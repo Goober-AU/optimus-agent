@@ -1802,18 +1802,22 @@ fn summary_output_budgets(
     if !ceiling.is_finite() || ceiling < 1.0 {
         return Err("Compaction model has no usable output budget".to_string());
     }
-    // Adaptive Claude and Responses count reasoning inside the output limit.
-    // Legacy Claude adds its explicit thinking budget in the adapter already.
+    // Adaptive Claude, Responses, and openai-completions reasoning models count
+    // reasoning inside the output limit. SGLang-style completions servers
+    // (GLM-5.3, Kimi-K3, DeepSeek) bill reasoning tokens against max_tokens, so
+    // summary calls need thinking headroom on top of the text budget; without it
+    // reasoning crowds out the whole summary and the call ends as a zero-text
+    // length failure. Legacy Claude adds its explicit thinking budget in the
+    // adapter already.
     let adaptive_claude = model.api == "anthropic-messages" && model.reasoning
         && pi_ai::providers::anthropic::supports_adaptive_thinking(&model.id)
         && (thinking_level.is_some_and(|level| *level != ThinkingLevel::Off)
             || pi_ai::providers::anthropic::is_always_on_adaptive_thinking_model(&model.id));
     let reasoning_budgeted = adaptive_claude || (model.reasoning
-        && matches!(model.api.as_str(), "openai-responses" | "azure-openai-responses")
+        && matches!(model.api.as_str(), "openai-responses" | "azure-openai-responses" | "openai-completions")
         && thinking_level != Some(&ThinkingLevel::Off));
     if reasoning_budgeted {
-        // Local ceiling for the added reasoning headroom. Preserve other APIs'
-        // preexisting initial output allocation, including Ollama.
+        // Local ceiling for the added reasoning headroom.
         ceiling = ceiling.min(65_536.0);
     }
     let requested = if reasoning_budgeted {
@@ -2977,7 +2981,7 @@ mod summary_retry_safety_tests {
         model.reasoning = true;
         model.context_window = 1_000_000.0;
         model.max_tokens = 131_072.0;
-        for api in ["openai-responses", "azure-openai-responses"] {
+        for api in ["openai-responses", "azure-openai-responses", "openai-completions"] {
             model.api = api.to_string();
             assert_eq!(summary_output_budgets(&model, 13_107.0, Some(&ThinkingLevel::Xhigh), None).unwrap(), (29_491.0, 58_982.0));
             assert_eq!(summary_output_budgets(&model, 13_107.0, Some(&ThinkingLevel::Off), None).unwrap(), (13_107.0, 26_214.0));
@@ -2996,6 +3000,26 @@ mod summary_retry_safety_tests {
         let mut options = CompactionOptions::default();
         options.simple.thinking_budgets = Some(pi_ai::types::ThinkingBudgets { high: Some(100_000.0), ..Default::default() });
         assert_eq!(summary_output_budgets(&model, 13_107.0, Some(&ThinkingLevel::High), Some(&options)).unwrap(), (65_536.0, 65_536.0));
+    }
+
+    #[test]
+    fn completions_reasoning_models_get_thinking_headroom_for_summaries() {
+        // Incident 2026-10-09 shape: GLM-5.3 (openai-completions on an SGLang
+        // server) burned the entire 13,107-token summary budget on reasoning
+        // and produced zero summary text; the retry at 26,214 did the same.
+        // Completions-family reasoning models need the same headroom that
+        // openai-responses already receives.
+        let mut model = Model::new("glm-5.3", "GLM-5.3", "openai-completions", "dgx-glm53", "https://fixture.invalid");
+        model.reasoning = true;
+        model.context_window = 1_048_576.0;
+        model.max_tokens = 262_144.0;
+        assert_eq!(summary_output_budgets(&model, 13_107.0, Some(&ThinkingLevel::Max), None).unwrap(), (29_491.0, 58_982.0));
+        assert_eq!(summary_output_budgets(&model, 8_192.0, Some(&ThinkingLevel::Max), None).unwrap(), (24_576.0, 49_152.0));
+        assert_eq!(summary_output_budgets(&model, 13_107.0, None, None).unwrap(), (21_299.0, 42_598.0));
+        assert_eq!(summary_output_budgets(&model, 13_107.0, Some(&ThinkingLevel::Off), None).unwrap(), (13_107.0, 26_214.0));
+        // Non-reasoning completions models keep the historical flat budget.
+        model.reasoning = false;
+        assert_eq!(summary_output_budgets(&model, 13_107.0, Some(&ThinkingLevel::Max), None).unwrap(), (13_107.0, 26_214.0));
     }
 
     #[test]
