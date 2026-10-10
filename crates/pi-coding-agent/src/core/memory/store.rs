@@ -686,7 +686,12 @@ impl MemoryStore {
                         })
                         .flatten();
                     if let Some(duplicate) = duplicate {
-                        return Err(format!("Exact duplicate: {}", duplicate.id));
+                        // A create that re-states an existing id coalesces
+                        // into that entry instead of failing the apply; only
+                        // a duplicate under a different id is rejected here.
+                        if edit.id.as_deref() != Some(duplicate.id.as_str()) {
+                            return Err(format!("Exact duplicate: {}", duplicate.id));
+                        }
                     }
                 }
                 let superseded = metadata.contains_key("supersededBy");

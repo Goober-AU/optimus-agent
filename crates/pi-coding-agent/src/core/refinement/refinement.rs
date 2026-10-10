@@ -1927,15 +1927,30 @@ pub fn apply_refinement_proposal(
             continue;
         }
         if edit.action == "create" && before.is_some() {
-            applied_edits.push(AppliedRefinementEdit {
-                edit: edit.clone(),
-                id,
-                before,
-                after: None,
-                applied: false,
-                error: Some("entry already exists".to_string()),
-            });
-            continue;
+            // Coalesce a re-stated fact into its existing entry instead of
+            // failing the whole proposal. Imports and rollbacks legitimately
+            // re-emit an id that already exists; a create-on-existing is
+            // applied as a no-op when nothing changes (or as an update via
+            // the shared merge path below when it does), keeping multi-edit
+            // proposals atomic.
+            let existing = before.as_ref().unwrap();
+            let unchanged = edit
+                .content
+                .as_deref()
+                .map(|content| content.trim() == existing.content.trim())
+                .unwrap_or(false);
+            if unchanged {
+                applied_edits.push(AppliedRefinementEdit {
+                    edit: edit.clone(),
+                    id,
+                    before,
+                    after: None,
+                    applied: true,
+                    error: None,
+                });
+                proposal_modified_keys.insert(entry_key);
+                continue;
+            }
         }
         if edit.action == "update" && before.is_none() {
             applied_edits.push(AppliedRefinementEdit {
@@ -1948,7 +1963,7 @@ pub fn apply_refinement_proposal(
             });
             continue;
         }
-        if edit.action == "create" && options.rollback_of.is_none() {
+        if edit.action == "create" && options.rollback_of.is_none() && before.is_none() {
             let duplicate = state
                 .entries
                 .get(kind.as_str())
@@ -2737,6 +2752,89 @@ mod tests {
         assert!(!state.entries.get("prompt").unwrap().contains_key("e"));
         assert_eq!(state.refinements.len(), 1);
         assert_eq!(state.refinements[0].changes.len(), 3);
+    }
+
+    #[test]
+    fn coalesces_create_on_existing_id_instead_of_failing_the_proposal() {
+        let mut state = empty_harness_state();
+        state.entries.get_mut("memory").unwrap().insert(
+            "e".to_string(),
+            serde_json::from_value(entry_value("e", "memory", "t", "c1")).unwrap(),
+        );
+        // Identical re-statement under an existing id: idempotent no-op.
+        let same = normalize_refinement_proposal(&serde_json::json!({
+            "summary": "s", "rationale": "r", "expectedOutcome": "o",
+            "edits": [{"action": "create", "kind": "memory", "id": "e", "title": "t", "content": "c1"}]
+        }));
+        let result = apply_refinement_proposal(
+            &mut state,
+            &same,
+            ApplyRefinementOptions {
+                id: "refine_co_1".to_string(),
+                ..Default::default()
+            },
+        );
+        assert!(result.applied_edits[0].applied);
+        assert_eq!(result.applied_edits[0].error, None);
+        let entry = state.entries.get("memory").unwrap().get("e").unwrap();
+        assert_eq!(entry.version, 1);
+        assert_eq!(entry.content, "c1");
+        assert_eq!(entry.created_at, "2026-01-01T00:00:00.000Z");
+        // Changed re-statement under an existing id: coalesced update.
+        let changed = normalize_refinement_proposal(&serde_json::json!({
+            "summary": "s", "rationale": "r", "expectedOutcome": "o",
+            "edits": [{"action": "create", "kind": "memory", "id": "e", "title": "t2", "content": "c2"}]
+        }));
+        let result = apply_refinement_proposal(
+            &mut state,
+            &changed,
+            ApplyRefinementOptions {
+                id: "refine_co_2".to_string(),
+                ..Default::default()
+            },
+        );
+        assert!(result.applied_edits[0].applied);
+        let entry = state.entries.get("memory").unwrap().get("e").unwrap();
+        assert_eq!(entry.version, 2);
+        assert_eq!(entry.content, "c2");
+        assert_eq!(entry.title, "t2");
+        assert_eq!(entry.created_at, "2026-01-01T00:00:00.000Z");
+    }
+
+    #[test]
+    fn create_on_existing_alongside_fresh_creates_applies_whole_proposal() {
+        let mut state = empty_harness_state();
+        state.entries.get_mut("memory").unwrap().insert(
+            "e".to_string(),
+            serde_json::from_value(entry_value("e", "memory", "t", "c1")).unwrap(),
+        );
+        let proposal = normalize_refinement_proposal(&serde_json::json!({
+            "summary": "s", "rationale": "r", "expectedOutcome": "o",
+            "edits": [
+                {"action": "create", "kind": "memory", "id": "e", "title": "t3", "content": "c3"},
+                {"action": "create", "kind": "memory", "id": "fresh", "title": "fresh", "content": "x"}
+            ]
+        }));
+        let result = apply_refinement_proposal(
+            &mut state,
+            &proposal,
+            ApplyRefinementOptions {
+                id: "refine_co_3".to_string(),
+                ..Default::default()
+            },
+        );
+        assert!(result.applied_edits.iter().all(|edit| edit.applied));
+        assert_eq!(
+            state
+                .entries
+                .get("memory")
+                .unwrap()
+                .get("e")
+                .unwrap()
+                .content,
+            "c3"
+        );
+        assert!(state.entries.get("memory").unwrap().contains_key("fresh"));
     }
 
     #[test]
