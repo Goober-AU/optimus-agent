@@ -1,0 +1,3 @@
+- Fixed refinement apply failing a whole proposal with `entry already exists` when a create edit re-states an id that already exists; imports and rollbacks can now re-emit known ids.
+- A create-on-existing now coalesces into that entry: identical content applies as an idempotent no-op, changed content applies as an update that preserves `created_at` and bumps `version`.
+- Multi-edit proposals stay atomic: the remaining edits still apply, and the store-level exact-duplicate guard only rejects duplicates recorded under a different id.
