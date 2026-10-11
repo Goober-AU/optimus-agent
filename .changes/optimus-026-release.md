@@ -1,0 +1,1 @@
+- Changed Optimus Agent to version 0.1.26 with the merged memory import, recall, source-integrity, and benchmark updates.
