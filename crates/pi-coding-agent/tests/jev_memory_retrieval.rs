@@ -136,7 +136,7 @@ async fn seed(memory: &MemoryService) {
         {"action":"create","kind":"memory","id":"unrelated","title":"Lunch","content":"UNRELATED_SENTINEL sandwich recipe."}
     ]}});
     memory
-        .request("apply", proposal.as_object().unwrap(), None)
+        .request("apply", proposal.as_object().unwrap(), None, None)
         .await
         .unwrap();
 }

@@ -828,7 +828,7 @@ async fn assert_service_update_provenance(explicit_clear: bool) {
         payload["sources"] = json!([]);
     }
     let applied = service
-        .request("apply", payload.as_object().unwrap(), None)
+        .request("apply", payload.as_object().unwrap(), None, None)
         .await
         .unwrap();
     assert_eq!(applied["appliedEdits"][0]["applied"], true);
@@ -859,7 +859,7 @@ async fn assert_service_update_provenance(explicit_clear: bool) {
     assert_eq!(update.after.as_ref(), Some(updated));
     let read_payload = json!({"id": "project:memory:legacy_note"});
     let read = reopened
-        .request("read", read_payload.as_object().unwrap(), None)
+        .request("read", read_payload.as_object().unwrap(), None, None)
         .await
         .unwrap();
     assert_eq!(read["sources"], expected);

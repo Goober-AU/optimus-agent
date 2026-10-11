@@ -45,7 +45,7 @@ impl Fixture {
 
     async fn apply(&self, payload: &Value) -> Result<Value, String> {
         self.service
-            .request("apply", payload.as_object().unwrap(), None)
+            .request("apply", payload.as_object().unwrap(), None, None)
             .await
     }
 
@@ -217,7 +217,7 @@ async fn source_modes_preserve_clear_or_replace_and_retry_the_original_result() 
         )
         .unwrap();
         let retry = reopened
-            .request("apply", payload.as_object().unwrap(), None)
+            .request("apply", payload.as_object().unwrap(), None, None)
             .await
             .unwrap();
         assert_eq!(
@@ -480,7 +480,7 @@ async fn handoff_retains_its_existing_complete_checkpoint_source_semantics() {
     });
     fixture
         .service
-        .request("handoff", base.as_object().unwrap(), None)
+        .request("handoff", base.as_object().unwrap(), None, None)
         .await
         .unwrap();
     let mut update = base.clone();
@@ -490,7 +490,7 @@ async fn handoff_retains_its_existing_complete_checkpoint_source_semantics() {
     update.as_object_mut().unwrap().remove("sources");
     let applied = fixture
         .service
-        .request("handoff", update.as_object().unwrap(), None)
+        .request("handoff", update.as_object().unwrap(), None, None)
         .await
         .unwrap();
     assert_eq!(
@@ -505,7 +505,7 @@ async fn handoff_retains_its_existing_complete_checkpoint_source_semantics() {
     assert_eq!(
         fixture
             .service
-            .request("handoff", update.as_object().unwrap(), None)
+            .request("handoff", update.as_object().unwrap(), None, None)
             .await
             .unwrap(),
         applied

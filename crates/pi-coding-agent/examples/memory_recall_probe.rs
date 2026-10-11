@@ -391,8 +391,8 @@ impl Replay {
             };
             let relative = self.file_paths.get(&key)
                 .ok_or_else(|| format!("missing frozen file export for source {} ({key}); use content:null only if missing at capture", source.id))?;
-            // Native freshness uses projectPath; native recall labels contain
-            // only source id/uri. Preserve those labels and their exact budget.
+            // Remap only the freshness lookup path. Keep original source IDs
+            // and URIs in the reported provenance.
             source.project_path = Some(relative.clone());
         }
         Ok(frozen)
@@ -813,10 +813,13 @@ mod tests {
             ["project:memory:a-current", "project:memory:d-unknown"]
         );
         assert_eq!(hits[0].sources[0], expected_sources[0]);
-        assert!(result["recall_text"]
-            .as_str()
-            .unwrap()
-            .contains(&serde_json::to_string(&uri).unwrap()));
+        let recall_text = result["recall_text"].as_str().unwrap();
+        let label: Value = serde_json::from_str(
+            recall_text.lines().find(|line| line.starts_with('{')).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(label["sources"], json!([{"id": "a-current"}]));
+        assert!(!recall_text.contains(&uri));
         // Compare exact rendering against an independent native file-root cut.
         std::fs::write(original.path().join("a-current.txt"), "frozen").unwrap();
         std::fs::write(original.path().join("b-stale.txt"), "changed").unwrap();
