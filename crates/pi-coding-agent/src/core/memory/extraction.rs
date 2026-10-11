@@ -143,7 +143,7 @@ fn local_message_to_pi_ai(
 }
 
 /// `extractor` / `createMemoryHostHandlers`: count each planning and repair response.
-pub(crate) async fn extract(
+pub async fn extract(
     memory: &MemoryService,
     records: Vec<Evidence>,
     model: pi_ai::types::Model,

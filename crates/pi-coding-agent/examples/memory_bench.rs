@@ -56,9 +56,17 @@ use pi_coding_agent::core::extensions::builtin::memory::{
 };
 use pi_coding_agent::core::kernel::shared::HostRequestHandler;
 use pi_coding_agent::core::memory::evidence::hash;
+use pi_coding_agent::core::memory::extraction;
+use pi_coding_agent::core::memory::jobs::{
+    ExtractionResult, ImportJobStatus, MemoryExtractor, MemoryJobs,
+};
 use pi_coding_agent::core::memory::service::{create_memory_host_handlers, MemoryService};
 use pi_coding_agent::core::memory::store::MemorySettings;
 use pi_coding_agent::core::model_registry::ModelRegistry;
+use pi_coding_agent::core::provider_retry::provider_retry_policy;
+use pi_coding_agent::core::refinement::refinement::{
+    ProviderRetryPolicy, RefineOptions, RefinementProposal,
+};
 use pi_coding_agent::core::resource_loader::DefaultResourceLoaderOptions;
 use pi_coding_agent::core::session_manager::SessionManager;
 use pi_coding_agent::core::settings_manager::SettingsManager;
@@ -170,7 +178,7 @@ struct QuestionSpec {
     eval: Option<Value>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ManifestSettings {
     #[serde(default = "default_true", alias = "recall_on")]
@@ -229,6 +237,30 @@ struct ManifestSettings {
     /// Enable recall-time LLM rerank of lexical hits (memory.recallRerank).
     #[serde(default, alias = "recall_rerank")]
     recall_rerank: bool,
+    /// Candidate pool width for recall rerank (memory.recallRerankCandidates).
+    /// None keeps the production default (20); wider pools let the rerank see
+    /// gold entries that rank far below the lexical top-20.
+    #[serde(default, alias = "recall_rerank_candidates")]
+    recall_rerank_candidates: Option<i64>,
+    /// Enable deterministic recall-query extraction from a "Question:"
+    /// wrapper (memory.recallQueryExtract).
+    #[serde(default, alias = "recall_query_extract")]
+    recall_query_extract: bool,
+    /// Enable recall-time LLM query expansion into angle queries
+    /// (memory.recallQueryExpansion).
+    #[serde(default, alias = "recall_query_expansion")]
+    recall_query_expansion: bool,
+    /// Angle query count for recall expansion (memory.recallQueryExpansionDraws).
+    /// None keeps the production default (2); 1-3 allowed.
+    #[serde(default, alias = "recall_query_expansion_draws")]
+    recall_query_expansion_draws: Option<i64>,
+    /// LME-v2 only: after each session's import, run one bounded extraction
+    /// call that distills reusable procedure notes (AgentRunbook-style:
+    /// precondition -> action -> observed outcome) into create edits titled
+    /// with the "LME2 Procedure:" prefix. Driver-level capture-side control;
+    /// never a product memory setting.
+    #[serde(default, alias = "lme2_procedure_notes")]
+    lme2_procedure_notes: bool,
 }
 
 impl Default for ManifestSettings {
@@ -254,6 +286,11 @@ impl Default for ManifestSettings {
             skip_ingest: false,
             recall_query_distillation: false,
             recall_rerank: false,
+            recall_rerank_candidates: None,
+            recall_query_extract: false,
+            recall_query_expansion: false,
+            recall_query_expansion_draws: None,
+            lme2_procedure_notes: false,
         }
     }
 }
@@ -783,12 +820,41 @@ fn parse_manifest(raw: &str) -> Result<Manifest, String> {
     manifest.explicit_helper_flags = [
         ("recallQueryDistillation", "recall_query_distillation"),
         ("recallRerank", "recall_rerank"),
-    ].iter().all(|(camel, snake)| settings.get(*camel).or_else(|| settings.get(*snake)).is_some_and(Value::is_boolean));
+        ("recallQueryExtract", "recall_query_extract"),
+("recallQueryExpansion", "recall_query_expansion"),    ].iter().all(|(camel, snake)| settings.get(*camel).or_else(|| settings.get(*snake)).is_some_and(Value::is_boolean));
     for question in &manifest.questions {
         question_declaration(question)?;
     }
+    validate_lme2_procedure_notes(&manifest)?;
     frozen_contract(&manifest)?;
     Ok(manifest)
+}
+
+/// lme2ProcedureNotes is a capture-side driver control for the LME-v2 family
+/// only. It must fail closed at parse time so a mixed or misconfigured
+/// manifest never reaches provider work.
+fn validate_lme2_procedure_notes(manifest: &Manifest) -> Result<(), String> {
+    if !manifest.settings.lme2_procedure_notes {
+        return Ok(());
+    }
+    for env in &manifest.envs {
+        if env.family.as_deref() != Some("lme_v2") {
+            return Err(format!(
+                "lme2ProcedureNotes requires family lme_v2; env {} has family {:?}",
+                env.env_id, env.family
+            ));
+        }
+    }
+    if manifest.settings.skip_ingest {
+        return Err("lme2ProcedureNotes requires ingestion; skipIngest must be false".to_string());
+    }
+    if manifest.settings.memory_learning == Some(false) {
+        return Err(
+            "lme2ProcedureNotes requires import learning; memoryLearning must not be false"
+                .to_string(),
+        );
+    }
+    Ok(())
 }
 
 fn declared_string<'de, D: serde::Deserializer<'de>>(
@@ -975,7 +1041,7 @@ fn frozen_contract(manifest: &Manifest) -> Result<bool, String> {
         || !manifest.questions[0].evidence.is_empty()
         || manifest.questions[0].eval.is_some()
     {
-        return Err("frozen replay requires one gold-free question, one session-free environment, skipIngest, explicit memoryLearning=false and helper booleans, answerMaxTokens=1..8192, tools off, autoRefine off and a fixed answerInstruction".to_string());
+        return Err("frozen replay requires one gold-free question, one session-free environment, skipIngest, explicit memoryLearning=false and recall toggle booleans, answerMaxTokens=1..8192, tools off, autoRefine off and a fixed answerInstruction".to_string());
     }
     let env_id = &manifest.envs[0].env_id;
     if env_id.is_empty() || !env_id.bytes().all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-')) {
@@ -1186,6 +1252,18 @@ fn manifest_memory_settings(settings: &ManifestSettings) -> Value {
     if settings.recall_rerank || settings.memory_learning == Some(false) {
         memory["recallRerank"] = json!(settings.recall_rerank);
     }
+    if settings.recall_query_extract || settings.memory_learning == Some(false) {
+        memory["recallQueryExtract"] = json!(settings.recall_query_extract);
+    }
+    if let Some(candidates) = settings.recall_rerank_candidates {
+        memory["recallRerankCandidates"] = json!(candidates);
+    }
+    if settings.recall_query_expansion || settings.memory_learning == Some(false) {
+        memory["recallQueryExpansion"] = json!(settings.recall_query_expansion);
+    }
+    if let Some(draws) = settings.recall_query_expansion_draws {
+        memory["recallQueryExpansionDraws"] = json!(draws);
+    }
     if let Some(max_chars) = settings.max_recall_chars {
         memory["maxRecallChars"] = json!(max_chars);
     }
@@ -1213,6 +1291,14 @@ fn memory_feature_realization(
     // These manifest defaults are expectations even when omitted from settings.json.
     requested_memory["recallQueryDistillation"] = json!(requested.recall_query_distillation);
     requested_memory["recallRerank"] = json!(requested.recall_rerank);
+    requested_memory["recallQueryExtract"] = json!(requested.recall_query_extract);
+    if let Some(candidates) = requested.recall_rerank_candidates {
+        requested_memory["recallRerankCandidates"] = json!(candidates);
+    }
+    requested_memory["recallQueryExpansion"] = json!(requested.recall_query_expansion);
+    if let Some(draws) = requested.recall_query_expansion_draws {
+        requested_memory["recallQueryExpansionDraws"] = json!(draws);
+    }
     // Keep the snapshot limited to memory behavior; never serialize sharing credentials.
     let effective_memory = json!({
         "recall": effective.recall,
@@ -1226,7 +1312,10 @@ fn memory_feature_realization(
         "importInstructions": effective.import_instructions,
         "recallQueryDistillation": effective.recall_query_distillation,
         "recallRerank": effective.recall_rerank,
-    });
+        "recallRerankCandidates": effective.recall_rerank_candidates,
+        "recallQueryExtract": effective.recall_query_extract,
+"recallQueryExpansion": effective.recall_query_expansion,
+        "recallQueryExpansionDraws": effective.recall_query_expansion_draws,    });
     let mut mismatches = Vec::new();
     for (key, value) in requested_memory
         .as_object()
@@ -1274,10 +1363,12 @@ fn memory_feature_realization(
         "llm_call_evidence": {
             "recallQueryDistillation": "not_reported_by_existing_diagnostics",
             "recallRerank": "not_reported_by_existing_diagnostics",
+            "recallQueryExpansion": "not_reported_by_existing_diagnostics",
         },
         "llm_helper_observations": {
             "recallQueryDistillation": [],
             "recallRerank": [],
+            "recallQueryExpansion": [],
         },
         "llm_helper_usage_coverage": null,
         "evidence_limit": "Settings prove configuration only. Optional recallHelpers diagnostics report helper dispatch/outcomes and allowlisted observations; attempted means stream dispatch, not provider completion or billable usage. Provider-observed zero is retained; null or absent is unavailable. Helper observations are not summed and do not prove cost completeness. Missing helper fields are unobserved; null recall_hook_observation means not collected.",
@@ -1514,6 +1605,7 @@ fn record_recall_observations(realization: &mut Value, diagnostics: &[&Map<Strin
     for (setting, helper) in [
         ("recallQueryDistillation", "queryDistillation"),
         ("recallRerank", "rerank"),
+        ("recallQueryExpansion", "queryExpansion"),
     ] {
         let observations: Vec<Value> = diagnostics
             .iter()
@@ -1718,6 +1810,375 @@ async fn preflight(
 // Ingest (import mode)
 // ---------------------------------------------------------------------------
 
+// LME-v2 procedure notes (AgentRunbook-C port, capture side only).
+//
+// The official strongest LMEv2 baseline (AgentRunbook-C) wins by keeping a
+// pre-rendered, bounded view of every trajectory (goal, start URL, annotated
+// action sequence, final outcome) next to the verbatim data, and by carrying
+// procedure/hint notes distilled from each session. Our import already stores
+// the verbatim sessions; these constants define the bounded distilled view and
+// the distinctive title prefix for the notes that recall can find lexically.
+const LME2_PROCEDURE_NOTES_TITLE_PREFIX: &str = "LME2 Procedure:";
+const LME2_PROCEDURE_NOTES_SOURCE_SUFFIX: &str = "procedures";
+const LME2_PROCEDURE_NOTES_MAX_CHARS: usize = 24_000;
+const LME2_PROCEDURE_NOTES_MAX_STEPS: usize = 120;
+
+/// Collapse whitespace and truncate with an ellipsis, mirroring the official
+/// baseline's inspector one-line formatting.
+fn lme2_notes_one_line(text: &str, max_chars: usize) -> String {
+    let compact: String = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if compact.chars().count() <= max_chars {
+        return compact;
+    }
+    let kept: String = compact.chars().take(max_chars.saturating_sub(3)).collect();
+    format!("{kept}...")
+}
+
+/// Build the one-row notes source for one LME-v2 session (one trajectory).
+///
+/// The row is the driver-rendered compact procedure view of the session:
+/// header (goal/outcome/start URL) plus the numbered URL/action/thought trace
+/// from the recorded observation and decision events. Accessibility trees are
+/// dropped entirely (the full session import already carries them), so the
+/// distillation call stays bounded: one row -> one chunk -> one LLM call.
+fn render_lme2_procedure_notes_source(session: &SessionSpec) -> Result<String, String> {
+    let mut header = String::new();
+    let mut steps: Vec<String> = Vec::new();
+    for event in &session.events {
+        let text = event.text.trim();
+        if event.role == "assistant"
+            && event.authority.as_deref() == Some("dataset_task_metadata")
+            && text.starts_with("Goal:")
+        {
+            header = text.to_string();
+            continue;
+        }
+        if event.role == "toolResult" {
+            // Observation text is "URL: <url>\nObservation:\n<tree>"; keep only the URL.
+            let url = text
+                .split('\n')
+                .next()
+                .unwrap_or("")
+                .strip_prefix("URL: ")
+                .unwrap_or("")
+                .to_string();
+            steps.push(format!("URL: {}", lme2_notes_one_line(&url, 220)));
+            continue;
+        }
+        if event.role == "assistant" && event.authority.as_deref() == Some("agent_decision") {
+            let action = text
+                .lines()
+                .find(|line| line.starts_with("Action: "))
+                .map(|line| lme2_notes_one_line(line, 320))
+                .unwrap_or_default();
+            let thought = text
+                .lines()
+                .find(|line| line.starts_with("Thought: "))
+                .map(|line| format!(" | {}", lme2_notes_one_line(line, 240)))
+                .unwrap_or_default();
+            if let Some(last) = steps.last_mut() {
+                last.push_str(&format!(" | {action}{thought}"));
+            }
+            continue;
+        }
+    }
+    if header.is_empty() {
+        return Err(format!(
+            "session {} has no dataset task metadata header; cannot render procedure notes source",
+            session.session_id
+        ));
+    }
+    if steps.is_empty() {
+        return Err(format!(
+            "session {} has no observation events; cannot render procedure notes source",
+            session.session_id
+        ));
+    }
+    let mut body = String::new();
+    body.push_str(&format!(
+        "Session {} — driver-rendered compact procedure view of one web-agent trajectory \
+(source events keep their recorded roles: observations are toolResult browser states, \
+decisions are assistant actions; accessibility trees are omitted).\n",
+        session.session_id
+    ));
+    body.push_str(&header);
+    body.push_str("\nAction trace:\n");
+    let mut shown = 0usize;
+    for step in &steps {
+        if body.chars().count() + step.chars().count() > LME2_PROCEDURE_NOTES_MAX_CHARS
+            || shown >= LME2_PROCEDURE_NOTES_MAX_STEPS
+        {
+            break;
+        }
+        shown += 1;
+        body.push_str(&format!("{shown}. {step}\n"));
+    }
+    if shown < steps.len() {
+        body.push_str(&format!(
+            "[trace truncated: {shown} of {} states shown]\n",
+            steps.len()
+        ));
+    }
+    let row = json!({
+        "type": "message",
+        "id": "notes_0001",
+        "message": {
+            "role": "user",
+            "content": [{"type": "text", "text": body}],
+        },
+    });
+    Ok(serde_json::to_string(&row).map_err(|error| error.to_string())? + "\n")
+}
+
+/// Extraction guidance for the notes pass, mirroring the official baseline's
+/// note generation: reusable procedures plus durable observations, grounded in
+/// the observed run only.
+fn lme2_procedure_notes_instructions() -> String {
+    concat!(
+        "Distill reusable procedure notes for this web-agent task environment from the session summary. ",
+        "Group the session's tool interactions into a few reusable procedures, each covering precondition, ",
+        "action and observed outcome, and add notable durable observations (gotchas, controls, values, page names) ",
+        "that later questions might need. Create one memory edit per note. ",
+        "Every title must start with \"LME2 Procedure:\" followed by a short specific name. ",
+        "Content must state precondition, steps and observed outcome concretely. ",
+        "Only create edits of kind memory with cited sourceIds grounded in the summary; ",
+        "exclude generic page furniture, secrets and temporary task state. ",
+        "Only preserve facts grounded in the observed run; favor durable answer-bearing facts."
+    )
+    .to_string()
+}
+
+/// Defense in depth: the notes job may only apply create edits of kind memory
+/// titled with the procedure prefix. Anything else the model emitted is
+/// dropped instead of polluting the benchmark store.
+fn filter_lme2_procedure_notes(proposal: RefinementProposal) -> RefinementProposal {
+    RefinementProposal {
+        edits: proposal
+            .edits
+            .into_iter()
+            .filter(|edit| {
+                edit.action == "create"
+                    && edit.kind == "memory"
+                    && edit.title
+                        .as_deref()
+                        .is_some_and(|title| title.starts_with(LME2_PROCEDURE_NOTES_TITLE_PREFIX))
+            })
+            .collect(),
+        ..proposal
+    }
+}
+
+/// One bounded procedure-notes extraction per LME-v2 session, applied through
+/// the same import job machinery (prepare -> run -> apply) as the main import.
+async fn run_lme2_procedure_notes(
+    scratch: &EnvScratch,
+    manifest: &Manifest,
+    session: &SessionSpec,
+    memory_request: &HostRequestHandler,
+) -> Result<Value, String> {
+    let started = Instant::now();
+    let source_path = scratch.sessions_dir.join(format!(
+        "{}.{}.jsonl",
+        session.session_id, LME2_PROCEDURE_NOTES_SOURCE_SUFFIX
+    ));
+    let body = render_lme2_procedure_notes_source(session)?;
+    std::fs::write(&source_path, &body).map_err(|error| {
+        format!(
+            "cannot write {}: {error}",
+            source_path.display()
+        )
+    })?;
+
+    let cwd_str = scratch.cwd.to_string_lossy().into_owned();
+    let agent_dir_str = scratch.agent_dir.to_string_lossy().into_owned();
+    let session_artifact_str = scratch
+        .session_artifact_dir
+        .to_string_lossy()
+        .into_owned();
+    let service =
+        MemoryService::new(&cwd_str, &agent_dir_str, Some(session_artifact_str.clone()))?;
+    let jobs = MemoryJobs::new(service.store.clone());
+    let prepared = jobs
+        .prepare(&source_path.to_string_lossy())
+        .await
+        .map_err(|error| {
+            format!(
+                "procedure notes prepare failed for {}: {error}",
+                session.session_id
+            )
+        })?;
+    if prepared.chunks.len() != 1 {
+        return Err(format!(
+            "procedure notes source for {} produced {} chunks; expected exactly one bounded chunk",
+            session.session_id,
+            prepared.chunks.len()
+        ));
+    }
+    let job_id = prepared.id.clone();
+
+    // Resolve the model exactly like the import path does (registry-backed,
+    // scratch models.json only; no installed-profile fallback).
+    let mut registry = ModelRegistry::create(
+        AuthStorage::create(
+            Some(scratch.agent_dir.join("auth.json").to_string_lossy().into_owned()),
+            None,
+        ),
+        Some(scratch.agent_dir.join("models.json").to_string_lossy().into_owned()),
+    );
+    let model = registry
+        .find(&manifest.model.provider, &manifest.model.id)
+        .ok_or_else(|| {
+            format!(
+                "model {}/{} not found in the scratch registry",
+                manifest.model.provider, manifest.model.id
+            )
+        })?;
+    let auth = registry.get_api_key_and_headers(&model).await;
+    let api_key = auth
+        .api_key
+        .filter(|key| auth.ok && !key.is_empty())
+        .ok_or("no credentials for the selected model")?;
+    let headers: Option<std::collections::HashMap<String, String>> =
+        auth.headers.map(|headers| headers.into_iter().collect());
+    let retry = provider_retry_policy(&SettingsManager::create(
+        &cwd_str,
+        Some(&agent_dir_str),
+    ));
+    let memory = service.clone();
+    let instructions = lme2_procedure_notes_instructions();
+    let extractor: MemoryExtractor = Arc::new(move |records| {
+        let memory = memory.clone();
+        let model = model.clone();
+        let api_key = api_key.clone();
+        let headers = headers.clone();
+        let instructions = instructions.clone();
+        Box::pin(async move {
+            let result = extraction::extract(
+                &memory,
+                records,
+                model,
+                api_key,
+                headers,
+                RefineOptions {
+                    retry: Some(ProviderRetryPolicy {
+                        enabled: retry.enabled,
+                        max_retries: retry.max_retries.max(0.0) as u32,
+                        base_delay_ms: retry.base_delay_ms,
+                        max_retry_delay_ms: retry.max_retry_delay_ms,
+                    }),
+                    instructions: Some(instructions),
+                    ..Default::default()
+                },
+            )
+            .await?;
+            Ok(ExtractionResult {
+                proposal: filter_lme2_procedure_notes(result.proposal),
+                input: result.input,
+                output: result.output,
+            })
+        })
+    });
+
+    // One bounded run with the same retry budget as import_run invocations.
+    let mut consecutive_failures = 0u32;
+    loop {
+        let outcome = tokio::time::timeout(
+            Duration::from_secs(manifest.settings.import_run_timeout_s),
+            jobs.run(&job_id, extractor.clone(), None),
+        )
+        .await;
+        let job = match outcome {
+            Ok(Ok(job)) => job,
+            Ok(Err(error)) => {
+                consecutive_failures += 1;
+                eprintln!(
+                    "[session {}] procedure notes run failed ({consecutive_failures} consecutive): {error}",
+                    session.session_id
+                );
+                if consecutive_failures > manifest.settings.import_run_retries {
+                    return Err(format!(
+                        "procedure notes run for job {job_id} failed {consecutive_failures} times in a row: {error}"
+                    ));
+                }
+                tokio::time::sleep(Duration::from_secs(2)).await;
+                continue;
+            }
+            Err(_) => {
+                let reason = format!(
+                    "timed out after {}s",
+                    manifest.settings.import_run_timeout_s
+                );
+                consecutive_failures += 1;
+                eprintln!(
+                    "[session {}] procedure notes run failed ({consecutive_failures} consecutive): {reason}",
+                    session.session_id
+                );
+                if consecutive_failures > manifest.settings.import_run_retries {
+                    return Err(format!(
+                        "procedure notes run for job {job_id} failed {consecutive_failures} times in a row: {reason}"
+                    ));
+                }
+                tokio::time::sleep(Duration::from_secs(2)).await;
+                continue;
+            }
+        };
+        if job.status != ImportJobStatus::Preview && job.status != ImportJobStatus::Applied {
+            return Err(format!(
+                "procedure notes run for session {} ended with status {}",
+                session.session_id,
+                job.status.as_str()
+            ));
+        }
+        break;
+    }
+
+    // Apply through the same transport as the main import (fresh revision).
+    let revision = service.store.read()?.memory.revision;
+    let applied = tokio::time::timeout(
+        Duration::from_secs(120),
+        call_memory(
+            memory_request,
+            json!({"action": "import_apply", "id": job_id, "revision": revision}),
+        ),
+    )
+    .await
+    .map_err(|_| format!("procedure notes apply timed out for session {}", session.session_id))?
+    .map_err(|error| {
+        format!(
+            "procedure notes apply failed for session {}: {error}",
+            session.session_id
+        )
+    })?;
+    let status = applied
+        .get("result")
+        .and_then(|result| result.get("status"))
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    if status != "applied" {
+        return Err(format!(
+            "procedure notes apply for session {} returned status {status:?}",
+            session.session_id
+        ));
+    }
+
+    let job = jobs.get(&job_id)?;
+    let notes_created: usize = job
+        .chunks
+        .iter()
+        .filter_map(|chunk| chunk.proposal.as_ref())
+        .map(|proposal| proposal.edits.len())
+        .sum();
+    Ok(json!({
+        "session_id": session.session_id,
+        "job_id": job_id,
+        "source_rows_sha256": hash(&body),
+        "llm_calls": 1,
+        "usage": {"input": job.usage.input, "output": job.usage.output},
+        "notes_created": notes_created,
+        "latency_ms": started.elapsed().as_millis() as u64,
+    }))
+}
+
 struct IngestOutcome {
     record: Value,
 }
@@ -1763,6 +2224,7 @@ async fn ingest_env(
     let mut total_usage_input = 0.0f64;
     let mut total_usage_output = 0.0f64;
     let mut chunk_count = 0usize;
+    let mut notes_stats: Vec<Value> = Vec::new();
 
     for session in &env.sessions {
         if session.events.is_empty() {
@@ -1889,6 +2351,21 @@ async fn ingest_env(
                 "import_apply for job {job_id} returned status {status:?}"
             ));
         }
+
+        // LME-v2 procedure notes: one bounded distillation call per session,
+        // applied as create edits through the same import machinery.
+        if manifest.settings.lme2_procedure_notes && env.family.as_deref() == Some("lme_v2") {
+            let stats =
+                run_lme2_procedure_notes(&scratch, manifest, session, &memory_request).await?;
+            eprintln!(
+                "[env {}] session {} procedure notes: {} note(s) in {}ms",
+                env.env_id,
+                session.session_id,
+                stats.get("notes_created").and_then(Value::as_u64).unwrap_or(0),
+                stats.get("latency_ms").and_then(Value::as_u64).unwrap_or(0)
+            );
+            notes_stats.push(stats);
+        }
     }
 
     // Snapshot the store plus the harness state files.
@@ -1930,6 +2407,23 @@ async fn ingest_env(
         "ingest_latency_ms": started.elapsed().as_millis() as u64,
         "ingest_llm_calls": chunk_count,
         "ingest_usage": {"input": total_usage_input, "output": total_usage_output},
+        "lme2_procedure_notes": {
+            "enabled": manifest.settings.lme2_procedure_notes
+                && env.family.as_deref() == Some("lme_v2"),
+            "sessions": notes_stats,
+            "llm_calls": notes_stats.len(),
+            "usage": {
+                "input": notes_stats
+                    .iter()
+                    .map(|stats| stats["usage"]["input"].as_f64().unwrap_or(0.0))
+                    .sum::<f64>(),
+                "output": notes_stats
+                    .iter()
+                    .map(|stats| stats["usage"]["output"].as_f64().unwrap_or(0.0))
+                    .sum::<f64>(),
+            },
+            "evidence_limit": "Driver-side counters over the notes import job; usage is the extractor-reported provider usage for the bounded per-session call.",
+        },
         "job_ids": job_ids,
         "ground_truth_refs": env.ground_truth_refs,
         "sessions": event_index,
@@ -2015,6 +2509,14 @@ fn answer_thinking_control(
         "provider_reasoning_disabled": null,
         "evidence_limit": "Native main-session control only; not proof of an emitted provider payload or backend reasoning behavior. Recall helpers, ingestion, and preflight keep their existing controls.",
     }))
+}
+
+/// Blank-at-cap rescue trigger: the assistant stopped at the output cap
+/// (stop_reason "length") and the answer channel stayed empty. Only that
+/// combination warrants one bounded follow-up; every other stop reason or a
+/// non-empty answer (even whitespace-trimmed) must never trigger it.
+fn blank_rescue_needed(stop_reason: &str, answer_text: &str) -> bool {
+    stop_reason == "length" && answer_text.trim().is_empty()
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -2217,8 +2719,8 @@ async fn run_question(
     }
 
     // Final assistant answer + usage.
-    let assistant = session.agent.find_last_assistant_message();
-    let answer_text = session
+    let mut assistant = session.agent.find_last_assistant_message();
+    let mut answer_text = session
         .messages()
         .iter()
         .rev()
@@ -2231,6 +2733,87 @@ async fn run_question(
             }
         })
         .unwrap_or_default();
+
+    // Blank-at-cap rescue: reasoning consumed the entire output budget and the
+    // final channel never opened (stop_reason "length" with empty answer text).
+    // Send exactly one bounded follow-up so the already-completed reasoning can
+    // be stated as an answer. The trigger is behavioral (length stop plus empty
+    // text), applies uniformly to every arm, and both attempts' usage is
+    // recorded for cost transparency.
+    let initial_stop_reason = assistant
+        .as_ref()
+        .map(|message| message.stop_reason.as_str().to_string())
+        .unwrap_or_default();
+    let initial_usage = assistant.as_ref().map(|message| {
+        json!({
+            "input_tokens": message.usage.input,
+            "output_tokens": message.usage.output,
+            "cache_read": message.usage.cache_read,
+            "cache_write": message.usage.cache_write,
+            "total_tokens": message.usage.total_tokens,
+        })
+    });
+    let mut blank_rescue = json!({"attempted": false});
+    if blank_rescue_needed(&initial_stop_reason, &answer_text) {
+        let rescue_prompt = "You ran out of output space before writing the final answer. Reply now with ONLY the final answer to the question above. Do not repeat your reasoning; state the answer directly.";
+        let rescue_result = tokio::time::timeout(
+            Duration::from_secs(manifest.settings.question_timeout_s),
+            async {
+                session
+                    .prompt_and_wait(rescue_prompt, None)
+                    .await
+                    .map_err(|error| format!("blank rescue prompt failed: {error}"))?;
+                session
+                    .wait_for_headless_idle()
+                    .await
+                    .map_err(|error| format!("wait_for_headless_idle failed: {error}"))?;
+                Ok::<(), String>(())
+            },
+        )
+        .await;
+        assistant = session.agent.find_last_assistant_message();
+        if let Some(text) = session
+            .messages()
+            .iter()
+            .rev()
+            .find_map(|message| {
+                let text = read_assistant_text(message);
+                if text.trim().is_empty() {
+                    None
+                } else {
+                    Some(text)
+                }
+            })
+        {
+            answer_text = text;
+        }
+        let outcome = match &rescue_result {
+            Ok(Ok(())) => {
+                if answer_text.trim().is_empty() {
+                    "still_blank"
+                } else {
+                    "answered"
+                }
+            }
+            Ok(Err(error)) => {
+                record["error"] = json!(error);
+                "error"
+            }
+            Err(_) => "timeout",
+        };
+        let rescue_stop_reason = assistant
+            .as_ref()
+            .map(|message| message.stop_reason.as_str().to_string());
+        blank_rescue = json!({
+            "attempted": true,
+            "trigger": "length_stop_with_empty_answer",
+            "initial_stop_reason": initial_stop_reason,
+            "initial_usage": initial_usage,
+            "outcome": outcome,
+            "rescue_stop_reason": rescue_stop_reason,
+        });
+    }
+    record["answer_blank_rescue"] = blank_rescue;
     if let Some(assistant) = &assistant {
         record["stop_reason"] = json!(assistant.stop_reason.as_str());
         if let Some(error_message) = &assistant.error_message {
@@ -2515,7 +3098,25 @@ async fn run(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pi_coding_agent::core::memory::store::default_memory_settings;
+
+    /// `default_memory_settings` is `pub(crate)` in the store, so the example
+    /// test build cannot import it. Build the same production defaults from a
+    /// fresh `MemoryService` (no settings.json in a scratch dir means
+    /// `store.settings()` returns the pristine defaults) instead of pinning a
+    /// struct literal that breaks whenever the store gains a setting.
+    fn default_memory_settings() -> pi_coding_agent::core::memory::store::MemorySettings {
+        let temp = tempfile::tempdir().expect("default settings scratch");
+        std::fs::create_dir_all(temp.path().join("agent"))
+            .expect("default settings agent dir");
+        MemoryService::new(
+            &temp.path().to_string_lossy(),
+            &temp.path().join("agent").to_string_lossy(),
+            None,
+        )
+        .expect("memory service for default settings")
+        .store
+        .settings()
+    }
 
     fn manifest_fixture(settings: Option<Value>) -> Manifest {
         let mut value = json!({
@@ -2714,6 +3315,7 @@ mod tests {
         assert!(manifest.settings.recall_on);
         assert!(!manifest.settings.recall_query_distillation);
         assert!(!manifest.settings.recall_rerank);
+        assert!(!manifest.settings.recall_query_extract);
         assert_eq!(manifest.settings.max_recall_entries, None);
         assert_eq!(manifest.settings.max_recall_chars, None);
         assert_eq!(manifest.settings.question_timeout_s, 180);
@@ -2732,6 +3334,7 @@ mod tests {
             false
         );
         assert_eq!(realization["effective_memory"]["recallRerank"], false);
+        assert_eq!(realization["effective_memory"]["recallQueryExtract"], false);
         assert_eq!(realization["effective_memory"]["maxRecallEntries"], 6);
         assert!(realization["recall_hook_observation"].is_null());
         assert!(realization["effective_memory"].get("shared").is_none());
@@ -2751,6 +3354,7 @@ mod tests {
             "recallOn": false,
             "recallQueryDistillation": true,
             "recallRerank": true,
+            "recallQueryExtract": true,
             "maxRecallChars": 1200,
             "maxRecallEntries": 3,
             "maxExtractionTokens": 512,
@@ -2761,6 +3365,7 @@ mod tests {
             "recall_on": false,
             "recall_query_distillation": true,
             "recall_rerank": true,
+            "recall_query_extract": true,
             "max_recall_chars": 1200,
             "max_recall_entries": 3,
             "max_extraction_tokens": 512,
@@ -2802,24 +3407,106 @@ mod tests {
                 recall_on: enabled,
                 recall_query_distillation: enabled,
                 recall_rerank: enabled,
+                recall_query_extract: enabled,
+                recall_query_expansion: enabled,
                 ..Default::default()
             };
             let mut effective = default_memory_settings();
             effective.recall = enabled;
             effective.recall_query_distillation = enabled;
             effective.recall_rerank = enabled;
+            effective.recall_query_extract = enabled;
+            effective.recall_query_expansion = enabled;
             memory_feature_realization(&requested, &effective, "test").unwrap();
-            for key in ["recall", "recallQueryDistillation", "recallRerank"] {
+            for key in [
+                "recall",
+                "recallQueryDistillation",
+                "recallRerank",
+                "recallQueryExtract",
+                "recallQueryExpansion",
+            ] {
                 let mut mismatch = effective.clone();
                 match key {
                     "recall" => mismatch.recall = !enabled,
                     "recallQueryDistillation" => mismatch.recall_query_distillation = !enabled,
-                    _ => mismatch.recall_rerank = !enabled,
+                    "recallRerank" => mismatch.recall_rerank = !enabled,
+                    "recallQueryExtract" => mismatch.recall_query_extract = !enabled,
+                    "recallQueryExpansion" => mismatch.recall_query_expansion = !enabled,
+                    _ => unreachable!(),
                 }
                 let error = memory_feature_realization(&requested, &mismatch, "test").unwrap_err();
                 assert!(error.contains(&format!("memory.{key}:")), "{error}");
             }
         }
+    }
+
+    #[test]
+    fn recall_rerank_candidates_manifest_aliases_and_default() {
+        assert_eq!(manifest_fixture(None).settings.recall_rerank_candidates, None);
+        let camel = manifest_fixture(Some(json!({"recallRerankCandidates": 50})));
+        let snake = manifest_fixture(Some(json!({"recall_rerank_candidates": 50})));
+        assert_eq!(camel.settings.recall_rerank_candidates, Some(50));
+        assert_eq!(snake.settings.recall_rerank_candidates, Some(50));
+        assert_eq!(
+            manifest_memory_settings(&camel.settings),
+            manifest_memory_settings(&snake.settings),
+        );
+    }
+
+    #[test]
+    fn manifest_memory_settings_includes_recall_rerank_candidates_only_when_set() {
+        assert_eq!(
+            manifest_memory_settings(&ManifestSettings::default()),
+            json!({"recall": true})
+        );
+        let settings = ManifestSettings {
+            recall_rerank_candidates: Some(50),
+            ..Default::default()
+        };
+        assert_eq!(
+            manifest_memory_settings(&settings),
+            json!({"recall": true, "recallRerankCandidates": 50})
+        );
+    }
+
+    #[test]
+    fn recall_rerank_candidates_realization_round_trip() {
+        let requested = ManifestSettings {
+            recall_rerank_candidates: Some(50),
+            ..Default::default()
+        };
+        let error =
+            memory_feature_realization(&requested, &default_memory_settings(), "test").unwrap_err();
+        assert!(
+            error.contains(
+                "memory.recallRerankCandidates: requested=50, expected=50, effective=20"
+            ),
+            "{error}"
+        );
+        let mut effective = default_memory_settings();
+        effective.recall_rerank_candidates = 50;
+        let realization = memory_feature_realization(&requested, &effective, "test").unwrap();
+        assert_eq!(realization["requested_memory"]["recallRerankCandidates"], 50);
+        assert_eq!(realization["effective_memory"]["recallRerankCandidates"], 50);
+        // An unset request leaves the production default (20) unchecked.
+        memory_feature_realization(&ManifestSettings::default(), &default_memory_settings(), "test")
+            .unwrap();
+    }
+
+    #[test]
+    fn blank_rescue_trigger_fires_only_for_length_stop_with_empty_answer() {
+        assert!(blank_rescue_needed("length", ""));
+        assert!(!blank_rescue_needed("length", "x"));
+        assert!(!blank_rescue_needed("stop", ""));
+        // Whitespace-only answers count as blank; no other stop reason, casing,
+        // or missing assistant message (empty reason) may trigger a rescue.
+        assert!(blank_rescue_needed("length", " \n\t "));
+        assert!(!blank_rescue_needed("Length", ""));
+        assert!(!blank_rescue_needed("toolUse", ""));
+        assert!(!blank_rescue_needed("aborted", ""));
+        assert!(!blank_rescue_needed("error", ""));
+        assert!(!blank_rescue_needed("", ""));
+        assert!(!blank_rescue_needed("stop", "final answer"));
     }
 
     #[test]
@@ -2904,6 +3591,91 @@ mod tests {
         assert_eq!(
             realization["effective_memory"]["importInstructions"],
             "Synthetic rule"
+        );
+        assert!(!scratch.agent_dir.join("models.json").exists());
+        assert!(!temp.path().join("env.jsonl").exists());
+        assert!(!temp.path().join("run.jsonl").exists());
+    }
+
+    #[test]
+    fn scratch_round_trip_applies_recall_rerank_candidates_and_fails_closed_out_of_range() {
+        let temp = tempfile::tempdir().unwrap();
+        let scratch = scratch_fixture(&temp);
+        // In-range values (including both validator bounds) round-trip through
+        // the real store settings untouched.
+        for candidates in [1, 300, 500] {
+            let requested = ManifestSettings {
+                recall_rerank_candidates: Some(candidates),
+                ..Default::default()
+            };
+            scratch.write_settings_json(&requested).unwrap();
+            let realization = check_memory_feature_realization(&scratch, &requested, "test")
+                .unwrap_or_else(|error| panic!("candidates={candidates}: {error}"));
+            assert_eq!(
+                realization["effective_memory"]["recallRerankCandidates"],
+                candidates
+            );
+        }
+        // Out-of-range requests are rejected by the production validator, so
+        // the whole memory block is ignored and the effective value falls
+        // back to the default 20; the realization check must fail closed
+        // naming the key.
+        for candidates in [0, 900] {
+            let requested = ManifestSettings {
+                recall_rerank_candidates: Some(candidates),
+                ..Default::default()
+            };
+            scratch.write_settings_json(&requested).unwrap();
+            let error = check_memory_feature_realization(&scratch, &requested, "test")
+                .unwrap_err();
+            assert!(
+                error.contains(&format!(
+                    "memory.recallRerankCandidates: requested={candidates}, expected={candidates}, effective=20"
+                )),
+                "{error}"
+            );
+        }
+    }
+
+    #[test]
+    fn recall_query_extract_manifest_settings_propagate_to_the_real_store() {
+        let temp = tempfile::tempdir().unwrap();
+        let scratch = scratch_fixture(&temp);
+        let requested = ManifestSettings {
+            recall_query_extract: true,
+            ..Default::default()
+        };
+        scratch.write_settings_json(&requested).unwrap();
+        // The written settings.json is what the production store reads.
+        let written: Value = serde_json::from_str(
+            &std::fs::read_to_string(scratch.agent_dir.join("settings.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(written["memory"]["recallQueryExtract"], true);
+        assert_eq!(
+            written["memory"],
+            json!({"recall": true, "recallQueryExtract": true})
+        );
+        let realization = check_memory_feature_realization(&scratch, &requested, "test").unwrap();
+        assert_eq!(realization["requested_memory"]["recallQueryExtract"], true);
+        assert_eq!(realization["effective_memory"]["recallQueryExtract"], true);
+        let service = MemoryService::new(
+            &scratch.cwd.to_string_lossy(),
+            &scratch.agent_dir.to_string_lossy(),
+            None,
+        )
+        .unwrap();
+        assert!(service.store.settings().recall_query_extract);
+        // A mismatch is still refused before any benchmark work.
+        let mut disabled = requested.clone();
+        disabled.recall_query_extract = false;
+        let error =
+            memory_feature_realization(&disabled, &service.store.settings(), "test").unwrap_err();
+        assert!(
+            error.contains(
+                "memory.recallQueryExtract: requested=false, expected=false, effective=true"
+            ),
+            "{error}"
         );
         assert!(!scratch.agent_dir.join("models.json").exists());
         assert!(!temp.path().join("env.jsonl").exists());
@@ -3841,8 +4613,9 @@ mod tests {
                 "hostId": "00000000-0000-0000-0000-000000000001", "revision": 7, "entryCount": 1}}],
             "questions": [{"qid": "q1", "env_id": "synthetic-env", "question": "Where is the synthetic needle?"}],
             "settings": {"skipIngest": true, "memoryLearning": false, "disableTools": true,
-                "recallQueryDistillation": false, "recallRerank": false, "answerMaxTokens": 8192,
-                "answerInstruction": "Answer directly.", "maxRecallChars": 6000, "maxRecallEntries": 6}
+                "recallQueryDistillation": false, "recallRerank": false, "recallQueryExtract": false, "answerMaxTokens": 8192,
+"recallQueryDistillation": false, "recallRerank": false, "recallQueryExpansion": false,
+                "answerMaxTokens": 8192,                "answerInstruction": "Answer directly.", "maxRecallChars": 6000, "maxRecallEntries": 6}
         })).unwrap();
         let manifest = parse_manifest(&raw).unwrap();
         std::fs::create_dir_all(&manifest.output_dir).unwrap();
@@ -3884,6 +4657,52 @@ mod tests {
             assert!(!replay.scratch.agent_dir.join("models.json").exists());
         }
         assert_eq!(std::fs::read(fixture).unwrap(), source_before);
+    }
+
+    #[test]
+    fn frozen_replay_propagates_recall_rerank_candidates_and_fails_closed_out_of_range() {
+        let input = tempfile::tempdir().unwrap();
+        let (fixture, sha) = frozen_fixture_input(&input);
+        // In-range: the manifest setting lands in scratch settings.json, is
+        // loaded by the real store, and passes the frozen realization check.
+        let temp = tempfile::tempdir().unwrap();
+        let mut manifest = frozen_manifest(&temp, &fixture, &sha);
+        manifest.settings.recall_rerank_candidates = Some(300);
+        let replay = FrozenReplay::prepare(&manifest, Path::new(&manifest.output_dir))
+            .unwrap()
+            .unwrap();
+        let scratch_settings: Value = serde_json::from_str(
+            &std::fs::read_to_string(replay.scratch.agent_dir.join("settings.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(scratch_settings["memory"]["recallRerankCandidates"], 300);
+        let service = MemoryService::new(
+            &replay.scratch.cwd.to_string_lossy(),
+            &replay.scratch.agent_dir.to_string_lossy(),
+            None,
+        )
+        .unwrap();
+        assert_eq!(service.store.settings().recall_rerank_candidates, 300);
+        // verify() re-runs memory_feature_realization; it must accept 300.
+        replay.verify(&manifest).unwrap();
+        // Out-of-range: the production validator rejects the memory block, so
+        // the store falls back to full defaults and learning flips to true;
+        // the frozen no-learning guard refuses the attempt before any replay
+        // work. Fail-closed via an earlier guard than the realization check.
+        let rejected = tempfile::tempdir().unwrap();
+        let mut invalid = frozen_manifest(&rejected, &fixture, &sha);
+        invalid.settings.recall_rerank_candidates = Some(900);
+        let error = match FrozenReplay::prepare(&invalid, Path::new(&invalid.output_dir)) {
+            Ok(_) => panic!("out-of-range recallRerankCandidates must fail closed"),
+            Err(error) => error,
+        };
+        assert!(
+            error.contains("frozen native identity/revision/count/no-learning check failed"),
+            "{error}"
+        );
+        // The failed attempt stays single-use: a retry on the same output is
+        // rejected by the claim, never silently reusing mutated state.
+        assert!(FrozenReplay::prepare(&invalid, Path::new(&invalid.output_dir)).is_err());
     }
 
     #[test]
@@ -4296,5 +5115,151 @@ print(json.dumps(env, ensure_ascii=False))
         duplicate["toolResult"] = duplicate["tool_result"].clone();
         assert!(serde_json::from_value::<EventSpec>(duplicate).is_err());
         assert!(!scratch.agent_dir.join("models.json").exists());
+    }
+
+    fn lme2_notes_env() -> EnvSpec {
+        serde_json::from_value(json!({
+            "env_id": "lme2-notes-env", "family": "lme_v2",
+            "authority_revision": 1,
+            "capture_protocol": SOURCE_AUTHORITY_CAPTURE_PROTOCOL,
+            "notes": {"axtree_cap_chars": 40},
+            "sessions": [{
+                "session_id": "traj",
+                "events": [
+                    {"role": "assistant", "text": "Goal: File a refund request\nOutcome: success\nStart: https://shop.invalid/home",
+                     "ext_id": "traj:header", "ts": null, "authority": "dataset_task_metadata"},
+                    {"role": "toolResult", "text": "URL: https://shop.invalid/refund\nObservation:\n[button] Open refund form",
+                     "ext_id": "traj:s0:obs", "ts": null, "authority": "browser_observation",
+                     "tool_result": {"toolCallId": "traj:s0:obs", "toolName": "lme_v2_observation", "isError": false}},
+                    {"role": "assistant", "text": "Action: click('Open refund form')\nThought: open the form",
+                     "ext_id": "traj:s0:act", "ts": null, "authority": "agent_decision"},
+                ],
+            }],
+        })).unwrap()
+    }
+
+    #[test]
+    fn combined_lme2_procedure_notes_settings_default_aliases_and_validation() {
+        let mut value = declared_manifest_fixture();
+        let manifest = parse_manifest_value(&value).unwrap();
+        assert!(!manifest.settings.lme2_procedure_notes);
+        assert!(!ManifestSettings::default().lme2_procedure_notes);
+        for key in ["lme2ProcedureNotes", "lme2_procedure_notes"] {
+            let settings: ManifestSettings = serde_json::from_value(json!({key: true})).unwrap();
+            assert!(settings.lme2_procedure_notes, "alias {key}");
+        }
+
+        // The control requires the lme_v2 family on every environment.
+        value["settings"] = json!({"lme2ProcedureNotes": true});
+        let error = parse_manifest_value(&value).unwrap_err();
+        assert!(error.contains("lme_v2"), "{error}");
+        value["envs"][0]["family"] = json!("lme_v2");
+        parse_manifest_value(&value).unwrap();
+
+        // Ingestion and import learning must stay enabled.
+        value["settings"] = json!({"lme2ProcedureNotes": true, "skipIngest": true});
+        let error = parse_manifest_value(&value).unwrap_err();
+        assert!(error.contains("skipIngest"), "{error}");
+        value["settings"] = json!({"lme2ProcedureNotes": true, "memoryLearning": false});
+        let error = parse_manifest_value(&value).unwrap_err();
+        assert!(error.contains("memoryLearning"), "{error}");
+
+        // Disabled by default, the control never constrains other families.
+        value["settings"] = json!({"skipIngest": true});
+        value["envs"][0].as_object_mut().unwrap().remove("family");
+        parse_manifest_value(&value).unwrap();
+    }
+
+    #[tokio::test]
+    async fn combined_lme2_procedure_notes_builder_yields_parseable_create_edits() {
+        use pi_coding_agent::core::memory::jobs::ImportJobStatus;
+        use pi_coding_agent::core::refinement::refinement::normalize_refinement_proposal;
+        let temp = tempfile::tempdir().unwrap();
+        let scratch = scratch_fixture(&temp);
+        let env = lme2_notes_env();
+        validate_capture_env(&env, CaptureMode::SourceAuthorityV1).unwrap();
+
+        // The builder emits exactly one parseable JSONL row without axtree bodies.
+        let body = render_lme2_procedure_notes_source(&env.sessions[0]).unwrap();
+        let rows: Vec<Value> = body
+            .lines()
+            .map(|line| serde_json::from_str(line).unwrap())
+            .collect();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0]["type"], "message");
+        assert_eq!(rows[0]["message"]["role"], "user");
+        let text = rows[0]["message"]["content"][0]["text"].as_str().unwrap();
+        assert!(text.contains("Goal: File a refund request"));
+        assert!(text.contains("Outcome: success"));
+        assert!(text.contains("URL: https://shop.invalid/refund"));
+        assert!(text.contains("Action: click('Open refund form')"));
+        assert!(text.contains("Thought: open the form"));
+        assert!(!text.contains("[button]"), "axtree body must stay out");
+        assert!(text.chars().count() <= LME2_PROCEDURE_NOTES_MAX_CHARS);
+        assert!(body.ends_with('\n'));
+
+        // Degraded sessions fail closed instead of inventing a trace.
+        let mut no_header = lme2_notes_env();
+        no_header.sessions[0].events.remove(0);
+        assert!(render_lme2_procedure_notes_source(&no_header.sessions[0]).is_err());
+        let mut no_observation = lme2_notes_env();
+        no_observation.sessions[0].events.remove(1);
+        assert!(render_lme2_procedure_notes_source(&no_observation.sessions[0]).is_err());
+
+        // The real job machinery turns the source into applied create edits;
+        // the filter keeps only prefixed create-memory edits.
+        let source = scratch.sessions_dir.join("traj.procedures.jsonl");
+        std::fs::write(&source, &body).unwrap();
+        let service = MemoryService::new(
+            &scratch.cwd.to_string_lossy(),
+            &scratch.agent_dir.to_string_lossy(),
+            None,
+        )
+        .unwrap();
+        let prepared = service
+            .jobs
+            .prepare(&source.to_string_lossy())
+            .await
+            .unwrap();
+        assert_eq!(prepared.chunks.len(), 1, "one bounded chunk per session");
+        let extract: MemoryExtractor = Arc::new(|records| {
+            Box::pin(async move {
+                assert_eq!(records.len(), 1);
+                Ok(ExtractionResult {
+                    proposal: filter_lme2_procedure_notes(normalize_refinement_proposal(
+                        &json!({
+                            "summary": "notes", "rationale": "transport", "expectedOutcome": "none",
+                            "edits": [
+                                {"action": "create", "kind": "memory",
+                                 "title": "LME2 Procedure: open refund form",
+                                 "content": "Precondition: refund page\nSteps: click Open refund form",
+                                 "path": "lme2-procedures"},
+                                {"action": "create", "kind": "memory", "title": "Wrong prefix",
+                                 "content": "must be dropped"},
+                                {"action": "update", "kind": "memory", "id": "x",
+                                 "title": "LME2 Procedure: update", "content": "must be dropped"},
+                            ]
+                        }),
+                    )),
+                    input: 1.0,
+                    output: 2.0,
+                })
+            })
+        });
+        let run = service.jobs.run(&prepared.id, extract, None).await.unwrap();
+        assert_eq!(run.status, ImportJobStatus::Preview);
+        assert_eq!(run.usage.input, 1.0);
+        service
+            .jobs
+            .apply(&prepared.id, prepared.expected_revision)
+            .await
+            .unwrap();
+        let document = service.store.read().unwrap();
+        let bucket = document.entries.get("memory").unwrap();
+        assert_eq!(bucket.len(), 1, "only the prefixed create edit applies");
+        let note = bucket.values().next().unwrap();
+        assert!(note.title.starts_with(LME2_PROCEDURE_NOTES_TITLE_PREFIX));
+        assert_eq!(note.kind.as_str(), "memory");
+        assert!(note.content.contains("Precondition: refund page"));
     }
 }

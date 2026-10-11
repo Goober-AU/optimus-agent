@@ -202,6 +202,21 @@ pub struct SearchCorpus {
     pub scope: MemoryScope,
 }
 
+/// `metadata.prospectiveCues` - write-time retrieval bridges generated when a
+/// memory is imported. Each cue is a one-line future situation phrased with
+/// deliberately different vocabulary than the entry content, so the cue words
+/// extend the searchable body text.
+fn prospective_cue_words(entry: &HarnessEntry) -> Vec<String> {
+    match entry.metadata.get("prospectiveCues") {
+        Some(Value::Array(cues)) => cues
+            .iter()
+            .filter_map(Value::as_str)
+            .flat_map(|cue| words(cue))
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
 pub fn search_memory(
     store: &MemoryStore,
     query: &str,
@@ -257,7 +272,14 @@ pub fn search_memory(
                     words(&format!("{} {} {}", entry.title, entry.path, entry.id))
                         .into_iter()
                         .collect();
-                let body_set: HashSet<String> = words(&entry.content).into_iter().collect();
+                let mut body_set: HashSet<String> = words(&entry.content).into_iter().collect();
+                // Prospective cues are metadata, but matching must see them:
+                // implicit-reference queries share no vocabulary with the
+                // stored content, only with the future situations the cues
+                // describe. They score like body words, not title words.
+                for word in prospective_cue_words(entry) {
+                    body_set.insert(word);
+                }
                 let scope = if host_id.is_some() {
                     MemoryScope::Host
                 } else {
@@ -354,12 +376,16 @@ pub fn recall_memory(
         ) {
             continue;
         }
+        // Source ids are kept so the model can cite provenance, but the file
+        // URI is dropped from the rendered label: it costs 530-830 chars per
+        // entry in the recall budget without adding answer-relevant signal,
+        // and freshness was already resolved before rendering.
         let label = serde_json::to_string(&serde_json::json!({
             "id": hit.id,
             "title": hit.entry.title,
             "version": hit.entry.version,
             "matched": hit.matched,
-            "sources": hit.sources.iter().map(|source| serde_json::json!({"id": source.id, "uri": source.uri})).collect::<Vec<_>>(),
+            "sources": hit.sources.iter().map(|source| serde_json::json!({"id": source.id})).collect::<Vec<_>>(),
         }))
         .unwrap_or_default();
         let prefix = format!("{label}\n");
@@ -576,6 +602,46 @@ mod tests {
             assert_eq!(only_inactive.len(), 1);
             assert_eq!(only_inactive[0].score, 3.0);
         }
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn prospective_cues_make_implicit_references_searchable() {
+        let (store, root) = fixture();
+        // The stored memory shares no vocabulary with the later question; only
+        // the write-time cues bridge the gap.
+        let mut indexed = entry("dog", "Pet passing", "Our family dog passed away in March.");
+        indexed.metadata = store_record(&serde_json::json!({
+            "prospectiveCues": [
+                "The house feels quiet without a pet greeting him at the door",
+                "He still reaches for the leash on walks around the neighborhood"
+            ]
+        }))
+        .unwrap();
+        let plain = entry("cat", "Unrelated cat", "A neighbor adopted a feline.");
+        let extra = corpus(MemoryScope::Global, vec![indexed, plain]);
+        let hits = search_memory(
+            &store,
+            "strange not having him around the house",
+            std::slice::from_ref(&extra),
+            false,
+        );
+        assert_eq!(hits.len(), 1);
+        assert_eq!(hits[0].entry.id, "dog");
+        assert!(hits[0].matched.iter().any(|term| term == "house"));
+        assert!(hits[0].matched.iter().any(|term| term == "him"));
+        // Without cues the same implicit-reference query finds nothing.
+        let stripped = corpus(
+            MemoryScope::Global,
+            vec![entry("dog", "Pet passing", "Our family dog passed away in March.")],
+        );
+        assert!(search_memory(
+            &store,
+            "strange not having him around the house",
+            std::slice::from_ref(&stripped),
+            false
+        )
+        .is_empty());
         std::fs::remove_dir_all(&root).ok();
     }
 
@@ -872,6 +938,46 @@ mod tests {
         std::fs::remove_dir_all(&root).ok();
     }
 
+
+    #[test]
+    fn recall_labels_omit_source_uris_but_keep_ids() {
+        let (store, root) = fixture();
+        let runtime = runtime();
+        let file = root.join("evidence.txt");
+        std::fs::write(&file, "hello").unwrap();
+        let digest = hash("hello");
+        let source_uri = url::Url::from_file_path(&file).unwrap().to_string();
+        let proposal = crate::core::refinement::refinement::normalize_refinement_proposal(
+            &serde_json::json!({
+                "summary": "s", "rationale": "r", "expectedOutcome": "o",
+                "edits": [{"action": "create", "kind": "memory", "id": "syd", "title": "Sydney trip", "content": "visited the opera house",
+                    "metadata": {"sources": [
+                        {"id": "file_1", "origin": "file", "sha256": digest, "uri": source_uri}
+                    ]}}]
+            }),
+        );
+        runtime
+            .block_on(store.apply(
+                &proposal,
+                crate::core::memory::store::ApplyOptions {
+                    event_id: "op".to_string(),
+                    expected_revision: 0,
+                    ..Default::default()
+                },
+            ))
+            .unwrap();
+        let hits = search_memory(&store, "Sydney", &[], false);
+        assert_eq!(hits.len(), 1);
+        // The file source makes freshness Current only if the URI resolves;
+        // with a bogus URI it is Unknown, which recall still includes.
+        let settings = crate::core::memory::store::default_memory_settings();
+        let recall = recall_memory(&hits, &settings, None);
+        assert!(recall.text.contains("\"title\":\"Sydney trip\""));
+        assert!(recall.text.contains("\"id\":\"file_1\""));
+        assert!(!recall.text.contains(&source_uri));
+        assert!(!recall.text.contains("file:///"));
+        std::fs::remove_dir_all(&root).ok();
+    }
     #[test]
     fn detects_changed_source_files_and_skips_missing_ones() {
         let (store, root) = fixture();
