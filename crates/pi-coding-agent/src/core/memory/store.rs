@@ -52,6 +52,32 @@ pub struct MemorySettings {
     /// Falls back to lexical order if the call fails or returns nothing parseable.
     #[serde(default, rename = "recallRerank")]
     pub recall_rerank: bool,
+    /// Number of top lexical hits offered to the recall rerank. Gold entries can
+    /// rank far below the top-20 on implicit-reference questions, so the pool can
+    /// be widened. Default 20 preserves prior behavior; 1-500 allowed.
+    #[serde(default = "default_recall_rerank_candidates", rename = "recallRerankCandidates")]
+    pub recall_rerank_candidates: i64,
+    /// Deterministically extract the recall search query from a "Question:"
+    /// wrapper line instead of searching the full user turn. Free and exact
+    /// when the wrapper pattern exists; keeps the raw message otherwise.
+    #[serde(default, rename = "recallQueryExtract")]
+    pub recall_query_extract: bool,
+    /// Expand the recall query into angle queries with one bounded LLM call,
+    /// then search once per angle plus the original query and merge the hits
+    /// per entry keeping the maximum score. Falls back to the single original
+    /// query when the call fails or returns nothing parseable.
+    #[serde(default, rename = "recallQueryExpansion")]
+    pub recall_query_expansion: bool,
+    /// Number of angle queries requested from the expansion call. Default 2
+    /// balances coverage against latency; 1-3 allowed.
+    #[serde(default = "default_recall_query_expansion_draws", rename = "recallQueryExpansionDraws")]
+    pub recall_query_expansion_draws: i64,
+/// Index newly imported memories at write time with prospective retrieval
+    /// cues: 3-5 short future situations in which the memory is the missing
+    /// context, phrased with deliberately different vocabulary so lexical
+    /// recall can bridge implicit-reference questions. Default false.
+    #[serde(default, rename = "recallProspectiveIndex")]
+    pub recall_prospective_index: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shared: Option<Option<SharedConfig>>,
 }
@@ -60,6 +86,14 @@ impl MemorySettings {
     pub fn shared_config(&self) -> Option<&SharedConfig> {
         self.shared.as_ref().and_then(|value| value.as_ref())
     }
+}
+
+pub fn default_recall_rerank_candidates() -> i64 {
+    20
+}
+
+pub fn default_recall_query_expansion_draws() -> i64 {
+    2
 }
 
 pub fn default_memory_settings() -> MemorySettings {
@@ -75,6 +109,11 @@ pub fn default_memory_settings() -> MemorySettings {
         import_instructions: None,
         recall_query_distillation: false,
         recall_rerank: false,
+        recall_rerank_candidates: default_recall_rerank_candidates(),
+        recall_query_extract: false,
+        recall_query_expansion: false,
+        recall_query_expansion_draws: default_recall_query_expansion_draws(),
+        recall_prospective_index: false,
         shared: None,
     }
 }
@@ -230,16 +269,23 @@ pub struct PartialMemorySettings {
     pub import_instructions: Option<String>,
     pub recall_query_distillation: Option<bool>,
     pub recall_rerank: Option<bool>,
+    pub recall_rerank_candidates: Option<i64>,
+    pub recall_query_extract: Option<bool>,
+    pub recall_query_expansion: Option<bool>,
+    pub recall_query_expansion_draws: Option<i64>,
     pub shared: Option<Option<SharedConfig>>,
+    pub recall_prospective_index: Option<bool>,
 }
 
-const LIMITS: [(&str, i64, i64); 6] = [
+const LIMITS: [(&str, i64, i64); 8] = [
     ("maxRecallChars", 0, 32000),
     ("maxRecallEntries", 0, 50),
     ("maxExtractionTokens", 256, 32000),
     ("maxImportBytes", 1024, 128 * 1024 * 1024),
     ("maxImportChunkChars", 1000, 80000),
     ("maxImportChunksPerRun", 1, 64),
+    ("recallRerankCandidates", 1, 500),
+    ("recallQueryExpansionDraws", 1, 3),
 ];
 
 pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String> {
@@ -250,6 +296,9 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
         "learning",
         "recallQueryDistillation",
         "recallRerank",
+        "recallQueryExtract",
+        "recallQueryExpansion",
+        "recallProspectiveIndex",
     ] {
         if let Some(raw) = source.get(key) {
             let boolean = raw
@@ -262,6 +311,11 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
                     result.recall_query_distillation = Some(boolean)
                 }
                 "recallRerank" => result.recall_rerank = Some(boolean),
+                "recallQueryExtract" => result.recall_query_extract = Some(boolean),
+                "recallQueryExpansion" => result.recall_query_expansion = Some(boolean),
+                "recallProspectiveIndex" => {
+                    result.recall_prospective_index = Some(boolean)
+                }
                 _ => {}
             }
         }
@@ -276,6 +330,8 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
                 "maxExtractionTokens" => result.max_extraction_tokens = Some(number),
                 "maxImportBytes" => result.max_import_bytes = Some(number),
                 "maxImportChunkChars" => result.max_import_chunk_chars = Some(number),
+                "recallRerankCandidates" => result.recall_rerank_candidates = Some(number),
+                "recallQueryExpansionDraws" => result.recall_query_expansion_draws = Some(number),
                 _ => result.max_import_chunks_per_run = Some(number),
             }
         }
@@ -883,8 +939,23 @@ fn apply_settings(settings: &mut MemorySettings, patch: &PartialMemorySettings) 
     if let Some(value) = patch.recall_query_distillation {
         settings.recall_query_distillation = value;
     }
+    if let Some(value) = patch.recall_query_extract {
+        settings.recall_query_extract = value;
+    }
     if let Some(value) = patch.recall_rerank {
         settings.recall_rerank = value;
+    }
+    if let Some(value) = patch.recall_rerank_candidates {
+        settings.recall_rerank_candidates = value.clamp(1, 500);
+    }
+    if let Some(value) = patch.recall_query_expansion {
+        settings.recall_query_expansion = value;
+    }
+    if let Some(value) = patch.recall_query_expansion_draws {
+        settings.recall_query_expansion_draws = value.clamp(1, 3);
+    }
+    if let Some(value) = patch.recall_prospective_index {
+        settings.recall_prospective_index = value;
     }
     if let Some(value) = patch.max_recall_chars {
         settings.max_recall_chars = value;
@@ -925,6 +996,26 @@ fn merge_settings_patch(target: &mut JsonMap, patch: &PartialMemorySettings) {
         patch.recall_query_distillation.map(Value::Bool),
     );
     set("recallRerank", patch.recall_rerank.map(Value::Bool));
+    set(
+        "recallQueryExtract",
+        patch.recall_query_extract.map(Value::Bool),
+    );
+    set(
+        "recallProspectiveIndex",
+        patch.recall_prospective_index.map(Value::Bool),
+    );
+    set(
+        "recallRerankCandidates",
+        patch.recall_rerank_candidates.map(|value| Value::from(value)),
+    );
+    set(
+        "recallQueryExpansion",
+        patch.recall_query_expansion.map(Value::Bool),
+    );
+    set(
+        "recallQueryExpansionDraws",
+        patch.recall_query_expansion_draws.map(|value| Value::from(value)),
+    );
     set(
         "maxRecallChars",
         patch.max_recall_chars.map(|value| Value::from(value)),
@@ -1316,6 +1407,100 @@ mod tests {
         );
         let cleared = validate_settings(&serde_json::json!({"shared": null})).unwrap();
         assert_eq!(cleared.shared, Some(None));
+        // Rerank pool width: absent keeps the default, out-of-range is rejected.
+        assert_eq!(validate_settings(&serde_json::json!({})).unwrap().recall_rerank_candidates, None);
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallRerankCandidates": 300})).unwrap().recall_rerank_candidates,
+            Some(300)
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallRerankCandidates": 501})).unwrap_err(),
+            "Invalid recallRerankCandidates"
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallRerankCandidates": 0})).unwrap_err(),
+            "Invalid recallRerankCandidates"
+        );
+        assert_eq!(default_memory_settings().recall_rerank_candidates, 20);
+        // Query expansion: bool flag plus a 1-3 draw budget.
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallQueryExpansion": "yes"})).unwrap_err(),
+            "recallQueryExpansion must be boolean"
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallQueryExpansion": true})).unwrap().recall_query_expansion,
+            Some(true)
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({})).unwrap().recall_query_expansion_draws,
+            None
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallQueryExpansionDraws": 3})).unwrap().recall_query_expansion_draws,
+            Some(3)
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallQueryExpansionDraws": 0})).unwrap_err(),
+            "Invalid recallQueryExpansionDraws"
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallQueryExpansionDraws": 4})).unwrap_err(),
+            "Invalid recallQueryExpansionDraws"
+        );
+        assert!(!default_memory_settings().recall_query_expansion);
+        assert_eq!(default_memory_settings().recall_query_expansion_draws, 2);
+    }
+
+    #[test]
+    fn recall_query_extract_validates_and_round_trips() {
+        let partial = validate_settings(&serde_json::json!({"recallQueryExtract": true})).unwrap();
+        assert_eq!(partial.recall_query_extract, Some(true));
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallQueryExtract": "true"})).unwrap_err(),
+            "recallQueryExtract must be boolean"
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({})).unwrap().recall_query_extract,
+            None
+        );
+        let mut settings = default_memory_settings();
+        assert!(!settings.recall_query_extract);
+        apply_settings(&mut settings, &partial);
+        assert!(settings.recall_query_extract);
+        apply_settings(
+            &mut settings,
+            &validate_settings(&serde_json::json!({"recallQueryExtract": false})).unwrap(),
+        );
+        assert!(!settings.recall_query_extract);
+        // The encoded form keeps the camelCase key and deserializes back.
+        let mut enabled = default_memory_settings();
+        enabled.recall_query_extract = true;
+        let encoded = serde_json::to_value(&enabled).unwrap();
+        assert_eq!(encoded["recallQueryExtract"], true);
+        let decoded: MemorySettings = serde_json::from_value(encoded).unwrap();
+        assert!(decoded.recall_query_extract);
+        let mut merged = serde_json::Map::new();
+        merge_settings_patch(
+            &mut merged,
+            &validate_settings(&serde_json::json!({"recallQueryExtract": true})).unwrap(),
+        );
+        assert_eq!(merged.get("recallQueryExtract"), Some(&serde_json::json!(true)));
+// Prospective indexing: absent keeps the default, non-boolean is rejected.
+        assert_eq!(
+            validate_settings(&serde_json::json!({})).unwrap().recall_prospective_index,
+            None
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallProspectiveIndex": true}))
+                .unwrap()
+                .recall_prospective_index,
+            Some(true)
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallProspectiveIndex": 1})).unwrap_err(),
+            "recallProspectiveIndex must be boolean"
+        );
+        assert!(!default_memory_settings().recall_prospective_index);
     }
 
     #[test]
