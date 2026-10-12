@@ -42,6 +42,7 @@ hashes match the default fixture conversion, not arbitrary converted data.
 | Family | Local input filenames under `--data-root` |
 | --- | --- |
 | LongMemEval-S | `longmemeval_s.json` |
+| LongMemEval-M | `longmemeval_m.json` (HuggingFace `longmemeval_m_cleaned.json`, ~2.7 GB; separate `python -m bench.converters.longmemeval_m` entry point) |
 | LoCoMo-shaped | `locomo10.json` |
 | LME-V2 | `lme_v2_questions.jsonl`, `lme_v2_small_haystack.json`, `trajectories.jsonl` |
 | Normalized cue adapter | `locomo_plus_normalized.json` |
@@ -95,6 +96,12 @@ LoCoMo/cue metric identity: **`optimus-local-scoring/1.0.0`**.
   campaign differences; the whole stack is not upstream-equivalent. LME-V2 is
   text-only, ingests trajectories in file order, caps accessibility trees at
   `LME_V2_AXTREE_CAP` (default 8000), and uses boxed-answer/UNKNOWN handling.
+  The shipped campaign artifacts record a historical 2000-char cap. Raise
+  retention explicitly with `run_converters.py --lme-v2-axtree-cap N` (a large
+  explicit value such as 1000000 requests effectively-full capture); the chosen
+  cap is recorded in each env's `notes.axtree_cap_chars`. A run manifest can
+  additionally declare `settings.captureAxtreeMaxChars` so the driver fails
+  closed when an env was generated with a lower cap.
 
 Regenerate **common questions and new model runs** before evaluating the new
 local protocols. Evaluating files without the expected question/scorer versions
