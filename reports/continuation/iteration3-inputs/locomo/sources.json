@@ -1,0 +1,75 @@
+{
+ "schema": "iteration3-locomo-gate2-sources/v1",
+ "created": "2026-10-12T13:30:19.361363+00:00",
+ "purpose": "LoCoMo regression-gate v2 (temporal-discipline binary) on imp3 HEAD; improved-defaults arm only, same 300-q dev set and settings as the iteration-2 gate anchor",
+ "repo": {
+  "worktree": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate",
+  "branch": "improve/mem3-gate2",
+  "head": "bdffcad50ca39660255cad940193953a68140c02",
+  "binary_worktree_source": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3 (improve/memory-iteration-3, clean tree, binary built after last source change)"
+ },
+ "binary": {
+  "path": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3/target/release/examples/memory_bench.exe",
+  "sha256": "ab1e1474af636a18b47b8969c22fa1e82cfbd811ad5efe71b30be0122ee169fc",
+  "anchor_binary_iteration2": {
+   "commit": "799760177883f3c9f26fe39ff6e7f05288c5d757",
+   "sha256": "4ece283eef1e48d8a03dc61ee26c3804233c3d6a001f8b8d0e28fc616e74db4e"
+  }
+ },
+ "question_set": {
+  "declarations": "declarations/locomo-dev300-model-questions.jsonl",
+  "sha256": "9e88a6fdf1a3d74866daf21dd47e53fd6721599a2907f8e217f3ec6c626b383f",
+  "n": 300,
+  "note": "copied byte-identical from iteration2-inputs/locomo/declarations (sha matches sources.json there); same LoCoMo dev data",
+  "gold_qs_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration2-inputs/locomo/common/locomo (read-only reference for scoring)"
+ },
+ "model": {
+  "provider": "dgx-glm53",
+  "id": "glm-5.3",
+  "jev": false
+ },
+ "settings_note": "settings byte-identical to iteration-2 improved-defaults manifests (defaults arm: no distill/rerank/extract/expansion/prospective helpers; recallOn=true; memoryLearning=false; maxExtractionTokens=32000; maxImportChunkChars=15000; disableTools=true; evidenceTimestamps=true; captureProtocol optimus-memory-capture/temporal-authority/1.0.0)",
+ "sharding": {
+  "s0": [
+   "conv-26",
+   "conv-42",
+   "conv-47",
+   "conv-50"
+  ],
+  "s1": [
+   "conv-30",
+   "conv-43",
+   "conv-48"
+  ],
+  "s2": [
+   "conv-41",
+   "conv-44",
+   "conv-49"
+  ],
+  "note": "era-A partition, same as iteration-2; per-shard questions 129/90/81"
+ },
+ "anchor_numbers_iteration2": {
+  "cats1_4_mean_f1": 0.2626,
+  "cats1_4_acc05": 0.2146,
+  "overall_mean_f1": 0.2039,
+  "overall_acc05": 0.1667,
+  "by_category_mean_f1": {
+   "1_multi_hop": 0.161,
+   "2_temporal": 0.2279,
+   "3_open_domain": 0.1616,
+   "4_single_hop": 0.322,
+   "5_adversarial": 0.0
+  }
+ },
+ "manifests": {
+  "manifests/locomo-gate3-improved-s0.json": "ceb16fd73c7413a51f2d0759882656a61150389feba2533e882fbb6b57563359",
+  "manifests/locomo-gate3-improved-s1.json": "69eda89fb002ff8a58751885c7695aa964e5cf6c30e62c99b03bd12ccffea7d7",
+  "manifests/locomo-gate3-improved-s2.json": "103185fa1e988b9dabf13d16380bc7057b7778ec644c10b58c0a622a10b1a4ed"
+ },
+ "scoring": {
+  "method": "bench.eval.evaluate, deterministic local token-F1 (optimus-local-scoring/1.0.0), no judge, no network",
+  "bench_venv": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/repo-continuation/bench/.venv/Scripts/python.exe",
+  "bench_repo_cwd": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate",
+  "note": "local locomo scoring code identical between iteration-2 anchor commit and imp3 HEAD (verified by git diff: only flag-gated judge profiles for other families changed); anchor re-score check available via score_gate.py --rescore-anchor"
+ }
+}

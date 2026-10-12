@@ -1,0 +1,26 @@
+[
+ {
+  "shard": "s0",
+  "manifest": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\imp3-gate\\reports\\continuation\\iteration3-inputs\\locomo\\manifests\\locomo-gate3-improved-s0.json",
+  "log": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\imp3-gate\\reports\\continuation\\iteration3-inputs\\locomo\\logs\\improved-s0.log",
+  "memory_bench_pid": 21980,
+  "started_at": "2026-10-12T13:30:45.065948+00:00",
+  "binary_sha256": "ab1e1474af636a18b47b8969c22fa1e82cfbd811ad5efe71b30be0122ee169fc"
+ },
+ {
+  "shard": "s1",
+  "manifest": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\imp3-gate\\reports\\continuation\\iteration3-inputs\\locomo\\manifests\\locomo-gate3-improved-s1.json",
+  "log": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\imp3-gate\\reports\\continuation\\iteration3-inputs\\locomo\\logs\\improved-s1.log",
+  "memory_bench_pid": 28064,
+  "started_at": "2026-10-12T13:30:45.130739+00:00",
+  "binary_sha256": "ab1e1474af636a18b47b8969c22fa1e82cfbd811ad5efe71b30be0122ee169fc"
+ },
+ {
+  "shard": "s2",
+  "manifest": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\imp3-gate\\reports\\continuation\\iteration3-inputs\\locomo\\manifests\\locomo-gate3-improved-s2.json",
+  "log": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\imp3-gate\\reports\\continuation\\iteration3-inputs\\locomo\\logs\\improved-s2.log",
+  "memory_bench_pid": 28052,
+  "started_at": "2026-10-12T13:30:45.202250+00:00",
+  "binary_sha256": "ab1e1474af636a18b47b8969c22fa1e82cfbd811ad5efe71b30be0122ee169fc"
+ }
+]
