@@ -175,6 +175,22 @@ class Shard:
         self.jobs_seen = len(self._job_status)
 
 
+def manifest_run_dir(manifest_path: str) -> str | None:
+    """Run location for a manifest: its own output_dir when declared.
+
+    Per-env (or any non-shard) manifest sets write to the output_dir recorded
+    inside the manifest, which does not follow the <run-root>/<shard> layout;
+    reading it keeps import-job monitoring pointed at the real run directory.
+    Returns None for unreadable/undeclaring manifests so callers fall back to
+    the historical shard-layout derivation.
+    """
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as fh:
+            return json.load(fh).get("output_dir") or None
+    except (OSError, ValueError):
+        return None
+
+
 def kill_tree(proc: subprocess.Popen | None) -> None:
     if proc is None or proc.poll() is not None:
         return
@@ -367,13 +383,21 @@ def main() -> int:
     if args.concurrency < 1:
         parser.error("--concurrency must be >= 1")
 
-    # Resolve shards.
+    # Resolve shards. A manifest dir without the canonical shard naming (e.g.
+    # the per-env manifest set) falls back to every plain *.json except
+    # _-prefixed sidecars, so --shards all drives any manifest set.
     all_files = sorted(glob.glob(os.path.join(args.manifest_dir, SHARD_PREFIX + "s*.json")))
+    if not all_files:
+        all_files = sorted(
+            p for p in glob.glob(os.path.join(args.manifest_dir, "*.json"))
+            if not os.path.basename(p).startswith("_")
+        )
     by_key: dict[str, str] = {}
     for path in all_files:
         stem = os.path.splitext(os.path.basename(path))[0]
         by_key[stem] = path
-        by_key[stem[len(SHARD_PREFIX):]] = path
+        if stem.startswith(SHARD_PREFIX):
+            by_key[stem[len(SHARD_PREFIX):]] = path
     tokens: list[str] = []
     for tok in args.shards.split(","):
         tok = tok.strip()
@@ -381,7 +405,8 @@ def main() -> int:
             continue
         if tok == "all":
             tokens.extend(
-                os.path.splitext(os.path.basename(p))[0][len(SHARD_PREFIX):] for p in all_files
+                stem[len(SHARD_PREFIX):] if stem.startswith(SHARD_PREFIX) else stem
+                for stem in (os.path.splitext(os.path.basename(p))[0] for p in all_files)
             )
             continue
         range_match = re.fullmatch(r"(s\d+)-(s\d+)", tok)
@@ -404,7 +429,7 @@ def main() -> int:
                 parser.error(f"unknown shard: {tok}")
         name = tok[len(SHARD_PREFIX):] if tok.startswith(SHARD_PREFIX) else tok
         log_path = os.path.join(args.log_dir, name + ".log")
-        run_dir = os.path.join(args.run_root, SHARD_PREFIX + name)
+        run_dir = manifest_run_dir(path) or os.path.join(args.run_root, SHARD_PREFIX + name)
         shards.append(Shard(name, path, log_path, run_dir))
     if len({sh.name for sh in shards}) != len(shards):
         parser.error("duplicate shards selected")
