@@ -259,6 +259,12 @@ struct ManifestSettings {
     /// created entry stores 3-5 future-situation cues as searchable metadata.
     #[serde(default, alias = "recall_prospective_index")]
     recall_prospective_index: bool,
+    /// Enable write-time verbatim source spans (memory.recallSourceSpans):
+    /// each entry created by a session import also retains the verbatim
+    /// turn text of its first cited source id as searchable, renderable
+    /// metadata.
+    #[serde(default, alias = "recall_source_spans")]
+    recall_source_spans: bool,
     /// LME-v2 only: after each session's import, run one bounded extraction
     /// call that distills reusable procedure notes (AgentRunbook-style:
     /// precondition -> action -> observed outcome) into create edits titled
@@ -296,6 +302,7 @@ impl Default for ManifestSettings {
             recall_query_expansion: false,
             recall_query_expansion_draws: None,
             recall_prospective_index: false,
+            recall_source_spans: false,
             lme2_procedure_notes: false,
         }
     }
@@ -1273,6 +1280,9 @@ fn manifest_memory_settings(settings: &ManifestSettings) -> Value {
     if settings.recall_prospective_index || settings.memory_learning == Some(false) {
         memory["recallProspectiveIndex"] = json!(settings.recall_prospective_index);
     }
+    if settings.recall_source_spans || settings.memory_learning == Some(false) {
+        memory["recallSourceSpans"] = json!(settings.recall_source_spans);
+    }
     if let Some(max_chars) = settings.max_recall_chars {
         memory["maxRecallChars"] = json!(max_chars);
     }
@@ -1309,6 +1319,7 @@ fn memory_feature_realization(
         requested_memory["recallQueryExpansionDraws"] = json!(draws);
     }
     requested_memory["recallProspectiveIndex"] = json!(requested.recall_prospective_index);
+    requested_memory["recallSourceSpans"] = json!(requested.recall_source_spans);
     // Keep the snapshot limited to memory behavior; never serialize sharing credentials.
     let effective_memory = json!({
         "recall": effective.recall,
@@ -1326,7 +1337,8 @@ fn memory_feature_realization(
         "recallQueryExtract": effective.recall_query_extract,
 "recallQueryExpansion": effective.recall_query_expansion,
         "recallQueryExpansionDraws": effective.recall_query_expansion_draws,
-        "recallProspectiveIndex": effective.recall_prospective_index,    });
+        "recallProspectiveIndex": effective.recall_prospective_index,
+        "recallSourceSpans": effective.recall_source_spans,    });
     let mut mismatches = Vec::new();
     for (key, value) in requested_memory
         .as_object()
@@ -3429,6 +3441,7 @@ mod tests {
                 recall_query_extract: enabled,
                 recall_query_expansion: enabled,
                 recall_prospective_index: enabled,
+                recall_source_spans: enabled,
                 ..Default::default()
             };
             let mut effective = default_memory_settings();
@@ -3438,6 +3451,7 @@ mod tests {
             effective.recall_query_extract = enabled;
             effective.recall_query_expansion = enabled;
             effective.recall_prospective_index = enabled;
+            effective.recall_source_spans = enabled;
             memory_feature_realization(&requested, &effective, "test").unwrap();
             for key in [
                 "recall",
@@ -3446,6 +3460,7 @@ mod tests {
                 "recallQueryExtract",
                 "recallQueryExpansion",
                 "recallProspectiveIndex",
+                "recallSourceSpans",
             ] {
                 let mut mismatch = effective.clone();
                 match key {
@@ -3455,6 +3470,7 @@ mod tests {
                     "recallQueryExtract" => mismatch.recall_query_extract = !enabled,
                     "recallQueryExpansion" => mismatch.recall_query_expansion = !enabled,
                     "recallProspectiveIndex" => mismatch.recall_prospective_index = !enabled,
+                    "recallSourceSpans" => mismatch.recall_source_spans = !enabled,
                     _ => unreachable!(),
                 }
                 let error = memory_feature_realization(&requested, &mismatch, "test").unwrap_err();
