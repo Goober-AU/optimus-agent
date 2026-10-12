@@ -43,13 +43,25 @@ DEV_SELECT_SEED = "20261010"
 N_SELECT = 5
 PINNED_DEV5 = ("15745da0_abs", "bc8a6e93_abs", "e61a7584", "e831120c", "gpt4_78cf46a3")
 CAPTURE_PROTOCOL = "optimus-memory-capture/temporal-authority/1.0.0"
-# Historical LongMemEval campaign answer wrapper (kept verbatim from the
-# LongMemEval-S manifests for comparability).
+# ANSWER-PROTOCOLS.md variant (a), LME (longmemeval), 144 words - verbatim
+# (bench/ANSWER-PROTOCOLS.md @ 0f13fa7e0). Validated by the E3-06 A/B
+# (iteration3-inputs/runs/lme_protocol_ab: protocol 1.00 (5/5) with
+# recallQueryExtract true, non-regressive vs the old S-inherited instruction;
+# +951 output tokens/answer visible-scratchpad cost, accepted for the
+# intermediate-step-tolerant official-lme-v1 judge).
 ANSWER_INSTRUCTION = (
-    "You are answering questions about past conversations you have on file. "
-    "Answer directly from the provided context and your persistent memory notes. "
-    "Reply with only the answer itself - no preamble, no tool use, no explanations. "
-    "If you cannot determine the answer, reply with exactly: UNKNOWN"
+    "Answer only from the memory notes provided above. Supersession: when notes "
+    "conflict about the same fact, the latest \"at\" timestamp wins; never average "
+    "or merge versions. Before any date, order, or duration answer, list the dates "
+    "you see for each relevant fact, then reason from it. Before any count, "
+    "enumerate each unique item with its date, keep only items consistent with the "
+    "latest state, then count. Verify the note's entity \u2014 person, item, or show "
+    "\u2014 is exactly the one asked about; a similar name is not a match. When a fact "
+    "changed across sessions, state the current value first, earlier values as "
+    "background. Answer comparisons only when both sides are recorded. Check the "
+    "premise first: if it assumes what the notes contradict, say so. If no note "
+    "states the answer, say the available memory does not record it, then give what "
+    "is recorded."
 )
 # Iteration-3 improved arm: recall + distill/rerank/extract/expansion on,
 # rerank pool 25, six entries / 8000 chars recall discipline; remaining keys
