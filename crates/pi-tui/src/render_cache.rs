@@ -1,5 +1,85 @@
 //! Port of packages/tui/src/render-cache.ts.
 
+use std::{borrow::Borrow, cell::OnceCell, fmt, ops::Deref, rc::Rc};
+
+/// Immutable transcript text shared across component, wrapping and viewport caches.
+/// Cloning a line retains its allocation; graphics metadata is scanned only once.
+#[derive(Clone, Debug, Default)]
+pub struct RenderedLine(Rc<RenderedLineData>);
+
+#[derive(Debug, Default)]
+struct RenderedLineData {
+    text: String,
+    image: OnceCell<bool>,
+    image_rows: OnceCell<Option<usize>>,
+}
+
+impl RenderedLine {
+    pub fn as_str(&self) -> &str {
+        &self.0.text
+    }
+
+    pub fn ptr_eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+
+    pub fn is_image(&self) -> bool {
+        *self
+            .0
+            .image
+            .get_or_init(|| crate::terminal_image::is_image_line(self))
+    }
+
+    pub fn image_rows(&self) -> Option<usize> {
+        *self
+            .0
+            .image_rows
+            .get_or_init(|| crate::terminal_image::image_row_count(self))
+    }
+}
+
+impl From<String> for RenderedLine {
+    fn from(text: String) -> Self {
+        Self(Rc::new(RenderedLineData {
+            text,
+            ..Default::default()
+        }))
+    }
+}
+
+impl From<&str> for RenderedLine {
+    fn from(text: &str) -> Self {
+        text.to_owned().into()
+    }
+}
+
+impl Deref for RenderedLine {
+    type Target = str;
+    fn deref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl Borrow<str> for RenderedLine {
+    fn borrow(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl fmt::Display for RenderedLine {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self)
+    }
+}
+
+impl PartialEq for RenderedLine {
+    fn eq(&self, other: &Self) -> bool {
+        self.ptr_eq(other) || self.as_str() == other.as_str()
+    }
+}
+
+impl Eq for RenderedLine {}
+
 /// Cache of rendered lines keyed by (width, revision, style epoch).
 ///
 /// Native addition for transcript row memoization (A11): unlike
@@ -29,7 +109,13 @@ impl StyledRenderCache {
         None
     }
 
-    pub fn set(&mut self, width: usize, revision: u64, style: u64, lines: Vec<String>) -> Vec<String> {
+    pub fn set(
+        &mut self,
+        width: usize,
+        revision: u64,
+        style: u64,
+        lines: Vec<String>,
+    ) -> Vec<String> {
         self.cached_width = Some(width);
         self.cached_revision = Some(revision);
         self.cached_style = Some(style);
@@ -82,6 +168,26 @@ impl VersionedRenderCache {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shared_lines_retain_text_and_graphics_metadata() {
+        let text = String::from("café 世界");
+        let allocation = text.as_ptr();
+        let line = RenderedLine::from(text);
+        assert_eq!(line.as_str().as_ptr(), allocation);
+        assert!(!line.is_image());
+        let shared = line.clone();
+        assert!(line.ptr_eq(&shared));
+        assert_eq!(shared.0.image.get(), Some(&false));
+        assert_eq!(line, RenderedLine::from("café 世界"));
+        let image = RenderedLine::from(crate::terminal_image::position_image(
+            "\x1bP0;1;0q~\x1b\\",
+            3,
+        ));
+        assert!(image.is_image());
+        assert_eq!(image.image_rows(), Some(3));
+        assert_eq!(image.clone().0.image_rows.get(), Some(&Some(3)));
+    }
 
     #[test]
     fn cache_hits_only_for_same_width_and_version() {

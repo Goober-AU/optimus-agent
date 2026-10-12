@@ -221,10 +221,10 @@ impl Timeline {
 }
 
 struct CachedTimelineLine {
-    text: String,
+    text: RenderedLine,
     metadata: Option<(Kind, Option<i64>, Option<Duration>)>,
     first: bool,
-    rendered: String,
+    rendered: RenderedLine,
     selection: (usize, usize),
 }
 
@@ -245,8 +245,8 @@ impl TimelineCache {
     pub fn render<'a>(
         &mut self,
         timeline: Timeline,
-        rows: impl IntoIterator<Item = (&'a str, Option<&'a RowMeta>, bool)>,
-    ) -> (Vec<String>, Vec<Option<(usize, usize)>>) {
+        rows: impl IntoIterator<Item = (&'a RenderedLine, Option<&'a RowMeta>, bool)>,
+    ) -> (Vec<RenderedLine>, Vec<Option<(usize, usize)>>) {
         let palette = theme();
         if self.timeline != Some(timeline)
             || self.palette.as_ref().is_none_or(|previous| !Arc::ptr_eq(previous, &palette))
@@ -260,14 +260,14 @@ impl TimelineCache {
         for (index, (text, meta, first)) in rows.into_iter().enumerate() {
             let metadata = meta.map(|m| (m.kind, m.timestamp, m.elapsed));
             let unchanged = self.lines.get(index).is_some_and(|previous| {
-                previous.text == text && previous.metadata == metadata && previous.first == first
+                previous.text == *text && previous.metadata == metadata && previous.first == first
             });
             if !unchanged {
                 let entry = CachedTimelineLine {
-                    text: text.to_string(),
+                    text: text.clone(),
                     metadata,
                     first,
-                    rendered: timeline.line_with_palette(&palette, text, meta, first),
+                    rendered: timeline.line_with_palette(&palette, text, meta, first).into(),
                     selection: (timeline.left, timeline.left
                         + visible_width(strip_ansi(text).trim_end()).min(timeline.content_width())),
                 };
@@ -591,7 +591,7 @@ mod image_tests {
         let mut wrap = super::super::TranscriptWrapCache::default();
         for width in [24, 40, 120] {
             let timeline = Timeline::new(width);
-            let wrapped = wrap.render(vec![String::new(), String::new(), graphic.clone()], timeline.content_width());
+            let wrapped = wrap.render(vec!["".into(), "".into(), graphic.clone().into()], timeline.content_width());
             assert_eq!(wrapped.len(), 3);
             let decorated = timeline.line(&wrapped[2], None, false);
             // Sidebar-safe relative placement: restore to the pre-rail

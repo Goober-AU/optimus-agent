@@ -32,6 +32,7 @@ use crate::modes::interactive::prompt_stash_state::{
     PromptStashCapture, PromptStashEditorEffect, PromptStashOutcome, PromptStashSession,
 };
 use pi_tui::components::text::Text as TuiText;
+use pi_tui::render_cache::RenderedLine;
 use pi_tui::tui::{Component as TuiComponent, InputListenerResult, TuiStopOptions, TUI};
 use std::cell::{Cell, RefCell};
 use std::hash::{Hash, Hasher};
@@ -152,6 +153,9 @@ impl<T: TuiComponent> TuiComponent for SharedComponent<T> {
     fn render(&mut self, width: f64) -> Vec<String> {
         self.0.borrow_mut().render(width)
     }
+    fn render_shared(&mut self, width: f64) -> Vec<RenderedLine> {
+        self.0.borrow_mut().render_shared(width)
+    }
     fn invalidate(&mut self) {
         self.0.borrow_mut().invalidate();
     }
@@ -195,7 +199,7 @@ struct Transcript {
     tools: HashMap<String, Rc<RefCell<ToolExecutionComponent>>>,
     wrapped_lines: TranscriptWrapCache,
     /// A11: memoized render output per row (see `render_row_cached`).
-    row_cache: Vec<RowRenderCache>,
+    row_cache: Vec<Option<RowRenderCache>>,
 }
 
 /// A11: per-row render memoization entry, aligned by index with `Transcript::rows`
@@ -207,7 +211,7 @@ struct RowRenderCache {
     width_bits: u64,
     revision: u64,
     style: u64,
-    lines: Vec<String>,
+    lines: Vec<RenderedLine>,
 }
 
 /// A11: render one transcript row, reusing the previous frame's lines when the
@@ -215,38 +219,37 @@ struct RowRenderCache {
 /// without a revision contract (animated tool panels, extension surfaces) keep
 /// rendering every frame, exactly as before.
 fn render_row_cached(
-    cache: &mut Vec<RowRenderCache>,
+    cache: &mut Vec<Option<RowRenderCache>>,
     index: usize,
     row: &mut Box<dyn TuiComponent>,
     width: f64,
     style: u64,
-) -> Vec<String> {
+) -> Vec<RenderedLine> {
+    // Uncacheable rows still occupy a slot, so later rows remain cacheable.
+    if cache.len() <= index { cache.resize_with(index + 1, || None); }
     let Some(revision) = row.render_revision() else {
-        return row.render(width);
+        cache[index] = None;
+        return row.render_shared(width);
     };
     let width_bits = width.to_bits();
-    if let Some(entry) = cache.get(index) {
+    if let Some(entry) = &cache[index] {
         if entry.width_bits == width_bits && entry.revision == revision && entry.style == style {
             return entry.lines.clone();
         }
     }
-    let lines = row.render(width);
+    let lines = row.render_shared(width);
     let entry = RowRenderCache { width_bits, revision, style, lines: lines.clone() };
-    if cache.len() == index {
-        cache.push(entry);
-    } else if let Some(slot) = cache.get_mut(index) {
-        *slot = entry;
-    }
+    cache[index] = Some(entry);
     lines
 }
 
 #[derive(Default)]
 struct TranscriptWrapCache {
     width: usize,
-    lines: Vec<(String, Vec<String>, Vec<usize>)>,
+    lines: Vec<(RenderedLine, Vec<RenderedLine>, Vec<usize>)>,
 }
 impl TranscriptWrapCache {
-    fn render(&mut self, lines: Vec<String>, width: usize) -> Vec<String> {
+    fn render(&mut self, lines: Vec<RenderedLine>, width: usize) -> Vec<RenderedLine> {
         if self.width != width {
             self.lines.clear();
             self.width = width;
@@ -256,13 +259,13 @@ impl TranscriptWrapCache {
         for (index, line) in lines.into_iter().enumerate() {
             if let Some((previous, wrapped, counts)) = self.lines.get_mut(index) {
                 if *previous != line {
-                    *wrapped = pi_tui::utils::wrap_text_with_ansi(&line, width);
+                    *wrapped = pi_tui::utils::wrap_text_with_ansi(&line, width).into_iter().map(RenderedLine::from).collect();
                     *counts = Self::content_counts(wrapped);
                     *previous = line;
                 }
                 output.extend(wrapped.iter().cloned());
             } else {
-                let wrapped = pi_tui::utils::wrap_text_with_ansi(&line, width);
+                let wrapped: Vec<_> = pi_tui::utils::wrap_text_with_ansi(&line, width).into_iter().map(RenderedLine::from).collect();
                 output.extend(wrapped.iter().cloned());
                 let counts = Self::content_counts(&wrapped);
                 self.lines.push((line, wrapped, counts));
@@ -271,7 +274,7 @@ impl TranscriptWrapCache {
         output
     }
 
-    fn content_counts(lines: &[String]) -> Vec<usize> {
+    fn content_counts(lines: &[RenderedLine]) -> Vec<usize> {
         lines.iter().map(|line| pi_tui::utils::strip_ansi(line).chars().filter(|ch| !ch.is_whitespace()).count()).collect()
     }
 
@@ -660,6 +663,9 @@ impl Transcript {
 }
 impl TuiComponent for Transcript {
     fn render(&mut self, width: f64) -> Vec<String> {
+        self.render_shared(width).iter().map(ToString::to_string).collect()
+    }
+    fn render_shared(&mut self, width: f64) -> Vec<RenderedLine> {
         self.timeline = (native_neon::active() && self.mode.borrow().fullscreen_enabled).then(|| native_neon::Timeline::new(width.max(1.0) as usize));
         let width = self.timeline.map_or(width, |timeline| timeline.content_width() as f64);
         let mode = self.mode.borrow();
@@ -667,15 +673,15 @@ impl TuiComponent for Transcript {
         let mut keys = Vec::new();
         let mut custom_header = false;
         if let Some(surfaces) = &self.extension_surfaces {
-            if let Some(header) = &mut surfaces.borrow_mut().header { lines.extend(header.render(width)); custom_header = true; }
+            if let Some(header) = &mut surfaces.borrow_mut().header { lines.extend(header.render_shared(width)); custom_header = true; }
         }
         if self.timeline.is_some() && !custom_header && self.rows.is_empty() && self.history.as_ref().is_none_or(|h| h.rows.is_empty()) {
-            lines.push(theme().fg("accent", "Ready when you are."));
-            lines.push(theme().fg("dim", "Describe a task, or use /help to explore commands."));
+            lines.push(theme().fg("accent", "Ready when you are.").into());
+            lines.push(theme().fg("dim", "Describe a task, or use /help to explore commands.").into());
         }
         if self.timeline.is_none() && !custom_header && self.rows.is_empty() && self.history.as_ref().is_none_or(|h| h.rows.is_empty()) {
-            lines.push(theme().fg("muted", "Ready when you are."));
-            lines.push(theme().fg("dim", "Describe a task, or choose a chat from Sessions."));
+            lines.push(theme().fg("muted", "Ready when you are.").into());
+            lines.push(theme().fg("dim", "Describe a task, or choose a chat from Sessions.").into());
         }
         drop(mode);
         keys.resize(lines.len(), None);
@@ -701,19 +707,19 @@ impl TuiComponent for Transcript {
         // The `mainViewContainer` child order (interactive-mode.ts:1268-1272), then
         // the prompt-context containers below it (TS:1575-1577).
         for container in mode.get_main_view_containers() {
-            lines.extend(local::Component::render(container, width.max(1.0) as usize));
+            lines.extend(local::Component::render(container, width.max(1.0) as usize).into_iter().map(RenderedLine::from));
         }
         for container in mode.get_prompt_context_containers() {
-            lines.extend(local::Component::render(container, width.max(1.0) as usize));
+            lines.extend(local::Component::render(container, width.max(1.0) as usize).into_iter().map(RenderedLine::from));
         }
         if let Some(message) = self.clipboard_notice.text() {
-            lines.push(theme().fg("dim", message));
+            lines.push(theme().fg("dim", message).into());
         }
         if mode.restored_draft_notice.borrow().is_some() {
-            lines.push(theme().fg("dim", "Draft restored"));
+            lines.push(theme().fg("dim", "Draft restored").into());
         }
         if let Some(progress) = &self.refinement_progress {
-            lines.push(truncate_to_width(&theme().fg("accent", progress), width, "…", false));
+            lines.push(truncate_to_width(&theme().fg("accent", progress), width, "…", false).into());
         }
         if mode.should_show_working_loader() {
             // `createWorkingLoader` mounts the animated pi-tui `Loader`
@@ -734,19 +740,19 @@ impl TuiComponent for Transcript {
                 "{}{}",
                 theme().fg("accent", &frames[frame]),
                 theme().fg("muted", &format!(" {}", mode.get_working_loader_message())),
-            ));
+            ).into());
         }
         drop(mode);
         // TypeScript includes the side-question container in fullscreen scroll
         // content as well as inline content (getPromptContextContainers).
         if let Some(side_pane) = &self.side_pane {
-            lines.extend(side_pane.borrow_mut().render(width));
+            lines.extend(side_pane.borrow_mut().render_shared(width));
         }
         let receipts = self.local_receipts.render(width);
         if self.local_sending_count > 0 && receipts.is_empty() {
-            lines.push(theme().fg("dim", "Sending — not yet confirmed by host"));
+            lines.push(theme().fg("dim", "Sending — not yet confirmed by host").into());
         }
-        lines.extend(receipts);
+        lines.extend(receipts.into_iter().map(RenderedLine::from));
         // Editor and overlay repaints must not reparse unchanged history's ANSI
         // and Unicode on every key. Compare rendered bytes so external component
         // updates, theme changes and expansion still invalidate precisely.
@@ -759,7 +765,7 @@ impl TuiComponent for Transcript {
             let rows = rendered.iter().zip(&self.viewport_anchors).map(|(line, anchor)| {
                 let meta = anchor.as_ref().and_then(|anchor| metadata.get(&anchor.key)
                     .or_else(|| history.as_ref().and_then(|h| h.row_metadata.get(&anchor.key))));
-                (line.as_str(), meta, anchor.as_ref().is_some_and(|a| a.offset == 0))
+                (line, meta, anchor.as_ref().is_some_and(|a| a.offset == 0))
             });
             let (decorated, columns) = self.timeline_cache.render(timeline, rows);
             self.selection_columns = columns;
@@ -6876,14 +6882,14 @@ fn apply_event_legacy_for_speed(
     #[test]
     fn transcript_wrap_cache_preserves_live_updates_resize_and_unicode() {
         let mut cache = TranscriptWrapCache::default();
-        let mut lines = vec!["\x1b[32mhello 世界 👩‍💻\x1b[0m".into(), "long output ".repeat(20)];
-        let expected = |lines: &Vec<String>, width| lines.iter()
-            .flat_map(|line| pi_tui::utils::wrap_text_with_ansi(line, width)).collect::<Vec<_>>();
+        let mut lines: Vec<RenderedLine> = vec!["\x1b[32mhello 世界 👩‍💻\x1b[0m".into(), "long output ".repeat(20).into()];
+        let expected = |lines: &Vec<RenderedLine>, width| lines.iter()
+            .flat_map(|line| pi_tui::utils::wrap_text_with_ansi(line, width)).map(RenderedLine::from).collect::<Vec<_>>();
         assert_eq!(cache.render(lines.clone(), 20), expected(&lines, 20));
         let stable_buffer = cache.lines[0].1.as_ptr();
         assert_eq!(cache.render(lines.clone(), 20), expected(&lines, 20));
         assert_eq!(cache.lines[0].1.as_ptr(), stable_buffer, "unchanged history was rewrapped");
-        lines[1].push_str("stream delta");
+        lines[1] = format!("{}stream delta", lines[1]).into();
         assert_eq!(cache.render(lines.clone(), 20), expected(&lines, 20));
         assert_eq!(cache.lines[0].1.as_ptr(), stable_buffer);
         assert_eq!(cache.render(lines.clone(), 8), expected(&lines, 8));
@@ -6898,7 +6904,7 @@ fn apply_event_legacy_for_speed(
 
     #[test]
     fn transcript_wrap_cache_large_repaint_measurement() {
-        let lines: Vec<String> = (0..2000).map(|i| format!("\x1b[32m{i}: café 世界 output text {}\x1b[0m", "abcd ".repeat(12))).collect();
+        let lines: Vec<RenderedLine> = (0..2000).map(|i| format!("\x1b[32m{i}: café 世界 output text {}\x1b[0m", "abcd ".repeat(12)).into()).collect();
         let mut cache = TranscriptWrapCache::default();
         let started = Instant::now();
         let expected = cache.render(lines.clone(), 150);

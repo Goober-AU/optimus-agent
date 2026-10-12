@@ -6,6 +6,7 @@
 //! scroll position is application state, not terminal scrollback.
 
 use crate::selection_metadata::TableCellSelectionRegion;
+use crate::render_cache::RenderedLine;
 use crate::terminal_image::{delete_kitty_image, image_row_count, is_image_line};
 use crate::utils::{slice_by_column, strip_ansi, url_at_column, visible_width};
 use std::rc::Rc;
@@ -125,7 +126,7 @@ pub struct FullscreenViewport {
     last_header_height: usize,
     selection_columns: Vec<Option<(usize, usize)>>,
     padding_line: String,
-    last_transcript: Vec<String>,
+    last_transcript: Vec<RenderedLine>,
     last_anchors: Vec<Option<ViewportAnchor>>,
     last_top_padding: usize,
     last_bottom_aligned: bool,
@@ -219,6 +220,20 @@ impl FullscreenViewport {
         bottom_aligned: bool,
         header: &[String],
     ) -> Vec<String> {
+        let transcript: Vec<_> = transcript.iter().cloned().map(RenderedLine::from).collect();
+        self.compose_shared_frame_with_header(&transcript, dock, height, table_cell_selection_regions, anchors, bottom_aligned, header)
+    }
+
+    pub fn compose_shared_frame_with_header(
+        &mut self,
+        transcript: &[RenderedLine],
+        dock: &[String],
+        height: usize,
+        table_cell_selection_regions: &[TableCellSelectionRegion],
+        anchors: &[Option<ViewportAnchor>],
+        bottom_aligned: bool,
+        header: &[String],
+    ) -> Vec<String> {
         let dock_height = clipped_fullscreen_dock_height(dock.len(), height);
         let header_height = header.len().min(height.saturating_sub(dock_height + FULLSCREEN_MIN_TRANSCRIPT_ROWS));
         let dock_lines: Vec<String> = if dock.len() > dock_height {
@@ -258,10 +273,10 @@ impl FullscreenViewport {
         self.table_cell_selection_regions = table_cell_selection_regions.to_vec();
 
         let end = (self.scroll_top + window_height).min(transcript.len());
-        let mut window: Vec<String> = transcript[self.scroll_top..end].to_vec();
+        let mut window: Vec<String> = transcript[self.scroll_top..end].iter().map(ToString::to_string).collect();
         let mut visible_images = 0;
-        for (last, line) in transcript.iter().enumerate().filter(|(_, line)| is_image_line(line)) {
-            let rows = image_row_count(line);
+        for (last, line) in transcript.iter().enumerate().filter(|(_, line)| line.is_image()) {
+            let rows = line.image_rows();
             let first = last.saturating_sub(rows.unwrap_or(1).saturating_sub(1));
             if last < self.scroll_top || first >= end { continue; }
             if rows.is_some() && first >= self.scroll_top && last < end
@@ -888,7 +903,7 @@ impl FullscreenViewport {
     }
 
     fn extract_selection_text(
-        source_lines: &[String],
+        source_lines: &[RenderedLine],
         sel: (SelectionPoint, SelectionPoint),
         span_for: &dyn Fn(usize, (SelectionPoint, SelectionPoint)) -> Option<ColumnSpan>,
     ) -> Option<String> {
@@ -927,7 +942,7 @@ impl FullscreenViewport {
 
     fn extract_table_selection_text(
         &self,
-        source_lines: &[String],
+        source_lines: &[RenderedLine],
         sel: (SelectionPoint, SelectionPoint),
     ) -> Option<String> {
         let active = match self.active_table_selection {
@@ -1188,6 +1203,22 @@ fn trim_end(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shared_transcript_retains_text_and_clips_images_without_mutating_history() {
+        let image = crate::terminal_image::position_image("\x1bP0;1;0q~\x1b\\", 3);
+        let transcript: Vec<RenderedLine> = vec!["first".into(), "".into(), "".into(), image.clone().into(), "last".into()];
+        let mut viewport = FullscreenViewport::new();
+        let frame = viewport.compose_shared_frame_with_header(&transcript, &[], 3, &[], &[], false, &[]);
+        assert!(frame.iter().any(|line| line.contains("Cannot display image")));
+        assert_eq!(transcript[3].as_str(), image);
+        assert!(viewport.last_transcript.iter().zip(&transcript).all(|(a, b)| a.ptr_eq(b)));
+        let frame = viewport.compose_shared_frame_with_header(&transcript, &[], 5, &[], &[], false, &[]);
+        assert_eq!(frame[3], image);
+        assert!(viewport.begin_selection(0, 0));
+        viewport.extend_selection(0, 5);
+        assert_eq!(viewport.end_selection().as_deref(), Some("first"));
+    }
 
     #[test]
     fn painting_strips_shell_markers_without_changing_styles_links_or_source() {

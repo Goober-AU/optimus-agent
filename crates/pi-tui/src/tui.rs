@@ -10,6 +10,7 @@ use crate::mouse::{
     is_mouse_sequence, is_wheel_down, is_wheel_up, parse_sgr_mouse_event, MOUSE_BUTTON_LEFT,
 };
 use crate::selection_metadata::TableCellSelectionRegion;
+use crate::render_cache::RenderedLine;
 use crate::terminal::{Terminal, TerminalStopOptions};
 use crate::terminal_image::{
     delete_kitty_image, get_capabilities, image_line_for_viewport, is_image_line, set_cell_dimensions,
@@ -96,6 +97,11 @@ impl Drop for RenderPhaseGuard<'_> {
 pub trait Component {
     /// Render the component to lines for the given viewport width.
     fn render(&mut self, width: f64) -> Vec<String>;
+
+    /// Fullscreen transcripts can retain immutable lines across repaints.
+    fn render_shared(&mut self, width: f64) -> Vec<RenderedLine> {
+        self.render(width).into_iter().map(RenderedLine::from).collect()
+    }
 
     /// Fixed chrome can yield rows to the transcript on short terminals.
     fn render_with_height(&mut self, width: f64, _height: usize) -> Vec<String> {
@@ -2267,7 +2273,7 @@ impl TUI {
         self.sync_fullscreen_mouse_tracking();
         self.overlay_selection_regions = Vec::new();
 
-        let mut transcript: Vec<String> = Vec::new();
+        let mut transcript: Vec<RenderedLine> = Vec::new();
         let mut anchors = Vec::new();
         let mut bottom_aligned = false;
         let mut selection_regions: Vec<TableCellSelectionRegion> = Vec::new();
@@ -2293,7 +2299,7 @@ impl TUI {
         with_image_height_limit(image_height, || {
             for component in scroll_components.iter() {
                 let line_offset = transcript.len();
-                let component_lines = component.borrow_mut().render(width as f64);
+                let component_lines = component.borrow_mut().render_shared(width as f64);
                 let mut component_anchors = component.borrow().get_viewport_anchors();
                 component_anchors.resize(component_lines.len(), None);
                 anchors.extend(component_anchors);
@@ -2320,7 +2326,7 @@ impl TUI {
             match self.fullscreen.as_mut() {
                 Some(fullscreen) => {
                     fullscreen.viewport.set_transcript_presentation(selection_columns, padding_line);
-                    let frame = fullscreen.viewport.compose_frame_with_header(
+                    let frame = fullscreen.viewport.compose_shared_frame_with_header(
                         &transcript,
                         &dock,
                         height,
