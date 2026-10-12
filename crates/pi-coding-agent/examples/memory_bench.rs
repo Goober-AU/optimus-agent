@@ -273,9 +273,9 @@ struct ManifestSettings {
     #[serde(default, alias = "lme2_procedure_notes")]
     lme2_procedure_notes: bool,
     /// LME-v2 only: before the question prompt is assembled, run a bounded
-    /// 6-turn GLM-5.3 tool loop (read_summary / search_trace / get_state) over
-    /// the ingested session jsonl to verify exactly ONE interaction state, and
-    /// append the verified span to the question as "Verified interaction
+    /// 12-turn GLM-5.3 tool loop (read_summary / search_trace / get_state)
+    /// over the ingested session jsonl to verify exactly ONE interaction
+    /// state, and append the verified span to the question as "Verified interaction
     /// evidence:" (AgentRunbook-C triage+exactness discipline, driver-side
     /// only; the normal memory recall is unchanged). Fail-open: any loop
     /// error leaves the question prompt without the evidence.
@@ -2245,15 +2245,21 @@ async fn run_lme2_procedure_notes(
 // static-environment category with shortlist-then-verify retrieval over the
 // recorded trajectories: a guaranteed-coverage summary, scoped regex search,
 // exactly one verified state, and rejection of nearby-but-not-exact matches.
-// This is a driver-side port for question time only: a bounded 6-turn GLM-5.3
+// This is a driver-side port for question time only: a bounded 12-turn GLM-5.3
 // tool loop over the ingested session jsonl (the scratch sessions_dir written
 // at ingest time) whose verified span is prefixed to the question as
 // "Verified interaction evidence:". The core memory system and the normal
 // recall path are untouched, and every failure mode fails open to the normal
 // question prompt.
 
-const LMEV2_SPAN_VERIFY_MAX_TURNS: usize = 6;
-const LMEV2_SPAN_VERIFY_BUDGET_S: u64 = 240;
+const LMEV2_SPAN_VERIFY_MAX_TURNS: usize = 12;
+/// 300s: the v4 run's slowest question averaged 19.1s/turn (6 turns, 115s);
+/// 12 turns at that pace is ~230s before the forced final answer, so the old
+/// 240s cap would starve exactly the deep searches this budget buys.
+const LMEV2_SPAN_VERIFY_BUDGET_S: u64 = 300;
+/// One-shot re-prompt when the turn budget is spent on tool calls: the loop
+/// must end in a real answer or UNVERIFIED, never in a dangling search.
+const LMEV2_SPAN_VERIFY_FORCED_FINAL_PROMPT: &str = "You have used your search budget. Reply NOW with the final answer or UNVERIFIED — no more tool calls.";
 const LMEV2_SPAN_VERIFY_SEARCH_LINES: usize = 20;
 const LMEV2_SPAN_VERIFY_STATE_CHARS: usize = 8_000;
 const LMEV2_SPAN_VERIFY_SUMMARY_CHARS: usize = 48_000;
@@ -2663,7 +2669,7 @@ fn lmev2_parse_citation(text: &str, fetched: &[String]) -> Lmev2Citation {
 /// state, reject nearby-but-not-exact matches.
 fn lmev2_span_verify_system_prompt() -> String {
     "You verify evidence for one question about past web-agent interaction \
-traces. You have at most 6 turns and exactly one tool call per turn.
+traces. You have at most 12 turns and exactly one tool call per turn.
 
 Discipline:
 1. Triage: call read_summary first. Shortlist the few sessions whose goal \
@@ -2681,7 +2687,8 @@ Search again with a narrower pattern.
 5. Final answer: reply with ONLY the index of the single verified state, in \
 the exact form <session>:<state> (example: 00c06bce:3), and nothing else. You \
 may only cite a state you actually fetched with get_state during this loop. If \
-you cannot verify a state within the turn budget, reply with only: UNVERIFIED"
+you cannot verify a state within the turn budget, reply with only: UNVERIFIED. \
+When the question asks for a list, use commas between items."
         .to_string()
 }
 
@@ -2753,8 +2760,9 @@ async fn run_lmev2_span_verify(
     lmev2_span_verify_loop(&store, &question.question, model, api_key, headers, started).await
 }
 
-/// The bounded tool loop: at most 6 turns, one tool call per turn, a 240s
-/// wall-clock cap, and fail-open semantics on every error (no span, question
+/// The bounded tool loop: at most 12 turns, one tool call per turn, a 300s
+/// wall-clock cap, a forced final-answer interaction when the budget is spent
+/// on tool calls, and fail-open semantics on every error (no span, question
 /// keeps its normal prompt and memory recall).
 async fn lmev2_span_verify_loop(
     store: &Lmev2TraceStore,
@@ -2912,6 +2920,136 @@ async fn lmev2_span_verify_loop(
         }
     }
 
+    // Forced final answer: the budget ran out while the model was still
+    // calling tools (or the final turn came back empty). One more
+    // interaction, with no tools attached, so the loop can only end in a
+    // real answer or UNVERIFIED — never in a dangling search. The v4 run
+    // showed every question dying as turn_budget_exhausted with the
+    // decisive state already fetched; this step converts that into a span.
+    let mut forced_final = false;
+    if turns == LMEV2_SPAN_VERIFY_MAX_TURNS
+        && matches!(outcome, "turn_budget_exhausted" | "empty_final_turn")
+    {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            outcome = "timeout";
+            detail = json!(format!(
+                "{}s wall-clock budget exhausted before the forced final answer",
+                LMEV2_SPAN_VERIFY_BUDGET_S
+            ));
+        } else {
+            messages.push(pi_ai::types::Message::User(pi_ai::types::UserMessage::new(
+                pi_ai::types::UserContent::Text(
+                    LMEV2_SPAN_VERIFY_FORCED_FINAL_PROMPT.to_string(),
+                ),
+                0,
+            )));
+            let context = pi_ai::types::Context {
+                system_prompt: Some(lmev2_span_verify_system_prompt()),
+                messages: messages.clone(),
+                // No tools: the forced interaction can only be a final answer.
+                tools: None,
+            };
+            let options = pi_ai::types::SimpleStreamOptions {
+                stream: pi_ai::types::StreamOptions {
+                    max_tokens: Some(LMEV2_SPAN_VERIFY_TURN_TOKENS),
+                    api_key: Some(api_key.clone()),
+                    headers: headers.clone(),
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+            let reply = tokio::time::timeout(
+                remaining,
+                pi_ai::stream::complete_simple(model, &context, Some(&options)),
+            )
+            .await;
+            match reply {
+                Err(_) => {
+                    outcome = "timeout";
+                    detail = json!(format!(
+                        "{}s wall-clock budget exhausted during the forced final answer",
+                        LMEV2_SPAN_VERIFY_BUDGET_S
+                    ));
+                }
+                Ok(reply) => {
+                    turns += 1;
+                    forced_final = true;
+                    usage_input += reply.usage.input
+                        + reply.usage.cache_read
+                        + reply.usage.cache_write;
+                    usage_output += reply.usage.output;
+                    if reply.stop_reason.as_str() == "error"
+                        || reply.stop_reason.as_str() == "aborted"
+                    {
+                        outcome = "provider_error";
+                        detail = json!(reply
+                            .error_message
+                            .clone()
+                            .unwrap_or_else(|| format!("stop reason {}", reply.stop_reason)));
+                    } else {
+                        let calls: Vec<&pi_ai::types::ToolCall> = reply
+                            .content
+                            .iter()
+                            .filter_map(|block| block.as_tool_call())
+                            .collect();
+                        let text: String = reply
+                            .content
+                            .iter()
+                            .filter_map(|block| block.as_text().map(|text| text.text.clone()))
+                            .collect::<Vec<String>>()
+                            .join("");
+                        let text = text.trim();
+                        // The forced step must produce an answer or
+                        // UNVERIFIED; anything else (a tool call against no
+                        // tools, an empty reply, an unfetched or missing
+                        // citation) fails open as unverified with the reason
+                        // recorded in detail. Text replies are parsed exactly
+                        // like a normal final turn; a tool call only matters
+                        // when the model produced no text at all.
+                        if !text.is_empty() && text.eq_ignore_ascii_case("unverified") {
+                            outcome = "unverified";
+                            detail = json!("forced final answer");
+                        } else if !text.is_empty() {
+                            match lmev2_parse_citation(text, &fetched) {
+                                Lmev2Citation::Fetched(index) => {
+                                    verified_index = Some(index);
+                                    outcome = "verified";
+                                    detail = json!("forced final answer");
+                                }
+                                Lmev2Citation::NotFetched(index) => {
+                                    outcome = "unverified";
+                                    detail = json!(format!(
+                                        "forced final answer cites {index} which was never fetched with get_state"
+                                    ));
+                                }
+                                Lmev2Citation::None => {
+                                    outcome = "unverified";
+                                    detail = json!(format!(
+                                        "forced final answer has no <session>:<state> index: {}",
+                                        lme2_notes_one_line(text, 200)
+                                    ));
+                                }
+                            }
+                        } else if let Some(call) = calls.first() {
+                            outcome = "unverified";
+                            detail = json!(format!(
+                                "forced final answer requested tool {} despite no tools being attached",
+                                call.name
+                            ));
+                        } else {
+                            outcome = "unverified";
+                            detail = json!(format!(
+                                "forced final answer was empty (stop reason {})",
+                                reply.stop_reason
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     let span = verified_index.as_ref().and_then(|index| {
         let (session_id, ordinal) = index.split_once(':')?;
         let session = store.find(session_id)?;
@@ -2927,6 +3065,7 @@ async fn lmev2_span_verify_loop(
         "detail": detail,
         "turns": turns,
         "max_turns": LMEV2_SPAN_VERIFY_MAX_TURNS,
+        "forced_final": forced_final,
         "budget_s": LMEV2_SPAN_VERIFY_BUDGET_S,
         "sessions": store.sessions.len(),
         "tool_calls": tool_calls,
@@ -6341,16 +6480,19 @@ print(json.dumps(env, ensure_ascii=False))
 
     #[tokio::test]
     async fn lmev2_span_verify_loop_bounds_turns_and_one_tool_call_per_turn() {
-        // The mock always requests a tool, so the loop must stop at exactly 6
-        // turns. The first turn requests two calls; only the first may run.
-        let responses = vec![
-            span_double_tool_call_message(),
-            span_tool_call_message("call-3", "read_summary", json!({})),
-            span_tool_call_message("call-4", "read_summary", json!({})),
-            span_tool_call_message("call-5", "read_summary", json!({})),
-            span_tool_call_message("call-6", "read_summary", json!({})),
-            span_tool_call_message("call-7", "read_summary", json!({})),
-        ];
+        // The mock always requests a tool, so the search loop must stop at
+        // exactly 12 turns; the 13th interaction is the forced final answer
+        // (no tools attached) and must convert the spent budget into
+        // UNVERIFIED. The first turn requests two calls; only the first runs.
+        let mut responses = vec![span_double_tool_call_message()];
+        for turn in 2..=12 {
+            responses.push(span_tool_call_message(
+                &format!("call-{turn}"),
+                "read_summary",
+                json!({}),
+            ));
+        }
+        responses.push(span_text_message("UNVERIFIED"));
         let (api, captured) = register_span_mock(responses);
         let model = span_mock_model(&api);
         let temp = tempfile::tempdir().unwrap();
@@ -6365,23 +6507,33 @@ print(json.dumps(env, ensure_ascii=False))
         )
         .await;
         assert!(outcome.span.is_none(), "no span without a final answer");
-        assert_eq!(outcome.record["outcome"], "turn_budget_exhausted");
-        assert_eq!(outcome.record["turns"], 6);
-        assert_eq!(outcome.record["max_turns"], 6);
+        assert_eq!(outcome.record["outcome"], "unverified");
+        assert_eq!(outcome.record["detail"], "forced final answer");
+        assert_eq!(outcome.record["turns"], 13);
+        assert_eq!(outcome.record["max_turns"], 12);
+        assert_eq!(outcome.record["forced_final"], true);
         let calls = outcome.record["tool_calls"].as_array().unwrap();
-        assert_eq!(calls.len(), 6, "one executed tool call per turn");
+        assert_eq!(calls.len(), 12, "one executed tool call per search turn");
         assert_eq!(calls[0]["tool"], "read_summary");
         assert_eq!(calls[0]["extra_ignored"], 1, "second call ignored");
         assert_eq!(calls[1]["extra_ignored"], 0);
-        assert_eq!(calls[5]["extra_ignored"], 0);
-        // The loop asked the mock exactly six times, tools attached.
+        assert_eq!(calls[11]["extra_ignored"], 0);
+        // The loop asked the mock exactly 13 times: 12 with tools attached,
+        // then the forced final answer with no tools at all.
         let contexts = captured.lock().unwrap();
-        assert_eq!(contexts.len(), 6);
-        assert!(contexts.iter().all(|context| context
+        assert_eq!(contexts.len(), 13);
+        assert!(contexts[..12].iter().all(|context| context
             .tools
             .as_ref()
             .map(|tools| tools.len() == 3)
             .unwrap_or(false)));
+        assert!(contexts[12].tools.is_none(), "no tools on the forced final");
+        let forced_last = contexts[12].messages.last();
+        assert!(matches!(
+            forced_last,
+            Some(pi_ai::types::Message::User(user))
+                if user.content.text() == LMEV2_SPAN_VERIFY_FORCED_FINAL_PROMPT
+        ), "the forced final prompt must be the last message");
         assert!(contexts
             .iter()
             .all(|context| context
@@ -6389,6 +6541,108 @@ print(json.dumps(env, ensure_ascii=False))
                 .as_deref()
                 .unwrap_or("")
                 .contains("Verify ONE state")));
+        assert!(contexts.iter().all(|context| context
+            .system_prompt
+            .as_deref()
+            .unwrap_or("")
+            .contains("at most 12 turns")));
+        assert!(contexts.iter().all(|context| context
+            .system_prompt
+            .as_deref()
+            .unwrap_or("")
+            .contains("use commas between items")));
+        pi_ai::api_registry::unregister_api_providers(&api);
+    }
+
+    #[tokio::test]
+    async fn lmev2_span_verify_loop_forces_final_answer_when_budget_is_spent_on_tools() {
+        let temp = tempfile::tempdir().unwrap();
+        let store = span_verify_store(&temp);
+
+        // The mock tool-calls on every reply, including the forced 13th
+        // interaction: no tool may run there (no tools are attached) and the
+        // loop must still end in an answer or UNVERIFIED.
+        let mut responses: Vec<_> = (1..=12)
+            .map(|turn| span_tool_call_message(&format!("call-{turn}"), "read_summary", json!({})))
+            .collect();
+        responses.push(span_tool_call_message(
+            "call-13",
+            "get_state",
+            json!({"index": "sess1:2"}),
+        ));
+        let (api, captured) = register_span_mock(responses);
+        let model = span_mock_model(&api);
+        let outcome = lmev2_span_verify_loop(
+            &store,
+            "What is the checkout button?",
+            &model,
+            "fixture-key".to_string(),
+            None,
+            Instant::now(),
+        )
+        .await;
+        assert!(outcome.span.is_none());
+        assert_eq!(outcome.record["outcome"], "unverified");
+        assert_eq!(
+            outcome.record["detail"].as_str().unwrap(),
+            "forced final answer requested tool get_state despite no tools being attached"
+        );
+        assert_eq!(outcome.record["forced_final"], true);
+        assert_eq!(outcome.record["turns"], 13);
+        assert_eq!(outcome.record["max_turns"], 12);
+        let calls = outcome.record["tool_calls"].as_array().unwrap();
+        assert_eq!(calls.len(), 12, "the forced interaction executes no tool");
+        let contexts = captured.lock().unwrap();
+        assert_eq!(contexts.len(), 13);
+        assert!(contexts[12].tools.is_none(), "no tools on the forced final");
+        assert!(matches!(
+            contexts[12].messages.last(),
+            Some(pi_ai::types::Message::User(user))
+                if user.content.text() == LMEV2_SPAN_VERIFY_FORCED_FINAL_PROMPT
+        ));
+        drop(contexts);
+        pi_ai::api_registry::unregister_api_providers(&api);
+
+        // The v4 failure shape: the decisive state is fetched on the final
+        // allowed turn, the budget runs out, and the forced reply cites it.
+        let mut responses: Vec<_> = (1..=11)
+            .map(|turn| span_tool_call_message(&format!("call-{turn}"), "read_summary", json!({})))
+            .collect();
+        responses.push(span_tool_call_message(
+            "call-12",
+            "get_state",
+            json!({"index": "sess1:2"}),
+        ));
+        responses.push(span_text_message("sess1:2"));
+        let (api, captured) = register_span_mock(responses);
+        let model = span_mock_model(&api);
+        let outcome = lmev2_span_verify_loop(
+            &store,
+            "Which button did the agent click to check out?",
+            &model,
+            "fixture-key".to_string(),
+            None,
+            Instant::now(),
+        )
+        .await;
+        assert_eq!(outcome.record["outcome"], "verified");
+        assert_eq!(outcome.record["detail"], "forced final answer");
+        assert_eq!(outcome.record["forced_final"], true);
+        assert_eq!(outcome.record["turns"], 13);
+        assert_eq!(outcome.record["max_turns"], 12);
+        assert_eq!(outcome.record["cited_index"], "sess1:2");
+        assert_eq!(outcome.record["fetched_states"], json!(["sess1:2"]));
+        let span = outcome.span.expect("verified span from the forced answer");
+        assert!(span.contains("[session sess1 state 2]"));
+        assert!(span.contains("click('42')"));
+        let contexts = captured.lock().unwrap();
+        assert_eq!(contexts.len(), 13);
+        assert!(contexts[..12].iter().all(|context| context
+            .tools
+            .as_ref()
+            .map(|tools| tools.len() == 3)
+            .unwrap_or(false)));
+        assert!(contexts[12].tools.is_none());
         pi_ai::api_registry::unregister_api_providers(&api);
     }
 
