@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-12T14:20:07+00:00",
+  "generated": "2026-10-12T15:09:59+00:00",
   "campaign_root": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424",
   "dataset": {
     "file": "longmemeval_s.json",
@@ -8,7 +8,7 @@
     "bytes": 278025796
   },
   "reference_manifest": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration2-inputs\\manifests\\longmemeval_dev5_improved_v2.json",
-  "settings": "dev5 improved_v2 baseline + recallQueryExtract, recallQueryExpansion(2), answer protocol (a) from ANSWER-PROTOCOLS.md, answerMaxTokens 8192",
+  "settings": "dev5 improved_v2 baseline + recallQueryExtract, recallQueryExpansion OFF (E3-06 A/B parity), answer protocol (a) from ANSWER-PROTOCOLS.md, answerMaxTokens 8192, ingestTimeoutS 43200",
   "model": {
     "provider": "dgx-glm53",
     "id": "glm-5.3"
@@ -30,133 +30,133 @@
   "manifests": [
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_smoke5_v1.json",
-      "sha256": "539c02b7f8ae10a8c50e3b66c0f642150bf8a3a098048454871b45631b91a774",
+      "sha256": "25aec8b1450cc6876c40eff6828d907c53211764851e3eef685e06ed9188d6bf",
       "envs": 5,
       "questions": 5
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1.json",
-      "sha256": "5020ef3580f86c1fa9fefeb54b7ba1cc7b85b4cd11109fb9c3a82b9fc50c0e42",
+      "sha256": "14eafa38d01072b7bce24fa84d28db9c4452d452ed2b724288ce3ef810d4a8b9",
       "envs": 500,
       "questions": 500
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s00.json",
-      "sha256": "acef1bd94d343688182806037160d02c8a6fb6864fd640e3eb05bbc0fb15d6eb",
+      "sha256": "99ef3daa3e371eebe29dab77433aa327d6dd4954a71aaddcd5d43c009bfea9b8",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s01.json",
-      "sha256": "de3be91192996013ed2cf03c6834bc60e92035e595ec0e14699b88049d4c571a",
+      "sha256": "49fb8e80a810b3c7cd8a56fef2186948f6bbcdef57a9ce937443fbb5eed1b5b5",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s02.json",
-      "sha256": "25652180eab6ca67b38fef2d0ba86afecc8a96a3b32748365ee9f57f0158b894",
+      "sha256": "2c88f0d26012c016df9b7b61129a3960e1690b1b41b55341dda970085275cc72",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s03.json",
-      "sha256": "e1b449fef2b696cd8dd662b54be220bc7a57fb89ab072321f3f30699040f98ee",
+      "sha256": "31139df2139201c0eaab0ab8d62f34b03bb430fd272cd9266fb02c1301a3d02e",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s04.json",
-      "sha256": "132458f3f3bfc4ea87c2bd1e20ccd95c3ea5f8422875c07ac23d51f96e64c505",
+      "sha256": "399e4e0bbacb5f13b24fcbd2b7d54e2ace82e6021a8666aec35af9b81c68ab54",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s05.json",
-      "sha256": "e3e58ff6c5ef7118a2fcef599e90137d31871f47fec9ded4eeaf5030323f8fd8",
+      "sha256": "4015c88b6df2ab16c92b19d6843b667d135992e49303a6b65f734315a592bed8",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s06.json",
-      "sha256": "11973f7774b6eac0d16f20474daa534ed09c2cfd688dd865d869bf947350b9fd",
+      "sha256": "e4f4faea5f187868718a08e5603d71f189bbf3e746a78df95f357b0a866a3be9",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s07.json",
-      "sha256": "1d3d8d6616e104c7c25fc5403b73a29c9b4093485ea211776827827df9620aed",
+      "sha256": "bc8c812e3e612ef1e8ee993a23e4c1cce7512ae6ce2ac25dfe4ab1e3f2575b2e",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s08.json",
-      "sha256": "e796265e6b2faacd9948a1196ad7af8d150132d6be2d6261b4c138a73289cb2a",
+      "sha256": "bd7dd7287ef55371227ddd246564421a86e97a0e8ba7ea89287ccefb72be7f1e",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s09.json",
-      "sha256": "385c726ec39977855cc3a654e51956c1756edffde0ddca5dbe11ae38132bc409",
+      "sha256": "079bc0125ff0501cbda7df7ca2bf93f7671b046947f54f7b745f54a837ff2737",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s10.json",
-      "sha256": "698c7d0d17258c23e855c17cb00c4a21cb937015b57c386fa9a2aac7bfa415c1",
+      "sha256": "6dc810a0e1e6eea5aadeb7dc8fefdd4cb3aaef4bb33ba62649602b8f649ddc83",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s11.json",
-      "sha256": "c3a14a5379866f2e3c01a1c042a6dd6a232f1ca611fd45ffc94bff97371c3515",
+      "sha256": "163a2479aca8d23a3436b1f587284013b1ca4c0915fdad3895ebe3c5e76d8454",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s12.json",
-      "sha256": "5bad099b340dfb2ebd8a072bd516061d319753ccf43293ebffdc85c14692f4dd",
+      "sha256": "d7b5195e050eb0910ab6502cb07194ad475f30616b9f208a410b5b4e10c91b82",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s13.json",
-      "sha256": "ac8c24dfc4afa76334b5e726d40fba0fc06411e777a37e19ccd5c12ff85a9566",
+      "sha256": "5dca52d8f34306dc370c5d0f182b822f04afc0ef940fa3d69e632de719c3f309",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s14.json",
-      "sha256": "019c5a9301100845c5c5dbe1105f65ed80a3db8658af673eed34960d8186fb52",
+      "sha256": "58c087653f77e96c5f2530fbcdbaa2865501196af0c6fe4e531f2e485d9c3628",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s15.json",
-      "sha256": "58315e73591aa92665e296e6420ea3b0ce00174cb4310b809cfedeb4944bf932",
+      "sha256": "3838184555041d8f8b21159761b3de808a7af27466975d101bb9e3ce3b15efb9",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s16.json",
-      "sha256": "e4f52b1955dba0ec7854e3f4ba2384e066c42c10b9a523096c9581046a380021",
+      "sha256": "121a0130474d249fb3d67b8377748fb5e4de064f3b10fd92db473b03e593e3ad",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s17.json",
-      "sha256": "d9bdc249ac68199f5eaba69180d5fe6a0b96bb8aa38d0e32c3a681c822a1ae07",
+      "sha256": "f24a3edb78fa9a18af853f41c7d8a6cc31134c9c816ee185f71fe625b01de883",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s18.json",
-      "sha256": "e6dee6ac4a84249417e58d1d272db9d45e7488eed603024eae2084203eb2f892",
+      "sha256": "1ca0f7929d1d875152856cb31d0f502cdf6b565fb5c540ad258723e9b000530a",
       "envs": 25,
       "questions": 25
     },
     {
       "file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\manifests\\lme_s_full_v1_s19.json",
-      "sha256": "194a5097c87c8a388df6d7264b3618473f1967934d054664ecdfcbf8b8454541",
+      "sha256": "2abb3f408ccf78924c2a4df6b93d67664a7807bb6aa40102be7b5f46c7de33cc",
       "envs": 25,
       "questions": 25
     }

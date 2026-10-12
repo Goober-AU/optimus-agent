@@ -25,9 +25,16 @@ model dgx-glm53/glm-5.3):
 Settings are the dev5 improved_v2 LongMemEval-S settings verbatim (recall +
 distill + rerank on, rerank pool 200, 8 entries / 8000 chars, extraction
 32000 / chunk 15000 budgets, disableTools, questionTimeoutS 240) plus the
-iteration-3 upgrades: recallQueryExtract, recallQueryExpansion with 2 draws,
-answerMaxTokens 8192, and the LME answer protocol variant (a) from
-reports/continuation/iteration3-research/ANSWER-PROTOCOLS.md.
+iteration-3 upgrades: recallQueryExtract (question-only recall query, the
+protocol pairing requirement), answerMaxTokens 8192, the LME answer protocol
+variant (a) from reports/continuation/iteration3-research/ANSWER-PROTOCOLS.md,
+and ingestTimeoutS 43200 (FULL-RUN-DECISION.md mitigation for the c8-contention
+timeout risk; the A/B skipped ingest so this does not affect its parity).
+recallQueryExpansion stays OFF - explicit false, matching the E3-06 A/B
+manifest exactly: that A/B validated the protocol at 1.00 (5/5,
+non-regressive) with extract ON and expansion OFF, and expansion has never
+been measured on the S family in any arm, so the full run executes the exact
+validated answer-stage stack (strict-evidence parity).
 
 Offline: no model, no network, no Jev, no installed profile access. Run from
 the worktree root (stdlib only):
@@ -79,19 +86,28 @@ ANSWER_PROTOCOL_A = (
     "is recorded."
 )
 # Iteration-3 additions on top of the dev5 improved_v2 settings.
+# recallQueryExpansion is explicitly False (and the draws key dropped, exactly
+# like the A/B manifest): the E3-06 A/B that validated the protocol (1.00, 5/5,
+# non-regressive, +951 output tokens/answer) ran with expansion OFF, and
+# expansion has never been measured on the S family in any arm - keeping it ON
+# would make the full 500-q run the first-ever measurement of the unvalidated
+# protocol+expansion combo (FULL-RUN-DECISION.md flag / risk register). M's set
+# keeps expansion ON with the residual risk accepted there; S deliberately
+# differs for strict evidence parity. ingestTimeoutS 43200 is the LME-M-style
+# timeout-risk mitigation (ingest is not exercised by the frozen-store A/B).
 SETTINGS_ADDITIONS = {
     "recallQueryExtract": True,
-    "recallQueryExpansion": True,
-    "recallQueryExpansionDraws": 2,
+    "recallQueryExpansion": False,
     "answerMaxTokens": 8192,
     "answerInstruction": ANSWER_PROTOCOL_A,
+    "ingestTimeoutS": 43200,
 }
 # Measured on the dev5 improved_v2 run (5 S envs, distill+rerank arm, GLM-5.3,
 # reports/continuation/iteration2-inputs/runs/longmemeval_dev5_improved_v2.log):
 # 243 sessions ingested in 9548.3 s -> 39.3 s/session, 1909.7 s/env; questions
-# averaged 6.5 s. The full-run question side adds query expansion (one bounded
-# LLM call) and the protocol-(a) scratchpad (~+500 output tokens), estimated at
-# 12 s/question pending the first-hour recalibration.
+# averaged 6.5 s. The full-run question side adds the protocol-(a) scratchpad
+# (~+500 output tokens; expansion stays OFF, see SETTINGS_ADDITIONS) - 12 s/
+# question remains the conservative estimate pending first-hour recalibration.
 INGEST_S_PER_SESSION = 9548.3 / 243.0
 QUESTION_S_ESTIMATE = 12.0
 
@@ -469,7 +485,8 @@ def main(argv=None):
     seed = reference.get("seed")
     settings = build_settings(reference["settings"])
     print(f"[lme-s-full] settings: dev5 improved_v2 baseline "
-          f"({len(reference['settings'])} keys) + extract/expansion(2)/protocol-(a)/8192 "
+          f"({len(reference['settings'])} keys) + extract/protocol-(a)/8192/"
+          f"ingestTimeoutS-43200, expansion OFF (E3-06 A/B parity) "
           f"-> {len(settings)} keys")
 
     problems_total = []
@@ -531,8 +548,9 @@ def main(argv=None):
         "campaign_root": campaign,
         "dataset": provenance,
         "reference_manifest": reference_path,
-        "settings": ("dev5 improved_v2 baseline + recallQueryExtract, recallQueryExpansion(2), "
-                      "answer protocol (a) from ANSWER-PROTOCOLS.md, answerMaxTokens 8192"),
+        "settings": ("dev5 improved_v2 baseline + recallQueryExtract, "
+                      "recallQueryExpansion OFF (E3-06 A/B parity), answer protocol (a) "
+                      "from ANSWER-PROTOCOLS.md, answerMaxTokens 8192, ingestTimeoutS 43200"),
         "model": MODEL,
         "n_questions": len(by_qid),
         "cost_model": model,

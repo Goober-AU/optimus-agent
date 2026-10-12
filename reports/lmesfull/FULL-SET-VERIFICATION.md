@@ -88,8 +88,19 @@ questionTimeoutS 240, skipIngest false — **plus** the iteration-3 upgrades:
 
 - `recallQueryExtract: true` (question-only recall query; required pairing for the
   protocol instruction),
-- `recallQueryExpansion: true` + `recallQueryExpansionDraws: 2`,
+- `recallQueryExpansion: false` — **OFF for strict E3-06 A/B parity** (regenerated
+  2026-10-12 by imp3-lmemreg; the original set carried true + 2 draws): the A/B that
+  validated the protocol (1.00, 5/5, non-regressive, official-lme-v1 judge) ran with
+  extract ON and expansion OFF, and expansion has never been measured on the S family
+  in any arm. The draws key is dropped, exactly matching the A/B manifest. The LME-M
+  set keeps expansion ON (residual risk accepted in FULL-RUN-DECISION.md section 2);
+  S deliberately differs so the full 500-q run executes the exact validated
+  answer-stage stack,
 - `answerMaxTokens: 8192`,
+- `ingestTimeoutS: 43200` — FULL-RUN-DECISION.md mitigation for the c8-contention
+  timeout risk (measured 39.3 s/session x ~48 sessions ~= 31 min/env solo vs the
+  3600 s driver default; LME-M-style; the frozen-store A/B never exercised ingest,
+  so this does not affect its parity),
 - `answerInstruction` = **LME answer protocol variant (a)** from
   `reports/continuation/iteration3-research/ANSWER-PROTOCOLS.md` (144 words:
   latest-"at"-wins supersession, visible date scratchpad, count enumeration,
@@ -170,3 +181,26 @@ standard `bench.eval.evaluate --bench longmemeval` pass against the full questio
 Total 22 files, 589.6 MB. Shard qid ranges: s00 = 001be529..0bb5a684 ... s19 =
 gpt4_b5700ca9..gpt4_fe651585_abs (globally sorted-qid order, contiguous
 non-overlapping 25-env slices).
+
+## 10. Regeneration (2026-10-12, worker imp3-lmemreg)
+
+Regenerated from the same pinned dataset and code lineage (worktree
+`imp3-lmemreg`, branch `improve/mem3-lmem-protocol`, base = improve/
+memory-iteration-3 HEAD `baa0f4449`) to apply the two O-flagged deltas from
+FULL-RUN-DECISION.md section 3:
+
+- `recallQueryExpansion` true(2 draws) -> **false** (strict E3-06 A/B parity; see
+  section 4 above for the full justification),
+- `ingestTimeoutS` absent (driver default 3600) -> **43200** (c8 timeout-risk
+  mitigation).
+
+Verification of the regenerated set (all 22 files): protocol (a) verbatim
+22/22, expansion false 22/22, draws key absent 22/22, ingestTimeoutS 43200
+22/22; old-vs-new JSON diff shows ONLY the three settings deltas above -
+envs, questions, run_ids, output_dirs, model and seed are identical to the
+original set. The receipt (`manifests-receipt.json`) was rewritten with the
+new sha256s and settings note; the driver-parse validation of section 8 was
+performed on the original emission and the settings deltas are all
+pre-validated driver keys (the LME-M full set runs ingestTimeoutS 43200 and
+the E3-06 A/B ran recallQueryExpansion false), so it was not repeated.
+
