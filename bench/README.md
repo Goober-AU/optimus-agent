@@ -42,6 +42,7 @@ hashes match the default fixture conversion, not arbitrary converted data.
 | Family | Local input filenames under `--data-root` |
 | --- | --- |
 | LongMemEval-S | `longmemeval_s.json` |
+| LongMemEval-M | `longmemeval_m.json` (HuggingFace `longmemeval_m_cleaned.json`, ~2.7 GB; separate `python -m bench.converters.longmemeval_m` entry point) |
 | LoCoMo-shaped | `locomo10.json` |
 | LME-V2 | `lme_v2_questions.jsonl`, `lme_v2_small_haystack.json`, `trajectories.jsonl` |
 | Normalized cue adapter | `locomo_plus_normalized.json` |
