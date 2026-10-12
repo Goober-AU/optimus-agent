@@ -1318,7 +1318,11 @@ Content: {content}
 
 JSON object with key \"cues\":"
                         ),
-                        512.0,
+                        // 2048: GLM-5.3 spends hidden reasoning tokens before the visible JSON;
+                        // at 512 the budget is exhausted mid-reasoning and the content arrives
+                        // empty (finish_reason=length), leaving the entry uncued. Measured:
+                        // 512 -> empty, 2048 -> 5-cue JSON with ~525 reasoning + ~104 visible.
+                        2048.0,
                     )
                     .await;
                     let cues = result
