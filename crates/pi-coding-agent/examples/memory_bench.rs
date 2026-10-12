@@ -266,6 +266,15 @@ struct ManifestSettings {
     /// never a product memory setting.
     #[serde(default, alias = "lme2_procedure_notes")]
     lme2_procedure_notes: bool,
+    /// LME-v2 only: before the question prompt is assembled, run a bounded
+    /// 6-turn GLM-5.3 tool loop (read_summary / search_trace / get_state) over
+    /// the ingested session jsonl to verify exactly ONE interaction state, and
+    /// append the verified span to the question as "Verified interaction
+    /// evidence:" (AgentRunbook-C triage+exactness discipline, driver-side
+    /// only; the normal memory recall is unchanged). Fail-open: any loop
+    /// error leaves the question prompt without the evidence.
+    #[serde(default, alias = "lmev2_span_verify")]
+    lmev2_span_verify: bool,
 }
 
 impl Default for ManifestSettings {
@@ -297,6 +306,7 @@ impl Default for ManifestSettings {
             recall_query_expansion_draws: None,
             recall_prospective_index: false,
             lme2_procedure_notes: false,
+            lmev2_span_verify: false,
         }
     }
 }
@@ -832,6 +842,7 @@ fn parse_manifest(raw: &str) -> Result<Manifest, String> {
         question_declaration(question)?;
     }
     validate_lme2_procedure_notes(&manifest)?;
+    validate_lmev2_span_verify(&manifest)?;
     frozen_contract(&manifest)?;
     Ok(manifest)
 }
@@ -857,6 +868,30 @@ fn validate_lme2_procedure_notes(manifest: &Manifest) -> Result<(), String> {
     if manifest.settings.memory_learning == Some(false) {
         return Err(
             "lme2ProcedureNotes requires import learning; memoryLearning must not be false"
+                .to_string(),
+        );
+    }
+    Ok(())
+}
+
+/// lmev2SpanVerify reads the session jsonl the driver writes at ingest time,
+/// so it is an LME-v2-family question-time control that fails closed at parse
+/// time on a mixed or no-ingest manifest.
+fn validate_lmev2_span_verify(manifest: &Manifest) -> Result<(), String> {
+    if !manifest.settings.lmev2_span_verify {
+        return Ok(());
+    }
+    for env in &manifest.envs {
+        if env.family.as_deref() != Some("lme_v2") {
+            return Err(format!(
+                "lmev2SpanVerify requires family lme_v2; env {} has family {:?}",
+                env.env_id, env.family
+            ));
+        }
+    }
+    if manifest.settings.skip_ingest {
+        return Err(
+            "lmev2SpanVerify requires the ingested session jsonl; skipIngest must be false"
                 .to_string(),
         );
     }
@@ -2190,6 +2225,708 @@ async fn run_lme2_procedure_notes(
     }))
 }
 
+// ---------------------------------------------------------------------------
+// LME-v2 span verify (AgentRunbook-C triage+exactness discipline, bench-only)
+// ---------------------------------------------------------------------------
+//
+// The official strongest LMEv2 baseline (AgentRunbook-C) wins the
+// static-environment category with shortlist-then-verify retrieval over the
+// recorded trajectories: a guaranteed-coverage summary, scoped regex search,
+// exactly one verified state, and rejection of nearby-but-not-exact matches.
+// This is a driver-side port for question time only: a bounded 6-turn GLM-5.3
+// tool loop over the ingested session jsonl (the scratch sessions_dir written
+// at ingest time) whose verified span is prefixed to the question as
+// "Verified interaction evidence:". The core memory system and the normal
+// recall path are untouched, and every failure mode fails open to the normal
+// question prompt.
+
+const LMEV2_SPAN_VERIFY_MAX_TURNS: usize = 6;
+const LMEV2_SPAN_VERIFY_BUDGET_S: u64 = 240;
+const LMEV2_SPAN_VERIFY_SEARCH_LINES: usize = 20;
+const LMEV2_SPAN_VERIFY_STATE_CHARS: usize = 8_000;
+const LMEV2_SPAN_VERIFY_SUMMARY_CHARS: usize = 48_000;
+const LMEV2_SPAN_VERIFY_EVIDENCE_CHARS: usize = 8_000;
+const LMEV2_SPAN_VERIFY_TURN_TOKENS: f64 = 16_384.0;
+
+/// One recorded session as the span-verify tools see it: the Goal header plus
+/// every non-header event text (a "state" is one interaction step: URL,
+/// action, thought and the observed page tree).
+#[derive(Debug)]
+struct Lmev2TraceSession {
+    session_id: String,
+    goal: String,
+    states: Vec<String>,
+}
+
+#[derive(Debug)]
+struct Lmev2TraceStore {
+    sessions: Vec<Lmev2TraceSession>,
+}
+
+impl Lmev2TraceStore {
+    /// Load every `<session_id>.jsonl` from the scratch sessions dir written
+    /// at ingest time. Rows keep the import format; the first Goal-prefixed
+    /// row is the session header, every other row is one recorded state.
+    fn load(sessions_dir: &Path) -> Result<Lmev2TraceStore, String> {
+        let entries = std::fs::read_dir(sessions_dir).map_err(|error| {
+            format!(
+                "cannot read sessions dir {}: {error}",
+                sessions_dir.display()
+            )
+        })?;
+        let procedures_suffix =
+            format!(".{LME2_PROCEDURE_NOTES_SOURCE_SUFFIX}.jsonl");
+        let mut paths: Vec<PathBuf> = entries
+            .filter_map(|entry| entry.ok().map(|entry| entry.path()))
+            .filter(|path| {
+                // Session files only: the procedure-notes source rows share
+                // the dir but are distilled views, not recorded traces.
+                path.extension().and_then(|ext| ext.to_str()) == Some("jsonl")
+                    && !path.to_string_lossy().ends_with(&procedures_suffix)
+            })
+            .collect();
+        paths.sort();
+        let mut sessions = Vec::new();
+        for path in paths {
+            let session_id = path
+                .file_stem()
+                .and_then(|stem| stem.to_str())
+                .ok_or_else(|| format!("session file {} has no stem", path.display()))?
+                .to_string();
+            let body = std::fs::read_to_string(&path)
+                .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
+            let mut goal = String::new();
+            let mut states: Vec<String> = Vec::new();
+            let mut header_seen = false;
+            for (position, line) in body.lines().enumerate() {
+                if line.trim().is_empty() {
+                    continue;
+                }
+                let row: Value = serde_json::from_str(line).map_err(|error| {
+                    format!("{} line {}: {error}", path.display(), position + 1)
+                })?;
+                let text = row
+                    .get("message")
+                    .and_then(|message| message.get("content"))
+                    .and_then(Value::as_array)
+                    .map(|blocks| {
+                        blocks
+                            .iter()
+                            .filter_map(|block| block.get("text").and_then(Value::as_str))
+                            .collect::<Vec<&str>>()
+                            .join("")
+                    })
+                    .unwrap_or_default();
+                if !header_seen && text.starts_with("Goal:") {
+                    goal = lme2_notes_one_line(text.trim_end(), 400);
+                } else {
+                    states.push(text);
+                }
+                header_seen = true;
+            }
+            sessions.push(Lmev2TraceSession {
+                session_id,
+                goal,
+                states,
+            });
+        }
+        Ok(Lmev2TraceStore { sessions })
+    }
+
+    fn find(&self, session_id: &str) -> Option<&Lmev2TraceSession> {
+        self.sessions
+            .iter()
+            .find(|session| session.session_id == session_id)
+    }
+}
+
+/// First `Action: ...` line of a recorded state, if any.
+fn lmev2_state_action(state: &str) -> Option<String> {
+    state
+        .lines()
+        .find(|line| line.starts_with("Action: "))
+        .map(|line| line.to_string())
+}
+
+/// The three deterministic tools exposed to the GLM-5.3 span-verify loop.
+/// Pure functions over the trace store; no process spawn, no file writes.
+fn lmev2_span_tool_specs() -> Vec<pi_ai::types::Tool> {
+    vec![
+        pi_ai::types::Tool {
+            name: "read_summary".to_string(),
+            description: "One line per recorded session: id, state count, goal, first and \
+                last action. Call once to shortlist sessions before searching."
+                .to_string(),
+            parameters: json!({"type": "object", "properties": {}, "additionalProperties": false}),
+        },
+        pi_ai::types::Tool {
+            name: "search_trace".to_string(),
+            description: "Regex search over the lines of every recorded state (URL, Action, \
+                Thought, page tree). Returns matched lines prefixed with their \
+                `<session>:<state>` index; at most 20 lines. Scope one shortlisted session \
+                with \"session\". When results are truncated, narrow the pattern instead of \
+                paging."
+                .to_string(),
+            parameters: json!({
+                "type": "object",
+                "properties": {
+                    "pattern": {
+                        "type": "string",
+                        "description": "Rust regex applied per line; prefer literal distinctive strings",
+                    },
+                    "session": {
+                        "type": "string",
+                        "description": "Optional session id to scope the search to one session",
+                    },
+                    "max_lines": {
+                        "type": "integer",
+                        "description": "Optional result cap, 1-20 (default 20)",
+                    },
+                },
+                "required": ["pattern"],
+                "additionalProperties": false,
+            }),
+        },
+        pi_ai::types::Tool {
+            name: "get_state".to_string(),
+            description: "Full recorded text of ONE state (URL, Action, Thought, Observation \
+                page tree), given its `<session>:<state>` index from read_summary or \
+                search_trace."
+                .to_string(),
+            parameters: json!({
+                "type": "object",
+                "properties": {
+                    "index": {
+                        "type": "string",
+                        "description": "State index in the exact form <session>:<state>",
+                    },
+                },
+                "required": ["index"],
+                "additionalProperties": false,
+            }),
+        },
+    ]
+}
+
+struct Lmev2ToolOutcome {
+    output: String,
+    is_error: bool,
+    /// Canonical `<session>:<state>` index for successful get_state calls.
+    fetched_index: Option<String>,
+}
+
+fn lmev2_tool_error(output: String) -> Lmev2ToolOutcome {
+    Lmev2ToolOutcome {
+        output,
+        is_error: true,
+        fetched_index: None,
+    }
+}
+
+fn lmev2_run_span_tool(
+    store: &Lmev2TraceStore,
+    name: &str,
+    arguments: &Map<String, Value>,
+) -> Lmev2ToolOutcome {
+    match name {
+        "read_summary" => lmev2_span_read_summary(store),
+        "search_trace" => lmev2_span_search_trace(store, arguments),
+        "get_state" => lmev2_span_get_state(store, arguments),
+        other => lmev2_tool_error(format!(
+            "unknown tool {other:?}; available tools: read_summary, search_trace, get_state"
+        )),
+    }
+}
+
+fn lmev2_span_read_summary(store: &Lmev2TraceStore) -> Lmev2ToolOutcome {
+    if store.sessions.is_empty() {
+        return Lmev2ToolOutcome {
+            output: "(no recorded sessions)\n".to_string(),
+            is_error: false,
+            fetched_index: None,
+        };
+    }
+    let mut body = String::new();
+    let mut shown = 0usize;
+    for session in &store.sessions {
+        let first = session
+            .states
+            .iter()
+            .find_map(|state| lmev2_state_action(state))
+            .map(|action| lme2_notes_one_line(&action, 140))
+            .unwrap_or_else(|| "(none)".to_string());
+        let last = session
+            .states
+            .iter()
+            .rev()
+            .find_map(|state| lmev2_state_action(state))
+            .map(|action| lme2_notes_one_line(&action, 140))
+            .unwrap_or_else(|| "(none)".to_string());
+        let goal = if session.goal.is_empty() {
+            "(none)".to_string()
+        } else {
+            session.goal.clone()
+        };
+        let line = format!(
+            "{} | states={} | goal: {} | first: {} | last: {}\n",
+            session.session_id,
+            session.states.len(),
+            goal,
+            first,
+            last
+        );
+        if body.chars().count() + line.chars().count() > LMEV2_SPAN_VERIFY_SUMMARY_CHARS {
+            body.push_str(&format!(
+                "[summary truncated: {shown} of {} sessions shown]\n",
+                store.sessions.len()
+            ));
+            break;
+        }
+        body.push_str(&line);
+        shown += 1;
+    }
+    Lmev2ToolOutcome {
+        output: body,
+        is_error: false,
+        fetched_index: None,
+    }
+}
+
+fn lmev2_span_search_trace(
+    store: &Lmev2TraceStore,
+    arguments: &Map<String, Value>,
+) -> Lmev2ToolOutcome {
+    let Some(pattern) = arguments.get("pattern").and_then(Value::as_str) else {
+        return lmev2_tool_error(
+            "search_trace requires a non-empty string argument \"pattern\"".to_string(),
+        );
+    };
+    if pattern.trim().is_empty() {
+        return lmev2_tool_error("search_trace pattern must not be empty".to_string());
+    }
+    let regex = match regex::Regex::new(pattern) {
+        Ok(regex) => regex,
+        Err(error) => {
+            return lmev2_tool_error(format!(
+                "invalid regex {pattern:?}: {error}; fix the pattern"
+            ))
+        }
+    };
+    let max_lines = arguments
+        .get("max_lines")
+        .and_then(Value::as_u64)
+        .map(|value| (value as usize).clamp(1, LMEV2_SPAN_VERIFY_SEARCH_LINES))
+        .unwrap_or(LMEV2_SPAN_VERIFY_SEARCH_LINES);
+    let scoped: Vec<&Lmev2TraceSession> = match arguments.get("session").and_then(Value::as_str) {
+        None => store.sessions.iter().collect(),
+        Some(session_id) => match store.find(session_id) {
+            Some(session) => vec![session],
+            None => {
+                return lmev2_tool_error(format!(
+                    "unknown session {session_id:?}; use a session id from read_summary"
+                ))
+            }
+        },
+    };
+    let mut output = String::new();
+    let mut shown = 0usize;
+    let mut total = 0usize;
+    for session in scoped {
+        for (position, state) in session.states.iter().enumerate() {
+            for line in state.lines() {
+                if regex.is_match(line) {
+                    total += 1;
+                    if shown < max_lines {
+                        shown += 1;
+                        output.push_str(&format!(
+                            "{}:{} {}\n",
+                            session.session_id,
+                            position + 1,
+                            lme2_notes_one_line(line, 400)
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    if shown == 0 {
+        return Lmev2ToolOutcome {
+            output: "no matches; adjust the pattern or the session scope".to_string(),
+            is_error: false,
+            fetched_index: None,
+        };
+    }
+    let mut body = format!("showing {shown} of {total} match(es)\n");
+    body.push_str(&output);
+    if total > shown {
+        body.push_str("results truncated; narrow the pattern or scope one session\n");
+    }
+    Lmev2ToolOutcome {
+        output: body,
+        is_error: false,
+        fetched_index: None,
+    }
+}
+
+fn lmev2_span_get_state(
+    store: &Lmev2TraceStore,
+    arguments: &Map<String, Value>,
+) -> Lmev2ToolOutcome {
+    let Some(index) = arguments.get("index").and_then(Value::as_str) else {
+        return lmev2_tool_error(
+            "get_state requires a string argument \"index\" of the form <session>:<state>"
+                .to_string(),
+        );
+    };
+    let Some((session_id, ordinal)) = index.split_once(':') else {
+        return lmev2_tool_error(format!(
+            "index {index:?} must be <session>:<state>, e.g. 00c06bce:3"
+        ));
+    };
+    let Some(session) = store.find(session_id) else {
+        return lmev2_tool_error(format!(
+            "unknown session {session_id:?}; use a session id from read_summary"
+        ));
+    };
+    let Ok(position) = ordinal.trim().parse::<usize>() else {
+        return lmev2_tool_error(format!(
+            "state part of {index:?} must be a positive number"
+        ));
+    };
+    if position == 0 || position > session.states.len() {
+        return lmev2_tool_error(format!(
+            "state {position} out of range; session {session_id} has {} state(s)",
+            session.states.len()
+        ));
+    }
+    let state = &session.states[position - 1];
+    let body = if state.chars().count() > LMEV2_SPAN_VERIFY_STATE_CHARS {
+        let mut cut: String = state.chars().take(LMEV2_SPAN_VERIFY_STATE_CHARS).collect();
+        cut.push_str(&format!(
+            "…[state truncated at {} chars]",
+            LMEV2_SPAN_VERIFY_STATE_CHARS
+        ));
+        cut
+    } else {
+        state.clone()
+    };
+    Lmev2ToolOutcome {
+        output: format!(
+            "session {session_id} state {position} of {}\n{body}",
+            session.states.len()
+        ),
+        is_error: false,
+        fetched_index: Some(format!("{session_id}:{position}")),
+    }
+}
+
+/// Final-answer citation parse: the reply must carry a `<session>:<state>`
+/// index; a fetched index verifies, anything else fails open.
+enum Lmev2Citation {
+    Fetched(String),
+    NotFetched(String),
+    None,
+}
+
+fn lmev2_parse_citation(text: &str, fetched: &[String]) -> Lmev2Citation {
+    let Ok(citation) = regex::Regex::new(r"([A-Za-z0-9_-]+):(\d+)") else {
+        return Lmev2Citation::None;
+    };
+    let mut first: Option<String> = None;
+    for captures in citation.captures_iter(text) {
+        let index = format!("{}:{}", &captures[1], &captures[2]);
+        if fetched.iter().any(|seen| seen == &index) {
+            return Lmev2Citation::Fetched(index);
+        }
+        first.get_or_insert(index);
+    }
+    match first {
+        Some(index) => Lmev2Citation::NotFetched(index),
+        None => Lmev2Citation::None,
+    }
+}
+
+/// System prompt paraphrasing the AgentRunbook-C triage+exactness
+/// discipline: shortlist from summaries, scoped regex per session, verify ONE
+/// state, reject nearby-but-not-exact matches.
+fn lmev2_span_verify_system_prompt() -> String {
+    "You verify evidence for one question about past web-agent interaction \
+traces. You have at most 6 turns and exactly one tool call per turn.
+
+Discipline:
+1. Triage: call read_summary first. Shortlist the few sessions whose goal \
+plausibly matches the question. Do not spend turns re-reading summaries.
+2. Scoped search: search_trace with a regex scoped to one shortlisted session \
+at a time. Prefer literal, distinctive strings from the question (exact option \
+text, labels, field names) over broad words. When results are truncated, \
+narrow the pattern instead of paging.
+3. Verify ONE state: when a hit looks decisive, get_state its \
+<session>:<state> index and read the whole recorded state (URL, action, \
+thought, page tree). One verified state is enough.
+4. Reject nearby-but-not-exact matches: if the state does not contain the \
+exact value, element or outcome the question asks about, do not cite it. \
+Search again with a narrower pattern.
+5. Final answer: reply with ONLY the index of the single verified state, in \
+the exact form <session>:<state> (example: 00c06bce:3), and nothing else. You \
+may only cite a state you actually fetched with get_state during this loop. If \
+you cannot verify a state within the turn budget, reply with only: UNVERIFIED"
+        .to_string()
+}
+
+struct Lmev2SpanVerify {
+    /// Verified span text (session provenance header + verbatim state text)
+    /// prefixed to the question, or None to keep the normal prompt.
+    span: Option<String>,
+    record: Value,
+}
+
+impl Lmev2SpanVerify {
+    fn disabled() -> Lmev2SpanVerify {
+        Lmev2SpanVerify {
+            span: None,
+            record: json!({"enabled": false}),
+        }
+    }
+}
+
+/// The verified span rides along with the normal memory recall: the question
+/// (and its answer instruction) stays intact, the evidence is appended.
+fn lmev2_effective_question(
+    answer_instruction: &Option<String>,
+    question: &str,
+    verified_span: Option<&str>,
+) -> String {
+    let base = match answer_instruction {
+        Some(instruction) => format!("{instruction}\n\nQuestion: {question}"),
+        None => question.to_string(),
+    };
+    match verified_span {
+        Some(span) => format!("{base}\n\nVerified interaction evidence: {span}"),
+        None => base,
+    }
+}
+
+async fn run_lmev2_span_verify(
+    scratch: &EnvScratch,
+    question: &QuestionSpec,
+    registry: &Arc<Mutex<ModelRegistry>>,
+    model: &pi_ai::types::Model,
+) -> Lmev2SpanVerify {
+    let started = Instant::now();
+    let fail = |outcome: &str, detail: String| Lmev2SpanVerify {
+        span: None,
+        record: json!({
+            "enabled": true,
+            "outcome": outcome,
+            "detail": detail,
+            "sessions": 0,
+            "latency_ms": started.elapsed().as_millis() as u64,
+        }),
+    };
+    let store = match Lmev2TraceStore::load(&scratch.sessions_dir) {
+        Ok(store) => store,
+        Err(error) => return fail("store_error", error),
+    };
+    if store.sessions.is_empty() {
+        return fail(
+            "no_sessions",
+            "the scratch sessions dir has no session jsonl to verify against".to_string(),
+        );
+    }
+    let auth = match registry_auth(registry.clone(), model.clone()).await {
+        Ok(auth) => auth,
+        Err(error) => return fail("auth_error", error),
+    };
+    let (api_key, headers) = auth;
+    lmev2_span_verify_loop(&store, &question.question, model, api_key, headers, started).await
+}
+
+/// The bounded tool loop: at most 6 turns, one tool call per turn, a 240s
+/// wall-clock cap, and fail-open semantics on every error (no span, question
+/// keeps its normal prompt and memory recall).
+async fn lmev2_span_verify_loop(
+    store: &Lmev2TraceStore,
+    question_text: &str,
+    model: &pi_ai::types::Model,
+    api_key: String,
+    headers: Option<indexmap::IndexMap<String, String>>,
+    started: Instant,
+) -> Lmev2SpanVerify {
+    let deadline = started + Duration::from_secs(LMEV2_SPAN_VERIFY_BUDGET_S);
+    let tools = lmev2_span_tool_specs();
+    let mut messages: Vec<pi_ai::types::Message> = vec![pi_ai::types::Message::User(
+        pi_ai::types::UserMessage::new(
+            pi_ai::types::UserContent::Text(question_text.to_string()),
+            0,
+        ),
+    )];
+    let mut fetched: Vec<String> = Vec::new();
+    let mut tool_calls: Vec<Value> = Vec::new();
+    let mut usage_input = 0.0f64;
+    let mut usage_output = 0.0f64;
+    let mut turns = 0usize;
+    let mut outcome = "turn_budget_exhausted";
+    let mut detail = Value::Null;
+    let mut verified_index: Option<String> = None;
+
+    for _ in 0..LMEV2_SPAN_VERIFY_MAX_TURNS {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            outcome = "timeout";
+            detail = json!(format!(
+                "{}s wall-clock budget exhausted",
+                LMEV2_SPAN_VERIFY_BUDGET_S
+            ));
+            break;
+        }
+        let context = pi_ai::types::Context {
+            system_prompt: Some(lmev2_span_verify_system_prompt()),
+            messages: messages.clone(),
+            tools: Some(tools.clone()),
+        };
+        let options = pi_ai::types::SimpleStreamOptions {
+            stream: pi_ai::types::StreamOptions {
+                max_tokens: Some(LMEV2_SPAN_VERIFY_TURN_TOKENS),
+                api_key: Some(api_key.clone()),
+                headers: headers.clone(),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let reply = match tokio::time::timeout(
+            remaining,
+            pi_ai::stream::complete_simple(model, &context, Some(&options)),
+        )
+        .await
+        {
+            Ok(reply) => reply,
+            Err(_) => {
+                outcome = "timeout";
+                detail = json!(format!(
+                    "{}s wall-clock budget exhausted",
+                    LMEV2_SPAN_VERIFY_BUDGET_S
+                ));
+                break;
+            }
+        };
+        turns += 1;
+        usage_input += reply.usage.input + reply.usage.cache_read + reply.usage.cache_write;
+        usage_output += reply.usage.output;
+        if reply.stop_reason.as_str() == "error" || reply.stop_reason.as_str() == "aborted" {
+            outcome = "provider_error";
+            detail = json!(reply
+                .error_message
+                .clone()
+                .unwrap_or_else(|| format!("stop reason {}", reply.stop_reason)));
+            break;
+        }
+        // Own the call data before the assistant message is moved into the
+        // conversation history.
+        let calls: Vec<(String, String, Map<String, Value>)> = reply
+            .content
+            .iter()
+            .filter_map(|block| block.as_tool_call())
+            .map(|call| (call.id.clone(), call.name.clone(), call.arguments.clone()))
+            .collect();
+        if let Some((call_id, call_name, call_arguments)) = calls.first() {
+            // Bound: one tool call per turn; extra calls are ignored.
+            let extra_ignored = calls.len().saturating_sub(1);
+            let result = lmev2_run_span_tool(store, call_name, call_arguments);
+            if let Some(index) = &result.fetched_index {
+                if !fetched.contains(index) {
+                    fetched.push(index.clone());
+                }
+            }
+            tool_calls.push(json!({
+                "turn": turns,
+                "tool": call_name,
+                "arguments": call_arguments,
+                "is_error": result.is_error,
+                "extra_ignored": extra_ignored,
+            }));
+            let tool_result = pi_ai::types::ToolResultMessage::new(
+                call_id.clone(),
+                call_name.clone(),
+                vec![pi_ai::types::ImageOrTextContent::Text(
+                    pi_ai::types::TextContent::new(result.output),
+                )],
+                result.is_error,
+                0,
+            );
+            messages.push(pi_ai::types::Message::Assistant(reply));
+            messages.push(pi_ai::types::Message::ToolResult(tool_result));
+            continue;
+        }
+        let text: String = reply
+            .content
+            .iter()
+            .filter_map(|block| block.as_text().map(|text| text.text.clone()))
+            .collect::<Vec<String>>()
+            .join("");
+        let text = text.trim();
+        if text.is_empty() {
+            outcome = "empty_final_turn";
+            detail = json!(format!(
+                "turn {turns} produced no tool call and no text (stop reason {})",
+                reply.stop_reason
+            ));
+            break;
+        }
+        if text.eq_ignore_ascii_case("unverified") {
+            outcome = "unverified";
+            break;
+        }
+        match lmev2_parse_citation(text, &fetched) {
+            Lmev2Citation::Fetched(index) => {
+                verified_index = Some(index);
+                outcome = "verified";
+                break;
+            }
+            Lmev2Citation::NotFetched(index) => {
+                outcome = "unverified_citation";
+                detail = json!(format!(
+                    "final answer cites {index} which was never fetched with get_state"
+                ));
+                break;
+            }
+            Lmev2Citation::None => {
+                outcome = "invalid_citation";
+                detail = json!(format!(
+                    "final answer has no <session>:<state> index: {}",
+                    lme2_notes_one_line(text, 200)
+                ));
+                break;
+            }
+        }
+    }
+
+    let span = verified_index.as_ref().and_then(|index| {
+        let (session_id, ordinal) = index.split_once(':')?;
+        let session = store.find(session_id)?;
+        let position = ordinal.parse::<usize>().ok()?;
+        session.states.get(position.checked_sub(1)?).map(|state| {
+            let body: String = state.chars().take(LMEV2_SPAN_VERIFY_EVIDENCE_CHARS).collect();
+            format!("[session {session_id} state {position}]\n{body}")
+        })
+    });
+    let record = json!({
+        "enabled": true,
+        "outcome": outcome,
+        "detail": detail,
+        "turns": turns,
+        "max_turns": LMEV2_SPAN_VERIFY_MAX_TURNS,
+        "budget_s": LMEV2_SPAN_VERIFY_BUDGET_S,
+        "sessions": store.sessions.len(),
+        "tool_calls": tool_calls,
+        "fetched_states": fetched,
+        "cited_index": verified_index,
+        "span_chars": span.as_ref().map(|span| span.chars().count()).unwrap_or(0),
+        "usage": {"input": usage_input, "output": usage_output},
+        "latency_ms": started.elapsed().as_millis() as u64,
+    });
+    Lmev2SpanVerify { span, record }
+}
+
 struct IngestOutcome {
     record: Value,
 }
@@ -2581,6 +3318,14 @@ async fn run_question(
         }
         model.max_tokens = f64::from(cap);
     }
+
+    // LME-v2 span verify (fail-open): one bounded GLM-5.3 tool loop over the
+    // ingested session jsonl before the question prompt is assembled.
+    let span_verify = if manifest.settings.lmev2_span_verify {
+        run_lmev2_span_verify(scratch, question, &registry, &model).await
+    } else {
+        Lmev2SpanVerify::disabled()
+    };
     let creation = answer_session_creation(&manifest.settings, model)?;
 
     let services = create_agent_session_services(CreateAgentSessionServicesOptions {
@@ -2644,12 +3389,11 @@ async fn run_question(
         );
     }
 
-    let effective_question = match &manifest.settings.answer_instruction {
-        Some(instruction) => {
-            format!("{instruction}\n\nQuestion: {}", question.question)
-        }
-        None => question.question.clone(),
-    };
+    let effective_question = lmev2_effective_question(
+        &manifest.settings.answer_instruction,
+        &question.question,
+        span_verify.span.as_deref(),
+    );
     let branch_before_prompt = session
         .session_manager
         .lock()
@@ -2691,6 +3435,8 @@ async fn run_question(
     if let Some(Value::Object(fields)) = declaration {
         record.as_object_mut().expect("question record").extend(fields);
     }
+
+    record["lmev2_span_verify"] = span_verify.record;
 
     // Snapshot completed diagnostics even if the answer failed or timed out.
     // In-flight helpers may still be unobserved; never interpret that as zero.
@@ -5285,4 +6031,508 @@ print(json.dumps(env, ensure_ascii=False))
         assert_eq!(note.kind.as_str(), "memory");
         assert!(note.content.contains("Precondition: refund page"));
     }
+
+    // --- LME-v2 span verify (lmev2SpanVerify) ---
+
+    fn span_verify_env() -> EnvSpec {
+        serde_json::from_value(json!({
+            "env_id": "span-env", "family": "lme_v2",
+            "sessions": [{
+                "session_id": "sess1",
+                "events": [
+                    {"role": "assistant",
+                     "text": "Goal: check the shipping options\nOutcome: success\nStart: https://shop.invalid/"},
+                    {"role": "user",
+                     "text": "URL: https://shop.invalid/\nObservation:\n[1] heading 'Shipping'"},
+                    {"role": "user",
+                     "text": "URL: https://shop.invalid/cart\nAction: click('42')\nThought: open the cart\nObservation:\n[42] button 'Checkout', visible"},
+                    {"role": "user",
+                     "text": "URL: https://shop.invalid/done\nAction: send_msg_to_user(\"done\")\nObservation:\n[1] StaticText 'Order placed'"},
+                ],
+            }],
+        }))
+        .unwrap()
+    }
+
+    fn span_verify_store(temp: &tempfile::TempDir) -> Lmev2TraceStore {
+        let env = span_verify_env();
+        let scratch = EnvScratch::prepare(temp.path(), &env).unwrap();
+        scratch
+            .write_session_files(&env, CaptureMode::LegacyUndated, true)
+            .unwrap();
+        Lmev2TraceStore::load(&scratch.sessions_dir).unwrap()
+    }
+
+    fn tool_args(value: Value) -> Map<String, Value> {
+        match value {
+            Value::Object(map) => map,
+            _ => panic!("synthetic tool arguments must be an object"),
+        }
+    }
+
+    #[test]
+    fn lmev2_span_verify_settings_default_aliases_and_validation() {
+        let mut value = declared_manifest_fixture();
+        let manifest = parse_manifest_value(&value).unwrap();
+        assert!(!manifest.settings.lmev2_span_verify);
+        assert!(!ManifestSettings::default().lmev2_span_verify);
+        for key in ["lmev2SpanVerify", "lmev2_span_verify"] {
+            let settings: ManifestSettings = serde_json::from_value(json!({key: true})).unwrap();
+            assert!(settings.lmev2_span_verify, "alias {key}");
+        }
+
+        // The control requires the lme_v2 family on every environment.
+        value["settings"] = json!({"lmev2SpanVerify": true});
+        let error = parse_manifest_value(&value).unwrap_err();
+        assert!(error.contains("lme_v2"), "{error}");
+        value["envs"][0]["family"] = json!("lme_v2");
+        parse_manifest_value(&value).unwrap();
+
+        // The session jsonl source requires ingestion.
+        value["settings"] = json!({"lmev2SpanVerify": true, "skipIngest": true});
+        let error = parse_manifest_value(&value).unwrap_err();
+        assert!(error.contains("skipIngest"), "{error}");
+
+        // Disabled by default, the control never constrains other families.
+        value["settings"] = json!({"skipIngest": true});
+        value["envs"][0].as_object_mut().unwrap().remove("family");
+        parse_manifest_value(&value).unwrap();
+    }
+
+    #[test]
+    fn lmev2_span_store_loads_sessions_and_tools_dispatch_with_validation() {
+        let temp = tempfile::tempdir().unwrap();
+        let store = span_verify_store(&temp);
+        assert_eq!(store.sessions.len(), 1);
+        let session = store.find("sess1").unwrap();
+        assert_eq!(session.states.len(), 3);
+        assert!(session.goal.contains("check the shipping options"));
+
+        // Tool schemas: fixed names, required arguments, property types.
+        let tools = lmev2_span_tool_specs();
+        let names: Vec<&str> = tools.iter().map(|tool| tool.name.as_str()).collect();
+        assert_eq!(names, ["read_summary", "search_trace", "get_state"]);
+        for tool in &tools {
+            assert_eq!(tool.parameters["type"], "object");
+        }
+        assert_eq!(tools[1].parameters["required"], json!(["pattern"]));
+        assert_eq!(tools[2].parameters["required"], json!(["index"]));
+        assert_eq!(tools[1].parameters["properties"]["pattern"]["type"], "string");
+        assert_eq!(tools[2].parameters["properties"]["index"]["type"], "string");
+
+        // Summary: state count, goal, first and last action.
+        let summary = lmev2_run_span_tool(&store, "read_summary", &Map::new());
+        assert!(!summary.is_error);
+        assert!(summary
+            .output
+            .contains("sess1 | states=3 | goal: Goal: check the shipping options"));
+        assert!(summary.output.contains("first: Action: click('42')"));
+        assert!(summary
+            .output
+            .contains("last: Action: send_msg_to_user(\"done\")"));
+
+        // Search: index-prefixed matches and a clean no-match message.
+        let search = lmev2_run_span_tool(
+            &store,
+            "search_trace",
+            &tool_args(json!({"pattern": "Checkout"})),
+        );
+        assert!(!search.is_error);
+        assert!(search.output.contains("showing 1 of 1 match(es)"));
+        assert!(search.output.contains("sess1:2 [42] button 'Checkout', visible"));
+        let none = lmev2_run_span_tool(
+            &store,
+            "search_trace",
+            &tool_args(json!({"pattern": "no-such-thing"})),
+        );
+        assert!(!none.is_error);
+        assert!(none.output.contains("no matches"));
+
+        // Argument validation fails closed with guidance, not panics.
+        assert!(lmev2_run_span_tool(&store, "search_trace", &Map::new()).is_error);
+        let bad_regex = lmev2_run_span_tool(
+            &store,
+            "search_trace",
+            &tool_args(json!({"pattern": "("})),
+        );
+        assert!(bad_regex.is_error);
+        assert!(bad_regex.output.contains("invalid regex"));
+        let unknown_session = lmev2_run_span_tool(
+            &store,
+            "search_trace",
+            &tool_args(json!({"pattern": "x", "session": "nope"})),
+        );
+        assert!(unknown_session.is_error);
+        assert!(unknown_session.output.contains("unknown session"));
+        assert!(lmev2_run_span_tool(&store, "nope", &Map::new()).is_error);
+
+        // get_state: valid index returns the verbatim state plus the
+        // canonical fetched marker; every malformed index fails closed.
+        let state = lmev2_run_span_tool(&store, "get_state", &tool_args(json!({"index": "sess1:2"})));
+        assert!(!state.is_error);
+        assert_eq!(state.fetched_index.as_deref(), Some("sess1:2"));
+        assert!(state.output.contains("session sess1 state 2 of 3"));
+        assert!(state.output.contains("click('42')"));
+        assert!(state.output.contains("[42] button 'Checkout', visible"));
+        for bad in ["sess1", "sess1:0", "sess1:9", "nope:1", "sess1:x"] {
+            let error = lmev2_run_span_tool(&store, "get_state", &tool_args(json!({"index": bad})));
+            assert!(error.is_error, "index {bad:?} must fail");
+            assert!(error.fetched_index.is_none());
+        }
+    }
+
+    #[test]
+    fn lmev2_span_search_caps_lines_and_clamps_requested_limits() {
+        let store = Lmev2TraceStore {
+            sessions: vec![Lmev2TraceSession {
+                session_id: "big".to_string(),
+                goal: "Goal: many states".to_string(),
+                states: (0..50)
+                    .map(|index| {
+                        format!("Action: step {index}\nObservation:\n[target] row {index}")
+                    })
+                    .collect(),
+            }],
+        };
+        let default = lmev2_run_span_tool(
+            &store,
+            "search_trace",
+            &tool_args(json!({"pattern": "target"})),
+        );
+        assert!(!default.is_error);
+        assert!(default.output.contains("showing 20 of 50 match(es)"));
+        assert!(default
+            .output
+            .contains("results truncated; narrow the pattern or scope one session"));
+        assert_eq!(
+            default
+                .output
+                .lines()
+                .filter(|line| line.starts_with("big:"))
+                .count(),
+            20
+        );
+        // The requested cap clamps into 1-20 instead of trusting the model.
+        let inflated = lmev2_run_span_tool(
+            &store,
+            "search_trace",
+            &tool_args(json!({"pattern": "target", "max_lines": 500})),
+        );
+        assert!(inflated.output.contains("showing 20 of 50 match(es)"));
+        let narrowed = lmev2_run_span_tool(
+            &store,
+            "search_trace",
+            &tool_args(json!({"pattern": "target", "max_lines": 2})),
+        );
+        assert!(narrowed.output.contains("showing 2 of 50 match(es)"));
+    }
+
+    fn span_tool_call_message(
+        id: &str,
+        name: &str,
+        arguments: Value,
+    ) -> pi_ai::types::AssistantMessage {
+        let mut message = pi_ai::types::AssistantMessage::new("fixture", "fixture", "fixture", 0);
+        message.content = vec![pi_ai::types::ContentBlock::ToolCall(pi_ai::types::ToolCall::new(
+            id,
+            name,
+            tool_args(arguments),
+        ))];
+        message
+    }
+
+    fn span_double_tool_call_message() -> pi_ai::types::AssistantMessage {
+        let mut message = pi_ai::types::AssistantMessage::new("fixture", "fixture", "fixture", 0);
+        message.content = vec![
+            pi_ai::types::ContentBlock::ToolCall(pi_ai::types::ToolCall::new(
+                "call-1",
+                "read_summary",
+                Map::new(),
+            )),
+            pi_ai::types::ContentBlock::ToolCall(pi_ai::types::ToolCall::new(
+                "call-2",
+                "get_state",
+                tool_args(json!({"index": "sess1:1"})),
+            )),
+        ];
+        message
+    }
+
+    fn span_text_message(text: &str) -> pi_ai::types::AssistantMessage {
+        let mut message = pi_ai::types::AssistantMessage::new("fixture", "fixture", "fixture", 0);
+        message.content =
+            vec![pi_ai::types::ContentBlock::Text(pi_ai::types::TextContent::new(text))];
+        message
+    }
+
+    fn span_error_message(detail: &str) -> pi_ai::types::AssistantMessage {
+        let mut message = span_text_message("");
+        message.stop_reason = "error".to_string();
+        message.error_message = Some(detail.to_string());
+        message
+    }
+
+    fn span_empty_length_message() -> pi_ai::types::AssistantMessage {
+        let mut message = span_text_message("   ");
+        message.stop_reason = "length".to_string();
+        message
+    }
+
+    /// Registers a mock provider that replays scripted assistant messages and
+    /// records every context the loop sends.
+    fn register_span_mock(
+        responses: Vec<pi_ai::types::AssistantMessage>,
+    ) -> (
+        String,
+        Arc<Mutex<Vec<pi_ai::types::Context>>>,
+    ) {
+        use pi_ai::api_registry::{register_api_provider_simple, ApiProviderSimple};
+        use pi_ai::utils::event_stream::AssistantMessageEventStream;
+
+        let api = format!("lmev2-span-fixture-{}", uuid::Uuid::new_v4());
+        let queue = Arc::new(Mutex::new(std::collections::VecDeque::from(responses)));
+        let captured = Arc::new(Mutex::new(Vec::<pi_ai::types::Context>::new()));
+        let captured_stream = captured.clone();
+        register_api_provider_simple(
+            ApiProviderSimple {
+                api: api.clone(),
+                stream: Arc::new(|_, _, _| panic!("unexpected base stream")),
+                stream_simple: Arc::new(move |_model, context, _options| {
+                    captured_stream.lock().unwrap().push(context.clone());
+                    let message = queue
+                        .lock()
+                        .unwrap()
+                        .pop_front()
+                        .expect("unexpected extra completion");
+                    let stream = AssistantMessageEventStream::new();
+                    stream.push(pi_ai::types::AssistantMessageEvent::Done {
+                        reason: message.stop_reason.clone(),
+                        message,
+                    });
+                    stream
+                }),
+                compact: None,
+                supports_compaction: None,
+            },
+            Some(api.clone()),
+        );
+        (api, captured)
+    }
+
+    fn span_mock_model(api: &str) -> pi_ai::types::Model {
+        pi_ai::types::Model::new(api, api, api, api, "https://fixture.invalid")
+    }
+
+    #[tokio::test]
+    async fn lmev2_span_verify_loop_bounds_turns_and_one_tool_call_per_turn() {
+        // The mock always requests a tool, so the loop must stop at exactly 6
+        // turns. The first turn requests two calls; only the first may run.
+        let responses = vec![
+            span_double_tool_call_message(),
+            span_tool_call_message("call-3", "read_summary", json!({})),
+            span_tool_call_message("call-4", "read_summary", json!({})),
+            span_tool_call_message("call-5", "read_summary", json!({})),
+            span_tool_call_message("call-6", "read_summary", json!({})),
+            span_tool_call_message("call-7", "read_summary", json!({})),
+        ];
+        let (api, captured) = register_span_mock(responses);
+        let model = span_mock_model(&api);
+        let temp = tempfile::tempdir().unwrap();
+        let store = span_verify_store(&temp);
+        let outcome = lmev2_span_verify_loop(
+            &store,
+            "What is the checkout button?",
+            &model,
+            "fixture-key".to_string(),
+            None,
+            Instant::now(),
+        )
+        .await;
+        assert!(outcome.span.is_none(), "no span without a final answer");
+        assert_eq!(outcome.record["outcome"], "turn_budget_exhausted");
+        assert_eq!(outcome.record["turns"], 6);
+        assert_eq!(outcome.record["max_turns"], 6);
+        let calls = outcome.record["tool_calls"].as_array().unwrap();
+        assert_eq!(calls.len(), 6, "one executed tool call per turn");
+        assert_eq!(calls[0]["tool"], "read_summary");
+        assert_eq!(calls[0]["extra_ignored"], 1, "second call ignored");
+        assert_eq!(calls[1]["extra_ignored"], 0);
+        assert_eq!(calls[5]["extra_ignored"], 0);
+        // The loop asked the mock exactly six times, tools attached.
+        let contexts = captured.lock().unwrap();
+        assert_eq!(contexts.len(), 6);
+        assert!(contexts.iter().all(|context| context
+            .tools
+            .as_ref()
+            .map(|tools| tools.len() == 3)
+            .unwrap_or(false)));
+        assert!(contexts
+            .iter()
+            .all(|context| context
+                .system_prompt
+                .as_deref()
+                .unwrap_or("")
+                .contains("Verify ONE state")));
+        pi_ai::api_registry::unregister_api_providers(&api);
+    }
+
+    #[tokio::test]
+    async fn lmev2_span_verify_loop_verifies_one_fetched_state() {
+        let responses = vec![
+            span_tool_call_message("call-1", "read_summary", json!({})),
+            span_tool_call_message(
+                "call-2",
+                "search_trace",
+                json!({"pattern": "Checkout", "session": "sess1"}),
+            ),
+            span_tool_call_message("call-3", "get_state", json!({"index": "sess1:2"})),
+            span_text_message("sess1:2"),
+        ];
+        let (api, captured) = register_span_mock(responses);
+        let model = span_mock_model(&api);
+        let temp = tempfile::tempdir().unwrap();
+        let store = span_verify_store(&temp);
+        let outcome = lmev2_span_verify_loop(
+            &store,
+            "Which button did the agent click to check out?",
+            &model,
+            "fixture-key".to_string(),
+            None,
+            Instant::now(),
+        )
+        .await;
+        assert_eq!(outcome.record["outcome"], "verified");
+        assert_eq!(outcome.record["turns"], 4);
+        assert_eq!(outcome.record["cited_index"], "sess1:2");
+        assert_eq!(outcome.record["fetched_states"], json!(["sess1:2"]));
+        let span = outcome.span.expect("verified span");
+        assert!(span.contains("[session sess1 state 2]"));
+        assert!(span.contains("click('42')"));
+        assert!(span.contains("[42] button 'Checkout', visible"));
+        // The loop fed the tool results back into the conversation.
+        let contexts = captured.lock().unwrap();
+        assert_eq!(contexts.len(), 4);
+        assert_eq!(contexts[0].messages.len(), 1);
+        assert!(matches!(
+            &contexts[0].messages[0],
+            pi_ai::types::Message::User(user)
+                if user.content.text().contains("check out")
+        ));
+        let last = contexts.last().unwrap();
+        assert!(last
+            .messages
+            .iter()
+            .any(|message| message.as_tool_result().is_some()));
+        pi_ai::api_registry::unregister_api_providers(&api);
+    }
+
+    #[tokio::test]
+    async fn lmev2_span_verify_loop_fails_open_on_provider_error_and_bad_citations() {
+        let temp = tempfile::tempdir().unwrap();
+        let store = span_verify_store(&temp);
+
+        // Provider error: no span, the outcome records the failure.
+        let (api, _) = register_span_mock(vec![span_error_message("synthetic provider failure")]);
+        let model = span_mock_model(&api);
+        let outcome =
+            lmev2_span_verify_loop(&store, "q?", &model, "k".to_string(), None, Instant::now())
+                .await;
+        assert!(outcome.span.is_none());
+        assert_eq!(outcome.record["outcome"], "provider_error");
+        assert_eq!(outcome.record["detail"], "synthetic provider failure");
+        assert_eq!(outcome.record["turns"], 1);
+        pi_ai::api_registry::unregister_api_providers(&api);
+
+        // Citing a state that was never fetched fails open.
+        let (api, _) = register_span_mock(vec![span_text_message("sess1:3")]);
+        let model = span_mock_model(&api);
+        let outcome =
+            lmev2_span_verify_loop(&store, "q?", &model, "k".to_string(), None, Instant::now())
+                .await;
+        assert!(outcome.span.is_none());
+        assert_eq!(outcome.record["outcome"], "unverified_citation");
+        pi_ai::api_registry::unregister_api_providers(&api);
+
+        // An explicit UNVERIFIED reply ends the loop without a span.
+        let (api, _) = register_span_mock(vec![span_text_message("UNVERIFIED")]);
+        let model = span_mock_model(&api);
+        let outcome =
+            lmev2_span_verify_loop(&store, "q?", &model, "k".to_string(), None, Instant::now())
+                .await;
+        assert!(outcome.span.is_none());
+        assert_eq!(outcome.record["outcome"], "unverified");
+        pi_ai::api_registry::unregister_api_providers(&api);
+
+        // A blank final turn (length stop, no text) fails open.
+        let (api, _) = register_span_mock(vec![span_empty_length_message()]);
+        let model = span_mock_model(&api);
+        let outcome =
+            lmev2_span_verify_loop(&store, "q?", &model, "k".to_string(), None, Instant::now())
+                .await;
+        assert!(outcome.span.is_none());
+        assert_eq!(outcome.record["outcome"], "empty_final_turn");
+        pi_ai::api_registry::unregister_api_providers(&api);
+
+        // A final answer with no <session>:<state> index at all fails open.
+        let (api, _) = register_span_mock(vec![span_text_message("I could not find it.")]);
+        let model = span_mock_model(&api);
+        let outcome =
+            lmev2_span_verify_loop(&store, "q?", &model, "k".to_string(), None, Instant::now())
+                .await;
+        assert!(outcome.span.is_none());
+        assert_eq!(outcome.record["outcome"], "invalid_citation");
+        pi_ai::api_registry::unregister_api_providers(&api);
+    }
+
+    #[test]
+    fn lmev2_effective_question_appends_verified_evidence_and_fails_open() {
+        let instruction = "Answer directly.".to_string();
+        // Fail-open: without a span the prompt is exactly the legacy prompt.
+        assert_eq!(
+            lmev2_effective_question(&Some(instruction.clone()), "Q?", None),
+            format!("{instruction}\n\nQuestion: Q?")
+        );
+        assert_eq!(lmev2_effective_question(&None, "Q?", None), "Q?");
+        // With a span the question stays intact and the evidence is appended.
+        let with_span = lmev2_effective_question(
+            &Some(instruction.clone()),
+            "Q?",
+            Some("[session sess1 state 2]\nAction: click('42')"),
+        );
+        assert!(with_span.starts_with(&format!("{instruction}\n\nQuestion: Q?")));
+        assert!(with_span.contains("Verified interaction evidence: [session sess1 state 2]"));
+        assert!(with_span.contains("click('42')"));
+    }
+
+    #[tokio::test]
+    async fn run_lmev2_span_verify_fails_open_without_session_files() {
+        let temp = tempfile::tempdir().unwrap();
+        let env = span_verify_env();
+        let scratch = EnvScratch::prepare(temp.path(), &env).unwrap();
+        let registry = Arc::new(Mutex::new(ModelRegistry::create(
+            AuthStorage::create(
+                Some(scratch.agent_dir.join("auth.json").to_string_lossy().into_owned()),
+                None,
+            ),
+            Some(
+                scratch
+                    .agent_dir
+                    .join("models.json")
+                    .to_string_lossy()
+                    .into_owned(),
+            ),
+        )));
+        let model = span_mock_model("fixture-unused");
+        let question: QuestionSpec =
+            serde_json::from_value(json!({"qid": "q1", "env_id": "span-env", "question": "Q?"}))
+                .unwrap();
+        // No session files were written, so the loop is skipped fail-open.
+        let outcome = run_lmev2_span_verify(&scratch, &question, &registry, &model).await;
+        assert!(outcome.span.is_none());
+        assert_eq!(outcome.record["outcome"], "no_sessions");
+        // A missing sessions dir is the same fail-open story.
+        let missing = Lmev2TraceStore::load(&temp.path().join("missing")).unwrap_err();
+        assert!(missing.contains("cannot read sessions dir"), "{missing}");
+    }
+
 }
