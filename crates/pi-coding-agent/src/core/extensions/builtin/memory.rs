@@ -922,7 +922,7 @@ fn create_memory_extension_impl(
                                             "Query: {normal_query}\n\nCandidates:\n{}",
                                             candidates.join("\n")
                                         ),
-                                        512.0,
+                                        2048.0,
                                     ).await;
                                     rerank_report = result.report;
                                     if let Some(text) = result.text {
@@ -2347,7 +2347,7 @@ mod recall_runtime_tests {
             }
             let expected: Vec<_> = [
                 (distill, RECALL_DISTILL_SYSTEM, 64.0),
-                (rerank, RECALL_RERANK_SYSTEM, 512.0),
+                (rerank, RECALL_RERANK_SYSTEM, 2048.0),
             ]
             .into_iter()
             .filter(|(enabled, _, _)| *enabled)
