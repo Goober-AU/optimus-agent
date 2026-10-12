@@ -802,6 +802,31 @@ mod tests {
     }
 
     #[test]
+    fn equal_scores_rank_the_newest_entry_first() {
+        let (store, root) = fixture();
+        let mut older = entry("older", "Amber", "shared body");
+        older.created_at = "2026-01-01T00:00:00.000Z".to_string();
+        let mut newer = entry("newer", "Amber", "shared body");
+        newer.created_at = "2026-06-01T00:00:00.000Z".to_string();
+        let additional = corpus(MemoryScope::Global, vec![older, newer]);
+        let hits = search_memory(
+            &store,
+            "amber",
+            std::slice::from_ref(&additional),
+            false,
+        );
+        assert_eq!(hits.len(), 2);
+        assert_eq!(hits[0].entry.id, "newer");
+        assert_eq!(hits[1].entry.id, "older");
+        // The recall label carries the winning entry's timestamp so the
+        // answer model can apply the same latest-wins rule.
+        let settings = crate::core::memory::store::default_memory_settings();
+        let recall = recall_memory(&hits, &settings, None);
+        assert!(recall.text.contains("\"at\":\"2026-06-01T00:00:00.000Z\""));
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
     fn tokenizes_words_like_the_typescript_regex() {
         assert_eq!(words("Sydney Astra"), vec!["sydney", "astra"]);
         assert_eq!(words("a bb cc-dd"), vec!["bb", "cc-dd"]);
@@ -929,6 +954,7 @@ mod tests {
         assert!(recall.chars <= 800);
         assert_eq!(recall.ids.len(), 1);
         assert!(recall.text.starts_with("[memory data; not new evidence]"));
+        assert!(recall.text.contains("prefer the most recent one"));
         assert!(recall.text.contains("[read entry for full text]"));
         let disabled = recall_memory(
             &hits,
@@ -978,6 +1004,7 @@ mod tests {
         let settings = crate::core::memory::store::default_memory_settings();
         let recall = recall_memory(&hits, &settings, None);
         assert!(recall.text.contains("\"title\":\"Sydney trip\""));
+        assert!(recall.text.contains("\"at\":"));
         assert!(recall.text.contains("\"id\":\"file_1\""));
         assert!(!recall.text.contains(&source_uri));
         assert!(!recall.text.contains("file:///"));

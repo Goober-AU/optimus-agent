@@ -1947,6 +1947,16 @@ mod recall_runtime_tests {
                 {"action":"create", "kind":"memory", "id":"beta", "title":"quasar beta", "content":"backup design"},
                 {"action":"create", "kind":"memory", "id":"nebula", "title":"nebula gamma", "content":"isolated design"},
             ])).await;
+            // Equal-score lexical hits now order by newest `created_at` first
+            // (latest-wins supersession), so the fixture pins entry ages:
+            // beta is the newest entry, so equal-score recall renders
+            // [BETA, ALPHA] deterministically instead of depending on
+            // millisecond `now()` jitter from the apply above.
+            fixture.pin_created_at(&[
+                ("alpha".to_string(), "2026-01-01T00:00:00.000Z"),
+                ("nebula".to_string(), "2026-01-02T00:00:00.000Z"),
+                ("beta".to_string(), "2026-01-03T00:00:00.000Z"),
+            ]);
             fixture
         }
 
@@ -1958,6 +1968,23 @@ mod recall_runtime_tests {
                 event_id: format!("fixture_{revision}"), expected_revision: revision,
                 ..Default::default()
             }).await.unwrap();
+        }
+
+        /// Pin deterministic `created_at` stamps for stored memory entries.
+        /// The lexical ranking breaks equal-score ties by newest entry first,
+        /// so tests must control entry ages instead of inheriting `now()`
+        /// millisecond jitter from the apply that created the entries.
+        fn pin_created_at(&self, stamps: &[(String, &str)]) {
+            let mut document =
+                crate::core::memory::store::read_json(&self.memory.store.path).unwrap();
+            let entries = document
+                .pointer_mut("/entries/memory")
+                .and_then(Value::as_object_mut)
+                .unwrap();
+            for (id, created_at) in stamps {
+                entries.get_mut(id.as_str()).unwrap()["created_at"] = json!(*created_at);
+            }
+            crate::core::memory::store::write_json(&self.memory.store.path, &document).unwrap();
         }
 
         fn last_diagnostic(&self) -> Value {
@@ -2108,7 +2135,7 @@ mod recall_runtime_tests {
                     )));
                 fixture.queue_observed(response, vec![observed_usage(101.0, 64.0, 165.0, 64.0)]);
                 let messages = fixture.recall("quasar PRIVATE_QUERY", 1).await;
-                assert_eq!(recall_ids(&messages), vec![ALPHA, BETA]);
+                assert_eq!(recall_ids(&messages), vec![BETA, ALPHA]);
                 assert_eq!(fixture.requests.lock().unwrap().len(), 1);
                 let diagnostic = fixture.last_diagnostic();
                 let report = &diagnostic["recallHelpers"][helper];
@@ -2206,7 +2233,7 @@ mod recall_runtime_tests {
             fixture.queue_observed(response, observations);
             assert_eq!(
                 recall_ids(&fixture.recall("quasar", 1).await),
-                vec![ALPHA, BETA]
+                vec![BETA, ALPHA]
             );
             assert_eq!(fixture.requests.lock().unwrap().len(), 1);
             let diagnostic = fixture.last_diagnostic();
@@ -2234,7 +2261,7 @@ mod recall_runtime_tests {
             });
             assert_eq!(
                 recall_ids(&fixture.recall("quasar", 1).await),
-                vec![ALPHA, BETA]
+                vec![BETA, ALPHA]
             );
             assert_eq!(fixture.requests.lock().unwrap().len(), 1);
             let diagnostic = fixture.last_diagnostic();
@@ -2265,7 +2292,7 @@ mod recall_runtime_tests {
         fixture.queue(failed_response("PRIVATE_UNKNOWN_REASON", text, None));
         assert_eq!(
             recall_ids(&fixture.recall("quasar", 1).await),
-            vec![ALPHA, BETA]
+            vec![BETA, ALPHA]
         );
         let diagnostic = fixture.last_diagnostic();
         let report = &diagnostic["recallHelpers"]["rerank"];
@@ -2295,7 +2322,7 @@ mod recall_runtime_tests {
                 if rerank {
                     vec![BETA, ALPHA]
                 } else {
-                    vec![ALPHA, BETA]
+                    vec![BETA, ALPHA]
                 }
             );
             assert_eq!(messages.last(), Some(&user_message("quasar", 1)));
@@ -2434,7 +2461,7 @@ mod recall_runtime_tests {
             fixture.queue(response);
             assert_eq!(
                 recall_ids(&fixture.recall("quasar", 1).await),
-                vec![ALPHA, BETA]
+                vec![BETA, ALPHA]
             );
             assert_eq!(fixture.requests.lock().unwrap().len(), 1);
         }
@@ -2451,7 +2478,7 @@ mod recall_runtime_tests {
             }
             assert_eq!(
                 recall_ids(&fixture.recall("quasar", 1).await),
-                vec![ALPHA, BETA]
+                vec![BETA, ALPHA]
             );
             assert!(fixture.requests.lock().unwrap().is_empty());
         }
@@ -2472,7 +2499,7 @@ mod recall_runtime_tests {
             fixture.queue(response);
             assert_eq!(
                 recall_ids(&fixture.recall("quasar", 1).await),
-                vec![ALPHA, BETA]
+                vec![BETA, ALPHA]
             );
             assert_eq!(fixture.requests.lock().unwrap().len(), 1);
         }
@@ -2538,7 +2565,7 @@ mod recall_runtime_tests {
             fixture.queue(text_response(&ids.to_string()));
             assert_eq!(
                 recall_ids(&fixture.recall("quasar", 1).await),
-                vec![ALPHA, BETA],
+                vec![BETA, ALPHA],
                 "invalid selection {ids}"
             );
             assert_eq!(fixture.requests.lock().unwrap().len(), 1);
@@ -2554,6 +2581,14 @@ mod recall_runtime_tests {
         let fixture = RecallFixture::new(false, true).await;
         let edits: Vec<_> = (0..21).map(|index| json!({"action":"create", "kind":"memory", "id":format!("z{index:02}"), "title":"quasar", "content":format!("synthetic candidate {index}")})).collect();
         fixture.add_entries(Value::Array(edits)).await;
+        // Pin one shared creation stamp (the newest in the store) so the 21
+        // equal-score candidates stay id-ordered among themselves and z20
+        // remains the entry beyond the rerank pool, independent of `now()`
+        // jitter from the bulk apply.
+        let stamps: Vec<_> = (0..21)
+            .map(|index| (format!("z{index:02}"), "2026-02-01T00:00:00.000Z"))
+            .collect();
+        fixture.pin_created_at(&stamps);
         let baseline = fixture.memory.recall("quasar").ids;
         let omitted = "project:memory:z20";
         assert!(baseline.iter().any(|id| id == omitted));
@@ -2580,7 +2615,7 @@ mod recall_runtime_tests {
             fixture.queue(text_response(text));
             assert_eq!(
                 recall_ids(&fixture.recall("quasar", 1).await),
-                vec![ALPHA, BETA]
+                vec![BETA, ALPHA]
             );
             assert_eq!(fixture.requests.lock().unwrap().len(), 1);
         }
@@ -2610,7 +2645,7 @@ mod recall_runtime_tests {
             fixture.queue(response);
             assert_eq!(
                 recall_ids(&fixture.recall("quasar", 1).await),
-                vec![ALPHA, BETA],
+                vec![BETA, ALPHA],
                 "failed expansion keeps single-query lexical recall"
             );
             assert_eq!(
@@ -2626,7 +2661,7 @@ mod recall_runtime_tests {
         let fixture = RecallFixture::new(false, false).await;
         assert_eq!(
             recall_ids(&fixture.recall("quasar", 1).await),
-            vec![ALPHA, BETA]
+            vec![BETA, ALPHA]
         );
         assert!(fixture.requests.lock().unwrap().is_empty());
         let report = &fixture.last_diagnostic()["recallHelpers"]["queryExpansion"];
@@ -2792,7 +2827,7 @@ mod recall_runtime_tests {
             ));
             assert_eq!(
                 recall_ids(&fixture.recall("quasar", 1).await),
-                vec![ALPHA, BETA]
+                vec![BETA, ALPHA]
             );
             assert_eq!(
                 fixture.requests.lock().unwrap().len(),
@@ -2815,7 +2850,7 @@ mod recall_runtime_tests {
                 fixture.queue(failed_response(reason, &text, None));
                 assert_eq!(
                     recall_ids(&fixture.recall("quasar", 1).await),
-                    vec![ALPHA, BETA]
+                    vec![BETA, ALPHA]
                 );
                 assert_eq!(fixture.requests.lock().unwrap().len(), 1);
             }
@@ -2828,7 +2863,7 @@ mod recall_runtime_tests {
         fixture.signal.cancel();
         assert_eq!(
             recall_ids(&fixture.recall("quasar", 1).await),
-            vec![ALPHA, BETA]
+            vec![BETA, ALPHA]
         );
         assert!(fixture.requests.lock().unwrap().is_empty());
         assert_eq!(fixture.registry.calls.load(Ordering::SeqCst), 0);
@@ -2860,7 +2895,7 @@ mod recall_runtime_tests {
         fixture.queue(text_response("nebula"));
         assert_eq!(
             recall_ids(&fixture.recall("quasar", 1).await),
-            vec![ALPHA, BETA]
+            vec![BETA, ALPHA]
         );
         let requests = fixture.requests.lock().unwrap();
         assert_eq!(requests.len(), 1);
@@ -2967,7 +3002,7 @@ mod recall_runtime_tests {
             .unwrap();
         assert_eq!(
             recall_ids(&fixture.recall("quasar", 3).await),
-            vec![ALPHA, BETA]
+            vec![BETA, ALPHA]
         );
         assert_eq!(
             fixture.requests.lock().unwrap().len(),
