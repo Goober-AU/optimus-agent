@@ -1,0 +1,4628 @@
+{
+ "schema": "memory-bench-scores/1",
+ "bench": "longmemeval",
+ "judge_profile": "official-lme-v1",
+ "run_file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\runs\\lme_s_full_smoke5_v1\\run.jsonl",
+ "run": {
+  "run_id": "lme_s_full_smoke5_v1",
+  "variant": "improved",
+  "benchmark": "longmemeval"
+ },
+ "overall": {
+  "n": 500,
+  "n_flagged": 495,
+  "mean_score": 0.004,
+  "acc_ge_0.5": 0.004,
+  "wilson95_lo": 0.0011,
+  "wilson95_hi": 0.0145,
+  "mean_judge_latency_ms": 1239.8
+ },
+ "by_category": {
+  "knowledge-update": {
+   "n": 78,
+   "n_flagged": 76,
+   "mean_score": 0.0,
+   "acc_ge_0.5": 0.0,
+   "wilson95_lo": 0.0,
+   "wilson95_hi": 0.0469,
+   "mean_judge_latency_ms": 1103.5
+  },
+  "multi-session": {
+   "n": 133,
+   "n_flagged": 131,
+   "mean_score": 0.0075,
+   "acc_ge_0.5": 0.0075,
+   "wilson95_lo": 0.0013,
+   "wilson95_hi": 0.0414,
+   "mean_judge_latency_ms": 1395.5
+  },
+  "single-session-assistant": {
+   "n": 56,
+   "n_flagged": 56,
+   "mean_score": 0.0,
+   "acc_ge_0.5": 0.0,
+   "wilson95_lo": 0.0,
+   "wilson95_hi": 0.0642,
+   "mean_judge_latency_ms": null
+  },
+  "single-session-preference": {
+   "n": 30,
+   "n_flagged": 30,
+   "mean_score": 0.0,
+   "acc_ge_0.5": 0.0,
+   "wilson95_lo": 0.0,
+   "wilson95_hi": 0.1135,
+   "mean_judge_latency_ms": null
+  },
+  "single-session-user": {
+   "n": 70,
+   "n_flagged": 69,
+   "mean_score": 0.0143,
+   "acc_ge_0.5": 0.0143,
+   "wilson95_lo": 0.0025,
+   "wilson95_hi": 0.0766,
+   "mean_judge_latency_ms": 1201.0
+  },
+  "temporal-reasoning": {
+   "n": 133,
+   "n_flagged": 133,
+   "mean_score": 0.0,
+   "acc_ge_0.5": 0.0,
+   "wilson95_lo": 0.0,
+   "wilson95_hi": 0.0281,
+   "mean_judge_latency_ms": null
+  }
+ },
+ "counts": {
+  "questions_total": 500,
+  "records": 5,
+  "duplicate_qids_in_run": 0,
+  "questions_without_record": 495,
+  "flagged": 495
+ },
+ "judge_stats": {
+  "requests": 0,
+  "cache_hits": 5,
+  "retries": 0,
+  "failures": 0
+ },
+ "lme_v2_unknown": null,
+ "eval_wall_s": 0.0,
+ "results": [
+  {
+   "qid": "001be529",
+   "env_id": "001be529",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 1.0,
+   "flag": null,
+   "label": true,
+   "judge_raw": "yes",
+   "judge": "longmemeval",
+   "prompt_variant": "single-session-user",
+   "abstention": false,
+   "judge_latency_ms": 1201,
+   "judge_profile": "official-lme-v1",
+   "driver_latency_ms": 7388
+  },
+  {
+   "qid": "00ca467f",
+   "env_id": "00ca467f",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": null,
+   "label": false,
+   "judge_raw": "No",
+   "judge": "longmemeval",
+   "prompt_variant": "multi-session",
+   "abstention": false,
+   "judge_latency_ms": 1015,
+   "judge_profile": "official-lme-v1",
+   "driver_latency_ms": 14534
+  },
+  {
+   "qid": "0100672e",
+   "env_id": "0100672e",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 1.0,
+   "flag": null,
+   "label": true,
+   "judge_raw": "Yes",
+   "judge": "longmemeval",
+   "prompt_variant": "multi-session",
+   "abstention": false,
+   "judge_latency_ms": 1776,
+   "judge_profile": "official-lme-v1",
+   "driver_latency_ms": 14580
+  },
+  {
+   "qid": "01493427",
+   "env_id": "01493427",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": null,
+   "label": false,
+   "judge_raw": "no",
+   "judge": "longmemeval",
+   "prompt_variant": "knowledge-update",
+   "abstention": false,
+   "judge_latency_ms": 861,
+   "judge_profile": "official-lme-v1",
+   "driver_latency_ms": 9190
+  },
+  {
+   "qid": "031748ae",
+   "env_id": "031748ae",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": null,
+   "label": false,
+   "judge_raw": "no",
+   "judge": "longmemeval",
+   "prompt_variant": "knowledge-update",
+   "abstention": false,
+   "judge_latency_ms": 1346,
+   "judge_profile": "official-lme-v1",
+   "driver_latency_ms": 64871
+  },
+  {
+   "qid": "031748ae_abs",
+   "env_id": "031748ae_abs",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "06878be2",
+   "env_id": "06878be2",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "06db6396",
+   "env_id": "06db6396",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "06f04340",
+   "env_id": "06f04340",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "07741c44",
+   "env_id": "07741c44",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "07741c45",
+   "env_id": "07741c45",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "078150f1",
+   "env_id": "078150f1",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "07b6f563",
+   "env_id": "07b6f563",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0862e8bf",
+   "env_id": "0862e8bf",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0862e8bf_abs",
+   "env_id": "0862e8bf_abs",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "08e075c7",
+   "env_id": "08e075c7",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "08f4fc43",
+   "env_id": "08f4fc43",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0977f2af",
+   "env_id": "0977f2af",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "099778bb",
+   "env_id": "099778bb",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "09ba9854",
+   "env_id": "09ba9854",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "09ba9854_abs",
+   "env_id": "09ba9854_abs",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "09d032c9",
+   "env_id": "09d032c9",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0a34ad58",
+   "env_id": "0a34ad58",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0a995998",
+   "env_id": "0a995998",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0bb5a684",
+   "env_id": "0bb5a684",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0bc8ad92",
+   "env_id": "0bc8ad92",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0bc8ad93",
+   "env_id": "0bc8ad93",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0db4c65d",
+   "env_id": "0db4c65d",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0ddfec37",
+   "env_id": "0ddfec37",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0ddfec37_abs",
+   "env_id": "0ddfec37_abs",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0e4e4c46",
+   "env_id": "0e4e4c46",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0e5e2d1a",
+   "env_id": "0e5e2d1a",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0ea62687",
+   "env_id": "0ea62687",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0edc2aef",
+   "env_id": "0edc2aef",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "0f05491a",
+   "env_id": "0f05491a",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "10d9b85a",
+   "env_id": "10d9b85a",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "10e09553",
+   "env_id": "10e09553",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "118b2229",
+   "env_id": "118b2229",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1192316e",
+   "env_id": "1192316e",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "129d1232",
+   "env_id": "129d1232",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1568498a",
+   "env_id": "1568498a",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "15745da0",
+   "env_id": "15745da0",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "15745da0_abs",
+   "env_id": "15745da0_abs",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "157a136e",
+   "env_id": "157a136e",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "16c90bf4",
+   "env_id": "16c90bf4",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "184da446",
+   "env_id": "184da446",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "18bc8abd",
+   "env_id": "18bc8abd",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "18dcd5a5",
+   "env_id": "18dcd5a5",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1903aded",
+   "env_id": "1903aded",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "195a1a1b",
+   "env_id": "195a1a1b",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "19b5f2b3",
+   "env_id": "19b5f2b3",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "19b5f2b3_abs",
+   "env_id": "19b5f2b3_abs",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1a1907b4",
+   "env_id": "1a1907b4",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1a8a66a6",
+   "env_id": "1a8a66a6",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1b9b7252",
+   "env_id": "1b9b7252",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1c0ddc50",
+   "env_id": "1c0ddc50",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1c549ce4",
+   "env_id": "1c549ce4",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1cea1afa",
+   "env_id": "1cea1afa",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1d4da289",
+   "env_id": "1d4da289",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1d4e3b97",
+   "env_id": "1d4e3b97",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1da05512",
+   "env_id": "1da05512",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1de5cff2",
+   "env_id": "1de5cff2",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1e043500",
+   "env_id": "1e043500",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1f2b8d4f",
+   "env_id": "1f2b8d4f",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "1faac195",
+   "env_id": "1faac195",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2133c1b5",
+   "env_id": "2133c1b5",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2133c1b5_abs",
+   "env_id": "2133c1b5_abs",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "21436231",
+   "env_id": "21436231",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "21d02d0d",
+   "env_id": "21d02d0d",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "22d2cb42",
+   "env_id": "22d2cb42",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2311e44b",
+   "env_id": "2311e44b",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2311e44b_abs",
+   "env_id": "2311e44b_abs",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2318644b",
+   "env_id": "2318644b",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "25e5aa4f",
+   "env_id": "25e5aa4f",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2698e78f",
+   "env_id": "2698e78f",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2698e78f_abs",
+   "env_id": "2698e78f_abs",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "26bdc477",
+   "env_id": "26bdc477",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "27016adc",
+   "env_id": "27016adc",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2788b940",
+   "env_id": "2788b940",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "28bcfaac",
+   "env_id": "28bcfaac",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "28dc39ac",
+   "env_id": "28dc39ac",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "29f2956b",
+   "env_id": "29f2956b",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "29f2956b_abs",
+   "env_id": "29f2956b_abs",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2a1811e2",
+   "env_id": "2a1811e2",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2b8f3739",
+   "env_id": "2b8f3739",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2bf43736",
+   "env_id": "2bf43736",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2c63a862",
+   "env_id": "2c63a862",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2ce6a0f2",
+   "env_id": "2ce6a0f2",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2e6d26dc",
+   "env_id": "2e6d26dc",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2ebe6c90",
+   "env_id": "2ebe6c90",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "2ebe6c92",
+   "env_id": "2ebe6c92",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "311778f1",
+   "env_id": "311778f1",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "32260d93",
+   "env_id": "32260d93",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "3249768e",
+   "env_id": "3249768e",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "352ab8bd",
+   "env_id": "352ab8bd",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "35a27287",
+   "env_id": "35a27287",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "36580ce8",
+   "env_id": "36580ce8",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "36b9f61e",
+   "env_id": "36b9f61e",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "370a8ff4",
+   "env_id": "370a8ff4",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "37d43f65",
+   "env_id": "37d43f65",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "37f165cf",
+   "env_id": "37f165cf",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "38146c39",
+   "env_id": "38146c39",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "3a704032",
+   "env_id": "3a704032",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "3b6f954b",
+   "env_id": "3b6f954b",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "3ba21379",
+   "env_id": "3ba21379",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "3c1045c8",
+   "env_id": "3c1045c8",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "3d86fd0a",
+   "env_id": "3d86fd0a",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "3e321797",
+   "env_id": "3e321797",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "3f1e9474",
+   "env_id": "3f1e9474",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "3fdac837",
+   "env_id": "3fdac837",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "3fe836c9",
+   "env_id": "3fe836c9",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "4100d0a0",
+   "env_id": "4100d0a0",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "41275add",
+   "env_id": "41275add",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "41698283",
+   "env_id": "41698283",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "42ec0761",
+   "env_id": "42ec0761",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "4388e9dd",
+   "env_id": "4388e9dd",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "45dc21b6",
+   "env_id": "45dc21b6",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "46a3abf7",
+   "env_id": "46a3abf7",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "488d3006",
+   "env_id": "488d3006",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "4adc0475",
+   "env_id": "4adc0475",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "4b24c848",
+   "env_id": "4b24c848",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "4baee567",
+   "env_id": "4baee567",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "4bc144e2",
+   "env_id": "4bc144e2",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "4c36ccef",
+   "env_id": "4c36ccef",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "4d6b87c8",
+   "env_id": "4d6b87c8",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "4dfccbf7",
+   "env_id": "4dfccbf7",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "4dfccbf8",
+   "env_id": "4dfccbf8",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "4f54b7c9",
+   "env_id": "4f54b7c9",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "4fd1909e",
+   "env_id": "4fd1909e",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "5025383b",
+   "env_id": "5025383b",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "505af2f5",
+   "env_id": "505af2f5",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "50635ada",
+   "env_id": "50635ada",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "51a45a95",
+   "env_id": "51a45a95",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "51b23612",
+   "env_id": "51b23612",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "51c32626",
+   "env_id": "51c32626",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "54026fce",
+   "env_id": "54026fce",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "545bd2b5",
+   "env_id": "545bd2b5",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "55241a1f",
+   "env_id": "55241a1f",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "561fabcd",
+   "env_id": "561fabcd",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "577d4d32",
+   "env_id": "577d4d32",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "57f827a0",
+   "env_id": "57f827a0",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "5809eb10",
+   "env_id": "5809eb10",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "5831f84d",
+   "env_id": "5831f84d",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "58470ed2",
+   "env_id": "58470ed2",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "58bf7951",
+   "env_id": "58bf7951",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "58ef2f1c",
+   "env_id": "58ef2f1c",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "59524333",
+   "env_id": "59524333",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "5a4f22c0",
+   "env_id": "5a4f22c0",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "5a7937c8",
+   "env_id": "5a7937c8",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "5c40ec5b",
+   "env_id": "5c40ec5b",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "5d3d2817",
+   "env_id": "5d3d2817",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "5e1b23de",
+   "env_id": "5e1b23de",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "60036106",
+   "env_id": "60036106",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "60159905",
+   "env_id": "60159905",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "603deb26",
+   "env_id": "603deb26",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "60472f9c",
+   "env_id": "60472f9c",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6071bd76",
+   "env_id": "6071bd76",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "60bf93ed",
+   "env_id": "60bf93ed",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "60bf93ed_abs",
+   "env_id": "60bf93ed_abs",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "60d45044",
+   "env_id": "60d45044",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "618f13b2",
+   "env_id": "618f13b2",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "61f8c8f8",
+   "env_id": "61f8c8f8",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6222b6eb",
+   "env_id": "6222b6eb",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6456829e",
+   "env_id": "6456829e",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6456829e_abs",
+   "env_id": "6456829e_abs",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "65240037",
+   "env_id": "65240037",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6613b389",
+   "env_id": "6613b389",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "66f24dbb",
+   "env_id": "66f24dbb",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "67e0d0f2",
+   "env_id": "67e0d0f2",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "681a1674",
+   "env_id": "681a1674",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "69fee5aa",
+   "env_id": "69fee5aa",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6a1eabeb",
+   "env_id": "6a1eabeb",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6a27ffc2",
+   "env_id": "6a27ffc2",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6ade9755",
+   "env_id": "6ade9755",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6ae235be",
+   "env_id": "6ae235be",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6aeb4375",
+   "env_id": "6aeb4375",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6aeb4375_abs",
+   "env_id": "6aeb4375_abs",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6b168ec8",
+   "env_id": "6b168ec8",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6b7dfb22",
+   "env_id": "6b7dfb22",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6c49646a",
+   "env_id": "6c49646a",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6cb6f249",
+   "env_id": "6cb6f249",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6d550036",
+   "env_id": "6d550036",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6e984301",
+   "env_id": "6e984301",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6e984302",
+   "env_id": "6e984302",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "6f9b354f",
+   "env_id": "6f9b354f",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "7024f17c",
+   "env_id": "7024f17c",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "70b3e69b",
+   "env_id": "70b3e69b",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "71017276",
+   "env_id": "71017276",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "71017277",
+   "env_id": "71017277",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "71315a70",
+   "env_id": "71315a70",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "7161e7e2",
+   "env_id": "7161e7e2",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "71a3fd6b",
+   "env_id": "71a3fd6b",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "720133ac",
+   "env_id": "720133ac",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "726462e0",
+   "env_id": "726462e0",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "72e3ee87",
+   "env_id": "72e3ee87",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "73d42213",
+   "env_id": "73d42213",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "7401057b",
+   "env_id": "7401057b",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "7405e8b1",
+   "env_id": "7405e8b1",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "7527f7e2",
+   "env_id": "7527f7e2",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "75499fd8",
+   "env_id": "75499fd8",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "75832dbd",
+   "env_id": "75832dbd",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "75f70248",
+   "env_id": "75f70248",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "76d63226",
+   "env_id": "76d63226",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "778164c6",
+   "env_id": "778164c6",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "77eafa52",
+   "env_id": "77eafa52",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "7a87bd0c",
+   "env_id": "7a87bd0c",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "7a8d0b71",
+   "env_id": "7a8d0b71",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "7e00a6cb",
+   "env_id": "7e00a6cb",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "7e974930",
+   "env_id": "7e974930",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8077ef71",
+   "env_id": "8077ef71",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "80ec1f4f",
+   "env_id": "80ec1f4f",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "80ec1f4f_abs",
+   "env_id": "80ec1f4f_abs",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "81507db6",
+   "env_id": "81507db6",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "830ce83f",
+   "env_id": "830ce83f",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8464fc84",
+   "env_id": "8464fc84",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "852ce960",
+   "env_id": "852ce960",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "853b0a1d",
+   "env_id": "853b0a1d",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8550ddae",
+   "env_id": "8550ddae",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "85fa3a3f",
+   "env_id": "85fa3a3f",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "86b68151",
+   "env_id": "86b68151",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "86f00804",
+   "env_id": "86f00804",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8752c811",
+   "env_id": "8752c811",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "87f22b4a",
+   "env_id": "87f22b4a",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "88432d0a",
+   "env_id": "88432d0a",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "88432d0a_abs",
+   "env_id": "88432d0a_abs",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "89527b6b",
+   "env_id": "89527b6b",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8979f9ec",
+   "env_id": "8979f9ec",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "89941a93",
+   "env_id": "89941a93",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "89941a94",
+   "env_id": "89941a94",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8a137a7f",
+   "env_id": "8a137a7f",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8a2466db",
+   "env_id": "8a2466db",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8aef76bc",
+   "env_id": "8aef76bc",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8b9d4367",
+   "env_id": "8b9d4367",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8c18457d",
+   "env_id": "8c18457d",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8cf4d046",
+   "env_id": "8cf4d046",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8cf51dda",
+   "env_id": "8cf51dda",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8e91e7d9",
+   "env_id": "8e91e7d9",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8e9d538c",
+   "env_id": "8e9d538c",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8ebdbe50",
+   "env_id": "8ebdbe50",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "8fb83627",
+   "env_id": "8fb83627",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "91b15a6e",
+   "env_id": "91b15a6e",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "92a0aa75",
+   "env_id": "92a0aa75",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "945e3d21",
+   "env_id": "945e3d21",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "94f70d80",
+   "env_id": "94f70d80",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "95228167",
+   "env_id": "95228167",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "95bcc1c8",
+   "env_id": "95bcc1c8",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "982b5123",
+   "env_id": "982b5123",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "982b5123_abs",
+   "env_id": "982b5123_abs",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "993da5e2",
+   "env_id": "993da5e2",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "9a707b81",
+   "env_id": "9a707b81",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "9a707b82",
+   "env_id": "9a707b82",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "9aaed6a3",
+   "env_id": "9aaed6a3",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "9bbe84a2",
+   "env_id": "9bbe84a2",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "9d25d4e0",
+   "env_id": "9d25d4e0",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "9ea5eabc",
+   "env_id": "9ea5eabc",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "9ee3ecd6",
+   "env_id": "9ee3ecd6",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a06e4cfe",
+   "env_id": "a06e4cfe",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a08a253f",
+   "env_id": "a08a253f",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a11281a2",
+   "env_id": "a11281a2",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a1cc6108",
+   "env_id": "a1cc6108",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a1eacc2a",
+   "env_id": "a1eacc2a",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a2f3aa27",
+   "env_id": "a2f3aa27",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a3045048",
+   "env_id": "a3045048",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a3332713",
+   "env_id": "a3332713",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a346bb18",
+   "env_id": "a346bb18",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a3838d2b",
+   "env_id": "a3838d2b",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a40e080f",
+   "env_id": "a40e080f",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a4996e51",
+   "env_id": "a4996e51",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a82c026e",
+   "env_id": "a82c026e",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a89d7624",
+   "env_id": "a89d7624",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a96c20ee",
+   "env_id": "a96c20ee",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a96c20ee_abs",
+   "env_id": "a96c20ee_abs",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "a9f6b44c",
+   "env_id": "a9f6b44c",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "aae3761f",
+   "env_id": "aae3761f",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "ac031881",
+   "env_id": "ac031881",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "ad7109d1",
+   "env_id": "ad7109d1",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "af082822",
+   "env_id": "af082822",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "af8d2e46",
+   "env_id": "af8d2e46",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "afdc33df",
+   "env_id": "afdc33df",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "affe2881",
+   "env_id": "affe2881",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "b01defab",
+   "env_id": "b01defab",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "b0479f84",
+   "env_id": "b0479f84",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "b29f3365",
+   "env_id": "b29f3365",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "b320f3f8",
+   "env_id": "b320f3f8",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "b3c15d39",
+   "env_id": "b3c15d39",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "b46e15ed",
+   "env_id": "b46e15ed",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "b46e15ee",
+   "env_id": "b46e15ee",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "b5ef892d",
+   "env_id": "b5ef892d",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "b6019101",
+   "env_id": "b6019101",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "b6025781",
+   "env_id": "b6025781",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "b759caee",
+   "env_id": "b759caee",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "b86304ba",
+   "env_id": "b86304ba",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "b9cfe692",
+   "env_id": "b9cfe692",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "ba358f49",
+   "env_id": "ba358f49",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "ba358f49_abs",
+   "env_id": "ba358f49_abs",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "ba61f0b9",
+   "env_id": "ba61f0b9",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "bb7c3b45",
+   "env_id": "bb7c3b45",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "bbf86515",
+   "env_id": "bbf86515",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "bc149d6b",
+   "env_id": "bc149d6b",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "bc8a6e93",
+   "env_id": "bc8a6e93",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "bc8a6e93_abs",
+   "env_id": "bc8a6e93_abs",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "bcbe585f",
+   "env_id": "bcbe585f",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "bf659f65",
+   "env_id": "bf659f65",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c14c00dd",
+   "env_id": "c14c00dd",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c18a7dc8",
+   "env_id": "c18a7dc8",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c19f7a0b",
+   "env_id": "c19f7a0b",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c2ac3c61",
+   "env_id": "c2ac3c61",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c4a1ceb8",
+   "env_id": "c4a1ceb8",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c4ea545c",
+   "env_id": "c4ea545c",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c4f10528",
+   "env_id": "c4f10528",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c5e8278d",
+   "env_id": "c5e8278d",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c6853660",
+   "env_id": "c6853660",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c7cf7dfd",
+   "env_id": "c7cf7dfd",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c7dc5443",
+   "env_id": "c7dc5443",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c8090214",
+   "env_id": "c8090214",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c8090214_abs",
+   "env_id": "c8090214_abs",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c8c3f81d",
+   "env_id": "c8c3f81d",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c8f1aeed",
+   "env_id": "c8f1aeed",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c960da58",
+   "env_id": "c960da58",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "c9f37c46",
+   "env_id": "c9f37c46",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "caf03d32",
+   "env_id": "caf03d32",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "caf9ead2",
+   "env_id": "caf9ead2",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "cc06de0d",
+   "env_id": "cc06de0d",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "cc539528",
+   "env_id": "cc539528",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "cc5ded98",
+   "env_id": "cc5ded98",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "cc6d1ec1",
+   "env_id": "cc6d1ec1",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "ccb36322",
+   "env_id": "ccb36322",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "ce6d2d27",
+   "env_id": "ce6d2d27",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "ceb54acb",
+   "env_id": "ceb54acb",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "cf22b7bf",
+   "env_id": "cf22b7bf",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "d01c6aa8",
+   "env_id": "d01c6aa8",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "d23cf73b",
+   "env_id": "d23cf73b",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "d24813b1",
+   "env_id": "d24813b1",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "d3ab962e",
+   "env_id": "d3ab962e",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "d52b4f67",
+   "env_id": "d52b4f67",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "d596882b",
+   "env_id": "d596882b",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "d6062bb9",
+   "env_id": "d6062bb9",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "d6233ab6",
+   "env_id": "d6233ab6",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "d682f1a2",
+   "env_id": "d682f1a2",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "d7c942c3",
+   "env_id": "d7c942c3",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "d851d5ba",
+   "env_id": "d851d5ba",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "d905b33f",
+   "env_id": "d905b33f",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "dad224aa",
+   "env_id": "dad224aa",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "db467c8c",
+   "env_id": "db467c8c",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "dc439ea3",
+   "env_id": "dc439ea3",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "dccbc061",
+   "env_id": "dccbc061",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "dcfa8644",
+   "env_id": "dcfa8644",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "dd2973ad",
+   "env_id": "dd2973ad",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "dfde3500",
+   "env_id": "dfde3500",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e01b8e2f",
+   "env_id": "e01b8e2f",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e25c3b8d",
+   "env_id": "e25c3b8d",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e3038f8c",
+   "env_id": "e3038f8c",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e3fc4d6e",
+   "env_id": "e3fc4d6e",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e47becba",
+   "env_id": "e47becba",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e48988bc",
+   "env_id": "e48988bc",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e493bb7c",
+   "env_id": "e493bb7c",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e4e14d04",
+   "env_id": "e4e14d04",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e56a43b9",
+   "env_id": "e56a43b9",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e5ba910e_abs",
+   "env_id": "e5ba910e_abs",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e6041065",
+   "env_id": "e6041065",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e61a7584",
+   "env_id": "e61a7584",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e66b632c",
+   "env_id": "e66b632c",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e831120c",
+   "env_id": "e831120c",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e8a79c70",
+   "env_id": "e8a79c70",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e9327a54",
+   "env_id": "e9327a54",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "e982271f",
+   "env_id": "e982271f",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "eac54adc",
+   "env_id": "eac54adc",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "eac54add",
+   "env_id": "eac54add",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "eaca4986",
+   "env_id": "eaca4986",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "eace081b",
+   "env_id": "eace081b",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "ec81a493",
+   "env_id": "ec81a493",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "ed4ddc30",
+   "env_id": "ed4ddc30",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "edced276",
+   "env_id": "edced276",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "edced276_abs",
+   "env_id": "edced276_abs",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "eeda8a6d",
+   "env_id": "eeda8a6d",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "eeda8a6d_abs",
+   "env_id": "eeda8a6d_abs",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "ef66a6e5",
+   "env_id": "ef66a6e5",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "ef9cf60a",
+   "env_id": "ef9cf60a",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "efc3f7c2",
+   "env_id": "efc3f7c2",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "f0853d11",
+   "env_id": "f0853d11",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "f0e564bc",
+   "env_id": "f0e564bc",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "f35224e0",
+   "env_id": "f35224e0",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "f4f1d8a4",
+   "env_id": "f4f1d8a4",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "f4f1d8a4_abs",
+   "env_id": "f4f1d8a4_abs",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "f523d9fe",
+   "env_id": "f523d9fe",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "f685340e",
+   "env_id": "f685340e",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "f685340e_abs",
+   "env_id": "f685340e_abs",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "f8c5f88b",
+   "env_id": "f8c5f88b",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "f9e8c073",
+   "env_id": "f9e8c073",
+   "category": "knowledge-update",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "faba32e5",
+   "env_id": "faba32e5",
+   "category": "single-session-user",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "fca70973",
+   "env_id": "fca70973",
+   "category": "single-session-preference",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "fca762bc",
+   "env_id": "fca762bc",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "fea54f57",
+   "env_id": "fea54f57",
+   "category": "single-session-assistant",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_0a05b494",
+   "env_id": "gpt4_0a05b494",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_0b2f1d21",
+   "env_id": "gpt4_0b2f1d21",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_15e38248",
+   "env_id": "gpt4_15e38248",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_18c2b244",
+   "env_id": "gpt4_18c2b244",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_1916e0ea",
+   "env_id": "gpt4_1916e0ea",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_194be4b3",
+   "env_id": "gpt4_194be4b3",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_1a1dc16d",
+   "env_id": "gpt4_1a1dc16d",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_1d4ab0c9",
+   "env_id": "gpt4_1d4ab0c9",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_1d80365e",
+   "env_id": "gpt4_1d80365e",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_1e4a8aeb",
+   "env_id": "gpt4_1e4a8aeb",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_1e4a8aec",
+   "env_id": "gpt4_1e4a8aec",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_213fd887",
+   "env_id": "gpt4_213fd887",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_21adecb5",
+   "env_id": "gpt4_21adecb5",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_2312f94c",
+   "env_id": "gpt4_2312f94c",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_2487a7cb",
+   "env_id": "gpt4_2487a7cb",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_2655b836",
+   "env_id": "gpt4_2655b836",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_2ba83207",
+   "env_id": "gpt4_2ba83207",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_2c50253f",
+   "env_id": "gpt4_2c50253f",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_2d58bcd6",
+   "env_id": "gpt4_2d58bcd6",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_2f56ae70",
+   "env_id": "gpt4_2f56ae70",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_2f584639",
+   "env_id": "gpt4_2f584639",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_2f8be40d",
+   "env_id": "gpt4_2f8be40d",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_2f91af09",
+   "env_id": "gpt4_2f91af09",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_31ff4165",
+   "env_id": "gpt4_31ff4165",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_372c3eed",
+   "env_id": "gpt4_372c3eed",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_372c3eed_abs",
+   "env_id": "gpt4_372c3eed_abs",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_385a5000",
+   "env_id": "gpt4_385a5000",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_45189cb4",
+   "env_id": "gpt4_45189cb4",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_468eb063",
+   "env_id": "gpt4_468eb063",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_468eb064",
+   "env_id": "gpt4_468eb064",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_483dd43c",
+   "env_id": "gpt4_483dd43c",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_4929293a",
+   "env_id": "gpt4_4929293a",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_4929293b",
+   "env_id": "gpt4_4929293b",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_4cd9eba1",
+   "env_id": "gpt4_4cd9eba1",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_4edbafa2",
+   "env_id": "gpt4_4edbafa2",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_4ef30696",
+   "env_id": "gpt4_4ef30696",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_4fc4f797",
+   "env_id": "gpt4_4fc4f797",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_5438fa52",
+   "env_id": "gpt4_5438fa52",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_5501fe77",
+   "env_id": "gpt4_5501fe77",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_59149c77",
+   "env_id": "gpt4_59149c77",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_59149c78",
+   "env_id": "gpt4_59149c78",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_59c863d7",
+   "env_id": "gpt4_59c863d7",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_5dcc0aab",
+   "env_id": "gpt4_5dcc0aab",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_61e13b3c",
+   "env_id": "gpt4_61e13b3c",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_65aabe59",
+   "env_id": "gpt4_65aabe59",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_68e94287",
+   "env_id": "gpt4_68e94287",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_68e94288",
+   "env_id": "gpt4_68e94288",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_6dc9b45b",
+   "env_id": "gpt4_6dc9b45b",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_6ed717ea",
+   "env_id": "gpt4_6ed717ea",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_70e84552",
+   "env_id": "gpt4_70e84552",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_70e84552_abs",
+   "env_id": "gpt4_70e84552_abs",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_731e37d7",
+   "env_id": "gpt4_731e37d7",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_74aed68e",
+   "env_id": "gpt4_74aed68e",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_76048e76",
+   "env_id": "gpt4_76048e76",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_78cf46a3",
+   "env_id": "gpt4_78cf46a3",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_7a0daae1",
+   "env_id": "gpt4_7a0daae1",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_7abb270c",
+   "env_id": "gpt4_7abb270c",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_7bc6cf22",
+   "env_id": "gpt4_7bc6cf22",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_7ca326fa",
+   "env_id": "gpt4_7ca326fa",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_7ddcf75f",
+   "env_id": "gpt4_7ddcf75f",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_7de946e7",
+   "env_id": "gpt4_7de946e7",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_7f6b06db",
+   "env_id": "gpt4_7f6b06db",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_7fce9456",
+   "env_id": "gpt4_7fce9456",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_8279ba02",
+   "env_id": "gpt4_8279ba02",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_8279ba03",
+   "env_id": "gpt4_8279ba03",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_85da3956",
+   "env_id": "gpt4_85da3956",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_88806d6e",
+   "env_id": "gpt4_88806d6e",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_8c8961ae",
+   "env_id": "gpt4_8c8961ae",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_8e165409",
+   "env_id": "gpt4_8e165409",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_93159ced",
+   "env_id": "gpt4_93159ced",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_93159ced_abs",
+   "env_id": "gpt4_93159ced_abs",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_93f6379c",
+   "env_id": "gpt4_93f6379c",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_98f46fc6",
+   "env_id": "gpt4_98f46fc6",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_9a159967",
+   "env_id": "gpt4_9a159967",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_a1b77f9c",
+   "env_id": "gpt4_a1b77f9c",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_a2d1d1f6",
+   "env_id": "gpt4_a2d1d1f6",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_a56e767c",
+   "env_id": "gpt4_a56e767c",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_ab202e7f",
+   "env_id": "gpt4_ab202e7f",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_af6db32f",
+   "env_id": "gpt4_af6db32f",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_b0863698",
+   "env_id": "gpt4_b0863698",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_b4a80587",
+   "env_id": "gpt4_b4a80587",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_b5700ca0",
+   "env_id": "gpt4_b5700ca0",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_b5700ca9",
+   "env_id": "gpt4_b5700ca9",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_c27434e8",
+   "env_id": "gpt4_c27434e8",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_c27434e8_abs",
+   "env_id": "gpt4_c27434e8_abs",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_cd90e484",
+   "env_id": "gpt4_cd90e484",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_d12ceb0e",
+   "env_id": "gpt4_d12ceb0e",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_d31cdae3",
+   "env_id": "gpt4_d31cdae3",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_d6585ce8",
+   "env_id": "gpt4_d6585ce8",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_d6585ce9",
+   "env_id": "gpt4_d6585ce9",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_d84a3211",
+   "env_id": "gpt4_d84a3211",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_d9af6064",
+   "env_id": "gpt4_d9af6064",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_e05b82a6",
+   "env_id": "gpt4_e05b82a6",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_e061b84f",
+   "env_id": "gpt4_e061b84f",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_e061b84g",
+   "env_id": "gpt4_e061b84g",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_e072b769",
+   "env_id": "gpt4_e072b769",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_e414231e",
+   "env_id": "gpt4_e414231e",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_e414231f",
+   "env_id": "gpt4_e414231f",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_ec93e27f",
+   "env_id": "gpt4_ec93e27f",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_f2262a51",
+   "env_id": "gpt4_f2262a51",
+   "category": "multi-session",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_f420262c",
+   "env_id": "gpt4_f420262c",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_f420262d",
+   "env_id": "gpt4_f420262d",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_f49edff3",
+   "env_id": "gpt4_f49edff3",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_fa19884c",
+   "env_id": "gpt4_fa19884c",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_fa19884d",
+   "env_id": "gpt4_fa19884d",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_fe651585",
+   "env_id": "gpt4_fe651585",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  },
+  {
+   "qid": "gpt4_fe651585_abs",
+   "env_id": "gpt4_fe651585_abs",
+   "category": "temporal-reasoning",
+   "eval_type": "llm_judge",
+   "score": 0.0,
+   "flag": "missing_record",
+   "note": "no driver record for qid"
+  }
+ ]
+}

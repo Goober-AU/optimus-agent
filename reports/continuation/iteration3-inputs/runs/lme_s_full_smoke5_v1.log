@@ -1,0 +1,26 @@
+[run lme_s_full_smoke5_v1] benchmark=longmemeval variant=improved envs=5 questions=5 (resume: 0 questions, 0 envs done)
+[preflight] noJev isolation verified: {"noJev":true,"verified_before":"connectivity preflight","control_agent_dir":"\\\\?\\C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration3-inputs\\runs\\lme_s_full_smoke5_v1\\_control\\agent","native_resolvers_verified":["config::get_agent_dir()","pi_jev::config::default_agent_dir(None)"],"settings_source":"native JevSettingsStore at config::get_agent_dir()","effective_mode":"off","compaction_enabled":false,"session_override_count":0,"full_jev_override":false,"credential_env_policy":"removed_without_reading_before_runtime","installed_profile_fallback":false}
+[preflight] memory settings matched: requested={"recall":true,"recallQueryDistillation":true,"recallRerank":true,"recallQueryExtract":true,"recallRerankCandidates":200,"recallQueryExpansion":true,"recallQueryExpansionDraws":2,"maxRecallChars":8000,"maxRecallEntries":8,"maxExtractionTokens":32000,"maxImportChunkChars":15000,"recallProspectiveIndex":false} effective={"recall":true,"learning":true,"maxRecallChars":8000,"maxRecallEntries":8,"maxExtractionTokens":32000,"maxImportBytes":33554432,"maxImportChunkChars":15000,"maxImportChunksPerRun":4,"importInstructions":null,"recallQueryDistillation":true,"recallRerank":true,"recallRerankCandidates":200,"recallQueryExtract":true,"recallQueryExpansion":true,"recallQueryExpansionDraws":2,"recallProspectiveIndex":false} (configuration only, not LLM call evidence)
+[preflight] dgx-glm53/glm-5.3 reachable
+[env 1/5] 001be529 ingesting 51 session(s)
+[env 1/5] 001be529 ingested in 2368100ms (121 entries)
+[env 2/5] 00ca467f ingesting 47 session(s)
+[env 2/5] 00ca467f ingested in 2303874ms (110 entries)
+[env 3/5] 0100672e ingesting 49 session(s)
+[env 3/5] 0100672e ingested in 2248315ms (145 entries)
+[env 4/5] 01493427 ingesting 47 session(s)
+[env 4/5] 01493427 ingested in 2145758ms (139 entries)
+[env 5/5] 031748ae ingesting 46 session(s)
+[env 5/5] 031748ae ingested in 2418516ms (125 entries)
+[q 1/5] 001be529 asking (62 chars)
+[q 1/5] 001be529 done in 7389ms
+[q 2/5] 00ca467f asking (52 chars)
+[q 2/5] 00ca467f done in 14534ms
+[q 3/5] 0100672e asking (57 chars)
+[q 3/5] 0100672e done in 14581ms
+[q 4/5] 01493427 asking (86 chars)
+[q 4/5] 01493427 done in 9191ms
+[q 5/5] 031748ae asking (123 chars)
+{"provider":"dgx-glm53","model":"glm-5.3","api":"openai-completions","stopReason":"length","inputTokens":2263.0,"outputTokens":8192.0,"totalTokens":10455.0,"attempt":1,"retryEnabled":false,"ts":"2026-10-12T17:50:31.998Z","level":"warn","component":"agent-core.stream-watchdog","msg":"assistant response ended at the provider output cap"}
+[q 5/5] 031748ae done in 64871ms
+[run lme_s_full_smoke5_v1] complete
