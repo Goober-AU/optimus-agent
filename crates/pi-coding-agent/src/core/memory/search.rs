@@ -217,6 +217,17 @@ fn prospective_cue_words(entry: &HarnessEntry) -> Vec<String> {
     }
 }
 
+/// `metadata.sourceSpan` - the verbatim session turn text retained at write
+/// time when `recallSourceSpans` is enabled. The distilled entry content can
+/// paraphrase away the exact names, dates and quantities the original turn
+/// carried, so the span words join the searchable corpus at half body weight.
+fn source_span_words(entry: &HarnessEntry) -> HashSet<String> {
+    match entry.metadata.get("sourceSpan") {
+        Some(Value::String(span)) => words(span).into_iter().collect(),
+        _ => HashSet::new(),
+    }
+}
+
 pub fn search_memory(
     store: &MemoryStore,
     query: &str,
@@ -280,20 +291,25 @@ pub fn search_memory(
                 for word in prospective_cue_words(entry) {
                     body_set.insert(word);
                 }
+                // Verbatim source spans are metadata too, but the exact
+                // wording of the original turn must stay matchable: a
+                // span-only hit is real evidence, just weaker than the same
+                // term appearing in the stored content itself.
+                let span_set = source_span_words(entry);
                 let scope = if host_id.is_some() {
                     MemoryScope::Host
                 } else {
                     *base_scope
                 };
-                candidates.push((entry, scope, title_set, body_set));
+                candidates.push((entry, scope, title_set, body_set, span_set));
             }
         }
     }
     // Count every eligible entry, including nonmatches, once per term. Entries
     // excluded from this search must not affect the scores of allowed hits.
     let mut document_frequency: HashMap<String, usize> = HashMap::new();
-    for (_, _, title_set, body_set) in &candidates {
-        for term in title_set.union(body_set) {
+    for (_, _, title_set, body_set, span_set) in &candidates {
+        for term in title_set.union(body_set).chain(span_set.iter()) {
             *document_frequency.entry(term.clone()).or_default() += 1;
         }
     }
@@ -304,10 +320,14 @@ pub fn search_memory(
     };
     let denominator: f64 = terms.iter().map(|term| idf(term)).sum();
     let mut hits: Vec<MemoryHit> = Vec::new();
-    for (entry, scope, title_set, body_set) in candidates {
+    for (entry, scope, title_set, body_set, span_set) in candidates {
         let matched: Vec<String> = terms
             .iter()
-            .filter(|term| title_set.contains(*term) || body_set.contains(*term))
+            .filter(|term| {
+                title_set.contains(*term)
+                    || body_set.contains(*term)
+                    || span_set.contains(*term)
+            })
             .cloned()
             .collect();
         if !terms.is_empty() && matched.is_empty() {
@@ -315,7 +335,17 @@ pub fn search_memory(
         }
         let numerator: f64 = matched
             .iter()
-            .map(|term| if title_set.contains(term) { 3.0 } else { 1.0 } * idf(term))
+            .map(|term| {
+                let field_weight = if title_set.contains(term) {
+                    3.0
+                } else if body_set.contains(term) {
+                    1.0
+                } else {
+                    // Span-only match: half the body weight.
+                    0.5
+                };
+                field_weight * idf(term)
+            })
             .sum();
         let score = if denominator > 0.0 {
             numerator / denominator
@@ -394,7 +424,21 @@ pub fn recall_memory(
         }))
         .unwrap_or_default();
         let prefix = format!("{label}\n");
-        let space = settings.max_recall_chars - size - prefix.chars().count() as i64 - 32;
+        // Verbatim source span (recallSourceSpans): the original turn wording
+        // rides along after the content, capped tighter than the stored span.
+        let source_line = hit
+            .entry
+            .metadata
+            .get("sourceSpan")
+            .and_then(Value::as_str)
+            .filter(|span| !span.trim().is_empty())
+            .map(|span| format!("\nSource: {}", span.chars().take(200).collect::<String>()));
+        let source_chars = source_line
+            .as_ref()
+            .map(|line| line.chars().count() as i64)
+            .unwrap_or(0);
+        let space =
+            settings.max_recall_chars - size - prefix.chars().count() as i64 - source_chars - 32;
         if space < 80 {
             continue;
         }
@@ -410,8 +454,8 @@ pub fn recall_memory(
                     .collect::<String>()
             )
         };
-        lines.push(format!("{prefix}{content}"));
-        size += prefix.chars().count() as i64 + content.chars().count() as i64 + 1;
+        lines.push(format!("{prefix}{content}{}", source_line.unwrap_or_default()));
+        size += prefix.chars().count() as i64 + content.chars().count() as i64 + source_chars + 1;
         ids.push(hit.id.clone());
     }
     let text = if ids.is_empty() {
@@ -647,6 +691,104 @@ mod tests {
             false
         )
         .is_empty());
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn source_spans_make_verbatim_turn_text_searchable_at_half_body_weight() {
+        let (store, root) = fixture();
+        // The distilled memory paraphrases the turn; only the retained
+        // verbatim span still carries the exact wording a later query uses.
+        let mut spanned = entry("move", "Relocation", "We relocated to a new place.");
+        spanned.metadata = store_record(&serde_json::json!({
+            "sourceSpan": "We moved into the kumquat grove apartment on Elm Street."
+        }))
+        .unwrap();
+        let plain = entry("neighbor", "Neighbor", "The kumquat grove apartment is ours.");
+        let extra = corpus(MemoryScope::Global, vec![spanned, plain.clone()]);
+        let hits = search_memory(
+            &store,
+            "kumquat grove",
+            std::slice::from_ref(&extra),
+            false,
+        );
+        assert_eq!(hits.len(), 2);
+        // Both entries match both terms; the body-weighted entry outranks
+        // the span-only one, whose score is exactly half.
+        assert_eq!(hits[0].entry.id, "neighbor");
+        assert_eq!(hits[1].entry.id, "move");
+        assert_eq!(hits[0].matched, vec!["kumquat", "grove"]);
+        assert_eq!(hits[1].matched, vec!["kumquat", "grove"]);
+        assert!((hits[1].score - hits[0].score / 2.0).abs() < 1e-12);
+        // Without the span metadata a span-only term matches nothing, while
+        // the plain body match still works.
+        let stripped = corpus(
+            MemoryScope::Global,
+            vec![
+                entry("move", "Relocation", "We relocated to a new place."),
+                plain,
+            ],
+        );
+        assert!(search_memory(
+            &store,
+            "elm street",
+            std::slice::from_ref(&stripped),
+            false,
+        )
+        .is_empty());
+        let body_only = search_memory(
+            &store,
+            "kumquat grove",
+            std::slice::from_ref(&stripped),
+            false,
+        );
+        assert_eq!(body_only.len(), 1);
+        assert_eq!(body_only[0].entry.id, "neighbor");
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn recall_renders_the_source_span_after_content_capped_at_200_chars() {
+        let (store, root) = fixture();
+        let mut spanned = entry("move", "Relocation", "We relocated to a new place.");
+        let long_span: String = "kumquat ".repeat(80); // 640 chars.
+        spanned.metadata = store_record(&serde_json::json!({
+            "sourceSpan": long_span
+        }))
+        .unwrap();
+        let extra = corpus(MemoryScope::Global, vec![spanned]);
+        let hits = search_memory(
+            &store,
+            "relocated",
+            std::slice::from_ref(&extra),
+            false,
+        );
+        assert_eq!(hits.len(), 1);
+        let settings = crate::core::memory::store::default_memory_settings();
+        let recall = recall_memory(&hits, &settings, Some(&store.project.root));
+        // The span rides along after the content on its own line, capped at
+        // 200 chars of span text.
+        let start = recall.text.find("Source: ").expect("rendered source span");
+        assert!(recall.text[..start].ends_with("We relocated to a new place.\n"));
+        let rendered = &recall.text[start..];
+        assert!(rendered.starts_with("Source: kumquat kumquat"));
+        assert!(rendered.chars().count() <= "Source: ".chars().count() + 200);
+        assert!(recall.text.contains("\nSource: "));
+        // The cap actually dropped span content: a 640-char span cannot fit.
+        assert!(rendered.chars().count() < "Source: ".chars().count() + 640);
+        // Entries without a span render exactly as before.
+        let plain = corpus(
+            MemoryScope::Global,
+            vec![entry("plain", "Plain", "No span here.")],
+        );
+        let plain_hits = search_memory(
+            &store,
+            "plain",
+            std::slice::from_ref(&plain),
+            false,
+        );
+        let plain_recall = recall_memory(&plain_hits, &settings, Some(&store.project.root));
+        assert!(!plain_recall.text.contains("Source: "));
         std::fs::remove_dir_all(&root).ok();
     }
 

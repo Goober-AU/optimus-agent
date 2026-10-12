@@ -78,6 +78,14 @@ pub struct MemorySettings {
     /// recall can bridge implicit-reference questions. Default false.
     #[serde(default, rename = "recallProspectiveIndex")]
     pub recall_prospective_index: bool,
+    /// Retain a verbatim source snippet in `metadata.sourceSpan` for each
+    /// memory a session import creates: the first matching turn per cited
+    /// source id, copied from the session JSONL and capped at 400 chars.
+    /// Keeps the original conversational wording searchable and renderable
+    /// next to the distilled entry (AgentOS turn-pair discipline). Default
+    /// false.
+    #[serde(default, rename = "recallSourceSpans")]
+    pub recall_source_spans: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shared: Option<Option<SharedConfig>>,
 }
@@ -114,6 +122,7 @@ pub fn default_memory_settings() -> MemorySettings {
         recall_query_expansion: false,
         recall_query_expansion_draws: default_recall_query_expansion_draws(),
         recall_prospective_index: false,
+        recall_source_spans: false,
         shared: None,
     }
 }
@@ -275,6 +284,7 @@ pub struct PartialMemorySettings {
     pub recall_query_expansion_draws: Option<i64>,
     pub shared: Option<Option<SharedConfig>>,
     pub recall_prospective_index: Option<bool>,
+    pub recall_source_spans: Option<bool>,
 }
 
 const LIMITS: [(&str, i64, i64); 8] = [
@@ -299,6 +309,7 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
         "recallQueryExtract",
         "recallQueryExpansion",
         "recallProspectiveIndex",
+        "recallSourceSpans",
     ] {
         if let Some(raw) = source.get(key) {
             let boolean = raw
@@ -316,6 +327,7 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
                 "recallProspectiveIndex" => {
                     result.recall_prospective_index = Some(boolean)
                 }
+                "recallSourceSpans" => result.recall_source_spans = Some(boolean),
                 _ => {}
             }
         }
@@ -957,6 +969,9 @@ fn apply_settings(settings: &mut MemorySettings, patch: &PartialMemorySettings) 
     if let Some(value) = patch.recall_prospective_index {
         settings.recall_prospective_index = value;
     }
+    if let Some(value) = patch.recall_source_spans {
+        settings.recall_source_spans = value;
+    }
     if let Some(value) = patch.max_recall_chars {
         settings.max_recall_chars = value;
     }
@@ -1003,6 +1018,10 @@ fn merge_settings_patch(target: &mut JsonMap, patch: &PartialMemorySettings) {
     set(
         "recallProspectiveIndex",
         patch.recall_prospective_index.map(Value::Bool),
+    );
+    set(
+        "recallSourceSpans",
+        patch.recall_source_spans.map(Value::Bool),
     );
     set(
         "recallRerankCandidates",
@@ -1501,6 +1520,43 @@ mod tests {
             "recallProspectiveIndex must be boolean"
         );
         assert!(!default_memory_settings().recall_prospective_index);
+    }
+
+    #[test]
+    fn recall_source_spans_validates_and_round_trips() {
+        // Absent keeps the default, non-boolean is rejected.
+        assert_eq!(
+            validate_settings(&serde_json::json!({})).unwrap().recall_source_spans,
+            None
+        );
+        let partial = validate_settings(&serde_json::json!({"recallSourceSpans": true})).unwrap();
+        assert_eq!(partial.recall_source_spans, Some(true));
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallSourceSpans": 1})).unwrap_err(),
+            "recallSourceSpans must be boolean"
+        );
+        assert!(!default_memory_settings().recall_source_spans);
+        let mut settings = default_memory_settings();
+        apply_settings(&mut settings, &partial);
+        assert!(settings.recall_source_spans);
+        apply_settings(
+            &mut settings,
+            &validate_settings(&serde_json::json!({"recallSourceSpans": false})).unwrap(),
+        );
+        assert!(!settings.recall_source_spans);
+        // The encoded form keeps the camelCase key and deserializes back.
+        let mut enabled = default_memory_settings();
+        enabled.recall_source_spans = true;
+        let encoded = serde_json::to_value(&enabled).unwrap();
+        assert_eq!(encoded["recallSourceSpans"], true);
+        let decoded: MemorySettings = serde_json::from_value(encoded).unwrap();
+        assert!(decoded.recall_source_spans);
+        let mut merged = serde_json::Map::new();
+        merge_settings_patch(
+            &mut merged,
+            &validate_settings(&serde_json::json!({"recallSourceSpans": true})).unwrap(),
+        );
+        assert_eq!(merged.get("recallSourceSpans"), Some(&serde_json::json!(true)));
     }
 
     #[test]
