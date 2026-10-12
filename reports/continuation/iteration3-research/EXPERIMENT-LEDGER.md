@@ -97,10 +97,11 @@ run log); driver `memory_bench.exe` (Rust, capture protocol
 | R3 | `lme_v2_dev5_improved_v4_spanverify` | LME-V2 | LIVE (env web 24/25 jobs) | E3-04 readout |
 | R4 | `lme_m_dev5_improved_v1` (first-ever M run) | LongMemEval-M | LIVE (env 1/5, 90/91 jobs) | gates LME-M full |
 | R5 | gate2 shards s0-s2 | LoCoMo | LIVE (4/10 envs) | E3-02 readout |
-| R6 | `loco_plus_cuefix_smoke` (isolated build) | LoCoMo-Plus | PENDING | E3-03 validation; LP full prerequisite |
+| R6 | `loco_plus_cuefix_smoke` (isolated build) | LoCoMo-Plus | DONE: 26.0% coverage (182/701), q=1.0; 512 budget eats cues on 74% | E3-03 validation; LP full prerequisite |
 | R7 | LP full 401 | LoCoMo-Plus | PENDING | dev5 v3 scores + cue-fix smoke |
 | R8 | LME-M full 500 (per-env) | LongMemEval-M | PENDING | dev5 M signal + protocol regeneration (see FULL-RUN-DECISION.md §4) |
 | R9 | LME-S full 500 | LongMemEval-S | PENDING | E3-06 confirmed (1.00); needs run-queue clearance |
+| R10 | `loco_plus_cuebudget_smoke` (isolated build, service.rs 2048) | LoCoMo-Plus | DONE: 98.9% coverage (655/662), q=1.0, cost-neutral | LP full prerequisite (supersedes R6 gap) |
 
 ## Binary provenance (which build drives what)
 

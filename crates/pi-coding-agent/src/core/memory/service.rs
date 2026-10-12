@@ -169,7 +169,14 @@ pub(crate) async fn complete_prospective_cues(
 ) -> Result<ProspectiveCues, String> {
     let options = pi_ai::types::SimpleStreamOptions {
         stream: pi_ai::types::StreamOptions {
-            max_tokens: Some(512.0),
+            // 2048: GLM-5.3 spends hidden reasoning tokens before the visible JSON;
+            // at 512 the budget is exhausted mid-reasoning and the content arrives
+            // empty (finish_reason=length), leaving the entry uncued. Measured:
+            // 512 -> empty, 2048 -> 5-cue JSON with ~525 reasoning + ~104 visible.
+            // This host-handler call site is the one the bench driver exercises
+            // (create_memory_host_handlers -> import_apply); the extension-side
+            // raise in builtin/memory.rs does not cover it.
+            max_tokens: Some(2048.0),
             api_key: Some(api_key.to_string()),
             headers: headers.map(|headers| headers.clone().into_iter().collect()),
             ..Default::default()

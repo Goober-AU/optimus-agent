@@ -1,0 +1,27 @@
+{
+ "note": "pre-fix aborted run (imp3 HEAD 820c94cdb binary, driver path still 512)",
+ "live_coverage_at_kill": {
+  "with_cues": 28,
+  "total": 88,
+  "pct": 31.8
+ },
+ "pidx_per_import": [
+  {
+   "import_changes": 22,
+   "pidx_changes": 6
+  },
+  {
+   "import_changes": 15,
+   "pidx_changes": 3
+  },
+  {
+   "import_changes": 25,
+   "pidx_changes": 10
+  },
+  {
+   "import_changes": 26,
+   "pidx_changes": 9
+  }
+ ],
+ "root_cause": "commit c3736613d raised the budget only in memory.rs (extension /memory command path, recall_llm_text); the bench driver uses create_memory_host_handlers -> complete_prospective_cues (service.rs) which still caps max_tokens at 512"
+}
