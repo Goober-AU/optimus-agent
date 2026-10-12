@@ -1,0 +1,29 @@
+[
+ {
+  "shard": "s0",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-locostack/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-stack-s0.json",
+  "log": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-locostack/reports/continuation/iteration3-inputs/locomo/logs/stack-s0.log",
+  "memory_bench_pid": 25084,
+  "started_at": "2026-10-12T18:21:35.872937+00:00",
+  "binary_sha256": "ab1e1474af636a18b47b8969c22fa1e82cfbd811ad5efe71b30be0122ee169fc",
+  "launch_mode": "kernel_popen_detached"
+ },
+ {
+  "shard": "s1",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-locostack/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-stack-s1.json",
+  "log": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-locostack/reports/continuation/iteration3-inputs/locomo/logs/stack-s1.log",
+  "memory_bench_pid": 9516,
+  "started_at": "2026-10-12T18:21:35.881969+00:00",
+  "binary_sha256": "ab1e1474af636a18b47b8969c22fa1e82cfbd811ad5efe71b30be0122ee169fc",
+  "launch_mode": "kernel_popen_detached"
+ },
+ {
+  "shard": "s2",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-locostack/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-stack-s2.json",
+  "log": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-locostack/reports/continuation/iteration3-inputs/locomo/logs/stack-s2.log",
+  "memory_bench_pid": 20928,
+  "started_at": "2026-10-12T18:21:35.894691+00:00",
+  "binary_sha256": "ab1e1474af636a18b47b8969c22fa1e82cfbd811ad5efe71b30be0122ee169fc",
+  "launch_mode": "kernel_popen_detached"
+ }
+]

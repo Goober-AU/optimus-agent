@@ -1,0 +1,63 @@
+{
+ "schema": "iteration3-locomo-stack-sources/v1",
+ "created": "2026-10-12T18:24:06.125212+00:00",
+ "purpose": "LoCoMo iteration-3 improved+helpers arm: same 300-q dev gate set and shard partition as gate v2 (defaults arm 0.2766 cats1-4), with the recall helper stack ON + LoCoMo answer protocol (d); measures what the full technique set does on the original LoCoMo benchmark",
+ "repo": {
+  "worktree": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-locostack",
+  "branch": "improve/mem3-loco-stack",
+  "base": "improve/memory-iteration-3 HEAD c6a988511 (gate v2 merged)"
+ },
+ "binary": {
+  "path": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3/target/release/examples/memory_bench.exe",
+  "sha256": "ab1e1474af636a18b47b8969c22fa1e82cfbd811ad5efe71b30be0122ee169fc",
+  "commit": "bdffcad50",
+  "contains": [
+   "temporal discipline (955aafde2)",
+   "distillation+rerank (64485ea60)",
+   "iteration-2 recall features incl. query extract/expansion (66c12b179)",
+   "prospective index plumbing (f79d5ad1c)"
+  ],
+  "excludes": [
+   "recallSourceSpans (98725da08; opt-in and OFF here)",
+   "LP cue-budget fix (LP-specific; no cues without recallProspectiveIndex, which is OFF)"
+  ]
+ },
+ "question_set": {
+  "declarations": "declarations/locomo-dev300-model-questions.jsonl",
+  "sha256": "9e88a6fdf1a3d74866daf21dd47e53fd6721599a2907f8e217f3ec6c626b383f",
+  "n": 300,
+  "sharding": "era-A partition identical to gate v2 / iteration-2: s0=129 (conv-26,42,47,50), s1=90 (conv-30,43,48), s2=81 (conv-41,44,49)",
+  "sha256_note": "canonical (CRLF as on gate disk, identical to iteration-2 declarations); this worktree checkout is LF-normalized (sha b5b1d9331191d9f73a28c21f695457e520bb4c6c3d9e6ee877f68bc0f718e089), same 300 qids and same JSON per line (verified parse-identical); declarations are only used for qid-set verification in scoring"
+ },
+ "model": {
+  "provider": "dgx-glm53",
+  "id": "glm-5.3",
+  "jev": false,
+  "models_json": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/c06-instruction-boundary/inputs/runs/locomo-c06-ib-system_append-q12-s0p1/envs/conv-30/agent/models.json (sha256 326481a223eda68b160b3ba8b90d4a576bd17a9a1a05c0152ffde868d52b140c; content-identical to frozen-experiments private-config models.json used by gate v2)"
+ },
+ "settings_delta_vs_gate_defaults": {
+  "recallQueryDistillation": true,
+  "recallRerank": true,
+  "recallRerankCandidates": 200,
+  "recallQueryExtract": true,
+  "recallQueryExpansion": true,
+  "recallQueryExpansionDraws": 2,
+  "answerInstruction": "ANSWER-PROTOCOLS.md variant (d) LoCoMo (141 words), from reports/continuation/iteration3-research/ANSWER-PROTOCOLS.md",
+  "unchanged": "recallOn=true, memoryLearning=false, answerMaxTokens=8192, maxExtractionTokens=32000, maxImportChunkChars=15000, questionTimeoutS=240, ingestTimeoutS=21600, disableTools=true, evidenceTimestamps=true, recall budgets at production defaults (no maxRecallChars/maxRecallEntries overrides)"
+ },
+ "anchors": {
+  "gate_defaults_iteration3": {
+   "binary": "ab1e1474",
+   "cats14_mean_f1": 0.2766,
+   "overall_mean_f1": 0.2148,
+   "scores": "scores/improved-defaults.json"
+  },
+  "iteration2": {
+   "binary": "4ece283e",
+   "cats14_mean_f1": 0.2626,
+   "overall_mean_f1": 0.2039,
+   "scores": "scores/anchor-rescore.json"
+  }
+ },
+ "scoring": "deterministic local token-F1 (optimus-local-scoring/1.0.0) via bench.eval.evaluate in repo-continuation bench venv, gold qs read-only from iteration2-inputs/locomo/common/locomo; same code path as gate v2"
+}
