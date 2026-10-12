@@ -109,6 +109,43 @@ class MemoryBenchPortabilityTests(unittest.TestCase):
             with self.subTest(module=module):
                 self.assertIn("usage:", self.cli(module, "--help", env=env).stdout)
 
+    def test_lme_v2_axtree_cap_flag_raises_retention_and_is_recorded(self):
+        output = self.root / "capped"
+        self.cli("bench.converters.run_converters", "--family", "lme_v2",
+                 "--data-root", FIXTURES / "raw", "--out-dir", output,
+                 "--lme-v2-axtree-cap", "6")
+        env = json.loads((output / "lme_v2" / "env_web.json").read_text(encoding="utf-8"))
+        self.assertEqual(env["notes"]["axtree_cap_chars"], 6)
+        marker = "[accessibility tree truncated: first 6 of 39 chars]"
+        self.assertIn(marker, env["sessions"][0]["events"][1]["text"])
+        # The chosen cap also drives the manifest's recorded truncation stats.
+        manifest = json.loads((output / "lme_v2" / "manifest.json").read_text(encoding="utf-8"))
+        web_meta = next(m for m in manifest["envs"] if m["env_id"] == "web")
+        self.assertEqual(web_meta["states_truncated"],
+                         env["notes"]["states_truncated"])
+        self.assertEqual(web_meta["axtree_chars_capped"], env["notes"]["axtree_chars_capped"])
+
+        # Without the flag the converter default (8000) applies; fixture trees
+        # are 39 chars, so nothing is truncated and no marker is written.
+        default_output = self.root / "default"
+        self.cli("bench.converters.run_converters", "--family", "lme_v2",
+                 "--data-root", FIXTURES / "raw", "--out-dir", default_output)
+        default_env = json.loads((default_output / "lme_v2" / "env_web.json")
+                                 .read_text(encoding="utf-8"))
+        self.assertEqual(default_env["notes"]["axtree_cap_chars"], 8000)
+        self.assertNotIn("[accessibility tree truncated:",
+                         default_env["sessions"][0]["events"][1]["text"])
+
+    def test_lme_v2_axtree_cap_flag_rejects_non_positive_values(self):
+        for bad in ("0", "-4"):
+            with self.subTest(value=bad):
+                result = self.cli("bench.converters.run_converters", "--family",
+                                  "lme_v2", "--data-root", FIXTURES / "raw",
+                                  "--out-dir", self.root / "rejected",
+                                  "--lme-v2-axtree-cap", bad, ok=False)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("must be >= 1", result.stderr)
+
     def test_all_four_converters_and_full_manifests_are_portable(self):
         output = self.convert()
         expected = {"longmemeval": (1, 1), "locomo": (1, 5), "lme_v2": (2, 2),
