@@ -25,31 +25,47 @@ from __future__ import annotations
 import argparse
 import time
 
-from . import longmemeval, locomo, lme_v2, locomo_plus
-from .common import configure_paths
-
-FAMILIES = {
-    "longmemeval": longmemeval,
-    "locomo": locomo,
-    "lme_v2": lme_v2,
-    "locomo_plus": locomo_plus,
-}
+FAMILY_NAMES = ("longmemeval", "locomo", "lme_v2", "locomo_plus")
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--family", choices=sorted(FAMILIES), default=None,
+    ap.add_argument("--family", choices=sorted(FAMILY_NAMES), default=None,
                     help="convert only this family (default: all)")
     ap.add_argument("--full", action="store_true",
                     help="also emit the complete env/qs sets under <family>/full/")
     ap.add_argument("--data-root", help="raw input directory (or MEMORY_BENCH_DATA_ROOT)")
     ap.add_argument("--out-dir", help="common output root (or MEMORY_BENCH_COMMON_ROOT)")
+    ap.add_argument("--lme-v2-axtree-cap", type=int, default=None, metavar="CHARS",
+                    help="override the lme_v2 state-observation accessibility-tree cap "
+                         "(sets LME_V2_AXTREE_CAP for this invocation; must be >= 1). "
+                         "Raises retention above the converter default; the chosen "
+                         "value is recorded in each env's notes.axtree_cap_chars and in "
+                         "the family manifest stats. Use a large explicit value (for "
+                         "example 1000000) for effectively-full capture.")
     args = ap.parse_args(argv)
+
+    # The lme_v2 converter resolves LME_V2_AXTREE_CAP at import time, so the
+    # flag must be applied before the family modules are imported.
+    if args.lme_v2_axtree_cap is not None:
+        if args.lme_v2_axtree_cap < 1:
+            ap.error("--lme-v2-axtree-cap must be >= 1")
+        import os
+        os.environ["LME_V2_AXTREE_CAP"] = str(args.lme_v2_axtree_cap)
+
+    from . import longmemeval, locomo, lme_v2, locomo_plus
+    from .common import configure_paths
+    families = {
+        "longmemeval": longmemeval,
+        "locomo": locomo,
+        "lme_v2": lme_v2,
+        "locomo_plus": locomo_plus,
+    }
     configure_paths(args.data_root, args.out_dir)
 
-    fams = [args.family] if args.family else list(FAMILIES)
+    fams = [args.family] if args.family else list(families)
     for name in fams:
-        mod = FAMILIES[name]
+        mod = families[name]
         t0 = time.time()
         manifest = mod.build(dev_only=not args.full)
         dt = time.time() - t0

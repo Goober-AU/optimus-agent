@@ -281,6 +281,16 @@ struct ManifestSettings {
     /// error leaves the question prompt without the evidence.
     #[serde(default, alias = "lmev2_span_verify")]
     lmev2_span_verify: bool,
+    /// LME-v2 only: minimum state-observation capture fidelity in axtree chars.
+    /// When set, every lme_v2 environment must record
+    /// notes.axtree_cap_chars >= this value; a lower recorded cap fails closed
+    /// because source text truncated at conversion time cannot be restored at
+    /// run time (regenerate the env with LME_V2_AXTREE_CAP >= the requested
+    /// value). Default None accepts the recorded artifact cap (2000 in every
+    /// shipped env) so historical manifests keep parsing unchanged.
+    /// Driver-level capture-side control; never a product memory setting.
+    #[serde(default, alias = "capture_axtree_max_chars")]
+    capture_axtree_max_chars: Option<i64>,
 }
 
 impl Default for ManifestSettings {
@@ -314,6 +324,7 @@ impl Default for ManifestSettings {
             recall_source_spans: false,
             lme2_procedure_notes: false,
             lmev2_span_verify: false,
+            capture_axtree_max_chars: None,
         }
     }
 }
@@ -825,6 +836,7 @@ fn capture_input_policy(manifest: &Manifest, env: &EnvSpec) -> Result<Value, Str
         "family": env.family,
         "authority_revision": env.authority_revision,
         "axtree_cap_chars": env.notes.get("axtree_cap_chars"),
+        "capture_axtree_max_chars_requested": manifest.settings.capture_axtree_max_chars,
         "evidence_timestamps": mode == CaptureMode::SourceAuthorityV1 && manifest.settings.evidence_timestamps,
         "timestamp_source": if mode == CaptureMode::SourceAuthorityV1 { "event.ts_only" } else { "none_legacy_untrusted" },
         "naive_iso_policy": "preserve_calendar_fields_as_UTC",
@@ -850,6 +862,7 @@ fn parse_manifest(raw: &str) -> Result<Manifest, String> {
     }
     validate_lme2_procedure_notes(&manifest)?;
     validate_lmev2_span_verify(&manifest)?;
+    validate_capture_axtree_max_chars(&manifest)?;
     frozen_contract(&manifest)?;
     Ok(manifest)
 }
@@ -901,6 +914,50 @@ fn validate_lmev2_span_verify(manifest: &Manifest) -> Result<(), String> {
             "lmev2SpanVerify requires the ingested session jsonl; skipIngest must be false"
                 .to_string(),
         );
+    }
+    Ok(())
+}
+
+/// Upper bound for captureAxtreeMaxChars. The value is a per-state retention
+/// floor, not a token budget; a large explicit value (for example 1000000)
+/// requests effectively-full capture. 0 is rejected because the converter
+/// records a zero cap as "no tree text retained at all".
+const CAPTURE_AXTREE_MAX_CHARS_LIMIT: i64 = 2_000_000;
+
+/// captureAxtreeMaxChars is a capture-side driver control for the LME-v2
+/// family only: it declares the minimum axtree fidelity every env must have
+/// been generated with. It fails closed at parse time so an under-capped env
+/// (for example the historical 2000-char artifacts) can never silently satisfy
+/// a run that asked for more: source text truncated at conversion time cannot
+/// be restored at run time.
+fn validate_capture_axtree_max_chars(manifest: &Manifest) -> Result<(), String> {
+    let Some(requested) = manifest.settings.capture_axtree_max_chars else {
+        return Ok(());
+    };
+    if !(1..=CAPTURE_AXTREE_MAX_CHARS_LIMIT).contains(&requested) {
+        return Err(format!(
+            "captureAxtreeMaxChars must be between 1 and {CAPTURE_AXTREE_MAX_CHARS_LIMIT} (got {requested}); use a large explicit value for effectively-full capture"
+        ));
+    }
+    for env in &manifest.envs {
+        if env.family.as_deref() != Some("lme_v2") {
+            return Err(format!(
+                "captureAxtreeMaxChars requires family lme_v2; env {} has family {:?}",
+                env.env_id, env.family
+            ));
+        }
+        let Some(recorded) = env.notes.get("axtree_cap_chars").and_then(Value::as_u64) else {
+            return Err(format!(
+                "captureAxtreeMaxChars={requested} requires env {} to record notes.axtree_cap_chars; regenerate the env with the current converter",
+                env.env_id
+            ));
+        };
+        if recorded < requested as u64 {
+            return Err(format!(
+                "env {} recorded axtree cap {recorded} < captureAxtreeMaxChars {requested}; source text truncated at conversion time cannot be restored at run time — regenerate inputs with LME_V2_AXTREE_CAP >= {requested}",
+                env.env_id
+            ));
+        }
     }
     Ok(())
 }
@@ -6092,6 +6149,87 @@ print(json.dumps(env, ensure_ascii=False))
         value["settings"] = json!({"skipIngest": true});
         value["envs"][0].as_object_mut().unwrap().remove("family");
         parse_manifest_value(&value).unwrap();
+    }
+
+    #[test]
+    fn capture_axtree_max_chars_defaults_aliases_bounds_and_fail_closed_validation() {
+        // Default: unset, so historical manifests (and under-capped envs) parse.
+        let mut value = declared_manifest_fixture();
+        let manifest = parse_manifest_value(&value).unwrap();
+        assert_eq!(manifest.settings.capture_axtree_max_chars, None);
+        assert_eq!(ManifestSettings::default().capture_axtree_max_chars, None);
+        value["envs"] = json!([{
+            "env_id": "synthetic-env", "family": "lme_v2",
+            "notes": {"axtree_cap_chars": 40},
+        }]);
+        parse_manifest_value(&value).unwrap();
+
+        // Both spellings parse to the same requested value.
+        for key in ["captureAxtreeMaxChars", "capture_axtree_max_chars"] {
+            let settings: ManifestSettings = serde_json::from_value(json!({key: 8000})).unwrap();
+            assert_eq!(settings.capture_axtree_max_chars, Some(8000), "alias {key}");
+        }
+
+        // Bounds: zero is "no tree text retained", the limit guards absurd values.
+        for bad in [0, -1, 2_000_001] {
+            let mut bounded = value.clone();
+            bounded["settings"] = json!({"captureAxtreeMaxChars": bad});
+            let error = parse_manifest_value(&bounded).unwrap_err();
+            assert!(
+                error.contains("captureAxtreeMaxChars must be between 1 and"),
+                "{error}"
+            );
+        }
+
+        // Family gate: the control is LME-v2 only.
+        let mut mixed = declared_manifest_fixture();
+        mixed["settings"] = json!({"captureAxtreeMaxChars": 40});
+        mixed["envs"][0]["family"] = json!("locomo");
+        let error = parse_manifest_value(&mixed).unwrap_err();
+        assert!(
+            error.contains("captureAxtreeMaxChars requires family lme_v2"),
+            "{error}"
+        );
+
+        // Fail closed below the recorded cap: truncated source text cannot be
+        // restored at run time, so the run must refuse instead of silently
+        // under-capturing.
+        let mut under = value.clone();
+        under["settings"] = json!({"captureAxtreeMaxChars": 41});
+        let error = parse_manifest_value(&under).unwrap_err();
+        assert!(
+            error.contains("recorded axtree cap 40 < captureAxtreeMaxChars 41"),
+            "{error}"
+        );
+        assert!(
+            error.contains("regenerate inputs with LME_V2_AXTREE_CAP >= 41"),
+            "{error}"
+        );
+
+        // A missing recorded cap note also fails closed.
+        let mut no_note = value.clone();
+        no_note["settings"] = json!({"captureAxtreeMaxChars": 40});
+        no_note["envs"] = json!([{"env_id": "synthetic-env", "family": "lme_v2"}]);
+        let error = parse_manifest_value(&no_note).unwrap_err();
+        assert!(
+            error.contains("to record notes.axtree_cap_chars"),
+            "{error}"
+        );
+
+        // At the recorded cap the manifest parses and the request is recorded
+        // next to the env's own cap in the capture policy telemetry.
+        let mut ok = value.clone();
+        ok["settings"] = json!({"captureAxtreeMaxChars": 40});
+        let manifest = parse_manifest_value(&ok).unwrap();
+        let policy = capture_input_policy(&manifest, &manifest.envs[0]).unwrap();
+        assert_eq!(policy["capture_axtree_max_chars_requested"], 40);
+        assert_eq!(policy["axtree_cap_chars"], 40);
+        let mut unset = value.clone();
+        unset["settings"] = json!({"recallOn": false});
+        let manifest = parse_manifest_value(&unset).unwrap();
+        let policy = capture_input_policy(&manifest, &manifest.envs[0]).unwrap();
+        assert!(policy["capture_axtree_max_chars_requested"].is_null());
+        assert_eq!(policy["axtree_cap_chars"], 40);
     }
 
     #[tokio::test]

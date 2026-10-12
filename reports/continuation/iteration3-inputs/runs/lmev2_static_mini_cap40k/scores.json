@@ -1,0 +1,198 @@
+{
+ "schema": "memory-bench-scores/1",
+ "bench": "lme_v2",
+ "run_file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\imp3-lmev2ing\\reports\\continuation\\iteration3-inputs\\runs\\lmev2_static_mini_cap40k\\run.jsonl",
+ "run_sha256": "3532f1cf304c44c386fee896bd35b02cc677736b6bba2ddc3397c39f6c706fa6",
+ "run": {
+  "run_id": "lmev2_static_mini_cap40k",
+  "variant": "improved",
+  "benchmark": "lme_v2"
+ },
+ "scoring_provenance": {
+  "schema": "memory-bench-scoring-provenance/2",
+  "question_set_sha256": "d9744e2d495a3a91538c90964936a2a1369c0bff96f81e374b7626442106e3b8",
+  "question_files": [
+   {
+    "name": "qs_web.jsonl",
+    "sha256": "88d841be08502e0e3c70dc809f32c21cde933dd8f6d68eb406081f5db1d36b3b"
+   }
+  ],
+  "evaluator": {
+   "version": "optimus-memory-evaluation/2.0.0",
+   "question_protocols": {
+    "locomo": "optimus-locomo-conversion/2.0.0",
+    "locomo_plus": "optimus-normalized-cues/1.0.0",
+    "longmemeval": "optimus-longmemeval-adapter/2.0.0",
+    "lme_v2": "optimus-lme-v2-adapter/2.0.0"
+   },
+   "scoring_protocols": {
+    "locomo": "optimus-local-scoring/1.0.0",
+    "locomo_plus": "optimus-local-scoring/1.0.0",
+    "longmemeval": "optimus-longmemeval-dgx-port/2.0.0",
+    "lme_v2": "optimus-lme-v2-dgx-port/2.0.0"
+   },
+   "source_sha256": {
+    "protocol.py": "09bc0778d0e4de414eedbdbb00c512a13e97cca702f00bf488a3c97b4e07f840",
+    "evidence.py": "4a99b2449da1e423634c1fa584f5b0f4d4304b20e89796e9381db6e45c521045",
+    "io.py": "49de8d3307a13047af36ed8c36d1b3f025516f327c8c926bae3e833ec1851a48",
+    "eval/evaluate.py": "bfae40424fedd356410aaf94be68bf223e3d356dca02fc02fc7e2db7db06af95",
+    "eval/deterministic.py": "e3f88cec99d6b5db21450f235bcf011367db6e96721cbdff41d74d5be2a04fb3",
+    "eval/porter.py": "ccee2ef05615c348e2d80ba6d2a61b0e2ec03780e56f6f1faa7983a35ccb3510",
+    "eval/judges.py": "dd9161e8e27abf2e7414368a0700eccf5f35228f5374664b26ac5a2ee3ad94ca",
+    "eval/local_scoring.py": "36f82134ea0e383c64f3addb61709b029f02f3fc1b106dc4584c1cc8ab9cbd8b",
+    "eval/local_adapters.py": "67ccc0fdd12a56eadf02974e567efd1d254ded554f7a415834158df031e334c9",
+    "converters/common.py": "293c7e12c7a44f71bb0ebfd9bed0d3c5199b1f91d067e3fe14c9e830763771c5",
+    "converters/locomo.py": "6bca3195b4f229693f670fa159939f117f1fc5c8fc182fad6285b6d336a142d1",
+    "converters/locomo_plus.py": "2f9ffd4f7717b866060f4d3a2d997dc4d18549cf2f380ea08e5470e6d99a95d0",
+    "converters/longmemeval.py": "ec2963b54abd99a9843ffb78c8a38b40b4e9545ef31bff7cda0f5c6c8da1004a",
+    "converters/lme_v2.py": "869cccaa208b51a3ee14d0342e385d63003c0896fc072ae8f670d5e591a580b5"
+   },
+   "judge_settings": {
+    "provider": "dgx-glm53",
+    "model": "glm-5.3",
+    "jev": false,
+    "longmemeval": {
+     "temperature": 0,
+     "max_tokens": 2048
+    },
+    "locomo_plus": {
+     "temperature": 0,
+     "max_tokens": 512
+    },
+    "lme_v2": {
+     "temperature": null,
+     "max_tokens": 4096
+    }
+   },
+   "sha256": "798d4d80092ed00c873df231c9d987cf87cc37fdb6918946c101fb5b6e66641d"
+  },
+  "driver_question_binding": {
+   "schema": "memory-bench-caller-question-declaration/1",
+   "source": "caller_declared_scoring_question",
+   "claim": "caller-declared local artifact consistency only; not actual presentation or gold proof"
+  },
+  "selection": {
+   "variant": "improved",
+   "effective_variant": "improved",
+   "dedup": "last",
+   "qids": [
+    "36fe48ef",
+    "499488a6",
+    "f928c075"
+   ]
+  },
+  "selected_records": {
+   "36fe48ef": {
+    "variant": "improved",
+    "sha256": "faf89c230c128e97969ab38c141fd055635643d62dfd5031a5013ff46a35eee1"
+   },
+   "499488a6": {
+    "variant": "improved",
+    "sha256": "1ac3905c751c41c800102122cd11013eda01e4de71a6a2e6392daacf3f0b4c74"
+   },
+   "f928c075": {
+    "variant": "improved",
+    "sha256": "e7d7a95a6fecafb84be3758f266c71ecc32dbeaf20f201da45f101e92b65fe74"
+   }
+  }
+ },
+ "overall": {
+  "n": 3,
+  "n_flagged": 1,
+  "mean_score": 0.0,
+  "acc_ge_0.5": 0.0,
+  "wilson95_lo": 0.0,
+  "wilson95_hi": 0.5615,
+  "mean_judge_latency_ms": null
+ },
+ "by_category": {
+  "static-environment": {
+   "n": 3,
+   "n_flagged": 1,
+   "mean_score": 0.0,
+   "acc_ge_0.5": 0.0,
+   "wilson95_lo": 0.0,
+   "wilson95_hi": 0.5615,
+   "mean_judge_latency_ms": null
+  }
+ },
+ "counts": {
+  "questions_total": 3,
+  "records": 3,
+  "duplicate_qids_in_run": 0,
+  "questions_without_record": 0,
+  "flagged": 1
+ },
+ "judge_stats": null,
+ "lme_v2_unknown": {
+  "count": 0,
+  "pct_unknown": 0.0,
+  "pct_correct_excl_unknown": 0.0
+ },
+ "eval_wall_s": 0.0,
+ "results": [
+  {
+   "qid": "36fe48ef",
+   "env_id": "web",
+   "category": "static-environment",
+   "eval_type": "phrase_set",
+   "score": 0.0,
+   "flag": null,
+   "question_sha256": "9062792c48ea84cbca26a723573fbc1a3a2c1df8e309378668364e782555f20a",
+   "run_record_sha256": "faf89c230c128e97969ab38c141fd055635643d62dfd5031a5013ff46a35eee1",
+   "scoring_protocol": "optimus-lme-v2-dgx-port/2.0.0",
+   "native_failure": {
+    "driver_error": false,
+    "stop_error": false,
+    "timed_out": false
+   },
+   "details": {
+    "metric": "lme_v2_norm_phrase_set_match",
+    "separators": ",;"
+   },
+   "driver_latency_ms": 10227,
+   "is_unknown": false,
+   "parsed_boxed": "two"
+  },
+  {
+   "qid": "499488a6",
+   "env_id": "web",
+   "category": "static-environment",
+   "eval_type": "phrase_set",
+   "score": 0.0,
+   "flag": "empty_answer",
+   "question_sha256": "fba57e928e8a6b73002e3fdf63c48f01c272c0de774ea27d3fcfc5445411ebd7",
+   "run_record_sha256": "1ac3905c751c41c800102122cd11013eda01e4de71a6a2e6392daacf3f0b4c74",
+   "scoring_protocol": "optimus-lme-v2-dgx-port/2.0.0",
+   "native_failure": {
+    "driver_error": false,
+    "stop_error": false,
+    "timed_out": false
+   },
+   "note": "driver produced no answer text"
+  },
+  {
+   "qid": "f928c075",
+   "env_id": "web",
+   "category": "static-environment",
+   "eval_type": "phrase_set",
+   "score": 0.0,
+   "flag": null,
+   "question_sha256": "588665b46f424688db742c8763e2de71f006b8cfa6e1c302562bbb840b2d407b",
+   "run_record_sha256": "e7d7a95a6fecafb84be3758f266c71ecc32dbeaf20f201da45f101e92b65fe74",
+   "scoring_protocol": "optimus-lme-v2-dgx-port/2.0.0",
+   "native_failure": {
+    "driver_error": false,
+    "stop_error": false,
+    "timed_out": false
+   },
+   "details": {
+    "metric": "lme_v2_norm_phrase_set_match",
+    "separators": ",;"
+   },
+   "driver_latency_ms": 2741,
+   "is_unknown": false,
+   "parsed_boxed": "Toolbox"
+  }
+ ]
+}
