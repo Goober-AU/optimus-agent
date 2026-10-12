@@ -1,0 +1,144 @@
+{
+ "schema": "iteration3-locomo-gate2-result/v1",
+ "at": "2026-10-12T18:05:51.798686+00:00",
+ "question_set": {
+  "n": 300,
+  "protocol": "optimus-locomo-conversion/2.0.0",
+  "scoring": "optimus-local-scoring/1.0.0",
+  "qid_set_identical_to_iteration2_gate": true,
+  "declarations_sha256": "9e88a6fdf1a3d74866daf21dd47e53fd6721599a2907f8e217f3ec6c626b383f"
+ },
+ "binary": {
+  "iteration2_anchor": {
+   "commit": "799760177883f3c9f26fe39ff6e7f05288c5d757",
+   "sha256": "4ece283eef1e48d8a03dc61ee26c3804233c3d6a001f8b8d0e28fc616e74db4e"
+  },
+  "gate_v2": {
+   "commit": "bdffcad50ca39660255cad940193953a68140c02",
+   "sha256": "ab1e1474af636a18b47b8969c22fa1e82cfbd811ad5efe71b30be0122ee169fc",
+   "delta": "temporal discipline in core: recall at-labels, latest-wins tie-break, header guidance (commit 955aafde2) + import_apply timeout scaling + test stabilization"
+  },
+  "settings": "byte-identical to iteration-2 improved-defaults (defaults arm: all recall helpers off)"
+ },
+ "runs": {
+  "improved-s0": {
+   "envs": [
+    "conv-26",
+    "conv-42",
+    "conv-47",
+    "conv-50"
+   ],
+   "questions": 129,
+   "status": "complete"
+  },
+  "improved-s1": {
+   "envs": [
+    "conv-30",
+    "conv-43",
+    "conv-48"
+   ],
+   "questions": 90,
+   "status": "complete"
+  },
+  "improved-s2": {
+   "envs": [
+    "conv-41",
+    "conv-44",
+    "conv-49"
+   ],
+   "questions": 81,
+   "status": "complete"
+  }
+ },
+ "arms": {
+  "improved-defaults-gate-v2": {
+   "overall_mean_f1": 0.2148,
+   "overall_acc05": 0.1833,
+   "cats1_4_mean_f1": 0.2766,
+   "cats1_4_acc05": 0.2361,
+   "n": 300
+  },
+  "iteration2-anchor": {
+   "overall_mean_f1": 0.2039,
+   "overall_acc05": 0.1667,
+   "cats1_4_mean_f1": 0.2626,
+   "cats1_4_acc05": 0.2146,
+   "n": 300
+  }
+ },
+ "by_category_mean_f1": {
+  "1_multi_hop": {
+   "anchor": 0.161,
+   "gate_v2": 0.1307,
+   "delta": -0.0303,
+   "n": 43
+  },
+  "2_temporal": {
+   "anchor": 0.2279,
+   "gate_v2": 0.2485,
+   "delta": 0.0206,
+   "n": 48
+  },
+  "3_open_domain": {
+   "anchor": 0.1616,
+   "gate_v2": 0.2806,
+   "delta": 0.119,
+   "n": 15
+  },
+  "4_single_hop": {
+   "anchor": 0.322,
+   "gate_v2": 0.3361,
+   "delta": 0.0141,
+   "n": 127
+  },
+  "5_adversarial": {
+   "anchor": 0.0,
+   "gate_v2": 0.0,
+   "delta": 0.0,
+   "n": 67,
+   "note": "non-scoring: answer-form mismatch documented in iteration-2 gate affects both arms equally"
+  }
+ },
+ "statistics": {
+  "cats1_4_paired_delta": {
+   "n": 233,
+   "mean_delta": 0.014,
+   "se": 0.021,
+   "t": 0.67,
+   "approx_p_normal": 0.503
+  },
+  "cats1_4_acc_wilson95": {
+   "anchor": [
+    0.1667,
+    0.2717
+   ],
+   "gate_v2": [
+    0.1861,
+    0.2946
+   ]
+  },
+  "note": "paired per-question deltas on identical qids; no category difference is statistically significant; cat-3 swing is n=15 noise"
+ },
+ "run_quality": {
+  "error_rows": {
+   "count": 6,
+   "flagged": 6,
+   "qids": {
+    "conv-30_q66": "dgx 503 (cat4)",
+    "conv-30_q93": "dgx 503 (cat5)",
+    "conv-43_q3": "dgx 503 (cat3)",
+    "conv-41_q170": "dgx 503 (cat5)",
+    "conv-44_q157": "dgx 503 (cat5)",
+    "conv-49_q4": "stop_reason=length, 8192-token cap hit with empty visible answer (cat2; scored 0 in anchor too)"
+   },
+   "impact": "5 provider-503 rows + 1 length-cap row; 3 are cat-5 (0 in both arms); 2 cats1-4 rows had anchor F1 0.083/0.05; worst-case cats1-4 distortion < 0.001; no retry performed"
+  },
+  "vs_iteration2": "iteration-2 run had 0 error rows; 3 transient DGX 503s here (1 during s2 ingest auto-retried)"
+ },
+ "verdict": "NO REGRESSION (slight improve, within noise): cats 1-4 mean F1 0.2766 vs anchor 0.2626 (+0.0141, paired p~0.50); overall 0.2148 vs 0.2039 (+0.0109); temporal category 0.2485 vs 0.2279 (+0.0206); multi-hop 0.1307 vs 0.1610 (-0.0303, not significant, paired p~0.48); open-domain +0.119 on n=15 (noise); single-hop +0.0141. No gating metric fell beyond noise, memory lift is preserved (36x vs nomem floor 0.0073).",
+ "scores": {
+  "gate_v2": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/scores/improved-defaults.json",
+  "anchor": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration2-inputs/locomo/scores/improved-defaults.json",
+  "anchor_rescored_with_this_code": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/scores/anchor-rescore.json (identical to published)"
+ }
+}
