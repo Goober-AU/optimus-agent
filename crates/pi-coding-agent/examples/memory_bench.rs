@@ -2339,11 +2339,19 @@ async fn ingest_env(
             }
         }
 
-        // import_apply (revision read fresh right before applying)
+        // import_apply (revision read fresh right before applying).
+        // With recallProspectiveIndex the apply phase also generates one bounded
+        // cue call per newly created entry, so the budget scales to the ingest
+        // timeout instead of the fixed extraction window.
+        let apply_budget_s = if manifest.settings.recall_prospective_index {
+            manifest.settings.ingest_timeout_s.max(120)
+        } else {
+            120
+        };
         let service = MemoryService::new(&cwd_str, &agent_dir_str, Some(session_artifact_str.clone()))?;
         let revision = service.store.read()?.memory.revision;
         let applied = tokio::time::timeout(
-            Duration::from_secs(120),
+            Duration::from_secs(apply_budget_s),
             call_memory(
                 &memory_request,
                 json!({"action": "import_apply", "id": job_id, "revision": revision}),

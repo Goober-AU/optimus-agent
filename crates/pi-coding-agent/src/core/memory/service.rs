@@ -318,34 +318,36 @@ impl MemoryService {
         let mut input = 0.0f64;
         let mut output = 0.0f64;
         for entry in &created {
-            match generate(&entry.title, &entry.content).await {
-                Ok(result) => {
-                    input += result.input.unwrap_or(0.0);
-                    output += result.output.unwrap_or(0.0);
-                    if result.cues.is_empty() {
-                        failed += 1;
-                        continue;
-                    }
-                    let mut metadata = JsonMap::new();
-                    metadata.insert(
-                        "prospectiveCues".to_string(),
-                        serde_json::json!(result.cues),
-                    );
-                    edits.push(RefinementEdit {
-                        action: "update".to_string(),
-                        kind: "memory".to_string(),
-                        id: Some(entry.id.clone()),
-                        title: Some(entry.title.clone()),
-                        content: Some(entry.content.clone()),
-                        path: Some(entry.path.clone()),
-                        reference: None,
-                        arguments: None,
-                        metadata: Some(metadata),
-                        reason: Some("Write-time prospective retrieval cues".to_string()),
-                    });
+            let result = match generate(&entry.title, &entry.content).await {
+                Ok(result) => result,
+                Err(_) => {
+                    failed += 1;
+                    continue;
                 }
-                Err(_) => failed += 1,
+            };
+            input += result.input.unwrap_or(0.0);
+            output += result.output.unwrap_or(0.0);
+            if result.cues.is_empty() {
+                failed += 1;
+                continue;
             }
+            let mut metadata = JsonMap::new();
+            metadata.insert(
+                "prospectiveCues".to_string(),
+                serde_json::json!(result.cues),
+            );
+            edits.push(RefinementEdit {
+                action: "update".to_string(),
+                kind: "memory".to_string(),
+                id: Some(entry.id.clone()),
+                title: Some(entry.title.clone()),
+                content: Some(entry.content.clone()),
+                path: Some(entry.path.clone()),
+                reference: None,
+                arguments: None,
+                metadata: Some(metadata),
+                reason: Some("Write-time prospective retrieval cues".to_string()),
+            });
         }
         let indexed = edits.len();
         if edits.is_empty() {
