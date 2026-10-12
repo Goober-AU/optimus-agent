@@ -1,0 +1,28 @@
+Driver parse validation (campaign iteration-2 pattern) — 2026-10-12
+
+Binary: built from THIS worktree (imp3-lmesfull, branch improve/mem3-lmes-full,
+commit = base imp3 HEAD 4c87c9e78, clean tree):
+  cargo build --release --example memory_bench -p pi-coding-agent
+  (RUSTUP_HOME/CARGO_HOME = optimus-rust-toolchain; 12m19s, exit 0)
+  target/release/examples/memory_bench.exe (41,273,344 bytes)
+
+Method: run the sealed binary with MEMORY_BENCH_MODELS_JSON deliberately
+unset. The binary parses and validates the FULL manifest (serde schema,
+capture contract, question declarations, lme2/lmev2 gates, frozen contract)
+BEFORE the provider-config gate, then exits 2 there. Per the iteration-2
+MANIFESTS-READY convention, exit 2 at the provider-config gate with no
+earlier error means the manifest passed all driver-side checks.
+
+Results (exit 2 at the provider-config gate for all 22 manifests):
+  lme_s_full_smoke5_v1.json  (5 envs / 5 questions)    -> PASS
+  lme_s_full_v1.json         (500 envs / 500 q)        -> PASS
+  lme_s_full_v1_s00.json .. lme_s_full_v1_s19.json
+    (20 shards x 25 envs / 25 questions each)          -> PASS (20/20)
+
+Exact error line in every case (expected, after all manifest checks):
+  error: MEMORY_BENCH_MODELS_JSON must explicitly name the provider configuration; installed-profile fallback is forbidden
+
+Cleanup: the validation runs install an isolation skeleton under each
+manifest's output_dir; all 22 created skeleton dirs were removed afterwards
+(verified: no run.jsonl/env.jsonl existed in any of them), so every run_id
+still starts from a fresh, nonexistent output dir at launch time.
