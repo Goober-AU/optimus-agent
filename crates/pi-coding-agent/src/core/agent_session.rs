@@ -190,6 +190,7 @@ use crate::modes::agent_connection::daemon_agent_connection::now_iso;
 use crate::utils::warning_limiter::{limited_warning, wall_clock_ms, DEFAULT_WARNING_WINDOW_MS};
 use pi_ai::models::{
     get_model_input_limit, get_supported_thinking_levels, models_are_equal, supports_fast_mode,
+    supports_ultrafast_mode,
 };
 use pi_ai::utils::overflow::is_context_overflow;
 
@@ -13595,6 +13596,15 @@ impl AgentSession {
         let current_model = self.model();
         if let Some(current_model) = current_model.as_ref() {
             if supports_fast_mode(current_model) {
+                // Ultrafast serves a narrower model set (GPT-6 Astra and GPT-6.1
+                // Sol on the Codex subscription route). Switching models keeps the
+                // speed preference at the best tier the model serves instead of
+                // sending a tier it would reject.
+                if service_tier.as_ref().and_then(|tier| tier.as_deref()) == Some("ultrafast")
+                    && !supports_ultrafast_mode(current_model)
+                {
+                    return Some(Some("priority".to_string()));
+                }
                 return service_tier;
             }
         }

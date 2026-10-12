@@ -361,7 +361,10 @@ pub fn apply_service_tier_pricing(usage: &mut Usage, service_tier: Option<&str>,
 /// `resolveCodexServiceTier(responseServiceTier, requestServiceTier)`.
 pub fn resolve_codex_service_tier(response_service_tier: Option<&str>, request_service_tier: Option<&str>) -> Option<String> {
     if response_service_tier == Some("default")
-        && (request_service_tier == Some("flex") || request_service_tier == Some("priority"))
+        && matches!(
+            request_service_tier,
+            Some("flex") | Some("priority") | Some("ultrafast")
+        )
     {
         return request_service_tier.map(str::to_string);
     }

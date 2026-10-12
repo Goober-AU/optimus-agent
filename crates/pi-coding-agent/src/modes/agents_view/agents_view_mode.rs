@@ -226,8 +226,8 @@ pub struct AgentsViewCommand {
 }
 
 /// Built-in slash commands this mode maps onto existing RPCs.
-pub const BUILTIN_SLASH_COMMAND_NAMES: [&str; 37] = [
-    "settings", "model", "effort", "fast", "scoped-models", "export", "import", "share", "copy", "btw",
+pub const BUILTIN_SLASH_COMMAND_NAMES: [&str; 38] = [
+    "settings", "model", "effort", "fast", "ultrafast", "scoped-models", "export", "import", "share", "copy", "btw",
     "name", "session", "system-prompt", "logs", "traces", "context", "changelog", "update", "hotkeys",
     "fork", "clone", "tree", "login", "logout", "mcp", "new", "compact", "refine", "goal", "autonomous",
     "rlm-max-depth", "heartbeat", "heartbeats", "resume", "reload", "fullscreen", "quit",

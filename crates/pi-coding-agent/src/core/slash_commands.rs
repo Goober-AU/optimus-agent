@@ -216,6 +216,12 @@ fn canonical_builtin_slash_commands() -> Vec<BuiltinSlashCommand> {
         None,
     );
     push("fast", "Toggle OpenAI Fast mode".to_string(), None, None);
+    push(
+        "ultrafast",
+        "Toggle OpenAI Ultrafast mode (GPT-6 Astra / GPT-6.1 Sol)".to_string(),
+        None,
+        None,
+    );
     push("mode", "Switch between IPython, Node, Clang-Repl and Direct tools for this chat".into(), Some("[ipython|node|clang|direct|cycle]"), Some(true));
     push(
         "scoped-models",

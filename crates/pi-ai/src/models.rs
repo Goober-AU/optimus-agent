@@ -57,6 +57,18 @@ pub fn supports_fast_mode(model: &Model) -> bool {
     (codex_route && (eligible_id || codex_sol_id)) || (openai_route && eligible_id)
 }
 
+/// `supportsUltrafastMode(model)` — OpenAI's Ultrafast service tier ("the fastest
+/// available responses", 8x Standard speed against subscription allowance) is offered
+/// for exactly two models, both on the ChatGPT subscription route
+/// (`openai-codex-responses`): GPT-6 Astra and GPT-6.1 Sol. Fast (`priority`) remains
+/// available to the wider set above; a persisted Ultrafast preference on any other
+/// model is demoted by the session clamp, not rejected here.
+pub fn supports_ultrafast_mode(model: &Model) -> bool {
+    let ultrafast_id = model.id == GPT_6_ASTRA || model.id == GPT_6_1_SOL;
+    let codex_route = model.provider == "openai-codex" && model.api == "openai-codex-responses";
+    codex_route && ultrafast_id
+}
+
 /// Astra reserves part of its context window for output.
 pub const ASTRA_INPUT_LIMIT: f64 = 922_000.0;
 
@@ -330,6 +342,40 @@ mod tests {
             ] {
                 let model = Model::new(id, id, api, provider, "https://fixture.invalid");
                 assert!(!supports_fast_mode(&model), "{provider}/{id} via {api}");
+            }
+        }
+    }
+
+    #[test]
+    fn ultrafast_mode_requires_eligible_id_and_codex_route() {
+        for id in [GPT_6_ASTRA, GPT_6_1_SOL] {
+            for provider in ["openai", "openai-codex", "github-copilot", "OpenAI-Codex", ""] {
+                for api in [
+                    "openai-responses", "openai-codex-responses", "openai-completions",
+                    "openai-codex-responses-v2", "OpenAI-Codex-Responses", "",
+                ] {
+                    let model = Model::new(id, id, api, provider, "https://fixture.invalid");
+                    let codex = provider == "openai-codex" && api == "openai-codex-responses";
+                    assert_eq!(supports_ultrafast_mode(&model), codex, "{provider}/{id} via {api}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn ultrafast_mode_rejects_unreviewed_model_ids() {
+        for id in [
+            GPT_6_SOL, "gpt-6.2-sol", "gpt-6.1-astra", "gpt-6-astra-preview",
+            "gpt-6.1-sol-preview", "gpt-6-astra-2026-09-30", "gpt-6.1-sol-2026-09-30",
+            "gpt-6-astrax", "gpt-6.1-solx", "GPT-6-ASTRA", " gpt-6-astra", "gpt-6-astra ",
+            "openai-codex/gpt-6-astra", "",
+        ] {
+            for (provider, api) in [
+                ("openai", "openai-responses"),
+                ("openai-codex", "openai-codex-responses"),
+            ] {
+                let model = Model::new(id, id, api, provider, "https://fixture.invalid");
+                assert!(!supports_ultrafast_mode(&model), "{provider}/{id} via {api}");
             }
         }
     }

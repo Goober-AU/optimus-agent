@@ -412,6 +412,24 @@ pub async fn create_agent_session_with_factories(
             .unwrap_or(true)
     {
         Some(Some("default".to_string()))
+    } else if service_tier_preference.as_ref().and_then(|tier| tier.as_deref())
+        == Some("ultrafast")
+        && model
+            .as_ref()
+            .map(|model| !pi_ai::models::supports_ultrafast_mode(model))
+            .unwrap_or(true)
+    {
+        // A persisted Ultrafast preference survives only on the models that offer
+        // it; otherwise keep the speed preference at Fast when available.
+        if model
+            .as_ref()
+            .map(|model| pi_ai::models::supports_fast_mode(model))
+            .unwrap_or(false)
+        {
+            Some(Some("priority".to_string()))
+        } else {
+            Some(Some("default".to_string()))
+        }
     } else {
         service_tier_preference.clone()
     };
