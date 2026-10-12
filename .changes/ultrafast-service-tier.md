@@ -1,0 +1,4 @@
+- Added an `/ultrafast` command for OpenAI's Ultrafast service tier, offered for exactly two models on the ChatGPT/Codex subscription route: `gpt-6-astra` and `gpt-6.1-sol` (wire value `service_tier: "ultrafast"`, advertised by Codex alongside `priority` = Fast).
+- `pi-ai`: new `supports_ultrafast_mode` gate; `resolve_codex_service_tier` keeps a requested `ultrafast` tier when the server reports `default`, matching the existing `flex`/`priority` behavior.
+- TUI `/ultrafast` toggles between `default` and `ultrafast`; the model tray shows `ultrafast` while active. Telegram gets `/ultrafast [on|off]`.
+- Model switches demote a persisted `ultrafast` preference to `priority` (Fast) when the new model lacks Ultrafast but serves Fast, else `default` — the same clamp path `/fast` already uses.

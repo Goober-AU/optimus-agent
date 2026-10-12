@@ -4290,6 +4290,40 @@ async fn run_builtin_command(
                 if on { "on" } else { "off" }
             )))
         }
+        // `commandName === "ultrafast"` — Ultrafast service tier (GPT-6 Astra and
+        // GPT-6.1 Sol, ChatGPT/Codex subscription route only).
+        "ultrafast" => {
+            if !args.is_empty() {
+                return Ok(CommandOutput::Error("Usage: /ultrafast".to_string()));
+            }
+            let unavailable = concat!(
+                "Ultrafast requires GPT-6 Astra or GPT-6.1 Sol with ChatGPT ",
+                "authentication (openai-codex).",
+            );
+            let state = connection.get_state().await?;
+            let supports = state
+                .model
+                .as_ref()
+                .map(pi_ai::models::supports_ultrafast_mode)
+                .unwrap_or(false);
+            if !supports {
+                return Ok(CommandOutput::Status(unavailable.to_string()));
+            }
+            let enabled =
+                state.service_tier.as_ref().and_then(|tier| tier.as_deref()) == Some("ultrafast");
+            connection
+                .set_service_tier(Some(Some(
+                    if enabled { "default" } else { "ultrafast" }.to_string(),
+                )))
+                .await?;
+            let next = connection.get_state().await?;
+            let on =
+                next.service_tier.as_ref().and_then(|tier| tier.as_deref()) == Some("ultrafast");
+            Ok(CommandOutput::Status(format!(
+                "Ultrafast mode: {}",
+                if on { "on" } else { "off" }
+            )))
+        }
         // `commandName === "name"` (interactive-mode.ts:9410-9428).
         "name" => {
             let requested = text
@@ -6565,6 +6599,7 @@ fn apply_event_legacy_for_speed(
             "system-prompt",
             "traces",
             "tree",
+            "ultrafast",
             "update",
         ] {
             match classify_submission(&format!("/{name}")) {

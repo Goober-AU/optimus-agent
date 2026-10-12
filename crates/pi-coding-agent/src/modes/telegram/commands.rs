@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use pi_ai::models::supports_fast_mode;
+use pi_ai::models::{supports_fast_mode, supports_ultrafast_mode};
 use pi_agent_core::types::ThinkingLevel;
 
 use crate::core::cron_jobs::{format_agent_cron_job, AgentCronJob};
@@ -22,6 +22,7 @@ pub fn supported_commands() -> HashSet<&'static str> {
         "model",
         "effort",
         "fast",
+        "ultrafast",
         "name",
         "session",
         "context",
@@ -320,6 +321,29 @@ impl TelegramCommands {
                     )))
                     .await?;
                 self.reply(format!("Fast mode: {}", if enable { "on" } else { "off" }));
+                Ok(())
+            }
+            "ultrafast" => {
+                let state = connection.get_state().await?;
+                let Some(model) = state.model.as_ref() else {
+                    return Err("The current model does not support ultrafast mode.".to_string());
+                };
+                if !supports_ultrafast_mode(model) {
+                    return Err("The current model does not support ultrafast mode.".to_string());
+                }
+                // TS: `state.serviceTier !== "ultrafast"` - the resolved tier is not ultrafast.
+                let service_tier_is_ultrafast =
+                    state.service_tier.as_ref().and_then(|tier| tier.as_deref()) == Some("ultrafast");
+                let enable = args == "on" || (args.is_empty() && !service_tier_is_ultrafast);
+                if !args.is_empty() && args != "on" && args != "off" {
+                    return Err("Usage: /ultrafast [on|off]".to_string());
+                }
+                connection
+                    .set_service_tier(Some(Some(
+                        if enable { "ultrafast" } else { "default" }.to_string(),
+                    )))
+                    .await?;
+                self.reply(format!("Ultrafast mode: {}", if enable { "on" } else { "off" }));
                 Ok(())
             }
             "name" => {

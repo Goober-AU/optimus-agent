@@ -2434,15 +2434,14 @@ impl InteractiveMode {
                 parts.push(level.as_str().to_string());
             }
         }
-        if self
+        match self
             .connection_state
             .as_ref()
-            .map(|state| {
-                state.service_tier.as_ref().and_then(|tier| tier.as_deref()) == Some("priority")
-            })
-            .unwrap_or(false)
+            .and_then(|state| state.service_tier.as_ref().and_then(|tier| tier.as_deref()))
         {
-            parts.push("fast".to_string());
+            Some("priority") => parts.push("fast".to_string()),
+            Some("ultrafast") => parts.push("ultrafast".to_string()),
+            _ => {}
         }
         parts.join(" \u{2022} ")
     }
