@@ -78,3 +78,33 @@ for lp_118's phrasing.
 - `lpq118-scratch/lpq118_v4A_fresh2.log` — driver log (complete)
 - `lpq118-scratch/runs/lpq118_v4A_fresh/` — crashed original partial (evidence)
 - Ledger: `reports/continuation/iteration4/QUESTION-LEDGER.json` → entries[lp_118].round4.fresh_reingest_arm
+
+
+## Follow-up: full-stack E3 re-run (imp4-targetR + raised budgets + E3 + nonarr)
+
+3 runs on the cached fresh2 store (skipIngest, 734 entries / 99.0% cues),
+binary imp4-targetR (sha c04ab631), E3 read config (rerankCandidates 500,
+distillation OFF, expansion OFF), no-narration addendum.
+
+| run | rerank | gold recalled | answer grounding | score |
+| --- | --- | --- | --- | --- |
+| r1 | invalid_output, 2698 tok, stop=stop | no | son's ankle/bike accident | 0.0 |
+| r2 | invalid_output, 2648 tok, stop=stop | no | bike accident | 0.0 |
+| r3 | used, 3650 tok, stop=stop | **yes** (mem_sam_congratulated_evan_son_graduation) | empty-nest adjustment (implicit graduation) | **1.0** |
+
+**Mean 0.333 (1/3) — below the 2/3 launch bar.**
+
+Mechanism deltas vs the targetA fresh run:
+
+- Budget starvation FIXED: rerank emits 2648-3650 tokens with natural stop
+  (targetA: 0 chars, stop=length at the 2048 cap). Distillation/expansion
+  cleanly disabled per E3.
+- Narration FIXED: 0/3 narration with the addendum (v3: 1/6).
+- Residual class = rerank output-format parse flake: 2/3 runs the model
+  finished naturally but the output was unparseable, so the top-500 pool
+  collapsed to the lexical top-20 (no gold), and the answer latched onto
+  the son's accident memories. When the rerank parsed (r3) it selected gold
+  and the run scored 1.0.
+
+Artifacts: `lpq118-scratch/runs/lpq118_v4B_e3_r{1,2,3}/`,
+manifests + logs alongside; ledger entries[lp_118].round4.fresh_reingest_arm.fullstack_e3_rerun.
