@@ -1,0 +1,155 @@
+{
+ "schema": "loco-answers-experiment/1",
+ "ts": "2026-10-13T09:00:00+00:00",
+ "worker": "locoans",
+ "questions": [
+  {
+   "qid": "conv-26_q18",
+   "question": "Where has Melanie camped?",
+   "gold": "beach, mountains, forest",
+   "category": "1/multi-hop",
+   "baseline_score": 0.2685,
+   "baseline_note": "gate2 improved-defaults local token-F1 (comma_multi_answer); ledger det-config attempts 0.4444"
+  },
+  {
+   "qid": "conv-26_q144",
+   "question": "How did Melanie's son handle the accident?",
+   "gold": "He was scared but reassured by his family",
+   "category": "4/single-hop",
+   "baseline_score": 0.2927,
+   "baseline_note": "gate2 improved-defaults local token-F1; det-config attempts 0.3333-0.3636 ('He was okay.')"
+  }
+ ],
+ "diagnosis": {
+  "q18_class": "D (retrieval) for the missing 'forest' + G (answer form) for the comma shape - NOT a pure answer-stage set-completeness miss",
+  "q18_store_evidence": [
+   "All three gold-fact notes EXIST in the frozen conv-26 store: melanie_family_mountain_camping_trip_june_2023, melanie_family_beach_camping, melanie_family_forest_camping_trip_july_2023 (+ melanie_family_forest_camping_late_august_2023).",
+   "But NONE is inside the 24-entry recall window: forest-Aug ranks 25th (score 0.2684, TIED with the boundary entries at ranks 15-23; the 0.2684 tie group spans ranks 15-49), forest-July ranks 44th, and the mountain + beach notes are NOT in the top-50 at all.",
+   "The baseline answer 'the mountains and the beach' is derived from the cross-reference sentence inside melanie_camping_what_she_loves_most (rank 16): 'This generalizes her earlier camping trips (mountains in June 2023; beach camping as a favorite family activity)'.",
+   "'forest' appears NOWHERE in the 24-window recall text - the model cannot answer what it never sees. V's scope verdict (answer-stage set-completeness miss) is corrected: the knowledge gap is read-time; a deep-rank D window/query fix (e.g. maxRecallEntries 24->28+ or a query that differentiates the tied 0.2684 group) is required to restore the forest fact.",
+   "G-side: the locomo cat-1 comma_multi_answer scorer splits both prediction and gold on commas and takes the mean over gold sub-answers of the best sub-F1, so a comma-separated answer 'mountains, beach' scores 0.6667 (each gold part matched at F1 1.0) while the same items joined by 'and' score 0.4444 - the answer FORM is a gate-relevant answer-stage factor."
+  ],
+  "q144_class": "G (answer stage) - genuine",
+  "q144_store_evidence": [
+   "Gold note melanie_son_accident_family_roadtrip_october_2023 is recalled at RANK 0 (score 1.5071) - recall is perfect.",
+   "The note supports 'Everyone was freaked out and scared, but thankfully her son is okay' - the baseline answers ('He was okay.' / 'Thankfully, he was okay.') dropped the fear entirely.",
+   "The gold's 'reassured by his family' derives from the siblings' sentence ('They were scared but we reassured them', session_18 m_0007) with a they->he swap; the note-faithful son answer caps at 'He was scared but okay' (token-F1 0.6154).",
+   "Failure mode: the det answerInstruction's natural-form guidance covers when/what/who/which questions but NOT how-questions, so the model either rambles or answers with the resolution only."
+  ]
+ },
+ "hypotheses": [
+  {
+   "id": "q18-B0",
+   "desc": "baseline re-answer with the deterministic config (h3b-deterministic-recall.json)",
+   "settings": "loco-q5/h3b-deterministic-recall.json",
+   "outcome": "fail",
+   "score": 0.4444,
+   "answer": "the mountains and the beach",
+   "recall": "24 entries; only 2 camping notes (perseid rank 5, what-she-loves-most rank 16); NO forest note in window",
+   "conclusion": "failure_stage=answer, but the recall set lacks all three location notes - set completeness cannot be fixed at answer stage"
+  },
+  {
+   "id": "q18-H1",
+   "desc": "set-completeness answer clause (parent-specified general wording, verbatim)",
+   "settings": "loco-answers/q18-h1-setcompleteness.json",
+   "outcome": "fail",
+   "score": 0.2667,
+   "answer": "The mountains (June 2023) and the beach.",
+   "conclusion": "WORSE than baseline: the clause pushed the model to add note-provenance dates that dilute token-F1; forest still absent (not in window)"
+  },
+  {
+   "id": "q18-H2",
+   "desc": "are beach/mountain/forest all in the 24-entry window? (diagnostic check)",
+   "outcome": "no",
+   "evidence": "search_ranked: forest-Aug rank 25 (tied 0.2684 with ranks 15-49), forest-July rank 44, mountain/beach notes not in top-50; window covers ranks 0-23",
+   "conclusion": "root cause of the missing 'forest' is retrieval ranking (deep-rank D: window/query), not answer aggregation"
+  },
+  {
+   "id": "q18-H3",
+   "desc": "general comma-form multi-item clause (comma-separated list, one or two words per item, combine across notes)",
+   "settings": "loco-answers/q18-h3-commaform.json",
+   "outcome": "pass",
+   "score": 0.6667,
+   "answer": "mountains, beach",
+   "conclusion": "WIN on form: each gold part matched at sub-F1 1.0; forest still unretrieved - a D-side fix would take this to 1.0"
+  },
+  {
+   "id": "q144-H1",
+   "desc": "entity-binding clause (parent-specified: answers about a specific person must come from notes about that person)",
+   "settings": "loco-answers/q144-h1-entitybinding.json",
+   "outcome": "fail",
+   "score": 0.4444,
+   "answer": "He was freaked out and scared, but thankfully he is okay.",
+   "conclusion": "content correct (son-bound, fear included) but verbose form dilutes token-F1 below 0.5"
+  },
+  {
+   "id": "q144-H3",
+   "desc": "entity-binding + how-question form rule (short clause of at most eight words naming how they felt and how it turned out)",
+   "settings": "loco-answers/q144-h3-eb-how-cap8.json",
+   "outcome": "pass",
+   "score": 0.5333,
+   "answer": "He was freaked out and scared, but okay.",
+   "conclusion": "WIN: the eight-word cap trims the dilution tokens while keeping fear+outcome"
+  },
+  {
+   "id": "G4-final",
+   "desc": "combined instruction (comma-form + entity-binding + how-cap8 + what-happened contrast + scope closer) - full battery",
+   "settings": "loco-answers/g4-final-combined.json",
+   "outcome": "pass",
+   "score": null,
+   "answers": {
+    "conv-26_q18": "mountains, beach (0.6667)",
+    "conv-26_q144": "He was scared, but thankfully okay. (0.5714)"
+   },
+   "conclusion": "8/9 battery pass; see regression_gate"
+  }
+ ],
+ "regression_gate": {
+  "required": "q1/q54/q126 at 1.0; q135/q141/q143/q149 >= 0.5 (their current passing states)",
+  "results": {
+   "conv-26_q1": {
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "2022"
+   },
+   "conv-26_q54": {
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "the week before 23 August 2023"
+   },
+   "conv-26_q126": {
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "Horseback riding"
+   },
+   "conv-26_q135": {
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "She got hurt and had to take a break from pottery."
+   },
+   "conv-26_q141": {
+    "score": 0.5263,
+    "outcome": "pass",
+    "answer": "Freedom and being real..."
+   },
+   "conv-26_q143": {
+    "score": 0.5,
+    "outcome": "pass",
+    "answer": "He was in an accident"
+   },
+   "conv-26_q149": {
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "love and support"
+   }
+  },
+  "stability": "q18: 0.6667 x3 + one 0.0 narration glitch (model narrated tool use; disableTools=true); q143: 0.5 x2; q144: 0.5714/0.5 x2",
+  "q149_note": "q149 is NOT answer-stage fixable on the frozen store: the 'motivation' note (melanie_married_five_years_as_of_june_2023: 'Her husband and kids keep her motivated') is in the store but OUTSIDE q149's 24-entry window, and 'strength' (session_18 m_0009: 'they give me the strength to keep going') was never ingested as a note at all. locoq7attrs' 0.8 required a typeB re-ingest with the h7 importInstructions. Det baseline for q149 was also 0.0 - no regression from this config; fix belongs to D (recall) or typeB (V's h7 importInstructions)."
+ },
+ "instructions": {
+  "driver": "imp4-targetR/release/examples/memory_bench.exe (exe 2026-10-13 08:17 > memory.rs 07:51)",
+  "model": "dgx-glm53/glm-5.3 only (user-mandated)",
+  "mode": "typeA copy-out against the frozen conv-26 store; ledger attempts auto-appended",
+  "scratch": "reports/continuation/iteration4/ql-attempts-locoans/"
+ }
+}

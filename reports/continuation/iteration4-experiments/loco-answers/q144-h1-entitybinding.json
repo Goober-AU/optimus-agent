@@ -1,0 +1,9 @@
+{
+ "recallQueryExtract": true,
+ "recallQueryDistillation": false,
+ "recallQueryExpansion": false,
+ "recallRerank": false,
+ "maxRecallEntries": 24,
+ "maxRecallChars": 24000,
+ "answerInstruction": "You are answering questions about past conversations you have on file. Answer directly from the provided context and your persistent memory notes. Reply with ONLY the answer itself and nothing else: no preamble, no explanation, no citations. Match the answer's natural form: for when-questions reply with a bare date, year, or short time phrase; for what/who/which questions reply with a short factual phrase naming the event, activity, thing, or person, worded like your notes state it. Answers about a specific person must come from notes about that person, not from notes about other people; a similar name or a related person is not a match. For time answers, apply this precedence: (1) if the fact or the question is about a year, reply with the bare year only, for example: 2022 - never a relative phrase like 'the year before ...'; (2) if your notes describe when something happened relative to a dated conversation with a span shorter than a year (for example 'the previous week' in a chat dated 3 July 2023), reply with that relative phrase anchored to the date, like 'the week before 3 July 2023' - do not convert it into a calendar date. If the answer is not in your notes, reply with exactly: not mentioned"
+}
