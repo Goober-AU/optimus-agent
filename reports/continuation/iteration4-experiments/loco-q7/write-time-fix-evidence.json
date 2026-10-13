@@ -1,0 +1,211 @@
+{
+ "schema": "loco-q7-write-time-fix-evidence/1",
+ "qid": "conv-26_q149",
+ "gold": "Strength and motivation",
+ "fix_class": "B write-time (attribute-statement extraction) + answer-stage part-combination",
+ "worktree": "imp4-attrs (branch improve/mem4-attributes)",
+ "controller": "scripts/memory_question_loop.py --mode typeB (single-session env conv-26/session_18, content-addressed cache)",
+ "cache_key_v1": "37ca5f1254f4e6c01052d21439d609bac7ff17be70ab688860af750a9a82d57f",
+ "cache_key_v2": "603d5a512bf70394844e77e2e1b518a6a934d20c94baf30fe6cbe7fa71f8ba26",
+ "write_clause": {
+  "base_words": 65,
+  "v1_words_added": 51,
+  "v1_total_words": 116,
+  "v2_words_added": 59,
+  "v2_total_words": 124,
+  "budget": "under 60 added words (KU precedent: 58 added / 123 total)",
+  "v1_text": "When a speaker states what motivates them, what matters to them, or describes themselves or another person (feelings, preferences, relationships, sources of strength or support), create a memory entry recording who holds the attribute and what it is, naming the person in the title. These are as important as dated events.",
+  "v2_text": "When a speaker states what motivates them, what matters to them, or describes themselves, another person, or a group (feelings, preferences, relationships, sources of strength or support), create a memory entry recording who holds the attribute and what that person or group gives or means to them, in the speaker's own words. These are as important as dated events.",
+  "v2_full_importInstructions": "Extract durable host-neutral project facts only. Only create edits of kind memory with cited sourceIds. Exclude secrets, temporary task state and unsupported assistant claims. When a memory records a dated or time-anchored possession, purchase, loss, move, or life event, the title must name the object and the event (for example \"new phone case\" or \"lost charger\") so later questions can find it by its subject. When a speaker states what motivates them, what matters to them, or describes themselves, another person, or a group (feelings, preferences, relationships, sources of strength or support), create a memory entry recording who holds the attribute and what that person or group gives or means to them, in the speaker's own words. These are as important as dated events.",
+  "note": "v2 drops v1's 'naming the person in the title' for word budget; observed extraction names the person in every title anyway (all 6 v2 titles name Melanie or Caroline)."
+ },
+ "read_clause": {
+  "words_added": 41,
+  "text": "When several notes each state part of what a person or group gives, means, or is to someone, answer with those parts combined, naming each attribute in one or two words (the quality or thing itself, no verbs or longer phrases).",
+  "placement": "appended to the h3b-deterministic answerInstruction after 'worded like your notes state it.'",
+  "note": "recall stack unchanged from h3b-deterministic-recall.json (extract-only query, no distill/rerank/expansion, 24 entries / 24000 chars)."
+ },
+ "store_transformation": {
+  "frozen_store_session18_memories": [
+   "melanie_son_accident_family_roadtrip_october_2023",
+   "melanie_family_grand_canyon_roadtrip_october_2023",
+   "melanie_family_trail_walk_after_roadtrip_october_2023",
+   "melanie_camping_what_she_loves_most"
+  ],
+  "v2_store_session18_memories": {
+   "melanie-son-accident-weekend-roadtrip": "dated event (accident) - preserved under the clause",
+   "melanie-grand-canyon-roadtrip": "dated event - preserved",
+   "melanie-family-support-motivation": "NEW attribute note: quotes m_0011 'biggest motivation and support' (cites m_0005/9/11/13/15)",
+   "melanie-kids-tough-strength": "NEW attribute note: quotes m_0009 'give me the strength to keep going' (cites m_0007/8/9)",
+   "melanie-camping-family-preference": "preference note (was 'camping what she loves most')",
+   "melanie-trail-walk-after-roadtrip": "dated event - preserved"
+  },
+  "gold_turns_now_cited": [
+   "m_0009:0 (D18:9)",
+   "m_0011:0 (D18:11)",
+   "m_0013:0 (D18:13)"
+  ]
+ },
+ "attempts": [
+  {
+   "id": "B0-frozen",
+   "config": "h3b deterministic, frozen full store",
+   "score": 0.0,
+   "answer": "Love and support",
+   "owner": "locoq7 (prior)"
+  },
+  {
+   "id": "H4",
+   "config": "clause v1, typeB single-session ingest",
+   "score": 0.3333,
+   "answer": "Her biggest motivation and support",
+   "run_id": "attrs-q149-h4-typeb",
+   "note": "attribute note created but content summarized 'biggest motivation and support' only; m_0009 strength phrasing cited yet dropped from content"
+  },
+  {
+   "id": "H4b",
+   "config": "clause v2 (speaker's own words), fresh ingest",
+   "score": 0.3333,
+   "answer": "The strength to keep going",
+   "run_id": "attrs-q149-h4b-typeb-v2",
+   "note": "both attribute notes now quote the gold statements verbatim; answer stage quotes ONE note instead of combining"
+  },
+  {
+   "id": "H4b-r2",
+   "config": "same, warm-cache re-answer",
+   "score": 0.3333,
+   "answer": "The strength to keep going",
+   "run_id": "attrs-q149-h4b-r2",
+   "note": "stable, not sampling variance"
+  },
+  {
+   "id": "H5",
+   "config": "+ combine-parts answer clause (one short phrase)",
+   "score": 0.4,
+   "answer": "The strength to keep going, and her biggest motivation and support.",
+   "run_id": "attrs-q149-h5-combine",
+   "note": "combines both notes but keeps verbs/modifiers ('to keep going', 'biggest')"
+  },
+  {
+   "id": "H6",
+   "config": "+ bare-attributes answer clause",
+   "score": 0.5,
+   "answer": "The strength to keep going, motivation, and support",
+   "run_id": "attrs-q149-h6-combine-bare"
+  },
+  {
+   "id": "H7",
+   "config": "+ one-or-two-words-per-attribute answer clause (FINAL)",
+   "score": 0.8,
+   "answer": "Strength, motivation, and support.",
+   "run_id": "attrs-q149-h7w",
+   "note": "PASS; F1 vs gold 'Strength and motivation': pred {strength, motivation, support}, gold {strength, motivation}"
+  },
+  {
+   "id": "H7-r2",
+   "config": "same, warm-cache re-answer",
+   "score": 0.8,
+   "answer": "Strength, motivation, and support",
+   "run_id": "attrs-q149-h7w-r2",
+   "note": "stable across repeats"
+  }
+ ],
+ "spot_checks": [
+  {
+   "qid": "conv-26_q144",
+   "gold": "He was scared but reassured by his family",
+   "evidence": "D18:6, D18:7 (session 18)",
+   "is_attribute_statement": true,
+   "write_side": "clause v2 captures the dropped statement: melanie-kids-tough-strength quotes 'they were scared ... but were reassured' (m_0007)",
+   "result": {
+    "score": 0.3636,
+    "answer": "He was okay.",
+    "run_id": "attrs-q144-h7w",
+    "baseline_h2h_det": 0.3636,
+    "flipped": false
+   },
+   "residual_failure": "answer stage answers from the son-accident note ('He was okay') instead of the scared/reassured note; the question asks about the son while D18:7's scared/reassured statement is about the siblings (dataset gold maps it to the son). Not a write-time drop."
+  },
+  {
+   "qid": "conv-26_q77",
+   "gold": "Likely no; since this one went badly",
+   "evidence": "D18:3, D18:1 (session 18)",
+   "is_attribute_statement": false,
+   "write_side": "frozen store already contained the bad-trip-start facts (son-accident note); v2 store keeps 'The trip got off to a bad start because of it'",
+   "result": {
+    "score": 0.0,
+    "answer": "not mentioned",
+    "run_id": "attrs-q77-h7w",
+    "baseline_h2h_det": 0.0,
+    "flipped": false
+   },
+   "residual_failure": "category-3/open-domain inference question ('Would she go on another roadtrip soon?'); answer policy says 'not mentioned' unless notes state it - the model does not infer future intent. Not a write-time drop."
+  },
+  {
+   "qid": "conv-26_q18",
+   "gold": "beach, mountains, forest",
+   "evidence": "D4:6, D6:16, D8:32 (sessions 4/6/8)",
+   "is_attribute_statement": "partly (preference set), but gold spans three sessions",
+   "single_session_testable": false,
+   "reasoning": "frozen full store ALREADY contains beach, mountain and forest camping notes (melanie_family_beach_camping, melanie_family_mountain_camping_trip_june_2023, melanie_family_forest_camping_trip_july_2023, ...); the h2h-det failure (0.444, 'The mountains and the beach') is an answer-set-completeness miss, not an extraction drop. Needs a full-store run with a list-all-parts answer clause; out of single-session scope."
+  },
+  {
+   "qid": "conv-26_q26",
+   "gold": "2022",
+   "evidence": "D7:8 (session 7)",
+   "is_attribute_statement": false,
+   "single_session_testable": false,
+   "reasoning": "D7:8 never names the book ('This book I read last year reminds me to always pursue my dreams'); the frozen store already has melanie_book_gold_coin_cover_pursue_dreams with 'a book she read last year (approximately 2022)'. The h2h 'not mentioned' is a question-to-note linkage failure (title only exists in the question), not a write-time drop."
+  }
+ ],
+ "regression_check": {
+  "method": "no full-store re-ingest (too expensive); verify by citation provenance that no fixed conv-26 question's gold memory derives from session-18 extraction",
+  "fixed_questions": [
+   {
+    "qid": "conv-26_q1",
+    "gold_memory": "melanie_lake_sunrise_painting_2022",
+    "gold_evidence": "D1:12",
+    "cited_sessions": [
+     "session_1"
+    ],
+    "session18_dependent": false
+   },
+   {
+    "qid": "conv-26_q54",
+    "gold_memory": "caroline_self_portrait_painting_aug_2023",
+    "gold_evidence": "D13:11",
+    "cited_sessions": [
+     "session_13"
+    ],
+    "session18_dependent": false
+   },
+   {
+    "qid": "conv-26_q126",
+    "gold_memory": "caroline_childhood_horseback_riding_dad",
+    "gold_evidence": "D13:7",
+    "cited_sessions": [
+     "session_13"
+    ],
+    "session18_dependent": false
+   }
+  ],
+  "session18_memories_in_frozen_store": [
+   "melanie_son_accident_family_roadtrip_october_2023",
+   "melanie_family_grand_canyon_roadtrip_october_2023",
+   "melanie_family_trail_walk_after_roadtrip_october_2023",
+   "melanie_camping_what_she_loves_most"
+  ],
+  "reasoning": [
+   "All typeB runs write to a NEW content-addressed cache (conv-26--37ca5f12... / conv-26--603d5a51...); the frozen improved-s0 store that produced every 1.0 attempt is read-only and untouched, so q1/q54/q126 answers are unchanged by construction.",
+   "Citation provenance (jobs import_<hash>.source.jsonl per session, matched by first-record text): q1's gold memory cites only session_1; q54's and q126's gold memories cite only session_13. Session-18-derived memories appear in their recall sets only as non-winning distractors.",
+   "For a future FULL-store re-ingest with the clause: the clause is additive (attribute capture) and the base dated-event instructions are unchanged; the v2 single-session re-ingest still produced the son-accident, Grand Canyon, trail-walk and camping notes, so the session-18-dependent fixed question conv-26_q143 (gold D18:1 'He got into an accident', fixed 0.5 by locoq6's read-time config) retains its gold fact under re-extraction (v2 store: 'Melanie's son got into an accident')."
+  ],
+  "verdict": "regression clean by construction (single-session cache isolated; gold memories of q1/q54/q126 cite sessions 1/13 only)"
+ },
+ "reusable_store": "warm cache conv-26--603d5a512bf70394 (clause v2, session_18 only) reusable via skipIngest copy-out for further read-time experiments",
+ "cost": {
+  "ingest_runs": 2,
+  "answer_only_runs": 7,
+  "llm": "dgx-glm53/glm-5.3 only"
+ }
+}

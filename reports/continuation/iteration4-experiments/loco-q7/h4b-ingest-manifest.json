@@ -1,0 +1,334 @@
+{
+ "run_id": "attrs-q149-h4b-typeb-v2",
+ "benchmark": "locomo",
+ "variant": "improved",
+ "output_dir": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration4\\ql-typeb-cache\\conv-26--603d5a512bf70394",
+ "envs": [
+  {
+   "env_id": "conv-26",
+   "sessions": [
+    {
+     "session_id": "session_18",
+     "ts": "2023-10-20T18:55:00",
+     "events": [
+      {
+       "role": "assistant",
+       "text": "Melanie: Hey Caroline, that roadtrip this past weekend was insane! We were all freaked when my son got into an accident. We were so lucky he was okay. It was a real scary experience. Thankfully it's over now. What's been up since we last talked? (shared image: a photo of a car dashboard with a white cloth and a steering wheel)",
+       "ext_id": "D18:1",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "user",
+       "text": "Caroline: Oops, sorry 'bout the accident! Must have been traumatizing for you guys. Thank goodness your son's okay. Life sure can be a roller coaster.",
+       "ext_id": "D18:2",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "assistant",
+       "text": "Melanie: Yeah, our trip got off to a bad start. I was really scared when we got into the accident. Thankfully, my son's ok and that was a reminder that life is precious and to cherish our family.",
+       "ext_id": "D18:3",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "user",
+       "text": "Caroline: Glad your son is okay, Melanie. Life's unpredictable, but moments like these remind us how important our loved ones are. Family's everything.",
+       "ext_id": "D18:4",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "assistant",
+       "text": "Melanie: Yeah, you're right, Caroline. Family's super important to me. Especially after the accident, I've thought a lot about how much I need them. They mean the world to me and I'm so thankful to have them. Thankfully, they enjoyed the Grand Canyon a lot! (shared image: a photo of two children standing on a rocky cliff overlooking a canyon)",
+       "ext_id": "D18:5",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "user",
+       "text": "Caroline: The kids look so cute, Mel! I bet they bring lots of joy. How did they handle the accident?",
+       "ext_id": "D18:6",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "assistant",
+       "text": "Melanie: Thanks! They were scared but we reassured them and explained their brother would be OK. They're tough kids.",
+       "ext_id": "D18:7",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "user",
+       "text": "Caroline: Kids are amazingly resilient in tough situations. They have an amazing ability to bounce back.",
+       "ext_id": "D18:8",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "assistant",
+       "text": "Melanie: They're really amazing. Wish I was that resilient too. But they give me the strength to keep going.",
+       "ext_id": "D18:9",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "user",
+       "text": "Caroline: Our loved ones give us strength to tackle any challenge - it's amazing!",
+       "ext_id": "D18:10",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "assistant",
+       "text": "Melanie: Yeah, Caroline. Totally agree. They're my biggest motivation and support.",
+       "ext_id": "D18:11",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "user",
+       "text": "Caroline: It's so sweet to see your love for your family, Melanie. They really are your rock.",
+       "ext_id": "D18:12",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "assistant",
+       "text": "Melanie: Thanks, Caroline. They're a real support. Appreciate them a lot.",
+       "ext_id": "D18:13",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "user",
+       "text": "Caroline: Glad you've got people to lean on, Melanie. It helps during tougher times.",
+       "ext_id": "D18:14",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "assistant",
+       "text": "Melanie: Yeah for sure. Having my fam around helps a lot. It makes hard times easier. (shared image: a photography of a woman and a child walking on a trail)",
+       "ext_id": "D18:15",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "user",
+       "text": "Caroline: Wow, great pic! Is that recent? Looks like you all had fun!",
+       "ext_id": "D18:16",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "assistant",
+       "text": "Melanie: Thanks, Caroline! Yup, we just did it yesterday! The kids loved it and it was a nice way to relax after the road trip.",
+       "ext_id": "D18:17",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "user",
+       "text": "Caroline: Glad you got some R&R after the drive. Nature sure seems to refresh us, huh?",
+       "ext_id": "D18:18",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "assistant",
+       "text": "Melanie: Absolutely! It really helps me reset and recharge. I love camping trips with my fam, 'cause nature brings such peace and serenity. (shared image: a photo of a sunset over a body of water)",
+       "ext_id": "D18:19",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "user",
+       "text": "Caroline: Wow, that's awesome! What do you love most about camping with your fam?",
+       "ext_id": "D18:20",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "assistant",
+       "text": "Melanie: It's a chance to be present and together. We bond over stories, campfires and nature. It's so peaceful waking up to the sound of birds and the smell of fresh air - it always refreshes my soul.",
+       "ext_id": "D18:21",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "user",
+       "text": "Caroline: That's so peaceful and calming, Melanie! I can picture waking up to nature. It's great that you get to spend quality, tranquil time with your family.",
+       "ext_id": "D18:22",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "assistant",
+       "text": "Melanie: Thanks, Caroline! This is a great time. Nature and quality time, can't beat it!",
+       "ext_id": "D18:23",
+       "ts": "2023-10-20T18:55:00"
+      },
+      {
+       "role": "user",
+       "text": "Caroline: Yeah totally! They're priceless. Lucky you!",
+       "ext_id": "D18:24",
+       "ts": "2023-10-20T18:55:00"
+      }
+     ]
+    }
+   ],
+   "ground_truth_refs": [
+    "D10:10",
+    "D10:12",
+    "D10:14",
+    "D10:18",
+    "D10:3",
+    "D10:8",
+    "D11:1",
+    "D11:12",
+    "D11:14",
+    "D11:3",
+    "D11:4",
+    "D11:8",
+    "D12:1",
+    "D12:14",
+    "D12:15",
+    "D12:6",
+    "D13:1",
+    "D13:11",
+    "D13:16",
+    "D13:3",
+    "D13:4",
+    "D13:6",
+    "D13:7",
+    "D13:8",
+    "D14:1",
+    "D14:15",
+    "D14:17",
+    "D14:19",
+    "D14:23",
+    "D14:4",
+    "D14:5",
+    "D15:11",
+    "D15:13",
+    "D15:16",
+    "D15:2",
+    "D15:23",
+    "D15:26",
+    "D15:28",
+    "D16:1",
+    "D16:15",
+    "D16:16",
+    "D16:18",
+    "D16:4",
+    "D16:7",
+    "D16:8",
+    "D17:10",
+    "D17:12",
+    "D17:14",
+    "D17:18",
+    "D17:19",
+    "D17:23",
+    "D17:25",
+    "D17:3",
+    "D17:7",
+    "D17:8",
+    "D18:1",
+    "D18:13",
+    "D18:17",
+    "D18:21",
+    "D18:3",
+    "D18:5",
+    "D18:6",
+    "D18:7",
+    "D18:9",
+    "D19:1",
+    "D19:2",
+    "D19:3",
+    "D1:11",
+    "D1:12",
+    "D1:18",
+    "D1:3",
+    "D1:5",
+    "D1:9",
+    "D2:1",
+    "D2:12",
+    "D2:14",
+    "D2:15",
+    "D2:2",
+    "D2:3",
+    "D2:5",
+    "D2:7",
+    "D2:8",
+    "D3:1",
+    "D3:11",
+    "D3:13",
+    "D3:14",
+    "D3:16",
+    "D3:3",
+    "D3:5",
+    "D4:1",
+    "D4:13",
+    "D4:15",
+    "D4:3",
+    "D4:5",
+    "D4:6",
+    "D4:8",
+    "D5:1",
+    "D5:13",
+    "D5:4",
+    "D5:6",
+    "D5:8",
+    "D6:10",
+    "D6:11",
+    "D6:16",
+    "D6:4",
+    "D6:6",
+    "D6:9",
+    "D7:1",
+    "D7:11",
+    "D7:13",
+    "D7:18",
+    "D7:19",
+    "D7:21",
+    "D7:22",
+    "D7:24",
+    "D7:4",
+    "D7:5",
+    "D7:8",
+    "D7:9",
+    "D8:11",
+    "D8:12",
+    "D8:17",
+    "D8:2",
+    "D8:32",
+    "D8:4",
+    "D8:5",
+    "D8:6",
+    "D8:9",
+    "D9:1",
+    "D9:12",
+    "D9:14",
+    "D9:16",
+    "D9:17",
+    "D9:2"
+   ],
+   "family": "locomo"
+  }
+ ],
+ "questions": [
+  {
+   "qid": "conv-26_q149",
+   "env_id": "conv-26",
+   "question": "What do Melanie's family give her?",
+   "question_protocol": "optimus-locomo-conversion/2.0.0",
+   "scoring_protocol": "optimus-local-scoring/1.0.0",
+   "question_sha256": "be4dee9a8586aace91d228fdea6c9e2cdf42b1057bd4e1c3ba7712c0fa221eb1"
+  }
+ ],
+ "model": {
+  "provider": "dgx-glm53",
+  "id": "glm-5.3"
+ },
+ "settings": {
+  "recallQueryDistillation": false,
+  "recallRerank": false,
+  "memoryLearning": false,
+  "answerMaxTokens": 8192,
+  "maxExtractionTokens": 32000,
+  "maxImportChunkChars": 15000,
+  "questionTimeoutS": 240,
+  "ingestTimeoutS": 21600,
+  "disableTools": true,
+  "answerInstruction": "You are answering questions about past conversations you have on file. Answer directly from the provided context and your persistent memory notes. Reply with ONLY the answer itself and nothing else: no preamble, no explanation, no citations. Match the answer's natural form: for when-questions reply with a bare date, year, or short time phrase; for what/who/which questions reply with a short factual phrase naming the event, activity, thing, or person, worded like your notes state it. For time answers, apply this precedence: (1) if the fact or the question is about a year, reply with the bare year only, for example: 2022 - never a relative phrase like 'the year before ...'; (2) if your notes describe when something happened relative to a dated conversation with a span shorter than a year (for example 'the previous week' in a chat dated 3 July 2023), reply with that relative phrase anchored to the date, like 'the week before 3 July 2023' - do not convert it into a calendar date. If the answer is not in your notes, reply with exactly: not mentioned",
+  "evidenceTimestamps": true,
+  "recallOn": true,
+  "recallQueryExtract": true,
+  "recallQueryExpansion": false,
+  "maxRecallEntries": 24,
+  "maxRecallChars": 24000,
+  "importInstructions": "Extract durable host-neutral project facts only. Only create edits of kind memory with cited sourceIds. Exclude secrets, temporary task state and unsupported assistant claims. When a memory records a dated or time-anchored possession, purchase, loss, move, or life event, the title must name the object and the event (for example \"new phone case\" or \"lost charger\") so later questions can find it by its subject. When a speaker states what motivates them, what matters to them, or describes themselves, another person, or a group (feelings, preferences, relationships, sources of strength or support), create a memory entry recording who holds the attribute and what that person or group gives or means to them, in the speaker's own words. These are as important as dated events.",
+  "skipIngest": false
+ }
+}
