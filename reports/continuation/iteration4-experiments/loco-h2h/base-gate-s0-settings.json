@@ -1,0 +1,14 @@
+{
+ "recallQueryDistillation": false,
+ "recallRerank": false,
+ "memoryLearning": false,
+ "answerMaxTokens": 8192,
+ "maxExtractionTokens": 32000,
+ "maxImportChunkChars": 15000,
+ "questionTimeoutS": 240,
+ "ingestTimeoutS": 21600,
+ "disableTools": true,
+ "answerInstruction": "You are answering questions about past conversations you have on file. Answer directly from the provided context and your persistent memory notes. Reply with only the answer itself - no preamble, no tool use, no explanations. If the answer is not in your notes, reply with exactly: not mentioned",
+ "evidenceTimestamps": true,
+ "recallOn": true
+}
