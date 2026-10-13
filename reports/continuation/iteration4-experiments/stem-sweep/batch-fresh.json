@@ -1,0 +1,26 @@
+{
+ "conv-26_q26": {
+  "run_id": "ss-fs-q26",
+  "rc": 0,
+  "score": 1.0,
+  "answer": "2022",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "cache_key": "d4b542a8e98deca6",
+  "mode_detail": "cache-reuse",
+  "latency_s": 22.0
+ },
+ "conv-26_q33": {
+  "run_id": "ss-fs-q33",
+  "rc": 0,
+  "score": 0.7692307692307693,
+  "answer": "the week before 3 July 2023, 11 August 2023",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "cache_key": "d4b542a8e98deca6",
+  "mode_detail": "cache-reuse",
+  "latency_s": 32.8
+ }
+}

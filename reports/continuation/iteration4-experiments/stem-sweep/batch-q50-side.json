@@ -1,0 +1,26 @@
+{
+ "conv-41_q50": {
+  "run_id": "ss-q50-r1",
+  "rc": 3,
+  "score": 0.09523809523809523,
+  "answer": "adaptable, passionate, community-minded, caring, mentor, volunteer, activist, fire brigade member, politician, mechanical engineer, family man, dog owner",
+  "outcome": "fail",
+  "stage": "answer",
+  "recall_n": 24,
+  "recall_ids": [
+   "project:memory:mem_john_local_orgs_volunteering_plan_20230811",
+   "project:memory:mem_john_veteran_hospital_visit_samuel_20230717",
+   "project:memory:mem_john_inspirations_20230705",
+   "project:memory:mem_john_veterans_rights_march_20230703",
+   "project:memory:mem_john_politics_serve_motivation",
+   "project:memory:mem_john_sunset_calm_down",
+   "project:memory:imported_5be14d9a4b5da4ccff9bf779",
+   "project:memory:mem_maria_volunteering_spreading_kindness_20230627",
+   "project:memory:imported_5aa6f72b668c2474c068618e",
+   "project:memory:mem_john_fire_brigade_donation_drive_20230816",
+   "project:memory:mem_john_fire_brigade_membership_20230816",
+   "project:memory:mem_john_family_wife_kids_activities_20230813"
+  ],
+  "latency_s": 40.6
+ }
+}

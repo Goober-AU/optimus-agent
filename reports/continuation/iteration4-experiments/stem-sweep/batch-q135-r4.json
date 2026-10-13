@@ -1,0 +1,26 @@
+{
+ "conv-26_q135": {
+  "run_id": "ss-g-q135-r5",
+  "rc": 0,
+  "score": 1.0,
+  "answer": "She got hurt and had to take a break from pottery.",
+  "outcome": "pass",
+  "stage": null,
+  "recall_n": 24,
+  "recall_ids": [
+   "project:memory:melanie_family_trail_walk_after_roadtrip_october_2023",
+   "project:memory:melanie_wooden_figurines_purchase_oct_2023",
+   "project:memory:melanie_sunset_painting_oct_2023",
+   "project:memory:caroline_drawing_woman_in_dress",
+   "project:memory:melanie_son_accident_family_roadtrip_october_2023",
+   "project:memory:melanie_reading_recommended_book_oct_2023",
+   "project:memory:melanie_friend_adopted_melanie_considering_adoption",
+   "project:memory:melanie_peace_from_creativity_and_family",
+   "project:memory:melanie_camping_what_she_loves_most",
+   "project:memory:melanie_never_been_to_poetry_reading",
+   "project:memory:melanie_abstract_blue_painting_oct_2023",
+   "project:memory:caroline_passed_adoption_agency_interviews_oct_2023"
+  ],
+  "latency_s": 8.0
+ }
+}

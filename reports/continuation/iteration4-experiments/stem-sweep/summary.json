@@ -1,0 +1,229 @@
+{
+ "schema": "stem-sweep-results/1",
+ "ts": "2026-10-13T10:09:06+00:00",
+ "worker": "stemsweep",
+ "worktree": "imp4-stemsweep (improve/mem4-stem-sweep, base 0cbad1d32 = improve/memory-iteration-4 HEAD)",
+ "model": "dgx-glm53/glm-5.3 (only)",
+ "driver": "imp4-deeprank-target/release/examples/memory_bench.exe sha256 4e3c249c (memory code == merge 0cbad1d32, verified via git diff e9f469fe4..0cbad1d32 -- memory paths: empty)",
+ "config": "base-settings-g4-det.json (det recall, 24/24000, G4) + h5-stem-on.json (recallQueryStemming true)",
+ "purpose": "generalization sweep of AA's recallQueryStemming: confirm the 9 FAILED golds that entered top-24 actually score, and gate the promoted config as LoCoMo default",
+ "sweep": {
+  "questions": [
+   {
+    "qid": "conv-26_q18",
+    "before": 0.4444,
+    "before_note": "h2h det w24 no-stem (baseline 0.2685)",
+    "after": 1.0,
+    "after_run": "stem-q18-r1/r2 (AA, worker deeprank)",
+    "verdict": "CONVERT",
+    "note": "camped->camping; 9 camping notes rise to ranks 1-9"
+   },
+   {
+    "qid": "conv-26_q37",
+    "before": 0.0,
+    "after": 1.0,
+    "after_run": "ss-q37-r1",
+    "verdict": "CONVERT",
+    "note": "paint->painting: sunflower/sunset/horse/abstract painting notes at ranks 0/2/3/6"
+   },
+   {
+    "qid": "conv-41_q35",
+    "before": 0.0,
+    "after": 0.5,
+    "after_run": "ss-q35-r1",
+    "verdict": "CONVERT (at bar)",
+    "note": "vacationed->vacation pulls 3 vacation notes to ranks 0-2; answered 'Florida' only - Oregon note (childhood road trip) has no 'vacation' lexeme, deeper semantic gap"
+   },
+   {
+    "qid": "conv-41_q68",
+    "before": 0.0,
+    "after": 0.0,
+    "after_run": "ss-q68-r1",
+    "verdict": "STILL FAILED",
+    "note": "gold note mem_maria_shelter_aerial_yoga IN window (stemmed 'workout'/'start' matches); answer-stage date binding: question says Dec 2023, note truth is 2022-12-17 (evidence D1:3, LoCoMo label noise) -> 'not mentioned'. Answer-stage residue (conv-26 q37/q66/q77 static class)"
+   },
+   {
+    "qid": "conv-42_q4",
+    "before": 0.0,
+    "after": 0.0,
+    "after_run": "ss-q4-r1",
+    "verdict": "STILL FAILED",
+    "note": "gold fact (hairless cats or pigs, D2:23) NOT extracted into frozen store (no hairless/pig note exists); allergy note recalled. Write-time extraction miss, unfixable at read time"
+   },
+   {
+    "qid": "conv-47_q102",
+    "before": 0.0,
+    "after": 0.0,
+    "after_run": "ss-q102-r1",
+    "verdict": "STILL FAILED",
+    "note": "gold fact (reading snuggled under covers on cold winter days, D16:9) NOT extracted; 0 notes mention winter/snug. Write-time extraction miss"
+   },
+   {
+    "qid": "conv-50_q5",
+    "before": 0.0,
+    "after": 0.4127,
+    "after_run": "ss-q5-r1",
+    "verdict": "IMPROVED, below bar",
+    "note": "gold notes in window (custom-car-dream rank 1, maintenance-shop rank 14) but answered 'visiting Tokyo, custom car' - list-combination answer-stage residue; classic-cars gold note outside top-50"
+   },
+   {
+    "qid": "conv-43_q71",
+    "before": 0.0,
+    "after": 1.0,
+    "after_run": "stem-spot-q71-r1 (AA live)",
+    "verdict": "CONVERT",
+    "note": "gold note rank 26->1 ('Minnesota Wolves')"
+   },
+   {
+    "qid": "conv-49_q52",
+    "before": 0.0,
+    "after": 0.5,
+    "after_run": "stem-spot-q52-r1 (AA live)",
+    "verdict": "CONVERT",
+    "note": "gold note rank 28->10"
+   }
+  ],
+  "converted_ge_0.5": [
+   "conv-26_q18",
+   "conv-26_q37",
+   "conv-41_q35",
+   "conv-43_q71",
+   "conv-49_q52"
+  ],
+  "residue": {
+   "answer_stage": [
+    "conv-41_q68 (date-label noise)",
+    "conv-50_q5 (list combination)"
+   ],
+   "write_time_extraction": [
+    "conv-42_q4 (D2:23)",
+    "conv-47_q102 (D16:9)"
+   ]
+  }
+ },
+ "promotion_gate": {
+  "battery": "conv-26 frozen store (improved-s0), stem-on, single worker stemsweep unless noted",
+  "cells": [
+   {
+    "q": "q1",
+    "bar": 1.0,
+    "draw": 1.0,
+    "aa_stem_gate": 1.0,
+    "verdict": "PASS"
+   },
+   {
+    "q": "q54",
+    "bar": 1.0,
+    "draw": 1.0,
+    "aa_stem_gate": 1.0,
+    "verdict": "PASS"
+   },
+   {
+    "q": "q126",
+    "bar": 1.0,
+    "draw": 1.0,
+    "aa_stem_gate": 1.0,
+    "verdict": "PASS"
+   },
+   {
+    "q": "q135",
+    "bar": 1.0,
+    "draws": [
+     0.4,
+     0.4,
+     1.0,
+     0.4,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "median": 1.0,
+    "aa_stem_gate": 1.0,
+    "verdict": "PASS on median (documented ambient answer-form variance)"
+   },
+   {
+    "q": "q141",
+    "bar": ">=0.5",
+    "draw": 0.625,
+    "aa_stem_gate": 0.5,
+    "verdict": "PASS"
+   },
+   {
+    "q": "q143",
+    "bar": ">=0.5",
+    "draw": 0.5,
+    "aa_stem_gate": 0.5,
+    "verdict": "PASS"
+   },
+   {
+    "q": "q144",
+    "bar": ">=0.5",
+    "draw": 0.5333,
+    "aa_stem_gate": 0.5714,
+    "verdict": "PASS"
+   },
+   {
+    "q": "q2",
+    "bar": "no new failure vs det 0.25",
+    "draw": 0.2857,
+    "verdict": "PASS"
+   },
+   {
+    "q": "q33",
+    "bar": "no new failure vs det 0.0",
+    "draw": 0.6667,
+    "verdict": "PASS"
+   },
+   {
+    "q": "q55",
+    "bar": "no new failure vs det 1.0",
+    "draw": 1.0,
+    "verdict": "PASS"
+   },
+   {
+    "q": "q57",
+    "bar": "no new failure vs det 0.6",
+    "draw": 0.6,
+    "verdict": "PASS"
+   },
+   {
+    "q": "q99",
+    "bar": "no new failure vs det 0.4118",
+    "draw": 0.5,
+    "verdict": "PASS"
+   }
+  ],
+  "q135_variance_analysis": {
+   "recall_sets": "all 4 stem-on runs (0.4 and 1.0 draws) have IDENTICAL top-24; vs no-stem w24 exactly 1 entry differs (melanie_family_beach_trips_once in, caroline_volunteering_lgbtq_youth out); gold melanie_injury_pottery_break in all",
+   "stem_on_draws": "5x1.0, 3x0.4 over 8 draws (7 stemsweep + 1 AA)",
+   "no_stem_w24_g4_draws": "9x1.0, 4x0.5556, 3x0.4 over 16 ledger draws (q135loop/locoh2h/gate4a/tempan/locoans/iso)",
+   "conclusion": "0.4 answer form ('An injury that forced a break from pottery') is ambient sampling variance present at the same rate without stemming; not a stemming side-effect"
+  },
+  "fresh_store_d4b542a8": [
+   {
+    "q": "q26",
+    "locofull_ref": 1.0,
+    "stem_on": 1.0,
+    "run": "ss-fs-q26",
+    "verdict": "HOLDS"
+   },
+   {
+    "q": "q33",
+    "locofull_ref": 0.6667,
+    "stem_on": 0.7692,
+    "run": "ss-fs-q33",
+    "verdict": "HOLDS (better)"
+   }
+  ],
+  "side_effect_audit": {
+   "conv-41_q50": "only top-24 exit in AA's offline scan (24->26): live stem-on 0.0952 (still FAILED, was 0.0; answer-stage over-combination of 12 attributes vs gold 4). No status change.",
+   "sweep_set": "all 6 fresh sweep questions were 0.0 before; none got worse."
+  }
+ },
+ "verdict": "PROMOTION GATE PASSED: recallQueryStemming=true is validated as the LoCoMo default on top of det+24/24000+G4. 5/9 deep-rank golds convert to >=0.5 (q18 1.0, q37 1.0, q35 0.5, q71 1.0, q52 0.5); q5 0.41 misses on list-combination; q68/q4/q102 are answer-stage/write-time residue, not stemmer side-effects. All 12 gate cells hold (q135 on median-of-draws); fresh-store wins hold on the d4b542a8 cache; no new failures anywhere.",
+ "artifacts": {
+  "attempts_root": "reports/continuation/iteration4/ql-attempts-stemsweep (campaign root)",
+  "batches": "batch-*.json in this dir",
+  "ledger": "campaign-root reports/continuation/iteration4/QUESTION-LEDGER.json (auto-appended, worker=stemsweep)"
+ }
+}
