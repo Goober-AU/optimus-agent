@@ -1,0 +1,101 @@
+{
+  "schema": "loco-q1-experiment/1",
+  "ts": "2026-10-13T07:05:27Z",
+  "worker": "glm-locoq1",
+  "question": {
+    "qid": "conv-26_q1",
+    "question": "When did Melanie paint a sunrise?",
+    "gold": "2022",
+    "category": "2/temporal",
+    "baseline_score": 0.0,
+    "baseline_answer": "not mentioned",
+    "baseline_source": "imp3-gate/reports/continuation/iteration3-inputs/locomo/runs/improved-s0/run.jsonl"
+  },
+  "diagnosis": {
+    "class": "D (stored but not recalled; query pollution)",
+    "store": "imp3-gate/.../runs/improved-s0/envs/conv-26/agent/memory/projects/project_4b30654678833006224d23f1/harness_state.json",
+    "evidence": [
+      "Entry melanie_lake_sunrise_painting_2022 exists in frozen store: 'In the 2023-05-08 chat Melanie shared a photo of a painting of a sunrise/sunset over a lake that she painted herself last year (approximately 2022)'.",
+      "Baseline runtime recall_ids (6 entries) did NOT include it; budget filled by irrelevant entries (camping, cafe, clarinet...).",
+      "Direct search with the bare question text ranks it #1 at 0.891 (search_ranked field), so extraction and lexical match are fine.",
+      "Defaults have recallQueryExtract=false: the runtime recall lane searched with the FULL answerInstruction-wrapped message, so wrapper terms diluted IDF scoring (unmatched wrapper terms inflate the denominator) and 6 low-relevance entries won the 6-entry recall budget.",
+      "Model answered 'not mentioned' because the sunrise entry was never shown; latest-wins/at-date discipline was not the failure (no conflicting sunrise entries; the Oct-2023 sunset entry is a distinct event and even cross-references the 2022 painting)."
+    ]
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "desc": "fixed binary (imp4-targetA, imp4 HEAD) + same defaults settings",
+      "settings": "baseline defaults (base-settings = gate3 improved-s0 manifest settings)",
+      "outcome": "fail",
+      "score": 0.0,
+      "answer": "not mentioned",
+      "recall_ids_count": 6,
+      "conclusion": "Binary delta alone does not fix it; identical recall set as gate baseline."
+    },
+    {
+      "id": "H2",
+      "desc": "+ recall helpers ON (distill+rerank+extract+expansion, stack pattern: rerankCandidates 200, expansionDraws 2)",
+      "settings": "h2-stack-helpers-readonly.json",
+      "outcome": "fail",
+      "score": 0.125,
+      "answer": "Approximately 2022 - in a chat on 2023-05-08, Melanie said she painted the lake sunrise 'last year.'",
+      "recall_ids": [
+        "project:memory:melanie_lake_sunrise_painting_2022"
+      ],
+      "conclusion": "RETRIEVAL FIXED: the sunrise entry became the only recalled id. Remaining failure is answer-side: explanatory sentence dilutes token-F1 vs gold '2022' (helper observations: distillation empty_output, rerank used, expansion used)."
+    },
+    {
+      "id": "H3",
+      "desc": "H2 helpers + strict short-form answerInstruction (bare date/time phrase)",
+      "settings": "h3-helpers-shortanswer.json",
+      "outcome": "pass",
+      "score": 1.0,
+      "answer": "2022",
+      "recall_ids": [
+        "project:memory:melanie_lake_sunrise_painting_2022"
+      ],
+      "conclusion": "WIN: helpers ON + short-form answerInstruction => exact answer '2022', F1 1.0."
+    }
+  ],
+  "regression_check": {
+    "config": "H3 winning settings",
+    "questions": [
+      {
+        "qid": "conv-26_q26",
+        "baseline": 0.0,
+        "after": 0.0,
+        "note": "no regression; model narrated tool-intent instead of answering (same failure class as baseline)"
+      },
+      {
+        "qid": "conv-26_q33",
+        "baseline": 0.0,
+        "after": 0.2,
+        "note": "no regression (slight gain); multi-event listing instead of the single target date"
+      },
+      {
+        "qid": "conv-26_q54",
+        "baseline": 0.0,
+        "after": 1.0,
+        "note": "bonus fix: 'the week before 23 August 2023' exactly matches gold"
+      }
+    ],
+    "verdict": "no regressions (all 3 were FAILED at baseline; 1 additional fixed, 2 unchanged-failed)"
+  },
+  "artifacts": {
+    "ledger": "reports/continuation/iteration4/QUESTION-LEDGER.json (attempts auto-appended by scripts/memory_question_loop.py, atomic)",
+    "attempt_dirs": [
+      "reports/continuation/iteration4/ql-attempts/h1-defaults",
+      "reports/continuation/iteration4/ql-attempts/h2-stack-helpers",
+      "reports/continuation/iteration4/ql-attempts/h3-short-answer",
+      "reports/continuation/iteration4/ql-attempts/reg-conv-26_q26",
+      "reports/continuation/iteration4/ql-attempts/reg-conv-26_q33",
+      "reports/continuation/iteration4/ql-attempts/reg-conv-26_q54"
+    ]
+  },
+  "model": {
+    "provider": "dgx-glm53",
+    "id": "glm-5.3"
+  },
+  "driver": "imp4-targetA/release/examples/memory_bench.exe (imp4 HEAD, shared binary)"
+}
