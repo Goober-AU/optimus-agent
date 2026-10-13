@@ -52,12 +52,21 @@ pub fn normalize_remote(remote: &str) -> String {
 }
 
 fn git(cwd: &str, args: &[&str]) -> Option<String> {
-    let output = Command::new("git")
-        .arg("-C")
-        .arg(cwd)
-        .args(args)
-        .output()
-        .ok()?;
+    // Project-identity probes are noninteractive background helpers; spawn them
+    // through the shared hidden-spawn plumbing so headless parents (daemon
+    // workers, benchmarks) never allocate a console window per Git query.
+    let mut full_args: Vec<String> = vec!["-C".to_string(), cwd.to_string()];
+    full_args.extend(args.iter().map(|arg| arg.to_string()));
+    let output = crate::utils::child_process::spawn_sync_hidden(
+        "git",
+        &full_args,
+        crate::utils::child_process::SpawnOptions {
+            capture_stdout: true,
+            capture_stderr: true,
+            ..Default::default()
+        },
+    )
+    .ok()?;
     if !output.status.success() {
         return None;
     }
@@ -213,6 +222,77 @@ mod tests {
         // The pinned JS URL parser treats the drive letter as a URL scheme.
         assert_eq!(normalize_remote("C:/Users/x/repo"), "/Users/x/repo");
         assert_eq!(normalize_remote("/Users/x/repo"), "/Users/x/repo");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn identity_git_probes_run_through_the_hidden_spawn_helper() {
+        // Runtime routing proof: every Git probe project_identity issues must go
+        // through spawn_sync_hidden (CREATE_NO_WINDOW); a raw Command::new would
+        // allocate a console window under headless parents (daemon workers,
+        // benchmarks) and cause the popup storm this guards against.
+        static RECORDED: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+        fn record(
+            command: &str,
+            args: &[String],
+            _options: &crate::utils::child_process::SpawnOptions,
+        ) -> Option<std::io::Result<std::process::Child>> {
+            // Returning None falls through to the real (hidden) spawn.
+            RECORDED
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .push(format!("{command} {}", args.join(" ")));
+            None
+        }
+        crate::utils::child_process::set_sync_spawn_override_for_tests(Some(record));
+        let base = std::env::temp_dir().join(format!("prime-project-hidden-{}", uuid::Uuid::new_v4()));
+        let cwd = base.join("repo");
+        let agent_dir = base.join("agent");
+        std::fs::create_dir_all(&cwd).unwrap();
+        std::fs::create_dir_all(&agent_dir).unwrap();
+        let cwd = cwd.to_string_lossy().to_string();
+        let agent_dir = agent_dir.to_string_lossy().to_string();
+        let status = Command::new("git").arg("init").arg(&cwd).output().unwrap();
+        assert!(status.status.success());
+        let first = project_identity(&cwd, &agent_dir, None).expect("identity");
+        crate::utils::child_process::set_sync_spawn_override_for_tests(None);
+        let recorded = RECORDED
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
+        assert!(!recorded.is_empty(), "identity probes must be observable via the hidden spawn helper");
+        assert!(
+            recorded.iter().all(|entry| entry.starts_with("git -C ")),
+            "every probe must be a hidden git -C spawn: {recorded:?}"
+        );
+        assert!(
+            recorded.iter().any(|entry| entry.contains("rev-parse --show-toplevel")),
+            "the toplevel probe must run: {recorded:?}"
+        );
+        std::fs::remove_dir_all(&base).ok();
+        let _ = first;
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn repeated_identity_probes_stay_stable_and_bounded() {
+        // Bounded repetition: repeated project_identity calls (as benchmarks
+        // issue per environment) must keep resolving the same id without drift.
+        let base = std::env::temp_dir().join(format!("prime-project-repeat-{}", uuid::Uuid::new_v4()));
+        let cwd = base.join("repo");
+        let agent_dir = base.join("agent");
+        std::fs::create_dir_all(&cwd).unwrap();
+        std::fs::create_dir_all(&agent_dir).unwrap();
+        let cwd = cwd.to_string_lossy().to_string();
+        let agent_dir = agent_dir.to_string_lossy().to_string();
+        let status = Command::new("git").arg("init").arg(&cwd).output().unwrap();
+        assert!(status.status.success());
+        let mut ids = Vec::new();
+        for _ in 0..8 {
+            ids.push(project_identity(&cwd, &agent_dir, None).expect("identity").id);
+        }
+        assert!(ids.windows(2).all(|pair| pair[0] == pair[1]), "ids drifted: {ids:?}");
+        std::fs::remove_dir_all(&base).ok();
     }
 
     #[test]

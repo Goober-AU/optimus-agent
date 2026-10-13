@@ -952,6 +952,14 @@ impl DaemonCatalogClient {
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .env(DAEMON_CATALOG_ROLE_ENV, "1");
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            // The catalog child is a noninteractive helper of the headless
+            // supervisor; it must never allocate a console window.
+            child_command.creation_flags(CREATE_NO_WINDOW);
+        }
         for (key, value) in envs {
             child_command.env(key, value);
         }
