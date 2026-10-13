@@ -817,7 +817,7 @@ fn create_memory_extension_impl(
                                 &ctx,
                                 RECALL_DISTILL_SYSTEM,
                                 &format!("Message:\n{query}\n\nSearch query:"),
-                                64.0,
+                                2048.0,
                             ).await;
                             distillation_report = result.report;
                             result.text
@@ -844,7 +844,7 @@ fn create_memory_extension_impl(
                             &ctx,
                             RECALL_EXPANSION_SYSTEM,
                             &format!("Message:\n{query}\n\nSearch queries ({draws}):"),
-                            256.0,
+                            2048.0,
                         ).await;
                         expansion_report = result.report;
                         match result
@@ -922,7 +922,7 @@ fn create_memory_extension_impl(
                                             "Query: {normal_query}\n\nCandidates:\n{}",
                                             candidates.join("\n")
                                         ),
-                                        2048.0,
+                                        4096.0,
                                     ).await;
                                     rerank_report = result.report;
                                     if let Some(text) = result.text {
@@ -2346,8 +2346,8 @@ mod recall_runtime_tests {
                 );
             }
             let expected: Vec<_> = [
-                (distill, RECALL_DISTILL_SYSTEM, 64.0),
-                (rerank, RECALL_RERANK_SYSTEM, 2048.0),
+                (distill, RECALL_DISTILL_SYSTEM, 2048.0),
+                (rerank, RECALL_RERANK_SYSTEM, 4096.0),
             ]
             .into_iter()
             .filter(|(enabled, _, _)| *enabled)
@@ -2707,7 +2707,7 @@ mod recall_runtime_tests {
             1,
             "one bounded expansion call, not one per angle"
         );
-        assert_eq!(requests[0].options.stream.max_tokens, Some(256.0));
+        assert_eq!(requests[0].options.stream.max_tokens, Some(2048.0));
         assert_eq!(
             requests[0].context.system_prompt.as_deref(),
             Some(RECALL_EXPANSION_SYSTEM)
