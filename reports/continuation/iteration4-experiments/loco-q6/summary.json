@@ -1,0 +1,122 @@
+{
+ "schema": "loco-q6-experiment/1",
+ "ts": "2026-10-13T07:31:01Z",
+ "worker": "glm-locoq6",
+ "question": {
+  "qid": "conv-26_q143",
+  "question": "What happened to Melanie's son on their road trip?",
+  "gold": "He got into an accident",
+  "category": "4/single-hop",
+  "baseline_score": 0.1333,
+  "baseline_answer": "Melanie's son was in a car accident during the family road trip in mid-October 2023. The accident freaked everyone out and scared the other kids, but thankfully he was okay.",
+  "baseline_source": "imp3-gate/reports/continuation/iteration3-inputs/locomo/runs/improved-merged/run.jsonl"
+ },
+ "diagnosis": {
+  "class": "G (gold recalled but verbose answer; token-F1 dilution)",
+  "store": "imp3-gate/.../runs/improved-s0/envs/conv-26/agent/memory/projects/project_4b30654678833006224d23f1/harness_state.json",
+  "evidence": [
+   "Gold entry melanie_son_accident_family_roadtrip_october_2023 exists in the frozen store and was ALREADY recalled at defaults (rank 6/6, recall_chars 5060) in both the gate run and the fresh H0 re-answer.",
+   "H0 re-answer reproduced the baseline exactly (0.1333): a 276-char narrative ('On the family road trip in mid-October 2023, they got into an accident... thankfully her son is okay...') vs a 4-token gold [he, got, into, accident] - answer-side dilution, failure_stage=answer.",
+   "No retrieval fix needed; the failure is purely answer form, the same class as loco-q2 (q126) and loco-q4 (q141), so hypothesis order started with config (a).",
+   "Token-F1 table for the answer shapes seen: 'he got into an accident' 1.0; 'he got into a car accident' 0.8889; 'he had an accident' 0.5714; 'he was in an accident' 0.5; 'an accident' 0.4; 'a car accident' 0.3333."
+  ]
+ },
+ "hypotheses": [
+  {
+   "id": "H0-baseline",
+   "desc": "typeA re-answer with gate defaults (binary imp4-targetA, settings h0-base-settings-defaults.json = gate3 improved-s0)",
+   "settings": "loco-q6/h0-base-settings-defaults.json",
+   "outcome": "fail",
+   "score": 0.1333,
+   "answer": "On the family road trip in mid-October 2023, they got into an accident and Melanie's son was in the accident. Everyone was freaked out and scared, but thankfully her son is okay - Melanie called it a scary experience and a reminder that life is precious and to cherish family.",
+   "recall_ids_count": 6,
+   "recall_contains_gold_entry": true,
+   "conclusion": "Baseline reproduced exactly (0.1333). Gold entry recalled; class-G verbose-narrative dilution."
+  },
+  {
+   "id": "H1-fleet-a",
+   "desc": "config (a): helpers ON (distill+rerank(200)+extract+expansion(2)) + date-biased short-form answerInstruction (loco-q1/h3)",
+   "settings": "loco-q6/h1-helpers-shortanswer.json",
+   "outcome": "fail",
+   "score": 0.4,
+   "answer": "an accident",
+   "recall_ids": [
+    "project:memory:melanie_son_accident_family_roadtrip_october_2023",
+    "project:memory:melanie_family_grand_canyon_roadtrip_october_2023",
+    "project:memory:melanie_family_trail_walk_after_roadtrip_october_2023"
+   ],
+   "conclusion": "Retrieval FIXED (gold rank 1/3 after rerank; recall_chars 2574) but the 'bare date/short time phrase, No sentences' instruction over-compressed a what-happened answer to the bare noun phrase 'an accident' -> F1 0.4 (R=1/4). Answer-form failure, not retrieval."
+  },
+  {
+   "id": "H2-fleet-b",
+   "desc": "config (b): rerank OFF + wide recall (24 entries / 20000 chars) + shortest-complete-answer strict (loco-q3/h3)",
+   "settings": "loco-q6/h2-wide-recall-concise-strict.json",
+   "outcome": "fail",
+   "score": 0.3636,
+   "answer": "He was in an accident (but is okay).",
+   "recall_ids_count": 24,
+   "recall_contains_gold_entry": true,
+   "conclusion": "Right sentence shape at last, but under 16k chars of wide-recall context the model appended a parenthetical reassurance '(but is okay)' despite the strict no-parentheticals clause: 7 tokens vs 4 gold -> F1 0.3636. Wide recall invites extra-detail drift."
+  },
+  {
+   "id": "H3-merge",
+   "desc": "lineage merge: config (a) recall stack (helpers + rerank 200, 6-entry budget) + config (b) strict shortest-complete-answer instruction (one short sentence allowed, no parentheticals)",
+   "settings": "loco-q6/h3-helpers-shortest-complete.json",
+   "outcome": "pass",
+   "score": 0.5,
+   "answer": "he was in an accident",
+   "recall_ids": [
+    "project:memory:melanie_son_accident_family_roadtrip_october_2023",
+    "project:memory:melanie_family_grand_canyon_roadtrip_october_2023"
+   ],
+   "conclusion": "WIN: (a)'s rerank keeps recall tight (2 entries, gold rank 1) and (b)'s 'one short sentence' permission restores the subject+verb the (a) instruction banned. 'he was in an accident' -> tokens [he, was, accident], overlap {he, accident}: P 2/3, R 2/4 -> F1 0.5 (same pass bar as q141). Margin is thin; the 1.0 form 'he got into an accident' is a wording-level store paraphrase gap, not chased (gold-shaped tuning)."
+  }
+ ],
+ "regression_check": {
+  "config": "H3 winning settings (loco-q6/h3-helpers-shortest-complete.json)",
+  "questions": [
+   {
+    "qid": "conv-26_q1",
+    "required": "1.0",
+    "after": 1.0,
+    "answer": "2022"
+   },
+   {
+    "qid": "conv-26_q54",
+    "required": "1.0",
+    "after": 1.0,
+    "answer": "the week before 23 August 2023"
+   },
+   {
+    "qid": "conv-26_q126",
+    "required": "1.0",
+    "after": 1.0,
+    "answer": "horseback riding"
+   },
+   {
+    "qid": "conv-26_q141",
+    "required": ">= 0.5",
+    "after": 0.5263,
+    "answer": "freedom and being real - a nudge to always stay true to herself and embrace her womanhood"
+   }
+  ],
+  "verdict": "gate PASS: q1 1.0, q54 1.0, q126 1.0, q141 0.5263 (>= 0.5). No regressions under the merged config."
+ },
+ "fleet_note": "imp4 HEAD now also carries the loco-q5 deterministic-recall lineage (h3b, merged c22c20494) whose answerInstruction independently encodes the same what/who/which 'short factual phrase' precedence. The H3 merge here and loco-q5's h3b are compatible answer-form policies; the promotion-config unification (helper rerank vs deterministic recall) is left to the fleet owner.",
+ "provenance": {
+  "driver": "imp4-targetA/release/examples/memory_bench.exe (shared binary)",
+  "model": "dgx-glm53/glm-5.3 (user-mandated; no other models)",
+  "controller": "scripts/memory_question_loop.py (typeA copy-out, frozen improved-s0 conv-26 store)",
+  "ledger": "reports/continuation/iteration4/QUESTION-LEDGER.json (8 attempts auto-appended: 4 on q143, 4 gate)",
+  "run_dirs": [
+   "reports/continuation/iteration4/ql-attempts/locoq6-q143-h0-baseline",
+   "reports/continuation/iteration4/ql-attempts/locoq6-q143-h1-helpers-short",
+   "reports/continuation/iteration4/ql-attempts/locoq6-q143-h2-wide-concise",
+   "reports/continuation/iteration4/ql-attempts/locoq6-q143-h3-merge",
+   "reports/continuation/iteration4/ql-attempts/locoq6-reg-q1",
+   "reports/continuation/iteration4/ql-attempts/locoq6-reg-q54",
+   "reports/continuation/iteration4/ql-attempts/locoq6-reg-q126",
+   "reports/continuation/iteration4/ql-attempts/locoq6-reg-q141"
+  ]
+ }
+}
