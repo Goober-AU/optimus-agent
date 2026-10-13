@@ -1,0 +1,1 @@
+- Fixed the Windows Terminal popup storm from headless parents by spawning background helpers (Git project-identity probes, kernel bootstrap uv/python, tasklist liveness checks, pi.exec() plumbing, gh CLI calls, and the daemon catalog child) with CREATE_NO_WINDOW; interactive launches are unchanged.
