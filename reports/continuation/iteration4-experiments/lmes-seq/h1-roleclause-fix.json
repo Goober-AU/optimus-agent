@@ -1,0 +1,40 @@
+{
+ "schema": "lmes-seq-fix/1",
+ "qid": "031748ae_abs",
+ "question": "How many engineers do I lead when I just started my new role as Software Engineer Manager?",
+ "gold_shape": "premise-rejection (role never recorded)",
+ "baseline_attempt": {
+  "run_id": "lmesq1-031748aeabs",
+  "score": 0.0,
+  "stage": "answer",
+  "answer": "Five engineers (transferred from the similarly-named Senior Software Engineer role)"
+ },
+ "diagnosis": "G (answer stage): entity-binding miss on role/title. Recall was correct (both role notes present: user_role_senior_software_engineer_20230525/27); the store has the facts. The merged A+G4 instruction's entity clause covered person/item/show but not roles/titles, so the model transferred team-size facts across a different job title.",
+ "fix": "Read-time answerInstruction clause (H1): exact-name rule extended to roles/titles - facts under a different role/name are not recorded; do not transfer; state not recorded + what is recorded.",
+ "h1_attempt": {
+  "run_id": "lmesq1-h1-role",
+  "score": 1.0,
+  "answer": "The available memory does not record a role titled 'Software Engineer Manager'... notes only record Senior Software Engineer, a different title, so its facts cannot be transferred."
+ },
+ "regression_gate": {
+  "01493427_KU_store": {
+   "run_id": "gate-1493427",
+   "score": 1.0
+  },
+  "031748ae_KU_store": {
+   "run_id": "gate-31748ae",
+   "score": 1.0
+  },
+  "001be529_smoke5_sealed_exp": {
+   "run_id": "gate-01be529",
+   "score": 1.0
+  },
+  "0100672e_smoke5_sealed_exp": {
+   "run_id": "gate-100672e",
+   "score": 1.0
+  },
+  "ledger_note": "Gate attempts appended under longmemeval_s for 01493427/031748ae (correct entries). 001be529/0100672e have no lme_s ledger entry (known_correct_not_ledgered): their gate runs (gate-01be529/gate-100672e, both 1.0, identical question text+gold, S smoke5 stores, expansion=true) are evidenced in this file and C:/Users/openclawuser/lmesq-att/gate-01be529|gate-100672e; their accidental appends to longmemeval_m entries were removed to keep the M queue clean."
+ },
+ "generalizable": true,
+ "banked_into": "lmesseq-scratch/ov-banked.json (answerInstruction field)"
+}
