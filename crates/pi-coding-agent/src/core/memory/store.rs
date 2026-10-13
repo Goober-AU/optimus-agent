@@ -57,6 +57,18 @@ pub struct MemorySettings {
     /// be widened. Default 20 preserves prior behavior; 1-500 allowed.
     #[serde(default = "default_recall_rerank_candidates", rename = "recallRerankCandidates")]
     pub recall_rerank_candidates: i64,
+    /// Include a bounded content excerpt after each candidate's title in the
+    /// recall rerank prompt. A question's rare cue can live in entry content
+    /// rather than the title, and the id + title-only prompt then filters the
+    /// gold entry out on a plausible-but-wrong title match. Default false
+    /// preserves the historical id + title prompt.
+    #[serde(default, rename = "recallRerankWithContent")]
+    pub recall_rerank_with_content: bool,
+    /// Per-candidate content excerpt length in characters for the
+    /// content-aware rerank prompt. Default 240 keeps the prompt well under
+    /// the helper budget at the default pool width; 16-2000 allowed.
+    #[serde(default = "default_recall_rerank_content_chars", rename = "recallRerankContentChars")]
+    pub recall_rerank_content_chars: i64,
     /// Deterministically extract the recall search query from a "Question:"
     /// wrapper line instead of searching the full user turn. Free and exact
     /// when the wrapper pattern exists; keeps the raw message otherwise.
@@ -100,6 +112,10 @@ pub fn default_recall_rerank_candidates() -> i64 {
     20
 }
 
+pub fn default_recall_rerank_content_chars() -> i64 {
+    240
+}
+
 pub fn default_recall_query_expansion_draws() -> i64 {
     2
 }
@@ -118,6 +134,8 @@ pub fn default_memory_settings() -> MemorySettings {
         recall_query_distillation: false,
         recall_rerank: false,
         recall_rerank_candidates: default_recall_rerank_candidates(),
+        recall_rerank_with_content: false,
+        recall_rerank_content_chars: default_recall_rerank_content_chars(),
         recall_query_extract: false,
         recall_query_expansion: false,
         recall_query_expansion_draws: default_recall_query_expansion_draws(),
@@ -279,6 +297,8 @@ pub struct PartialMemorySettings {
     pub recall_query_distillation: Option<bool>,
     pub recall_rerank: Option<bool>,
     pub recall_rerank_candidates: Option<i64>,
+    pub recall_rerank_with_content: Option<bool>,
+    pub recall_rerank_content_chars: Option<i64>,
     pub recall_query_extract: Option<bool>,
     pub recall_query_expansion: Option<bool>,
     pub recall_query_expansion_draws: Option<i64>,
@@ -287,7 +307,7 @@ pub struct PartialMemorySettings {
     pub recall_source_spans: Option<bool>,
 }
 
-const LIMITS: [(&str, i64, i64); 8] = [
+const LIMITS: [(&str, i64, i64); 9] = [
     ("maxRecallChars", 0, 32000),
     ("maxRecallEntries", 0, 50),
     ("maxExtractionTokens", 256, 32000),
@@ -295,6 +315,7 @@ const LIMITS: [(&str, i64, i64); 8] = [
     ("maxImportChunkChars", 1000, 80000),
     ("maxImportChunksPerRun", 1, 64),
     ("recallRerankCandidates", 1, 500),
+    ("recallRerankContentChars", 16, 2000),
     ("recallQueryExpansionDraws", 1, 3),
 ];
 
@@ -306,6 +327,7 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
         "learning",
         "recallQueryDistillation",
         "recallRerank",
+        "recallRerankWithContent",
         "recallQueryExtract",
         "recallQueryExpansion",
         "recallProspectiveIndex",
@@ -322,6 +344,9 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
                     result.recall_query_distillation = Some(boolean)
                 }
                 "recallRerank" => result.recall_rerank = Some(boolean),
+                "recallRerankWithContent" => {
+                    result.recall_rerank_with_content = Some(boolean)
+                }
                 "recallQueryExtract" => result.recall_query_extract = Some(boolean),
                 "recallQueryExpansion" => result.recall_query_expansion = Some(boolean),
                 "recallProspectiveIndex" => {
@@ -343,6 +368,9 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
                 "maxImportBytes" => result.max_import_bytes = Some(number),
                 "maxImportChunkChars" => result.max_import_chunk_chars = Some(number),
                 "recallRerankCandidates" => result.recall_rerank_candidates = Some(number),
+                "recallRerankContentChars" => {
+                    result.recall_rerank_content_chars = Some(number)
+                }
                 "recallQueryExpansionDraws" => result.recall_query_expansion_draws = Some(number),
                 _ => result.max_import_chunks_per_run = Some(number),
             }
@@ -960,6 +988,12 @@ fn apply_settings(settings: &mut MemorySettings, patch: &PartialMemorySettings) 
     if let Some(value) = patch.recall_rerank_candidates {
         settings.recall_rerank_candidates = value.clamp(1, 500);
     }
+    if let Some(value) = patch.recall_rerank_with_content {
+        settings.recall_rerank_with_content = value;
+    }
+    if let Some(value) = patch.recall_rerank_content_chars {
+        settings.recall_rerank_content_chars = value.clamp(16, 2000);
+    }
     if let Some(value) = patch.recall_query_expansion {
         settings.recall_query_expansion = value;
     }
@@ -1026,6 +1060,14 @@ fn merge_settings_patch(target: &mut JsonMap, patch: &PartialMemorySettings) {
     set(
         "recallRerankCandidates",
         patch.recall_rerank_candidates.map(|value| Value::from(value)),
+    );
+    set(
+        "recallRerankWithContent",
+        patch.recall_rerank_with_content.map(Value::Bool),
+    );
+    set(
+        "recallRerankContentChars",
+        patch.recall_rerank_content_chars.map(|value| Value::from(value)),
     );
     set(
         "recallQueryExpansion",
@@ -1441,6 +1483,41 @@ mod tests {
             "Invalid recallRerankCandidates"
         );
         assert_eq!(default_memory_settings().recall_rerank_candidates, 20);
+        // Content-aware rerank: bool flag plus a bounded excerpt length.
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallRerankWithContent": "yes"})).unwrap_err(),
+            "recallRerankWithContent must be boolean"
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallRerankWithContent": true})).unwrap().recall_rerank_with_content,
+            Some(true)
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallRerankWithContent": false})).unwrap().recall_rerank_with_content,
+            Some(false)
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({})).unwrap().recall_rerank_content_chars,
+            None
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallRerankContentChars": 2000})).unwrap().recall_rerank_content_chars,
+            Some(2000)
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallRerankContentChars": 16})).unwrap().recall_rerank_content_chars,
+            Some(16)
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallRerankContentChars": 15})).unwrap_err(),
+            "Invalid recallRerankContentChars"
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallRerankContentChars": 2001})).unwrap_err(),
+            "Invalid recallRerankContentChars"
+        );
+        assert_eq!(default_memory_settings().recall_rerank_with_content, false);
+        assert_eq!(default_memory_settings().recall_rerank_content_chars, 240);
         // Query expansion: bool flag plus a 1-3 draw budget.
         assert_eq!(
             validate_settings(&serde_json::json!({"recallQueryExpansion": "yes"})).unwrap_err(),

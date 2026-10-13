@@ -1,0 +1,7 @@
+{
+  "recallRerankWithContent": true,
+  "recallRerankContentChars": 240,
+  "recallRerankCandidates": 24,
+  "maxRecallEntries": 24,
+  "maxRecallChars": 20000
+}

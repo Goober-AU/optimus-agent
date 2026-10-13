@@ -115,6 +115,7 @@ INGEST_AFFECTING_KEYS = (
 # settings that only affect the read/answer path (never in the type-B key)
 READ_AFFECTING_KEYS = (
     "recallOn", "recallQueryDistillation", "recallRerank", "recallRerankCandidates",
+    "recallRerankWithContent", "recallRerankContentChars",
     "recallQueryExtract", "recallQueryExpansion", "recallQueryExpansionDraws",
     "maxRecallChars", "maxRecallEntries", "answerInstruction", "answerMaxTokens",
     "answerThinkingLevel", "questionTimeoutS", "disableTools", "autoRefine",

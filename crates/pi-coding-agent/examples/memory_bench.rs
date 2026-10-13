@@ -242,6 +242,16 @@ struct ManifestSettings {
     /// gold entries that rank far below the lexical top-20.
     #[serde(default, alias = "recall_rerank_candidates")]
     recall_rerank_candidates: Option<i64>,
+    /// Include a bounded content excerpt in recall rerank candidates
+    /// (memory.recallRerankWithContent). A rare cue can live in entry
+    /// content rather than the title; default false preserves the
+    /// id + title-only prompt.
+    #[serde(default, alias = "recall_rerank_with_content")]
+    recall_rerank_with_content: bool,
+    /// Per-candidate rerank excerpt chars (memory.recallRerankContentChars).
+    /// None keeps the production default (240).
+    #[serde(default, alias = "recall_rerank_content_chars")]
+    recall_rerank_content_chars: Option<i64>,
     /// Enable deterministic recall-query extraction from a "Question:"
     /// wrapper (memory.recallQueryExtract).
     #[serde(default, alias = "recall_query_extract")]
@@ -317,6 +327,8 @@ impl Default for ManifestSettings {
             recall_query_distillation: false,
             recall_rerank: false,
             recall_rerank_candidates: None,
+            recall_rerank_with_content: false,
+            recall_rerank_content_chars: None,
             recall_query_extract: false,
             recall_query_expansion: false,
             recall_query_expansion_draws: None,
@@ -1363,6 +1375,12 @@ fn manifest_memory_settings(settings: &ManifestSettings) -> Value {
     if let Some(candidates) = settings.recall_rerank_candidates {
         memory["recallRerankCandidates"] = json!(candidates);
     }
+    if settings.recall_rerank_with_content || settings.memory_learning == Some(false) {
+        memory["recallRerankWithContent"] = json!(settings.recall_rerank_with_content);
+    }
+    if let Some(chars) = settings.recall_rerank_content_chars {
+        memory["recallRerankContentChars"] = json!(chars);
+    }
     if settings.recall_query_expansion || settings.memory_learning == Some(false) {
         memory["recallQueryExpansion"] = json!(settings.recall_query_expansion);
     }
@@ -1406,6 +1424,10 @@ fn memory_feature_realization(
     if let Some(candidates) = requested.recall_rerank_candidates {
         requested_memory["recallRerankCandidates"] = json!(candidates);
     }
+    requested_memory["recallRerankWithContent"] = json!(requested.recall_rerank_with_content);
+    if let Some(chars) = requested.recall_rerank_content_chars {
+        requested_memory["recallRerankContentChars"] = json!(chars);
+    }
     requested_memory["recallQueryExpansion"] = json!(requested.recall_query_expansion);
     if let Some(draws) = requested.recall_query_expansion_draws {
         requested_memory["recallQueryExpansionDraws"] = json!(draws);
@@ -1426,6 +1448,8 @@ fn memory_feature_realization(
         "recallQueryDistillation": effective.recall_query_distillation,
         "recallRerank": effective.recall_rerank,
         "recallRerankCandidates": effective.recall_rerank_candidates,
+        "recallRerankWithContent": effective.recall_rerank_with_content,
+        "recallRerankContentChars": effective.recall_rerank_content_chars,
         "recallQueryExtract": effective.recall_query_extract,
 "recallQueryExpansion": effective.recall_query_expansion,
         "recallQueryExpansionDraws": effective.recall_query_expansion_draws,
@@ -4475,6 +4499,98 @@ mod tests {
     }
 
     #[test]
+    fn recall_rerank_with_content_manifest_aliases_and_default() {
+        assert_eq!(manifest_fixture(None).settings.recall_rerank_with_content, false);
+        assert_eq!(manifest_fixture(None).settings.recall_rerank_content_chars, None);
+        let camel = manifest_fixture(Some(json!({
+            "recallRerankWithContent": true, "recallRerankContentChars": 120
+        })));
+        let snake = manifest_fixture(Some(json!({
+            "recall_rerank_with_content": true, "recall_rerank_content_chars": 120
+        })));
+        assert!(camel.settings.recall_rerank_with_content);
+        assert!(snake.settings.recall_rerank_with_content);
+        assert_eq!(camel.settings.recall_rerank_content_chars, Some(120));
+        assert_eq!(snake.settings.recall_rerank_content_chars, Some(120));
+        assert_eq!(
+            manifest_memory_settings(&camel.settings),
+            manifest_memory_settings(&snake.settings),
+        );
+    }
+
+    #[test]
+    fn manifest_memory_settings_includes_recall_rerank_with_content_only_when_set() {
+        let off = manifest_memory_settings(&ManifestSettings {
+            recall_rerank_with_content: false,
+            ..Default::default()
+        });
+        assert_eq!(off, json!({"recall": true}));
+        let on = manifest_memory_settings(&ManifestSettings {
+            recall_rerank_with_content: true,
+            recall_rerank_content_chars: Some(120),
+            ..Default::default()
+        });
+        assert_eq!(
+            on,
+            json!({"recall": true, "recallRerankWithContent": true, "recallRerankContentChars": 120})
+        );
+        // Frozen replays pin memoryLearning=false, so the toggle is always
+        // explicit there even when the manifest leaves it off.
+        let frozen = manifest_memory_settings(&ManifestSettings {
+            memory_learning: Some(false),
+            ..Default::default()
+        });
+        assert_eq!(
+            frozen,
+            json!({
+                "recall": true,
+                "learning": false,
+                "recallQueryDistillation": false,
+                "recallRerank": false,
+                "recallRerankWithContent": false,
+                "recallQueryExtract": false,
+                "recallQueryExpansion": false,
+                "recallProspectiveIndex": false,
+                "recallSourceSpans": false
+            })
+        );
+    }
+
+    #[test]
+    fn recall_rerank_with_content_realization_round_trip() {
+        let requested = ManifestSettings {
+            recall_rerank_with_content: true,
+            recall_rerank_content_chars: Some(120),
+            ..Default::default()
+        };
+        let error =
+            memory_feature_realization(&requested, &default_memory_settings(), "test").unwrap_err();
+        assert!(
+            error.contains(
+                "memory.recallRerankWithContent: requested=true, expected=true, effective=false"
+            ),
+            "{error}"
+        );
+        assert!(
+            error.contains(
+                "memory.recallRerankContentChars: requested=120, expected=120, effective=240"
+            ),
+            "{error}"
+        );
+        let mut effective = default_memory_settings();
+        effective.recall_rerank_with_content = true;
+        effective.recall_rerank_content_chars = 120;
+        let realization = memory_feature_realization(&requested, &effective, "test").unwrap();
+        assert_eq!(realization["requested_memory"]["recallRerankWithContent"], true);
+        assert_eq!(realization["effective_memory"]["recallRerankWithContent"], true);
+        assert_eq!(realization["requested_memory"]["recallRerankContentChars"], 120);
+        assert_eq!(realization["effective_memory"]["recallRerankContentChars"], 120);
+        // An unset request leaves the production defaults (off, 240) in force.
+        memory_feature_realization(&ManifestSettings::default(), &default_memory_settings(), "test")
+            .unwrap();
+    }
+
+    #[test]
     fn blank_rescue_trigger_fires_only_for_length_stop_with_empty_answer() {
         assert!(blank_rescue_needed("length", ""));
         assert!(!blank_rescue_needed("length", "x"));
@@ -4612,6 +4728,50 @@ mod tests {
             assert!(
                 error.contains(&format!(
                     "memory.recallRerankCandidates: requested={candidates}, expected={candidates}, effective=20"
+                )),
+                "{error}"
+            );
+        }
+    }
+
+    #[test]
+    fn scratch_round_trip_applies_recall_rerank_with_content_and_fails_closed_out_of_range() {
+        let temp = tempfile::tempdir().unwrap();
+        let scratch = scratch_fixture(&temp);
+        // In-range values (including both validator bounds) round-trip through
+        // the real store settings untouched.
+        for (with_content, chars) in [(true, Some(16)), (true, Some(240)), (true, Some(2000)), (false, None)] {
+            let requested = ManifestSettings {
+                recall_rerank_with_content: with_content,
+                recall_rerank_content_chars: chars,
+                ..Default::default()
+            };
+            scratch.write_settings_json(&requested).unwrap();
+            let realization = check_memory_feature_realization(&scratch, &requested, "test")
+                .unwrap_or_else(|error| panic!("with_content={with_content}, chars={chars:?}: {error}"));
+            assert_eq!(
+                realization["effective_memory"]["recallRerankWithContent"],
+                with_content
+            );
+            if let Some(chars) = chars {
+                assert_eq!(realization["effective_memory"]["recallRerankContentChars"], chars);
+            }
+        }
+        // Out-of-range excerpt lengths are rejected by the production
+        // validator, so the whole memory block is ignored and the effective
+        // value falls back to the default 240; the realization check must
+        // fail closed naming the key.
+        for chars in [15, 2001] {
+            let requested = ManifestSettings {
+                recall_rerank_content_chars: Some(chars),
+                ..Default::default()
+            };
+            scratch.write_settings_json(&requested).unwrap();
+            let error = check_memory_feature_realization(&scratch, &requested, "test")
+                .unwrap_err();
+            assert!(
+                error.contains(&format!(
+                    "memory.recallRerankContentChars: requested={chars}, expected={chars}, effective=240"
                 )),
                 "{error}"
             );
@@ -5684,6 +5844,37 @@ mod tests {
         // The failed attempt stays single-use: a retry on the same output is
         // rejected by the claim, never silently reusing mutated state.
         assert!(FrozenReplay::prepare(&invalid, Path::new(&invalid.output_dir)).is_err());
+    }
+
+    #[test]
+    fn frozen_replay_propagates_recall_rerank_with_content() {
+        let input = tempfile::tempdir().unwrap();
+        let (fixture, sha) = frozen_fixture_input(&input);
+        // In-range: the manifest settings land in scratch settings.json, are
+        // loaded by the real store, and pass the frozen realization check.
+        let temp = tempfile::tempdir().unwrap();
+        let mut manifest = frozen_manifest(&temp, &fixture, &sha);
+        manifest.settings.recall_rerank_with_content = true;
+        manifest.settings.recall_rerank_content_chars = Some(120);
+        let replay = FrozenReplay::prepare(&manifest, Path::new(&manifest.output_dir))
+            .unwrap()
+            .unwrap();
+        let scratch_settings: Value = serde_json::from_str(
+            &std::fs::read_to_string(replay.scratch.agent_dir.join("settings.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(scratch_settings["memory"]["recallRerankWithContent"], true);
+        assert_eq!(scratch_settings["memory"]["recallRerankContentChars"], 120);
+        let service = MemoryService::new(
+            &replay.scratch.cwd.to_string_lossy(),
+            &replay.scratch.agent_dir.to_string_lossy(),
+            None,
+        )
+        .unwrap();
+        assert!(service.store.settings().recall_rerank_with_content);
+        assert_eq!(service.store.settings().recall_rerank_content_chars, 120);
+        // verify() re-runs memory_feature_realization; it must accept the pair.
+        replay.verify(&manifest).unwrap();
     }
 
     #[test]
