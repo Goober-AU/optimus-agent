@@ -1,0 +1,197 @@
+{
+ "schema": "loco-temporal-experiment/1",
+ "ts": "2026-10-13T08:55:41+00:00",
+ "worker": "glm-tempan",
+ "scope": "temporal-resolution answer gap: questions naming month X answered from a different event whose title/date mentions X while the gold event's report date differs from its occurrence date (q135-class)",
+ "question": {
+  "qid": "conv-26_q135",
+  "question": "What setback did Melanie face in October 2023?",
+  "gold": "She got hurt and had to take a break from pottery.",
+  "category": "4/single-hop",
+  "baseline_score": 0.3158,
+  "store_facts": {
+   "gold_memory": "melanie_injury_pottery_break_sept_2023: occurred ~September 2023, REPORTED 2023-10-13 (content says 'setback' verbatim; title says September)",
+   "distractor_memory": "melanie_son_accident_family_roadtrip_october_2023: occurred 2023-10-14/15, reported 2023-10-20 (title + dates say October)",
+   "key_asymmetry": "the question's 'in October 2023' anchors to the gold's REPORT date (2023-10-13), NOT its occurrence date (September). The distractor matches October on BOTH dates. Only the wording match ('setback' appears verbatim in the gold note) discriminates."
+  }
+ },
+ "base_config": "loco-q5/h3b-deterministic-recall.json (extract-only recall, window 24 entries / 24000 chars, event-tolerant answerInstruction)",
+ "environment": {
+  "driver": "imp4-targetR/release/examples/memory_bench.exe (post-budget-fix shared binary, mtime 2026-10-13 08:17)",
+  "model": "dgx-glm53/glm-5.3 (user-mandated only model)",
+  "controller": "scripts/memory_question_loop.py typeA copy-out on the frozen imp3-gate improved-s0 conv-26 store (119 memory entries); typeB for the q149 write-time-fixed single-session env",
+  "judge": "question-scoped local-F1 (optimus-local-scoring/1.0.0, no LLM judge)",
+  "attempts_root": "tempan-scratch/ql-attempts (41 glm-tempan attempts auto-appended to QUESTION-LEDGER.json)"
+ },
+ "hypotheses": [
+  {
+   "id": "B0-reconfirm",
+   "desc": "re-confirm q135 on the h3b deterministic config with the targetR binary (loco-q5 reported 3/3 stable; store/binary drift check)",
+   "settings": "loco-temporal/b0-h3b-deterministic-recall.json",
+   "outcome": "pass",
+   "score": 0.5556,
+   "answer": "An injury that forced her to take a break from pottery",
+   "evidence": "gold at recall position 19/24, distractor at position 4; wrong event not chosen. Score band across the h3b family this session: 0.4-1.0 (paraphrase variance: 'She got hurt and had to take a break from pottery.' = 1.0 vs 'An injury that forced [her to take] a break from pottery' = 0.4-0.5556).",
+   "conclusion": "the event-tolerant clause HOLDS on the deterministic config; retrieval-side already solved by the wide window."
+  },
+  {
+   "id": "G-generality",
+   "desc": "h3b verbatim on q149 + the two month-anchored FAILED-list questions whose gold mentions a month (q33 July, q57 August)",
+   "settings": "loco-temporal/b0-h3b-deterministic-recall.json",
+   "outcome": "pass 2/3",
+   "scores": {
+    "conv-26_q33": 1.0,
+    "conv-26_q57": 0.6,
+    "conv-26_q149": 0.0
+   },
+   "answers": {
+    "conv-26_q33": "the week before 3 July 2023",
+    "conv-26_q57": "recently before 17 August 2023",
+    "conv-26_q149": "love and support"
+   },
+   "evidence": "q33: correct parade picked (late-June gold over the August distractor at recall rank 0). q57: wrong hike note picked (the 2023-08-17 'recently' note over the gold 2023-08-25 'the previous week' note; both in window) - 0.6 still passes. q149: gold fact absent from the frozen store (write-time drop of m_0009/m_0011, loco-q7 evidence) - NOT answer-fixable on the frozen store.",
+   "conclusion": "PROMOTION CRITERION MET: q135 + both month-anchored generalization questions pass under the h3b wording. q149 is a write-time gap (fixed in lineage by the merged attribute clause)."
+  },
+  {
+   "id": "H1-occurrence-pref",
+   "desc": "parent-prescribed strengthened clause verbatim: 'prefer facts whose occurrence date falls in that period over facts merely reported in it'",
+   "settings": "loco-temporal/h1-occurrence-pref.json",
+   "outcome": "fail",
+   "score": 0.0,
+   "answer": "Her son was in an accident during the family roadtrip.",
+   "conclusion": "NEGATIVE RESULT - the direction is inverted for this question class: the gold event OCCURRED in September and was REPORTED in October; occurrence-preference actively selects the October-dated distractor. The question's month anchor refers to the report/conversation date."
+  },
+  {
+   "id": "H1b-event-tolerant",
+   "desc": "safe direction: 'a fact belongs to that period if EITHER the event date OR the report date falls inside it; check both; prefer the note whose wording matches the question's terms'",
+   "settings": "loco-temporal/h1b-event-tolerant.json",
+   "outcome": "pass",
+   "scores": {
+    "conv-26_q135": 1.0,
+    "conv-26_q57": 0.6
+   },
+   "conclusion": "holds q135 at exact gold 1.0; no effect on q57. But see H2: the wording-match sentence induces 'not mentioned' bails when the question's period term ('summer') appears in NO note."
+  },
+  {
+   "id": "H2-lineage-merge",
+   "desc": "h3b + temporal clause (H1b) + anti-drift clause (no parentheticals/reassurances) + combine clause (attrs h7) - full answer-config merge",
+   "settings": "loco-temporal/h2-lineage-merge.json",
+   "outcome": "mixed",
+   "scores": {
+    "q135": 1.0,
+    "q1": 1.0,
+    "q54": 1.0,
+    "q126": 1.0,
+    "q141": 0.5556,
+    "q57": 0.6,
+    "q33": 0.0,
+    "q143": 0.3077,
+    "q149_typeb_writefix": 0.8
+   },
+   "evidence": "q33 bailed to 'not mentioned' with both parades in recall (the temporal clause's 'wording matches the question's terms most specifically' makes the model require a lexical 'summer' match that no note contains). q143 still appended 'but thankfully he is okay' despite the explicit no-reassurance clause. q149 on the write-time-fixed store: 0.8 'Strength, motivation and support' (combine clause works).",
+   "conclusion": "7/9 green in one battery, but the temporal clause is a q33-regression risk and the anti-drift clause does not fix q143."
+  },
+  {
+   "id": "H3-rerank-hybrid",
+   "desc": "content-aware rerank (recallRerankWithContent, candidates 24, content 240 chars) + merged instruction - the h2h-recommended hybrid path",
+   "settings": "loco-temporal/h3-rerank-content-merge.json",
+   "outcome": "mixed",
+   "scores": {
+    "q143": 0.5,
+    "q141": 0.5556,
+    "q1": 1.0,
+    "q54": 1.0,
+    "q57": 0.6,
+    "q126": 0.8,
+    "q135": 0.0,
+    "q33": 0.0
+   },
+   "evidence": "q143 PASSES at 0.5 ('He was in an accident.') with a tight 2-entry window - the only config besides loco-q6's narrow-rerank that reaches 0.5. But q135 FAILED: the rerank selected ONLY the distractor (recall n=1) - the 1/6 gold-drop flake the rerank-content worker observed; and q126 drifted to 'go horseback riding' (0.8); q33 bailed 'not mentioned' even with a perfect 2-entry recall (gold rank 1).",
+   "conclusion": "the narrow-window/rerank path fixes q143 at the cost of q135 (gold-drop flake) and q126 (verb-phrase drift). Cross-config tension confirmed: no tested single config passes q135 AND q143 together."
+  },
+  {
+   "id": "FINAL-h7-combine",
+   "desc": "lineage answer config WITHOUT the new temporal/anti-drift clauses: h3b event-tolerant + attrs combine clause (loco-q7/h7-attrs-combine-words.json, already merged)",
+   "settings": "loco-q7/h7-attrs-combine-words.json (typeA-safe copy: loco-temporal settings identical minus importInstructions)",
+   "outcome": "mixed",
+   "scores": {
+    "q1": 1.0,
+    "q54": 1.0,
+    "q126": 1.0,
+    "q141": 0.5,
+    "q33": 0.6667,
+    "q57": 0.6,
+    "q135": 0.4,
+    "q143": 0.3333,
+    "q149_typeb_writefix": 0.8
+   },
+   "conclusion": "6/9 green; q135 0.4 is the right event in the paraphrase variance band (0.4-1.0 across the family); q143 remains the wide-window residual."
+  }
+ ],
+ "regression_gate": {
+  "config": "promoted: deterministic recall (extract-only, 24/24000) + event-tolerant answerInstruction (h3b); q149 slot additionally needs the merged write-time attribute clause + combine instruction",
+  "questions": [
+   {
+    "qid": "conv-26_q1",
+    "required": "1.0",
+    "after": 1.0,
+    "note": "stable across h3b/H2/H3/h7 batteries"
+   },
+   {
+    "qid": "conv-26_q54",
+    "required": "1.0",
+    "after": 1.0,
+    "note": "stable 1.0 in all 4 batteries this session"
+   },
+   {
+    "qid": "conv-26_q126",
+    "required": "1.0",
+    "after": "0.5714-1.0 (variance band)",
+    "note": "right activity in every run; 1.0 in h2h/loco-q5 and the H2/h7 batteries; note-echo variants 'with her dad'/'through the fields' score 0.57-0.67. Per-run 1.0 is not sampling-stable for GLM-5.3."
+   },
+   {
+    "qid": "conv-26_q141",
+    "required": ">=0.5",
+    "after": "0.5-0.5556",
+    "note": "pass in all batteries"
+   },
+   {
+    "qid": "conv-26_q143",
+    "required": ">=0.5",
+    "after": "0.2353-0.3636",
+    "note": "FAIL under every wide-window instruction variant tested (h3b 0.2353-0.3158, anti-drift 0.3077, h7-combine 0.3333, loco-q3-strict 0.3636): the model reliably appends the okay/reassurance. 0.5 requires the narrow-rerank window (loco-q6 H3 or H3 here) which drops q135's gold 1/6 and drifts q126. Residual: needs a code-level or per-question recall-width policy."
+   },
+   {
+    "qid": "conv-26_q149",
+    "required": ">=0.5",
+    "after": "0.0 frozen / 0.8 with write-fix",
+    "note": "frozen store lacks the gold fact (write-time drop, loco-q7). With the merged attribute-clause store + combine instruction: 0.8 ('Strength, motivation and support'); plain h3b on the fixed store quotes one note only (0.333). The combine clause is required."
+   }
+  ],
+  "verdict": "PARTIAL: q1/q54 hold 1.0; q126 in the 0.57-1.0 variance band (activity always correct); q141 passes; q149 passes via the merged write-time + combine lineage; q143 is the one red slot under the promoted wide-window config, with a documented no-single-config-passes-q135+q143 tension."
+ },
+ "promotion": {
+  "claim": "The temporal-resolution answer gap (q135-class) is closed answer-side by the event-tolerant instruction already in the lineage (loco-q5 h3b): for what/who/which questions reply with 'a short factual phrase naming the event, activity, thing, or person, worded like your notes state it', keeping the loco-q2 time-form precedence verbatim. The question's month anchor must be allowed to match EITHER the event date OR the report date (gold = September event reported 2023-10-13; distractor = October on both dates); the surviving discriminator is the question's own event noun ('setback') matching the gold note's wording.",
+  "caveats": [
+   "Do NOT add the occurrence-preference wording (H1): it flips q135 to the distractor (0.0).",
+   "The explicit either-date clause (H1b/H2) is safe on q135 (1.0) but its wording-match sentence induced 'not mentioned' bails on q33, whose period term ('summer') appears in no note - keep it OUT of the lineage config until reworded.",
+   "q143 (verbose reassurance drift under the wide window) is instruction-resistant across 5 variants; its 0.5 sits only on the narrow-rerank path that drops q135's gold 1/6 runs.",
+   "Answer-side sampling variance bands under GLM-5.3: q135 0.4-1.0, q126 0.57-1.0, q33 0.0-1.0 (one 'not mentioned' flip in 5 plain-h3b runs). Gates should read medians/repeat-runs, not single samples."
+  ],
+  "recommended_config": "reports/continuation/iteration4-experiments/loco-q5/h3b-deterministic-recall.json (temporal/single-hop questions) + loco-q7/h7-attrs-combine-words.json answerInstruction when attribute-combination questions are in scope (q149-class)",
+  "generality_evidence": "q135-class month-anchored questions pass under h3b: q33 (July gold) 1.0/1.0/0.667 + one 0.0 flip, q57 (August gold) 0.6 stable 5/5 - both distractor-rich temporal traps answered from the correct event or a passing near-gold form."
+ },
+ "artifacts": {
+  "ledger": "reports/continuation/iteration4/QUESTION-LEDGER.json (41 glm-tempan attempts auto-appended)",
+  "attempt_dirs": "tempan-scratch/ql-attempts/tempan-* (scratch, not committed)",
+  "settings_files": [
+   "b0-h3b-deterministic-recall.json",
+   "h1-occurrence-pref.json",
+   "h1b-event-tolerant.json",
+   "h2-lineage-merge.json",
+   "h2b-typeb-q149-writefix.json",
+   "h3-rerank-content-merge.json",
+   "base-settings.json"
+  ]
+ }
+}
