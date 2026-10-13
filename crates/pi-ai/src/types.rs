@@ -1105,6 +1105,11 @@ pub struct OpenAICompletionsCompat {
     /// Whether the provider supports the `store` field. Default: auto-detected from URL.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub supports_store: Option<bool>,
+    /// Whether the provider derives token budgets from the SGLang server
+    /// runtime (local overlay): budget mirrors the serving stack, not the
+    /// model catalog. Default: off.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sglang_token_budget: Option<bool>,
     /// Whether the provider supports the `developer` role (vs `system`). Default: auto-detected from URL.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub supports_developer_role: Option<bool>,

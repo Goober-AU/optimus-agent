@@ -119,7 +119,7 @@ fn model(address: std::net::SocketAddr) -> Model {
     Model {
         id: "kimi-k3".into(), provider: "offline-fixture".into(), api: "openai-completions".into(),
         base_url: format!("http://{address}/v1"), reasoning: true,
-        context_window: 1_048_576.0, max_tokens: 262_144.0, default_max_tokens: Some(131_072.0),
+        context_window: 1_048_576.0, max_tokens: 262_144.0, max_tokens_explicit: true,
         thinking_level_map: Some([("max".into(), Some("max".into()))].into_iter().collect()),
         compat: Some(Compat::Completions(OpenAICompletionsCompat {
             sglang_token_budget: Some(true), supports_store: Some(false),
