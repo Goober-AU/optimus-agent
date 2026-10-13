@@ -4,7 +4,10 @@
 //! threshold check (per turn end and pre-turn), and the summary chunk loop
 //! walks the serialized conversation by scalar offsets. Both are dominated
 //! by one kernel: counting UTF-8 non-continuation bytes (`(b & 0xC0) != 0x80`),
-//! which equals the Unicode scalar count of any valid UTF-8 string.
+//! which equals the Unicode scalar count of any valid UTF-8 string. The same
+//! kernel also backs the raw-byte entry point [`count_noncontinuation`],
+//! used by the Jev compaction fingerprint writer (`core::jev_compaction`),
+//! which counts streamed serialization chunks that are not `&str`.
 //!
 //! Backends, selected once per process:
 //! - x86-64: AVX2 when `is_x86_feature_detected!("avx2")` (for `len >= 64`),
@@ -446,6 +449,49 @@ fn self_check_fixtures() -> Vec<String> {
     fixtures
 }
 
+/// Raw-byte fixtures for the byte-slice entry point (`count_noncontinuation`):
+/// the empty slice, every single byte value, the full 0..=255 sequence at
+/// several rotations (invalid UTF-8 included — the kernels classify each
+/// byte independently, so the reference is the scalar byte filter), every
+/// length 1..=64 of a mixed alphabet containing NUL, continuation bytes and
+/// lead bytes, and a > 128 KiB deterministic buffer beyond the aarch64 fold
+/// interval. These harden the per-process self-check for the raw-byte path
+/// the fingerprint writer depends on.
+fn self_check_byte_fixtures() -> Vec<Vec<u8>> {
+    let mut fixtures: Vec<Vec<u8>> = vec![Vec::new()];
+    for byte in 0..=255u8 {
+        fixtures.push(vec![byte]);
+    }
+    let all_bytes: Vec<u8> = (0..=255u8).collect();
+    for rotation in [0usize, 1, 3, 16, 17, 31] {
+        let mut rotated = all_bytes.clone();
+        rotated.rotate_left(rotation);
+        fixtures.push(rotated);
+    }
+    let alphabet: [u8; 12] = [
+        b'a', b'\n', 0x00, 0x7f, 0x80, 0x8f, 0xbf, 0xc2, 0xe0, 0xf0, 0xfd, 0xff,
+    ];
+    for len in 1..=64usize {
+        let mut bytes = Vec::with_capacity(len);
+        for i in 0..len {
+            bytes.push(alphabet[i % alphabet.len()]);
+        }
+        fixtures.push(bytes);
+    }
+    // > 128 KiB of deterministic mixed bytes (xorshift), beyond the NEON
+    // fold interval (4096 blocks x 16 B = 65 536 B) so the fold path runs.
+    let mut state = 0x0fed_cba9_8765_4321u64;
+    let mut big = Vec::with_capacity(128 * 1024 + 64);
+    while big.len() < 128 * 1024 + 64 {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        big.extend_from_slice(&state.to_le_bytes());
+    }
+    fixtures.push(big);
+    fixtures
+}
+
 fn init_dispatch() -> DispatchState {
     if forced_reference() {
         return DispatchState {
@@ -455,6 +501,11 @@ fn init_dispatch() -> DispatchState {
     }
     let fixtures = self_check_fixtures();
     let reference: Vec<usize> = fixtures.iter().map(|s| count_chars_reference(s)).collect();
+    let byte_fixtures = self_check_byte_fixtures();
+    let byte_reference: Vec<usize> = byte_fixtures
+        .iter()
+        .map(|bytes| count_noncontinuation_scalar(bytes))
+        .collect();
     for backend in candidate_backends() {
         let mut ok = true;
         for (i, fixture) in fixtures.iter().enumerate() {
@@ -465,6 +516,20 @@ fn init_dispatch() -> DispatchState {
                 _ => {
                     ok = false;
                     break;
+                }
+            }
+        }
+        if ok {
+            for (i, fixture) in byte_fixtures.iter().enumerate() {
+                // Byte fixtures may be invalid UTF-8; the reference is the
+                // scalar byte filter (the exact pre-SIMD semantics of the
+                // fingerprint writer), never the backend under test.
+                match run_backend(backend, fixture) {
+                    Some(got) if got == byte_reference[i] => {}
+                    _ => {
+                        ok = false;
+                        break;
+                    }
                 }
             }
         }
@@ -505,19 +570,31 @@ pub fn self_check() -> Backend {
     dispatch_state().backend
 }
 
+/// Dispatched non-continuation-byte count over any byte slice: bit-identical
+/// to `bytes.iter().filter(|byte| **byte & 0xc0 != 0x80).count()` for every
+/// input, valid UTF-8 or not (each byte is classified independently). For
+/// valid UTF-8 this is the Unicode scalar count. This is the streaming
+/// primitive for `Write`-based counters — e.g. the Jev compaction
+/// fingerprint — whose chunks are raw bytes, not `&str`.
+#[inline]
+pub fn count_noncontinuation(bytes: &[u8]) -> usize {
+    match dispatch_state().backend {
+        Backend::Reference => count_noncontinuation_scalar(bytes),
+        #[cfg(target_arch = "x86_64")]
+        Backend::Sse2 => count_noncontinuation_sse2(bytes),
+        #[cfg(target_arch = "x86_64")]
+        Backend::Avx2 => count_noncontinuation_avx2(bytes),
+        #[cfg(target_arch = "aarch64")]
+        Backend::Neon => count_noncontinuation_neon(bytes),
+    }
+}
+
 /// Dispatched Unicode-scalar count of a valid UTF-8 string. Bit-identical to
-/// `s.chars().count()` for every valid `&str`.
+/// `s.chars().count()` for every valid `&str`: each scalar contributes
+/// exactly one non-continuation byte, so the byte kernel is exact.
 #[inline]
 pub fn count_chars(s: &str) -> usize {
-    match dispatch_state().backend {
-        Backend::Reference => count_chars_reference(s),
-        #[cfg(target_arch = "x86_64")]
-        Backend::Sse2 => count_noncontinuation_sse2(s.as_bytes()),
-        #[cfg(target_arch = "x86_64")]
-        Backend::Avx2 => count_noncontinuation_avx2(s.as_bytes()),
-        #[cfg(target_arch = "aarch64")]
-        Backend::Neon => count_noncontinuation_neon(s.as_bytes()),
-    }
+    count_noncontinuation(s.as_bytes())
 }
 
 /// Dispatched forward scan over raw bytes: returns the byte offset just past
@@ -979,5 +1056,137 @@ mod tests {
             assert_eq!(count_chars(&text), first);
         }
         assert_eq!(first, count_chars_reference(&text));
+    }
+
+    // -----------------------------------------------------------------------
+    // Raw-byte entry point (`count_noncontinuation`), used by the Jev
+    // fingerprint writer: byte-exact vs the scalar filter on valid UTF-8,
+    // arbitrary bytes and streamed chunkings.
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn count_noncontinuation_matches_chars_count_on_valid_utf8() {
+        for (name, text) in count_cases() {
+            let expected = count_chars_reference(&text);
+            assert_eq!(
+                count_noncontinuation(text.as_bytes()),
+                expected,
+                "dispatch failed on {name} ({} bytes)",
+                text.len()
+            );
+            assert_eq!(
+                count_chars(&text),
+                expected,
+                "count_chars changed on {name}"
+            );
+        }
+    }
+
+    #[test]
+    fn count_noncontinuation_is_exact_on_arbitrary_bytes() {
+        let mut cases: Vec<(String, Vec<u8>)> = self_check_byte_fixtures()
+            .into_iter()
+            .enumerate()
+            .map(|(i, bytes)| (format!("self-check-bytes-{i}"), bytes))
+            .collect();
+        let mut rng = Lcg::new(0xC0FF_EE01);
+        for size in [
+            1usize, 15, 16, 17, 31, 32, 33, 63, 64, 65, 4096, 65_535, 65_536, 65_537, 131_072,
+        ] {
+            let mut bytes = Vec::with_capacity(size);
+            for _ in 0..size {
+                bytes.push((rng.next_u64() >> 32) as u8);
+            }
+            cases.push((format!("random-{size}"), bytes));
+        }
+        for (name, bytes) in cases {
+            let expected = count_noncontinuation_scalar(&bytes);
+            assert_eq!(
+                count_noncontinuation(&bytes),
+                expected,
+                "dispatch failed on {name}"
+            );
+            #[cfg(target_arch = "x86_64")]
+            {
+                // SAFETY: SSE2 is baseline on x86-64.
+                assert_eq!(
+                    unsafe { x86::count_noncontinuation_sse2(&bytes) },
+                    expected,
+                    "sse2 failed on {name}"
+                );
+                if std::arch::is_x86_feature_detected!("avx2") {
+                    // SAFETY: AVX2 detected at runtime.
+                    assert_eq!(
+                        unsafe { x86::count_noncontinuation_avx2(&bytes) },
+                        expected,
+                        "avx2 failed on {name}"
+                    );
+                }
+            }
+            #[cfg(target_arch = "aarch64")]
+            {
+                // SAFETY: NEON is baseline on aarch64.
+                assert_eq!(
+                    unsafe { neon::count_noncontinuation_neon(&bytes) },
+                    expected,
+                    "neon failed on {name}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn count_noncontinuation_is_chunk_additive_like_a_write_stream() {
+        // `Write`-based counters (the Jev fingerprint) sum one count per
+        // chunk; the byte classifier is position-independent, so any
+        // chunking must reproduce the whole-buffer count.
+        let text = generate_text(FixtureClass::MixedCrlf, 96 * 1024, 0x5CA1);
+        let bytes = text.as_bytes();
+        let expected = count_noncontinuation_scalar(bytes);
+        for chunk in [1usize, 7, 16, 31, 32, 33, 64, 100, 4096] {
+            let mut got = 0usize;
+            for piece in bytes.chunks(chunk) {
+                got += count_noncontinuation(piece);
+            }
+            assert_eq!(got, expected, "chunk {chunk}");
+        }
+        // Irregular chunk sizes.
+        let mut rng = Lcg::new(0xABCD_1234);
+        let mut got = 0usize;
+        let mut rest = bytes;
+        while !rest.is_empty() {
+            let take = (1 + rng.below(97) as usize).min(rest.len());
+            let (head, tail) = rest.split_at(take);
+            got += count_noncontinuation(head);
+            rest = tail;
+        }
+        assert_eq!(got, expected);
+    }
+
+    #[test]
+    fn self_check_byte_corpus_exceeds_the_neon_fold_interval() {
+        let max_len = self_check_byte_fixtures()
+            .iter()
+            .map(|fixture| fixture.len())
+            .max()
+            .unwrap();
+        assert!(
+            max_len >= 65_536,
+            "largest byte self-check fixture is {max_len} bytes; the NEON fold path would never run"
+        );
+    }
+
+    #[test]
+    fn self_check_byte_corpus_covers_every_byte_value() {
+        let mut seen = [false; 256];
+        for fixture in self_check_byte_fixtures() {
+            for byte in fixture {
+                seen[byte as usize] = true;
+            }
+        }
+        assert!(
+            seen.iter().all(|&value| value),
+            "the byte self-check corpus must classify every byte value"
+        );
     }
 }
