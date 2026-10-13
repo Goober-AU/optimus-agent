@@ -1,0 +1,130 @@
+{
+  "schema": "loco-q3-experiment/1",
+  "ts": "2026-10-13T07:18:50+00:00",
+  "worker": "glm-locoq3",
+  "question": {
+    "qid": "conv-26_q135",
+    "question": "What setback did Melanie face in October 2023?",
+    "gold": "She got hurt and had to take a break from pottery.",
+    "category": "4/single-hop",
+    "baseline_score": 0.3158,
+    "baseline_answer": "In October 2023 Melanie was recovering from an injury, which paused her pottery; to keep busy during recovery she read a book Caroline had recommended and painted (including a sunset painting).",
+    "baseline_source": "imp3-gate/reports/continuation/iteration3-inputs/locomo/runs/improved-merged/run.jsonl"
+  },
+  "diagnosis": {
+    "class": "B+D composite (answer dilution over an already-mispicked recall lane)",
+    "store": "imp3-gate/.../runs/improved-s0/envs/conv-26/agent/memory/projects/project_4b30654678833006224d23f1/harness_state.json",
+    "evidence": [
+      "Gold entry melanie_injury_pottery_break_sept_2023 is the ONLY store entry matching the query token 'setback' ('On 2023-10-13 Melanie told Caroline she recently had a setback: ... she got hurt and had to take a break from pottery') but it ranks #20 lexically (0.520) because its title carries '(September 2023)' and not 'October'.",
+      "Baseline (defaults) recall lane filled its 6-entry budget with wrapper-polluted hits (move/camping/adoption/reading/sunset) - the injury entry was never shown; the model still inferred the injury from the sunset/reading entries but wrapped it in extra facts -> token-F1 0.3158 (B-stage dilution).",
+      "Fleet h3 config (helpers ON + date-biased short-form answer) made it WORSE: the title-blind rerank (id+title only, pool 200) selected exactly ONE candidate - melanie_son_accident_family_roadtrip_october_2023 (an October accident, plausibly 'a setback' from titles alone) - and dropped everything else; recall narrowed to 1 entry/1221 chars.",
+      "Under the date-biased short-form instruction the model then answered a DATE ('the weekend before 20 October 2023', the son-accident date) -> F1 0.0. Two stacked failures: D-stage rerank mis-selection + B-stage format misroute."
+    ]
+  },
+  "hypotheses": [
+    {
+      "id": "H0-baseline",
+      "desc": "typeA re-answer with gate defaults (binary imp4-targetA, settings h1-base-settings-defaults.json)",
+      "settings": "loco-q1/h1-base-settings-defaults.json",
+      "outcome": "fail",
+      "score": 0.3333,
+      "answer": "An injury — she was recovering from an injury in October 2023 that had paused her pottery.",
+      "recall_ids_count": 6,
+      "conclusion": "Baseline reproduced (gate 0.3158 vs 0.3333 run-to-run). Stage B dilution on top of a polluted 6-entry recall that never showed the injury entry."
+    },
+    {
+      "id": "H1-fleet-h3",
+      "desc": "fleet winning config from loco-q1 (helpers ON incl. title-only rerank pool 200 + date-biased short-form answerInstruction)",
+      "settings": "loco-q1/h3-helpers-shortanswer.json",
+      "outcome": "fail",
+      "score": 0.0,
+      "answer": "the weekend before 20 October 2023",
+      "recall_ids": [
+        "project:memory:melanie_son_accident_family_roadtrip_october_2023"
+      ],
+      "conclusion": "WORSE than baseline. Title-blind rerank selected exactly ONE candidate (son's roadtrip accident - an October 'setback' by title) and dropped all others; the date-biased instruction then made the model answer a DATE. Stacked D+B failure."
+    },
+    {
+      "id": "H2-wide-recall-concise",
+      "desc": "rerank OFF + extract/distill/expansion ON + maxRecallEntries 24 / maxRecallChars 20000 + generalized concise answerInstruction (shortest complete answer; phrase-or-sentence)",
+      "settings": "loco-q3/h2-wide-recall-concise.json",
+      "outcome": "pass",
+      "score": 0.8889,
+      "answer": "She got hurt/injured and had to take a break from pottery.",
+      "recall_ids_count": 24,
+      "recall_contains_gold_entry": "project:memory:melanie_injury_pottery_break_sept_2023 (rank #20 lexical)",
+      "conclusion": "WIN on q135: wide recall admits the injury entry (the only 'setback' lexical match, rank #20) and the concise instruction yields the near-gold sentence. REGRESSION however: q54 dropped 1.0 -> 0.8333 (model appended '(approximately 2023-08-16)' from a recalled entry)."
+    },
+    {
+      "id": "H3-wide-recall-concise-strict",
+      "desc": "H2 + strict single-form clause in the answerInstruction (no parentheticals / alternate formats / approximations) to protect date-shape golds from wide-recall noise",
+      "settings": "loco-q3/h3-wide-recall-concise-strict.json",
+      "outcome": "pass",
+      "score": 0.5556,
+      "answer": "an injury that forced her to take a break from pottery",
+      "recall_ids_count": 24,
+      "recall_contains_gold_entry": "project:memory:melanie_injury_pottery_break_sept_2023 (rank #20 lexical)",
+      "conclusion": "WIN + clean gate. q135 fixed (0.3158 -> 0.5556, pass) and the strict clause restored q54 to exactly 'the week before 23 August 2023' (1.0) under the same wide recall. Trade-off vs H2: q135's margin is thinner (the model now says 'an injury that forced her...' instead of 'She got hurt and had to take a break from pottery') because the strict clause favors the minimal noun-phrase form; both pass, and only H3 holds the full gate at 1.0."
+    }
+  ],
+  "regression_check": {
+    "config": "H3 winning settings (h3-wide-recall-concise-strict.json)",
+    "questions": [
+      {
+        "qid": "conv-26_q1",
+        "gate": 1.0,
+        "after": 1.0,
+        "answer": "2022",
+        "note": "no regression"
+      },
+      {
+        "qid": "conv-26_q54",
+        "gate": 1.0,
+        "after": 1.0,
+        "answer": "the week before 23 August 2023",
+        "note": "no regression; strict clause removed H2's '(approximately 2023-08-16)' parenthetical"
+      },
+      {
+        "qid": "conv-26_q126",
+        "gate": 1.0,
+        "after": 1.0,
+        "answer": "horseback riding",
+        "note": "no regression (worker glm-locoq2 had passed it with the fleet h3 config; holds under this config too)"
+      }
+    ],
+    "verdict": "PASS — all three gate questions at 1.0 under the winning config"
+  },
+  "regression_check_h2": {
+    "config": "h2-wide-recall-concise.json",
+    "questions": [
+      {
+        "qid": "conv-26_q1",
+        "gate": 1.0,
+        "after": 1.0,
+        "note": "answer '2022' — clean"
+      },
+      {
+        "qid": "conv-26_q54",
+        "gate": 1.0,
+        "after": 0.8333,
+        "note": "REGRESSION vs gate: 'The week before 23 August 2023 (approximately 2023-08-16).' — parenthetical approximation appended"
+      },
+      {
+        "qid": "conv-26_q126",
+        "gate": 1.0,
+        "after": 1.0,
+        "note": "answer 'horseback riding' — clean"
+      }
+    ],
+    "verdict": "q135 fixed but q54 gate FAILED (1.0 required) -> tightened instruction in H3"
+  },
+  "winning_config": {
+    "settings_file": "reports/continuation/iteration4-experiments/loco-q3/h3-wide-recall-concise-strict.json",
+    "delta_vs_fleet_h3": [
+      "recallRerank: true -> false (title-blind rerank mis-selected a single wrong entry for what-questions)",
+      "maxRecallEntries: 6 (default) -> 24, maxRecallChars: 6000 -> 20000 (admit deep lexical ranks; the gold entry sat at rank #20)",
+      "answerInstruction: date-biased short-form -> generalized 'shortest complete answer' with strict single-form clause"
+    ],
+    "general_lesson": "Two new failure modes beyond the q1 loop's: (1) the recall rerank sees only id+title, so a plausible-but-wrong title (an October accident) can monopolize a narrowed recall and drop the true gold entry (which carried the query's rare token 'setback' only in its CONTENT, ranking #20); (2) a date-shaped answerInstruction misroutes what-happened questions into date answers. Wide recall + minimality instruction fixes both without code changes; the strict single-form clause is needed to keep date golds at exactly 1.0 under wide recall."
+  }
+}
