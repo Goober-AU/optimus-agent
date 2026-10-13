@@ -74,6 +74,13 @@ pub struct MemorySettings {
     /// when the wrapper pattern exists; keeps the raw message otherwise.
     #[serde(default, rename = "recallQueryExtract")]
     pub recall_query_extract: bool,
+    /// Match query terms to entry words by their morphological stem instead of
+    /// exact equality ("camped" matches "camping"). A query verb rarely repeats
+    /// verbatim in note text, so deep-rank misses on the exact-match tie groups
+    /// become reachable without widening the recall window. Default false
+    /// preserves exact-match behavior.
+    #[serde(default, rename = "recallQueryStemming")]
+    pub recall_query_stemming: bool,
     /// Expand the recall query into angle queries with one bounded LLM call,
     /// then search once per angle plus the original query and merge the hits
     /// per entry keeping the maximum score. Falls back to the single original
@@ -137,6 +144,7 @@ pub fn default_memory_settings() -> MemorySettings {
         recall_rerank_with_content: false,
         recall_rerank_content_chars: default_recall_rerank_content_chars(),
         recall_query_extract: false,
+        recall_query_stemming: false,
         recall_query_expansion: false,
         recall_query_expansion_draws: default_recall_query_expansion_draws(),
         recall_prospective_index: false,
@@ -300,6 +308,7 @@ pub struct PartialMemorySettings {
     pub recall_rerank_with_content: Option<bool>,
     pub recall_rerank_content_chars: Option<i64>,
     pub recall_query_extract: Option<bool>,
+    pub recall_query_stemming: Option<bool>,
     pub recall_query_expansion: Option<bool>,
     pub recall_query_expansion_draws: Option<i64>,
     pub shared: Option<Option<SharedConfig>>,
@@ -329,6 +338,7 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
         "recallRerank",
         "recallRerankWithContent",
         "recallQueryExtract",
+        "recallQueryStemming",
         "recallQueryExpansion",
         "recallProspectiveIndex",
         "recallSourceSpans",
@@ -348,6 +358,7 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
                     result.recall_rerank_with_content = Some(boolean)
                 }
                 "recallQueryExtract" => result.recall_query_extract = Some(boolean),
+                "recallQueryStemming" => result.recall_query_stemming = Some(boolean),
                 "recallQueryExpansion" => result.recall_query_expansion = Some(boolean),
                 "recallProspectiveIndex" => {
                     result.recall_prospective_index = Some(boolean)
@@ -982,6 +993,9 @@ fn apply_settings(settings: &mut MemorySettings, patch: &PartialMemorySettings) 
     if let Some(value) = patch.recall_query_extract {
         settings.recall_query_extract = value;
     }
+    if let Some(value) = patch.recall_query_stemming {
+        settings.recall_query_stemming = value;
+    }
     if let Some(value) = patch.recall_rerank {
         settings.recall_rerank = value;
     }
@@ -1048,6 +1062,10 @@ fn merge_settings_patch(target: &mut JsonMap, patch: &PartialMemorySettings) {
     set(
         "recallQueryExtract",
         patch.recall_query_extract.map(Value::Bool),
+    );
+    set(
+        "recallQueryStemming",
+        patch.recall_query_stemming.map(Value::Bool),
     );
     set(
         "recallProspectiveIndex",

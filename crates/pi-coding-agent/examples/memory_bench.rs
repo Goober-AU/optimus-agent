@@ -256,6 +256,10 @@ struct ManifestSettings {
     /// wrapper (memory.recallQueryExtract).
     #[serde(default, alias = "recall_query_extract")]
     recall_query_extract: bool,
+    /// Enable morphological-stem matching between query terms and entry
+    /// words in lexical recall (memory.recallQueryStemming).
+    #[serde(default, alias = "recall_query_stemming")]
+    recall_query_stemming: bool,
     /// Enable recall-time LLM query expansion into angle queries
     /// (memory.recallQueryExpansion).
     #[serde(default, alias = "recall_query_expansion")]
@@ -330,6 +334,7 @@ impl Default for ManifestSettings {
             recall_rerank_with_content: false,
             recall_rerank_content_chars: None,
             recall_query_extract: false,
+            recall_query_stemming: false,
             recall_query_expansion: false,
             recall_query_expansion_draws: None,
             recall_prospective_index: false,
@@ -868,7 +873,9 @@ fn parse_manifest(raw: &str) -> Result<Manifest, String> {
         ("recallQueryDistillation", "recall_query_distillation"),
         ("recallRerank", "recall_rerank"),
         ("recallQueryExtract", "recall_query_extract"),
-("recallQueryExpansion", "recall_query_expansion"),    ].iter().all(|(camel, snake)| settings.get(*camel).or_else(|| settings.get(*snake)).is_some_and(Value::is_boolean));
+        ("recallQueryStemming", "recall_query_stemming"),
+        ("recallQueryExpansion", "recall_query_expansion"),
+    ].iter().all(|(camel, snake)| settings.get(*camel).or_else(|| settings.get(*snake)).is_some_and(Value::is_boolean));
     for question in &manifest.questions {
         question_declaration(question)?;
     }
@@ -1372,6 +1379,9 @@ fn manifest_memory_settings(settings: &ManifestSettings) -> Value {
     if settings.recall_query_extract || settings.memory_learning == Some(false) {
         memory["recallQueryExtract"] = json!(settings.recall_query_extract);
     }
+    if settings.recall_query_stemming || settings.memory_learning == Some(false) {
+        memory["recallQueryStemming"] = json!(settings.recall_query_stemming);
+    }
     if let Some(candidates) = settings.recall_rerank_candidates {
         memory["recallRerankCandidates"] = json!(candidates);
     }
@@ -1421,6 +1431,7 @@ fn memory_feature_realization(
     requested_memory["recallQueryDistillation"] = json!(requested.recall_query_distillation);
     requested_memory["recallRerank"] = json!(requested.recall_rerank);
     requested_memory["recallQueryExtract"] = json!(requested.recall_query_extract);
+    requested_memory["recallQueryStemming"] = json!(requested.recall_query_stemming);
     if let Some(candidates) = requested.recall_rerank_candidates {
         requested_memory["recallRerankCandidates"] = json!(candidates);
     }
@@ -1451,7 +1462,8 @@ fn memory_feature_realization(
         "recallRerankWithContent": effective.recall_rerank_with_content,
         "recallRerankContentChars": effective.recall_rerank_content_chars,
         "recallQueryExtract": effective.recall_query_extract,
-"recallQueryExpansion": effective.recall_query_expansion,
+        "recallQueryStemming": effective.recall_query_stemming,
+        "recallQueryExpansion": effective.recall_query_expansion,
         "recallQueryExpansionDraws": effective.recall_query_expansion_draws,
         "recallProspectiveIndex": effective.recall_prospective_index,
         "recallSourceSpans": effective.recall_source_spans,    });
@@ -4405,6 +4417,7 @@ mod tests {
                 recall_query_distillation: enabled,
                 recall_rerank: enabled,
                 recall_query_extract: enabled,
+                recall_query_stemming: enabled,
                 recall_query_expansion: enabled,
                 recall_prospective_index: enabled,
                 recall_source_spans: enabled,
@@ -4415,6 +4428,7 @@ mod tests {
             effective.recall_query_distillation = enabled;
             effective.recall_rerank = enabled;
             effective.recall_query_extract = enabled;
+            effective.recall_query_stemming = enabled;
             effective.recall_query_expansion = enabled;
             effective.recall_prospective_index = enabled;
             effective.recall_source_spans = enabled;
@@ -4424,6 +4438,7 @@ mod tests {
                 "recallQueryDistillation",
                 "recallRerank",
                 "recallQueryExtract",
+                "recallQueryStemming",
                 "recallQueryExpansion",
                 "recallProspectiveIndex",
                 "recallSourceSpans",
@@ -4434,6 +4449,7 @@ mod tests {
                     "recallQueryDistillation" => mismatch.recall_query_distillation = !enabled,
                     "recallRerank" => mismatch.recall_rerank = !enabled,
                     "recallQueryExtract" => mismatch.recall_query_extract = !enabled,
+                    "recallQueryStemming" => mismatch.recall_query_stemming = !enabled,
                     "recallQueryExpansion" => mismatch.recall_query_expansion = !enabled,
                     "recallProspectiveIndex" => mismatch.recall_prospective_index = !enabled,
                     "recallSourceSpans" => mismatch.recall_source_spans = !enabled,
@@ -4549,6 +4565,7 @@ mod tests {
                 "recallRerank": false,
                 "recallRerankWithContent": false,
                 "recallQueryExtract": false,
+                "recallQueryStemming": false,
                 "recallQueryExpansion": false,
                 "recallProspectiveIndex": false,
                 "recallSourceSpans": false
@@ -5755,7 +5772,7 @@ mod tests {
             "questions": [{"qid": "q1", "env_id": "synthetic-env", "question": "Where is the synthetic needle?"}],
             "settings": {"skipIngest": true, "memoryLearning": false, "disableTools": true,
                 "recallQueryDistillation": false, "recallRerank": false, "recallQueryExtract": false, "answerMaxTokens": 8192,
-"recallQueryDistillation": false, "recallRerank": false, "recallQueryExpansion": false,
+"recallQueryDistillation": false, "recallRerank": false, "recallQueryExpansion": false, "recallQueryStemming": false,
                 "answerMaxTokens": 8192,                "answerInstruction": "Answer directly.", "maxRecallChars": 6000, "maxRecallEntries": 6}
         })).unwrap();
         let manifest = parse_manifest(&raw).unwrap();
