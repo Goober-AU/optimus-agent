@@ -559,9 +559,12 @@ class TestEndToEnd:
 
         rc = run_cli(world, "lp_18", mode="typeB", env={"EVAL_SCORE": "1.0"})
         assert rc == mql.EXIT_OK
-        attempts = sorted(os.listdir(world["attempts"]))
-        manifest2 = json.load(open(os.path.join(world["attempts"], attempts[1],
-                                                "manifest.json"), encoding="utf-8"))
+        # ledger order, not sorted(dir) names: two runs inside one wallclock
+        # second share a stamp and the uuid suffix can invert name order.
+        entry = mql.find_entry(load_ledger(world), "lp_18")
+        manifest2 = json.load(open(os.path.join(
+            world["attempts"], os.path.basename(entry["attempts"][1]["run_dir"]),
+            "manifest.json"), encoding="utf-8"))
         assert manifest2["settings"]["skipIngest"] is True
         assert manifest2["output_dir"].startswith(world["attempts"])
         assert manifest2["output_dir"] != cache_dir
@@ -652,3 +655,63 @@ class TestEndToEnd:
                                   "scoring", "qs-dir", "qs_lp_18.jsonl")
         rows = [json.loads(l) for l in open(scratch_qs, encoding="utf-8") if l.strip()]
         assert len(rows) == 1 and rows[0]["qid"] == "lp_18"
+
+
+# --------------------------------------------------------------------------
+# legacy longmemeval annotation (raw common-set rows)
+# --------------------------------------------------------------------------
+
+class TestLegacyProtocolAnnotations:
+    RAW_LME_S_ROW = {
+        "qid": "00ca467f", "env_id": "00ca467f",
+        "question": "How many doctor's appointments did I go to in March?",
+        "answer": "2",
+        "evidence": ["answer_39900a0a_3", "answer_39900a0a_2", "answer_39900a0a_1"],
+        "category": "multi-session",
+        "eval": {"type": "llm_judge", "params": {
+            "prompt_variant": "multi-session", "abstention": False,
+            "judge_model": "glm-5.3",
+            "protocol": "official longmemeval evaluate_qa.py yes/no prompts"}},
+        "question_date": "2023/03/27 (Mon) 23:35", "abstention": False,
+    }
+    # canonical_hash of the converter-rebuilt annotated record, equal to the
+    # lme_s_full_smoke5_v1 manifest's question_sha256 for this qid.
+    ANNOTATED_SHA256 = ("4ee9c7b3b277883ceb76f6331352f5f453f73024591e3780db"
+                        "07035cd81ba82e")
+
+    def test_raw_longmemeval_row_annotated_like_the_converter(self):
+        annotated = mql.ensure_protocol_annotations(
+            json.loads(json.dumps(self.RAW_LME_S_ROW)), "longmemeval_s")
+        assert annotated["family"] == "longmemeval"
+        assert annotated["question_protocol"] == "optimus-longmemeval-adapter/2.0.0"
+        assert annotated["eval"]["protocol"] == "optimus-longmemeval-dgx-port/2.0.0"
+        assert annotated["eval"]["params"]["source"] == (
+            "MIT LongMemEval templates; local DGX adapter")
+        assert "protocol" not in annotated["eval"]["params"]
+        # gold-free declaration now builds and binds the baseline hash
+        declaration = mql.question_declaration(annotated)
+        assert declaration["question_sha256"] == self.ANNOTATED_SHA256
+        assert "answer" not in declaration
+
+    def test_already_annotated_record_passes_through(self):
+        record = {"qid": "q", "env_id": "q", "question": "?", "answer": "a",
+                  "evidence": [], "category": "c",
+                  "eval": {"type": "llm_judge", "params": {}, "protocol": "p"},
+                  "family": "longmemeval", "question_protocol": "x"}
+        assert mql.ensure_protocol_annotations(record, "longmemeval_s") is record
+
+    def test_unknown_legacy_family_passes_through(self):
+        record = {"qid": "q", "env_id": "q", "question": "?", "answer": "a",
+                  "evidence": [], "category": "c", "eval": {"type": "f1"}}
+        assert mql.ensure_protocol_annotations(record, "locomo") is record
+
+    def test_raw_row_declaration_matches_baseline_manifest(self, world):
+        # a raw longmemeval_s qs row flows through the declaration builder
+        # and reproduces the baseline manifest's question_sha256.
+        with open(world["qs_path"], "w", encoding="utf-8") as h:
+            h.write(json.dumps(self.RAW_LME_S_ROW) + "\n")
+        record = mql.load_question_record(world["qs_path"], "00ca467f")
+        annotated = mql.ensure_protocol_annotations(record, "longmemeval_s")
+        declaration = mql.question_declaration(annotated)
+        assert declaration["question_sha256"] == self.ANNOTATED_SHA256
+        assert declaration["qid"] == "00ca467f"

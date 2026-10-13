@@ -95,6 +95,48 @@ FAMILY_CONFIG = {
     "lme_v2":         {"bench_flag": "lme_v2",    "judge_profile": "default",         "models_json": True},
 }
 
+# Legacy longmemeval common-set rows predate the 2.0.0 protocol annotations:
+# raw rows carry eval.params.protocol ("official longmemeval evaluate_qa.py
+# yes/no prompts") instead of the annotated family/question_protocol/
+# eval.protocol triple the driver declaration requires. Regenerate the
+# annotations deterministically, exactly like the converter
+# (bench.converters.longmemeval.build_question + annotate_question), so the
+# declaration's question_sha256 equals the baseline manifests (verified
+# byte-identical against lme_s_full_smoke5_v1's question entries).
+LEGACY_PROTOCOL_ANNOTATIONS = {
+    "longmemeval": {
+        "family": "longmemeval",
+        "question_protocol": "optimus-longmemeval-adapter/2.0.0",
+        "scoring_protocol": "optimus-longmemeval-dgx-port/2.0.0",
+        "params_source": "MIT LongMemEval templates; local DGX adapter",
+    },
+}
+
+
+def ensure_protocol_annotations(record: dict, benchmark: str) -> dict:
+    """Annotate legacy-format scoring questions in memory (never on disk).
+
+    Already-annotated records pass through unchanged; unknown legacy shapes
+    also pass through so the strict declaration contract stays visible.
+    """
+    if record.get("question_protocol") and (record.get("eval") or {}).get("protocol"):
+        return record
+    spec = LEGACY_PROTOCOL_ANNOTATIONS.get(FAMILY_CONFIG[benchmark]["bench_flag"])
+    if spec is None:
+        return record
+    annotated = dict(record)
+    eval_block = dict(record.get("eval") or {})
+    params = {key: value for key, value in (eval_block.get("params") or {}).items()
+              if key != "protocol"}
+    params["source"] = spec["params_source"]
+    eval_block["params"] = params
+    eval_block["protocol"] = spec["scoring_protocol"]
+    annotated["eval"] = eval_block
+    annotated["family"] = spec["family"]
+    annotated["question_protocol"] = spec["question_protocol"]
+    return annotated
+
+
 def normalize_judge_profile(value: str) -> str:
     """Ledger entries carry descriptive judge labels; map them to the
     evaluator's --judge-profile choices (default/official-lme-v1/official-lp-v1
@@ -810,6 +852,7 @@ def run_attempt(args, entry: dict) -> int:
     cache_root = args.cache_root or os.path.join(ledger_dir, "ql-typeb-cache")
 
     question_record = load_question_record(entry["qs_path"], qid)
+    question_record = ensure_protocol_annotations(question_record, benchmark)
     question = question_declaration(question_record)
 
     base_settings = resolve_base_settings(
