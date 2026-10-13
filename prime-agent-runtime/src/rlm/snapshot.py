@@ -899,6 +899,10 @@ def remember_restored_legacy_checkpoint(
         isinstance(name, str) for name in dropped
     ):
         return
+    # A legacy payload written by anything other than this writer (foreign or
+    # hand-made files) has no per-name blob layout; record nothing for it.
+    if not all(isinstance(blob, (bytes, bytearray)) for blob in payload.values()):
+        return
     remember_legacy_checkpoint(
         history,
         path,
@@ -1450,6 +1454,123 @@ def snapshot_cas_v2(
         metrics["written_bytes"] = written[0]
         metrics["total_wall_ms"] = _elapsed_ms(total_start, time.monotonic_ns())
         return {"error": f"CAS v2 snapshot failed: {_safe_str(error)}", "metrics": metrics}
+
+
+# ---------------------------------------------------------------------------
+# One-way legacy -> CAS v2 migration
+# ---------------------------------------------------------------------------
+
+# Sibling temp roots carry this marker; a hard crash can leave one behind.
+_MIGRATION_DIRNAME_MARKER = ".migrating-"
+# A migration temp root untouched for this long is abandoned, not active (an
+# in-flight migration touches files continuously).
+_MIGRATION_STALE_AFTER_S = 3600.0
+
+
+def legacy_payload_is_fresher(legacy_path: str, cas_root: str) -> bool:
+    """True when a legacy payload is newer than the v2 pointer (B).
+
+    A binary without CAS v2 support keeps writing the legacy pair after a
+    session flipped to v2; the mtime comparison detects that downgraded work
+    so auto-restore can revive it instead of the older committed generation.
+    Any doubt (missing file, non-regular entry) keeps the default v2 choice.
+    """
+    try:
+        legacy_info = os.lstat(legacy_path)
+        pointer_info = os.lstat(_owned_path(cas_root, CURRENT_FILENAME))
+    except OSError:
+        return False
+    if _is_reparse(legacy_info) or not stat.S_ISREG(legacy_info.st_mode):
+        return False
+    if _is_reparse(pointer_info) or not stat.S_ISREG(pointer_info.st_mode):
+        return False
+    return legacy_info.st_mtime_ns > pointer_info.st_mtime_ns
+
+
+def _cleanup_stale_migration_roots(cas_root: str) -> None:
+    """Best-effort removal of migration temp roots abandoned by hard crashes."""
+    parent = os.path.dirname(cas_root) or "."
+    prefix = os.path.basename(cas_root) + _MIGRATION_DIRNAME_MARKER
+    now = time.time()
+    try:
+        with os.scandir(parent) as iterator:
+            entries = [entry for entry in iterator if entry.name.startswith(prefix)]
+    except OSError:
+        return
+    for entry in entries[:16]:
+        try:
+            if not entry.is_dir(follow_symlinks=False):
+                continue
+            if now - entry.stat(follow_symlinks=False).st_mtime < _MIGRATION_STALE_AFTER_S:
+                continue
+            shutil.rmtree(entry.path, ignore_errors=True)
+        except OSError:
+            continue
+
+
+def migrate_legacy_to_cas(
+    ns: dict[str, Any],
+    cas_root: str,
+    max_bytes: int,
+    max_variable_bytes: int,
+    prune_oversized: bool,
+    always_skip: set[str],
+    handle_type: type[Any],
+    committed: list[dict[str, Any]] | None = None,
+    *,
+    budget_ms: int | None = None,
+) -> dict[str, Any]:
+    """Migrate one legacy session onto CAS v2 with an atomic directory flip.
+
+    The complete v2 root (blobs, generation, pointer) is built inside a
+    hidden sibling directory and flipped live with a single ``rename`` of that
+    directory, so a crash at any point leaves either the fully untouched
+    legacy state or a fully committed v2 root - never a half-migrated session
+    that auto-restore would strand. The legacy payload and manifest are kept
+    (never rewritten, never deleted) so older binaries without CAS v2 support
+    still restore this session; from the flip onward automatic saves continue
+    on CAS v2 and only changed blobs are rewritten.
+    """
+    root = _require_absolute_root(cas_root)
+    parent = os.path.dirname(root) or "."
+    _cleanup_stale_migration_roots(root)
+    temp_root = tempfile.mkdtemp(
+        prefix=os.path.basename(root) + _MIGRATION_DIRNAME_MARKER, dir=parent
+    )
+    try:
+        result = snapshot_cas_v2(
+            ns,
+            temp_root,
+            max_bytes,
+            max_variable_bytes,
+            prune_oversized,
+            always_skip,
+            handle_type,
+            committed,
+            budget_ms=budget_ms,
+        )
+        if "error" in result:
+            return result
+        try:
+            os.rename(temp_root, root)
+        except OSError as error:
+            # `snapshot_cas_v2` published its success into `committed` before
+            # the flip failed; that entry describes the discarded temp root,
+            # so retract it - the caller's legacy fallback publishes the real
+            # outcome (this request's committed list holds only this attempt).
+            if committed is not None:
+                committed.clear()
+            return {
+                "error": f"legacy to CAS v2 migration flip failed: {_safe_str(error)}",
+                "metrics": result.get("metrics"),
+            }
+        _fsync_directory(parent)
+        return {**result, "migrated_from_legacy": True}
+    finally:
+        # After a successful rename this is a no-op (the directory moved); on
+        # any failure it removes the half-built root so nothing is left behind.
+        if os.path.lexists(temp_root):
+            shutil.rmtree(temp_root, ignore_errors=True)
 
 
 def restore_cas_v2(
