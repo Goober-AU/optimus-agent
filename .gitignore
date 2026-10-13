@@ -49,3 +49,6 @@ __pycache__/
 /.rust-port/
 /.port-env/
 crates/*/target/
+
+# iteration4 question-loop scratch (question-scoped rescore dirs)
+scratch/
