@@ -1,0 +1,292 @@
+{
+ "run_id": "wrq102-attrv2",
+ "benchmark": "locomo",
+ "variant": "improved",
+ "output_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/writeres-scratch/typeb-cache\\conv-47--3afe0f0a9f8cc2fa",
+ "envs": [
+  {
+   "env_id": "conv-47",
+   "sessions": [
+    {
+     "session_id": "session_16",
+     "ts": "2022-07-09T17:13:00",
+     "events": [
+      {
+       "role": "user",
+       "text": "James: Hey John! Long time no talk - hope you're doing well. Guess what? Last week I actually won an online gaming tournament! It was such an exciting experience and it blew my mind when I won. Winning felt so good and it really motivated me to keep improving.",
+       "ext_id": "D16:1",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "assistant",
+       "text": "John: Hey James! Congrats on winning the online gaming tournament! It's super fulfilling to see your hard work pay off. So happy for you!",
+       "ext_id": "D16:2",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "user",
+       "text": "James: Thanks! It was really fulfilling to see my hard work pay off with a victory in the tournament. How are you?",
+       "ext_id": "D16:3",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "assistant",
+       "text": "John: Feeling the tug of emotion lately. Determined and passionate on one hand, but feeling overwhelmed and stressed on the other. Balancing personal and professional is kind of a challenge. How have you been?",
+       "ext_id": "D16:4",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "user",
+       "text": "James: Yeah, staying balanced can be tough. I'm trying to take breaks from my hobbies and do other things. Lately I've become interested in extreme sports. Yesterday, for example, I was doing rope jumping. The highest height I jumped from was 150 meters!",
+       "ext_id": "D16:5",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "assistant",
+       "text": "John: Wow, how cool! What other extreme sport have you tried?",
+       "ext_id": "D16:6",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "user",
+       "text": "James: Just three days ago, I was surfing. Catching a wave is so cool! It's strange, but it relaxes me so much. How do you like to relax?",
+       "ext_id": "D16:7",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "assistant",
+       "text": "John: I like to relax by reading. I love entering the imaginative worlds of authors - it's a fun escape from reality.  (shared image: a photo of a book shelf filled with books and a guitar)",
+       "ext_id": "D16:8",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "user",
+       "text": "James: I also love to read, especially while snuggled under the covers on a cold winter day. But now it’s summer and I want something more exciting! By the way, I bought air tickets to Toronto, and I’m leaving the day after tomorrow evening.",
+       "ext_id": "D16:9",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "assistant",
+       "text": "John: Cool, this is already the fourth country you will visit! Will you only be in Toronto, or will you be visiting somewhere else?",
+       "ext_id": "D16:10",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "user",
+       "text": "James: I also plan to visit Vancouver. Maybe, I'll go somewhere else.",
+       "ext_id": "D16:11",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "assistant",
+       "text": "John: When are you coming back?",
+       "ext_id": "D16:12",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "user",
+       "text": "James: I plan to return on July 20, I’ll definitely bring you some kind of souvenir!",
+       "ext_id": "D16:13",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "assistant",
+       "text": "John: Thanks James! I will be waiting for you from your journey! Bon Voyage!",
+       "ext_id": "D16:14",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "user",
+       "text": "James: Thank you, John! Take care and see you soon!",
+       "ext_id": "D16:15",
+       "ts": "2022-07-09T17:13:00"
+      },
+      {
+       "role": "assistant",
+       "text": "John: Take care, bye!",
+       "ext_id": "D16:16",
+       "ts": "2022-07-09T17:13:00"
+      }
+     ]
+    }
+   ],
+   "ground_truth_refs": [
+    "D10:10",
+    "D10:12",
+    "D10:2",
+    "D10:4",
+    "D11:3",
+    "D11:5",
+    "D12:5",
+    "D12:6",
+    "D13:12",
+    "D13:15",
+    "D13:5",
+    "D13:6",
+    "D13:7",
+    "D13:8",
+    "D14:10",
+    "D14:17",
+    "D14:23",
+    "D15:11",
+    "D15:15",
+    "D15:9",
+    "D16:11",
+    "D16:13",
+    "D16:5",
+    "D16:8",
+    "D16:9",
+    "D17:1",
+    "D17:13",
+    "D17:16",
+    "D17:22",
+    "D17:24",
+    "D17:28",
+    "D18:1",
+    "D18:16",
+    "D18:3",
+    "D18:7",
+    "D18:9",
+    "D19:12",
+    "D19:14",
+    "D19:3",
+    "D19:7",
+    "D1:12",
+    "D1:14",
+    "D1:16",
+    "D1:26",
+    "D1:27",
+    "D1:36",
+    "D1:4",
+    "D1:8",
+    "D20:17",
+    "D20:9",
+    "D21:12",
+    "D21:14",
+    "D21:15",
+    "D21:16",
+    "D21:17",
+    "D21:18",
+    "D22:10",
+    "D22:12",
+    "D22:7",
+    "D23:1",
+    "D23:10",
+    "D23:13",
+    "D23:15",
+    "D23:3",
+    "D23:5",
+    "D23:6",
+    "D23:8",
+    "D24:1",
+    "D24:13",
+    "D24:14",
+    "D24:15",
+    "D24:3",
+    "D24:4",
+    "D24:8",
+    "D25:13",
+    "D25:7",
+    "D25:9",
+    "D26:10",
+    "D26:3",
+    "D26:5",
+    "D27:1",
+    "D27:2",
+    "D27:6",
+    "D28:19",
+    "D28:25",
+    "D28:27",
+    "D28:3",
+    "D28:6",
+    "D29:1",
+    "D29:10",
+    "D29:12",
+    "D29:3",
+    "D29:8",
+    "D2:12",
+    "D2:17",
+    "D2:18",
+    "D2:19",
+    "D30:1",
+    "D30:14",
+    "D30:18",
+    "D30:2",
+    "D30:4",
+    "D31:1",
+    "D31:2",
+    "D31:22",
+    "D31:4",
+    "D3:11",
+    "D3:2",
+    "D3:3",
+    "D3:5",
+    "D4:12",
+    "D4:14",
+    "D4:16",
+    "D5:1",
+    "D5:4",
+    "D6:1",
+    "D6:12",
+    "D6:14",
+    "D6:15",
+    "D6:6",
+    "D6:7",
+    "D7:13",
+    "D8:11",
+    "D8:14",
+    "D8:20",
+    "D8:29",
+    "D8:34",
+    "D8:36",
+    "D9:12",
+    "D9:16",
+    "D9:18",
+    "D9:19"
+   ],
+   "family": "locomo",
+   "notes": {
+    "speaker_a": "James",
+    "speaker_b": "John",
+    "speaker_a_role": "user",
+    "n_sessions": 31,
+    "multimodal_turns": 109
+   }
+  }
+ ],
+ "questions": [
+  {
+   "qid": "conv-47_q102",
+   "env_id": "conv-47",
+   "question": "What did James enjoy doing on cold winter days?",
+   "question_protocol": "optimus-locomo-conversion/2.0.0",
+   "scoring_protocol": "optimus-local-scoring/1.0.0",
+   "question_sha256": "16c4010e55ee1bd9bb83c21a3ced0bb861d53d0632e2a6b17d1c6c7da96f4d0c"
+  }
+ ],
+ "model": {
+  "provider": "dgx-glm53",
+  "id": "glm-5.3"
+ },
+ "settings": {
+  "recallQueryExtract": true,
+  "recallQueryDistillation": false,
+  "recallQueryExpansion": false,
+  "recallRerank": false,
+  "memoryLearning": false,
+  "answerMaxTokens": 8192,
+  "maxExtractionTokens": 32000,
+  "maxImportChunkChars": 15000,
+  "questionTimeoutS": 240,
+  "ingestTimeoutS": 21600,
+  "disableTools": true,
+  "answerInstruction": "You are answering questions about past conversations you have on file. Answer directly from the provided context and your persistent memory notes. Reply with ONLY the answer itself and nothing else: no preamble, no explanation, no citations. Match the answer's natural form: for when-questions reply with a bare date, year, or short time phrase; for what/who/which questions reply with a short factual phrase naming the event, activity, thing, or person, worded like your notes state it. for how-questions about how someone handled or reacted to an event, reply with a short clause of at most eight words naming how they felt and how it turned out. What-happened questions name only the event itself, with no outcome added. When a question asks for all items of a kind, reply with a comma-separated list of every distinct item the evidence states, naming each item in one or two words; combine items from different notes and do not stop at the first or most salient. Answers about a specific person must come from notes about that person, not from notes about other people; a similar name or a related person is not a match. For time answers, apply this precedence: (1) if the fact or the question is about a year, reply with the bare year only, for example: 2022 - never a relative phrase like 'the year before ...'; (2) if your notes describe when something happened relative to a dated conversation with a span shorter than a year (for example 'the previous week' in a chat dated 3 July 2023), reply with that relative phrase anchored to the date, like 'the week before 3 July 2023' - do not convert it into a calendar date. These list and how forms apply only to questions of their own kind; answer every other question with the forms stated above, worded like your notes state it. If the answer is not in your notes, reply with exactly: not mentioned",
+  "evidenceTimestamps": true,
+  "recallOn": true,
+  "maxRecallEntries": 24,
+  "maxRecallChars": 24000,
+  "recallQueryStemming": true,
+  "importInstructions": "Extract durable host-neutral project facts only. Only create edits of kind memory with cited sourceIds. Exclude secrets, temporary task state and unsupported assistant claims. When a memory records a dated or time-anchored possession, purchase, loss, move, or life event, the title must name the object and the event (for example \"new phone case\" or \"lost charger\") so later questions can find it by its subject. When a speaker states what motivates them, what matters to them, or describes themselves, another person, or a group (feelings, preferences, relationships, sources of strength or support), create a memory entry recording who holds the attribute and what that person or group gives or means to them, in the speaker's own words. These are as important as dated events.",
+  "skipIngest": false
+ }
+}
