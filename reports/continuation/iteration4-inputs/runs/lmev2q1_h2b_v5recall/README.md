@@ -1,0 +1,1 @@
+H2b read-time full v5 recall stack (skipIngest reuse of H1 store; distill+rerank pool 200+extract+expansion). Gold note recalled; answer quoted both Toolbox counts but picked 'two' by recency. 36fe48ef=0.0 (answer-side failure). See lmev2q1_h3_fid_v2/README.md.

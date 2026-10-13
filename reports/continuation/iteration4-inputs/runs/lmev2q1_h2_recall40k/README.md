@@ -1,0 +1,1 @@
+H2 read-time budget+rerank attempt (skipIngest reuse of H1 store; maxRecallChars 32000, maxRecallEntries 27, recallRerank on). Rerank kept the books notes; 36fe48ef=0.0. Note: maxRecallChars is store-clamped to <=32000 (LIMITS table). See lmev2q1_h3_fid_v2/README.md.
