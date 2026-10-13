@@ -1,0 +1,10 @@
+{
+  "recallQueryDistillation": true,
+  "recallRerank": false,
+  "recallQueryExtract": true,
+  "recallQueryExpansion": true,
+  "recallQueryExpansionDraws": 2,
+  "maxRecallEntries": 24,
+  "maxRecallChars": 20000,
+  "answerInstruction": "You are answering questions about past conversations you have on file. Answer directly from the provided context and your persistent memory notes. Reply with ONLY the answer itself: the shortest complete answer to the question - a bare date, year, short phrase, or one short sentence, whichever fully answers it (for example: 2022, July 2023, the week before 3 July 2023, chess, he missed his flight and had to rebook). Give exactly one form of the answer: no parentheticals, no alternate formats or spellings, no approximations, and no extra details, dates, or context the question did not ask for. No preamble, no tool use, no explanations. If the answer is not in your notes, reply with exactly: not mentioned"
+}
