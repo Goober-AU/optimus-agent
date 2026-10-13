@@ -1,0 +1,118 @@
+{
+ "schema": "loco-full-stack-gate-results/1",
+ "ts": "2026-10-13T10:05:00+00:00",
+ "worker": "locofull",
+ "worktree": "imp4-locofull (improve/mem4-loco-full, base 62ead4f50)",
+ "model": "dgx-glm53/glm-5.3 (only)",
+ "driver": "imp4-targetR/release/examples/memory_bench.exe",
+ "store": {
+  "frozen_entries": 119,
+  "fresh_entries": 176,
+  "ingest_wall_min": 22,
+  "cache_key": "d4b542a8e98deca6...",
+  "capture_protocol": "optimus-memory-capture/temporal-authority/1.0.0 (SourceAuthorityV1)"
+ },
+ "write_time_validation": {
+  "attribute_notes": "12 Melanie strength/motivation/support notes; session-18 gold statements captured verbatim-ish: 'they're tough kids who give her the strength to keep going' + 'they are her biggest motivation and support' (merged note imported_d8298...); plus melanie-husband-kids-motivation",
+  "ku_notes": "caroline-counseling-pursuit-update-2023-07-06 (update-shaped title present)",
+  "k149_gold_statements_in_store": true
+ },
+ "table_note": "see gate-table.json; fresh = median of draws (x2/x3 on disagreements)",
+ "targets": {
+  "q149_ge_0.8": {
+   "met": false,
+   "value": 0.5714,
+   "draws": [
+    0.5714,
+    0.5714,
+    0.5714
+   ],
+   "answers": [
+    "love, support, strength, motivation, joy"
+   ]
+  },
+  "q1_q54_q126_eq_1": {
+   "met": true,
+   "values": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  "q135_q141_q143_ge_05": {
+   "met": true,
+   "values": [
+    1.0,
+    0.526,
+    1.0
+   ]
+  },
+  "q144_ge_05": {
+   "met": false,
+   "value": 0.333,
+   "draws": [
+    0.333,
+    0.5,
+    0.333
+   ],
+   "answers": [
+    "He was thankfully okay.",
+    "He was scared but thankfully ended up okay."
+   ]
+  },
+  "aggregate_beats_0296": {
+   "met": true,
+   "value": 0.3736,
+   "frozen_det_value": 0.296
+  }
+ },
+ "regressions": {
+  "q18": {
+   "frozen_det": 0.444,
+   "fresh": 0.0,
+   "draws": [
+    0.0,
+    0.0
+   ],
+   "class": "recall-depth + extraction-selection change",
+   "evidence": "all 3 gold location notes EXIST in fresh store (mountain/beach/forest) but rank below the 32-entry window; the frozen 0.444 came from a cross-reference inside the frozen what-she-loves note, whose fresh counterpart (imported_ec6de..., rank 28/32) does not restate locations; diag w32 still 0.0"
+  },
+  "q55": {
+   "frozen_det": 1.0,
+   "fresh": 0.0,
+   "draws": [
+    0.0,
+    0.0
+   ],
+   "class": "recall-width (fixed by window 32)",
+   "evidence": "diag maxRecallEntries 24->32 restores 1.0 'sunsets' (Caroline's sunset-painting note enters); window crowding from 57 extra attribute notes"
+  },
+  "q144": {
+   "frozen_det": 0.364,
+   "fresh_median": 0.333,
+   "draws": [
+    0.333,
+    0.5,
+    0.333
+   ],
+   "class": "answer-stage phrasing wobble on correct recall",
+   "evidence": "accident note recalled at rank 0; note-faithful son answer caps ~0.5-0.615 ('scared but okay' variants); gold 'reassured by his family' derives from the siblings' sentence"
+  }
+ },
+ "wins_vs_frozen_det": {
+  "q26": "+1.000 (0.0 -> 1.0, '2022')",
+  "q33": "+0.667 (0.0 -> 0.667)",
+  "q135": "+0.444 (0.556 -> 1.0)",
+  "q143": "+0.500 (0.5 -> 1.0)",
+  "q149": "+0.571 (0.0 -> 0.5714)",
+  "q39": "+0.083",
+  "q99": "+0.100"
+ },
+ "aggregate": {
+  "n18_fresh_mean": 0.4996,
+  "n18_frozen_det_mean": 0.4223,
+  "n18_mean_delta_vs_baseline": 0.3736,
+  "frozen_det_mean_delta_vs_baseline": 0.296
+ },
+ "verdict": "PARTIAL VALIDATION: aggregate +0.374 beats the +0.296 target and 5/7 fixed bars hold (q1/q54/q126 = 1.0; q135/q141/q143 >= 0.5), the q149 write-time structural fix is real (0.0 -> 0.571 stable, gold statements in store), but q149 misses the 0.8 bar (answer-stage over-combination: 5 attributes vs gold 2 on the full store), q144 misses 0.5 (phrasing wobble), and q18/q55 regress via window crowding (q55 fixed by window 32; q18 needs deeper recall). The round-4 PR evidence package can cite the write-time clause set as validated-at-write-time; the read-time stack needs a window bump 24->32 for stores >150 entries before full-stack validation."
+}

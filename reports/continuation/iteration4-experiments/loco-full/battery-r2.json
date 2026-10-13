@@ -1,0 +1,42 @@
+{
+ "q18": {
+  "run_id": "lf4-q18-r2",
+  "rc": 3,
+  "score": 0.0,
+  "answer": "not mentioned",
+  "outcome": "fail",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 13.8
+ },
+ "q55": {
+  "run_id": "lf4-q55-r2",
+  "rc": 3,
+  "score": 0.0,
+  "answer": "not mentioned",
+  "outcome": "fail",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 22.5
+ },
+ "q144": {
+  "run_id": "lf4-q144-r2",
+  "rc": 0,
+  "score": 0.5,
+  "answer": "He was scared but thankfully ended up okay.",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 19.7
+ },
+ "q141": {
+  "run_id": "lf4-q141-r2",
+  "rc": 0,
+  "score": 0.5555555555555556,
+  "answer": "Freedom and being real \u2014 a nudge to stay true to herself and embrace her womanhood.",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 17.9
+ }
+}

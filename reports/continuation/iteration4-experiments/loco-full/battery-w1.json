@@ -1,0 +1,52 @@
+{
+ "q1": {
+  "run_id": "lf4-q1-w1",
+  "rc": 0,
+  "score": 1.0,
+  "answer": "2022",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 6.5
+ },
+ "q2": {
+  "run_id": "lf4-q2-w1",
+  "rc": 3,
+  "score": 0.25,
+  "answer": "counseling or mental health work",
+  "outcome": "fail",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 7.9
+ },
+ "q18": {
+  "run_id": "lf4-q18-w1",
+  "rc": 3,
+  "score": 0.0,
+  "answer": "not mentioned",
+  "outcome": "fail",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 7.2
+ },
+ "q26": {
+  "run_id": "lf4-q26-w1",
+  "rc": 0,
+  "score": 1.0,
+  "answer": "2022",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 12.6
+ },
+ "q33": {
+  "run_id": "lf4-q33-w1",
+  "rc": 0,
+  "score": 0.6666666666666666,
+  "answer": "the week before 3 July 2023, and the Friday before 14 August 2023",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 49.3
+ }
+}

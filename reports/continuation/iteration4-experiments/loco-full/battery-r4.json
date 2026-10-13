@@ -1,0 +1,22 @@
+{
+ "q144": {
+  "run_id": "lf4-q144-r4",
+  "rc": 3,
+  "score": 0.3333333333333333,
+  "answer": "thankfully he was okay",
+  "outcome": "fail",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 6.3
+ },
+ "q141": {
+  "run_id": "lf4-q141-r4",
+  "rc": 0,
+  "score": 0.5263157894736842,
+  "answer": "Freedom and being real \u2014 a nudge to always stay true to herself and embrace her womanhood.",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 7.2
+ }
+}

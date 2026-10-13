@@ -1,0 +1,41 @@
+{
+ "schema": "loco-full-stack-gate/1",
+ "ts": "2026-10-13T09:20:00+00:00",
+ "worker": "locofull",
+ "worktree": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-locofull (branch improve/mem4-loco-full, base 62ead4f50)",
+ "driver": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-targetR/release/examples/memory_bench.exe",
+ "controller": "scripts/memory_question_loop.py --mode typeB (+env-from-manifest captureProtocol pickup, same patch as the lmev2 full-env gate)",
+ "model": "dgx-glm53/glm-5.3 (only)",
+ "env_source": "imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json (conv-26, 19 sessions; captureProtocol temporal-authority/1.0.0)",
+ "cache_key": "d4b542a8e98deca6b455c5f0544f1dd650e90542c0004218e03fcee96ed48999",
+ "cache_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/ql-typeb-cache\\conv-26--d4b542a8e98deca6",
+ "write_time": "importInstructions = default + title-naming + KU fact-update clause (imp3-ku lme_s_ku_smoke2_v2, validated 2/2) + attribute-statement clause v2 (loco-q7 h4b, 'in the speaker's own words')",
+ "read_time": "det recall (extract-only, 24/24000, loco-q5 h3b) + G4 combined answer instruction (loco-answers) + h7-combine clause (loco-q7 h7) merged",
+ "battery": [
+  "conv-26_q1",
+  "conv-26_q2",
+  "conv-26_q18",
+  "conv-26_q26",
+  "conv-26_q33",
+  "conv-26_q37",
+  "conv-26_q39",
+  "conv-26_q55",
+  "conv-26_q57",
+  "conv-26_q66",
+  "conv-26_q77",
+  "conv-26_q99",
+  "conv-26_q144",
+  "conv-26_q149",
+  "conv-26_q54",
+  "conv-26_q126",
+  "conv-26_q135",
+  "conv-26_q141",
+  "conv-26_q143"
+ ],
+ "targets": {
+  "q149": ">= 0.8",
+  "fixed_set": "q1/q54/q126 = 1.0; q135/q141/q143/q144 >= 0.5",
+  "aggregate": "mean delta vs baseline improves on +0.296 (frozen det all-18)"
+ },
+ "attempts_root": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/ql-attempts-locofull"
+}
