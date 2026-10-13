@@ -1488,6 +1488,10 @@ pub struct Model {
     /// The output limit was explicitly configured rather than supplied by a catalog.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub max_tokens_explicit: bool,
+    /// Default requested output budget; `max_tokens` remains the output ceiling.
+    /// Absent keeps the legacy simple-provider default (at most 32,000 tokens).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_max_tokens: Option<f64>,
     /// Flagship model surfaced above non-featured models of the same provider in pickers.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub featured: Option<bool>,
