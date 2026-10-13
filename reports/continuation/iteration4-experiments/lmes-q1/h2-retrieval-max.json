@@ -1,0 +1,7 @@
+{
+ "recallQueryExpansion": true,
+ "recallQueryExpansionDraws": 2,
+ "maxRecallEntries": 24,
+ "maxRecallChars": 24000,
+ "recallRerankCandidates": 400
+}

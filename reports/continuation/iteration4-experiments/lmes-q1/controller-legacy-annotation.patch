@@ -1,0 +1,131 @@
+warning: in the working copy of 'scripts/memory_question_loop.py', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'tests/test_memory_question_loop.py', CRLF will be replaced by LF the next time Git touches it
+diff --git a/scripts/memory_question_loop.py b/scripts/memory_question_loop.py
+index 5fae178f8..b341a9a9c 100644
+--- a/scripts/memory_question_loop.py
++++ b/scripts/memory_question_loop.py
+@@ -95,6 +95,48 @@ FAMILY_CONFIG = {
+     "lme_v2":         {"bench_flag": "lme_v2",    "judge_profile": "default",         "models_json": True},
+ }
+ 
++# Legacy longmemeval common-set rows predate the 2.0.0 protocol annotations:
++# raw rows carry eval.params.protocol ("official longmemeval evaluate_qa.py
++# yes/no prompts") instead of the annotated family/question_protocol/
++# eval.protocol triple the driver declaration requires. Regenerate the
++# annotations deterministically, exactly like the converter
++# (bench.converters.longmemeval.build_question + annotate_question), so the
++# declaration's question_sha256 equals the baseline manifests (verified
++# byte-identical against lme_s_full_smoke5_v1's question entries).
++LEGACY_PROTOCOL_ANNOTATIONS = {
++    "longmemeval": {
++        "family": "longmemeval",
++        "question_protocol": "optimus-longmemeval-adapter/2.0.0",
++        "scoring_protocol": "optimus-longmemeval-dgx-port/2.0.0",
++        "params_source": "MIT LongMemEval templates; local DGX adapter",
++    },
++}
++
++
++def ensure_protocol_annotations(record: dict, benchmark: str) -> dict:
++    """Annotate legacy-format scoring questions in memory (never on disk).
++
++    Already-annotated records pass through unchanged; unknown legacy shapes
++    also pass through so the strict declaration contract stays visible.
++    """
++    if record.get("question_protocol") and (record.get("eval") or {}).get("protocol"):
++        return record
++    spec = LEGACY_PROTOCOL_ANNOTATIONS.get(FAMILY_CONFIG[benchmark]["bench_flag"])
++    if spec is None:
++        return record
++    annotated = dict(record)
++    eval_block = dict(record.get("eval") or {})
++    params = {key: value for key, value in (eval_block.get("params") or {}).items()
++              if key != "protocol"}
++    params["source"] = spec["params_source"]
++    eval_block["params"] = params
++    eval_block["protocol"] = spec["scoring_protocol"]
++    annotated["eval"] = eval_block
++    annotated["family"] = spec["family"]
++    annotated["question_protocol"] = spec["question_protocol"]
++    return annotated
++
++
+ def normalize_judge_profile(value: str) -> str:
+     """Ledger entries carry descriptive judge labels; map them to the
+     evaluator's --judge-profile choices (default/official-lme-v1/official-lp-v1
+@@ -810,6 +852,7 @@ def run_attempt(args, entry: dict) -> int:
+     cache_root = args.cache_root or os.path.join(ledger_dir, "ql-typeb-cache")
+ 
+     question_record = load_question_record(entry["qs_path"], qid)
++    question_record = ensure_protocol_annotations(question_record, benchmark)
+     question = question_declaration(question_record)
+ 
+     base_settings = resolve_base_settings(
+diff --git a/tests/test_memory_question_loop.py b/tests/test_memory_question_loop.py
+index 49a806522..001b685cb 100644
+--- a/tests/test_memory_question_loop.py
++++ b/tests/test_memory_question_loop.py
+@@ -652,3 +652,63 @@ class TestEndToEnd:
+                                   "scoring", "qs-dir", "qs_lp_18.jsonl")
+         rows = [json.loads(l) for l in open(scratch_qs, encoding="utf-8") if l.strip()]
+         assert len(rows) == 1 and rows[0]["qid"] == "lp_18"
++
++
++# --------------------------------------------------------------------------
++# legacy longmemeval annotation (raw common-set rows)
++# --------------------------------------------------------------------------
++
++class TestLegacyProtocolAnnotations:
++    RAW_LME_S_ROW = {
++        "qid": "00ca467f", "env_id": "00ca467f",
++        "question": "How many doctor's appointments did I go to in March?",
++        "answer": "2",
++        "evidence": ["answer_39900a0a_3", "answer_39900a0a_2", "answer_39900a0a_1"],
++        "category": "multi-session",
++        "eval": {"type": "llm_judge", "params": {
++            "prompt_variant": "multi-session", "abstention": False,
++            "judge_model": "glm-5.3",
++            "protocol": "official longmemeval evaluate_qa.py yes/no prompts"}},
++        "question_date": "2023/03/27 (Mon) 23:35", "abstention": False,
++    }
++    # canonical_hash of the converter-rebuilt annotated record, equal to the
++    # lme_s_full_smoke5_v1 manifest's question_sha256 for this qid.
++    ANNOTATED_SHA256 = ("4ee9c7b3b277883ceb76f6331352f5f453f73024591e3780db"
++                        "07035cd81ba82e")
++
++    def test_raw_longmemeval_row_annotated_like_the_converter(self):
++        annotated = mql.ensure_protocol_annotations(
++            json.loads(json.dumps(self.RAW_LME_S_ROW)), "longmemeval_s")
++        assert annotated["family"] == "longmemeval"
++        assert annotated["question_protocol"] == "optimus-longmemeval-adapter/2.0.0"
++        assert annotated["eval"]["protocol"] == "optimus-longmemeval-dgx-port/2.0.0"
++        assert annotated["eval"]["params"]["source"] == (
++            "MIT LongMemEval templates; local DGX adapter")
++        assert "protocol" not in annotated["eval"]["params"]
++        # gold-free declaration now builds and binds the baseline hash
++        declaration = mql.question_declaration(annotated)
++        assert declaration["question_sha256"] == self.ANNOTATED_SHA256
++        assert "answer" not in declaration
++
++    def test_already_annotated_record_passes_through(self):
++        record = {"qid": "q", "env_id": "q", "question": "?", "answer": "a",
++                  "evidence": [], "category": "c",
++                  "eval": {"type": "llm_judge", "params": {}, "protocol": "p"},
++                  "family": "longmemeval", "question_protocol": "x"}
++        assert mql.ensure_protocol_annotations(record, "longmemeval_s") is record
++
++    def test_unknown_legacy_family_passes_through(self):
++        record = {"qid": "q", "env_id": "q", "question": "?", "answer": "a",
++                  "evidence": [], "category": "c", "eval": {"type": "f1"}}
++        assert mql.ensure_protocol_annotations(record, "locomo") is record
++
++    def test_raw_row_declaration_matches_baseline_manifest(self, world):
++        # a raw longmemeval_s qs row flows through the declaration builder
++        # and reproduces the baseline manifest's question_sha256.
++        with open(world["qs_path"], "w", encoding="utf-8") as h:
++            h.write(json.dumps(self.RAW_LME_S_ROW) + "\n")
++        record = mql.load_question_record(world["qs_path"], "00ca467f")
++        annotated = mql.ensure_protocol_annotations(record, "longmemeval_s")
++        declaration = mql.question_declaration(annotated)
++        assert declaration["question_sha256"] == self.ANNOTATED_SHA256
++        assert declaration["qid"] == "00ca467f"

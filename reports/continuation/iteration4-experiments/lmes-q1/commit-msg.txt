@@ -1,0 +1,26 @@
+lmes-q1: controller legacy-protocol annotation for raw longmemeval rows
+
+The round-4 question controller could not run ANY longmemeval_s/m ledger
+entry: the pinned data/common rows are legacy-format (eval.params.protocol,
+no family/question_protocol/eval.protocol) and question_declaration failed
+with 'question record is missing eval.protocol'.
+
+ensure_protocol_annotations() regenerates the 2.0.0 protocol annotations
+in memory exactly like bench.converters.longmemeval.build_question +
+annotate_question; already-annotated records pass through unchanged. The
+resulting question_sha256 was verified byte-identical to the
+lme_s_full_smoke5_v1 baseline manifest (qid 00ca467f ->
+4ee9c7b3b277883ceb76f6331352f5f453f73024591e3780db07035cd81ba82e).
+
+Also makes test_type_b_cold_ingest_then_warm_reuse deterministic: pick the
+second attempt from ledger order instead of sorted(dirname) (same-second
+run ids can invert name order; observed ~2-in-5 full-suite flakes).
+
+Question loop result for 00ca467f (3 attempts, all score 0.0, stage
+answer): baseline 'One', H1 short-form '1', H2 max retrieval 'Count: 1'.
+Root cause is write-time, not read-time: the March 3 Dr. Smith PCP visit
+(session answer_39900a0a_1, record m_0001:0) never entered the frozen
+store - import_8319fcc5 chunk 0 proposed updating
+memory_lingering_cough_guaifenesin but normalized with edits:[] - so no
+read-time setting can reach gold '2'. UNRESOLVED at read time; needs a
+typeB re-ingest or extraction/normalizer fix as follow-up.
