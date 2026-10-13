@@ -150,8 +150,9 @@ async fn chat_finish_length_recovers_with_a_larger_wire_budget_and_identical_his
     );
     let requests = fixture.requests.lock().unwrap();
     assert_eq!(requests.len(), 2);
-    assert_eq!(output_budget(&requests[0]), 13_107.0);
-    assert_eq!(output_budget(&requests[1]), 26_214.0);
+    // #133 adds thinking headroom for openai-completions reasoning models; Low = +2048.
+    assert_eq!(output_budget(&requests[0]), 15_155.0);
+    assert_eq!(output_budget(&requests[1]), 30_310.0);
     let mut initial = requests[0].clone();
     let mut retried = requests[1].clone();
     for request in [&mut initial, &mut retried] {
