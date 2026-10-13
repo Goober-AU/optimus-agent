@@ -689,8 +689,15 @@ async fn share(
     connection: &Arc<dyn wire::AgentConnection>,
     send: &mpsc::Sender<HostEvent>,
 ) -> Result<CommandOutput, String> {
-    let auth = tokio::process::Command::new("gh")
-        .args(["auth", "status"])
+    let mut gh_auth = tokio::process::Command::new("gh");
+    gh_auth.args(["auth", "status"]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        gh_auth.creation_flags(CREATE_NO_WINDOW);
+    }
+    let auth = gh_auth
         .output()
         .await
         .map_err(|_| {
@@ -715,6 +722,12 @@ async fn share(
         .args(["gist", "create", "--public=false"])
         .arg(&file)
         .kill_on_drop(true);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
     let result = tokio::select! {
         result = command.output() => result.map_err(|e| e.to_string()),
         _ = cancel.cancelled() => { let _ = send.send(HostEvent::CloseCommandDialog); return Ok(CommandOutput::Status("Share cancelled".into())); }

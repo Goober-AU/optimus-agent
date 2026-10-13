@@ -426,6 +426,13 @@ fn exec_command(
         if !cwd.is_empty() {
             process.current_dir(&cwd);
         }
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            // pi.exec() helpers are noninteractive background commands.
+            process.creation_flags(CREATE_NO_WINDOW);
+        }
         if let Some(env) = env {
             for (key, value) in env {
                 match value {
