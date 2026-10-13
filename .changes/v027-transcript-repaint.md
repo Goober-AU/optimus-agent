@@ -1,0 +1,2 @@
+- Fixed typing lag in long terminal sessions by sharing cached transcript lines, retaining row caches after tool and spacer rows, and reusing image metadata during fullscreen repaints.
+- Changed Optimus Agent to version 0.1.27, including the latest memory, compaction, output-limit, and Ultrafast service-tier updates.

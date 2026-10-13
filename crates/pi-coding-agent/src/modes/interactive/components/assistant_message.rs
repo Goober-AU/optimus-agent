@@ -338,7 +338,7 @@ pub struct AssistantMessageComponent {
     container: Container,
     /// A11: bumped by every mutator that can change rendered output
     /// (`update_content`, `set_expanded`, `set_hide_thinking_block`,
-    /// `set_hidden_thinking_label`) and by `invalidate`. The transcript's row
+    /// `set_hidden_thinking_label`, `dismiss_request_error`) and by `invalidate`. The transcript's row
     /// cache uses it to skip re-rendering unchanged assistant messages; the
     /// `dirty` reconcile flag alone cannot express "unchanged since the last
     /// frame" because render clears it.
@@ -432,6 +432,7 @@ impl AssistantMessageComponent {
         }
         self.error_dismissed = true;
         self.dirty = true;
+        self.revision = self.revision.wrapping_add(1);
         true
     }
 

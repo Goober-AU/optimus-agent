@@ -135,6 +135,85 @@ pub(super) fn painted_transcript(mode: Rc<RefCell<InteractiveMode>>, editor: Rc<
     FrameHarness::with_mode(mode, Some(editor)).paint().join("\n")
 }
 
+#[test]
+#[ignore = "manual long-session typing benchmark"]
+fn long_session_typing_benchmark() {
+    let h = FrameHarness::new("long-session-typing");
+    crate::modes::interactive::theme::theme::init_theme(Some("neon"), false);
+    h.width.set(140);
+    h.height.set(81);
+    h.mode.borrow_mut().apply_connection_state_snapshot(local::AgentConnectionState {
+        session_id: "long-session-typing".into(), ..Default::default()
+    });
+    for message in 0..1000 {
+        let text = (0..65).map(|line| format!(
+            "Message {message}, line {line}: café 世界 {}", "transcript text ".repeat(5)
+        )).collect::<Vec<_>>().join("\n");
+        h.transcript.borrow_mut().message(user(&text), false);
+    }
+    let frame = h.paint();
+    assert!(frame.join("\n").contains("Message 999"));
+    let mut durations = Vec::new();
+    for _ in 0..12 {
+        let started = Instant::now();
+        h.key("x");
+        let frame = h.paint();
+        durations.push(started.elapsed().as_secs_f64() * 1000.0);
+        assert!(frame.join("\n").contains(&h.editor.borrow().editor().get_text()));
+    }
+    durations.sort_by(f64::total_cmp);
+    eprintln!("long-session typing: lines={}, median={:.3}ms, max={:.3}ms",
+        h.ui.borrow().get_scroll_info().unwrap().lines_above + 81,
+        durations[durations.len() / 2], durations.last().unwrap());
+}
+
+#[test]
+fn transcript_rows_after_uncacheable_rows_reuse_lines_and_refresh_on_changes() {
+    struct Row {
+        revision: Rc<Cell<Option<u64>>>,
+        renders: Rc<Cell<usize>>,
+        text: Rc<RefCell<String>>,
+    }
+    impl TuiComponent for Row {
+        fn render(&mut self, width: f64) -> Vec<String> {
+            self.renders.set(self.renders.get() + 1);
+            vec![format!("{} at {width}", self.text.borrow())]
+        }
+        fn render_revision(&self) -> Option<u64> { self.revision.get() }
+        fn invalidate(&mut self) {}
+    }
+    let revision = Rc::new(Cell::new(Some(1)));
+    let renders = Rc::new(Cell::new(0));
+    let text = Rc::new(RefCell::new("original".to_string()));
+    let mut row: Box<dyn TuiComponent> = Box::new(Row {
+        revision: revision.clone(), renders: renders.clone(), text: text.clone(),
+    });
+    let mut spacer: Box<dyn TuiComponent> = Box::new(pi_tui::components::spacer::Spacer::new(1));
+    let mut cache = Vec::new();
+    render_row_cached(&mut cache, 0, &mut spacer, 80.0, 1);
+    let first = render_row_cached(&mut cache, 1, &mut row, 80.0, 1);
+    for _ in 0..3 {
+        render_row_cached(&mut cache, 0, &mut spacer, 80.0, 1);
+        let again = render_row_cached(&mut cache, 1, &mut row, 80.0, 1);
+        assert_eq!(again, first);
+        assert!(again[0].ptr_eq(&first[0]));
+    }
+    assert_eq!(renders.get(), 1, "a spacer must not disable caching of later rows");
+    assert_eq!(render_row_cached(&mut cache, 1, &mut row, 40.0, 1)[0].as_str(), "original at 40");
+    render_row_cached(&mut cache, 1, &mut row, 40.0, 2);
+    assert_eq!(renders.get(), 3, "width and style changes must render again");
+    *text.borrow_mut() = "stream delta".into();
+    revision.set(Some(2));
+    assert_eq!(render_row_cached(&mut cache, 1, &mut row, 40.0, 2)[0].as_str(), "stream delta at 40");
+    revision.set(None);
+    *text.borrow_mut() = "dynamic".into();
+    assert_eq!(render_row_cached(&mut cache, 1, &mut row, 40.0, 2)[0].as_str(), "dynamic at 40");
+    *text.borrow_mut() = "settled".into();
+    revision.set(Some(2));
+    assert_eq!(render_row_cached(&mut cache, 1, &mut row, 40.0, 2)[0].as_str(), "settled at 40");
+    assert_eq!(first[0].as_str(), "original at 80", "retained frames stay immutable");
+}
+
 fn user(text: &str) -> AgentMessage {
     AgentMessage::Message(Message::User(UserMessage::new(UserContent::Text(text.into()), 1)))
 }

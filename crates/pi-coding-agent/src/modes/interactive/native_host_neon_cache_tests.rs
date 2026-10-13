@@ -19,13 +19,15 @@ fn long_transcript_editor_repaints_do_not_reformat_unchanged_neon_lines() {
         UserContent::Text(text), 1_790_200_000_000,
     ))), false);
     let started = Instant::now();
-    let expected = transcript.render(150.0);
+    let expected = transcript.render_shared(150.0);
     let cold = started.elapsed();
     assert!(expected.len() >= 1000);
     LINE_FORMATS.with(|count| count.set(0));
     let started = Instant::now();
     for _ in 0..5 {
-        assert_eq!(transcript.render(150.0), expected);
+        let actual = transcript.render_shared(150.0);
+        assert_eq!(actual, expected);
+        assert!(actual.iter().zip(&expected).all(|(a, b)| a.ptr_eq(b)), "unchanged lines were copied");
     }
     eprintln!("neon 1000-line transcript: cold={cold:?}, warm mean={:?}", started.elapsed() / 5);
     assert_eq!(LINE_FORMATS.with(Cell::get), 0, "editor/status repaints reformatted unchanged history");
@@ -34,14 +36,14 @@ fn long_transcript_editor_repaints_do_not_reformat_unchanged_neon_lines() {
 fn check_frame(
     cache: &mut TimelineCache,
     timeline: Timeline,
-    rows: &[(String, Option<RowMeta>, bool)],
+    rows: &[(RenderedLine, Option<RowMeta>, bool)],
     expected_formats: usize,
 ) {
-    let expected = rows.iter().map(|(text, meta, first)| timeline.line(text, meta.as_ref(), *first)).collect::<Vec<_>>();
+    let expected = rows.iter().map(|(text, meta, first)| RenderedLine::from(timeline.line(text, meta.as_ref(), *first))).collect::<Vec<_>>();
     let expected_columns = rows.iter().map(|(text, _, _)| Some((timeline.left,
         timeline.left + visible_width(strip_ansi(text).trim_end()).min(timeline.content_width())))).collect::<Vec<_>>();
     LINE_FORMATS.with(|count| count.set(0));
-    let (actual, columns) = cache.render(timeline, rows.iter().map(|(text, meta, first)| (text.as_str(), meta.as_ref(), *first)));
+    let (actual, columns) = cache.render(timeline, rows.iter().map(|(text, meta, first)| (text, meta.as_ref(), *first)));
     assert_eq!(actual, expected);
     assert_eq!(columns, expected_columns);
     assert_eq!(LINE_FORMATS.with(Cell::get), expected_formats);
@@ -56,7 +58,7 @@ fn timeline_cache_updates_only_changed_lines_and_releases_removed_history() {
     let mut rows = vec![("first 世界".into(), None, false), ("streaming".into(), None, false)];
     check_frame(&mut cache, timeline, &rows, 2);
     check_frame(&mut cache, timeline, &rows, 0);
-    rows[1].0.push_str(" delta 👩‍💻");
+    rows[1].0 = format!("{} delta 👩‍💻", rows[1].0).into();
     check_frame(&mut cache, timeline, &rows, 1);
     rows.push(("appended".into(), None, false));
     check_frame(&mut cache, timeline, &rows, 1);
@@ -116,7 +118,7 @@ fn timeline_cache_preserves_unicode_links_and_graphics_on_repaint() {
     let graphic = pi_tui::terminal_image::position_image("\x1bP0;1;0q~\x1b\\", 3);
     let rows = vec![
         ("\x1b]8;;https://example.test\x07café 世界 👩‍💻\x1b]8;;\x07".into(), None, false),
-        (graphic, None, false),
+        (graphic.into(), None, false),
     ];
     for width in [120, 40, 24] {
         check_frame(&mut cache, Timeline::new(width), &rows, 3);
