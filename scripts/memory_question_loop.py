@@ -606,6 +606,14 @@ def build_manifest(run_id: str, benchmark: str, output_dir: str, env_spec: dict,
     }
     if env_spec.get("family"):
         manifest["envs"][0]["family"] = env_spec["family"]
+    # Carry regenerated-env capture metadata into the driver manifest: the
+    # driver validates notes.axtree_cap_chars (captureAxtreeMaxChars) and the
+    # authority_revision/capture_protocol pair against these fields.
+    for metadata_key in ("authority_revision", "capture_protocol"):
+        if env_spec.get(metadata_key) is not None:
+            manifest["envs"][0][metadata_key] = env_spec[metadata_key]
+    if isinstance(env_spec.get("notes"), dict) and env_spec["notes"]:
+        manifest["envs"][0]["notes"] = env_spec["notes"]
     if notes is not None:
         manifest["envs"][0]["notes"] = notes
     if capture_protocol:
@@ -892,6 +900,11 @@ def run_attempt(args, entry: dict) -> int:
         capture_protocol = None
         if env_source == "source-manifest" and os.path.isfile(source_manifest):
             capture_protocol = read_json(source_manifest).get("captureProtocol")
+        elif env_source == "env-from-manifest" and os.path.isfile(_env_source_path):
+            # A regenerated env carried by --env-from-manifest declares its
+            # capture protocol in that same manifest; without it the driver
+            # falls back to LegacyUndated and rejects versioned captures.
+            capture_protocol = read_json(_env_source_path).get("captureProtocol")
         settings.setdefault("evidenceTimestamps", True)
         prepared = prepare_typeb(entry, attempt_dir, settings, run_id, question,
                                  benchmark, cache_root, env_spec, env_source,

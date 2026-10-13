@@ -1,0 +1,52 @@
+{
+ "q77": {
+  "run_id": "lf4-q77-w3",
+  "rc": 3,
+  "score": 0.0,
+  "answer": "not mentioned",
+  "outcome": "fail",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 7.2
+ },
+ "q99": {
+  "run_id": "lf4-q99-w3",
+  "rc": 0,
+  "score": 0.5116279069767442,
+  "answer": "Her own journey and the support she received \u2014 seeing how counseling and support groups improved her life after her mental health struggle made her want to help people who have gone through the same t",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 25.6
+ },
+ "q144": {
+  "run_id": "lf4-q144-w3",
+  "rc": 3,
+  "score": 0.3333333333333333,
+  "answer": "He was thankfully okay.",
+  "outcome": "fail",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 6.1
+ },
+ "q54": {
+  "run_id": "lf4-q54-w3",
+  "rc": 0,
+  "score": 1.0,
+  "answer": "the week before 23 August 2023",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 6.4
+ },
+ "q126": {
+  "run_id": "lf4-q126-w3",
+  "rc": 0,
+  "score": 1.0,
+  "answer": "Horseback riding.",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 4.8
+ }
+}

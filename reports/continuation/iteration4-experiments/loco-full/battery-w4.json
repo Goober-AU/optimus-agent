@@ -1,0 +1,32 @@
+{
+ "q135": {
+  "run_id": "lf4-q135-w4",
+  "rc": 0,
+  "score": 1.0,
+  "answer": "She got hurt and had to take a break from pottery.",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 6.9
+ },
+ "q141": {
+  "run_id": "lf4-q141-w4",
+  "rc": 3,
+  "score": 0.22222222222222224,
+  "answer": "Freedom and embracing her womanhood.",
+  "outcome": "fail",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 6.8
+ },
+ "q143": {
+  "run_id": "lf4-q143-w4",
+  "rc": 0,
+  "score": 1.0,
+  "answer": "He got into an accident.",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 5.7
+ }
+}

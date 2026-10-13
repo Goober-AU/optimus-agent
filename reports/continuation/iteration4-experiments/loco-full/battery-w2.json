@@ -1,0 +1,52 @@
+{
+ "q37": {
+  "run_id": "lf4-q37-w2",
+  "rc": 3,
+  "score": 0.0,
+  "answer": "not mentioned",
+  "outcome": "fail",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 71.3
+ },
+ "q39": {
+  "run_id": "lf4-q39-w2",
+  "rc": 0,
+  "score": 0.5333333333333333,
+  "answer": "school talks, pride parade, conference, activist group, youth mentorship, youth center volunteering, counseling workshop, art show, art advocacy",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 29.8
+ },
+ "q55": {
+  "run_id": "lf4-q55-w2",
+  "rc": 3,
+  "score": 0.0,
+  "answer": "not mentioned",
+  "outcome": "fail",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 68.5
+ },
+ "q57": {
+  "run_id": "lf4-q57-w2",
+  "rc": 0,
+  "score": 0.6,
+  "answer": "recently before 17 August 2023",
+  "outcome": "pass",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 25.9
+ },
+ "q66": {
+  "run_id": "lf4-q66-w2",
+  "rc": 3,
+  "score": 0.0,
+  "answer": "Connect with nature and each other",
+  "outcome": "fail",
+  "stage": "ingest",
+  "recall_n": 24,
+  "latency_s": 21.4
+ }
+}
