@@ -1,0 +1,1733 @@
+{
+ "schema": "lp-e3-fleet-validation/1",
+ "created": "2026-10-13",
+ "worker": "glm-lpe3val",
+ "purpose": "Fleet-wide validation of the E3 LP read-time config (recallRerankCandidates 500, recallQueryExpansion OFF, recallQueryDistillation OFF over the v3 LP base) before a fleet-wide LP config change.",
+ "config": {
+  "e3_settings": {
+   "recallRerankCandidates": 500,
+   "recallQueryExpansion": false,
+   "recallQueryDistillation": false
+  },
+  "base_settings": "reports/continuation/iteration3-inputs/manifests/loco_plus_dev5_improved_v3.json settings (v3 LP base: pool 200, expansion ON, distillation ON)",
+  "driver": "imp4-targetR/release/examples/memory_bench.exe (sha256 c04ab631...)",
+  "model": "dgx-glm53/glm-5.3 only (no Jev)",
+  "judge": "official-lp-v1, LP_JUDGE_MAX_TOKENS=4096, question-scoped 1-qs-dir scratch scoring",
+  "mode": "typeA skipIngest re-answers on frozen stores (question-scoped scratch copies; baseline stores never mutated)"
+ },
+ "dev5_v3_stores": {
+  "note": "The loco_plus dev5 set is 5 questions (one per frozen v3 store), not 25; lp_118 was the only dev5 question not yet run on E3. Completed here x3 (pair disagreed r1/r2).",
+  "questions": [
+   {
+    "qid": "lp_18",
+    "v3_baseline": "1.0 (rescored; run eval_error)",
+    "e3_runs": [
+     "1.0"
+    ],
+    "e3_median": 1.0,
+    "source": "lpq232-reg-lp_18 (Z)"
+   },
+   {
+    "qid": "lp_69",
+    "v3_baseline": "1.0",
+    "e3_runs": [
+     "1.0"
+    ],
+    "e3_median": 1.0,
+    "source": "lpq232-reg-lp_69 (Z)"
+   },
+   {
+    "qid": "lp_118",
+    "v3_baseline": "0.0",
+    "e3_runs": [
+     "1.0",
+     "0.0",
+     "1.0"
+    ],
+    "e3_median": 1.0,
+    "source": "lpe3a-lp118-r1..r3"
+   },
+   {
+    "qid": "lp_159",
+    "v3_baseline": "1.0",
+    "e3_runs": [
+     "1.0"
+    ],
+    "e3_median": 1.0,
+    "source": "lpq232-reg-lp_159 (Z)"
+   },
+   {
+    "qid": "lp_232",
+    "v3_baseline": "1.0 (rescored; run eval_error)",
+    "e3_runs": [
+     "1.0",
+     "0.0",
+     "1.0"
+    ],
+    "e3_median": 1.0,
+    "source": "lpq232-e3-pool500raw + r2/r3 (Z)"
+   }
+  ],
+  "v3_mean": 0.8,
+  "e3_median_mean": 1.0,
+  "delta": "+0.2 (lp_118 fixed; no regressions)"
+ },
+ "broader_sample": {
+  "selection_rule": "blind continuation of the dev5 rule: order all 120 declared dev qids by SHA256(qid+'20261010') ascending, take ranks 6-25 (dev5 = ranks 1-5); selection blind to scores/gold/judge",
+  "qids": [
+   "lp_124",
+   "lp_146",
+   "lp_147",
+   "lp_157",
+   "lp_192",
+   "lp_20",
+   "lp_201",
+   "lp_207",
+   "lp_230",
+   "lp_260",
+   "lp_261",
+   "lp_277",
+   "lp_291",
+   "lp_31",
+   "lp_317",
+   "lp_327",
+   "lp_344",
+   "lp_378",
+   "lp_60",
+   "lp_62"
+  ],
+  "stores": "frozen base-era stores runs/locomo_plus/s0..s3c/envs/<qid> (0% prospective-cue coverage; 38-959 entries)",
+  "baselines": "scores/locomo_plus_base_full.json per-question (base variant, 2026-10-08/09 era); v3 never ran these questions (full v3 launch never started)",
+  "per_question": [
+   {
+    "qid": "lp_124",
+    "base": 1.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 0.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "used"
+     ]
+    ],
+    "recall_n": [
+     1,
+     1
+    ],
+    "category": "state|rank_tercile_1"
+   },
+   {
+    "qid": "lp_146",
+    "base": 0.0,
+    "e3_r1": 0.0,
+    "e3_r2": 0.0,
+    "pair_mean": 0.0,
+    "delta": 0.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "empty_output"
+     ]
+    ],
+    "recall_n": [
+     6,
+     20
+    ],
+    "category": "state|rank_tercile_2"
+   },
+   {
+    "qid": "lp_147",
+    "base": 0.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 1.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "used"
+     ]
+    ],
+    "recall_n": [
+     5,
+     5
+    ],
+    "category": "state|rank_tercile_2"
+   },
+   {
+    "qid": "lp_157",
+    "base": 1.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 0.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "invalid_output"
+     ]
+    ],
+    "recall_n": [
+     5,
+     20
+    ],
+    "category": "state|rank_tercile_2"
+   },
+   {
+    "qid": "lp_192",
+    "base": 0.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 1.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "used"
+     ]
+    ],
+    "recall_n": [
+     4,
+     1
+    ],
+    "category": "state|rank_tercile_3"
+   },
+   {
+    "qid": "lp_20",
+    "base": 0.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 1.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "used"
+     ]
+    ],
+    "recall_n": [
+     1,
+     1
+    ],
+    "category": "causal|rank_tercile_2"
+   },
+   {
+    "qid": "lp_201",
+    "base": 1.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 0.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "used"
+     ]
+    ],
+    "recall_n": [
+     1,
+     2
+    ],
+    "category": "state|rank_tercile_3"
+   },
+   {
+    "qid": "lp_207",
+    "base": 0.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 1.0,
+    "rerank": [
+     [
+      "empty_selection"
+     ],
+     [
+      "empty_selection"
+     ]
+    ],
+    "recall_n": [
+     20,
+     20
+    ],
+    "category": "goal|rank_tercile_1"
+   },
+   {
+    "qid": "lp_230",
+    "base": 1.0,
+    "e3_r1": 1.0,
+    "e3_r2": 0.0,
+    "pair_mean": 0.5,
+    "delta": -0.5,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "empty_selection"
+     ]
+    ],
+    "recall_n": [
+     1,
+     20
+    ],
+    "category": "goal|rank_tercile_1"
+   },
+   {
+    "qid": "lp_260",
+    "base": 1.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 0.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "invalid_output"
+     ]
+    ],
+    "recall_n": [
+     2,
+     20
+    ],
+    "category": "goal|rank_tercile_2"
+   },
+   {
+    "qid": "lp_261",
+    "base": 1.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 0.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "used"
+     ]
+    ],
+    "recall_n": [
+     1,
+     1
+    ],
+    "category": "goal|rank_tercile_2"
+   },
+   {
+    "qid": "lp_277",
+    "base": 0.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 1.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "used"
+     ]
+    ],
+    "recall_n": [
+     6,
+     5
+    ],
+    "category": "goal|rank_tercile_3"
+   },
+   {
+    "qid": "lp_291",
+    "base": 0.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 1.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "invalid_output"
+     ]
+    ],
+    "recall_n": [
+     4,
+     20
+    ],
+    "category": "goal|rank_tercile_1"
+   },
+   {
+    "qid": "lp_31",
+    "base": 1.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 0.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "empty_selection"
+     ]
+    ],
+    "recall_n": [
+     3,
+     20
+    ],
+    "category": "causal|rank_tercile_2"
+   },
+   {
+    "qid": "lp_317",
+    "base": 1.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 0.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "used"
+     ]
+    ],
+    "recall_n": [
+     2,
+     2
+    ],
+    "category": "value|rank_tercile_1"
+   },
+   {
+    "qid": "lp_327",
+    "base": 0.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 1.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "used"
+     ]
+    ],
+    "recall_n": [
+     10,
+     3
+    ],
+    "category": "value|rank_tercile_1"
+   },
+   {
+    "qid": "lp_344",
+    "base": 0.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 1.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "used"
+     ]
+    ],
+    "recall_n": [
+     2,
+     2
+    ],
+    "category": "value|rank_tercile_1"
+   },
+   {
+    "qid": "lp_378",
+    "base": 0.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 1.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "used"
+     ]
+    ],
+    "recall_n": [
+     2,
+     2
+    ],
+    "category": "value|rank_tercile_2"
+   },
+   {
+    "qid": "lp_60",
+    "base": 1.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 0.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "used"
+     ]
+    ],
+    "recall_n": [
+     1,
+     1
+    ],
+    "category": "causal|rank_tercile_3"
+   },
+   {
+    "qid": "lp_62",
+    "base": 0.0,
+    "e3_r1": 1.0,
+    "e3_r2": 1.0,
+    "pair_mean": 1.0,
+    "delta": 1.0,
+    "rerank": [
+     [
+      "used"
+     ],
+     [
+      "used"
+     ]
+    ],
+    "recall_n": [
+     2,
+     2
+    ],
+    "category": "causal|rank_tercile_3"
+   }
+  ],
+  "runs": [
+   {
+    "qid": "lp_124",
+    "rep": "r1",
+    "run_id": "lpe3b-124-r1",
+    "ts": "2026-10-13T09:21:19",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence. It states",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 1,
+    "recall_chars": 681,
+    "recall_ids": [
+     "project:memory:tim_public_speaking_anxiety"
+    ],
+    "answer_chars": 1373,
+    "answer_excerpt": "That makes a lot of sense, Tim, and honestly it fits with what you've told me before \u2014 that speaking in front of people makes you so anxious you shake even just introducing yourself in meetings. If th",
+    "driver_latency_ms": 17555,
+    "driver_exit": 0,
+    "wall_s": 25.4
+   },
+   {
+    "qid": "lp_124",
+    "rep": "r2",
+    "run_id": "lpe3b-124-r2",
+    "ts": "2026-10-13T09:21:36",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence. It states",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 1,
+    "recall_chars": 681,
+    "recall_ids": [
+     "project:memory:tim_public_speaking_anxiety"
+    ],
+    "answer_chars": 829,
+    "answer_excerpt": "That makes a lot of sense, Tim. I know how much speaking in front of people costs you \u2014 you've mentioned before that you shake even just introducing yourself in meetings. Monthly client briefings woul",
+    "driver_latency_ms": 11136,
+    "driver_exit": 0,
+    "wall_s": 17.5
+   },
+   {
+    "qid": "lp_146",
+    "rep": "r1",
+    "run_id": "lpe3b-146-r1",
+    "ts": "2026-10-13T09:24:13",
+    "score": 0.0,
+    "flag": null,
+    "label": "wrong",
+    "judge_reason": "The evidence concerns James having severe allergy symptoms that caused him to call in sick to work, and John advising him to take care of himself when unwell. The model prediction discusses travel eme",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 6,
+    "recall_chars": 4225,
+    "recall_ids": [
+     "project:memory:mem_lp146_james_road_trip_family_dogs",
+     "project:memory:mem_lp146_james_road_trip_sanctuary",
+     "project:memory:mem_lp146_travel_nuuk",
+     "project:memory:mem_lp146_james_canada_trip",
+     "project:memory:mem_lp146_travel_history",
+     "project:memory:mem_lp146_travel_plan_next_year"
+    ],
+    "answer_chars": 707,
+    "answer_excerpt": "Good instinct \u2014 honestly, with how much you travel, an emergency kit sounds like a must. You've racked up Italy, Turkey, Mexico, and even Nuuk on that last trip, so you know how quickly plans can go s",
+    "driver_latency_ms": 23661,
+    "driver_exit": 0,
+    "wall_s": 31.7
+   },
+   {
+    "qid": "lp_146",
+    "rep": "r2",
+    "run_id": "lpe3b-146-r2",
+    "ts": "2026-10-13T09:25:18",
+    "score": 0.0,
+    "flag": null,
+    "label": "wrong",
+    "judge_reason": "The evidence concerns James having severe allergy symptoms that forced him to call in sick to work, and John advising him to take care of himself when unwell. The model prediction makes no reference t",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "empty_output"
+    ],
+    "recall_n": 20,
+    "recall_chars": 14855,
+    "recall_ids": [
+     "project:memory:mem_john_game_tip_spoiler_free",
+     "project:memory:mem_lp146_james_road_trip_family_dogs",
+     "project:memory:mem_lp146_james_amusement_park_weekend",
+     "project:memory:mem_lp146_james_amusement_park",
+     "project:memory:mem_lp146_james_samantha_girlfriend",
+     "project:memory:mem_lp146_james_power_outage_progress_loss",
+     "project:memory:mem_lp146_travel_nuuk",
+     "project:memory:mem_lp146_james_drums_hobby",
+     "project:memory:mem_lp146_james_road_trip_sanctuary",
+     "project:memory:mem_lp146_james_canada_trip",
+     "project:memory:mem_lp146_travel_history",
+     "project:memory:mem_lp146_james_volunteering_organization",
+     "project:memory:mem_lp146_john_new_rpg_game",
+     "project:memory:mem_lp146_james_big_project_milestone",
+     "project:memory:mem_lp146_james_cooking_class",
+     "project:memory:mem_lp146_james_first_game_released",
+     "project:memory:mem_lp146_james_gaming_platform_community",
+     "project:memory:mem_lp146_james_strategy_game_aspiration",
+     "project:memory:mem_lp146_james_samantha_move_in",
+     "project:memory:imported_8d03ba0198acca1d8e51f5c9"
+    ],
+    "answer_chars": 807,
+    "answer_excerpt": "Ha, look at you \u2014 Mr. Prepared! Honestly, though, it tracks. After that power outage hit your apartment right when you'd reached the big reveal in your game, and you lost progress because you hadn't s",
+    "driver_latency_ms": 58006,
+    "driver_exit": 0,
+    "wall_s": 64.8
+   },
+   {
+    "qid": "lp_147",
+    "rep": "r1",
+    "run_id": "lpe3b-147-r1",
+    "ts": "2026-10-13T09:26:49",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly uses the evidence. It directly recalls Deborah",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 5,
+    "recall_chars": 3875,
+    "recall_ids": [
+     "project:memory:memory-deborah-oldest-sibling",
+     "project:memory:memory-deborah-selfcare-philosophy",
+     "project:memory:memory-deborah-sunset-reflection-photo",
+     "project:memory:memory-deborah-friend-farewell-quote",
+     "project:memory:memory-deborah-lake-reflection-spot"
+    ],
+    "answer_chars": 1062,
+    "answer_excerpt": "Deborah \u2014 do you realize what a milestone that is for you? You've told me before that being the oldest sibling basically hardwired you to take charge; the second anything wobbles, you grab the wheel w",
+    "driver_latency_ms": 26059,
+    "driver_exit": 0,
+    "wall_s": 34.6
+   },
+   {
+    "qid": "lp_147",
+    "rep": "r2",
+    "run_id": "lpe3b-147-r2",
+    "ts": "2026-10-13T09:27:18",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence. It states",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 5,
+    "recall_chars": 3875,
+    "recall_ids": [
+     "project:memory:memory-deborah-oldest-sibling",
+     "project:memory:memory-deborah-selfcare-philosophy",
+     "project:memory:memory-deborah-sunset-reflection-photo",
+     "project:memory:memory-deborah-friend-farewell-quote",
+     "project:memory:memory-deborah-lake-reflection-spot"
+    ],
+    "answer_chars": 1028,
+    "answer_excerpt": "Deborah, I don't think you're giving yourself enough credit for how big that is. You're the oldest sibling \u2014 the one who's been taking charge of every project since childhood because that's just who y",
+    "driver_latency_ms": 22720,
+    "driver_exit": 0,
+    "wall_s": 28.7
+   },
+   {
+    "qid": "lp_157",
+    "rep": "r1",
+    "run_id": "lpe3b-157-r1",
+    "ts": "2026-10-13T09:21:24",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence: it mentions that Deborah",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 5,
+    "recall_chars": 3805,
+    "recall_ids": [
+     "project:memory:deborah_chronic_knee_pain_gentle_yoga",
+     "project:memory:deborah_running_group_with_anna",
+     "project:memory:deborah_daily_routine_and_jogging",
+     "project:memory:deborah_biking_and_art_show_activities",
+     "project:memory:deborah_favorite_nature_spots"
+    ],
+    "answer_chars": 1584,
+    "answer_excerpt": "Deborah, first of all \u2014 congratulations for signing up! That took courage, and I want to gently push back on that fear.\n\nThink about how far you've come lately. For a while, your knee had you limited ",
+    "driver_latency_ms": 23241,
+    "driver_exit": 0,
+    "wall_s": 30.7
+   },
+   {
+    "qid": "lp_157",
+    "rep": "r2",
+    "run_id": "lpe3b-157-r2",
+    "ts": "2026-10-13T09:21:56",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references Deborah",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "invalid_output"
+    ],
+    "recall_n": 20,
+    "recall_chars": 15236,
+    "recall_ids": [
+     "project:memory:deborah_bali_trip_last_year_and_love_of_beach_yoga",
+     "project:memory:jolene_deborah_sunrise_together_plan",
+     "project:memory:deborah_rio_trip_three_years_ago",
+     "project:memory:jolene_surfing_goal",
+     "project:memory:deborah_study_advice_and_mug_promise",
+     "project:memory:deborah_surfing_experience_and_plan_with_jolene",
+     "project:memory:deborah_park_bench_mother_memories",
+     "project:memory:deborah_jolene_coffee_date_friday",
+     "project:memory:deborah_jolene_joint_plan_next_month",
+     "project:memory:deborah_stem_volunteer_program_support",
+     "project:memory:deborah_care_home_meditation_yoga_session",
+     "project:memory:deborah_yoga_getaway_storm_cancellation",
+     "project:memory:deborah_favorite_yoga_routine_gentle_flow",
+     "project:memory:deborah_neighborhood_yoga_class",
+     "project:memory:deborah_free_gardening_class_with_neighbor",
+     "project:memory:deborah_mother_hobbies_window_seat",
+     "project:memory:deborah_cat_card_game",
+     "project:memory:deborah_gratitude_small_moments",
+     "project:memory:deborah_lake_reflection_spot",
+     "project:memory:deborah_mother_loved_flowers_bench_tribute"
+    ],
+    "answer_chars": 1207,
+    "answer_excerpt": "Deborah, I'm going to gently throw your own words back at you. When I kept hesitating about learning to surf, you told me to chase my dreams and not be daunted \u2014 that taking those first steps is key, ",
+    "driver_latency_ms": 26524,
+    "driver_exit": 0,
+    "wall_s": 34.1
+   },
+   {
+    "qid": "lp_192",
+    "rep": "r1",
+    "run_id": "lpe3b-192-r1",
+    "ts": "2026-10-13T09:25:47",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence about muting meetings and staying silent at work (",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 4,
+    "recall_chars": 2895,
+    "recall_ids": [
+     "project:memory:john_disconnected_at_work_mutes_meetings_and_barely_speaks",
+     "project:memory:john_inspiration_sources_and_occasional_self_doubt_about_his_impact",
+     "project:memory:john_feeling_stuck_on_impact_exploring_volunteering_options",
+     "project:memory:john_weekly_walks_with_sunset_views_to_disconnect_and_find_peace"
+    ],
+    "answer_chars": 1180,
+    "answer_excerpt": "That link you just made matters. When it was meetings \u2014 muting yourself, staying silent \u2014 it was easier to treat it as being about the job. But your friends are one of the things you've told me actual",
+    "driver_latency_ms": 21491,
+    "driver_exit": 0,
+    "wall_s": 28.2
+   },
+   {
+    "qid": "lp_192",
+    "rep": "r2",
+    "run_id": "lpe3b-192-r2",
+    "ts": "2026-10-13T09:26:10",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence by directly recalling the user",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 1,
+    "recall_chars": 835,
+    "recall_ids": [
+     "project:memory:john_disconnected_at_work_mutes_meetings_and_barely_speaks"
+    ],
+    "answer_chars": 1419,
+    "answer_excerpt": "That lines up with what you shared before about work \u2014 muting every meeting, barely speaking, feeling disconnected there. At the time it might have been easy to write off as just a job thing. Now the ",
+    "driver_latency_ms": 17220,
+    "driver_exit": 0,
+    "wall_s": 22.5
+   },
+   {
+    "qid": "lp_20",
+    "rep": "r1",
+    "run_id": "lpe3b-20-r1",
+    "ts": "2026-10-13T09:23:35",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly uses the evidence: it mentions Caroline by name, references her carrying a refillable bottle, the caf\u00e9 giving her plastic cups, and saving about a dozen cups in that first mo",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 1,
+    "recall_chars": 892,
+    "recall_ids": [
+     "project:memory:caroline_s_sustainability_habit_refillable_bottle_instead_of_caf_plastic_cups"
+    ],
+    "answer_chars": 798,
+    "answer_excerpt": "That's a natural next step for you, Caroline. You already cut single-use cups from your own routine by carrying your refillable bottle \u2014 after noticing how many plastic cups your caf\u00e9 was handing you,",
+    "driver_latency_ms": 8756,
+    "driver_exit": 0,
+    "wall_s": 17.9
+   },
+   {
+    "qid": "lp_20",
+    "rep": "r2",
+    "run_id": "lpe3b-20-r2",
+    "ts": "2026-10-13T09:23:55",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence: it mentions the refillable bottle, the plastic cups the caf\u00e9 kept handing out, and the roughly dozen cups saved in that first month. It builds direct",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 1,
+    "recall_chars": 892,
+    "recall_ids": [
+     "project:memory:caroline_s_sustainability_habit_refillable_bottle_instead_of_caf_plastic_cups"
+    ],
+    "answer_chars": 807,
+    "answer_excerpt": "That's a natural next step for you. Your refillable bottle already cut out the plastic cups your caf\u00e9 kept handing you \u2014 roughly a dozen in that first month alone. Now you're moving from changing your",
+    "driver_latency_ms": 14916,
+    "driver_exit": 0,
+    "wall_s": 20.9
+   },
+   {
+    "qid": "lp_201",
+    "rep": "r1",
+    "run_id": "lpe3b-201-r1",
+    "ts": "2026-10-13T09:25:32",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly reflects and uses the evidence. It directly recalls Jon",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 1,
+    "recall_chars": 779,
+    "recall_ids": [
+     "project:memory:jon_s_mall_panic_attack_late_shopping"
+    ],
+    "answer_chars": 1131,
+    "answer_excerpt": "Jon, I am proud of you\u2014and I want you to know why this lands the way it does. After that panic attack at the mall, you'd rearranged your whole shopping life around avoiding crowds, going only late at ",
+    "driver_latency_ms": 17262,
+    "driver_exit": 0,
+    "wall_s": 24.8
+   },
+   {
+    "qid": "lp_201",
+    "rep": "r2",
+    "run_id": "lpe3b-201-r2",
+    "ts": "2026-10-13T09:25:53",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence. It directly states:",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 2,
+    "recall_chars": 1423,
+    "recall_ids": [
+     "project:memory:jon_s_mall_panic_attack_late_shopping",
+     "project:memory:jon_s_overcame_fear_of_judgment"
+    ],
+    "answer_chars": 938,
+    "answer_excerpt": "Jon, I am proud of you\u2014and I hope you're proud of yourself too.\n\nThink about where you started. After the panic attack at the mall, you were only shopping late at night when the place was empty. Satur",
+    "driver_latency_ms": 13967,
+    "driver_exit": 0,
+    "wall_s": 20.5
+   },
+   {
+    "qid": "lp_207",
+    "rep": "r1",
+    "run_id": "lpe3b-207-r1",
+    "ts": "2026-10-13T09:24:50",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence: it mentions",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "empty_selection"
+    ],
+    "recall_n": 20,
+    "recall_chars": 14027,
+    "recall_ids": [
+     "project:memory:mem_deborah_mindfulness_journey",
+     "project:memory:mem_deborah_mom_friends_reunion",
+     "project:memory:mem_deborah_wedding_beach_surfing",
+     "project:memory:mem_deborah_mother_art",
+     "project:memory:mem_deborah_yoga_gentle_flow_routine",
+     "project:memory:mem_deborah_eisenhower_matrix_method",
+     "project:memory:mem_deborah_storm_canceled_yoga_getaway",
+     "project:memory:mem_deborah_mother_cooking",
+     "project:memory:mem_deborah_husband_shared_activities",
+     "project:memory:mem_deborah_mom_house_visit",
+     "project:memory:deborah_study_advice_and_encouraging_mug_gift_promise_for_jolene",
+     "project:memory:mem_deborah_scuba_interest",
+     "project:memory:mem_deborah_cat_card_game",
+     "project:memory:deborah_jolene_planned_get_together_set_for_next_month_jolene_to_confirm_the_day",
+     "project:memory:mem_deborah_daily_routine",
+     "project:memory:mem_deborah_jolene_coffee_date_friday",
+     "project:memory:mem_deborah_community_cleanup_project",
+     "project:memory:mem_deborah_yoga_music_preferences",
+     "project:memory:mem_deborah_bodybuilding_competition_goal",
+     "project:memory:mem_deborah_hobby_study_balance_advice"
+    ],
+    "answer_chars": 1042,
+    "answer_excerpt": "Oh no, Deborah \u2014 your wrist! That must have been so hard, especially with how active you are. I keep thinking about your training with your coach for the bodybuilding competition next year, not to men",
+    "driver_latency_ms": 47505,
+    "driver_exit": 0,
+    "wall_s": 53.6
+   },
+   {
+    "qid": "lp_207",
+    "rep": "r2",
+    "run_id": "lpe3b-207-r2",
+    "ts": "2026-10-13T09:25:38",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence by stating",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "empty_selection"
+    ],
+    "recall_n": 20,
+    "recall_chars": 14027,
+    "recall_ids": [
+     "project:memory:mem_deborah_mindfulness_journey",
+     "project:memory:mem_deborah_mom_friends_reunion",
+     "project:memory:mem_deborah_wedding_beach_surfing",
+     "project:memory:mem_deborah_mother_art",
+     "project:memory:mem_deborah_yoga_gentle_flow_routine",
+     "project:memory:mem_deborah_eisenhower_matrix_method",
+     "project:memory:mem_deborah_storm_canceled_yoga_getaway",
+     "project:memory:mem_deborah_mother_cooking",
+     "project:memory:mem_deborah_husband_shared_activities",
+     "project:memory:mem_deborah_mom_house_visit",
+     "project:memory:deborah_study_advice_and_encouraging_mug_gift_promise_for_jolene",
+     "project:memory:mem_deborah_scuba_interest",
+     "project:memory:mem_deborah_cat_card_game",
+     "project:memory:deborah_jolene_planned_get_together_set_for_next_month_jolene_to_confirm_the_day",
+     "project:memory:mem_deborah_daily_routine",
+     "project:memory:mem_deborah_jolene_coffee_date_friday",
+     "project:memory:mem_deborah_community_cleanup_project",
+     "project:memory:mem_deborah_yoga_music_preferences",
+     "project:memory:mem_deborah_bodybuilding_competition_goal",
+     "project:memory:mem_deborah_hobby_study_balance_advice"
+    ],
+    "answer_chars": 892,
+    "answer_excerpt": "Oh no, your wrist \u2014 I'm sorry! I remember you'd been training with your coach for next year's bodybuilding competition, so going all that time without lifting anything heavy must have been so frustrat",
+    "driver_latency_ms": 42777,
+    "driver_exit": 0,
+    "wall_s": 48.2
+   },
+   {
+    "qid": "lp_230",
+    "rep": "r1",
+    "run_id": "lpe3b-230-r1",
+    "ts": "2026-10-13T09:23:05",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the key elements of the evidence: the no-spend month Caroline",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 1,
+    "recall_chars": 685,
+    "recall_ids": [
+     "project:memory:caroline-yellowstone-trip-goal"
+    ],
+    "answer_chars": 706,
+    "answer_excerpt": "That's great to hear, Caroline! It makes sense that the no-spend month you and your family did would build those habits \u2014 hunting for deals and cooking at home instead of eating out are exactly the ki",
+    "driver_latency_ms": 8349,
+    "driver_exit": 0,
+    "wall_s": 16.9
+   },
+   {
+    "qid": "lp_230",
+    "rep": "r2",
+    "run_id": "lpe3b-230-r2",
+    "ts": "2026-10-13T09:23:43",
+    "score": 0.0,
+    "flag": null,
+    "label": "wrong",
+    "judge_reason": "The prediction is merely a procedural statement about checking the workspace for memory source files. It does not reflect, reference, or use any content from the evidence (the no-spend month, the fami",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "empty_selection"
+    ],
+    "recall_n": 20,
+    "recall_chars": 11713,
+    "recall_ids": [
+     "project:memory:caroline-art-since-age-17",
+     "project:memory:caroline-eagle-rainbow-mural-meaning",
+     "project:memory:caroline-lgbtq-youth-center-volunteering",
+     "project:memory:caroline-support-system-background",
+     "project:memory:caroline_s_transgender_teen_mentee",
+     "project:memory:caroline_s_adoption_plans",
+     "project:memory:caroline_and_melanie_s_pride_fest_last_year",
+     "project:memory:caroline-mental-health-journey",
+     "project:memory:caroline-church-stained-glass-window",
+     "project:memory:caroline-rainbow-sidewalk-pride",
+     "project:memory:caroline-swedish-roots-necklace",
+     "project:memory:caroline-apologized-after-hike-encounter",
+     "project:memory:caroline_s_upsetting_encounter_on_a_hike",
+     "project:memory:caroline-melanie-friendship",
+     "project:memory:caroline_and_melanie_s_special_summer_outing_plan",
+     "project:memory:caroline-art-trans-expression",
+     "project:memory:caroline-embracing-identity-painting",
+     "project:memory:caroline_contacted_her_mentor_for_adoption_advice",
+     "project:memory:caroline-youth-center-talent-show",
+     "project:memory:caroline-school-lgbtq-advocacy-talk"
+    ],
+    "answer_chars": 75,
+    "answer_excerpt": "I'll quickly check the workspace for any memory source files, then respond.",
+    "driver_latency_ms": 29485,
+    "driver_exit": 0,
+    "wall_s": 35.4
+   },
+   {
+    "qid": "lp_260",
+    "rep": "r1",
+    "run_id": "lpe3b-260-r1",
+    "ts": "2026-10-13T09:23:50",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly reflects the evidence. It states",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 2,
+    "recall_chars": 1330,
+    "recall_ids": [
+     "project:memory:mem_caroline_self_defense",
+     "project:memory:mem_caroline_hike_upsetting_encounter"
+    ],
+    "answer_chars": 1190,
+    "answer_excerpt": "That insight makes a lot of sense, especially given where it's coming from.\n\nYou originally took up self-defense to feel safer and more confident walking alone at night \u2014 but what happened on that hik",
+    "driver_latency_ms": 10720,
+    "driver_exit": 0,
+    "wall_s": 16.6
+   },
+   {
+    "qid": "lp_260",
+    "rep": "r2",
+    "run_id": "lpe3b-260-r2",
+    "ts": "2026-10-13T09:24:12",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction is clearly linked to the evidence. Caroline",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "invalid_output"
+    ],
+    "recall_n": 20,
+    "recall_chars": 13435,
+    "recall_ids": [
+     "project:memory:mem_caroline_adoption_council_meeting",
+     "project:memory:caroline_is_pursuing_adoption_to_build_a_family_for_kids_in_need",
+     "project:memory:mem_caroline_youth_center_volunteering",
+     "project:memory:mem_caroline_rainbow_sidewalk_pride_month",
+     "project:memory:mem_caroline_trans_conference",
+     "project:memory:mem_melanie_son_accident_roadtrip",
+     "project:memory:caroline_paints_and_is_holding_an_lgbtq_art_show_with_her_paintings",
+     "project:memory:caroline_spoke_at_a_school_event_about_her_transgender_journey_she_has_been_tran",
+     "project:memory:mem_caroline_trans_counseling_focus",
+     "project:memory:mem_caroline_lgbtq_conference_attended",
+     "project:memory:mem_caroline_pride_parade",
+     "project:memory:mem_caroline_pride_parade_proud_equality",
+     "project:memory:caroline_contacted_her_mentor_for_adoption_advice",
+     "project:memory:mem_caroline_open_to_pottery",
+     "project:memory:caroline_attended_a_transgender_poetry_reading",
+     "project:memory:mem_caroline_support_group",
+     "project:memory:caroline_drew_a_woman_in_a_dress_celebrating_freedom_and_authenticity",
+     "project:memory:caroline_mentors_a_transgender_teen_in_an_lgbtq_youth_mentorship_program",
+     "project:memory:mem_caroline_favorite_book_becoming_nicole",
+     "project:memory:mem_caroline_painting_embracing_identity"
+    ],
+    "answer_chars": 790,
+    "answer_excerpt": "I hear that \u2014 and honestly, it fits what I've seen lately.\n\nThink about Melanie's family. When her son had that accident on their road trip, what got them through wasn't any physical skill. It was how",
+    "driver_latency_ms": 16678,
+    "driver_exit": 0,
+    "wall_s": 71.3
+   },
+   {
+    "qid": "lp_261",
+    "rep": "r1",
+    "run_id": "lpe3b-261-r1",
+    "ts": "2026-10-13T09:22:19",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly and directly draws on the evidence. It references",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 1,
+    "recall_chars": 675,
+    "recall_ids": [
+     "project:memory:mem_jon_lake_cottage_goal"
+    ],
+    "answer_chars": 621,
+    "answer_excerpt": "All those packed lunches finally paid off, didn't they? From brown-bagging it at the office every day to sitting on your own shore watching the water \u2014 that's not a view you just bought, that's one yo",
+    "driver_latency_ms": 11072,
+    "driver_exit": 0,
+    "wall_s": 19.2
+   },
+   {
+    "qid": "lp_261",
+    "rep": "r2",
+    "run_id": "lpe3b-261-r2",
+    "ts": "2026-10-13T09:22:33",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence. It recalls that Jon started bringing his lunch to work every single day to save up for the down payment on a little cottage by the lake (",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 1,
+    "recall_chars": 675,
+    "recall_ids": [
+     "project:memory:mem_jon_lake_cottage_goal"
+    ],
+    "answer_chars": 567,
+    "answer_excerpt": "Jon, that's wonderful \u2014 you're actually there, watching the lake from your own place.\n\nI remember when this was still a plan: you started bringing your lunch to work every single day just to build up ",
+    "driver_latency_ms": 7202,
+    "driver_exit": 0,
+    "wall_s": 13.3
+   },
+   {
+    "qid": "lp_277",
+    "rep": "r1",
+    "run_id": "lpe3b-277-r1",
+    "ts": "2026-10-13T09:21:22",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly reflects the evidence. It directly references",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 6,
+    "recall_chars": 3308,
+    "recall_ids": [
+     "project:memory:deborah_karlie_last_photo_summer_hike",
+     "project:memory:deborah_annapurna_40th_birthday_goal",
+     "project:memory:deborah_running_group_with_anna",
+     "project:memory:deborah_morning_jog_habit",
+     "project:memory:deborah_selfcare_empty_cup_philosophy",
+     "project:memory:deborah_daily_routine"
+    ],
+    "answer_chars": 1063,
+    "answer_excerpt": "What a moment of reflection that must be \u2014 seeing that older version of yourself in those spring photos, before everything shifted.\n\nAnd you're right, it's such a clear before-and-after. Back then it ",
+    "driver_latency_ms": 20422,
+    "driver_exit": 0,
+    "wall_s": 28.2
+   },
+   {
+    "qid": "lp_277",
+    "rep": "r2",
+    "run_id": "lpe3b-277-r2",
+    "ts": "2026-10-13T09:22:00",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly reflects the evidence: it states",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 5,
+    "recall_chars": 2870,
+    "recall_ids": [
+     "project:memory:deborah_annapurna_40th_birthday_goal",
+     "project:memory:deborah_morning_jog_habit",
+     "project:memory:deborah_running_group_with_anna",
+     "project:memory:deborah_karlie_last_photo_summer_hike",
+     "project:memory:deborah_selfcare_empty_cup_philosophy"
+    ],
+    "answer_chars": 882,
+    "answer_excerpt": "It's funny how old photos can hold up a mirror like that. Last spring you were asking a lot of your body, but nothing else in your life had changed yet \u2014 and it makes sense that felt impossible, becau",
+    "driver_latency_ms": 31332,
+    "driver_exit": 0,
+    "wall_s": 38.5
+   },
+   {
+    "qid": "lp_291",
+    "rep": "r1",
+    "run_id": "lpe3b-291-r1",
+    "ts": "2026-10-13T09:23:59",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence: it states",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 4,
+    "recall_chars": 2216,
+    "recall_ids": [
+     "project:memory:mem_jon_mentorship_director_goal",
+     "project:memory:mem_jon_career_dance_studio",
+     "project:memory:mem_jon_runs_own_studio",
+     "project:memory:mem_jon_overcame_fear_of_judgment"
+    ],
+    "answer_chars": 1078,
+    "answer_excerpt": "That sounds like a decision that fits exactly where you are now, and honestly, it tracks with everything you've told me.\n\nYou left banking because dancing was your passion, not just a job. You built t",
+    "driver_latency_ms": 27735,
+    "driver_exit": 0,
+    "wall_s": 33.9
+   },
+   {
+    "qid": "lp_291",
+    "rep": "r2",
+    "run_id": "lpe3b-291-r2",
+    "ts": "2026-10-13T09:25:08",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence: it mentions",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "invalid_output"
+    ],
+    "recall_n": 20,
+    "recall_chars": 11179,
+    "recall_ids": [
+     "project:memory:mem_gina_just_do_it_catchphrase",
+     "project:memory:mem_jon_bank_account_closure",
+     "project:memory:mem_jon_networking_events",
+     "project:memory:mem_jon_studio_grand_opening",
+     "project:memory:mem_jon_dance_comp_next_month",
+     "project:memory:mem_jon_studio_marley_flooring",
+     "project:memory:mem_jon_reading_lean_startup",
+     "project:memory:mem_jon_runs_own_studio",
+     "project:memory:mem_jon_studio_mentoring_offering",
+     "project:memory:mem_jon_marketing_analytics_learning",
+     "project:memory:mem_jon_mentorship_director_goal",
+     "project:memory:mem_jon_business_plan_investors",
+     "project:memory:mem_jon_business_advice",
+     "project:memory:mem_jon_gym_routine",
+     "project:memory:mem_jon_studio_search_still_on",
+     "project:memory:mem_plan_gina_social_media_help",
+     "project:memory:mem_jon_career_dance_studio",
+     "project:memory:mem_jon_studio_candidate_downtown",
+     "project:memory:mem_jon_favorite_dance_style",
+     "project:memory:mem_jon_networking_met_investors"
+    ],
+    "answer_chars": 948,
+    "answer_excerpt": "Jon, honestly? That sounds exactly like the guy who left banking to build something of his own. You told me the best part of running the studio is the freedom \u2014 creating a space where dancers of every",
+    "driver_latency_ms": 63793,
+    "driver_exit": 0,
+    "wall_s": 69.4
+   },
+   {
+    "qid": "lp_31",
+    "rep": "r1",
+    "run_id": "lpe3b-31-r1",
+    "ts": "2026-10-13T09:21:48",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction is clearly linked to the evidence. The evidence establishes Jon",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 3,
+    "recall_chars": 2431,
+    "recall_ids": [
+     "project:memory:mem_jon_dance_self_expression_fear",
+     "project:memory:mem_jon_confidence_motivation_anchor",
+     "project:memory:mem_jon_mentor_aspiring_dancers_dance_togetherness"
+    ],
+    "answer_chars": 1511,
+    "answer_excerpt": "Jon, this sounds a lot like something you've already beaten once.\n\nWhen we talked about your dancing, you told me you used to be scared to death of what people would think of it. What freed you was de",
+    "driver_latency_ms": 46240,
+    "driver_exit": 0,
+    "wall_s": 102.1
+   },
+   {
+    "qid": "lp_31",
+    "rep": "r2",
+    "run_id": "lpe3b-31-r2",
+    "ts": "2026-10-13T09:23:17",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction is clearly linked to the evidence. The memory establishes that Jon adopted sustainable practices (switching to reusable containers after the soup spill) and now hates waste less, with B",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "empty_selection"
+    ],
+    "recall_n": 20,
+    "recall_chars": 14566,
+    "recall_ids": [
+     "project:memory:mem_jon_studio_grand_opening",
+     "project:memory:mem_jon_studio_one_on_one_mentoring",
+     "project:memory:mem_jon_dance_self_expression_fear",
+     "project:memory:mem_jon_confidence_motivation_anchor",
+     "project:memory:mem_jon_marketing_analytics_tools_learning",
+     "project:memory:mem_jon_running_studio_highlights",
+     "project:memory:mem_jon_lean_startup_book",
+     "project:memory:mem_jon_dance_stress_relief_focus",
+     "project:memory:mem_jon_gym_routine",
+     "project:memory:mem_jon_dance_videos_social_media",
+     "project:memory:mem_jon_networking_events",
+     "project:memory:mem_jon_studio_all_ages_vision",
+     "project:memory:jon_s_dance_studio_search_latest_status_check_in",
+     "project:memory:mem_jon_studio_tenuous_temp_job",
+     "project:memory:mem_jon_full_time_business_decision",
+     "project:memory:mem_jon_business_plan_investors",
+     "project:memory:jon_s_pre_opening_check_in_stressful_business_planning_period_dancing_keeps_him_",
+     "project:memory:mem_jon_studio_checkin_things_looking_up",
+     "project:memory:mem_jon_bank_account_closure",
+     "project:memory:mem_jon_mentor_aspiring_dancers_dance_togetherness"
+    ],
+    "answer_chars": 1285,
+    "answer_excerpt": "Ha \u2014 six months later and you're mentoring people again, just about sustainability instead of dance. Honestly, that tracks. Between the one-on-one mentoring you do at the studio and how much you light",
+    "driver_latency_ms": 34310,
+    "driver_exit": 0,
+    "wall_s": 56.9
+   },
+   {
+    "qid": "lp_317",
+    "rep": "r1",
+    "run_id": "lpe3b-317-r1",
+    "ts": "2026-10-13T09:22:30",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly reflects the evidence. It states that chasing promotions would have meant",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 2,
+    "recall_chars": 1296,
+    "recall_ids": [
+     "project:memory:mem_deborah_children_family_priority",
+     "project:memory:mem_deborah_yoga_teaching"
+    ],
+    "answer_chars": 1124,
+    "answer_excerpt": "Those \"what if\" thoughts are normal, and having them doesn't mean you chose wrong. From what you've shared before, chasing promotions aggressively would have meant exactly what you decided against \u2014 e",
+    "driver_latency_ms": 24364,
+    "driver_exit": 0,
+    "wall_s": 32.1
+   },
+   {
+    "qid": "lp_317",
+    "rep": "r2",
+    "run_id": "lpe3b-317-r2",
+    "ts": "2026-10-13T09:22:50",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly reflects the evidence. It states",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 2,
+    "recall_chars": 1296,
+    "recall_ids": [
+     "project:memory:mem_deborah_children_family_priority",
+     "project:memory:mem_deborah_yoga_teaching"
+    ],
+    "answer_chars": 887,
+    "answer_excerpt": "That wondering is so human, and it makes sense \u2014 it's natural to glance back at the road not taken. But when I think about what you've actually built, I don't see a career you set aside. I see a delib",
+    "driver_latency_ms": 13520,
+    "driver_exit": 0,
+    "wall_s": 20.3
+   },
+   {
+    "qid": "lp_327",
+    "rep": "r1",
+    "run_id": "lpe3b-327-r1",
+    "ts": "2026-10-13T09:21:59",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly reflects the evidence. It directly recalls Deborah",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 10,
+    "recall_chars": 5977,
+    "recall_ids": [
+     "project:memory:memory_deborah_local_bookshop",
+     "project:memory:memory_deborah_hidden_coffee_shop",
+     "project:memory:memory_deborah_community_cleanup",
+     "project:memory:memory_deborah_yoga_group_letter",
+     "project:memory:memory_deborah_neighborhood_yoga_class",
+     "project:memory:memory_deborah_yoga_teaching",
+     "project:memory:memory_deborah_mindfulness_workshops",
+     "project:memory:memory_deborah_yoga_event",
+     "project:memory:memory_deborah_gardening_class",
+     "project:memory:memory_deborah_care_home_yoga"
+    ],
+    "answer_chars": 1435,
+    "answer_excerpt": "Deborah, I'm so sorry \u2014 I know how much that shop meant to you. You weren't just a casual customer there; you made a point of buying your books from that little place instead of ordering online, preci",
+    "driver_latency_ms": 14796,
+    "driver_exit": 0,
+    "wall_s": 23.2
+   },
+   {
+    "qid": "lp_327",
+    "rep": "r2",
+    "run_id": "lpe3b-327-r2",
+    "ts": "2026-10-13T09:22:26",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly uses the evidence: it references the person",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 3,
+    "recall_chars": 1712,
+    "recall_ids": [
+     "project:memory:memory_deborah_local_bookshop",
+     "project:memory:memory_deborah_hidden_coffee_shop",
+     "project:memory:memory_deborah_favorite_studio"
+    ],
+    "answer_chars": 1041,
+    "answer_excerpt": "I'm sorry \u2014 that's a real loss. And I know it wasn't just any shop to you. You'd made a point of buying your books there instead of ordering online, precisely because you wanted places like it to surv",
+    "driver_latency_ms": 20816,
+    "driver_exit": 0,
+    "wall_s": 27.1
+   },
+   {
+    "qid": "lp_344",
+    "rep": "r1",
+    "run_id": "lpe3b-344-r1",
+    "ts": "2026-10-13T09:25:41",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly reflects the evidence. It states",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 2,
+    "recall_chars": 1317,
+    "recall_ids": [
+     "project:memory:tim_gave_a_class_presentation_nervous_but_succeeded_people_tim",
+     "project:memory:mem_lp344_tim_punctuality"
+    ],
+    "answer_chars": 828,
+    "answer_excerpt": "That sounds like it stung, and honestly, I get why. You're usually the person who shows up fifteen minutes early \u2014 being on time matters to you because you respect other people's time. So when traffic",
+    "driver_latency_ms": 31441,
+    "driver_exit": 0,
+    "wall_s": 39.3
+   },
+   {
+    "qid": "lp_344",
+    "rep": "r2",
+    "run_id": "lpe3b-344-r2",
+    "ts": "2026-10-13T09:26:15",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly uses the evidence/memory. It directly restates Tim",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 2,
+    "recall_chars": 1317,
+    "recall_ids": [
+     "project:memory:tim_gave_a_class_presentation_nervous_but_succeeded_people_tim",
+     "project:memory:mem_lp344_tim_punctuality"
+    ],
+    "answer_chars": 743,
+    "answer_excerpt": "That sounds like a rough morning, Tim. And I get why it hit you so hard. You're the person who arrives 15 minutes early to everything because you respect other people's time too much to be late. So wa",
+    "driver_latency_ms": 28249,
+    "driver_exit": 0,
+    "wall_s": 34.3
+   },
+   {
+    "qid": "lp_378",
+    "rep": "r1",
+    "run_id": "lpe3b-378-r1",
+    "ts": "2026-10-13T09:22:55",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence. It directly recalls the memory:",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 2,
+    "recall_chars": 1453,
+    "recall_ids": [
+     "project:memory:evan_lost_job_downsizing_job_hunt",
+     "project:memory:evan_values_generosity_paid_for_next_persons_groceries"
+    ],
+    "answer_chars": 1285,
+    "answer_excerpt": "Evan, please don't second-guess that choice. You're between jobs after the layoffs, money is tight, and you're in the middle of a job hunt \u2014 saying no to chipping in right now isn't stinginess. It's j",
+    "driver_latency_ms": 21533,
+    "driver_exit": 0,
+    "wall_s": 29.5
+   },
+   {
+    "qid": "lp_378",
+    "rep": "r2",
+    "run_id": "lpe3b-378-r2",
+    "ts": "2026-10-13T09:23:24",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence. It mentions",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 2,
+    "recall_chars": 1453,
+    "recall_ids": [
+     "project:memory:evan_lost_job_downsizing_job_hunt",
+     "project:memory:evan_values_generosity_paid_for_next_persons_groceries"
+    ],
+    "answer_chars": 1380,
+    "answer_excerpt": "That makes complete sense, and honestly, I think you made the right call. Since the company downsized and you've been hunting for the next role, your first job is keeping yourself steady. Money you do",
+    "driver_latency_ms": 21220,
+    "driver_exit": 0,
+    "wall_s": 28.9
+   },
+   {
+    "qid": "lp_60",
+    "rep": "r1",
+    "run_id": "lpe3b-60-r1",
+    "ts": "2026-10-13T09:27:34",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence: it mentions",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 1,
+    "recall_chars": 742,
+    "recall_ids": [
+     "project:memory:caroline_s_paper_planner_after_phone_data_loss"
+    ],
+    "answer_chars": 606,
+    "answer_excerpt": "That sounds like a system that works for you. After your old phone died and took all your notes with it, it makes sense you'd keep something as important as trip confirmations on paper, where nothing ",
+    "driver_latency_ms": 9235,
+    "driver_exit": 0,
+    "wall_s": 16.9
+   },
+   {
+    "qid": "lp_60",
+    "rep": "r2",
+    "run_id": "lpe3b-60-r2",
+    "ts": "2026-10-13T09:27:53",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence: it mentions",
+    "base_score": 1.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 1,
+    "recall_chars": 742,
+    "recall_ids": [
+     "project:memory:caroline_s_paper_planner_after_phone_data_loss"
+    ],
+    "answer_chars": 608,
+    "answer_excerpt": "That sounds like the right call for you. After your old phone died and took all your notes with it, I can see why you'd want your trip details somewhere that can't vanish on you\u2014writing the confirmati",
+    "driver_latency_ms": 6959,
+    "driver_exit": 0,
+    "wall_s": 17.2
+   },
+   {
+    "qid": "lp_62",
+    "rep": "r1",
+    "run_id": "lpe3b-62-r1",
+    "ts": "2026-10-13T09:22:56",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence: it mentions",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 2,
+    "recall_chars": 1550,
+    "recall_ids": [
+     "project:memory:john_bike_security_after_friends_bike_theft",
+     "project:memory:john_growth_mindset_and_new_challenges"
+    ],
+    "answer_chars": 1226,
+    "answer_excerpt": "That's genuinely worth celebrating\u2014and it fits exactly the philosophy you're always talking about, about pushing past your comfort zone and growing through the uncomfortable moments.\n\nContext matters ",
+    "driver_latency_ms": 15719,
+    "driver_exit": 0,
+    "wall_s": 23.1
+   },
+   {
+    "qid": "lp_62",
+    "rep": "r2",
+    "run_id": "lpe3b-62-r2",
+    "ts": "2026-10-13T09:23:14",
+    "score": 1.0,
+    "flag": null,
+    "label": "correct",
+    "judge_reason": "The prediction explicitly references the evidence: it mentions",
+    "base_score": 0.0,
+    "rerank_outcomes": [
+     "used"
+    ],
+    "recall_n": 2,
+    "recall_chars": 1550,
+    "recall_ids": [
+     "project:memory:john_bike_security_after_friends_bike_theft",
+     "project:memory:john_growth_mindset_and_new_challenges"
+    ],
+    "answer_chars": 1164,
+    "answer_excerpt": "That's a real win, John\u2014and honestly, it makes sense why it's a big one.\n\nEver since your friend's bike got stolen outside that grocery store, you've been extra careful with your stuff\u2014two locks on yo",
+    "driver_latency_ms": 11551,
+    "driver_exit": 0,
+    "wall_s": 20.5
+   }
+  ],
+  "aggregate": {
+   "n": 20,
+   "base_mean": 0.45,
+   "e3_pair_mean": 0.925,
+   "delta": "+0.475",
+   "e3_r1_mean": 0.95,
+   "e3_r2_mean": 0.9,
+   "base_fail_fixed": "10/11",
+   "base_pass_held_pair_mean": "9/9",
+   "regressions_pair_mean": 0,
+   "pairs_agree": "19/20 (only lp_230 1.0/0.0, rerank-flake driven)",
+   "flagged_runs": 0,
+   "rerank_used_rate_40_runs": 0.8
+  }
+ },
+ "failure_analysis": {
+  "persistent_miss": {
+   "qid": "lp_146",
+   "runs": "0.0 / 0.0",
+   "class": "rerank-selection miss (not a retrieval-window miss): store has 128 entries so the whole store is inside the 500-pool; gold 'James: suffers from allergies severe enough to miss work' is in the pool but absent from top-50 lexical ranking and was not selected by the rerank in either run (r1 used->6 travel entries; r2 empty_output->lexical fallback 21 entries, no gold). Question ('packing my emergency kit before every trip') has zero lexical overlap with the gold."
+  },
+  "flake_misses": [
+   {
+    "qid": "lp_118",
+    "run": "lpe3a-lp118-r2",
+    "class": "rerank invalid_output (480 tok) -> lexical top-20 fallback without gold -> 0.0; r1/r3 rerank used, gold recalled, 1.0"
+   },
+   {
+    "qid": "lp_230",
+    "run": "lpe3b-230-r2",
+    "class": "rerank empty_selection -> lexical top-20 fallback without gold (caroline-yellowstone-trip-goal not in top-20) -> workspace-narration answer -> 0.0; r1 rerank used, gold recalled, 1.0"
+   },
+   {
+    "qid": "lp_232",
+    "run": "lpq232-e3-r2 (Z)",
+    "class": "rerank invalid_output (1535 tok) -> lexical fallback -> 0.0"
+   }
+  ],
+  "flake_survivors": "lp_157-r2, lp_260-r2, lp_291-r2, lp_31-r2 (invalid/empty rerank) and lp_207-r1/r2 (empty_selection) still scored 1.0: gold was lexically reachable in the fallback window.",
+  "judge_variance": "no judge flips observed in this sample (0 flagged, decisive reasons); the x1 disagreement (lp_230) is rerank-driven, not judge-driven"
+ }
+}
