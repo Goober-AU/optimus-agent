@@ -1,0 +1,72 @@
+{
+ "schema": "loco-q7-experiment/1",
+ "ts": "2026-10-13T08:15:00+00:00",
+ "worker": "locoq7",
+ "question": {
+  "qid": "conv-26_q149",
+  "question": "What do Melanie's family give her?",
+  "gold": "Strength and motivation",
+  "category": "4/single-hop",
+  "baseline_score": 0.0741,
+  "baseline_note": "gate2 improved-defaults local token-F1; h2h deterministic attempt 0.0 ('Love and support')"
+ },
+ "diagnosis": {
+  "class": "B (write-time drop), with a rank-33 in-store substitute that cannot win the answer stage",
+  "store_evidence": [
+   "Gold fact is NOT in the frozen conv-26 store: no memory entry contains the D18 strength/motivation statements. Full harness_state scan (119 entries, title+content) finds zero Melanie notes with 'strength'/'motivation' phrasing about family.",
+   "Gold source: session 18 (2023-10-20 chat), D18:9 = m_0009 'They're really amazing. Wish I was that resilient too. But they give me the strength to keep going.' plus m_0011 'They're my biggest motivation and support.'",
+   "Write-time drop is an extraction-selection miss, NOT chunking: session-18 import (job import_75094c90476e98ccf7c226be) ingested ONE chunk covering all 24 records (coverage: 24/24 evidence records, excludedLines=[]), but the accepted proposal created only 4 memories (son accident, Grand Canyon roadtrip, trail walk, camping-what-she-loves) citing m_0001/3/5/6/7/15-21 - the m_0009-m_0014 attribute/sentiment turns were never cited by any memory.",
+   "Nearest in-store substitute: melanie_married_five_years_as_of_june_2023 ('Her husband and kids keep her motivated; she says she feels most alive and happy during family moments') - lexical rank 33/50 on the raw question (score 0.4081; matched [melanie, family, her] at body weight), OUTSIDE the 24-entry deterministic window.",
+   "Decoy that wins the answer stage: melanie_move_family_support_july_2023 (rank 15, in-window) - 'they helped out and showed lots of love and support' - a surface-perfect completion of 'What do Melanie's family give her?' with the wrong content.",
+   "Scorer floor: official locomo_token_f1 drops a/an/the/and and Porter-stems; 'love and support' scores 0.0 vs gold. Only 'Motivation' (0.667), 'Motivation and support' (0.5) or 'Strength and motivation' (1.0) pass; 'Motivation, love and support' = 0.4 fails."
+  ],
+  "write_time_fix_needed": "Extraction must capture speaker-attribute statements ('X gives me Y' / 'X keeps me motivated'), not only dated events. Owned by the update-drop/UI-distillation workers (imp4-updatedrop). Same pattern likely explains q18/q26/q77/q144 ('not mentioned' answers)."
+ },
+ "hypotheses": [
+  {
+   "id": "B0",
+   "desc": "baseline re-answer with the deterministic config (h3b-deterministic-recall.json: extract-only, 24-entry/24000-char window)",
+   "settings": "loco-q5/h3b-deterministic-recall.json",
+   "outcome": "fail",
+   "score": 0.0,
+   "answer": "Love and support",
+   "recall_ids_count": 24,
+   "recall_chars": 16152,
+   "conclusion": "failure reproduced on the frozen store; recall = first 24 of the lexical ranking (verified identical to search_ranked); answer comes from the rank-15 move decoy."
+  },
+  {
+   "id": "H1",
+   "desc": "deeper-rank rescue: widen window to maxRecallEntries=36 (chars unchanged 24000) so the rank-33 'husband and kids keep her motivated' note enters",
+   "settings": "loco-q7/h1-window36.json",
+   "outcome": "recall-fixed, answer-fail",
+   "score": 0.0,
+   "answer": "Lots of love and support.",
+   "recall_ids_count": 36,
+   "recall_chars": 23996,
+   "gold_substitute_position": 33,
+   "conclusion": "substitute note IS recalled at position 33/36 (exactly as the offline size simulation predicted, 23996/24000 chars), but the model still answers from the move decoy. Recall is no longer the blocker; the answer stage is."
+  },
+  {
+   "id": "H2",
+   "desc": "H1 + generic habitual-vs-incident answerInstruction clause (a general question is answered by a general ongoing fact, not a one-incident note)",
+   "settings": "loco-q7/h2-window36-general.json",
+   "outcome": "fail",
+   "score": 0.0,
+   "answer": "love and support",
+   "recall_ids_count": 36,
+   "conclusion": "instruction scoping does not flip the choice between the move decoy and the married note; pushing harder would leak gold semantics into the instruction (overfitting), so no third instruction variant was run."
+  }
+ ],
+ "verdict": {
+  "fixed": false,
+  "regression_gate": "not run (no fix to gate)",
+  "classification": "B write-time; the deterministic read-time stack (any window width, any answer instruction) cannot recover >=0.5 because the gold fact was never stored and the only pass-capable substitute loses the answer stage to the lexically stronger move decoy. The helper stack (h2h fleet: distill+expansion+rerank) also failed 0.0 on this question.",
+  "next_owner": "update-drop/UI-distillation workers: capture D18:9-class attribute statements at write time; read-time work on q149 should stop here."
+ },
+ "environment": {
+  "model": "dgx-glm53/glm-5.3 (user-mandated only model)",
+  "driver": "imp4-targetA/release/examples/memory_bench.exe (0.1.27, shared binary; imp4-targetR not present at run time)",
+  "controller": "scripts/memory_question_loop.py (typeA copy-out on the frozen conv-26 store)",
+  "attempts_root": "reports/continuation/iteration4/ql-attempts-locoq7"
+ }
+}

@@ -1,0 +1,46 @@
+{
+ "schema": "loco-q7-write-time-evidence/1",
+ "qid": "conv-26_q149",
+ "gold": "Strength and motivation",
+ "evidence_ref": "D18:9",
+ "store": "imp3-gate/reports/continuation/iteration3-inputs/locomo/runs/improved-s0/envs/conv-26",
+ "import_job": "import_75094c90476e98ccf7c226be (session_18.jsonl, 2023-10-20 chat)",
+ "chunking": "single chunk, 24/24 evidence records, excludedLines=[] - the drop is NOT a chunking miss",
+ "memories_created": [
+  "melanie_son_accident_family_roadtrip_october_2023",
+  "melanie_family_grand_canyon_roadtrip_october_2023",
+  "melanie_family_trail_walk_after_roadtrip_october_2023",
+  "melanie_camping_what_she_loves_most"
+ ],
+ "cited_source_ids": [
+  "m_0001:0",
+  "m_0003:0",
+  "m_0005:0",
+  "m_0006:0",
+  "m_0007:0",
+  "m_0015:0",
+  "m_0016:0",
+  "m_0017:0",
+  "m_0019:0",
+  "m_0021:0"
+ ],
+ "dropped_gold_turns": [
+  {
+   "id": "m_0009",
+   "who": "Melanie",
+   "text": "They're really amazing. Wish I was that resilient too. But they give me the strength to keep going.",
+   "note": "D18:9 - the question's evidence turn"
+  },
+  {
+   "id": "m_0011",
+   "who": "Melanie",
+   "text": "Yeah, Caroline. Totally agree. They're my biggest motivation and support."
+  },
+  {
+   "id": "m_0013",
+   "who": "Melanie",
+   "text": "Thanks, Caroline. They're a real support. Appreciate them a lot."
+  }
+ ],
+ "fix_needed": "extraction proposals should capture speaker-attribute statements (what X gives/keeps her), not only dated events; likely also covers q18/q26/q77/q144 'not mentioned' failures"
+}
