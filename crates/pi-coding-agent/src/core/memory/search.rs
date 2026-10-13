@@ -101,6 +101,79 @@ fn is_word_character(character: char) -> bool {
     character.is_alphanumeric() || character == '_' || character == '-'
 }
 
+/// Morphological stem used when `memory.recallQueryStemming` is enabled:
+/// query terms and entry words both reduce to a shared stem so inflected
+/// forms match ("camped" == "camping" == "camps" -> "camp"). Deliberately
+/// minimal (suffix strip with a 3-char stem floor plus doubled-consonant
+/// collapse); it must stay deterministic, ASCII-suffix-only, and applied
+/// symmetrically to the query and the corpus so exact-match semantics are
+/// the unchanged default and scores stay comparable within one mode.
+pub fn stem(word: &str) -> String {
+    let characters: Vec<char> = word.chars().collect();
+    let collapse_double_consonant = |stem: &[char]| -> Vec<char> {
+        if stem.len() >= 3
+            && stem[stem.len() - 1] == stem[stem.len() - 2]
+            && !matches!(stem[stem.len() - 1], 'a' | 'e' | 'i' | 'o' | 'u')
+        {
+            stem[..stem.len() - 1].to_vec()
+        } else {
+            stem.to_vec()
+        }
+    };
+    let has_suffix = |suffix: &[char]| {
+        word.chars().rev().take(suffix.len()).collect::<Vec<_>>().iter().rev().eq(suffix.iter())
+    };
+    // "stories" -> "story", "studies" -> "study", "carried" -> "carry"
+    if characters.len() >= 5 && has_suffix(&['i', 'e', 's']) {
+        let mut stem: Vec<char> = characters[..characters.len() - 3].to_vec();
+        stem.push('y');
+        return stem.into_iter().collect();
+    }
+    if characters.len() >= 5 && has_suffix(&['i', 'e', 'd']) {
+        let mut stem: Vec<char> = characters[..characters.len() - 3].to_vec();
+        stem.push('y');
+        return stem.into_iter().collect();
+    }
+    // "camping" -> "camp", "running" -> "run"; short words stay whole
+    if characters.len() >= 6 && has_suffix(&['i', 'n', 'g']) {
+        let stem = collapse_double_consonant(&characters[..characters.len() - 3]);
+        if stem.len() >= 3 {
+            return stem.into_iter().collect();
+        }
+    }
+    // "camped" -> "camp", "stopped" -> "stop"
+    if characters.len() >= 5 && has_suffix(&['e', 'd']) {
+        let stem = collapse_double_consonant(&characters[..characters.len() - 2]);
+        if stem.len() >= 3 {
+            return stem.into_iter().collect();
+        }
+    }
+    // "camps" -> "camp", "faces" -> "face", "sunsets" -> "sunset";
+    // "ss"/"us"/"as" endings keep the 's' (class, plus, alas).
+    if characters.len() >= 4
+        && has_suffix(&['s'])
+        && !has_suffix(&['s', 's'])
+        && !has_suffix(&['u', 's'])
+        && !has_suffix(&['a', 's'])
+    {
+        return characters[..characters.len() - 1].iter().collect();
+    }
+    word.to_string()
+}
+
+/// Tokenize `value` into unique stems (stemming mode) or unique words.
+fn words_stemmed(value: &str) -> Vec<String> {
+    let mut seen: HashSet<String> = HashSet::new();
+    let mut result: Vec<String> = Vec::new();
+    for word in words(value) {
+        let stemmed = stem(&word);
+        if seen.insert(stemmed.clone()) {
+            result.push(stemmed);
+        }
+    }
+    result
+}
+
 pub fn sources(entry: &HarnessEntry) -> Vec<MemorySource> {
     match entry.metadata.get("sources") {
         Some(Value::Array(values)) => values
@@ -228,6 +301,14 @@ fn source_span_words(entry: &HarnessEntry) -> HashSet<String> {
     }
 }
 
+/// `sourceSpan` words reduced to stems when stemming is enabled.
+fn source_span_words_stemmed(entry: &HarnessEntry) -> HashSet<String> {
+    source_span_words(entry)
+        .into_iter()
+        .map(|word| stem(&word))
+        .collect()
+}
+
 pub fn search_memory(
     store: &MemoryStore,
     query: &str,
@@ -250,7 +331,12 @@ pub fn search_memory(
         }),
     }
     corpus.extend(additional.iter().cloned());
-    let terms = words(query);
+    let stemming = store.settings().recall_query_stemming;
+    let terms = if stemming {
+        words_stemmed(query)
+    } else {
+        words(query)
+    };
     let mut candidates = Vec::new();
     for SearchCorpus {
         state,
@@ -279,23 +365,36 @@ pub fn search_memory(
                 {
                     continue;
                 }
-                let title_set: HashSet<String> =
+                let title_set: HashSet<String> = if stemming {
+                    words_stemmed(&format!("{} {} {}", entry.title, entry.path, entry.id))
+                        .into_iter()
+                        .collect()
+                } else {
                     words(&format!("{} {} {}", entry.title, entry.path, entry.id))
                         .into_iter()
-                        .collect();
-                let mut body_set: HashSet<String> = words(&entry.content).into_iter().collect();
+                        .collect()
+                };
+                let mut body_set: HashSet<String> = if stemming {
+                    words_stemmed(&entry.content).into_iter().collect()
+                } else {
+                    words(&entry.content).into_iter().collect()
+                };
                 // Prospective cues are metadata, but matching must see them:
                 // implicit-reference queries share no vocabulary with the
                 // stored content, only with the future situations the cues
                 // describe. They score like body words, not title words.
                 for word in prospective_cue_words(entry) {
-                    body_set.insert(word);
+                    body_set.insert(if stemming { stem(&word) } else { word });
                 }
                 // Verbatim source spans are metadata too, but the exact
                 // wording of the original turn must stay matchable: a
                 // span-only hit is real evidence, just weaker than the same
                 // term appearing in the stored content itself.
-                let span_set = source_span_words(entry);
+                let span_set = if stemming {
+                    source_span_words_stemmed(entry)
+                } else {
+                    source_span_words(entry)
+                };
                 let scope = if host_id.is_some() {
                     MemoryScope::Host
                 } else {
@@ -940,6 +1039,61 @@ mod tests {
         assert_eq!(duplicates[0].id, duplicates[1].id);
         assert_eq!(duplicates[0].entry.content, "first");
         assert_eq!(duplicates[1].entry.content, "second");
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn stem_reduces_inflections_to_a_shared_form() {
+        // Query-verb to note-word bridges.
+        assert_eq!(stem("camped"), stem("camping"));
+        assert_eq!(stem("camped"), stem("camps"));
+        assert_eq!(stem("stories"), stem("story"));
+        assert_eq!(stem("faces"), stem("face"));
+        assert_eq!(stem("sunsets"), stem("sunset"));
+        assert_eq!(stem("signing"), stem("sign"));
+        assert_eq!(stem("painted"), stem("paint"));
+        assert_eq!(stem("running"), stem("run"));
+        assert_eq!(stem("loves"), stem("love"));
+        // Short words and non-suffix endings stay whole.
+        assert_eq!(stem("art"), "art");
+        assert_eq!(stem("king"), "king");
+        assert_eq!(stem("class"), "class");
+        assert_eq!(stem("plus"), "plus");
+        // Stemming is deterministic and idempotent for already-bare words.
+        assert_eq!(stem("camp"), "camp");
+        assert_eq!(stem(&stem("camped")), stem("camped"));
+    }
+
+    #[test]
+    fn stemming_bridges_query_inflections_to_entry_words() {
+        let (store, root) = fixture();
+        // The query says "camped"; the notes say "camping". Exact matching
+        // finds nothing, stemming finds both trip notes.
+        let trips = corpus(
+            MemoryScope::Global,
+            vec![
+                entry("beach", "Beach notes", "They love beach camping."),
+                entry("forest", "Forest notes", "The family went camping in the forest."),
+                entry("other", "Unrelated", "A neighbor adopted a feline."),
+            ],
+        );
+        std::fs::write(
+            std::path::Path::new(&store.agent_dir).join("settings.json"),
+            serde_json::json!({"memory": {"recallQueryStemming": true}}).to_string(),
+        )
+        .unwrap();
+        let hits = search_memory(&store, "camped", std::slice::from_ref(&trips), false);
+        assert_eq!(hits.len(), 2);
+        assert!(hits.iter().all(|hit| hit.matched == vec!["camp".to_string()]));
+        // Body-only match of the only query term: score is exactly 1.0.
+        assert!(hits.iter().all(|hit| (hit.score - 1.0).abs() < 1e-12));
+
+        // Default off: the same query matches nothing (exact "camped" vs
+        // the "camping" body words).
+        std::fs::remove_file(std::path::Path::new(&store.agent_dir).join("settings.json"))
+            .unwrap();
+        let exact = search_memory(&store, "camped", std::slice::from_ref(&trips), false);
+        assert!(exact.is_empty());
         std::fs::remove_dir_all(&root).ok();
     }
 

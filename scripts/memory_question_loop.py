@@ -158,7 +158,7 @@ INGEST_AFFECTING_KEYS = (
 READ_AFFECTING_KEYS = (
     "recallOn", "recallQueryDistillation", "recallRerank", "recallRerankCandidates",
     "recallRerankWithContent", "recallRerankContentChars",
-    "recallQueryExtract", "recallQueryExpansion", "recallQueryExpansionDraws",
+    "recallQueryExtract", "recallQueryStemming", "recallQueryExpansion", "recallQueryExpansionDraws",
     "maxRecallChars", "maxRecallEntries", "answerInstruction", "answerMaxTokens",
     "answerThinkingLevel", "questionTimeoutS", "disableTools", "autoRefine",
 )
