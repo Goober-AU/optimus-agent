@@ -1,6 +1,8 @@
 //! Port of packages/coding-agent/src/core/memory/search.ts
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -8,7 +10,7 @@ use serde_json::Value;
 use crate::core::refinement::refinement::{HarnessEntry, HarnessScope, HarnessState};
 
 use super::evidence::{hash, MemorySource};
-use super::store::{record, MemorySettings, MemoryStore};
+use super::store::{MemorySettings, MemoryStore};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -228,140 +230,431 @@ fn source_span_words(entry: &HarnessEntry) -> HashSet<String> {
     }
 }
 
-pub fn search_memory(
-    store: &MemoryStore,
-    query: &str,
-    additional: &[SearchCorpus],
-    include_inactive: bool,
-) -> Vec<MemoryHit> {
-    let mut corpus: Vec<SearchCorpus> = Vec::new();
-    match store.read() {
-        Ok(document) => corpus.push(SearchCorpus {
-            state: document.harness(),
-            scope: MemoryScope::Project,
-        }),
-        Err(_) => corpus.push(SearchCorpus {
-            state: crate::core::refinement::refinement::HarnessState {
-                schema: 1.0,
-                entries: Default::default(),
-                refinements: Vec::new(),
-            },
-            scope: MemoryScope::Project,
-        }),
+// ---------------------------------------------------------------------------
+// Precomputed corpus index
+//
+// `search_memory` used to repeat the whole corpus pipeline on every query:
+// `store.read()` (full JSON parse + validate + deserialize), a second deep
+// clone through `MemoryDocument::harness()`, per-entry tokenization of every
+// field, a full document-frequency rebuild, and `idf` recomputed for every
+// (entry, term) pair. The index below factors that work out of the query
+// path: it is built once per corpus revision (keyed by the file's
+// `(mtime_ns, len)` identity, the same write discipline as the Jev settings
+// cache in `crates/pi-jev/src/config.rs`) and reused by every query and every
+// `MemoryService` instance in the process until the file changes on disk.
+// Scores stay bit-identical: the query-time loop performs the exact
+// arithmetic of the original implementation, in the exact order, with `idf`
+// hoisted to one evaluation per query term (same inputs, same `f64` ops).
+// ---------------------------------------------------------------------------
+
+/// Interned term id, unique inside one corpus index.
+type TermId = u32;
+
+/// One searchable entry reduced to its precomputed form. The three term sets
+/// are interned into sorted `TermId` vectors: binary search over them answers
+/// the same membership questions as the original `HashSet::contains`, without
+/// keeping a hash table per entry per field.
+struct IndexedEntry {
+    entry: HarnessEntry,
+    scope: MemoryScope,
+    /// `scope:kind:id` hit label, precomputed once per revision.
+    id: String,
+    /// False for superseded/detached entries: excluded unless
+    /// `include_inactive`, but still counted in `df_all`.
+    active: bool,
+    title: Vec<TermId>,
+    body: Vec<TermId>,
+    span: Vec<TermId>,
+    sources: Vec<MemorySource>,
+}
+
+/// A whole corpus (project store document or additional harness state)
+/// reduced to its searchable form, in the exact iteration order the original
+/// per-query loop observed (`state.entries.values()`, then bucket order).
+pub(crate) struct CorpusIndex {
+    entries: Vec<IndexedEntry>,
+    lexicon: HashMap<String, TermId>,
+    /// Document frequency over active entries. Mirrors the original DF loop
+    /// exactly: a term present in `title ∪ body` counts once per entry, and a
+    /// term also present in the source span counts one more time for that
+    /// entry (the original `union(..).chain(span_set.iter())` double count is
+    /// load-bearing for score parity).
+    df_active: HashMap<TermId, u32>,
+    /// Document frequency over every retained entry (`include_inactive`).
+    df_all: HashMap<TermId, u32>,
+    /// Number of active entries; `entries.len()` is the total.
+    active_count: usize,
+}
+
+fn intern_term(lexicon: &mut HashMap<String, TermId>, word: &str) -> TermId {
+    if let Some(&id) = lexicon.get(word) {
+        return id;
     }
-    corpus.extend(additional.iter().cloned());
-    let terms = words(query);
-    let mut candidates = Vec::new();
-    for SearchCorpus {
-        state,
-        scope: base_scope,
-    } in &corpus
-    {
+    let id = lexicon.len() as TermId;
+    lexicon.insert(word.to_string(), id);
+    id
+}
+
+impl CorpusIndex {
+    /// Build the searchable form of one corpus. `project_id`/`host_id` are
+    /// the searching store's identity: entries that could never pass the
+    /// original filters for this store (foreign project/host) are dropped
+    /// here, which is safe because the cache key below carries both.
+    pub(crate) fn build(
+        state: &HarnessState,
+        base_scope: MemoryScope,
+        project_id: &str,
+        host_id: &str,
+    ) -> CorpusIndex {
+        let mut lexicon: HashMap<String, TermId> = HashMap::new();
+        let mut entries: Vec<IndexedEntry> = Vec::new();
         for bucket in state.entries.values() {
             for entry in bucket.values() {
-                let project_id = entry.metadata.get("projectId").and_then(Value::as_str);
-                if project_id.is_some() && project_id != Some(store.project.id.as_str()) {
+                let project = entry.metadata.get("projectId").and_then(Value::as_str);
+                if project.is_some() && project != Some(project_id) {
                     continue;
                 }
-                let host_id = entry
+                let host = entry
                     .metadata
                     .get("hostId")
                     .and_then(Value::as_str)
                     .filter(|id| !id.is_empty());
-                if host_id.is_some() && host_id != Some(store.host_id.as_str()) {
+                if host.is_some() && host != Some(host_id) {
                     continue;
                 }
-                if !include_inactive
-                    && (entry.metadata.contains_key("supersededBy")
-                        || entry.metadata.get("status").and_then(Value::as_str)
-                            == Some("superseded")
-                        || entry.metadata.get("detached").is_some())
-                {
-                    continue;
-                }
-                let title_set: HashSet<String> =
-                    words(&format!("{} {} {}", entry.title, entry.path, entry.id))
-                        .into_iter()
-                        .collect();
-                let mut body_set: HashSet<String> = words(&entry.content).into_iter().collect();
-                // Prospective cues are metadata, but matching must see them:
-                // implicit-reference queries share no vocabulary with the
-                // stored content, only with the future situations the cues
-                // describe. They score like body words, not title words.
-                for word in prospective_cue_words(entry) {
-                    body_set.insert(word);
-                }
-                // Verbatim source spans are metadata too, but the exact
-                // wording of the original turn must stay matchable: a
-                // span-only hit is real evidence, just weaker than the same
-                // term appearing in the stored content itself.
-                let span_set = source_span_words(entry);
-                let scope = if host_id.is_some() {
+                let active = !(entry.metadata.contains_key("supersededBy")
+                    || entry.metadata.get("status").and_then(Value::as_str) == Some("superseded")
+                    || entry.metadata.get("detached").is_some());
+                let scope = if host.is_some() {
                     MemoryScope::Host
                 } else {
-                    *base_scope
+                    base_scope
                 };
-                candidates.push((entry, scope, title_set, body_set, span_set));
+                let mut title: Vec<TermId> =
+                    words(&format!("{} {} {}", entry.title, entry.path, entry.id))
+                        .iter()
+                        .map(|word| intern_term(&mut lexicon, word))
+                        .collect();
+                title.sort_unstable();
+                let mut body: Vec<TermId> = words(&entry.content)
+                    .iter()
+                    .map(|word| intern_term(&mut lexicon, word))
+                    .collect();
+                for word in prospective_cue_words(entry) {
+                    body.push(intern_term(&mut lexicon, &word));
+                }
+                body.sort_unstable();
+                body.dedup();
+                let mut span: Vec<TermId> = source_span_words(entry)
+                    .iter()
+                    .map(|word| intern_term(&mut lexicon, word))
+                    .collect();
+                span.sort_unstable();
+                entries.push(IndexedEntry {
+                    id: format!("{}:{}:{}", scope.as_str(), entry.kind.as_str(), entry.id),
+                    sources: sources(entry),
+                    entry: entry.clone(),
+                    scope,
+                    active,
+                    title,
+                    body,
+                    span,
+                });
+            }
+        }
+        let mut df_active: HashMap<TermId, u32> = HashMap::new();
+        let mut df_all: HashMap<TermId, u32> = HashMap::new();
+        let mut active_count = 0usize;
+        for entry in &entries {
+            if entry.active {
+                active_count += 1;
+            }
+            // title ∪ body, each term once, then every span term again.
+            let mut title_at = 0usize;
+            let mut body_at = 0usize;
+            loop {
+                let id = match (title_at < entry.title.len(), body_at < entry.body.len()) {
+                    (true, false) => {
+                        let id = entry.title[title_at];
+                        title_at += 1;
+                        id
+                    }
+                    (false, true) => {
+                        let id = entry.body[body_at];
+                        body_at += 1;
+                        id
+                    }
+                    (true, true) => {
+                        let (left, right) = (entry.title[title_at], entry.body[body_at]);
+                        if left < right {
+                            title_at += 1;
+                        } else if right < left {
+                            body_at += 1;
+                        } else {
+                            title_at += 1;
+                            body_at += 1;
+                        }
+                        left.min(right)
+                    }
+                    (false, false) => break,
+                };
+                *df_all.entry(id).or_insert(0) += 1;
+                if entry.active {
+                    *df_active.entry(id).or_insert(0) += 1;
+                }
+            }
+            for &id in &entry.span {
+                *df_all.entry(id).or_insert(0) += 1;
+                if entry.active {
+                    *df_active.entry(id).or_insert(0) += 1;
+                }
+            }
+        }
+        CorpusIndex {
+            entries,
+            lexicon,
+            df_active,
+            df_all,
+            active_count,
+        }
+    }
+}
+
+/// Cache key: one on-disk corpus revision as seen by one searching store.
+/// `(path, mtime_ns, len)` follows the atomic-write discipline: every store
+/// mutation goes through the temp-file + rename writer, so a rewrite always
+/// moves the mtime (NTFS stamps writes at 100 ns granularity); `project_id`,
+/// `host_id` and the corpus scope pin the per-store filter decisions baked
+/// into the index.
+#[derive(Clone, PartialEq, Eq, Hash)]
+struct CorpusCacheKey {
+    path: String,
+    mtime_ns: u64,
+    len: u64,
+    scope: &'static str,
+    project_id: String,
+    host_id: String,
+}
+
+struct CorpusCacheEntry {
+    index: Arc<CorpusIndex>,
+    last_used: u64,
+}
+
+/// Process-wide corpus index cache. `MemoryService` instances are built per
+/// session (and the extension rebuilds them per turn when the service map is
+/// fresh), so a strictly per-object cache could never serve the hot path;
+/// the registry lets every instance for one store file share one index.
+/// Bounded by LRU eviction so a long-lived process cannot accumulate one
+/// index per historical store path.
+static CORPUS_INDEX_CACHE: OnceLock<Mutex<HashMap<CorpusCacheKey, CorpusCacheEntry>>> =
+    OnceLock::new();
+static CORPUS_CACHE_CLOCK: AtomicU64 = AtomicU64::new(1);
+const CORPUS_INDEX_CACHE_MAX: usize = 16;
+
+/// `(mtime_ns, len)` change identity of a corpus file, or `None` when the
+/// file is missing or its mtime cannot be trusted to move on rewrite
+/// (unreadable, pre-epoch): those opt out of the cache and always re-load.
+fn file_identity(path: &str) -> Option<(u64, u64)> {
+    let metadata = std::fs::metadata(path).ok()?;
+    let modified = metadata
+        .modified()
+        .ok()?
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?;
+    Some((modified.as_nanos() as u64, metadata.len()))
+}
+
+fn empty_harness_state_like() -> HarnessState {
+    HarnessState {
+        schema: 1.0,
+        entries: Default::default(),
+        refinements: Vec::new(),
+    }
+}
+
+/// Index of an on-disk corpus, cached by file identity. `load` returns `None`
+/// when the read failed (lock contention, IO): the original search treated a
+/// read failure as an empty corpus for that one query, so this builds an
+/// uncached empty index rather than caching the failure.
+pub(crate) fn cached_file_corpus_index(
+    path: &str,
+    base_scope: MemoryScope,
+    project_id: &str,
+    host_id: &str,
+    load: impl FnOnce() -> Option<HarnessState>,
+) -> Arc<CorpusIndex> {
+    let Some((mtime_ns, len)) = file_identity(path) else {
+        return Arc::new(CorpusIndex::build(
+            &load().unwrap_or_else(empty_harness_state_like),
+            base_scope,
+            project_id,
+            host_id,
+        ));
+    };
+    let key = CorpusCacheKey {
+        path: path.to_string(),
+        mtime_ns,
+        len,
+        scope: base_scope.as_str(),
+        project_id: project_id.to_string(),
+        host_id: host_id.to_string(),
+    };
+    let registry = CORPUS_INDEX_CACHE.get_or_init(|| Mutex::new(HashMap::new()));
+    if let Some(cached) = registry
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .get_mut(&key)
+    {
+        cached.last_used = CORPUS_CACHE_CLOCK.fetch_add(1, Ordering::Relaxed);
+        return cached.index.clone();
+    }
+    let Some(state) = load() else {
+        return Arc::new(CorpusIndex::build(
+            &empty_harness_state_like(),
+            base_scope,
+            project_id,
+            host_id,
+        ));
+    };
+    let index = Arc::new(CorpusIndex::build(&state, base_scope, project_id, host_id));
+    let mut caches = registry
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    if caches.len() >= CORPUS_INDEX_CACHE_MAX {
+        if let Some(oldest) = caches
+            .iter()
+            .min_by_key(|(_, entry)| entry.last_used)
+            .map(|(key, _)| key.clone())
+        {
+            caches.remove(&oldest);
+        }
+    }
+    caches.insert(
+        key,
+        CorpusCacheEntry {
+            index: index.clone(),
+            last_used: CORPUS_CACHE_CLOCK.fetch_add(1, Ordering::Relaxed),
+        },
+    );
+    index
+}
+
+/// Index of an in-memory corpus with no stable file identity (the shared
+/// cache): rebuilt per query, exactly like the original loop rebuilt its
+/// token sets per query.
+pub(crate) fn adhoc_corpus_index(
+    state: &HarnessState,
+    base_scope: MemoryScope,
+    project_id: &str,
+    host_id: &str,
+) -> Arc<CorpusIndex> {
+    Arc::new(CorpusIndex::build(state, base_scope, project_id, host_id))
+}
+
+/// The searching store's own corpus, cached by its `harness_state.json`
+/// identity. On a read failure the original search searched an empty corpus
+/// for that query; `None` from the loader keeps that behavior without
+/// caching it.
+fn cached_store_corpus_index(store: &MemoryStore) -> Arc<CorpusIndex> {
+    cached_file_corpus_index(
+        &store.path,
+        MemoryScope::Project,
+        &store.project.id,
+        &store.host_id,
+        || store.read().ok().map(|document| document.harness()),
+    )
+}
+
+/// Query a store plus prebuilt additional corpora. This is the shared core of
+/// [`search_memory`]; `MemoryService::search` passes file-cached indexes for
+/// its global and session corpora instead of re-loading them per query.
+pub(crate) fn search_corpora(
+    store: &MemoryStore,
+    query: &str,
+    additional: &[Arc<CorpusIndex>],
+    include_inactive: bool,
+) -> Vec<MemoryHit> {
+    let store_index = cached_store_corpus_index(store);
+    let corpora: Vec<&CorpusIndex> = std::iter::once(store_index.as_ref())
+        .chain(additional.iter().map(|index| index.as_ref()))
+        .collect();
+    let terms = words(query);
+    // Document frequency over every eligible entry, including nonmatches,
+    // once per term. The original loop counted candidates corpus by corpus;
+    // per-corpus precomputed maps sum to the same integer totals regardless
+    // of summation order.
+    let mut term_df = vec![0usize; terms.len()];
+    let mut total_documents = 0usize;
+    for corpus in &corpora {
+        let df = if include_inactive {
+            &corpus.df_all
+        } else {
+            &corpus.df_active
+        };
+        total_documents += if include_inactive {
+            corpus.entries.len()
+        } else {
+            corpus.active_count
+        };
+        for (index, term) in terms.iter().enumerate() {
+            if let Some(&id) = corpus.lexicon.get(term) {
+                term_df[index] += df.get(&id).copied().unwrap_or(0) as usize;
             }
         }
     }
-    // Count every eligible entry, including nonmatches, once per term. Entries
-    // excluded from this search must not affect the scores of allowed hits.
-    let mut document_frequency: HashMap<String, usize> = HashMap::new();
-    for (_, _, title_set, body_set, span_set) in &candidates {
-        for term in title_set.union(body_set).chain(span_set.iter()) {
-            *document_frequency.entry(term.clone()).or_default() += 1;
-        }
-    }
-    let total_documents = candidates.len() as f64;
-    let idf = |term: &str| -> f64 {
-        let df = document_frequency.get(term).copied().unwrap_or(0) as f64;
-        ((total_documents + 1.0) / (df + 1.0)).ln() + 1.0
-    };
-    let denominator: f64 = terms.iter().map(|term| idf(term)).sum();
+    let total_documents = total_documents as f64;
+    let term_idf: Vec<f64> = term_df
+        .iter()
+        .map(|&df| ((total_documents + 1.0) / (df as f64 + 1.0)).ln() + 1.0)
+        .collect();
+    let denominator: f64 = term_idf.iter().sum();
     let mut hits: Vec<MemoryHit> = Vec::new();
-    for (entry, scope, title_set, body_set, span_set) in candidates {
-        let matched: Vec<String> = terms
+    for corpus in &corpora {
+        // Resolve each query term against this corpus once, not per entry.
+        let resolved: Vec<Option<TermId>> = terms
             .iter()
-            .filter(|term| {
-                title_set.contains(*term)
-                    || body_set.contains(*term)
-                    || span_set.contains(*term)
-            })
-            .cloned()
+            .map(|term| corpus.lexicon.get(term).copied())
             .collect();
-        if !terms.is_empty() && matched.is_empty() {
-            continue;
-        }
-        let numerator: f64 = matched
-            .iter()
-            .map(|term| {
-                let field_weight = if title_set.contains(term) {
+        for entry in &corpus.entries {
+            if !include_inactive && !entry.active {
+                continue;
+            }
+            let mut matched: Vec<usize> = Vec::new();
+            let mut numerator = 0.0f64;
+            for (index, id) in resolved.iter().enumerate() {
+                let Some(id) = id else { continue };
+                let field_weight = if entry.title.binary_search(&id).is_ok() {
                     3.0
-                } else if body_set.contains(term) {
+                } else if entry.body.binary_search(&id).is_ok() {
                     1.0
-                } else {
+                } else if entry.span.binary_search(&id).is_ok() {
                     // Span-only match: half the body weight.
                     0.5
+                } else {
+                    continue;
                 };
-                field_weight * idf(term)
-            })
-            .sum();
-        let score = if denominator > 0.0 {
-            numerator / denominator
-        } else {
-            0.0
-        };
-        let refs = sources(entry);
-        hits.push(MemoryHit {
-            id: format!("{}:{}:{}", scope.as_str(), entry.kind.as_str(), entry.id),
-            scope,
-            entry: entry.clone(),
-            score,
-            matched,
-            freshness: MemoryFreshness::Unknown,
-            sources: refs,
-        });
+                matched.push(index);
+                numerator += field_weight * term_idf[index];
+            }
+            if !terms.is_empty() && matched.is_empty() {
+                continue;
+            }
+            let score = if denominator > 0.0 {
+                numerator / denominator
+            } else {
+                0.0
+            };
+            hits.push(MemoryHit {
+                id: entry.id.clone(),
+                scope: entry.scope,
+                entry: entry.entry.clone(),
+                score,
+                matched: matched.iter().map(|&index| terms[index].clone()).collect(),
+                freshness: MemoryFreshness::Unknown,
+                sources: entry.sources.clone(),
+            });
+        }
     }
     hits.sort_by(|left, right| {
         right
@@ -376,6 +669,26 @@ pub fn search_memory(
             .then_with(|| left.id.cmp(&right.id))
     });
     hits
+}
+
+pub fn search_memory(
+    store: &MemoryStore,
+    query: &str,
+    additional: &[SearchCorpus],
+    include_inactive: bool,
+) -> Vec<MemoryHit> {
+    let additional: Vec<Arc<CorpusIndex>> = additional
+        .iter()
+        .map(|corpus| {
+            adhoc_corpus_index(
+                &corpus.state,
+                corpus.scope,
+                &store.project.id,
+                &store.host_id,
+            )
+        })
+        .collect();
+    search_corpora(store, query, &additional, include_inactive)
 }
 
 pub struct RecallResult {
@@ -472,7 +785,9 @@ mod tests {
     use super::*;
     use crate::core::memory::project::ProjectIdentity;
     use crate::core::memory::store::{empty_document, record as store_record, MemoryStore};
-    use crate::core::refinement::refinement::{save_harness_state, HarnessEntry};
+    use crate::core::refinement::refinement::{
+        save_harness_state, HarnessEntry, RefinementEdit, RefinementProposal,
+    };
 
     fn fixture() -> (MemoryStore, std::path::PathBuf) {
         let root = std::env::temp_dir().join(format!("prime-search-{}", uuid::Uuid::new_v4()));
@@ -1208,5 +1523,452 @@ mod tests {
         let refs = sources(&entry);
         assert_eq!(refs.len(), 1);
         assert_eq!(refs[0].id, "a");
+    }
+
+    // -----------------------------------------------------------------------
+    // Parity harness: the pre-index implementation, kept verbatim as the
+    // reference for output-identity tests (hits, f64 score bits, ordering).
+    // -----------------------------------------------------------------------
+    fn search_memory_reference(
+        store: &MemoryStore,
+        query: &str,
+        additional: &[SearchCorpus],
+        include_inactive: bool,
+    ) -> Vec<MemoryHit> {
+        let mut corpus: Vec<SearchCorpus> = Vec::new();
+        match store.read() {
+            Ok(document) => corpus.push(SearchCorpus {
+                state: document.harness(),
+                scope: MemoryScope::Project,
+            }),
+            Err(_) => corpus.push(SearchCorpus {
+                state: crate::core::refinement::refinement::HarnessState {
+                    schema: 1.0,
+                    entries: Default::default(),
+                    refinements: Vec::new(),
+                },
+                scope: MemoryScope::Project,
+            }),
+        }
+        corpus.extend(additional.iter().cloned());
+        let terms = words(query);
+        let mut candidates = Vec::new();
+        for SearchCorpus {
+            state,
+            scope: base_scope,
+        } in &corpus
+        {
+            for bucket in state.entries.values() {
+                for entry in bucket.values() {
+                    let project_id = entry.metadata.get("projectId").and_then(Value::as_str);
+                    if project_id.is_some() && project_id != Some(store.project.id.as_str()) {
+                        continue;
+                    }
+                    let host_id = entry
+                        .metadata
+                        .get("hostId")
+                        .and_then(Value::as_str)
+                        .filter(|id| !id.is_empty());
+                    if host_id.is_some() && host_id != Some(store.host_id.as_str()) {
+                        continue;
+                    }
+                    if !include_inactive
+                        && (entry.metadata.contains_key("supersededBy")
+                            || entry.metadata.get("status").and_then(Value::as_str)
+                                == Some("superseded")
+                            || entry.metadata.get("detached").is_some())
+                    {
+                        continue;
+                    }
+                    let title_set: HashSet<String> =
+                        words(&format!("{} {} {}", entry.title, entry.path, entry.id))
+                            .into_iter()
+                            .collect();
+                    let mut body_set: HashSet<String> = words(&entry.content).into_iter().collect();
+                    // Prospective cues are metadata, but matching must see them:
+                    // implicit-reference queries share no vocabulary with the
+                    // stored content, only with the future situations the cues
+                    // describe. They score like body words, not title words.
+                    for word in prospective_cue_words(entry) {
+                        body_set.insert(word);
+                    }
+                    // Verbatim source spans are metadata too, but the exact
+                    // wording of the original turn must stay matchable: a
+                    // span-only hit is real evidence, just weaker than the same
+                    // term appearing in the stored content itself.
+                    let span_set = source_span_words(entry);
+                    let scope = if host_id.is_some() {
+                        MemoryScope::Host
+                    } else {
+                        *base_scope
+                    };
+                    candidates.push((entry, scope, title_set, body_set, span_set));
+                }
+            }
+        }
+        // Count every eligible entry, including nonmatches, once per term. Entries
+        // excluded from this search must not affect the scores of allowed hits.
+        let mut document_frequency: HashMap<String, usize> = HashMap::new();
+        for (_, _, title_set, body_set, span_set) in &candidates {
+            for term in title_set.union(body_set).chain(span_set.iter()) {
+                *document_frequency.entry(term.clone()).or_default() += 1;
+            }
+        }
+        let total_documents = candidates.len() as f64;
+        let idf = |term: &str| -> f64 {
+            let df = document_frequency.get(term).copied().unwrap_or(0) as f64;
+            ((total_documents + 1.0) / (df + 1.0)).ln() + 1.0
+        };
+        let denominator: f64 = terms.iter().map(|term| idf(term)).sum();
+        let mut hits: Vec<MemoryHit> = Vec::new();
+        for (entry, scope, title_set, body_set, span_set) in candidates {
+            let matched: Vec<String> = terms
+                .iter()
+                .filter(|term| {
+                    title_set.contains(*term)
+                        || body_set.contains(*term)
+                        || span_set.contains(*term)
+                })
+                .cloned()
+                .collect();
+            if !terms.is_empty() && matched.is_empty() {
+                continue;
+            }
+            let numerator: f64 = matched
+                .iter()
+                .map(|term| {
+                    let field_weight = if title_set.contains(term) {
+                        3.0
+                    } else if body_set.contains(term) {
+                        1.0
+                    } else {
+                        // Span-only match: half the body weight.
+                        0.5
+                    };
+                    field_weight * idf(term)
+                })
+                .sum();
+            let score = if denominator > 0.0 {
+                numerator / denominator
+            } else {
+                0.0
+            };
+            let refs = sources(entry);
+            hits.push(MemoryHit {
+                id: format!("{}:{}:{}", scope.as_str(), entry.kind.as_str(), entry.id),
+                scope,
+                entry: entry.clone(),
+                score,
+                matched,
+                freshness: MemoryFreshness::Unknown,
+                sources: refs,
+            });
+        }
+        hits.sort_by(|left, right| {
+            right
+                .score
+                .partial_cmp(&left.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+                // Latest-wins tie-break: for equal scores, newer entries rank first
+                // so temporal supersession surfaces the current fact inside the
+                // recall budget (AgentOS/Hindsight latest-mentioned-wins discipline).
+                .then_with(|| right.entry.created_at.cmp(&left.entry.created_at))
+                .then_with(|| right.scope.order().cmp(&left.scope.order()))
+                .then_with(|| left.id.cmp(&right.id))
+        });
+        hits
+    }
+
+
+    /// Deterministic SplitMix64 corpus generator (no external crates).
+    struct TestRng(u64);
+    impl TestRng {
+        fn next_u64(&mut self) -> u64 {
+            self.0 = self.0.wrapping_add(0x9E37_79B9_7F4A_7C15);
+            let mut z = self.0;
+            z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+            z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+            z ^ (z >> 31)
+        }
+        fn below(&mut self, n: usize) -> usize {
+            (self.next_u64() % n as u64) as usize
+        }
+    }
+
+    fn parity_vocab(rng: &mut TestRng, size: usize) -> Vec<String> {
+        const CONSONANTS: &[u8] = b"bcdfghjklmnpqrstvwxyz";
+        const VOWELS: &[u8] = b"aeiou";
+        let mut words = Vec::with_capacity(size);
+        let mut seen = HashSet::new();
+        while words.len() < size {
+            let len = 3 + rng.below(7);
+            let mut word = String::with_capacity(len);
+            for i in 0..len {
+                let source = if rng.below(2) == (i % 2) { VOWELS } else { CONSONANTS };
+                word.push(source[rng.below(source.len())] as char);
+            }
+            if word.contains(|c: char| VOWELS.contains(&(c as u8))) && seen.insert(word.clone()) {
+                words.push(word);
+            }
+        }
+        words
+    }
+
+    fn parity_word_seq(rng: &mut TestRng, vocab: &[String], min_chars: usize, max_chars: usize) -> Vec<usize> {
+        let target = min_chars + rng.below(max_chars - min_chars + 1);
+        let mut words = Vec::new();
+        let mut len = 0usize;
+        while len < target {
+            // Skew towards the front of the vocab: common vs rare words.
+            let cap = rng.below(vocab.len().min(64)).max(1);
+            let index = rng.below(cap);
+            words.push(index);
+            len += vocab[index].len() + 1;
+        }
+        words
+    }
+
+    fn parity_entry(rng: &mut TestRng, vocab: &[String], index: usize, project_id: &str) -> HarnessEntry {
+        let title = parity_word_seq(rng, vocab, 30, 120)
+            .iter().map(|&w| vocab[w].as_str()).collect::<Vec<_>>().join(" ");
+        let content = parity_word_seq(rng, vocab, 80, 900)
+            .iter().map(|&w| vocab[w].as_str()).collect::<Vec<_>>().join(" ");
+        let mut metadata = serde_json::Map::new();
+        metadata.insert("projectId".to_string(), serde_json::json!(project_id));
+        match rng.below(8) {
+            0 => { metadata.insert("supersededBy".to_string(), serde_json::json!("other")); },
+            1 => { metadata.insert("status".to_string(), serde_json::json!("superseded")); },
+            2 => { metadata.insert("detached".to_string(), serde_json::json!(true)); },
+            3 => {
+                metadata.insert(
+                    "prospectiveCues".to_string(),
+                    serde_json::json!([format!("{} question soon", vocab[rng.below(vocab.len())]),
+                                       format!("when the {} arrives", vocab[rng.below(vocab.len())])]),
+                );
+            },
+            4 => {
+                metadata.insert(
+                    "sourceSpan".to_string(),
+                    serde_json::json!(format!("User said {} and {} yesterday", vocab[rng.below(vocab.len())], vocab[rng.below(vocab.len())])),
+                );
+            },
+            _ => {}
+        }
+        let created = format!(
+            "2026-{:02}-{:02}T{:02}:{:02}:{:02}.000Z",
+            1 + rng.below(12), 1 + rng.below(28), rng.below(24), rng.below(60), rng.below(60)
+        );
+        serde_json::from_value(serde_json::json!({
+            "id": format!("p{:05}", index),
+            "kind": "memory",
+            "title": title,
+            "content": content,
+            "path": "general",
+            "metadata": metadata,
+            "reference": {},
+            "arguments": {},
+            "source": "refine",
+            "created_at": created,
+            "updated_at": created,
+            "version": 1
+        }))
+        .unwrap()
+    }
+
+    fn parity_corpus_document(store: &MemoryStore, vocab: &[String], rng: &mut TestRng, count: usize) -> Vec<HarnessEntry> {
+        let mut document = empty_document(&store.project.id);
+        let mut made = Vec::new();
+        for index in 0..count {
+            // `validate_document` requires every store entry to carry this
+            // project's id, so foreign-project entries live only in the
+            // additional corpora below; the store spread varies hostId and
+            // activity flags instead.
+            let entry = match index % 10 {
+                1 => {
+                    let mut host_entry = parity_entry(rng, vocab, index, &store.project.id);
+                    host_entry
+                        .metadata
+                        .insert("hostId".to_string(), serde_json::json!("00000000-0000-0000-0000-00000000dead"));
+                    host_entry
+                }
+                2 => {
+                    let mut host_entry = parity_entry(rng, vocab, index, &store.project.id);
+                    host_entry
+                        .metadata
+                        .insert("hostId".to_string(), serde_json::json!(store.host_id));
+                    host_entry
+                }
+                _ => parity_entry(rng, vocab, index, &store.project.id),
+            };
+            made.push(entry.clone());
+            document
+                .entries
+                .get_mut("memory")
+                .unwrap()
+                .insert(entry.id.clone(), entry);
+        }
+        let value = serde_json::to_value(&document).unwrap();
+        std::fs::create_dir_all(&store.dir).unwrap();
+        crate::core::memory::store::write_json(&store.path, &value).unwrap();
+        made
+    }
+
+    fn parity_queries(vocab: &[String], entries: &[HarnessEntry], rng: &mut TestRng) -> Vec<String> {
+        let mut queries: Vec<String> = Vec::new();
+        // Broad common-word queries: the head of the vocab (highest draw
+        // probability in the generator).
+        for index in 0..12 {
+            queries.push(vocab[index % 8].clone());
+            queries.push(format!("{} {}", vocab[index % 8], vocab[(index + 3) % 8]));
+        }
+        // Entry-derived queries.
+        for entry in entries.iter().step_by(7) {
+            let words_of = words(&format!("{} {}", entry.title, entry.content));
+            if words_of.is_empty() { continue; }
+            let start = rng.below(words_of.len());
+            let end = (start + 1 + rng.below(4)).min(words_of.len());
+            queries.push(words_of[start..end].join(" "));
+        }
+        // Vocabulary mixtures.
+        for _ in 0..40 {
+            let count = 1 + rng.below(5);
+            let mut parts = Vec::new();
+            for _ in 0..count {
+                parts.push(vocab[rng.below(vocab.len())].clone());
+            }
+            queries.push(parts.join(" "));
+        }
+        // Edge cases: empty, no valid terms, duplicates, unicode.
+        queries.push(String::new());
+        queries.push("! a".to_string());
+        queries.push("x".to_string());
+        queries.push("東京 ÉCOLE école".to_string());
+        queries.push(format!("{} {}", vocab[0], vocab[0]));
+        queries.push(" ".repeat(40));
+        queries
+    }
+
+    #[test]
+    fn cached_search_matches_reference_scores_bits_order_and_cache_reuse() {
+        let (store, root) = fixture();
+        let mut rng = TestRng(0x5EED_ABCD_0000_0001);
+        let vocab = parity_vocab(&mut rng, 400);
+        let entries = parity_corpus_document(&store, &vocab, &mut rng, 240);
+
+        // Additional corpora with their own foreign/inactive/unicode entries.
+        let mut additional: Vec<SearchCorpus> = Vec::new();
+        for (scope, id_salt) in [(MemoryScope::Global, 0usize), (MemoryScope::Session, 1usize)] {
+            let mut state = empty_document(&store.project.id).harness();
+            for index in 0..60 {
+                let mut entry = parity_entry(&mut rng, &vocab, 1000 + index + id_salt, &store.project.id);
+                entry.id = format!("a{}_{}", id_salt, entry.id);
+                match index % 6 {
+                    0 => { entry.metadata.insert("projectId".to_string(), serde_json::json!("project_other")); },
+                    1 => { entry.metadata.insert("hostId".to_string(), serde_json::json!("00000000-0000-0000-0000-00000000dead")); },
+                    2 => { entry.metadata.insert("supersededBy".to_string(), serde_json::json!("x")); },
+                    _ => {}
+                }
+                state
+                    .entries
+                    .get_mut("memory")
+                    .unwrap()
+                    .insert(entry.id.clone(), entry);
+            }
+            additional.push(SearchCorpus { state, scope });
+        }
+
+        let queries = parity_queries(&vocab, &entries, &mut rng);
+        assert!(queries.len() >= 100, "expected >=100 queries, got {}", queries.len());
+
+        for include_inactive in [false, true] {
+            for query in &queries {
+                let reference = search_memory_reference(&store, query, &additional, include_inactive);
+                // First call may build the cache; the second reuses it. Both
+                // must match the reference bit for bit.
+                let first = search_memory(&store, query, &additional, include_inactive);
+                let second = search_memory(&store, query, &additional, include_inactive);
+                assert_eq!(first, reference, "query={:?} include_inactive={}", query, include_inactive);
+                assert_eq!(second, reference, "cached query={:?} include_inactive={}", query, include_inactive);
+            }
+        }
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn cache_invalidates_when_the_store_is_written_through_the_real_api() {
+        let (store, root) = fixture();
+        let mut rng = TestRng(0x5EED_0000_0000_0002);
+        let vocab = parity_vocab(&mut rng, 80);
+        parity_corpus_document(&store, &vocab, &mut rng, 40);
+        assert!(search_memory(&store, "zzzqxv_not_present", &[], false).is_empty());
+
+        let runtime = runtime();
+        runtime.block_on(async {
+            let proposal = RefinementProposal {
+                summary: "Add beacon".to_string(),
+                rationale: "test".to_string(),
+                edits: vec![RefinementEdit {
+                    action: "create".to_string(),
+                    kind: "memory".to_string(),
+                    id: Some("beacon_entry".to_string()),
+                    title: Some("Quokka beacon fact".to_string()),
+                    content: Some("The quokka beacon shines at dawn over the zzzqxv hill.".to_string()),
+                    path: Some("general".to_string()),
+                    reference: None,
+                    arguments: None,
+                    metadata: None,
+                    reason: None,
+                }],
+                expected_outcome: "Searchable memory".to_string(),
+            };
+            let options = crate::core::memory::store::ApplyOptions {
+                event_id: "parity_create".to_string(),
+                expected_revision: 0,
+                ..Default::default()
+            };
+            store.apply(&proposal, options).await.expect("apply");
+        });
+
+        let hits = search_memory(&store, "zzzqxv beacon", &[], false);
+        assert_eq!(hits.len(), 1, "next search must see the appended entry");
+        assert_eq!(hits[0].entry.id, "beacon_entry");
+        // And the reference agrees after the write.
+        let reference = search_memory_reference(&store, "zzzqxv beacon", &[], false);
+        assert_eq!(hits, reference);
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn concurrent_searches_on_the_shared_cache_stay_correct() {
+        let (store, root) = fixture();
+        let mut rng = TestRng(0x5EED_0000_0000_0003);
+        let vocab = parity_vocab(&mut rng, 200);
+        let entries = parity_corpus_document(&store, &vocab, &mut rng, 120);
+        let queries = parity_queries(&vocab, &entries, &mut rng);
+        let expected: Vec<Vec<MemoryHit>> = queries
+            .iter()
+            .map(|query| search_memory_reference(&store, query, &[], false))
+            .collect();
+
+        let results: Vec<std::sync::Mutex<Vec<Vec<MemoryHit>>>> = (0..4)
+            .map(|_| std::sync::Mutex::new(Vec::new()))
+            .collect();
+        std::thread::scope(|scope| {
+            for (_worker, results) in results.iter().enumerate() {
+                let store = &store;
+                let queries = &queries;
+                scope.spawn(move || {
+                    let mut own = Vec::new();
+                    for query in queries.iter() {
+                        own.push(search_memory(store, query, &[], false));
+                    }
+                    *results.lock().unwrap() = own;
+                });
+            }
+        });
+        for own in &results {
+            assert_eq!(*own.lock().unwrap(), expected);
+        }
+        std::fs::remove_dir_all(&root).ok();
     }
 }

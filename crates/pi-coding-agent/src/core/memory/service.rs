@@ -10,15 +10,17 @@ use crate::core::kernel::shared::{
     HostRequestHandler, HostRequestHandlers, KernelError,
 };
 use crate::core::refinement::refinement::{
-    get_global_harness_state_dir, get_local_harness_state_dir, load_harness_state,
-    normalize_refinement_proposal, HarnessScope, RefinementEdit, RefinementProposal,
+    get_global_harness_state_dir, get_harness_state_path, get_local_harness_state_dir,
+    load_harness_state_details, normalize_refinement_proposal, HarnessScope,
+    HarnessStateLoadStatus, RefinementEdit, RefinementProposal,
 };
 
 use super::evidence::{hash, MemoryOrigin, MemorySource};
 use super::jobs::{import_overview, ImportJob, MemoryExtractor, MemoryJobs};
 use super::project::{project_identity, ProjectIdentity};
 use super::search::{
-    freshness, recall_memory, search_memory, MemoryHit, MemoryScope, RecallResult, SearchCorpus,
+    adhoc_corpus_index, cached_file_corpus_index, freshness, recall_memory, search_corpora,
+    CorpusIndex, MemoryHit, MemoryScope, RecallResult,
 };
 use super::sharing::MemorySharing;
 use super::store::{record, MemoryStore};
@@ -278,29 +280,52 @@ impl MemoryService {
     }
 
     pub fn search(&self, query: &str, include_inactive: bool) -> Vec<MemoryHit> {
-        let mut extra: Vec<SearchCorpus> = vec![
-            SearchCorpus {
-                state: load_harness_state(
-                    &get_global_harness_state_dir(&self.store.agent_dir),
-                    HarnessScope::Global,
-                ),
-                scope: MemoryScope::Global,
-            },
-            SearchCorpus {
-                state: self.sharing.cache().state.harness(),
-                scope: MemoryScope::Shared,
-            },
+        // The global and session corpora are on-disk harness states: their
+        // indexes are cached by `(mtime_ns, len)` file identity, so a recall
+        // query never re-reads and re-tokenizes them. Only clean loads are
+        // cached; missing/corrupt/unreadable states keep the original
+        // per-query empty-corpus fallback.
+        let project_id = self.store.project.id.clone();
+        let host_id = self.store.host_id.clone();
+        let global_dir = get_global_harness_state_dir(&self.store.agent_dir);
+        let global_path = get_harness_state_path(&global_dir);
+        let mut corpora: Vec<Arc<CorpusIndex>> = vec![
+            cached_file_corpus_index(
+                &global_path,
+                MemoryScope::Global,
+                &project_id,
+                &host_id,
+                || {
+                    let details = load_harness_state_details(&global_dir, HarnessScope::Global);
+                    (details.status == HarnessStateLoadStatus::Loaded).then_some(details.state)
+                },
+            ),
+            // The shared corpus is an in-memory cache with no stable file
+            // identity: rebuilt per query like before.
+            adhoc_corpus_index(
+                &self.sharing.cache().state.harness(),
+                MemoryScope::Shared,
+                &project_id,
+                &host_id,
+            ),
         ];
         if let Some(session_artifact_dir) = &self.session_artifact_dir {
             if let Some(dir) = get_local_harness_state_dir(Some(session_artifact_dir)) {
-                extra.push(SearchCorpus {
-                    state: load_harness_state(&dir, HarnessScope::Local),
-                    scope: MemoryScope::Session,
-                });
+                let path = get_harness_state_path(&dir);
+                corpora.push(cached_file_corpus_index(
+                    &path,
+                    MemoryScope::Session,
+                    &project_id,
+                    &host_id,
+                    || {
+                        let details = load_harness_state_details(&dir, HarnessScope::Local);
+                        (details.status == HarnessStateLoadStatus::Loaded).then_some(details.state)
+                    },
+                ));
             }
         }
         // A selected shared copy of a local memory should not consume recall twice.
-        let found = search_memory(&self.store, query, &extra, include_inactive);
+        let found = search_corpora(&self.store, query, &corpora, include_inactive);
         let local_ids: Vec<String> = found
             .iter()
             .filter(|hit| hit.scope == MemoryScope::Project)
