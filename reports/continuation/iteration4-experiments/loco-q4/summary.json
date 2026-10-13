@@ -1,0 +1,95 @@
+{
+ "schema": "loco-q4-experiment/1",
+ "ts": "2026-10-13T07:21:48+00:00",
+ "worker": "glm-locoq4",
+ "question": {
+  "qid": "conv-26_q141",
+  "question": "What does Caroline's drawing symbolize for her?",
+  "gold": "Freedom and being true to herself.",
+  "category": "4/single-hop",
+  "baseline_score": 0.375,
+  "baseline_answer": "For Caroline, the drawing of a woman in a dress stands for freedom and being real — like a nudge to always stay true to herself and embrace her womanhood.",
+  "baseline_source": "imp3-gate/reports/continuation/iteration3-inputs/locomo/runs/improved-merged/run.jsonl"
+ },
+ "diagnosis": {
+  "class": "G (recalled but verbose echo; answer-side dilution) with paraphrase headroom",
+  "store": "imp3-gate/.../runs/improved-s0/envs/conv-26/agent/memory/projects/project_4b30654678833006224d23f1/harness_state.json",
+  "evidence": [
+   "Retrieval is NOT the defaults failure for q141: both the gate run and the fresh typeA baseline recalled the gold entry (project:memory:caroline_drawing_woman_in_dress) inside the 6-entry budget alongside 5 irrelevant entries.",
+   "The store note itself paraphrases the dialogue: 'It stands for freedom and being real — like a nudge to always stay true to herself and embrace her womanhood' vs gold 'Freedom and being true to herself.'.",
+   "At defaults the model echoes the full note sentence; token-F1 dilutes to 0.375 (gate, with 'For Caroline...' preamble) or 0.5 (fresh run, preamble dropped) — run-to-run preamble variance straddles the 0.5 pass bar.",
+   "Official LoCoMo F1 normalization drops articles including 'and': 'freedom and being real' -> [freedom, be, real] vs gold [freedom, be, true, to, herself] -> exactly 0.5; a 1.0 requires 'freedom and being true to herself'."
+  ]
+ },
+ "hypotheses": [
+  {
+   "id": "H0-baseline",
+   "desc": "typeA re-answer with gate defaults (binary imp4-targetA, settings loco-q1/h1-base-settings-defaults.json)",
+   "settings": "loco-q1/h1-base-settings-defaults.json",
+   "outcome": "pass",
+   "score": 0.5,
+   "answer": "Freedom and being real — like a nudge to always stay true to herself and embrace her womanhood.",
+   "recall_ids_count": 6,
+   "conclusion": "Borderline pass (gate baseline was 0.375 fail): same class-G verbose echo, less preamble this run. Confirms the failure mode is answer-side, not retrieval."
+  },
+  {
+   "id": "H1-fleet-h3",
+   "desc": "fleet winning config from loco-q1 (helpers ON: distill+rerank(200)+extract+expansion(2); strict short-form answerInstruction)",
+   "settings": "loco-q1/h3-helpers-shortanswer.json",
+   "outcome": "pass",
+   "score": 0.5,
+   "answer": "freedom and being real",
+   "recall_ids": [
+    "project:memory:caroline_drawing_woman_in_dress",
+    "project:memory:caroline_flower_drawings_hobby_aug_2023"
+   ],
+   "conclusion": "FIXED at the 0.5 pass bar (fourth-question evidence): recall narrowed to the gold entry (+1 related) and the short-form instruction yields the note's opening phrase 'freedom and being real'. Stable 4/4 across workers (locoq2 x3 + this run). Remaining headroom to 1.0 is a store-paraphrase gap ('being real' vs 'being true to herself'), not a config defect; not chased to avoid gold-shaped instruction tuning."
+  }
+ ],
+ "regression_check": {
+  "config": "fleet h3 winning settings (loco-q1/h3-helpers-shortanswer.json)",
+  "questions": [
+   {
+    "qid": "conv-26_q1",
+    "baseline": 0.0,
+    "after": 1.0,
+    "answer": "2022",
+    "note": "fresh gate run by glm-locoq4; no regression"
+   },
+   {
+    "qid": "conv-26_q54",
+    "baseline": 0.1818,
+    "after": 1.0,
+    "answer": "the week before 23 August 2023",
+    "note": "fresh gate run by glm-locoq4; no regression this run (known 0.444 calendar-conversion flake documented by loco-q2; stabilized by the merged precedence time-form variant)"
+   },
+   {
+    "qid": "conv-26_q126",
+    "baseline": 0.2105,
+    "after": 1.0,
+    "answer": "horseback riding",
+    "note": "fleet-reported (worker glm-locoq3 latest attempt); no regression"
+   },
+   {
+    "qid": "conv-26_q135",
+    "baseline": 0.3158,
+    "after": 0.5556,
+    "answer": "an injury that forced her to take a break from pottery",
+    "note": "fleet-reported (worker glm-locoq3, wide-recall + concise config); FAILED -> pass, not a regression"
+   }
+  ],
+  "verdict": "gate green: q1 1.0, q54 1.0 (fresh runs), q126 1.0 and q135 0.5556 pass (fleet-reported). No regressions."
+ },
+ "provenance": {
+  "driver": "imp4-targetA/release/examples/memory_bench.exe (shared binary)",
+  "model": "dgx-glm53/glm-5.3 (user-mandated; no other models)",
+  "controller": "scripts/memory_question_loop.py (typeA copy-out, frozen improved-s0 conv-26 store)",
+  "ledger": "reports/continuation/iteration4/QUESTION-LEDGER.json (attempts auto-appended)",
+  "run_dirs": [
+   "reports/continuation/iteration4/ql-attempts/locoq4-q141-baseline",
+   "reports/continuation/iteration4/ql-attempts/locoq4-q141-h1-fwinning",
+   "reports/continuation/iteration4/ql-attempts/locoq4-reg-q1",
+   "reports/continuation/iteration4/ql-attempts/locoq4-reg-q54"
+  ]
+ }
+}
