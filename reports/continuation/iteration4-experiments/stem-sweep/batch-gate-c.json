@@ -1,0 +1,74 @@
+{
+ "conv-26_q55": {
+  "run_id": "ss-g-q55",
+  "rc": 0,
+  "score": 1.0,
+  "answer": "sunsets",
+  "outcome": "pass",
+  "stage": null,
+  "recall_n": 24,
+  "recall_ids": [
+   "project:memory:melanie_peace_from_creativity_and_family",
+   "project:memory:melanie_family_nature_painting_july_2023",
+   "project:memory:melanie_art_hobby_seven_years",
+   "project:memory:caroline_heart_painting_togetherness_september_2023",
+   "project:memory:melanie_camping_what_she_loves_most",
+   "project:memory:caroline_transition_reason_community_acceptance_aug_2023",
+   "project:memory:melanie_sunflower_painting_favorite_art_types_aug_2023",
+   "project:memory:imported_7752b73673606b943dfa4d2e",
+   "project:memory:imported_a277b57a2fc7ed0b6fde2bbb",
+   "project:memory:melanie_horse_painting_aug_2023",
+   "project:memory:caroline_abstract_painting_oct_2023",
+   "project:memory:caroline_beach_sunset_painting_aug_2023"
+  ],
+  "latency_s": 7.2
+ },
+ "conv-26_q57": {
+  "run_id": "ss-g-q57",
+  "rc": 0,
+  "score": 0.6,
+  "answer": "recently before 17 August 2023",
+  "outcome": "pass",
+  "stage": null,
+  "recall_n": 24,
+  "recall_ids": [
+   "project:memory:imported_c9447d65c1bf0c5eb878ac34",
+   "project:memory:caroline_artist_trans_experience_art",
+   "project:memory:caroline_transition_reason_community_acceptance_aug_2023",
+   "project:memory:caroline_transition_courage_reflection_july_2023",
+   "project:memory:caroline_counseling_career_motivation_own_struggles",
+   "project:memory:caroline_picnic_friends_family_early_july_2023",
+   "project:memory:melanie_son_accident_family_roadtrip_october_2023",
+   "project:memory:caroline_volunteering_lgbtq_youth_center_aug_2023",
+   "project:memory:caroline_lgbtq_pride_parade_late_june_2023",
+   "project:memory:caroline_flower_drawings_hobby_aug_2023",
+   "project:memory:melanie_pets_luna_and_oliver",
+   "project:memory:caroline_art_helped_gender_identity_transition"
+  ],
+  "latency_s": 12.4
+ },
+ "conv-26_q99": {
+  "run_id": "ss-g-q99",
+  "rc": 0,
+  "score": 0.5,
+  "answer": "Her own mental health struggles and the helpful support she received.",
+  "outcome": "pass",
+  "stage": null,
+  "recall_n": 24,
+  "recall_ids": [
+   "project:memory:melanie_book_gold_coin_cover_pursue_dreams",
+   "project:memory:caroline_counseling_career_motivation_own_struggles",
+   "project:memory:caroline_counseling_focus_trans_people",
+   "project:memory:caroline_lgbtq_counseling_workshop_june_2023",
+   "project:memory:caroline_career_goal_counseling_mental_health",
+   "project:memory:caroline_lgbtq_pride_parade_late_june_2023",
+   "project:memory:melanie_camping_what_she_loves_most",
+   "project:memory:melanie_peace_from_creativity_and_family",
+   "project:memory:caroline_volunteering_lgbtq_youth_center_aug_2023",
+   "project:memory:caroline_lgbtq_youth_mentorship_july_2023",
+   "project:memory:caroline_meaningful_song_brave_sara_bareilles",
+   "project:memory:caroline_transition_reason_community_acceptance_aug_2023"
+  ],
+  "latency_s": 17.3
+ }
+}

@@ -1,0 +1,74 @@
+{
+ "conv-42_q4": {
+  "run_id": "ss-q4-r1",
+  "rc": 3,
+  "score": 0.0,
+  "answer": "not mentioned",
+  "outcome": "fail",
+  "stage": "answer",
+  "recall_n": 24,
+  "recall_ids": [
+   "project:memory:nate_third_turtle_2022_11",
+   "project:memory:joanna_no_pet_stance_2022_05",
+   "project:memory:nate_turtles_tampa_beach_2022_11",
+   "project:memory:nate_pets_park_day_2022_11",
+   "project:memory:nate_pets_new_tank_2022_08",
+   "project:memory:nate_dog_max_2022_05",
+   "project:memory:joanna_little_women_recommendation_2022_02",
+   "project:memory:nate_pet_turtles",
+   "project:memory:joanna_hometown_hiking_trail_2022_04",
+   "project:memory:nate_cork_board_idea_2022_06",
+   "project:memory:joanna_animal_allergies",
+   "project:memory:joanna_character_drawings_2022_10"
+  ],
+  "latency_s": 6.4
+ },
+ "conv-47_q102": {
+  "run_id": "ss-q102-r1",
+  "rc": 3,
+  "score": 0.0,
+  "answer": "not mentioned",
+  "outcome": "fail",
+  "stage": "answer",
+  "recall_n": 24,
+  "recall_ids": [
+   "project:memory:mem_james_2d_adventure_games_preference",
+   "project:memory:mem-conv47-james-tournament-semifinals",
+   "project:memory:mem_james_animal_sanctuary_visit",
+   "project:memory:mem_james_road_trip_family_dogs",
+   "project:memory:mem_james_extreme_sports",
+   "project:memory:mem_james_gaming_interests",
+   "project:memory:mem_john_portable_smokers_startup",
+   "project:memory:mem_john_fifa23_hooked",
+   "project:memory:mem-conv47-john-csgo-charity-tournament",
+   "project:memory:mem-conv47-john-board-game-friends",
+   "project:memory:mem_james_childhood_comic_game_project",
+   "project:memory:imported_816b0792855f31639df5807d"
+  ],
+  "latency_s": 7.2
+ },
+ "conv-50_q5": {
+  "run_id": "ss-q5-r1",
+  "rc": 3,
+  "score": 0.41269841269841273,
+  "answer": "visiting Tokyo, custom car",
+  "outcome": "fail",
+  "stage": "answer",
+  "recall_n": 24,
+  "recall_ids": [
+   "project:memory:imported_a7447d2acd0958a0af43e0bb",
+   "project:memory:memory-dave-custom-car-dream",
+   "project:memory:memory-calvin-supportive-people-artist-growth",
+   "project:memory:memory-calvin-world-tour-dream",
+   "project:memory:memory-calvin-concerts-artist-crowd-connection",
+   "project:memory:memory-calvin-ratatouille-favorite",
+   "project:memory:memory-calvin-new-car",
+   "project:memory:imported_baa7cd9c01765dcb0ca49367",
+   "project:memory:memory-dave-vintage-car-restored-sept2023",
+   "project:memory:memory-calvin-boston-performance-plan",
+   "project:memory:memory-dave-car-mods-blog",
+   "project:memory:imported_ef58b692d11fdfdeb78c8bbb"
+  ],
+  "latency_s": 8.5
+ }
+}

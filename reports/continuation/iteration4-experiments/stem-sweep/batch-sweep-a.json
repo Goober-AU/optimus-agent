@@ -1,0 +1,74 @@
+{
+ "conv-26_q37": {
+  "run_id": "ss-q37-r1",
+  "rc": 0,
+  "score": 1.0,
+  "answer": "a sunflower, a sunset, a horse, an abstract blue painting",
+  "outcome": "pass",
+  "stage": null,
+  "recall_n": 24,
+  "recall_ids": [
+   "project:memory:melanie_sunflower_painting_favorite_art_types_aug_2023",
+   "project:memory:melanie_peace_from_creativity_and_family",
+   "project:memory:melanie_sunset_painting_oct_2023",
+   "project:memory:melanie_horse_painting_aug_2023",
+   "project:memory:melanie_camping_what_she_loves_most",
+   "project:memory:caroline_abstract_painting_oct_2023",
+   "project:memory:melanie_abstract_blue_painting_oct_2023",
+   "project:memory:melanie_art_hobby_seven_years",
+   "project:memory:melanie_autumn_painting_plans_aug_2023",
+   "project:memory:melanie_family_nature_painting_july_2023",
+   "project:memory:melanie_lake_sunrise_painting_2022",
+   "project:memory:melanie_injury_pottery_break_sept_2023"
+  ],
+  "latency_s": 11.4
+ },
+ "conv-41_q35": {
+  "run_id": "ss-q35-r1",
+  "rc": 0,
+  "score": 0.5,
+  "answer": "Florida",
+  "outcome": "pass",
+  "stage": null,
+  "recall_n": 24,
+  "recall_ids": [
+   "project:memory:mem_maria_florida_vacation_photo_20230616",
+   "project:memory:mem_maria_first_surfing_attempt_20230504",
+   "project:memory:mem_maria_vacation_takeaways_20230504",
+   "project:memory:mem_maria_shelter_connection_building_approach",
+   "project:memory:mem_maria_shelter_start_story_20230803",
+   "project:memory:mem_maria_park_me_time_walks_20230705",
+   "project:memory:mem_john_california_family_vacation_20230616",
+   "project:memory:mem_maria_other_dog_20230813",
+   "project:memory:mem_maria_baked_goods_shelter_20230731",
+   "project:memory:mem_maria_volunteer_shelters_plan_202308",
+   "project:memory:mem_maria_shelter_kids_20230703",
+   "project:memory:mem_maria_dog_shelter_volunteering_20230603"
+  ],
+  "latency_s": 6.2
+ },
+ "conv-41_q68": {
+  "run_id": "ss-q68-r1",
+  "rc": 3,
+  "score": 0.0,
+  "answer": "not mentioned",
+  "outcome": "fail",
+  "stage": "answer",
+  "recall_n": 24,
+  "recall_ids": [
+   "project:memory:mem_john_family_boot_camp_20230504",
+   "project:memory:mem_john_yoga_class_weekend_20230407",
+   "project:memory:mem_maria_dog_shelter_volunteering_20230603",
+   "project:memory:mem_maria_poetry_class_20230402",
+   "project:memory:imported_502d33eda101c437f6ee50d2",
+   "project:memory:mem_maria_adopted_puppy_shadow_20230813",
+   "project:memory:mem_maria_shelter_start_story_20230803",
+   "project:memory:mem_maria_shelter_aerial_yoga",
+   "project:memory:mem_maria_joined_gym_20230616",
+   "project:memory:mem_john_school_mentor_20230813",
+   "project:memory:mem_john_food_drive_20230205",
+   "project:memory:mem_john_kickboxing"
+  ],
+  "latency_s": 24.2
+ }
+}
