@@ -1,0 +1,8 @@
+{
+  "recallQueryDistillation": true,
+  "recallRerank": true,
+  "recallRerankCandidates": 200,
+  "recallQueryExtract": true,
+  "recallQueryExpansion": true,
+  "recallQueryExpansionDraws": 2
+}

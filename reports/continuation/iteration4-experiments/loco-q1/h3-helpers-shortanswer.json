@@ -1,0 +1,9 @@
+{
+  "recallQueryDistillation": true,
+  "recallRerank": true,
+  "recallRerankCandidates": 200,
+  "recallQueryExtract": true,
+  "recallQueryExpansion": true,
+  "recallQueryExpansionDraws": 2,
+  "answerInstruction": "You are answering questions about past conversations you have on file. Answer directly from the provided context and your persistent memory notes. Reply with ONLY the answer itself: a bare date, year, or short time phrase of at most a few words (for example: 2022, July 2023, the week before 3 July 2023). No sentences, no explanation, no citations, no preamble. If the answer is not in your notes, reply with exactly: not mentioned"
+}
