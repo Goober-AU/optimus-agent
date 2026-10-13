@@ -1,0 +1,123 @@
+{
+  "schema": "loco-q2-experiment/1",
+  "ts": "2026-10-13T07:20:00+00:00",
+  "worker": "glm-locoq2",
+  "question": {
+    "qid": "conv-26_q126",
+    "question": "What activity did Caroline used to do with her dad?",
+    "gold": "Horseback riding",
+    "category": "4/single-hop",
+    "baseline_score": 0.2105,
+    "baseline_answer": "Horseback riding - as a kid, Caroline used to go horseback riding with her dad, riding through the fields.",
+    "baseline_source": "imp3-gate/reports/continuation/iteration3-inputs/locomo/runs/improved-merged/run.jsonl"
+  },
+  "diagnosis": {
+    "class": "G (recalled but wrong answer form; free-form sentence dilutes token-F1)",
+    "store": "imp3-gate/.../runs/improved-s0/envs/conv-26/agent/memory/projects/project_4b30654678833006224d23f1/harness_state.json",
+    "evidence": [
+      "Entry caroline_childhood_horseback_riding_dad exists in frozen store: 'as a kid she used to go horseback riding with her dad - they would ride through the fields'.",
+      "Baseline-typeA defaults run: recall_ids[0] = caroline_childhood_horseback_riding_dad (gold fact recalled rank #1 even at defaults); score 0.2222.",
+      "Failure is purely answer-side: 'Horseback riding - as a kid she used to go horseback riding with her dad through the fields.' vs gold 'Horseback riding' (2-token gold inside a 16-token sentence).",
+      "Confirms the general weakness (b) found in loco-q1: free-form sentence answers dilute token-F1; same failure class as loco-q1 H2."
+    ]
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "desc": "F's winning config from loco-q1 (helpers ON + strict short-form answerInstruction, reports/continuation/iteration4-experiments/loco-q1/h3-helpers-shortanswer.json)",
+      "settings": "loco-q1/h3-helpers-shortanswer.json",
+      "outcome": "pass",
+      "score": 1.0,
+      "answer": "horseback riding",
+      "recall_ids": [
+        "project:memory:caroline_childhood_horseback_riding_dad"
+      ],
+      "conclusion": "GENERAL FIX CARRIES: category-4 single-hop fixed by the same config that fixed q1 (category-2 temporal). Recall narrowed to the single gold entry; rerank used, distillation/expansion empty_output."
+    },
+    {
+      "id": "H2",
+      "desc": "regression-gate repair attempt: H1 config + relative-time anchoring clause in answerInstruction (sub-year relative phrases anchored to the chat date, e.g. 'the week before 3 July 2023')",
+      "settings": "h2-relative-time-anchor.json",
+      "outcome": "mixed",
+      "score": null,
+      "conclusion": "q54 stabilized at 1.0 (2/2 samples, 'the week before 23 August 2023') but q1 BROKE 0.0 ('the year before 8 May 2023'): the anchoring clause was applied to year-level facts too."
+    },
+    {
+      "id": "H3",
+      "desc": "H2 + time-form precedence: (1) year-level facts -> bare year only, never a relative phrase; (2) sub-year spans described relative to a dated conversation -> anchored relative phrase, not a calendar date",
+      "settings": "h3-precedence-timeform.json",
+      "outcome": "pass",
+      "score": 1.0,
+      "answer": "horseback riding",
+      "recall_ids": [
+        "project:memory:caroline_childhood_horseback_riding_dad"
+      ],
+      "conclusion": "WIN: q126 1.0 while q1 stays 1.0 ('2022') and q54 stays 1.0 ('the week before 23 August 2023', 2/2)."
+    }
+  ],
+  "regression_check": {
+    "config": "H3 winning settings (h3-precedence-timeform.json)",
+    "questions": [
+      {
+        "qid": "conv-26_q1",
+        "baseline": 0.0,
+        "after": 1.0,
+        "note": "gate required stay 1.0: '2022' exact (H1-config re-run also 1.0; H2 without precedence broke it 0.0)"
+      },
+      {
+        "qid": "conv-26_q54",
+        "baseline": 0.1818,
+        "after": 1.0,
+        "note": "gate required stay 1.0: under F's H1 config q54 was FLAKY 1/4 (0.4444 x3: 'approximately/Around 16 August 2023'); precedence config stable 1.0 2/2 ('the week before 23 August 2023')"
+      },
+      {
+        "qid": "conv-26_q141",
+        "baseline": 0.375,
+        "after": 0.5,
+        "note": "bonus fix: pass >= 0.5 ('Freedom and being real' vs gold 'Freedom and being true to herself.')"
+      },
+      {
+        "qid": "conv-26_q135",
+        "baseline": 0.3158,
+        "after": 0.0,
+        "note": "still FAILED (both configs): wrong-event recall - question says 'setback October 2023', model recalls melanie_son_accident_family_roadtrip_october_2023 (literally October) instead of melanie_injury_pottery_break_sept_2023 (reported 2023-10-13, occurred ~Sept); temporal-offset trap, distinct failure class D/G-mix; concurrent sibling runs agree (0.3333 defaults, 0.0 with config)"
+      }
+    ],
+    "verdict": "gate PASS with the H3 precedence config: q1 1.0, q54 1.0 (stable), q126 1.0, q141 0.5 pass; q135 remains a genuinely-failed question (not a regression: it never passed; score drop is short-form answer form, same wrong event)"
+  },
+  "promotion_evidence": {
+    "claim": "F's loco-q1 winning config generalizes across categories (fixed q126 category-4 single-hop immediately, 1/1)",
+    "caveat": "its short-form instruction is unstable on week-level temporal golds (q54 1/4); the refined precedence variant (this loop's H3) fixes that while keeping every other win",
+    "recommended_config": "reports/continuation/iteration4-experiments/loco-q2/h3-precedence-timeform.json"
+  },
+  "artifacts": {
+    "ledger": "reports/continuation/iteration4/QUESTION-LEDGER.json (attempts auto-appended by scripts/memory_question_loop.py, atomic)",
+    "attempt_dirs": [
+      "reports/continuation/iteration4/ql-attempts/locoq2-q126-base-defaults",
+      "reports/continuation/iteration4/ql-attempts/locoq2-q126-h1-fwinning",
+      "reports/continuation/iteration4/ql-attempts/locoq2-reg-q1",
+      "reports/continuation/iteration4/ql-attempts/locoq2-reg-q54",
+      "reports/continuation/iteration4/ql-attempts/locoq2-reg-q54-r2",
+      "reports/continuation/iteration4/ql-attempts/locoq2-reg-q54-r3",
+      "reports/continuation/iteration4/ql-attempts/locoq2-reg-q135",
+      "reports/continuation/iteration4/ql-attempts/locoq2-reg-q141",
+      "reports/continuation/iteration4/ql-attempts/locoq2-h2-reg-q1",
+      "reports/continuation/iteration4/ql-attempts/locoq2-h2-reg-q54-a",
+      "reports/continuation/iteration4/ql-attempts/locoq2-h2-reg-q54-b",
+      "reports/continuation/iteration4/ql-attempts/locoq2-h2-reg-q126",
+      "reports/continuation/iteration4/ql-attempts/locoq2-h2-reg-q141",
+      "reports/continuation/iteration4/ql-attempts/locoq2-h2-reg-q135",
+      "reports/continuation/iteration4/ql-attempts/locoq2-h3-reg-q1",
+      "reports/continuation/iteration4/ql-attempts/locoq2-h3-reg-q54-a",
+      "reports/continuation/iteration4/ql-attempts/locoq2-h3-reg-q54-b",
+      "reports/continuation/iteration4/ql-attempts/locoq2-h3-reg-q126",
+      "reports/continuation/iteration4/ql-attempts/locoq2-h3-reg-q141",
+      "reports/continuation/iteration4/ql-attempts/locoq2-h3-reg-q135"
+    ]
+  },
+  "model": {
+    "provider": "dgx-glm53",
+    "id": "glm-5.3"
+  },
+  "driver": "imp4-targetA/release/examples/memory_bench.exe (imp4 HEAD 695e123e4, shared binary)"
+}
