@@ -1,0 +1,1 @@
+- Added the round-4 question-by-question benchmark controller (`scripts/memory_question_loop.py`): per-question driver runs from the failure ledger with isolated type-A store copies or content-addressed type-B ingest caches, question-scoped official scoring, atomic ledger appends, and a diagnostics block with per-stage telemetry.
