@@ -796,6 +796,11 @@ async fn legacy_settings_recall_rerank_configure_and_read_propagate() {
     assert_recall_opt_in_round_trip("recallRerank", "recallQueryDistillation").await;
 }
 
+#[tokio::test]
+async fn legacy_settings_recall_rerank_with_content_configure_and_read_propagate() {
+    assert_recall_opt_in_round_trip("recallRerankWithContent", "recallRerank").await;
+}
+
 async fn assert_service_update_provenance(explicit_clear: bool) {
     let fixture = Fixture::new();
     let service = fixture.service("alpha");
