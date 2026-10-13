@@ -1,0 +1,178 @@
+{
+  "schema": "lmev2-q3-experiment/1",
+  "ts": "2026-10-13T07:28:16+00:00",
+  "worker": "glm-lmev2q3",
+  "question": {
+    "qid": "f928c075",
+    "benchmark": "lme_v2",
+    "category": "static-environment",
+    "question": "I am using our reddit-based custom forum website. When I compare my own profile page with another user's profile page, what is the name of the additional section on the right side that appears only on my own profile page? Answer with a short phrase and wrap your final answer in `\\boxed{}`.",
+    "gold": "moderator",
+    "eval": "norm_phrase_set_match (word-boundary phrase; the answer must contain the word 'moderator')",
+    "baseline_score": 0.0,
+    "baseline_answer": "\\boxed{Toolbox}",
+    "baseline_source": "reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/run.jsonl (mini cap-40000 store); re-confirmed by controller typeA default run q4-f928c075-typeA-20261013-071020-554973",
+    "store": "mini cap-40000 static-env store (3 sessions: 1ad1af4b, 2e66df34, b1c719fb), 23 notes"
+  },
+  "diagnosis": {
+    "stage": "G-reasoning (evidence present in recall, answer picks the adjacent page-structure element)",
+    "evidence": "The gold note postmill_account_moderator_list ('MarvelsGrantMan136 is a moderator on: sci_fi, cmu_lti, Cyberpunk, PlantsForCatParents, karaoke') is recalled in every attempt (position 2 of 11 in the baseline recall_ids).",
+    "failure_mode": "The same note also records the own-page 'Toolbox' section (links 'Hidden forums', 'Trash'). Asked for the section unique to the own profile page, the model answers 'Toolbox'.",
+    "ground_truth_discriminator": "In the raw haystack the Toolbox section is NOT unique to the own profile page: another user's profile page (ziostraccette, traj 8012d4f3) shows a Toolbox with 'Block user'/'Send message', and forum pages (/f/Cyberpunk, /f/books, /f/television/*) show a Toolbox with 'Bans'/'Moderation log'/'Appearance'/'Delete forum'. The only section unique to the own profile page is '<user> is a moderator on:'. The mini store contains NO forum-page or other-user-page Toolbox note (checked: 0 occurrences of Bans/Moderation log/Block user/Send message across all 23 notes), so the discriminative fact is absent from the store and the model must fall back on general UI knowledge.",
+    "why_h1_failed": "The role clause ('answer with the role exactly as stated in the note that mentions the person') does not fire because the model classifies the question as a which-section question, not a what-role question; with the same 11-note recall it still answers Toolbox.",
+    "why_h2_works": "The comparative-uniqueness clause supplies the missing general UI heuristic: generic site-wide utility sections (navigation, search, toolbox-style) appear on many pages and must not be chosen as the differentiator; sections tied to the account's roles/statuses/memberships are the differentiator, answered with the role/status word."
+  },
+  "hypotheses": [
+    {
+      "id": "H0-baseline",
+      "desc": "typeA re-answer with controller defaults (base settings from lme_v2_dev5_improved_v3 source manifest: distillation+rerank200+extract+expansion ON, maxRecall 12000/12; shared binary imp4-targetA)",
+      "settings": "source-manifest defaults",
+      "run_id": "q4-f928c075-typeA-20261013-071020-554973",
+      "outcome": "fail",
+      "score": 0.0,
+      "answer": "\\boxed{Toolbox}",
+      "recall_ids_count": 11,
+      "gold_note_recalled": true,
+      "conclusion": "Conflation reproduced under controller diagnostics: gold note in recall, answer picks the adjacent Toolbox section. Read-time helpers all degenerate (empty_output/invalid_output) -> direct 11-note recall."
+    },
+    {
+      "id": "H1-role-instruction",
+      "desc": "parent-specified role/attribute clause appended to the base answerInstruction: 'When asked about a person's role or status on a page, answer with the role exactly as stated in the note that mentions the person.' (general wording, no benchmark specifics)",
+      "settings": "h1-role-instruction.json",
+      "run_id": "q4-f928c075-typeA-h1-roleinstr",
+      "outcome": "fail",
+      "score": 0.0,
+      "answer": "\\boxed{Toolbox}",
+      "recall_ids_count": 11,
+      "gold_note_recalled": true,
+      "conclusion": "No effect. The question is classified as a which-section question; the role clause never fires. Same answer as baseline."
+    },
+    {
+      "id": "H2-compare-instruction",
+      "desc": "comparative-uniqueness clause appended to the base answerInstruction: 'When a question asks what element or section appears only on one page or only for one account compared with another, do not choose generic site-wide UI such as navigation, search, or toolbox-style utility sections; those appear on many pages. Prefer a section tied to that account's own roles, statuses, or memberships, and answer with the role or status word exactly as stated in the note that mentions it.'",
+      "settings": "h2-compare-instruction.json",
+      "runs": [
+        {
+          "run_id": "q4-f928c075-typeA-h2-compareinstr",
+          "score": 1.0,
+          "answer": "\\boxed{is a moderator on}",
+          "recall_ids_count": 2,
+          "rerank": "used"
+        },
+        {
+          "run_id": "q4-f928c075-typeA-h2-compareinstr-r2",
+          "score": 1.0,
+          "answer": "\\boxed{is a moderator on}",
+          "recall_ids_count": 3,
+          "rerank": "n/a"
+        },
+        {
+          "run_id": "q4-f928c075-typeA-h2-compareinstr-r3",
+          "score": 1.0,
+          "answer": "\\boxed{moderator}",
+          "recall_ids_count": 11,
+          "rerank": "empty_output (wide lane identical to the failing baseline)"
+        }
+      ],
+      "outcome": "pass",
+      "score": 1.0,
+      "stability": "3/3 passes; r3 reproduced the exact 11-note recall lane of the baseline failure and still flipped the answer to the gold word, ruling out recall-lane luck as the sole cause",
+      "conclusion": "FIXED. Settings-only, read-time (typeA), no code or store changes."
+    },
+    {
+      "id": "H3-page-struct-store",
+      "desc": "glm-lmev2q1's page-struct store (imp4-lmev2q1/reports/continuation/iteration4-inputs/runs/lmev2q1_h1_pagestruct, 27 notes, page-structure importInstructions) tested via a ledger copy with store_path overridden; canonical ledger untouched",
+      "data_points": [
+        {
+          "source": "q1's own driver run (base instruction, read-time features off)",
+          "answer": "Toolbox",
+          "score": 0.0,
+          "recall": [
+            "memory_postmill_user_history_page_structure",
+            "memory_postmill_user_profile_page_own_view",
+            "memory_postmill_books_forum_listing_page"
+          ]
+        },
+        {
+          "source": "controller typeA default (v3 read-time features), run q4-f928c075-typeA-h3-pagestruct-default",
+          "answer": "\\boxed{Edit biography}",
+          "score": 0.0,
+          "recall_included_full_sidebar_note": "memory_postmill_user_page_submissions_self_view (enumerates all 3 own-page sidebar sections incl. 'is a moderator on:')"
+        },
+        {
+          "source": "controller typeA + h2 instruction, run q4-f928c075-typeA-h3-pagestruct-h2instr",
+          "answer": "honest no-evidence reply (only the sidebar-less own-page note recalled)",
+          "score": 0.0,
+          "recall": [
+            "memory_postmill_user_profile_page_own_view"
+          ]
+        },
+        {
+          "source": "controller typeA + h2 instruction, run q4-f928c075-typeA-h3-pagestruct-h2instr-r2",
+          "answer": "\\boxed{UNKNOWN}",
+          "score": 0.0,
+          "recall": [
+            "memory_postmill_user_profile_page_own_view"
+          ]
+        }
+      ],
+      "outcome": "fail",
+      "conclusion": "Separating page-structure notes does NOT fix the conflation by itself. The page-struct store DOES contain the full own-page sidebar enumeration ('Toolbox' (2 links: Hidden forums, Trash); 'MarvelsGrantMan136 is a moderator on:' (5 links)) and forum-page Toolbox notes (Bans/Moderation log), but (a) with the base instruction the model picks a different own-page-only element ('Edit biography' - a link, not a section), and (b) the v3 rerank lane on this store repeatedly selected only the partial own-page note ('No other sidebar or panel sections are visible in this snapshot'), starving the evidence. The decisive missing piece is unchanged: no note in either store describes ANOTHER user's profile page (the mini env never visits one; the discriminative trajectory 8012d4f3 is outside the 3-session mini env), so the cross-page comparison fact must come from general UI knowledge (H2's heuristic) or from a store that includes an other-user profile page."
+    }
+  ],
+  "regression_check": {
+    "store": "same mini cap-40000 store, controller typeA re-answers",
+    "36fe48ef": {
+      "gold": "six",
+      "default_run": {
+        "run_id": "q4-36fe48ef-typeA-default",
+        "score": 0.0,
+        "answer": "The Toolbox section is on your user (profile) page, not on a forum page ... Per the evidence, the Toolbox contains two links: 'Hidden forums' and 'Trash'."
+      },
+      "h2_run": {
+        "run_id": "q4-36fe48ef-typeA-h2-compareinstr",
+        "score": 0.0,
+        "flag": "empty_answer",
+        "note": "length stop at answerMaxTokens 8192; no answer text"
+      },
+      "verdict": "no score regression (0.0 -> 0.0). Question stays B-blocked on this store: no forum-page Toolbox note with the six links exists (0 occurrences of Bans/Moderation log/Appearance/Delete forum in the 23 notes). Failure mode changed from wrong answer to length-stop blank under H2."
+    },
+    "499488a6": {
+      "gold": "none",
+      "default_run": {
+        "run_id": "q4-499488a6-typeA-20261013-070452-153b34 (worker lmev2q2)",
+        "score": 0.0,
+        "answer": "\\boxed{UNKNOWN}"
+      },
+      "h2_runs": [
+        {
+          "run_id": "q4-499488a6-typeA-h2-compareinstr",
+          "score": 0.0,
+          "answer": "I'll first inspect the working directory to see what trajectory data is on file.HostException: null"
+        },
+        {
+          "run_id": "q4-499488a6-typeA-h2-compareinstr-r2",
+          "score": 0.0,
+          "answer": "I'll check the workspace for any trajectory files or source code that mention the \"Hide this forum\" feature before answering."
+        }
+      ],
+      "verdict": "no score regression (0.0 -> 0.0). Degenerate no-box chatter predates H2 (earlier attempts on this qid by other workers show the same pattern); question is B-blocked: the store has no 'Hide this forum' note (0 occurrences), so the all-views-have-it gold 'none' is unverifiable."
+    }
+  },
+  "winning_config": {
+    "settings_file": "reports/continuation/iteration4-experiments/lmev2-q3/h2-compare-instruction.json",
+    "change": "answerInstruction only (read-time, typeA-compatible): base lme_v2 instruction + comparative-uniqueness clause",
+    "answerInstruction": "You are answering questions about past agent trajectories you have on file. Answer from the provided context and your persistent memory notes. If the question's premise is not supported by the evidence, say so briefly and give the correct value from the evidence instead. If evidence is genuinely absent, reply: UNKNOWN. For multiple-choice questions reply with the option letter in \\boxed{}. For list questions reply with the comma-separated values in \\boxed{}. Keep the answer short. When a question asks what element or section appears only on one page or only for one account compared with another, do not choose generic site-wide UI such as navigation, search, or toolbox-style utility sections; those appear on many pages. Prefer a section tied to that account's own roles, statuses, or memberships, and answer with the role or status word exactly as stated in the note that mentions it.",
+    "everything_else": "unchanged from the lme_v2_dev5_improved_v3 source manifest (recallOn, distillation/rerank/extract/expansion ON, maxRecallChars 12000, maxRecallEntries 12, answerMaxTokens 8192)",
+    "model": "dgx-glm53/glm-5.3 only",
+    "driver": "imp4-targetA shared binary",
+    "store": "frozen mini cap-40000 store, typeA copy-out (baseline store never mutated)",
+    "generalization_risk": "The clause was derived from this failure and names 'toolbox-style utility sections' as the generic-UI example (generic web-UI vocabulary, but adjacent to the observed distractor). It is conditional (fires only on appears-only-on-one-page/account questions) and did not change 36fe48ef/499488a6 scores, but it needs the full 5-question static-env battery and a full-env (100-session, cap>=40000) re-ingest validation before promotion to defaults.",
+    "promotion_criteria": "static-env 5/5 or better vs baseline on the lme_v2 dev5 set, no regression on the lme_s/loco gates",
+    "h3_caveat": "The H2 instruction is validated on the canonical mini store (3/3, incl. an identical wide-recall lane). On the q1 page-struct store it was 0/2, but both failures were recall starvation (rerank selected only the partial own-page note; rerank input does not include the answerInstruction - identical 1416-token rerank inputs across H3a/H3b - so the selection difference is rerank LLM variance, not the instruction)."
+  },
+  "ledger_bookkeeping": {
+    "canonical_ledger": "reports/continuation/iteration4/QUESTION-LEDGER.json - f928c075: 5 attempts (baseline, H1, H2, H2-r2, H2-r3); 36fe48ef: +2 (default, H2); 499488a6: +2 (H2, H2-r2). H2-r3 was the wide-recall-lane confirmation run.",
+    "h3_ledger_copy": "imp4-ql-scratch/lmev2q3/h3-ledger.json (store_path override for the page-struct store; H3 attempts are recorded there and in imp4-ql-scratch/lmev2q3/ql-attempts/, NOT in the canonical ledger, because the canonical entry's store is the mini store)"
+  }
+}
