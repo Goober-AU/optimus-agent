@@ -1,0 +1,258 @@
+{
+ "schema": "iteration4-loco-h2h-results/1",
+ "date": "2026-10-13",
+ "worker": "locoh2h",
+ "purpose": "conv-26 config head-to-head (regression gate for the LoCoMo promotion decision)",
+ "model": {
+  "provider": "dgx-glm53",
+  "id": "glm-5.3"
+ },
+ "store": "imp3-gate/reports/continuation/iteration3-inputs/locomo/runs/improved-s0/envs/conv-26 (119 memory entries, frozen, typeA copy-out)",
+ "configs": {
+  "fleet": {
+   "file": "fleet-h3-precedence-timeform.json",
+   "source": "loco-q2 h3-precedence-timeform.json (refines loco-q1 h3-helpers-shortanswer)",
+   "settings": {
+    "recallQueryExtract": true,
+    "recallQueryDistillation": true,
+    "recallQueryExpansion": true,
+    "recallQueryExpansionDraws": 2,
+    "recallRerank": true,
+    "recallRerankCandidates": 200,
+    "answerInstruction": "short-form + time-form precedence (see json)"
+   }
+  },
+  "det": {
+   "file": "det-h3b-deterministic-recall.json",
+   "source": "loco-q5 h3b-deterministic-recall.json",
+   "settings": {
+    "recallQueryExtract": true,
+    "recallQueryDistillation": false,
+    "recallQueryExpansion": false,
+    "recallRerank": false,
+    "maxRecallEntries": 24,
+    "maxRecallChars": 24000,
+    "answerInstruction": "event-tolerant short-form + time-form precedence (see json)"
+   }
+  }
+ },
+ "base_settings": "base-gate-s0-settings.json (imp3-gate locomo-gate3-improved-s0 manifest settings)",
+ "sets": {
+  "comparison": [
+   "q2",
+   "q18",
+   "q26",
+   "q33",
+   "q37",
+   "q39",
+   "q55",
+   "q57",
+   "q66",
+   "q77",
+   "q99",
+   "q144",
+   "q149"
+  ],
+  "no_regression": [
+   "q1",
+   "q54",
+   "q126",
+   "q135",
+   "q141"
+  ],
+  "excluded": [
+   "q143 (owned by glm-locoq6 live loop)"
+  ]
+ },
+ "runs": {
+  "q2": {
+   "baseline": 0.0,
+   "category": "3/open-domain",
+   "fleet": 0.3333333333333333,
+   "det": 0.25
+  },
+  "q18": {
+   "baseline": 0.2685,
+   "category": "1/multi-hop",
+   "fleet": 0.0,
+   "det": 0.4444444444444444
+  },
+  "q26": {
+   "baseline": 0.0606,
+   "category": "2/temporal",
+   "fleet": 0.0,
+   "det": 0.0
+  },
+  "q33": {
+   "baseline": 0.0678,
+   "category": "2/temporal",
+   "fleet": 0.6666666666666666,
+   "det": 0.0
+  },
+  "q37": {
+   "baseline": 0.0,
+   "category": "1/multi-hop",
+   "fleet": 0.4,
+   "det": 0.0
+  },
+  "q39": {
+   "baseline": 0.1088,
+   "category": "1/multi-hop",
+   "fleet": 0.18333333333333335,
+   "det": 0.44999999999999996
+  },
+  "q55": {
+   "baseline": 0.0,
+   "category": "1/multi-hop",
+   "fleet": 1.0,
+   "det": 1.0
+  },
+  "q57": {
+   "baseline": 0.0556,
+   "category": "2/temporal",
+   "fleet": 0.0,
+   "det": 0.6
+  },
+  "q66": {
+   "baseline": 0.0,
+   "category": "1/multi-hop",
+   "fleet": 0.0,
+   "det": 0.0
+  },
+  "q77": {
+   "baseline": 0.0,
+   "category": "3/open-domain",
+   "fleet": 0.0,
+   "det": 0.0
+  },
+  "q99": {
+   "baseline": 0.2574,
+   "category": "4/single-hop",
+   "fleet": 0.5263157894736842,
+   "det": 0.411764705882353
+  },
+  "q144": {
+   "baseline": 0.2927,
+   "category": "4/single-hop",
+   "fleet": 0.0,
+   "det": 0.36363636363636365
+  },
+  "q149": {
+   "baseline": 0.0741,
+   "category": "4/single-hop",
+   "fleet": 0.0,
+   "det": 0.0
+  },
+  "q1": {
+   "baseline": 0.0,
+   "category": "2/temporal",
+   "fleet": 1.0,
+   "det": 1.0
+  },
+  "q54": {
+   "baseline": 0.1818,
+   "category": "2/temporal",
+   "fleet": 1.0,
+   "det": 1.0
+  },
+  "q126": {
+   "baseline": 0.2105,
+   "category": "4/single-hop",
+   "fleet": 1.0,
+   "det": 1.0
+  },
+  "q135": {
+   "baseline": 0.3158,
+   "category": "4/single-hop",
+   "fleet": 0.0,
+   "det": 0.5555555555555556
+  },
+  "q141": {
+   "baseline": 0.375,
+   "category": "4/single-hop",
+   "fleet": 0.5,
+   "det": 0.5263157894736842
+  }
+ },
+ "comparison_stats": {
+  "n": 13,
+  "fixed_by_fleet_ge_0.5": [
+   "q33",
+   "q55",
+   "q99"
+  ],
+  "fixed_by_det_ge_0.5": [
+   "q55",
+   "q57"
+  ],
+  "fixed_by_both": [
+   "q55"
+  ],
+  "fleet_only": [
+   "q33",
+   "q99"
+  ],
+  "det_only": [
+   "q57"
+  ],
+  "unfixed_by_both": [
+   "q2",
+   "q18",
+   "q26",
+   "q37",
+   "q39",
+   "q66",
+   "q77",
+   "q144",
+   "q149"
+  ],
+  "mean_f1_delta_fleet": 0.148,
+  "mean_f1_delta_det": 0.18
+ },
+ "no_regression_stats": {
+  "n": 5,
+  "fleet_regressions": [
+   "q135 (1.0 in loco-q5 det run -> 0.0; title-blind rerank kept only melanie_son_accident_family_roadtrip_october_2023 and dropped gold melanie_injury_pottery_break_sept_2023)"
+  ],
+  "det_regressions": [],
+  "note": "q135 det 0.556 here vs 1.0 in loco-q5 h3b single-shot (answer-model variance, still >=0.5)"
+ },
+ "overall": {
+  "mean_f1_delta_fleet_all18": 0.241,
+  "mean_f1_delta_det_all18": 0.296
+ },
+ "helper_flakiness_18_runs": {
+  "fleet": {
+   "recallQueryDistillation:empty_output": 17,
+   "recallQueryDistillation:used": 1,
+   "recallQueryExpansion:empty_output": 8,
+   "recallQueryExpansion:used": 10,
+   "recallRerank:used": 15,
+   "recallRerank:invalid_output": 1,
+   "recallRerank:empty_output": 2
+  },
+  "det": {
+   "all_helpers": "disabled (18/18)"
+  }
+ },
+ "cost": {
+  "fleet_mean": {
+   "recall_chars": 2362,
+   "recall_ids": 3.0,
+   "tok_in": 1617,
+   "tok_out": 636,
+   "answer_latency_ms": 28624
+  },
+  "det_mean": {
+   "recall_chars": 16818,
+   "recall_ids": 24.0,
+   "tok_in": 5464,
+   "tok_out": 240,
+   "answer_latency_ms": 20065
+  },
+  "note": "fleet adds ~4.4k tokens per rerank call + per-helper latency; det has none but 7x larger recall context"
+ },
+ "verdict": "DETERMINISTIC (loco-q5 h3b) is the LoCoMo promotion candidate: zero regressions on the fixed set (fleet regressed q135 1.0->0.0 via title-blind rerank gold-drop), higher mean F1 delta (+0.180 vs +0.148 comparison; +0.296 vs +0.241 all-18), zero flaky LLM helpers in recall (distill empty 17/18=94%, expansion empty 8/18, rerank invalid/empty 3/18), faster (20.1s vs 28.6s mean). Fleet's 2 extra fixes (q33,q99) rest on a flaky helper stack. Hybrid path: keep deterministic recall + wide window (24/24000) as the base and add rerank only if a content-aware rerank (N's improve/mem4-content-rerank) lands; if any rerank is kept it must fall back to raw extract-recall on empty/invalid output.",
+ "attempts_root": "reports/continuation/iteration4/ql-attempts-locoh2h",
+ "ledger": "reports/continuation/iteration4/QUESTION-LEDGER.json (36 h2h attempts appended, worker=locoh2h, run_id=h2h-<tag>-<q>)"
+}
