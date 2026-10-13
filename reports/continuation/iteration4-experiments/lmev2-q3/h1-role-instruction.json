@@ -1,0 +1,3 @@
+{
+  "answerInstruction": "You are answering questions about past agent trajectories you have on file. Answer from the provided context and your persistent memory notes. If the question's premise is not supported by the evidence, say so briefly and give the correct value from the evidence instead. If evidence is genuinely absent, reply: UNKNOWN. For multiple-choice questions reply with the option letter in \\boxed{}. For list questions reply with the comma-separated values in \\boxed{}. Keep the answer short. When asked about a person's role or status on a page, answer with the role exactly as stated in the note that mentions the person."
+}
