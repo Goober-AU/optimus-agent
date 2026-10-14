@@ -1,0 +1,32 @@
+{
+ "q99x-r3": {
+  "tag": "q99x-r3",
+  "qid": "conv-26_q99",
+  "run_id": "nm-g3-q99x-r3",
+  "mode": "typeB",
+  "rc": 0,
+  "err": null,
+  "score": 0.5789473684210525,
+  "outcome": "pass",
+  "answer": "Her own journey and the support she received \u2014 seeing how counseling and support groups improved her life made her want to help people who have gone through the same things.",
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "d4b542a8e98deca6",
+  "latency_s": 14.9
+ },
+ "q99x-r4": {
+  "tag": "q99x-r4",
+  "qid": "conv-26_q99",
+  "run_id": "nm-g3-q99x-r4",
+  "mode": "typeB",
+  "rc": 0,
+  "err": null,
+  "score": 0.7058823529411764,
+  "outcome": "pass",
+  "answer": "Her own journey and the support she received.",
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "d4b542a8e98deca6",
+  "latency_s": 15.2
+ }
+}
