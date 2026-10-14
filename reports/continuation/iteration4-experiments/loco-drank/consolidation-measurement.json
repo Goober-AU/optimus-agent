@@ -1,0 +1,871 @@
+{
+ "schema": "loco-drank-consolidation-measurement/1",
+ "ts": "2026-10-14T23:06:10.885328",
+ "worker": "drank (reactivation)",
+ "mode": "OFFLINE ONLY - python search_replay.py reimplementation, zero driver/endpoint runs",
+ "stores": {
+  "conv-26": {
+   "entries": 176
+  },
+  "conv-30": {
+   "entries": 130
+  },
+  "conv-41": {
+   "entries": 303
+  },
+  "conv-42": {
+   "entries": 232
+  },
+  "conv-43": {
+   "entries": 314
+  },
+  "conv-44": {
+   "entries": 242
+  },
+  "conv-47": {
+   "entries": 259
+  },
+  "conv-48": {
+   "entries": 277
+  },
+  "conv-49": {
+   "entries": 181
+  },
+  "conv-50": {
+   "entries": 206
+  }
+ },
+ "verification": "replay re-verified 50/50 vs binary search_ranked on writefull's conv-30 (wf30-q50-a1, wfg30-q36-a1) and conv-49 (wf49-q26-a1, wfg49-q94-a1); 10/10 stores verified cumulatively",
+ "population": {
+  "note": "ledger-FAILED questions on the 10 fresh stores; best gold-carrier rank (any evidence carrier)",
+  "buckets_10store": {
+   "in_w24": 144,
+   "beyond_36": 8,
+   "no_extracted_gold": 3,
+   "w33_36": 1,
+   "admits_w32": 2
+  },
+  "buckets_8store_banked": {
+   "in_w24": 133,
+   "admits_w32": 1,
+   "w33_36": 1,
+   "beyond_36": 7,
+   "no_extracted_gold": 2
+  }
+ },
+ "consolidation_model": {
+  "clustering": "transitive connected components over title-token similarity (date-stripped: numbers + month names removed); containment = |A&B|/min(|A|,|B|)",
+  "configs": {
+   "ct080": "containment>=0.80 (near-duplicate series only; max cluster 8-12; N 2320->2251, -3%)",
+   "ct070": "containment>=0.70 (moderate; max cluster 17; N ->2161, -7%)",
+   "ct065": "containment>=0.65 (aggressive-realistic; max cluster 21; N ->2042, -12%)",
+   "ct050": "containment>=0.50 (pathological bound: 101/157-member mega-clusters; N ->1002, -57%)"
+  },
+  "merge_semantics": "latest member is canonical; title = union of member titles ('union') or latest member's title ('first'); content/sourceIds/sources/sourceSpan/prospectiveCues = union; created_at = max"
+ },
+ "targets": {
+  "ct080-union": {
+   "conv-41_q50": {
+    "before": 51,
+    "after": 51
+   },
+   "conv-42_q56": {
+    "before": 50,
+    "after": 55
+   },
+   "conv-47_q11": {
+    "before": 54,
+    "after": 54
+   },
+   "conv-48_q185": {
+    "before": 49,
+    "after": 48
+   },
+   "conv-50_q40": {
+    "before": 176,
+    "after": 175
+   },
+   "conv-42_q151": {
+    "before": 60,
+    "after": 55
+   },
+   "conv-44_q24": {
+    "before": 50,
+    "after": 43
+   },
+   "conv-50_q28": {
+    "before": 28,
+    "after": 28
+   },
+   "conv-47_q97": {
+    "before": 36,
+    "after": 35
+   }
+  },
+  "ct080-first": {
+   "conv-41_q50": {
+    "before": 51,
+    "after": 51
+   },
+   "conv-42_q56": {
+    "before": 50,
+    "after": 55
+   },
+   "conv-47_q11": {
+    "before": 54,
+    "after": 54
+   },
+   "conv-48_q185": {
+    "before": 49,
+    "after": 48
+   },
+   "conv-50_q40": {
+    "before": 176,
+    "after": 175
+   },
+   "conv-42_q151": {
+    "before": 60,
+    "after": 55
+   },
+   "conv-44_q24": {
+    "before": 50,
+    "after": 42
+   },
+   "conv-50_q28": {
+    "before": 28,
+    "after": 28
+   },
+   "conv-47_q97": {
+    "before": 36,
+    "after": 35
+   }
+  },
+  "ct070-union": {
+   "conv-41_q50": {
+    "before": 51,
+    "after": 51
+   },
+   "conv-42_q56": {
+    "before": 50,
+    "after": 54
+   },
+   "conv-47_q11": {
+    "before": 54,
+    "after": 54
+   },
+   "conv-48_q185": {
+    "before": 49,
+    "after": 44
+   },
+   "conv-50_q40": {
+    "before": 176,
+    "after": 171
+   },
+   "conv-42_q151": {
+    "before": 60,
+    "after": 53
+   },
+   "conv-44_q24": {
+    "before": 50,
+    "after": 38
+   },
+   "conv-50_q28": {
+    "before": 28,
+    "after": 28
+   },
+   "conv-47_q97": {
+    "before": 36,
+    "after": 35
+   }
+  },
+  "ct070-first": {
+   "conv-41_q50": {
+    "before": 51,
+    "after": 51
+   },
+   "conv-42_q56": {
+    "before": 50,
+    "after": 54
+   },
+   "conv-47_q11": {
+    "before": 54,
+    "after": 54
+   },
+   "conv-48_q185": {
+    "before": 49,
+    "after": 44
+   },
+   "conv-50_q40": {
+    "before": 176,
+    "after": 171
+   },
+   "conv-42_q151": {
+    "before": 60,
+    "after": 52
+   },
+   "conv-44_q24": {
+    "before": 50,
+    "after": 37
+   },
+   "conv-50_q28": {
+    "before": 28,
+    "after": 28
+   },
+   "conv-47_q97": {
+    "before": 36,
+    "after": 35
+   }
+  },
+  "ct065-union": {
+   "conv-41_q50": {
+    "before": 51,
+    "after": 48
+   },
+   "conv-42_q56": {
+    "before": 50,
+    "after": 47
+   },
+   "conv-47_q11": {
+    "before": 54,
+    "after": 54
+   },
+   "conv-48_q185": {
+    "before": 49,
+    "after": 44
+   },
+   "conv-50_q40": {
+    "before": 176,
+    "after": 147
+   },
+   "conv-42_q151": {
+    "before": 60,
+    "after": 48
+   },
+   "conv-44_q24": {
+    "before": 50,
+    "after": 37
+   },
+   "conv-50_q28": {
+    "before": 28,
+    "after": 3
+   },
+   "conv-47_q97": {
+    "before": 36,
+    "after": 37
+   }
+  },
+  "ct065-first": {
+   "conv-41_q50": {
+    "before": 51,
+    "after": 48
+   },
+   "conv-42_q56": {
+    "before": 50,
+    "after": 46
+   },
+   "conv-47_q11": {
+    "before": 54,
+    "after": 54
+   },
+   "conv-48_q185": {
+    "before": 49,
+    "after": 44
+   },
+   "conv-50_q40": {
+    "before": 176,
+    "after": 147
+   },
+   "conv-42_q151": {
+    "before": 60,
+    "after": 47
+   },
+   "conv-44_q24": {
+    "before": 50,
+    "after": 37
+   },
+   "conv-50_q28": {
+    "before": 28,
+    "after": 8
+   },
+   "conv-47_q97": {
+    "before": 36,
+    "after": 37
+   }
+  },
+  "ct050-union": {
+   "conv-41_q50": {
+    "before": 51,
+    "after": 1
+   },
+   "conv-42_q56": {
+    "before": 50,
+    "after": 18
+   },
+   "conv-47_q11": {
+    "before": 54,
+    "after": 49
+   },
+   "conv-48_q185": {
+    "before": 49,
+    "after": 1
+   },
+   "conv-50_q40": {
+    "before": 176,
+    "after": 89
+   },
+   "conv-42_q151": {
+    "before": 60,
+    "after": 24
+   },
+   "conv-44_q24": {
+    "before": 50,
+    "after": 1
+   },
+   "conv-50_q28": {
+    "before": 28,
+    "after": 1
+   },
+   "conv-47_q97": {
+    "before": 36,
+    "after": 28
+   }
+  },
+  "ct050-first": {
+   "conv-41_q50": {
+    "before": 51,
+    "after": 8
+   },
+   "conv-42_q56": {
+    "before": 50,
+    "after": 18
+   },
+   "conv-47_q11": {
+    "before": 54,
+    "after": 49
+   },
+   "conv-48_q185": {
+    "before": 49,
+    "after": 2
+   },
+   "conv-50_q40": {
+    "before": 176,
+    "after": 89
+   },
+   "conv-42_q151": {
+    "before": 60,
+    "after": 24
+   },
+   "conv-44_q24": {
+    "before": 50,
+    "after": 1
+   },
+   "conv-50_q28": {
+    "before": 28,
+    "after": 3
+   },
+   "conv-47_q97": {
+    "before": 36,
+    "after": 26
+   }
+  }
+ },
+ "population_effect": {
+  "ct080-union": {
+   "store_entries": {
+    "conv-26": [
+     176,
+     174
+    ],
+    "conv-30": [
+     130,
+     124
+    ],
+    "conv-41": [
+     303,
+     294
+    ],
+    "conv-42": [
+     232,
+     218
+    ],
+    "conv-43": [
+     314,
+     313
+    ],
+    "conv-44": [
+     242,
+     229
+    ],
+    "conv-47": [
+     259,
+     256
+    ],
+    "conv-48": [
+     277,
+     262
+    ],
+    "conv-49": [
+     181,
+     176
+    ],
+    "conv-50": [
+     206,
+     205
+    ]
+   },
+   "pop8_held": 132,
+   "pop8_fell_out": 1,
+   "pop8_entered": 0,
+   "fell_out_cells": [
+    [
+     "conv-48_q102",
+     24,
+     25
+    ]
+   ],
+   "pop10": {
+    "held_in24": 143,
+    "entered_24": 1,
+    "lost_gold": 3,
+    "other": 10,
+    "FELL_OUT": 1
+   }
+  },
+  "ct080-first": {
+   "store_entries": {
+    "conv-26": [
+     176,
+     174
+    ],
+    "conv-30": [
+     130,
+     124
+    ],
+    "conv-41": [
+     303,
+     294
+    ],
+    "conv-42": [
+     232,
+     218
+    ],
+    "conv-43": [
+     314,
+     313
+    ],
+    "conv-44": [
+     242,
+     229
+    ],
+    "conv-47": [
+     259,
+     256
+    ],
+    "conv-48": [
+     277,
+     262
+    ],
+    "conv-49": [
+     181,
+     176
+    ],
+    "conv-50": [
+     206,
+     205
+    ]
+   },
+   "pop8_held": 132,
+   "pop8_fell_out": 1,
+   "pop8_entered": 0,
+   "fell_out_cells": [
+    [
+     "conv-48_q102",
+     24,
+     25
+    ]
+   ],
+   "pop10": {
+    "held_in24": 143,
+    "entered_24": 1,
+    "lost_gold": 3,
+    "other": 10,
+    "FELL_OUT": 1
+   }
+  },
+  "ct070-union": {
+   "store_entries": {
+    "conv-26": [
+     176,
+     166
+    ],
+    "conv-30": [
+     130,
+     124
+    ],
+    "conv-41": [
+     303,
+     284
+    ],
+    "conv-42": [
+     232,
+     210
+    ],
+    "conv-43": [
+     314,
+     301
+    ],
+    "conv-44": [
+     242,
+     207
+    ],
+    "conv-47": [
+     259,
+     255
+    ],
+    "conv-48": [
+     277,
+     251
+    ],
+    "conv-49": [
+     181,
+     165
+    ],
+    "conv-50": [
+     206,
+     198
+    ]
+   },
+   "pop8_held": 132,
+   "pop8_fell_out": 1,
+   "pop8_entered": 0,
+   "fell_out_cells": [
+    [
+     "conv-48_q102",
+     24,
+     26
+    ]
+   ],
+   "pop10": {
+    "held_in24": 143,
+    "entered_24": 1,
+    "lost_gold": 3,
+    "other": 10,
+    "FELL_OUT": 1
+   }
+  },
+  "ct070-first": {
+   "store_entries": {
+    "conv-26": [
+     176,
+     166
+    ],
+    "conv-30": [
+     130,
+     124
+    ],
+    "conv-41": [
+     303,
+     284
+    ],
+    "conv-42": [
+     232,
+     210
+    ],
+    "conv-43": [
+     314,
+     301
+    ],
+    "conv-44": [
+     242,
+     207
+    ],
+    "conv-47": [
+     259,
+     255
+    ],
+    "conv-48": [
+     277,
+     251
+    ],
+    "conv-49": [
+     181,
+     165
+    ],
+    "conv-50": [
+     206,
+     198
+    ]
+   },
+   "pop8_held": 131,
+   "pop8_fell_out": 2,
+   "pop8_entered": 0,
+   "fell_out_cells": [
+    [
+     "conv-43_q84",
+     21,
+     42
+    ],
+    [
+     "conv-48_q102",
+     24,
+     25
+    ]
+   ],
+   "pop10": {
+    "held_in24": 142,
+    "entered_24": 1,
+    "lost_gold": 3,
+    "other": 10,
+    "FELL_OUT": 2
+   }
+  },
+  "ct065-union": {
+   "store_entries": {
+    "conv-26": [
+     176,
+     163
+    ],
+    "conv-30": [
+     130,
+     117
+    ],
+    "conv-41": [
+     303,
+     253
+    ],
+    "conv-42": [
+     232,
+     193
+    ],
+    "conv-43": [
+     314,
+     298
+    ],
+    "conv-44": [
+     242,
+     204
+    ],
+    "conv-47": [
+     259,
+     243
+    ],
+    "conv-48": [
+     277,
+     246
+    ],
+    "conv-49": [
+     181,
+     153
+    ],
+    "conv-50": [
+     206,
+     172
+    ]
+   },
+   "pop8_held": 132,
+   "pop8_fell_out": 1,
+   "pop8_entered": 1,
+   "fell_out_cells": [
+    [
+     "conv-48_q102",
+     24,
+     26
+    ]
+   ],
+   "pop10": {
+    "held_in24": 143,
+    "entered_24": 2,
+    "lost_gold": 3,
+    "other": 8,
+    "deep_worse": 1,
+    "FELL_OUT": 1
+   }
+  },
+  "ct065-first": {
+   "store_entries": {
+    "conv-26": [
+     176,
+     163
+    ],
+    "conv-30": [
+     130,
+     117
+    ],
+    "conv-41": [
+     303,
+     253
+    ],
+    "conv-42": [
+     232,
+     193
+    ],
+    "conv-43": [
+     314,
+     298
+    ],
+    "conv-44": [
+     242,
+     204
+    ],
+    "conv-47": [
+     259,
+     243
+    ],
+    "conv-48": [
+     277,
+     246
+    ],
+    "conv-49": [
+     181,
+     153
+    ],
+    "conv-50": [
+     206,
+     172
+    ]
+   },
+   "pop8_held": 130,
+   "pop8_fell_out": 3,
+   "pop8_entered": 1,
+   "fell_out_cells": [
+    [
+     "conv-41_q131",
+     2,
+     35
+    ],
+    [
+     "conv-43_q84",
+     21,
+     42
+    ],
+    [
+     "conv-48_q102",
+     24,
+     25
+    ]
+   ],
+   "pop10": {
+    "held_in24": 141,
+    "entered_24": 3,
+    "lost_gold": 3,
+    "FELL_OUT": 3,
+    "other": 7,
+    "deep_worse": 1
+   }
+  },
+  "ct050-union": {
+   "store_entries": {
+    "conv-26": [
+     176,
+     78
+    ],
+    "conv-30": [
+     130,
+     42
+    ],
+    "conv-41": [
+     303,
+     108
+    ],
+    "conv-42": [
+     232,
+     98
+    ],
+    "conv-43": [
+     314,
+     141
+    ],
+    "conv-44": [
+     242,
+     77
+    ],
+    "conv-47": [
+     259,
+     179
+    ],
+    "conv-48": [
+     277,
+     96
+    ],
+    "conv-49": [
+     181,
+     84
+    ],
+    "conv-50": [
+     206,
+     99
+    ]
+   },
+   "pop8_held": 133,
+   "pop8_fell_out": 0,
+   "pop8_entered": 6,
+   "fell_out_cells": [],
+   "pop10": {
+    "held_in24": 144,
+    "entered_24": 8,
+    "lost_gold": 3,
+    "other": 3
+   }
+  },
+  "ct050-first": {
+   "store_entries": {
+    "conv-26": [
+     176,
+     78
+    ],
+    "conv-30": [
+     130,
+     42
+    ],
+    "conv-41": [
+     303,
+     108
+    ],
+    "conv-42": [
+     232,
+     98
+    ],
+    "conv-43": [
+     314,
+     141
+    ],
+    "conv-44": [
+     242,
+     77
+    ],
+    "conv-47": [
+     259,
+     179
+    ],
+    "conv-48": [
+     277,
+     96
+    ],
+    "conv-49": [
+     181,
+     84
+    ],
+    "conv-50": [
+     206,
+     99
+    ]
+   },
+   "pop8_held": 133,
+   "pop8_fell_out": 0,
+   "pop8_entered": 6,
+   "fell_out_cells": [],
+   "pop10": {
+    "held_in24": 144,
+    "entered_24": 8,
+    "lost_gold": 3,
+    "other": 3
+   }
+  }
+ },
+ "mechanisms": [
+  "complement merge can lift a gold far: conv-30_q3 gold carrier mem_jon_lost_banking_job merged with mem_jon_job_loss_push_to_dance -> matched [what,do,jon,in], rank 130->2 at ct080 (the one clear win)",
+  "merged distractors inherit the union of member term sets and jump ABOVE golds: conv-42_q56 50->55 at ct080 (joanna-lactose 2-merge matches 5 query terms, outranks the turtles gold)",
+  "title-first consolidation loses date-bearing titles: conv-41_q131 2->35 at ct065-first (10-member cluster kept only the latest title; 'July 2023' terms gone from the searchable title, score 0.697->0.345)",
+  "the 7 deep-rank targets sit deep from lexical non-overlap, not store density: -12% N moves them 5-13 ranks (need 25-50); only the -57% mega-cluster collapse reaches the window"
+ ]
+}

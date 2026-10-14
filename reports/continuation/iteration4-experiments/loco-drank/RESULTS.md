@@ -82,3 +82,44 @@ Artifacts: task1-rank-analysis.json (gold ranks + 144-question sweep + w32/w36 a
 search_replay.py (verified offline replay), jobs-armA-D + results-armA-D + armA-D logs,
 drank-*.json settings, run-drank-jobs.py runner. No fleet-config changes proposed; no ledger status
 flips (all drank arms are experimental configs; the controller only appended attempts).
+
+
+## Reactivation (2026-10-14, round-5 candidate): offline write-time consolidation measurement
+
+OFFLINE ONLY (python replay, zero driver/endpoint runs). Stores: the 10 fresh typeB caches (writecamp 7 +
+conv-26 d4b542a8 + writefull's conv-30 62b3e5ec / conv-49 543cedbc); replay re-verified 50/50 vs binary
+search_ranked on writefull's two stores (4 run records) -> 10/10 stores verified. Population: 158 ledger-FAILED
+questions on the 10 stores; 8-store subset reproduces the banked 133/1/1/7/2 buckets exactly.
+
+Consolidation model: transitive clustering over date-stripped title-token similarity (containment =
+|A&B|/min(|A|,|B|)); merge = latest member canonical, content/sourceIds/sources/spans/cues unioned; four
+aggressiveness levels (ct080 near-duplicate series, ct070, ct065, ct050 pathological bound), each in
+title-union and title-first variants. Full data: consolidation-measurement.json.
+
+| config | N cut | q50 | q56 | q11 | q185 | q40 | q151 | q24 | 8-store pop (133 in-window) |
+|----|----:|----:|----:|----:|----:|----:|----:|----|
+| before | - | 51 | 50 | 54 | 49 | 176 | 60 | 50 | 133 held |
+| ct080 | -3% | 51 | **55** | 54 | 48 | 175 | 55 | 43 | 132 held, conv-48_q102 24->25 |
+| ct070 | -7% | 51 | 54 | 54 | 44 | 171 | 53 | 37-38 | 131-132 held (first: conv-43_q84 21->42) |
+| ct065 | -12% | 48 | 46-47 | 54 | 44 | 147 | 47-48 | 37 | 130-132 held (first: conv-41_q131 **2->35**) |
+| ct050 | -57% | **1** | **18** | 49 | **1** | 89 | **24** | **1** | 133 "held" but via mega-blobs |
+
+Findings:
+1. NO realistic config (3-12% N cut) brings ANY of the 7 deep-rank targets into the top-24 window. Best
+   movement is q24 50->37 and q151 60->47; the targets sit deep from lexical non-overlap, not store density.
+2. Only the pathological ct050 (57% N cut, 101/157-member mega-clusters) reaches 4 of 7 targets - and
+   q11 (->49) and q40 (->89) stay out even there. Mega-blobs also destroy granularity: q28's 28->3 at ct065
+   is a 21-member Calvin blob whose other two gold parts sit at ranks 101/124 inside it.
+3. Consolidation has a real dilution cost at every level: merged distractors inherit union term sets and
+   jump above golds (conv-42_q56 50->55 via a 2-member joanna-lactose merge matching 5 query terms);
+   title-first variants lose date-bearing titles (conv-41_q131 2->35: 10-member cluster kept only the
+   latest title, dropping the 'July 2023' terms that made the note rank 2).
+4. One genuine win mechanism exists: complement merges (conv-30_q3: mem_jon_lost_banking_job +
+   mem_jon_job_loss_push_to_dance -> rank 130->2 at ct080). None of the 7 targets has a complement
+   near-duplicate in its store, so the mechanism does not reach them.
+
+VERDICT: NO-GO for building the consolidation write-lane as a D-class ranking fix. The rank gains at
+safe merge levels are 5-15 positions where 25-50 are needed, each level costs 1-3 in-window golds, and
+the level that works is store destruction (prior H1 evidence: dilution already breaks answer quality at
+w32 with full granularity). Consolidation may still pay for itself on store size / recall-budget
+efficiency / complement merges, but that is a different lane with a different gate.
