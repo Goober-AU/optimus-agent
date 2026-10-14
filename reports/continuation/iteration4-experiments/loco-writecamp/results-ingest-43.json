@@ -1,0 +1,17 @@
+{
+ "conv-43_q41": {
+  "tag": "conv-43_q41",
+  "qid": "conv-43_q41",
+  "run_id": "wc43-q41-ing",
+  "rc": 0,
+  "err": null,
+  "score": 0.5714285714285715,
+  "outcome": "pass",
+  "answer": "fantasy stories",
+  "recall_n": 24,
+  "failure_stage": null,
+  "mode_detail": "ingest",
+  "cache_key": "cfbee6dc27de137e",
+  "latency_s": 2720.9
+ }
+}

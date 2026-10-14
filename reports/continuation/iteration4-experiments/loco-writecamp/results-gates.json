@@ -1,0 +1,17 @@
+{
+ "conv-41_q115": {
+  "tag": "conv-41_q115",
+  "qid": "conv-41_q115",
+  "run_id": "wcg41-q115-a1",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "a live music event",
+  "recall_n": 24,
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "f3e2ba0599fbe1d1",
+  "latency_s": 9.0
+ }
+}

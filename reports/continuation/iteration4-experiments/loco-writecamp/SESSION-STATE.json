@@ -1,0 +1,379 @@
+{
+ "wcexp": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-writecamp/reports/continuation/iteration4-experiments/loco-writecamp",
+ "wt": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-writecamp",
+ "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424",
+ "PYV": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/repo-continuation/bench/.venv/Scripts/python.exe",
+ "B_CLASS": [
+  "conv-41_q135",
+  "conv-42_q4",
+  "conv-42_q151",
+  "conv-43_q41",
+  "conv-43_q66",
+  "conv-44_q24",
+  "conv-44_q44",
+  "conv-47_q102",
+  "conv-47_q11",
+  "conv-48_q29",
+  "conv-50_q61"
+ ],
+ "ACTIONABLE": [
+  "conv-41_q135",
+  "conv-42_q151",
+  "conv-43_q41",
+  "conv-43_q66",
+  "conv-44_q24",
+  "conv-44_q44",
+  "conv-47_q102",
+  "conv-47_q11",
+  "conv-48_q29",
+  "conv-50_q61"
+ ],
+ "SEED_MAN": {
+  "conv-41": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s2.json",
+  "conv-42": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "conv-43": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s1.json",
+  "conv-44": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s2.json",
+  "conv-47": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "conv-48": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s1.json",
+  "conv-50": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json"
+ },
+ "INGEST_Q": {
+  "conv-41": "q135",
+  "conv-42": "q151",
+  "conv-43": "q41",
+  "conv-44": "q24",
+  "conv-47": "q102",
+  "conv-48": "q29",
+  "conv-50": "q61"
+ },
+ "GATES": {
+  "conv-41": [
+   "q115",
+   "q20",
+   "q110"
+  ],
+  "conv-42": [
+   "q20",
+   "q168",
+   "q125"
+  ],
+  "conv-43": [
+   "q12",
+   "q38",
+   "q122"
+  ],
+  "conv-44": [
+   "q85",
+   "q22",
+   "q63"
+  ],
+  "conv-47": [
+   "q119",
+   "q138",
+   "q34"
+  ],
+  "conv-48": [
+   "q16",
+   "q65",
+   "q14"
+  ],
+  "conv-50": [
+   "q143",
+   "q10",
+   "q135"
+  ]
+ },
+ "GOLD": {
+  "conv-41_q135": {
+   "answer": "To remember and appreciate those who served",
+   "evidence": [
+    "D27:12"
+   ],
+   "question": "Why does Maria think it's important for younger generations to visit military memorials?"
+  },
+  "conv-42_q4": {
+   "answer": "Hairless cats or pigs,since they don't have fur, which is one of the main causes of Joanna's allergy.",
+   "evidence": [
+    "D2:23"
+   ],
+   "question": "What pets wouldn't cause any discomfort to Joanna?"
+  },
+  "conv-42_q151": {
+   "answer": "Taking time off to chill with pets",
+   "evidence": [
+    "D19:9"
+   ],
+   "question": "How did Nate celebrate winning the international tournament?"
+  },
+  "conv-43_q41": {
+   "answer": "Fantasy stories with plot twists",
+   "evidence": [
+    "D15:3",
+    "D16:1"
+   ],
+   "question": "What kind of fiction stories does Tim write?"
+  },
+  "conv-43_q66": {
+   "answer": "Star Wars: Jedi Apprentice by Judy Blundell and David Farland. It is a highly rated and immersive series about his favorite movies.",
+   "evidence": [
+    "D27:19",
+    "D27:21"
+   ],
+   "question": "What is a Star Wars book that Tim might enjoy?"
+  },
+  "conv-44_q24": {
+   "answer": "Yes",
+   "evidence": [
+    "D2:16",
+    "D13:10"
+   ],
+   "question": "Did Audrey and Andrew grow up with a pet dog?"
+  },
+  "conv-44_q44": {
+   "answer": "Voyageurs National Park",
+   "evidence": [
+    "D5:8",
+    "D11:9"
+   ],
+   "question": "Which national park could Audrey and Andrew be referring to in their conversations?"
+  },
+  "conv-47_q102": {
+   "answer": "Reading while snuggled under the covers",
+   "evidence": [
+    "D16:9"
+   ],
+   "question": "What did James enjoy doing on cold winter days?"
+  },
+  "conv-47_q11": {
+   "answer": "seeking solitude",
+   "evidence": [
+    "D6:7"
+   ],
+   "question": "How was John feeling on April 10, 2022?"
+  },
+  "conv-48_q29": {
+   "answer": "Wednesday before 9 February, 2023",
+   "evidence": [
+    "D5:1"
+   ],
+   "question": "When did Jolene have a mini-retreat to reflect on her career?"
+  },
+  "conv-50_q61": {
+   "answer": "nearly two months",
+   "evidence": [
+    "D14:11",
+    "D20:1",
+    "D21:4"
+   ],
+   "question": "How long did Dave's work on the Ford Mustang take?"
+  }
+ },
+ "frozen_scan": {
+  "conv-41_q135": {
+   "n_entries": 162,
+   "hits": {
+    "military memorial": [
+     "mem_john_family_military_memorial_visit_202307"
+    ],
+    "younger generation": [],
+    "those who served": [
+     "mem_john_family_military_memorial_visit_202307"
+    ],
+    "memorial": [
+     "mem_john_family_military_memorial_visit_202307"
+    ]
+   }
+  },
+  "conv-42_q4": {
+   "n_entries": 129,
+   "hits": {
+    "allergic": [
+     "joanna_animal_allergies",
+     "joanna_former_dog_tilly_michigan",
+     "joanna_visit_nate_turtles_2022_11_10"
+    ],
+    "reptiles": [
+     "joanna_animal_allergies",
+     "joanna_visit_nate_turtles_2022_11_10"
+    ],
+    "fur": [
+     "joanna_animal_allergies",
+     "joanna_living_room_furnishing_advice_2022_10",
+     "nate_living_room_furnishing_plan_2022_10",
+     "joanna_invested_in_little_things_trait_2022_10"
+    ]
+   }
+  },
+  "conv-42_q151": {
+   "n_entries": 129,
+   "hits": {
+    "time off": [],
+    "chill with": [],
+    "pets": [
+     "nate_pet_turtles",
+     "nate_dog_max_2022_05",
+     "joanna_no_pet_stance_2022_05",
+     "nate_max_playdates_neighbor_dog_2022_05",
+     "nate_pets_new_tank_2022_08"
+    ],
+    "weekend": [
+     "nate_gaming_party_2022_06",
+     "joanna_waterfall_trail_hike_2022_06",
+     "nate_vegan_ice_cream_2022_06",
+     "joanna_family_new_recipe_love",
+     "joanna_selfcare_balance_2022_08"
+    ]
+   }
+  },
+  "conv-43_q41": {
+   "n_entries": 186,
+   "hits": {
+    "fantasy": [
+     "mem-tim-fantasy-literature-forum",
+     "mem-tim-fantasy-reading-escape",
+     "mem-tim-magazine-fantasy-writing-gig",
+     "mem-tim-favorite-fantasy-series",
+     "mem-tim-rothfuss-current-read"
+    ],
+    "plot twist": [
+     "mem-tim-plot-twist-writing-block"
+    ],
+    "writing": [
+     "mem-tim-magazine-fantasy-writing-gig",
+     "mem-tim-fantasy-novel-progress",
+     "mem-tim-writing-inspiration-sources",
+     "mem-tim-jk-rowling-inspiration",
+     "mem-tim-plot-twist-writing-block"
+    ],
+    "novel": [
+     "mem-tim-magazine-fantasy-writing-gig",
+     "mem-tim-name-of-wind-recommendation",
+     "mem-tim-book-conference-sept-2023",
+     "mem-tim-no-sports-team-travel-magic",
+     "mem-tim-rothfuss-trip-book-recommendation"
+    ]
+   }
+  },
+  "conv-43_q66": {
+   "n_entries": 186,
+   "hits": {
+    "star wars": [
+     "mem-john-star-wars-lotr-fan",
+     "mem-tim-star-wars-favorite-movie"
+    ],
+    "jedi apprentice": [],
+    "blundell": [],
+    "farland": []
+   }
+  },
+  "conv-44_q24": {
+   "n_entries": 152,
+   "hits": {
+    "dog": [
+     "mem-conv44-audrey-dog-collars",
+     "mem-conv44-audrey-dogs",
+     "imported_071e05ce18d7f5cc522c37cd",
+     "imported_9cd6a652856ffd3dde7304ac",
+     "mem-conv44-andrew-nature-city-living"
+    ],
+    "family's dog": [],
+    "pet": [
+     "mem-conv44-andrew-favorite-animals",
+     "mem-conv44-andrew-pet-friendly-housing",
+     "mem-conv44-audrey-training-workshop",
+     "mem-conv44-audrey-positive-reinforcement-belief",
+     "mem-conv44-andrew-training-class-lookinto"
+    ],
+    "max": [
+     "mem-conv44-audrey-childhood-dog-max"
+    ]
+   }
+  },
+  "conv-44_q44": {
+   "n_entries": 152,
+   "hits": {
+    "national park": [
+     "mem-conv44-audrey-national-park-road-trip",
+     "mem-conv44-audrey-peak-hike-sunset"
+    ],
+    "voyageurs": [],
+    "road trip": [
+     "mem-conv44-audrey-national-park-road-trip",
+     "mem-conv44-audrey-road-trip-frequency",
+     "mem-conv44-andrew-road-trip-bucket-list",
+     "mem-conv44-audrey-peak-hike-sunset"
+    ]
+   }
+  },
+  "conv-47_q102": {
+   "n_entries": 158,
+   "hits": {
+    "snuggl": [],
+    "under the covers": [],
+    "cold winter": []
+   }
+  },
+  "conv-47_q11": {
+   "n_entries": 158,
+   "hits": {
+    "alone with nature": [
+     "mem_john_canyon_nature_walk"
+    ],
+    "canyon": [
+     "mem_john_canyon_nature_walk"
+    ],
+    "solitude": [],
+    "wanted to be alone": [
+     "mem_john_canyon_nature_walk"
+    ]
+   }
+  },
+  "conv-48_q29": {
+   "n_entries": 174,
+   "hits": {
+    "mini retreat": [
+     "imported_864e44a40055b1d8a29b651f",
+     "mem_jolene_phuket_meditation_retreat_2023"
+    ],
+    "mini-retreat": [],
+    "retreat": [
+     "imported_864e44a40055b1d8a29b651f",
+     "mem_deborah_yoga_retreat_2023",
+     "mem_jolene_retreat_interest",
+     "mem_deborah_meditation_guide_retreat_aug2023",
+     "imported_76f6de78ce49e40e3db4ba87"
+    ]
+   }
+  },
+  "conv-50_q61": {
+   "n_entries": 130,
+   "hits": {
+    "mustang": [
+     "memory-dave-april-car-show",
+     "memory-dave-vintage-mustang-engine-trouble",
+     "imported_ef58b692d11fdfdeb78c8bbb"
+    ],
+    "two months": [],
+    "junkyard": [
+     "imported_ef58b692d11fdfdeb78c8bbb"
+    ]
+   }
+  }
+ },
+ "run_ids": {
+  "ingest": {}
+ },
+ "heartbeat_id": "f157c523-3c3c-4ff9-a8d3-0d0c64f9ee40",
+ "cache_keys_observed": {
+  "conv-41": "f3e2ba0599fbe1d1",
+  "conv-42": "beda05a45ceb6a91",
+  "conv-43": "cfbee6dc27de137e",
+  "conv-44": "15430ae5cea336ec",
+  "conv-47": "3f790289038f5b3e",
+  "conv-48": "029159a993d70060",
+  "conv-50": "a3366924dfa549d5"
+ },
+ "att_root": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/ql-attempts-writecamp",
+ "cache_root": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/ql-typeb-cache",
+ "wmi_launch_ps1_pattern": "wmi-<name>.ps1 files in wcexp; command: cmd.exe /c \"\"PYV\" \"run-jobs.py\" \"jobs\" \"out\" N > log 2>&1\""
+}

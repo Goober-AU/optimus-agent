@@ -1,0 +1,17 @@
+{
+ "conv-48_q29": {
+  "tag": "conv-48_q29",
+  "qid": "conv-48_q29",
+  "run_id": "wc48-q29-ing",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "the Wednesday before 9 February 2023",
+  "recall_n": 24,
+  "failure_stage": null,
+  "mode_detail": "ingest",
+  "cache_key": "029159a993d70060",
+  "latency_s": 2805.2
+ }
+}

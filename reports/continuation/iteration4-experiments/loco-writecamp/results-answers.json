@@ -1,0 +1,47 @@
+{
+ "conv-44_q44": {
+  "tag": "conv-44_q44",
+  "qid": "conv-44_q44",
+  "run_id": "wc44-q44-a1",
+  "rc": 1,
+  "err": "try2 20261007-040424\\imp4b-writecamp\\scripts\\memory_question_loop.py\", line 1144, in main\n    return run_attempt(args, entry)\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\imp4b-writecamp\\scripts\\memory_question_loop.py\", line 903, in run_attempt\n    os.makedirs(attempt_dir, exist_ok=False)\n  File \"<frozen os>\", line 225, in makedirs\nFileExistsError: [WinError 183] Cannot create a file when that file already exists: 'C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/ql-attempts-writecamp\\\\wc44-q44-a1'\n",
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "not mentioned",
+  "recall_n": 24,
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "15430ae5cea336ec",
+  "latency_s": 0.2
+ },
+ "conv-43_q66": {
+  "tag": "conv-43_q66",
+  "qid": "conv-43_q66",
+  "run_id": "wc43-q66-a1",
+  "rc": 1,
+  "err": "try2 20261007-040424\\imp4b-writecamp\\scripts\\memory_question_loop.py\", line 1144, in main\n    return run_attempt(args, entry)\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\imp4b-writecamp\\scripts\\memory_question_loop.py\", line 903, in run_attempt\n    os.makedirs(attempt_dir, exist_ok=False)\n  File \"<frozen os>\", line 225, in makedirs\nFileExistsError: [WinError 183] Cannot create a file when that file already exists: 'C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/ql-attempts-writecamp\\\\wc43-q66-a1'\n",
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "not mentioned",
+  "recall_n": 24,
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "cfbee6dc27de137e",
+  "latency_s": 0.2
+ },
+ "conv-47_q11": {
+  "tag": "conv-47_q11",
+  "qid": "conv-47_q11",
+  "run_id": "wc47-q11-a1",
+  "rc": 1,
+  "err": "try2 20261007-040424\\imp4b-writecamp\\scripts\\memory_question_loop.py\", line 1144, in main\n    return run_attempt(args, entry)\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\imp4b-writecamp\\scripts\\memory_question_loop.py\", line 903, in run_attempt\n    os.makedirs(attempt_dir, exist_ok=False)\n  File \"<frozen os>\", line 225, in makedirs\nFileExistsError: [WinError 183] Cannot create a file when that file already exists: 'C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/ql-attempts-writecamp\\\\wc47-q11-a1'\n",
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "not mentioned",
+  "recall_n": 24,
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "3f790289038f5b3e",
+  "latency_s": 0.2
+ }
+}

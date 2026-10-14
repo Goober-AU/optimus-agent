@@ -1,0 +1,62 @@
+{
+ "conv-42_q151": {
+  "tag": "conv-42_q151",
+  "qid": "conv-42_q151",
+  "run_id": "wc42-q151-a2",
+  "rc": 3,
+  "err": null,
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "not mentioned",
+  "recall_n": 24,
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "beda05a45ceb6a91",
+  "latency_s": 8.1
+ },
+ "conv-44_q24": {
+  "tag": "conv-44_q24",
+  "qid": "conv-44_q24",
+  "run_id": "wc44-q24-a2",
+  "rc": 3,
+  "err": null,
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "not mentioned",
+  "recall_n": 24,
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "15430ae5cea336ec",
+  "latency_s": 9.4
+ },
+ "conv-50_q61": {
+  "tag": "conv-50_q61",
+  "qid": "conv-50_q61",
+  "run_id": "wc50-q61-a2",
+  "rc": 3,
+  "err": null,
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "not mentioned",
+  "recall_n": 24,
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "a3366924dfa549d5",
+  "latency_s": 8.3
+ },
+ "conv-47_q11": {
+  "tag": "conv-47_q11",
+  "qid": "conv-47_q11",
+  "run_id": "wc47-q11-a2",
+  "rc": 3,
+  "err": null,
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "not mentioned",
+  "recall_n": 24,
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "3f790289038f5b3e",
+  "latency_s": 10.1
+ }
+}

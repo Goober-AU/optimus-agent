@@ -1,0 +1,17 @@
+{
+ "conv-44_q24": {
+  "tag": "conv-44_q24",
+  "qid": "conv-44_q24",
+  "run_id": "wc44-q24-ing",
+  "rc": 3,
+  "err": null,
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "not mentioned",
+  "recall_n": 24,
+  "failure_stage": "answer",
+  "mode_detail": "ingest",
+  "cache_key": "15430ae5cea336ec",
+  "latency_s": 2616.2
+ }
+}

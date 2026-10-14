@@ -1,0 +1,17 @@
+{
+ "conv-50_q61": {
+  "tag": "conv-50_q61",
+  "qid": "conv-50_q61",
+  "run_id": "wc50-q61-ing",
+  "rc": 3,
+  "err": null,
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "not mentioned",
+  "recall_n": 24,
+  "failure_stage": "answer",
+  "mode_detail": "ingest",
+  "cache_key": "a3366924dfa549d5",
+  "latency_s": 2327.4
+ }
+}
