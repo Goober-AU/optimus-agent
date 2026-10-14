@@ -1666,6 +1666,12 @@ fn helper_observation(index: usize, data: &Map<String, Value>, helper: &str) -> 
             .and_then(Value::as_u64)
             .filter(|_| new_call));
     }
+    if reported.contains_key("retries") {
+        observation["retries"] = json!(reported
+            .get("retries")
+            .and_then(Value::as_u64)
+            .filter(|_| new_call));
+    }
     if reported.contains_key("latencyMs") {
         observation["latencyMs"] =
             json!(nonnegative_finite(reported.get("latencyMs")).filter(|_| new_call));
@@ -5380,6 +5386,7 @@ mod tests {
             "stopReason": "stop", "emittedTextChars": 7, "latencyMs": 12.5,
             "usage": {"input": 10, "output": 2, "totalTokens": 12, "reasoningTokens": 0},
             "usageSource": "provider_observation", "cancelled": false, "providerError": false,
+            "retries": 1,
         })
     }
 
@@ -5420,6 +5427,7 @@ mod tests {
             assert_eq!(observation["usageSource"], "provider_observation");
             assert_eq!(observation["cancelled"], false);
             assert_eq!(observation["providerError"], false);
+            assert_eq!(observation["retries"], 1);
             let coverage = &realization["llm_helper_usage_coverage"][setting];
             assert_eq!(coverage["status"], "reported_attempts_have_token_fields");
             for field in ["input", "output", "totalTokens", "reasoningTokens"] {
