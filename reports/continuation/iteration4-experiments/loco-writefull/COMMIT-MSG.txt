@@ -1,0 +1,8 @@
+loco-writefull: full-population write-time re-ingest — 9/21 converts on the 2 remaining conversations, gates hold 6/6
+
+- conv-30 + conv-49 typeB re-ingested with the validated clause set (byte-identical to writecamp's; cache-key lineage verified against writecamp conv-41 and DD conv-26)
+- Fresh stores: conv-30 130 entries (1.83x frozen 71), conv-49 181 (1.47x frozen 123); all 4 gold spot-checks extract (conv-30 q59/q50, conv-49 q128/q26)
+- Converts: conv-30 2/8 (q12 0.667, q68 1.0); conv-49 7/13 (q0/q1/q2/q41/q85/q146 1.0, q52 0.667)
+- Residuals answer-stage only (11 cells: form/merging/inference/open-domain; q144 stable across 2 draws — Evan-vs-Sam photo event-mismatch)
+- Gates: 6/6 HOLD (conv-30 q36/q37/q14, conv-49 q138/q94/q151), zero regressions
+- Answer config: FINAL9 + stem + det recall 24/24000; driver imp4b-target8k 4d2ba13f; every LoCoMo conversation now on a fresh clause-set store

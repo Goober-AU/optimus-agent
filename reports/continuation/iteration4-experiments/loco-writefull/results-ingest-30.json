@@ -1,0 +1,17 @@
+{
+ "conv-30_q59": {
+  "tag": "conv-30_q59",
+  "qid": "conv-30_q59",
+  "run_id": "wf30-q59-ing",
+  "rc": 3,
+  "err": null,
+  "score": 0.303030303030303,
+  "outcome": "fail",
+  "answer": "She's passionate about dance and fashion, so combining them lets her show her creativity and share her love with others, plus she can add dance-inspired items to her store.",
+  "recall_n": 24,
+  "failure_stage": "answer",
+  "mode_detail": "ingest",
+  "cache_key": "62b3e5ece0f952f0",
+  "latency_s": 1575.2
+ }
+}

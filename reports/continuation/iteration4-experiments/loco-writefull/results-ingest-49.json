@@ -1,0 +1,17 @@
+{
+ "conv-49_q128": {
+  "tag": "conv-49_q128",
+  "qid": "conv-49_q128",
+  "run_id": "wf49-q128-ing",
+  "rc": 3,
+  "err": null,
+  "score": 0.16666666666666669,
+  "outcome": "fail",
+  "answer": "His happy place \u2014 it shaped him, always holds a special place in his heart, feels peaceful and serene, and is \"a little slice of paradise.\"",
+  "recall_n": 24,
+  "failure_stage": "answer",
+  "mode_detail": "ingest",
+  "cache_key": "543cedbccf0f73d9",
+  "latency_s": 2209.9
+ }
+}

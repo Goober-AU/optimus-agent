@@ -1,0 +1,191 @@
+[
+ {
+  "qid": "conv-42_q151",
+  "run_id": "dk42-151-w32-r1",
+  "tag": "dk42-151-w32-r1",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-42_q151",
+  "run_id": "dk42-151-w32-r2",
+  "tag": "dk42-151-w32-r2",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-42_q151",
+  "run_id": "dk42-151-w32-r3",
+  "tag": "dk42-151-w32-r3",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-44_q24",
+  "run_id": "dk44-24-w32-r1",
+  "tag": "dk44-24-w32-r1",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s2.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-44_q24",
+  "run_id": "dk44-24-w32-r2",
+  "tag": "dk44-24-w32-r2",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s2.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-44_q24",
+  "run_id": "dk44-24-w32-r3",
+  "tag": "dk44-24-w32-r3",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s2.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-42_q20",
+  "run_id": "dk42-20-w32-r1",
+  "tag": "dk42-20-w32-r1",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-42_q20",
+  "run_id": "dk42-20-w32-r2",
+  "tag": "dk42-20-w32-r2",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-42_q20",
+  "run_id": "dk42-20-w32-r3",
+  "tag": "dk42-20-w32-r3",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-47_q34",
+  "run_id": "dk47-34-w32-r1",
+  "tag": "dk47-34-w32-r1",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-47_q34",
+  "run_id": "dk47-34-w32-r2",
+  "tag": "dk47-34-w32-r2",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-47_q34",
+  "run_id": "dk47-34-w32-r3",
+  "tag": "dk47-34-w32-r3",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-47_q138",
+  "run_id": "dk47-138-w32-r1",
+  "tag": "dk47-138-w32-r1",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-47_q138",
+  "run_id": "dk47-138-w32-r2",
+  "tag": "dk47-138-w32-r2",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-47_q138",
+  "run_id": "dk47-138-w32-r3",
+  "tag": "dk47-138-w32-r3",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-50_q10",
+  "run_id": "dk50-10-w32-r1",
+  "tag": "dk50-10-w32-r1",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-50_q10",
+  "run_id": "dk50-10-w32-r2",
+  "tag": "dk50-10-w32-r2",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-50_q10",
+  "run_id": "dk50-10-w32-r3",
+  "tag": "dk50-10-w32-r3",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-50_q28",
+  "run_id": "dk50-28-w32-r1",
+  "tag": "dk50-28-w32-r1",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-50_q28",
+  "run_id": "dk50-28-w32-r2",
+  "tag": "dk50-28-w32-r2",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ },
+ {
+  "qid": "conv-50_q28",
+  "run_id": "dk50-28-w32-r3",
+  "tag": "dk50-28-w32-r3",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s0.json",
+  "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/base-wc-det.json",
+  "settings": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-drank\\reports/continuation/iteration4-experiments/loco-drank/drank-w32-final9-stem.json",
+  "ledger": null
+ }
+]

@@ -1,0 +1,59 @@
+{
+ "schema": "lmes-seq-fix/1",
+ "qid": "09d032c9",
+ "question": "I've been having trouble with the battery life on my phone lately. Any tips?",
+ "gold_shape": "advice/preference-construction (build on the recorded power-bank purchase)",
+ "baseline_attempt": {
+  "run_id": "lmesq5-09d032c9",
+  "score": 0.0,
+  "stage": "answer",
+  "answer": "The available memory does not record any tips about phone battery life... (listed unrelated topics)"
+ },
+ "diagnosis": "Stage D retrieval: the question's 'battery life' has zero lexical overlap with the power-bank/charging-pad notes ('battery' never appears in them; notes not in the top-50 candidate pool; rerank empty_selection). recallQueryExpansion=true was NONDETERMINISTIC: one run recalled both power notes (judge then errored empty-content, eval_error), the retry's expansion draw missed the paraphrase entirely. After W2 fixed retrieval deterministically, stage G2: the model stated the recorded facts but did not CONSTRUCT tips from them (judge: 'merely lists ... without building upon the power bank ownership with practical suggestions').",
+ "fix": "W2 write-time importInstructions clause: charging/power devices (power bank, charging pad, charger) must include 'battery' or 'battery backup' in title and content. H4 read-time answerInstruction clause: advice/tips questions first check the notes for the asked topic's items and preferences, then answer with suggestions that build on those items, stating the item as the basis; only say 'not recorded' when the notes record nothing on the topic.",
+ "iterations": [
+  {
+   "hypothesis": "recallQueryExpansion=true (read-time)",
+   "run_ids": [
+    "lmesq5-09dexp",
+    "lmesq5-09dexp2"
+   ],
+   "notes": "run 1: power notes recalled, answer gold-aligned, but judge empty-content eval_error; run 2: expansion draw missed, recalled nothing",
+   "verdict": "rejected (nondeterministic)"
+  },
+  {
+   "hypothesis": "W2 write-time battery words",
+   "run_id": "lmesq5-09dw2",
+   "target": "retrieval fixed deterministically (3/3 power notes); answer still fact-listing",
+   "verdict": "partial"
+  },
+  {
+   "hypothesis": "W2 + H4 (advice-construction clause)",
+   "run_id": "lmesq5-09dw2h4",
+   "target": "1.0",
+   "verdict": "accepted"
+  }
+ ],
+ "regression_gate": {
+  "h4_read_only_warm": {
+   "06878be2": "1.0",
+   "07b6f563": "1.0",
+   "07741c45": "1.0",
+   "031748ae_abs": "1.0",
+   "0862e8bf_abs": "1.0",
+   "0862e8bf": "1.0"
+  },
+  "h4_sealed_exp": {
+   "001be529": "1.0",
+   "0100672e": "1.0"
+  },
+  "w2h4_reingest": {
+   "06db6396": "1.0",
+   "07741c44": "1.0"
+  },
+  "note": "0a34ad58 (advice question, Tokyo) passed 1.0 pre-H4 with W1+H3d config - baseline diversity"
+ },
+ "generalizable": true,
+ "banked_into": "lmesseq-scratch/ov-banked.json (importInstructions W2 + answerInstruction H4; pre-fix backup ov-banked-w1h3d.json)",
+ "caveats": "Expansion nondeterminism + judge empty-content both observed; both belong in the driver/judge defect ticket"
+}

@@ -1,0 +1,1669 @@
+{
+ "schema": "loco-drank-rank-analysis/1",
+ "ts": "2026-10-14T12:31:47.842514",
+ "method": "offline python reimplementation of search.rs (stemmed mode), verified 50/50 vs binary search_ranked on all 7 writecamp fresh stores + conv-26 d4b542a8 (plain mode)",
+ "config": "FINAL9 answer + recallQueryStemming true + maxRecallEntries 24 (writecamp fullstack-final9-stem)",
+ "six_misses": {
+  "conv-42_q151": {
+   "question": "How did Nate celebrate winning the international tournament?",
+   "gold_best_rank": 60,
+   "gold_ranks": {
+    "nate-time-off-belief": 60
+   },
+   "w32_admits_gold": false,
+   "w36_admits_gold": false,
+   "enters_25_32": [
+    [
+     25,
+     "nate-pets-hobbies-break-from-reality",
+     0.478,
+     "Time with his pets and his hobbies is how Nate takes a break"
+    ],
+    [
+     26,
+     "nate-tournament-stress-competitors-2022-10",
+     0.464,
+     "Nate stressed by tough competitors over tournament progress;"
+    ],
+    [
+     27,
+     "nate-games-escape-from-life-struggles",
+     0.424,
+     "Playing games is Nate's escape from life struggles, so he do"
+    ],
+    [
+     28,
+     "nate-makes-living-gaming",
+     0.372,
+     "Nate now makes a living from gaming - his passion (Aug 2022)"
+    ],
+    [
+     29,
+     "imported_dd7e0db95f535e1a9034362a",
+     0.372,
+     "Nate is proud he can make money doing what he loves (gaming)"
+    ],
+    [
+     30,
+     "nate-gaming-room",
+     0.372,
+     "Nate's gaming room (computer and gaming chair, photo shared "
+    ],
+    [
+     31,
+     "joanna-writing-joy",
+     0.336,
+     "Writing and friends bring Joanna joy; writing is how she exp"
+    ],
+    [
+     32,
+     "nate-controller-accessories-gaming-party",
+     0.335,
+     "Nate's controller accessories for friends at his gaming part"
+    ]
+   ],
+   "enters_33_36": [
+    [
+     33,
+     "joanna-tilly-stuffed-animal-dog-nate-gift",
+     0.306,
+     "Joanna's stuffed animal dog Tilly (gift from Nate, always wi"
+    ],
+    [
+     34,
+     "nate-joanna-book-series-exchange",
+     0.306,
+     "Nate and Joanna exchanged book series recommendations (Aug 2"
+    ],
+    [
+     35,
+     "nate-shared-new-dairy-free-recipe-joanna",
+     0.306,
+     "Nate shared his new creamy dairy-free dessert recipe with Jo"
+    ],
+    [
+     36,
+     "nate-vegan-ice-cream-recipe-promise-joanna",
+     0.306,
+     "Nate promised Joanna his vegan ice cream recipe (2022-06-24)"
+    ]
+   ]
+  },
+  "conv-44_q24": {
+   "question": "Did Audrey and Andrew grow up with a pet dog?",
+   "gold_best_rank": 67,
+   "gold_ranks": {
+    "mem_andrew_family_dog_misses_hikes": 67,
+    "mem_audrey_childhood_dog_max": 139
+   },
+   "w32_admits_gold": false,
+   "w36_admits_gold": false,
+   "enters_25_32": [
+    [
+     25,
+     "mem_andrew_hiking_dogs_bonding_memories",
+     0.751,
+     "Andrew sees hiking with dogs as a fun way to bond and make m"
+    ],
+    [
+     26,
+     "mem_andrew_toby_outdoor_plans_2023_08",
+     0.751,
+     "Andrew's plans with his new dog Toby: outdoor adventures and"
+    ],
+    [
+     27,
+     "mem_audrey_dogs_personalities",
+     0.75,
+     "Personalities of Audrey's four dogs: relaxed oldest, game-lo"
+    ],
+    [
+     28,
+     "mem_audrey_agility_classes_2023_08",
+     0.747,
+     "Audrey's new agility classes with her pups (started by Augus"
+    ],
+    [
+     29,
+     "mem_audrey_beach_trip_dogs_2023_10",
+     0.737,
+     "Audrey's beach trip with her dogs: pups swam and played in t"
+    ],
+    [
+     30,
+     "mem_audrey_dog_bonding_advice",
+     0.737,
+     "Audrey's advice for building a strong bond with a dog: patie"
+    ],
+    [
+     31,
+     "mem_andrew_jealous_dog_outings",
+     0.724,
+     "Andrew is 'kinda jealous' of Audrey's fun outings with her d"
+    ],
+    [
+     32,
+     "mem_audrey_positive_reinforcement_belief",
+     0.724,
+     "Audrey believes punishment is never the proper way for pets "
+    ]
+   ],
+   "enters_33_36": [
+    [
+     33,
+     "mem_audrey_vet_visit_four_dogs_havoc",
+     0.723,
+     "Audrey's chaotic vet checkup with all four dogs; plans one-b"
+    ],
+    [
+     34,
+     "mem_andrew_pets_happiness_companionship_2023_10",
+     0.711,
+     "Andrew says pets bring so much happiness, joy and companions"
+    ],
+    [
+     35,
+     "mem_audrey_nature_cheers_her_up",
+     0.7,
+     "Nature always cheers Audrey up and makes her feel grateful"
+    ],
+    [
+     36,
+     "mem_andrew_beach_trip_plan_2023_11",
+     0.698,
+     "Andrew's beach trip with girlfriend and dog Toby planned (No"
+    ]
+   ]
+  },
+  "conv-42_q20": {
+   "question": "When did Nate adopt Max?",
+   "gold_best_rank": 1,
+   "gold_ranks": {
+    "nate-adopted-dog-max": 1
+   },
+   "w32_admits_gold": true,
+   "w36_admits_gold": true,
+   "enters_25_32": [
+    [
+     25,
+     "nate-finds-joy-in-little-things",
+     0.356,
+     "Nate finds joy in the little things"
+    ],
+    [
+     26,
+     "nate-reasons-for-choosing-turtles",
+     0.356,
+     "Nate's reasons for choosing turtles as pets"
+    ],
+    [
+     27,
+     "nate-dairy-free-favorite-flavors",
+     0.356,
+     "Nate's favorite dairy-free dessert flavors: coconut milk, ch"
+    ],
+    [
+     28,
+     "nate-plan-watch-little-women",
+     0.356,
+     "Nate plans to watch 'Little Women' (Joanna's recommendation)"
+    ],
+    [
+     29,
+     "nate-pet-turtles",
+     0.356,
+     "Nate's pet turtles - had for 3 years"
+    ],
+    [
+     30,
+     "joanna-book-writers-group-feedback",
+     0.353,
+     "Joanna shared her book with her writers group and got great "
+    ],
+    [
+     31,
+     "joanna-submitted-more-scripts-nov-2022",
+     0.282,
+     "Joanna submitted a few more scripts (week before 2022-11-07)"
+    ],
+    [
+     32,
+     "joanna-cozy-living-room-advice",
+     0.282,
+     "Joanna's cozy living room advice: multi-seat fluffy couch, w"
+    ]
+   ],
+   "enters_33_36": [
+    [
+     33,
+     "joanna-screenplay-film-contest-submission-2022-0",
+     0.282,
+     "Joanna submitted her recent screenplay to a film contest (20"
+    ],
+    [
+     34,
+     "joanna-screenplay-rejected-by-major-company",
+     0.282,
+     "Joanna's screenplay rejected by a major company (generic let"
+    ],
+    [
+     35,
+     "nate-loves-experimenting-with-flavors",
+     0.214,
+     "Nate loves experimenting with flavors, like his colorful coc"
+    ],
+    [
+     36,
+     "nate-turtles-beach-trip-tampa",
+     0.214,
+     "Nate took his turtles to the beach in Tampa"
+    ]
+   ]
+  },
+  "conv-47_q34": {
+   "question": "Which countries did James visit in July 2022?",
+   "gold_best_rank": 1,
+   "gold_ranks": {
+    "mem_conv47_james_canada_fourth_country": 2,
+    "mem_conv47_james_trip_nuuk": 1
+   },
+   "w32_admits_gold": true,
+   "w36_admits_gold": true,
+   "enters_25_32": [
+    [
+     25,
+     "mem_conv47_james_three_dogs_2022_11_07",
+     0.337,
+     "James now has three dogs at home (2022-11-07, updates earlie"
+    ],
+    [
+     26,
+     "mem_conv47_james_samantha_move_in_together",
+     0.336,
+     "James and Samantha decided to move in together - rented an a"
+    ],
+    [
+     27,
+     "mem_conv47_james_more_games_plan_2022_10_13",
+     0.336,
+     "James plans to make more games in different genres and test "
+    ],
+    [
+     28,
+     "mem_conv47_james_extreme_sports_interest",
+     0.336,
+     "James is taking breaks from his hobbies and has become inter"
+    ],
+    [
+     29,
+     "mem_conv47_james_max_meaning",
+     0.336,
+     "James says Max brings him so much joy, especially in tough t"
+    ],
+    [
+     30,
+     "mem_conv47_james_nature_walks_inner_peace",
+     0.336,
+     "James says walks in nature are relaxing and refreshing, help"
+    ],
+    [
+     31,
+     "mem_conv47_james_happiness_sources",
+     0.336,
+     "James's happiness in life comes from his pets, computer game"
+    ],
+    [
+     32,
+     "mem_conv47_james_gaming_refuge",
+     0.336,
+     "James says gaming is his refuge in tough times, like therapy"
+    ]
+   ],
+   "enters_33_36": [
+    [
+     33,
+     "mem_conv47_james_motivation_accomplishment",
+     0.336,
+     "James feels a great sense of accomplishment creating things "
+    ],
+    [
+     34,
+     "mem_conv47_james_motivation_games",
+     0.336,
+     "James finds motivation in video games"
+    ],
+    [
+     35,
+     "mem_conv47_james_amusement_park_outing_2022_05",
+     0.317,
+     "James's amusement park outing with friends - roller coasters"
+    ],
+    [
+     36,
+     "mem_conv47_james_big_project_finished_2022_05",
+     0.317,
+     "James finished a big months-long project and learned a new l"
+    ]
+   ]
+  },
+  "conv-47_q138": {
+   "question": "What inspired James to create his game?",
+   "gold_best_rank": 1,
+   "gold_ranks": {
+    "mem_conv47_james_witcher3_inspired_game": 1
+   },
+   "w32_admits_gold": true,
+   "w36_admits_gold": true,
+   "enters_25_32": [
+    [
+     25,
+     "mem_conv47_james_gaming_hooked_since_origin",
+     0.768,
+     "James says the games that introduced him to gaming have kept"
+    ],
+    [
+     26,
+     "mem_conv47_james_wants_to_try_impostor_game",
+     0.768,
+     "James has been meaning to try the impostor-finding game John"
+    ],
+    [
+     27,
+     "mem_conv47_john_online_board_game_2022_11_07",
+     0.731,
+     "John created an online board game with a game developer; dem"
+    ],
+    [
+     28,
+     "mem_conv47_james_small_goals_motivation",
+     0.698,
+     "James stays motivated and focused by setting small goals and"
+    ],
+    [
+     29,
+     "mem_conv47_james_power_outage_2022_10_18",
+     0.696,
+     "James's apartment power outage (2022-10-18) lost him unsaved"
+    ],
+    [
+     30,
+     "mem_conv47_shared_gamedev_magazine",
+     0.696,
+     "John and James both read the same game dev magazine with tut"
+    ],
+    [
+     31,
+     "mem_conv47_james_streaming_start",
+     0.696,
+     "James started streaming games (2022-09-18)"
+    ],
+    [
+     32,
+     "mem_conv47_james_game_dev_challenges",
+     0.696,
+     "James's strategy game development challenges: balancing mech"
+    ]
+   ],
+   "enters_33_36": [
+    [
+     33,
+     "mem_conv47_james_game_bug_fixed_by_friends",
+     0.696,
+     "James's game project bug fixed with friends' help (2022-04-2"
+    ],
+    [
+     34,
+     "mem_conv47_james_turnbased_strategy_game",
+     0.696,
+     "James is playing a turn-based strategy game about managing r"
+    ],
+    [
+     35,
+     "mem_conv47_james_open_new_games",
+     0.696,
+     "James is always up for trying new games"
+    ],
+    [
+     36,
+     "mem_conv47_james_rpg_strategy_genres",
+     0.696,
+     "James is getting into new game genres - RPGs and strategy ga"
+    ]
+   ]
+  },
+  "conv-50_q10": {
+   "question": "When did Calvin's place get flooded in Tokyo?",
+   "gold_best_rank": 2,
+   "gold_ranks": {
+    "mem-calvin-home-flood": 2
+   },
+   "w32_admits_gold": true,
+   "w36_admits_gold": true,
+   "enters_25_32": [
+    [
+     25,
+     "mem-calvin-car-accident-repairs",
+     0.429,
+     "Calvin's car accident outcome: insurance sorted in a week, m"
+    ],
+    [
+     26,
+     "mem-dave-tokyo-trip-plan",
+     0.428,
+     "Dave's travel plan: wants to visit Tokyo (2023-05-16)"
+    ],
+    [
+     27,
+     "mem-dave-calvin-nature-boston-plans",
+     0.42,
+     "Dave and Calvin's plans: visiting Dave's nature spots and ca"
+    ],
+    [
+     28,
+     "mem-dave-calvin-boston-meetup-plan",
+     0.42,
+     "Dave and Calvin's plan to meet up in Boston (August 2023)"
+    ],
+    [
+     29,
+     "mem-dave-classic-rock-taste",
+     0.401,
+     "Dave's recent music taste: getting into classic rock (Novemb"
+    ],
+    [
+     30,
+     "mem-dave-car-work-therapy-childhood-garage",
+     0.399,
+     "Dave's car work: passion and therapy; childhood sanctuary in"
+    ],
+    [
+     31,
+     "mem-dave-road-trip-friends-2023-07",
+     0.352,
+     "Dave's road trip with friends: countryside recharge, break f"
+    ],
+    [
+     32,
+     "mem-calvin-setback-motivation-approach",
+     0.352,
+     "Calvin's approach to setbacks: passion, helpful people, and "
+    ]
+   ],
+   "enters_33_36": [
+    [
+     33,
+     "mem-calvin-motivation-remember-why",
+     0.352,
+     "Calvin's motivation: remembering why he's doing it keeps him"
+    ],
+    [
+     34,
+     "mem-dave-old-record-player",
+     0.34,
+     "Dave's old record player that still gets the job done (2023-"
+    ],
+    [
+     35,
+     "mem-dave-japan-visit-interest",
+     0.33,
+     "Dave's interest in visiting Japan and love of Japanese music"
+    ],
+    [
+     36,
+     "mem-calvin-boston-artist-collaborations",
+     0.329,
+     "Calvin's Boston artist meetings: collaborations planned via "
+    ]
+   ]
+  }
+ },
+ "sweep_144_failed": {
+  "conv-26_q1": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D1:12": 2
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q126": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D13:7": 1
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q135": {
+   "best_gold_rank": 4,
+   "ranks": {
+    "D17:8": 4
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q141": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D17:23": 1
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q143": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D18:1": 1
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q144": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D18:6": null,
+    "D18:7": 1
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q149": {
+   "best_gold_rank": 6,
+   "ranks": {
+    "D18:9": 6
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q18": {
+   "best_gold_rank": 6,
+   "ranks": {
+    "D6:16": 7,
+    "D4:6": 8,
+    "D8:32": 6
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q2": {
+   "best_gold_rank": 21,
+   "ranks": {
+    "D1:9": 23,
+    "D1:11": 21
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q26": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D7:8": 1
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q33": {
+   "best_gold_rank": 3,
+   "ranks": {
+    "D5:1": 3
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q37": {
+   "best_gold_rank": 7,
+   "ranks": {
+    "D8:6": 9,
+    "D9:17": 7
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q39": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D10:3": 2,
+    "D5:1": 15,
+    "D9:12": 23,
+    "D9:2": 6
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q54": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D13:11": 1
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q55": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D14:5": 16,
+    "D8:6": 1
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q66": {
+   "best_gold_rank": 15,
+   "ranks": {
+    "D16:4": 15,
+    "D10:12": 29
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q77": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D18:3": 1,
+    "D18:1": 1
+   },
+   "store": "conv-26"
+  },
+  "conv-26_q99": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D4:15": 2
+   },
+   "store": "conv-26"
+  },
+  "conv-41_q110": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D19:1": 1
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q115": {
+   "best_gold_rank": 11,
+   "ranks": {
+    "D20:4": 11
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q125": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D24:3": 2
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q131": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D26:1": 2
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q137": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D28:1": 2
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q138": {
+   "best_gold_rank": 4,
+   "ranks": {
+    "D28:8": 4
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q18": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D7:16": 3,
+    "D10:1": 1
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q20": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D11:3": 1,
+    "D11:5": 1
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q35": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D19:23": 1,
+    "D18:3": 133
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q47": {
+   "best_gold_rank": 6,
+   "ranks": {
+    "D25:17": 6,
+    "D25:13": 86,
+    "D10:1": 156,
+    "D1:4": 201
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q50": {
+   "best_gold_rank": 51,
+   "ranks": {
+    "D26:6": 51,
+    "D2:14": 181,
+    "D3:5": 176,
+    "D4:6": 166
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q54": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D28:8": 1
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q57": {
+   "best_gold_rank": 3,
+   "ranks": {
+    "D3:5": 8,
+    "D6:12": 20,
+    "D29:4": 15,
+    "D29:10": 3
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q60": {
+   "best_gold_rank": 12,
+   "ranks": {
+    "D30:1": 13,
+    "D31:4": 12
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q68": {
+   "best_gold_rank": 9,
+   "ranks": {
+    "D1:3": 9
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q82": {
+   "best_gold_rank": 8,
+   "ranks": {
+    "D9:2": 8
+   },
+   "store": "conv-41"
+  },
+  "conv-41_q91": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D12:9": 1
+   },
+   "store": "conv-41"
+  },
+  "conv-42_q11": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D4:4": 46,
+    "D5:11": 1,
+    "D2:23": 18
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q125": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D14:22": 1
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q138": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D17:4": 2
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q143": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D18:5": 1
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q151": {
+   "best_gold_rank": 60,
+   "ranks": {
+    "D19:9": 60
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q165": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D23:15": 1
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q168": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D24:8": 2
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q170": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D24:6": 2
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q175": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D24:6": 1
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q184": {
+   "best_gold_rank": null,
+   "ranks": {
+    "D27:29": null
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q197": {
+   "best_gold_rank": 5,
+   "ranks": {
+    "D29:8": 5
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q20": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D12:3": 1
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q24": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D14:20": 1
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q28": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D16:8": 1
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q31": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D17:1": 1
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q4": {
+   "best_gold_rank": 6,
+   "ranks": {
+    "D2:23": 6
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q41": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D22:1": 2
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q47": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D14:8": 26,
+    "D23:1": 1
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q56": {
+   "best_gold_rank": 50,
+   "ranks": {
+    "D5:6": 66,
+    "D26:9": 50
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q63": {
+   "best_gold_rank": 6,
+   "ranks": {
+    "D10:6": 23,
+    "D27:1": 50,
+    "D27:23": 15,
+    "D1:7": 6,
+    "D23:17": 16
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q64": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D27:1": 1
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q71": {
+   "best_gold_rank": 19,
+   "ranks": {
+    "D11:9": 19,
+    "D28:23": 156
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q75": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D3:4": 4,
+    "D3:10": 2,
+    "D21:10": 1,
+    "D3:12": 4
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q85": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D29:1": 2
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q91": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D9:14": 1
+   },
+   "store": "conv-42"
+  },
+  "conv-42_q99": {
+   "best_gold_rank": 4,
+   "ranks": {
+    "D2:7": 4
+   },
+   "store": "conv-42"
+  },
+  "conv-43_q116": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D13:6": 1
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q12": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D3:27": 1
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q122": {
+   "best_gold_rank": 3,
+   "ranks": {
+    "D14:5": 3
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q138": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D19:6": 1
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q142": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D19:20": 2
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q16": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D3:2": 1,
+    "D5:1": 2
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q164": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D27:6": 1
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q20": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D3:19": 17,
+    "D5:2": 21,
+    "D6:1": 1,
+    "D6:3": 1
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q38": {
+   "best_gold_rank": 11,
+   "ranks": {
+    "D1:18": 11,
+    "D13:1": 64,
+    "D18:1": 13
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q45": {
+   "best_gold_rank": 14,
+   "ranks": {
+    "D18:1": 14
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q59": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D3:1": 2,
+    "D23:2": 49
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q61": {
+   "best_gold_rank": 6,
+   "ranks": {
+    "D4:10": 6,
+    "D11:26": 36,
+    "D17:9": 165,
+    "D19:16": 45,
+    "D19:20": 83,
+    "D22:12": 24
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q66": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D27:19": 13,
+    "D27:21": 1
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q71": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D1:5": 1
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q76": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D2:9": 1
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q84": {
+   "best_gold_rank": 21,
+   "ranks": {
+    "D4:7": 21
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q87": {
+   "best_gold_rank": 22,
+   "ranks": {
+    "D5:6": 22
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q9": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D3:13": 4,
+    "D3:15": 39,
+    "D25:2": 3,
+    "D29:4": 2
+   },
+   "store": "conv-43"
+  },
+  "conv-43_q90": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D6:17": 1
+   },
+   "store": "conv-43"
+  },
+  "conv-44_q121": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D28:10": 1
+   },
+   "store": "conv-44"
+  },
+  "conv-44_q14": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D3:7": 2,
+    "D9:20": 9
+   },
+   "store": "conv-44"
+  },
+  "conv-44_q22": {
+   "best_gold_rank": 10,
+   "ranks": {
+    "D14:1": 10
+   },
+   "store": "conv-44"
+  },
+  "conv-44_q24": {
+   "best_gold_rank": 50,
+   "ranks": {
+    "D2:16": 50,
+    "D13:10": 166
+   },
+   "store": "conv-44"
+  },
+  "conv-44_q41": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D19:12": null,
+    "D26:13": 1
+   },
+   "store": "conv-44"
+  },
+  "conv-44_q44": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D5:8": 1,
+    "D11:9": 25
+   },
+   "store": "conv-44"
+  },
+  "conv-44_q47": {
+   "best_gold_rank": 3,
+   "ranks": {
+    "D24:2": 4,
+    "D28:6": 3
+   },
+   "store": "conv-44"
+  },
+  "conv-44_q68": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D6:2": 1
+   },
+   "store": "conv-44"
+  },
+  "conv-44_q73": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D7:8": 1
+   },
+   "store": "conv-44"
+  },
+  "conv-44_q74": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D7:8": 2
+   },
+   "store": "conv-44"
+  },
+  "conv-44_q85": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D14:2": 1
+   },
+   "store": "conv-44"
+  },
+  "conv-44_q9": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D6:2": 188,
+    "D10:1": 9,
+    "D14:2": 3,
+    "D16:6": 20,
+    "D27:2": 1
+   },
+   "store": "conv-44"
+  },
+  "conv-44_q92": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D18:12": 1
+   },
+   "store": "conv-44"
+  },
+  "conv-47_q11": {
+   "best_gold_rank": 54,
+   "ranks": {
+    "D6:7": 54
+   },
+   "store": "conv-47"
+  },
+  "conv-47_q119": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D22:12": 1
+   },
+   "store": "conv-47"
+  },
+  "conv-47_q138": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D27:6": 1
+   },
+   "store": "conv-47"
+  },
+  "conv-47_q139": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D28:25": 1
+   },
+   "store": "conv-47"
+  },
+  "conv-47_q142": {
+   "best_gold_rank": 8,
+   "ranks": {
+    "D29:1": 8,
+    "D29:3": 8
+   },
+   "store": "conv-47"
+  },
+  "conv-47_q147": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D30:18": 1
+   },
+   "store": "conv-47"
+  },
+  "conv-47_q21": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D10:2": 1
+   },
+   "store": "conv-47"
+  },
+  "conv-47_q23": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D13:5": 1
+   },
+   "store": "conv-47"
+  },
+  "conv-47_q27": {
+   "best_gold_rank": 22,
+   "ranks": {
+    "D13:6": 22,
+    "D23:13": 93
+   },
+   "store": "conv-47"
+  },
+  "conv-47_q34": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D16:9": 4,
+    "D17:22": 1
+   },
+   "store": "conv-47"
+  },
+  "conv-47_q43": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D20:17": 2
+   },
+   "store": "conv-47"
+  },
+  "conv-47_q49": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D23:8": 1,
+    "D23:10": 1,
+    "D20:9": 2
+   },
+   "store": "conv-47"
+  },
+  "conv-47_q52": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D25:9": 1
+   },
+   "store": "conv-47"
+  },
+  "conv-47_q97": {
+   "best_gold_rank": 36,
+   "ranks": {
+    "D13:15": 36
+   },
+   "store": "conv-47"
+  },
+  "conv-48_q101": {
+   "best_gold_rank": 9,
+   "ranks": {
+    "D2:24": 9
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q102": {
+   "best_gold_rank": 24,
+   "ranks": {
+    "D3:1": 24
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q124": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D10:20": 1
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q14": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D2:17": 2,
+    "D2:19": 28,
+    "D12:3": 23,
+    "D29:7": 16
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q16": {
+   "best_gold_rank": 12,
+   "ranks": {
+    "D2:20": 13,
+    "D2:22": 12
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q162": {
+   "best_gold_rank": 3,
+   "ranks": {
+    "D22:8": 3
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q172": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D24:10": 2
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q173": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D25:1": 1
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q181": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D28:11": 1
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q185": {
+   "best_gold_rank": 49,
+   "ranks": {
+    "D29:7": 49
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q35": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D7:18": 1
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q58": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D19:8": 2,
+    "D19:10": 2
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q65": {
+   "best_gold_rank": 18,
+   "ranks": {
+    "D23:1": 18
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q69": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D23:1": 2,
+    "D23:3": 2,
+    "D23:18": 1
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q81": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D29:34": 1
+   },
+   "store": "conv-48"
+  },
+  "conv-48_q82": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D2:11": null,
+    "D2:13": 2,
+    "D3:6": 5,
+    "D4:12": 3,
+    "D6:10": 63
+   },
+   "store": "conv-48"
+  },
+  "conv-50_q10": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D6:3": 2
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q135": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D25:22": 1
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q137": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D26:6": 2
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q140": {
+   "best_gold_rank": null,
+   "ranks": {
+    "D26:11": null
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q143": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D28:8": 1
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q147": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D28:34": 1
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q155": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D30:4": 1
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q16": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D8:10": 1
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q24": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D13:7": 1,
+    "D22:5": 4,
+    "D20:1": 2
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q28": {
+   "best_gold_rank": 28,
+   "ranks": {
+    "D5:8": 28,
+    "D5:10": 58,
+    "D7:5": 150
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q40": {
+   "best_gold_rank": 176,
+   "ranks": {
+    "D20:8": 176,
+    "D20:6": 176
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q48": {
+   "best_gold_rank": 8,
+   "ranks": {
+    "D22:1": 8
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q5": {
+   "best_gold_rank": 8,
+   "ranks": {
+    "D4:5": 9,
+    "D5:5": 8
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q61": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D14:11": 115,
+    "D20:1": 3,
+    "D21:4": 1
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q67": {
+   "best_gold_rank": 5,
+   "ranks": {
+    "D28:1": 5
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q85": {
+   "best_gold_rank": 2,
+   "ranks": {
+    "D8:4": 2
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q87": {
+   "best_gold_rank": 3,
+   "ranks": {
+    "D10:1": 3
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q88": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D10:3": 1
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q89": {
+   "best_gold_rank": 3,
+   "ranks": {
+    "D11:6": 3
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q90": {
+   "best_gold_rank": 1,
+   "ranks": {
+    "D11:6": 1
+   },
+   "store": "conv-50"
+  },
+  "conv-50_q97": {
+   "best_gold_rank": 4,
+   "ranks": {
+    "D13:11": 4
+   },
+   "store": "conv-50"
+  }
+ },
+ "sweep_buckets": {
+  "in_w24": 133,
+  "beyond_36": 7,
+  "no_extracted_gold": 2,
+  "admits_w33_36": 1,
+  "admits_w32": 1
+ },
+ "q135_canary_d4b542a8": {
+  "question": "What setback did Melanie face in October 2023?",
+  "gold_rank": 4,
+  "gold_id": "melanie-injury-pottery-break",
+  "enters_25_32": [
+   [
+    26,
+    "caroline-melanie-summer-special-outing-plan",
+    0.2797
+   ],
+   [
+    27,
+    "melanie-view-of-caroline-counseling-inspiring",
+    0.2797
+   ],
+   [
+    28,
+    "caroline-youth-center-talent-show-plan",
+    0.265
+   ],
+   [
+    29,
+    "caroline-lgbtq-art-show-plan",
+    0.265
+   ],
+   [
+    30,
+    "caroline-moved-from-home-country",
+    0.265
+   ],
+   [
+    31,
+    "caroline-transition-three-years",
+    0.265
+   ],
+   [
+    32,
+    "imported_4b75837bb75df1a45c5298a5",
+    0.2449
+   ],
+   [
+    33,
+    "imported_d8298cdce2cb59e99ac029ab",
+    0.2449
+   ]
+  ]
+ }
+}

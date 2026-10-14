@@ -1,0 +1,582 @@
+{
+ "schema": "lpcamp-results/1",
+ "created": "2026-10-14",
+ "results": {
+  "_ingest_verify": {
+   "lp_232": null,
+   "lp_118": {
+    "ok": true,
+    "entries": 776,
+    "entries_with_cues": 769,
+    "cue_coverage_pct": 99.1,
+    "gold_entry_ids": [
+     "conversation-date-sam-evan-2023-11-19",
+     "evan-son-graduated-2023-10",
+     "evan-son-graduation-pride",
+     "sam-graduation-wonderful-achievement"
+    ],
+    "gold_entries": 4
+   },
+   "lp_18": {
+    "ok": true,
+    "entries": 713,
+    "entries_with_cues": 705,
+    "cue_coverage_pct": 98.9,
+    "gold_entry_ids": [
+     "evan_recovery_codes_card"
+    ],
+    "gold_entries": 1
+   },
+   "lp_159": null,
+   "lp_69": null
+  },
+  "lp_232": {
+   "gold_ids": [
+    "conv_maria_john_2023_07_22",
+    "john_carbon_footprint_commitment",
+    "maria_carbon_goal_reaction"
+   ],
+   "runs": [
+    {
+     "run_id": "lpcamp-rep232-1x1",
+     "phase": "e3",
+     "score": 1.0,
+     "flag": null,
+     "outcome": "pass",
+     "judge_label": "correct",
+     "answer_excerpt": "John, that guilt doesn't match the person I've been hearing about. You've been working to reduce your carbon footprint for a while now, and Maria was right to call that a commendable goal for the plan",
+     "mode_detail": "ingest",
+     "latency_ms": 20684,
+     "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\lpcamp-scratch\\att\\lpcamp-rep232-1x1",
+     "rerank_outcome": null,
+     "gold_recalled": null,
+     "recall_ids": [],
+     "answer_chars": 0
+    },
+    {
+     "run_id": "lpcamp-e3-lp232-r1",
+     "phase": "e3",
+     "score": 1.0,
+     "flag": null,
+     "outcome": "pass",
+     "judge_label": "correct",
+     "answer_excerpt": "Maria: Oh John, we've talked about this before, and I mean it\u2014even the small things make a difference, and you're doing way more than small things. One takeout order doesn't undo any of your efforts. ",
+     "mode_detail": "cache-reuse",
+     "latency_ms": 35229,
+     "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\lpcamp-scratch\\att\\lpcamp-e3-lp232-r1",
+     "rerank_outcome": "invalid_output",
+     "gold_recalled": false,
+     "recall_ids": [
+      "project:memory:john_noticed_listened_view",
+      "project:memory:john_every_kindness_matters",
+      "project:memory:john_long_time_no_see_2023",
+      "project:memory:john_loved_ones_importance",
+      "project:memory:john_small_act_big_impact",
+      "project:memory:maria_small_things_advice",
+      "project:memory:maria_help_offer_2023",
+      "project:memory:maria_long_time_no_talk",
+      "project:memory:john_park_weekend_2023",
+      "project:memory:john_small_step_belief",
+      "project:memory:john_meal_times",
+      "project:memory:john_encourage_maria_keep_going",
+      "project:memory:john_yoga_feels_connected",
+      "project:memory:maria_proud_john_persistence",
+      "project:memory:maria_help_anytime_offer",
+      "project:memory:john_off_to_family_time",
+      "project:memory:maria_john_long_time_no_see",
+      "project:memory:pizza_salad_photo",
+      "project:memory:maria_cross_necklace",
+      "project:memory:john_little_steps_count"
+     ],
+     "answer_chars": 716
+    },
+    {
+     "run_id": "lpcamp-e3-lp232-r2",
+     "phase": "e3",
+     "score": 1.0,
+     "flag": null,
+     "outcome": "pass",
+     "judge_label": "correct",
+     "answer_excerpt": "Maria: Oh, John, be a little kinder to yourself. You've been putting real work into shrinking your carbon footprint, and I meant it when I said that's a commendable goal for the planet. One takeout or",
+     "mode_detail": "cache-reuse",
+     "latency_ms": 28427,
+     "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\lpcamp-scratch\\att\\lpcamp-e3-lp232-r2",
+     "rerank_outcome": "used",
+     "gold_recalled": true,
+     "recall_ids": [
+      "project:memory:maria_carbon_goal_reaction",
+      "project:memory:john_wellbeing_balance_view",
+      "project:memory:john_easy_to_get_lost",
+      "project:memory:john_progress_belief",
+      "project:memory:john_bit_of_joy_view",
+      "project:memory:john_self_doubt_making_difference",
+      "project:memory:imported_89ecfe160f1cca281149920f",
+      "project:memory:john_boot_camp_journey_not_easy",
+      "project:memory:maria_small_steps_belief"
+     ],
+     "answer_chars": 821
+    }
+   ]
+  },
+  "lp_118": {
+   "gold_ids": [
+    "conversation-date-sam-evan-2023-11-19",
+    "evan-son-graduated-2023-10",
+    "evan-son-graduation-pride",
+    "sam-graduation-wonderful-achievement"
+   ],
+   "runs": [
+    {
+     "run_id": "lpcamp-e3-lp118-r1",
+     "phase": "e3",
+     "score": 1.0,
+     "flag": null,
+     "outcome": "pass",
+     "judge_label": "correct",
+     "answer_excerpt": "That quiet takes some getting used to, doesn't it? It was only last month that he graduated, and I still remember how proud you said you felt in that moment \u2014 that doesn't change just because the hous",
+     "mode_detail": "cache-reuse",
+     "latency_ms": 15822,
+     "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\lpcamp-scratch\\att\\lpcamp-e3-lp118-r1",
+     "rerank_outcome": "used",
+     "gold_recalled": true,
+     "recall_ids": [
+      "project:memory:evan-son-graduated-2023-10",
+      "project:memory:evan-son-graduation-pride"
+     ],
+     "answer_chars": 577
+    },
+    {
+     "run_id": "lpcamp-e3-lp118-r2",
+     "phase": "e3",
+     "score": 0.0,
+     "flag": null,
+     "outcome": "fail",
+     "judge_label": "wrong",
+     "answer_excerpt": "That silence can hit hard. I remember you saying it had been a while since you'd had a little one around, so having him there \u2014 even for a stretch \u2014 probably woke the whole house back up. And now the ",
+     "mode_detail": "cache-reuse",
+     "latency_ms": 31419,
+     "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\lpcamp-scratch\\att\\lpcamp-e3-lp118-r2",
+     "rerank_outcome": "invalid_output",
+     "gold_recalled": false,
+     "recall_ids": [
+      "project:memory:sam-said-evan-family-looks-happy",
+      "project:memory:evan-not-alone-sentiment",
+      "project:memory:evan-partner-rose-bush-reaction-2024-01-11",
+      "project:memory:evan-no-toddler-in-a-while",
+      "project:memory:evan-lucky-partner-gets-him",
+      "project:memory:evan-unexpected-city-tour",
+      "project:memory:sam-hard-time-with-weight-news",
+      "project:memory:evan-diet-lifestyle-view",
+      "project:memory:img-evan-fire-pit-group",
+      "project:memory:evan-whirlwind-of-emotions",
+      "project:memory:evan-roses-incident-embarrassed-next-morning",
+      "project:memory:evan-health-monitoring-realization",
+      "project:memory:evan-advice-self-belief",
+      "project:memory:evan-painting-mixed-emotions",
+      "project:memory:evan-view-encouragement-not-stress",
+      "project:memory:sam-hiking-long-gap",
+      "project:memory:evan-will-try-canadian-thing",
+      "project:memory:evan-advice-small-steps",
+      "project:memory:sam-life-up-and-down",
+      "project:memory:evan-health-scare-taught-value-of-life"
+     ],
+     "answer_chars": 673
+    }
+   ]
+  },
+  "lp_18": {
+   "gold_ids": [
+    "evan_recovery_codes_card"
+   ],
+   "runs": [
+    {
+     "run_id": "lpcamp-ing-lp18",
+     "phase": "ingest",
+     "score": 1.0,
+     "flag": null,
+     "outcome": "pass",
+     "judge_label": "correct",
+     "answer_excerpt": "Ha, honestly, that makes sense coming from you. After you got locked out of your work email back at the end of 2023, that card in your wallet isn't just paper to you \u2014 it's the thing that saved you fr",
+     "mode_detail": "ingest",
+     "latency_ms": 14509,
+     "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\lpcamp-scratch\\att\\lpcamp-ing-lp18",
+     "rerank_outcome": null,
+     "gold_recalled": null,
+     "recall_ids": [],
+     "answer_chars": 0
+    },
+    {
+     "run_id": "lpcamp-e3-lp18-r1",
+     "phase": "e3",
+     "score": 1.0,
+     "flag": null,
+     "outcome": "pass",
+     "judge_label": "correct",
+     "answer_excerpt": "That makes total sense given your history. After you got locked out of your work email back in late December, you wrote your recovery codes on that physical card \u2014 and it's clearly served you well sin",
+     "mode_detail": "cache-reuse",
+     "latency_ms": 11762,
+     "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\lpcamp-scratch\\att\\lpcamp-e3-lp18-r1",
+     "rerank_outcome": "used",
+     "gold_recalled": true,
+     "recall_ids": [
+      "project:memory:evan_recovery_codes_card",
+      "project:memory:evan_work_email_lockout",
+      "project:memory:sam_backup_plan_compliment"
+     ],
+     "answer_chars": 780
+    },
+    {
+     "run_id": "lpcamp-e3-lp18-r2",
+     "phase": "e3",
+     "score": 1.0,
+     "flag": null,
+     "outcome": "pass",
+     "judge_label": "correct",
+     "answer_excerpt": "That tracks, honestly. After you got locked out of your work email back in 2023, you went low-tech and wrote your recovery codes on that card \u2014 and it's clearly still doing its job.\n\nI'd just say this",
+     "mode_detail": "cache-reuse",
+     "latency_ms": 11894,
+     "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\lpcamp-scratch\\att\\lpcamp-e3-lp18-r2",
+     "rerank_outcome": "used",
+     "gold_recalled": true,
+     "recall_ids": [
+      "project:memory:evan_recovery_codes_card",
+      "project:memory:evan_work_email_lockout",
+      "project:memory:sam_backup_plan_compliment"
+     ],
+     "answer_chars": 630
+    }
+   ]
+  },
+  "lp_159": {
+   "gold_ids": [
+    "calvin_germ_fear_after_flu"
+   ],
+   "runs": [
+    {
+     "run_id": "lpcamp-e3-lp159-r1",
+     "phase": "e3",
+     "score": 0.0,
+     "flag": null,
+     "outcome": "fail",
+     "judge_label": "wrong",
+     "answer_excerpt": "Dave: Man, I'm sorry \u2014 that sounds like a rough night, lying awake with all that spinning in your head. I'm usually the one telling you to keep pushing and keep exploring, but this isn't about pushing",
+     "mode_detail": "cache-reuse",
+     "latency_ms": 78143,
+     "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\lpcamp-scratch\\att\\lpcamp-e3-lp159-r1",
+     "rerank_outcome": "invalid_output",
+     "gold_recalled": false,
+     "recall_ids": [
+      "project:memory:calvin_festival_crowd_photo",
+      "project:memory:dave_no_recent_hiking",
+      "project:memory:dave_will_keep_working_hard",
+      "project:memory:calvin_crowd_connection_rush",
+      "project:memory:dave_opinion_hiking_benefits",
+      "project:memory:calvin_purpose_creating_joy",
+      "project:memory:calvin_lives_for_concerts",
+      "project:memory:calvin_requested_dave_trip_pics",
+      "project:memory:dave_left_conversation_for_work",
+      "project:memory:calvin_loves_job_connecting_with_crowd",
+      "project:memory:dave_rock_concert_boston",
+      "project:memory:calvin_album_reception_motivated_20230913",
+      "project:memory:calvin_gala_awesome_time",
+      "project:memory:dave_road_trip_with_friends",
+      "project:memory:calvin_childhood_song_road_trip",
+      "project:memory:calvin_never_tried_skiing",
+      "project:memory:dave_band_jam_session_fun",
+      "project:memory:calvin_busy_with_music",
+      "project:memory:calvin_privileged_opportunity_remark",
+      "project:memory:calvin_shared_city_night_photo"
+     ],
+     "answer_chars": 718
+    },
+    {
+     "run_id": "lpcamp-e3-lp159-r2",
+     "phase": "e3",
+     "score": 1.0,
+     "flag": null,
+     "outcome": "pass",
+     "judge_label": "correct",
+     "answer_excerpt": "Ha, honestly, I can't blame you \u2014 one bathroom shared with a whole cabin full of people is enough to keep anyone spiraling all night. Don't feel bad about passing on it.\n\nThe part I'd want you to actu",
+     "mode_detail": "cache-reuse",
+     "latency_ms": 33880,
+     "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\lpcamp-scratch\\att\\lpcamp-e3-lp159-r2",
+     "rerank_outcome": "invalid_output",
+     "gold_recalled": false,
+     "recall_ids": [
+      "project:memory:calvin_festival_crowd_photo",
+      "project:memory:dave_no_recent_hiking",
+      "project:memory:dave_will_keep_working_hard",
+      "project:memory:calvin_crowd_connection_rush",
+      "project:memory:dave_opinion_hiking_benefits",
+      "project:memory:calvin_purpose_creating_joy",
+      "project:memory:calvin_lives_for_concerts",
+      "project:memory:calvin_requested_dave_trip_pics",
+      "project:memory:dave_left_conversation_for_work",
+      "project:memory:calvin_loves_job_connecting_with_crowd",
+      "project:memory:dave_rock_concert_boston",
+      "project:memory:calvin_album_reception_motivated_20230913",
+      "project:memory:calvin_gala_awesome_time",
+      "project:memory:dave_road_trip_with_friends",
+      "project:memory:calvin_childhood_song_road_trip",
+      "project:memory:calvin_never_tried_skiing",
+      "project:memory:dave_band_jam_session_fun",
+      "project:memory:calvin_busy_with_music",
+      "project:memory:calvin_privileged_opportunity_remark",
+      "project:memory:calvin_shared_city_night_photo"
+     ],
+     "answer_chars": 877
+    }
+   ]
+  },
+  "lp_69": {
+   "gold_ids": [
+    "mem_calvin_brother_lost_fair",
+    "mem_calvin_gps_tags_backpacks",
+    "mem_dave_safety_measures_reaction"
+   ],
+   "runs": [
+    {
+     "run_id": "lpcamp-e3-lp69-r1",
+     "phase": "e3",
+     "score": 1.0,
+     "flag": null,
+     "outcome": "pass",
+     "judge_label": "correct",
+     "answer_excerpt": "That's a big step, Calvin. Those GPS tags went on the backpacks after your little brother got lost at the county fair\u2014and after a scare like that, wanting to know exactly where everyone was made compl",
+     "mode_detail": "cache-reuse",
+     "latency_ms": 12111,
+     "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\lpcamp-scratch\\att\\lpcamp-e3-lp69-r1",
+     "rerank_outcome": "used",
+     "gold_recalled": true,
+     "recall_ids": [
+      "project:memory:mem_calvin_gps_tags_backpacks"
+     ],
+     "answer_chars": 664
+    },
+    {
+     "run_id": "lpcamp-e3-lp69-r2",
+     "phase": "e3",
+     "score": 1.0,
+     "flag": null,
+     "outcome": "pass",
+     "judge_label": "correct",
+     "answer_excerpt": "That's a real milestone, Calvin\u2014and honestly, it makes sense that it took time. After your little brother got lost at the county fair, putting GPS tags on all the kids' backpacks wasn't overprotective",
+     "mode_detail": "cache-reuse",
+     "latency_ms": 14352,
+     "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\lpcamp-scratch\\att\\lpcamp-e3-lp69-r2",
+     "rerank_outcome": "used",
+     "gold_recalled": true,
+     "recall_ids": [
+      "project:memory:mem_calvin_gps_tags_backpacks"
+     ],
+     "answer_chars": 773
+    }
+   ]
+  }
+ },
+ "classification": {
+  "table": {
+   "lp_232": {
+    "ingest_draws": [],
+    "e3_pair": [
+     [
+      "lpcamp-rep232-1x1",
+      1.0,
+      null,
+      null
+     ],
+     [
+      "lpcamp-e3-lp232-r1",
+      1.0,
+      "invalid_output",
+      false
+     ],
+     [
+      "lpcamp-e3-lp232-r2",
+      1.0,
+      "used",
+      true
+     ]
+    ],
+    "e3_scores": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "pair_pass": true
+   },
+   "lp_118": {
+    "ingest_draws": [],
+    "e3_pair": [
+     [
+      "lpcamp-e3-lp118-r1",
+      1.0,
+      "used",
+      true
+     ],
+     [
+      "lpcamp-e3-lp118-r2",
+      0.0,
+      "invalid_output",
+      false
+     ]
+    ],
+    "e3_scores": [
+     1.0,
+     0.0
+    ],
+    "pair_pass": true
+   },
+   "lp_18": {
+    "ingest_draws": [
+     [
+      "lpcamp-ing-lp18",
+      1.0
+     ]
+    ],
+    "e3_pair": [
+     [
+      "lpcamp-e3-lp18-r1",
+      1.0,
+      "used",
+      true
+     ],
+     [
+      "lpcamp-e3-lp18-r2",
+      1.0,
+      "used",
+      true
+     ]
+    ],
+    "e3_scores": [
+     1.0,
+     1.0
+    ],
+    "pair_pass": true
+   },
+   "lp_159": {
+    "ingest_draws": [],
+    "e3_pair": [
+     [
+      "lpcamp-e3-lp159-r1",
+      0.0,
+      "invalid_output",
+      false
+     ],
+     [
+      "lpcamp-e3-lp159-r2",
+      1.0,
+      "invalid_output",
+      false
+     ]
+    ],
+    "e3_scores": [
+     0.0,
+     1.0
+    ],
+    "pair_pass": true
+   },
+   "lp_69": {
+    "ingest_draws": [],
+    "e3_pair": [
+     [
+      "lpcamp-e3-lp69-r1",
+      1.0,
+      "used",
+      true
+     ],
+     [
+      "lpcamp-e3-lp69-r2",
+      1.0,
+      "used",
+      true
+     ]
+    ],
+    "e3_scores": [
+     1.0,
+     1.0
+    ],
+    "pair_pass": true
+   }
+  },
+  "n_runs": 12,
+  "rerank_used": 6,
+  "flakes": 4,
+  "flake_runs_scored_1": 2,
+  "flake_runs_gold_recalled": 0,
+  "flake_detail": [
+   {
+    "run_id": "lpcamp-e3-lp232-r1",
+    "score": 1.0,
+    "rerank": "invalid_output",
+    "gold_recalled": false
+   },
+   {
+    "run_id": "lpcamp-e3-lp118-r2",
+    "score": 0.0,
+    "rerank": "invalid_output",
+    "gold_recalled": false
+   },
+   {
+    "run_id": "lpcamp-e3-lp159-r1",
+    "score": 0.0,
+    "rerank": "invalid_output",
+    "gold_recalled": false
+   },
+   {
+    "run_id": "lpcamp-e3-lp159-r2",
+    "score": 1.0,
+    "rerank": "invalid_output",
+    "gold_recalled": false
+   }
+  ]
+ },
+ "frozen_e3_reference": {
+  "lp_18": {
+   "v3_baseline": 1.0,
+   "e3_runs": [
+    1.0
+   ],
+   "e3_median": 1.0
+  },
+  "lp_69": {
+   "v3_baseline": 1.0,
+   "e3_runs": [
+    1.0
+   ],
+   "e3_median": 1.0
+  },
+  "lp_118": {
+   "v3_baseline": 0.0,
+   "e3_runs": [
+    1.0,
+    0.0,
+    1.0
+   ],
+   "e3_median": 1.0
+  },
+  "lp_159": {
+   "v3_baseline": 1.0,
+   "e3_runs": [
+    1.0
+   ],
+   "e3_median": 1.0
+  },
+  "lp_232": {
+   "v3_baseline": 1.0,
+   "e3_runs": [
+    1.0,
+    0.0,
+    1.0
+   ],
+   "e3_median": 1.0
+  }
+ },
+ "frozen_flake_reference": {
+  "runs": 40,
+  "rerank_used": 32,
+  "flakes": 8,
+  "flake_runs_scored_1": 5,
+  "flake_runs_scored_0": 3
+ }
+}

@@ -1,0 +1,79 @@
+{
+ "task": "LoCoMo full-population write campaign: re-ingest remaining conversations (conv-30, conv-49) with validated write clauses",
+ "status": "COMPLETE",
+ "stores": {
+  "conv-30": {
+   "fresh": 130,
+   "frozen": 71,
+   "spot": [
+    "q59 PASS",
+    "q50 PASS"
+   ]
+  },
+  "conv-49": {
+   "fresh": 181,
+   "frozen": 123,
+   "spot": [
+    "q128 PASS",
+    "q26 PASS"
+   ]
+  }
+ },
+ "converts": {
+  "conv-30": [
+   "conv-30_q12",
+   "conv-30_q68"
+  ],
+  "conv-49": [
+   "conv-49_q0",
+   "conv-49_q1",
+   "conv-49_q146",
+   "conv-49_q2",
+   "conv-49_q41",
+   "conv-49_q52",
+   "conv-49_q85"
+  ]
+ },
+ "fails": {
+  "conv-30": [
+   "q17",
+   "q3",
+   "q44",
+   "q50",
+   "q51",
+   "q76"
+  ],
+  "conv-49": [
+   "q103",
+   "q144",
+   "q18",
+   "q26",
+   "q46",
+   "q51"
+  ]
+ },
+ "gates": {
+  "conv-30": {
+   "q36": 0.8,
+   "q37": 1.0,
+   "q14": 1.0
+  },
+  "conv-49": {
+   "q138": 1.0,
+   "q94": 1.0,
+   "q151": 1.0
+  },
+  "regressions": 0
+ },
+ "timeline": {
+  "conv-30_ingest": "12:23:25-12:49:40",
+  "conv-49_ingest": "12:33:52-13:10:42",
+  "answers-30": "12:55:18-13:01",
+  "gates-30": "13:01:56-13:02",
+  "answers-49": "13:15:58-13:22",
+  "gates-49": "13:22:57-13:23",
+  "q144-a2": "13:23:19"
+ },
+ "driver": "imp4b-target8k sha 4d2ba13f",
+ "model": "dgx-glm53/glm-5.3"
+}
