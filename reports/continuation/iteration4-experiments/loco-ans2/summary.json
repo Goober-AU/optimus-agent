@@ -1,0 +1,516 @@
+{
+ "schema": "loco-ans2-results/1",
+ "worker": "locoans2",
+ "worktree": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-locoans2 (improve/mem4-loco-ans2, base 0cbad1d32)",
+ "model": "dgx-glm53/glm-5.3 (only)",
+ "driver": "imp4-targetR/release/examples/memory_bench.exe (sha256 c04ab631...)",
+ "controller": "imp4/scripts/memory_question_loop.py --mode typeB (warm cache-reuse, copy-out, skipIngest)",
+ "store": "fresh typeB cache d4b542a8e98deca6 (176 entries, KU + attribute v2 importInstructions; env conv-26 from locomo-gate3-improved-s0.json)",
+ "recall": "det extract-only, maxRecallEntries 24 / 24000 chars (window unchanged; w32 is AA's lane)",
+ "attempts_root": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/ql-attempts-locoans2",
+ "q149_hypotheses": {
+  "gate-baseline (h7-combine)": {
+   "median": 0.5714,
+   "draws": [
+    0.5714,
+    0.5714,
+    0.5714
+   ],
+   "answers": [
+    "love, support, strength, motivation, joy x3 (gate lf4 runs)"
+   ]
+  },
+  "H1 question-scoped combine": {
+   "median": 0.5714,
+   "draws": [
+    0.5714285714285715,
+    0.5714285714285715,
+    0.5714285714285715
+   ],
+   "answers": [
+    "love, support, joy, strength, motivation",
+    "love, support, strength, joy, motivation",
+    "love, support, motivation, strength, joy"
+   ]
+  },
+  "H2 arity cap (2-3 attrs)": {
+   "median": 0.4,
+   "draws": [
+    0.4,
+    0.4,
+    0.4
+   ],
+   "answers": [
+    "love, support, motivation",
+    "love, support, motivation",
+    "love, support, strength"
+   ]
+  },
+  "H3 verb-scope": {
+   "median": 0.5,
+   "draws": [
+    0.5,
+    0.5,
+    0.6666666666666666
+   ],
+   "answers": [
+    "love, strength",
+    "love, strength",
+    "strength"
+   ]
+  },
+  "H4a recency single-note (worker fix)": {
+   "median": 0.8,
+   "draws": [
+    0.6666666666666666,
+    0.8,
+    0.8
+   ],
+   "answers": [
+    "strength, motivation, support",
+    "Motivation, support, strength",
+    "The world, strength, motivation, support"
+   ]
+  },
+  "H4a rerun (variance control)": {
+   "median": 0.8,
+   "draws": [
+    0.8,
+    0.8,
+    0.8
+   ],
+   "answers": [
+    "strength, motivation, support",
+    "strength, motivation, support",
+    "strength, motivation, support"
+   ]
+  },
+  "H4b verb+recency": {
+   "median": 0.5,
+   "draws": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "answers": [
+    "love, strength",
+    "love, strength",
+    "love, strength"
+   ]
+  },
+  "H4c single most-direct note": {
+   "median": 0.0,
+   "draws": [
+    0.0,
+    0.0,
+    0.8
+   ],
+   "answers": [
+    "love and support",
+    "love and support",
+    "strength, motivation, support"
+   ]
+  }
+ },
+ "q144_hypotheses": {
+  "gate-baseline": {
+   "median": 0.333,
+   "draws": [
+    0.333,
+    0.5,
+    0.333
+   ],
+   "answers": [
+    "He was thankfully okay. / He was scared but thankfully ended up okay. / thankfully he was okay (gate lf4 runs)"
+   ]
+  },
+  "H1 old-G4 control (frozen-passing instruction on fresh store)": {
+   "median": 0.3333,
+   "draws": [
+    0.3333333333333333,
+    0.3333333333333333,
+    0.5333333333333333
+   ],
+   "answers": [
+    "He was thankfully okay.",
+    "He was freaked out and scared, but okay.",
+    "Thankfully, he was okay."
+   ]
+  },
+  "H2 feeling-first template": {
+   "median": 0.3636,
+   "draws": [
+    0.3333333333333333,
+    0.36363636363636365,
+    0.5714285714285715
+   ],
+   "answers": [
+    "He was okay.",
+    "Thankfully, he was okay.",
+    "Scared, but thankfully he was okay."
+   ]
+  },
+  "H2b never-outcome-alone (worker fix)": {
+   "median": 0.5333,
+   "draws": [
+    0.5333333333333333,
+    0.5333333333333333,
+    0.5714285714285715
+   ],
+   "answers": [
+    "He was scared but ended up okay.",
+    "He was scared but ended up okay.",
+    "He was scared, but thankfully okay."
+   ]
+  }
+ },
+ "combined_instructions": {
+  "FINAL (h4a+h2b)": {
+   "q149": {
+    "median": 0.5,
+    "draws": [
+     0.3333333333333333,
+     0.5,
+     0.5
+    ],
+    "answers": [
+     "motivation and support",
+     "motivation, support",
+     "the world, biggest motivation, support"
+    ]
+   },
+   "q144": {
+    "median": 0.5333,
+    "draws": [
+     0.375,
+     0.5333333333333333,
+     0.5714285714285715
+    ],
+    "answers": [
+     "He was scared but ended up okay.",
+     "He was scared but thankfully okay.",
+     "It was scary, but thankfully he was okay."
+    ]
+   }
+  },
+  "FINAL2 (every-attribute h5b + h2b)": {
+   "q149": {
+    "median": 0.8,
+    "draws": [
+     0.5,
+     0.8,
+     0.8
+    ],
+    "answers": [
+     "motivation, support",
+     "strength, motivation, support",
+     "strength, motivation, support"
+    ]
+   },
+   "q144": {
+    "median": 0.5714,
+    "draws": [
+     0.0,
+     0.5714285714285715,
+     0.5714285714285715,
+     0.5714285714285715,
+     0.6153846153846154
+    ],
+    "answers": [
+     "He was scared, but thankfully okay.",
+     "not mentioned",
+     "He was scared but thankfully okay.",
+     "He was scared but okay.",
+     "He was scared, but thankfully okay."
+    ]
+   }
+  },
+  "FINAL3 (every-attribute h5 + h2b)": {
+   "q149": {
+    "median": 0.6667,
+    "draws": [
+     0.5714285714285715,
+     0.6666666666666666,
+     0.6666666666666666
+    ],
+    "answers": [
+     "strength, the world, biggest motivation, support",
+     "strength, the world, motivation, support",
+     "the world, motivation, support, strength"
+    ]
+   }
+  },
+  "FINAL4 (h4a + no-both how)": {
+   "q149": {
+    "median": 0.8,
+    "draws": [
+     0.6666666666666666,
+     0.8,
+     0.8
+    ],
+    "answers": [
+     "strength, motivation, support",
+     "strength, the world, motivation, support",
+     "strength, motivation, support"
+    ]
+   },
+   "q144": {
+    "median": 0.375,
+    "draws": [
+     0.36363636363636365,
+     0.375,
+     0.5714285714285715
+    ],
+    "answers": [
+     "He was scared, but thankfully okay.",
+     "It was really scary, but he was okay.",
+     "He was okay."
+    ]
+   }
+  }
+ },
+ "regression_final": {
+  "q1": {
+   "median": 1.0,
+   "draws": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "answers": [
+    "2022",
+    "2022",
+    "2022"
+   ]
+  },
+  "q26": {
+   "median": 1.0,
+   "draws": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "answers": [
+    "2022",
+    "2022",
+    "2022"
+   ]
+  },
+  "q33": {
+   "median": 0.6667,
+   "draws": [
+    0.0,
+    0.6666666666666666,
+    0.6666666666666666
+   ],
+   "answers": [
+    "the week before 3 July 2023, the Friday before 14 August 2023",
+    "not mentioned",
+    "the week before 3 July 2023 and the Friday before 14 August 2023"
+   ]
+  },
+  "q54": {
+   "median": 1.0,
+   "draws": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "answers": [
+    "the week before 23 August 2023",
+    "the week before 23 August 2023",
+    "the week before 23 August 2023"
+   ]
+  },
+  "q55": {
+   "median": 0.0,
+   "draws": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "answers": [
+    "I'll inspect the workspace to check for the underlying conversation files before answering.",
+    "sunsets",
+    "I'll check the workspace for the underlying conversation sources, since the compact notes don't state Caroline's painting subject."
+   ]
+  },
+  "q126": {
+   "median": 1.0,
+   "draws": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "answers": [
+    "horseback riding",
+    "Horseback riding",
+    "horseback riding"
+   ]
+  },
+  "q135": {
+   "median": 1.0,
+   "draws": [
+    0.6923076923076924,
+    1.0,
+    1.0
+   ],
+   "answers": [
+    "She got hurt and had to take a break from pottery (shared 2023-10-13; the injury itself happened in September 2023).",
+    "She got hurt and had to take a break from pottery.",
+    "She got hurt and had to take a break from pottery."
+   ]
+  },
+  "q141": {
+   "median": 0.625,
+   "draws": [
+    0.22222222222222224,
+    0.625,
+    0.7692307692307693
+   ],
+   "answers": [
+    "Freedom and being true to herself, embracing her womanhood",
+    "Freedom and embracing her womanhood.",
+    "Freedom and being real — staying true to herself and embracing her womanhood."
+   ]
+  },
+  "q143": {
+   "median": 1.0,
+   "draws": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "answers": [
+    "He got into an accident.",
+    "He got into an accident.",
+    "He got into an accident."
+   ]
+  }
+ },
+ "regression_final2": {
+  "q1": {
+   "median": 1.0,
+   "draws": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "answers": [
+    "2022",
+    "2022",
+    "2022"
+   ]
+  },
+  "q26": {
+   "median": 1.0,
+   "draws": [
+    0.0,
+    1.0,
+    1.0
+   ],
+   "answers": [
+    "2022",
+    "2022",
+    "not mentioned"
+   ]
+  },
+  "q33": {
+   "median": 0.6667,
+   "draws": [
+    0.0,
+    0.0,
+    0.6666666666666666,
+    0.6666666666666666,
+    0.6666666666666666,
+    1.0
+   ],
+   "answers": [
+    "not mentioned",
+    "the week before 3 July 2023, the Friday before 14 August 2023",
+    "not mentioned",
+    "the week before 3 July 2023, the Friday before 14 August 2023",
+    "the week before 3 July 2023",
+    "the week before 3 July 2023, the Friday before 14 August 2023"
+   ]
+  },
+  "q54": {
+   "median": 1.0,
+   "draws": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "answers": [
+    "the week before 23 August 2023",
+    "the week before 23 August 2023",
+    "the week before 23 August 2023"
+   ]
+  },
+  "q55": {
+   "median": 1.0,
+   "draws": [
+    0.0,
+    1.0,
+    1.0
+   ],
+   "answers": [
+    "not mentioned",
+    "Sunset",
+    "sunsets"
+   ]
+  },
+  "q126": {
+   "median": 1.0,
+   "draws": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "answers": [
+    "horseback riding",
+    "horseback riding",
+    "horseback riding"
+   ]
+  },
+  "q135": {
+   "median": 1.0,
+   "draws": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "answers": [
+    "She got hurt and had to take a break from pottery.",
+    "She got hurt and had to take a break from pottery.",
+    "She got hurt and had to take a break from pottery."
+   ]
+  },
+  "q141": {
+   "median": 0.5556,
+   "draws": [
+    0.5555555555555556,
+    0.5555555555555556,
+    0.7692307692307693
+   ],
+   "answers": [
+    "Freedom and being real — a nudge to stay true to herself and embrace her womanhood.",
+    "Freedom and being real — a nudge to stay true to herself and embrace her womanhood.",
+    "Freedom and being true to herself, embracing her womanhood."
+   ]
+  },
+  "q143": {
+   "median": 1.0,
+   "draws": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "answers": [
+    "He got into an accident.",
+    "He got into an accident.",
+    "He got into an accident."
+   ]
+  }
+ }
+}

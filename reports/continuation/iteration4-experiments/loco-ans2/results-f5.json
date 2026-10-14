@@ -1,0 +1,80 @@
+{
+ "f5-q149-r3": {
+  "tag": "f5-q149-r3",
+  "qid": "conv-26_q149",
+  "run_id": "a2bq149f5r3",
+  "rc": 0,
+  "err": null,
+  "score": 0.5,
+  "outcome": "pass",
+  "answer": "motivation, support",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 12.4
+ },
+ "f5-q144-r1": {
+  "tag": "f5-q144-r1",
+  "qid": "conv-26_q144",
+  "run_id": "a2bq144f5r1",
+  "rc": 0,
+  "err": null,
+  "score": 0.5714285714285715,
+  "outcome": "pass",
+  "answer": "He was scared but thankfully okay.",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 10.8
+ },
+ "f5-q149-r2": {
+  "tag": "f5-q149-r2",
+  "qid": "conv-26_q149",
+  "run_id": "a2bq149f5r2",
+  "rc": 0,
+  "err": null,
+  "score": 0.5,
+  "outcome": "pass",
+  "answer": "motivation, support",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 24.6
+ },
+ "f5-q144-r2": {
+  "tag": "f5-q144-r2",
+  "qid": "conv-26_q144",
+  "run_id": "a2bq144f5r2",
+  "rc": 0,
+  "err": null,
+  "score": 0.5714285714285715,
+  "outcome": "pass",
+  "answer": "He was scared but thankfully okay.",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 10.2
+ },
+ "f5-q144-r3": {
+  "tag": "f5-q144-r3",
+  "qid": "conv-26_q144",
+  "run_id": "a2bq144f5r3",
+  "rc": 0,
+  "err": null,
+  "score": 0.5714285714285715,
+  "outcome": "pass",
+  "answer": "Scared, but thankfully he was okay.",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 10.0
+ },
+ "f5-q149-r1": {
+  "tag": "f5-q149-r1",
+  "qid": "conv-26_q149",
+  "run_id": "a2bq149f5r1",
+  "rc": 0,
+  "err": null,
+  "score": 0.8,
+  "outcome": "pass",
+  "answer": "strength, motivation, support",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 54.5
+ }
+}
