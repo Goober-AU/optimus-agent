@@ -1,0 +1,66 @@
+{
+ "schema": "lmes-seq-fix/1",
+ "qid": "07741c45",
+ "question": "Where do I currently keep my old sneakers?",
+ "gold_shape": "current-state KU (latest of: under bed 2023-05-25 -> shoe rack in closet 2023-05-29)",
+ "baseline_attempt": {
+  "run_id": "lmesq2-07741c45r",
+  "score": 0.0,
+  "stage": "answer",
+  "answer": "The available memory does not record where you keep your old sneakers... (over-abstention; hallucinated 2023-05-28 white-sneaker detail)"
+ },
+ "diagnosis": "Stage G (answer reasoning), NOT write or recall. Write side exemplary: separate dated entries (sneakers_under_bed_odor_2023_05_25; closet_organization_sneakers_weekend_2023_05_29 with present-tense 'sitting in a shoe rack in the closet'; sneakers_shoe_rack_closet_plan_2023_05_29 plan-framed duplicate). Recall perfect: gold note ranked #1 (0.9087, matched currently/old/sneakers); 3/3 location notes in top 4. Root cause: recall labels render at=created_at=ingest wall-clock for imported stores, so the harness header's 'prefer the most recent at' supersession cue is inert (all ats within seconds); story dates live only in note text. Model weighed plan-vs-state framing + at-tie, then abstained ('no storage location recorded') despite rank-1 present-tense evidence. Banked A+G4+H1 abstention clause fired without a fact ever being stated.",
+ "fix": "Read-time answerInstruction clause (H2b): current-state questions order facts by story dates inside notes (at stamps are import times), present-tense observation beats same-dated plan, anti-abstention scoped by the H1 exact-name rule (facts for the exact asked entity; never transfer across names).",
+ "iterations": [
+  {
+   "hypothesis": "H2 (current-state + plan-vs-state + initially->earliest + anti-abstention)",
+   "run_id": "lmesq2-07741c45h2",
+   "target": 1.0,
+   "regression": "031748ae_abs BROKE (answered 4 engineers; 'initially' sentence overrode H1 exact-name abstention)"
+  },
+  {
+   "hypothesis": "H2b (H2 minus the 'initially->earliest' sentence, exact-name precedence made explicit)",
+   "run_id": "lmesq2-07745h2b",
+   "target": 1.0,
+   "regression": "all gates pass"
+  }
+ ],
+ "h2b_attempt": {
+  "run_id": "lmesq2-07745h2b",
+  "score": 1.0,
+  "mode": "typeB cache-reuse"
+ },
+ "regression_gate": {
+  "06db6396_KU": {
+   "run_id": "lmesq2-gate2-06db",
+   "score": 1.0
+  },
+  "07741c44_KU_initially_mirror": {
+   "run_id": "lmesq2-gate2-0744",
+   "score": 1.0
+  },
+  "031748ae_abs_H1_abstention": {
+   "run_id": "lmesq2-gate2-0317",
+   "score": 1.0
+  },
+  "001be529_smoke5_sealed_exp": {
+   "run_id": "lmesq2-gate2-01be529",
+   "score": 1.0
+  },
+  "0100672e_smoke5_sealed_exp": {
+   "run_id": "lmesq2-gate2-100672e",
+   "score": 1.0
+  },
+  "informational_06878be2": {
+   "run_id": "lmesq2-gate2-0687",
+   "score": 1.0
+  },
+  "informational_06f04340": {
+   "run_id": "lmesq2-gate2-06f0",
+   "score": 1.0
+  },
+  "ledger_note": "Sealed gates for 001be529/0100672e ran typeA against lme_s_full_smoke5_v1 frozen stores with expansion=true (their known state, per h1-roleclause-fix.json); their accidental ledger appends to longmemeval_m were removed to keep the M queue clean. 07741c45 marked RESOLVED."
+ },
+ "generalizable": true,
+ "banked_into": "lmesseq-scratch/ov-banked.json (answerInstruction field; pre-H2b backup at ov-banked-h1.json)"
+}
