@@ -73,8 +73,34 @@ def log(msg):
     print(f"[pipeline {time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
+ALL_STORES = ["lp_232", "lp_118", "lp_18", "lp_159", "lp_69"]
+CACHE_ROOT = os.path.join(SCRATCH, "cache")
+
+
+def store_warm(env_id):
+    """Warm = env.jsonl recorded + store harness_state present (any worker's cache)."""
+    try:
+        hits = [d for d in os.listdir(CACHE_ROOT)
+                if d.startswith(env_id + "--") and ".failed-" not in d]
+    except OSError:
+        return False
+    if len(hits) != 1:
+        return False
+    cd = os.path.join(CACHE_ROOT, hits[0])
+    if not os.path.isfile(os.path.join(cd, "env.jsonl")):
+        return False
+    proj = os.path.join(cd, "envs", env_id, "agent", "memory", "projects")
+    if not os.path.isdir(proj):
+        return False
+    for name in os.listdir(proj):
+        if os.path.isfile(os.path.join(proj, name, "harness_state.json")):
+            return True
+    return False
+
+
 def wait_for_ingest(timeout_s=16 * 3600):
-    """Block until the ingest launcher reports ingest-complete (or aborts)."""
+    """Block until: my chain's queue done (ingest-complete) AND all 5 stores warm
+    in the shared cache-root (lp_159/lp_69 land there via the resharded worker)."""
     t0 = time.time()
     logged = {}
     while True:
@@ -95,6 +121,15 @@ def wait_for_ingest(timeout_s=16 * 3600):
         if st.get("stopped"):
             return ("stopped", st)
         if phase == "ingest-complete":
+            missing = [e for e in ALL_STORES if not store_warm(e)]
+            if missing:
+                if logged.get("missing") != missing:
+                    logged["missing"] = missing
+                    log(f"queue done; waiting on resharded stores: {missing}")
+                if time.time() - t0 > timeout_s:
+                    return ("timeout", st)
+                time.sleep(60)
+                continue
             return ("complete", st)
         if time.time() - t0 > timeout_s:
             return ("timeout", st)

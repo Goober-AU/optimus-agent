@@ -26,7 +26,7 @@ sys.stderr = _log
 sys.path.insert(0, os.path.join(IMP4, "scripts"))
 import memory_question_loop as M  # noqa: E402
 
-QIDS = ["lp_118", "lp_18", "lp_159", "lp_69"]
+QIDS = ["lp_118", "lp_18"]  # lp_159 + lp_69 resharded to glm-writecamp (QQ)
 
 GOLD_KEYWORDS = {
     "lp_18": ["recovery code"],
