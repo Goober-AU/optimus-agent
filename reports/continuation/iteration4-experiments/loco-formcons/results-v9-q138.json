@@ -1,0 +1,32 @@
+{
+ "conv-47_q138-v9y2": {
+  "tag": "conv-47_q138-v9y2",
+  "qid": "conv-47_q138",
+  "run_id": "fc9v9-c47-q138-y2",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "The Witcher 3",
+  "recall_n": 24,
+  "recall_chars": 16651,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 10.6
+ },
+ "conv-47_q138-v9y3": {
+  "tag": "conv-47_q138-v9y3",
+  "qid": "conv-47_q138",
+  "run_id": "fc9v9-c47-q138-y3",
+  "rc": 3,
+  "err": null,
+  "score": 0.28571428571428575,
+  "outcome": "fail",
+  "answer": "The Witcher 3's amazing world and story",
+  "recall_n": 24,
+  "recall_chars": 16651,
+  "failure_stage": "answer",
+  "mode_detail": "copy-out",
+  "latency_s": 22.0
+ }
+}

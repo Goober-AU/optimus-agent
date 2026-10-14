@@ -1,0 +1,32 @@
+{
+ "conv-26_q144-v2x1r": {
+  "tag": "conv-26_q144-v2x1r",
+  "qid": "conv-26_q144",
+  "run_id": "fc9v2-c26-q144-x1r",
+  "rc": 0,
+  "err": null,
+  "score": 0.5714285714285715,
+  "outcome": "pass",
+  "answer": "Scared, but thankfully he was okay.",
+  "recall_n": 24,
+  "recall_chars": 13938,
+  "mode_detail": "cache-reuse",
+  "cache_key": "d4b542a8e98deca6",
+  "latency_s": 8.3
+ },
+ "conv-26_q144-v2x2r": {
+  "tag": "conv-26_q144-v2x2r",
+  "qid": "conv-26_q144",
+  "run_id": "fc9v2-c26-q144-x2r",
+  "rc": 3,
+  "err": null,
+  "score": 0.42857142857142855,
+  "outcome": "fail",
+  "answer": "Melanie's son was scared but okay.",
+  "recall_n": 24,
+  "recall_chars": 13938,
+  "mode_detail": "cache-reuse",
+  "cache_key": "d4b542a8e98deca6",
+  "latency_s": 9.3
+ }
+}

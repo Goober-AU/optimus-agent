@@ -1,0 +1,47 @@
+{
+ "conv-43_q116-v5x1": {
+  "tag": "conv-43_q116-v5x1",
+  "qid": "conv-43_q116",
+  "run_id": "fc9v5-c43-q116-x1",
+  "rc": 3,
+  "err": null,
+  "score": 0.43478260869565216,
+  "outcome": "fail",
+  "answer": "John's team lets tough opponents drive them to get better, backs each other up, and won't quit.",
+  "recall_n": 24,
+  "recall_chars": 17418,
+  "failure_stage": "answer",
+  "mode_detail": "copy-out",
+  "latency_s": 11.6
+ },
+ "conv-43_q116-v5x2": {
+  "tag": "conv-43_q116-v5x2",
+  "qid": "conv-43_q116",
+  "run_id": "fc9v5-c43-q116-x2",
+  "rc": 3,
+  "err": null,
+  "score": 0.43478260869565216,
+  "outcome": "fail",
+  "answer": "John says tough opponents drive the team to get better, and they back each other up and won't quit.",
+  "recall_n": 24,
+  "recall_chars": 17418,
+  "failure_stage": "answer",
+  "mode_detail": "copy-out",
+  "latency_s": 14.1
+ },
+ "conv-43_q116-v5x3": {
+  "tag": "conv-43_q116-v5x3",
+  "qid": "conv-43_q116",
+  "run_id": "fc9v5-c43-q116-x3",
+  "rc": 0,
+  "err": null,
+  "score": 0.6666666666666666,
+  "outcome": "pass",
+  "answer": "John's team backs each other up and won't quit.",
+  "recall_n": 24,
+  "recall_chars": 17418,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 25.5
+ }
+}

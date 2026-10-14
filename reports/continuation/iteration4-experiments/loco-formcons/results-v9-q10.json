@@ -1,0 +1,17 @@
+{
+ "conv-44_q10-v9x1": {
+  "tag": "conv-44_q10-v9x1",
+  "qid": "conv-44_q10",
+  "run_id": "fc9v9-c44-q10-x1",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "June 2023",
+  "recall_n": 24,
+  "recall_chars": 15954,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 10.9
+ }
+}
