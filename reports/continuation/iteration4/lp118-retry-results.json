@@ -1,0 +1,435 @@
+{
+ "schema": "lphard2-lp118-retry/1",
+ "generated": "2026-10-14",
+ "binary": "imp4b-lphard-target release sha 3a3ba13985a7 (improve/mem4b-lp-hard @ 314b40b56, retry build)",
+ "setup": "S's v4B E3: fresh2 store skipIngest, no-narration addendum, official-lp-v1, LP_JUDGE_MAX_TOKENS=4096",
+ "runs": [
+  {
+   "run_id": "lph-q118rt-r1",
+   "ts": "2026-10-14T05:19:47",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence is about Evan feeling proud of his son",
+   "rerank_outcomes": [
+    "empty_output"
+   ],
+   "rerank_retries": [
+    0
+   ],
+   "rerank_usage": [
+    {
+     "input": 14217.0,
+     "output": 4096.0,
+     "totalTokens": 18313.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_ids": [
+    "project:memory:mem_evan_family_not_easy_20231217",
+    "project:memory:mem_evan_not_alone_belief",
+    "project:memory:mem_sam_appreciates_evan_support",
+    "project:memory:mem_evan_while_since_toddler",
+    "project:memory:mem_evan_encouragement_not_stress",
+    "project:memory:mem_evan_fire_pit_photo",
+    "project:memory:mem_evan_partner_reaction_accident_20240111",
+    "project:memory:mem_sam_evans_partner_comment",
+    "project:memory:mem_evan_snack_reassurance",
+    "project:memory:mem_evan_bird_painting_joy_rush",
+    "project:memory:mem_evan_value_of_life_enjoy_moment",
+    "project:memory:mem_evan_health_scare_realization",
+    "project:memory:mem_sam_enjoys_soda_candy",
+    "project:memory:mem_sam_painting_relaxation_goal",
+    "project:memory:mem_evan_friend_intro_watercolor",
+    "project:memory:mem_evan_canada_hiking_biking",
+    "project:memory:mem_evan_worth_not_defined_by_weight",
+    "project:memory:mem_evan_no_pressure_advice",
+    "project:memory:mem_evan_knee_injury_basketball",
+    "project:memory:mem_sam_gps_keys_suggestion"
+   ],
+   "gold_recalled": false,
+   "answer_excerpt": "Man, I bet it is. After everything with his bike accident and how tough things have been for your family lately, that quiet must hit hard. It's funny how much noise a kid brings into a place \u2014 you don",
+   "answer_chars": 486,
+   "driver_latency_ms": 54933,
+   "driver_exit": 0,
+   "wall_s": 98.4
+  },
+  {
+   "run_id": "lph-q118rt-r2",
+   "ts": "2026-10-14T05:21:29",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence is about Evan feeling proud of his son",
+   "rerank_outcomes": [
+    "empty_output"
+   ],
+   "rerank_retries": [
+    1
+   ],
+   "rerank_usage": [
+    {
+     "input": 28434.0,
+     "output": 5631.0,
+     "totalTokens": 34065.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_ids": [
+    "project:memory:mem_evan_family_not_easy_20231217",
+    "project:memory:mem_evan_not_alone_belief",
+    "project:memory:mem_sam_appreciates_evan_support",
+    "project:memory:mem_evan_while_since_toddler",
+    "project:memory:mem_evan_encouragement_not_stress",
+    "project:memory:mem_evan_fire_pit_photo",
+    "project:memory:mem_evan_partner_reaction_accident_20240111",
+    "project:memory:mem_sam_evans_partner_comment",
+    "project:memory:mem_evan_snack_reassurance",
+    "project:memory:mem_evan_bird_painting_joy_rush",
+    "project:memory:mem_evan_value_of_life_enjoy_moment",
+    "project:memory:mem_evan_health_scare_realization",
+    "project:memory:mem_sam_enjoys_soda_candy",
+    "project:memory:mem_sam_painting_relaxation_goal",
+    "project:memory:mem_evan_friend_intro_watercolor",
+    "project:memory:mem_evan_canada_hiking_biking",
+    "project:memory:mem_evan_worth_not_defined_by_weight",
+    "project:memory:mem_evan_no_pressure_advice",
+    "project:memory:mem_evan_knee_injury_basketball",
+    "project:memory:mem_sam_gps_keys_suggestion"
+   ],
+   "gold_recalled": false,
+   "answer_excerpt": "I bet it does \u2014 after having that little guy filling the house up, the sudden quiet probably hits hard. Didn't you say it had been a while since you'd had a toddler around before he came? Sounds like ",
+   "answer_chars": 518,
+   "driver_latency_ms": 58917,
+   "driver_exit": 0,
+   "wall_s": 69.4
+  },
+  {
+   "run_id": "lph-q118rt-r3",
+   "ts": "2026-10-14T05:22:34",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence concerns Evan feeling proud about his son",
+   "rerank_outcomes": [
+    "invalid_output"
+   ],
+   "rerank_retries": [
+    1
+   ],
+   "rerank_usage": [
+    {
+     "input": 28434.0,
+     "output": 3296.0,
+     "totalTokens": 31730.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_ids": [
+    "project:memory:mem_evan_family_not_easy_20231217",
+    "project:memory:mem_evan_not_alone_belief",
+    "project:memory:mem_sam_appreciates_evan_support",
+    "project:memory:mem_evan_while_since_toddler",
+    "project:memory:mem_evan_encouragement_not_stress",
+    "project:memory:mem_evan_fire_pit_photo",
+    "project:memory:mem_evan_partner_reaction_accident_20240111",
+    "project:memory:mem_sam_evans_partner_comment",
+    "project:memory:mem_evan_snack_reassurance",
+    "project:memory:mem_evan_bird_painting_joy_rush",
+    "project:memory:mem_evan_value_of_life_enjoy_moment",
+    "project:memory:mem_evan_health_scare_realization",
+    "project:memory:mem_sam_enjoys_soda_candy",
+    "project:memory:mem_sam_painting_relaxation_goal",
+    "project:memory:mem_evan_friend_intro_watercolor",
+    "project:memory:mem_evan_canada_hiking_biking",
+    "project:memory:mem_evan_worth_not_defined_by_weight",
+    "project:memory:mem_evan_no_pressure_advice",
+    "project:memory:mem_evan_knee_injury_basketball",
+    "project:memory:mem_sam_gps_keys_suggestion"
+   ],
+   "gold_recalled": false,
+   "answer_excerpt": "Oh, I bet it does. You'd said it had been a while since you had a little one around the house, so after all that noise and energy, the quiet must really hit. And after the rough stretch your family's ",
+   "answer_chars": 688,
+   "driver_latency_ms": 53908,
+   "driver_exit": 0,
+   "wall_s": 62.4
+  },
+  {
+   "run_id": "lph-q118rt-r4",
+   "ts": "2026-10-14T05:25:15",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence concerns Evan",
+   "rerank_outcomes": [
+    "empty_output"
+   ],
+   "rerank_retries": [
+    1
+   ],
+   "rerank_usage": [
+    {
+     "input": 28434.0,
+     "output": 6175.0,
+     "totalTokens": 34609.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_ids": [
+    "project:memory:mem_evan_family_not_easy_20231217",
+    "project:memory:mem_evan_not_alone_belief",
+    "project:memory:mem_sam_appreciates_evan_support",
+    "project:memory:mem_evan_while_since_toddler",
+    "project:memory:mem_evan_encouragement_not_stress",
+    "project:memory:mem_evan_fire_pit_photo",
+    "project:memory:mem_evan_partner_reaction_accident_20240111",
+    "project:memory:mem_sam_evans_partner_comment",
+    "project:memory:mem_evan_snack_reassurance",
+    "project:memory:mem_evan_bird_painting_joy_rush",
+    "project:memory:mem_evan_value_of_life_enjoy_moment",
+    "project:memory:mem_evan_health_scare_realization",
+    "project:memory:mem_sam_enjoys_soda_candy",
+    "project:memory:mem_sam_painting_relaxation_goal",
+    "project:memory:mem_evan_friend_intro_watercolor",
+    "project:memory:mem_evan_canada_hiking_biking",
+    "project:memory:mem_evan_worth_not_defined_by_weight",
+    "project:memory:mem_evan_no_pressure_advice",
+    "project:memory:mem_evan_knee_injury_basketball",
+    "project:memory:mem_sam_gps_keys_suggestion"
+   ],
+   "gold_recalled": false,
+   "answer_excerpt": "I bet it does feel strange. You'd mentioned it had been a while since you had a little one around the house, so having that energy back for a bit \u2014 and then the quiet after \u2014 must really stand out. Qu",
+   "answer_chars": 339,
+   "driver_latency_ms": 51660,
+   "driver_exit": 0,
+   "wall_s": 60.5
+  },
+  {
+   "run_id": "lph-q118rt-r5",
+   "ts": "2026-10-14T05:26:10",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence is about Evan",
+   "rerank_outcomes": [
+    "empty_output"
+   ],
+   "rerank_retries": [
+    0
+   ],
+   "rerank_usage": [
+    {
+     "input": 14217.0,
+     "output": 4096.0,
+     "totalTokens": 18313.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_ids": [
+    "project:memory:mem_evan_family_not_easy_20231217",
+    "project:memory:mem_evan_not_alone_belief",
+    "project:memory:mem_sam_appreciates_evan_support",
+    "project:memory:mem_evan_while_since_toddler",
+    "project:memory:mem_evan_encouragement_not_stress",
+    "project:memory:mem_evan_fire_pit_photo",
+    "project:memory:mem_evan_partner_reaction_accident_20240111",
+    "project:memory:mem_sam_evans_partner_comment",
+    "project:memory:mem_evan_snack_reassurance",
+    "project:memory:mem_evan_bird_painting_joy_rush",
+    "project:memory:mem_evan_value_of_life_enjoy_moment",
+    "project:memory:mem_evan_health_scare_realization",
+    "project:memory:mem_sam_enjoys_soda_candy",
+    "project:memory:mem_sam_painting_relaxation_goal",
+    "project:memory:mem_evan_friend_intro_watercolor",
+    "project:memory:mem_evan_canada_hiking_biking",
+    "project:memory:mem_evan_worth_not_defined_by_weight",
+    "project:memory:mem_evan_no_pressure_advice",
+    "project:memory:mem_evan_knee_injury_basketball",
+    "project:memory:mem_sam_gps_keys_suggestion"
+   ],
+   "gold_recalled": false,
+   "answer_excerpt": "I can imagine \u2014 after all that time without a little one around, having the kiddo back in the house must have filled it right back up with noise and energy. Then the quiet hits twice as hard once they",
+   "answer_chars": 565,
+   "driver_latency_ms": 45577,
+   "driver_exit": 0,
+   "wall_s": 53.6
+  },
+  {
+   "run_id": "lph-q118rt-r6",
+   "ts": "2026-10-14T05:28:17",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence is about Evan feeling proud of his son",
+   "rerank_outcomes": [
+    "empty_output"
+   ],
+   "rerank_retries": [
+    0
+   ],
+   "rerank_usage": [
+    {
+     "input": 14217.0,
+     "output": 4096.0,
+     "totalTokens": 18313.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_ids": [
+    "project:memory:mem_evan_family_not_easy_20231217",
+    "project:memory:mem_evan_not_alone_belief",
+    "project:memory:mem_sam_appreciates_evan_support",
+    "project:memory:mem_evan_while_since_toddler",
+    "project:memory:mem_evan_encouragement_not_stress",
+    "project:memory:mem_evan_fire_pit_photo",
+    "project:memory:mem_evan_partner_reaction_accident_20240111",
+    "project:memory:mem_sam_evans_partner_comment",
+    "project:memory:mem_evan_snack_reassurance",
+    "project:memory:mem_evan_bird_painting_joy_rush",
+    "project:memory:mem_evan_value_of_life_enjoy_moment",
+    "project:memory:mem_evan_health_scare_realization",
+    "project:memory:mem_sam_enjoys_soda_candy",
+    "project:memory:mem_sam_painting_relaxation_goal",
+    "project:memory:mem_evan_friend_intro_watercolor",
+    "project:memory:mem_evan_canada_hiking_biking",
+    "project:memory:mem_evan_worth_not_defined_by_weight",
+    "project:memory:mem_evan_no_pressure_advice",
+    "project:memory:mem_evan_knee_injury_basketball",
+    "project:memory:mem_sam_gps_keys_suggestion"
+   ],
+   "gold_recalled": false,
+   "answer_excerpt": "That quiet must feel strange after everything \u2014 I remember you saying back in December that it wasn't an easy time for your family after your son's bike accident. I'm glad to hear he's doing well enou",
+   "answer_chars": 505,
+   "driver_latency_ms": 119481,
+   "driver_exit": 0,
+   "wall_s": 126.7
+  },
+  {
+   "run_id": "lph-q118rt-r7",
+   "ts": "2026-10-14T05:30:31",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence states that Evan felt incredibly proud when his son graduated last month. The model prediction, however, discusses a",
+   "rerank_outcomes": [
+    "empty_output"
+   ],
+   "rerank_retries": [
+    0
+   ],
+   "rerank_usage": [
+    {
+     "input": 14217.0,
+     "output": 4096.0,
+     "totalTokens": 18313.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_ids": [
+    "project:memory:mem_evan_family_not_easy_20231217",
+    "project:memory:mem_evan_not_alone_belief",
+    "project:memory:mem_sam_appreciates_evan_support",
+    "project:memory:mem_evan_while_since_toddler",
+    "project:memory:mem_evan_encouragement_not_stress",
+    "project:memory:mem_evan_fire_pit_photo",
+    "project:memory:mem_evan_partner_reaction_accident_20240111",
+    "project:memory:mem_sam_evans_partner_comment",
+    "project:memory:mem_evan_snack_reassurance",
+    "project:memory:mem_evan_bird_painting_joy_rush",
+    "project:memory:mem_evan_value_of_life_enjoy_moment",
+    "project:memory:mem_evan_health_scare_realization",
+    "project:memory:mem_sam_enjoys_soda_candy",
+    "project:memory:mem_sam_painting_relaxation_goal",
+    "project:memory:mem_evan_friend_intro_watercolor",
+    "project:memory:mem_evan_canada_hiking_biking",
+    "project:memory:mem_evan_worth_not_defined_by_weight",
+    "project:memory:mem_evan_no_pressure_advice",
+    "project:memory:mem_evan_knee_injury_basketball",
+    "project:memory:mem_sam_gps_keys_suggestion"
+   ],
+   "gold_recalled": false,
+   "answer_excerpt": "I bet it is, man. After going so long without a little one around, having that kiddo in the house again \u2014 and then the sudden quiet when he's gone \u2014 that's a big swing. It's like the whole energy of t",
+   "answer_chars": 470,
+   "driver_latency_ms": 42922,
+   "driver_exit": 0,
+   "wall_s": 57.4
+  },
+  {
+   "run_id": "lph-q118rt-r8",
+   "ts": "2026-10-14T05:31:11",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence states that Evan",
+   "rerank_outcomes": [
+    "used"
+   ],
+   "rerank_retries": [
+    0
+   ],
+   "rerank_usage": [
+    {
+     "input": 14217.0,
+     "output": 2512.0,
+     "totalTokens": 16729.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 5,
+   "recall_ids": [
+    "project:memory:mem_sam_congratulated_evan_son_graduation",
+    "project:memory:mem_evan_son_recovering_after_accident",
+    "project:memory:mem_evan_son_bike_accident",
+    "project:memory:mem_evan_caring_for_injured_son",
+    "project:memory:mem_evan_son_ankle_improving"
+   ],
+   "gold_recalled": true,
+   "answer_excerpt": "I bet it is \u2014 after all that time he spent home recovering from the bike accident, you got used to having him around. It's a strange kind of quiet after a house has been full of worry and doctor visit",
+   "answer_chars": 433,
+   "driver_latency_ms": 26810,
+   "driver_exit": 0,
+   "wall_s": 52.2
+  },
+  {
+   "run_id": "lph-q118rt-r9",
+   "ts": "2026-10-14T05:32:28",
+   "score": 1.0,
+   "flag": null,
+   "label": "correct",
+   "judge_reason": "The prediction explicitly references the evidence: it mentions",
+   "rerank_outcomes": [
+    "used"
+   ],
+   "rerank_retries": [
+    1
+   ],
+   "rerank_usage": [
+    {
+     "input": 28434.0,
+     "output": 5619.0,
+     "totalTokens": 34053.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 3,
+   "recall_ids": [
+    "project:memory:mem_sam_congratulated_evan_son_graduation",
+    "project:memory:mem_evan_son_recovering_after_accident",
+    "project:memory:mem_evan_caring_for_injured_son"
+   ],
+   "gold_recalled": true,
+   "answer_excerpt": "That's such a big shift, isn't it? After everything these past months \u2014 looking after him through the soccer injury, then the bike accident, all those trips to the doctor \u2014 your whole routine revolved",
+   "answer_chars": 590,
+   "driver_latency_ms": 51644,
+   "driver_exit": 0,
+   "wall_s": 58.0
+  }
+ ]
+}

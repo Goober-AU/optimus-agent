@@ -1,0 +1,758 @@
+{
+ "schema": "lphard2-lp146-readtime/1",
+ "generated": "2026-10-14",
+ "binary": "imp4-targetR release sha b57dc607 (fleet, post-merge) unless noted per row",
+ "e3": {
+  "recallRerankCandidates": 500,
+  "recallQueryExpansion": false,
+  "recallQueryDistillation": false
+ },
+ "runs": [
+  {
+   "qid": "lp_146",
+   "tag": "h1a",
+   "rep": "r1",
+   "run_id": "lph-h1a-146-r1",
+   "overrides": {
+    "recallRerankWithContent": true,
+    "recallRerankContentChars": 240
+   },
+   "ts": "2026-10-13T09:42:13",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence concerns James having severe allergy symptoms that caused him to call in sick to work, and John advising him to take care of himself when unwell. The model prediction makes no reference t",
+   "rerank_outcomes": [
+    "invalid_output"
+   ],
+   "rerank_usage": [
+    {
+     "input": 4570.0,
+     "output": 1327.0,
+     "totalTokens": 5897.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_chars": 14855,
+   "recall_ids": [
+    "project:memory:mem_john_game_tip_spoiler_free",
+    "project:memory:mem_lp146_james_road_trip_family_dogs",
+    "project:memory:mem_lp146_james_amusement_park_weekend",
+    "project:memory:mem_lp146_james_amusement_park",
+    "project:memory:mem_lp146_james_samantha_girlfriend",
+    "project:memory:mem_lp146_james_power_outage_progress_loss",
+    "project:memory:mem_lp146_travel_nuuk",
+    "project:memory:mem_lp146_james_drums_hobby",
+    "project:memory:mem_lp146_james_road_trip_sanctuary",
+    "project:memory:mem_lp146_james_canada_trip",
+    "project:memory:mem_lp146_travel_history",
+    "project:memory:mem_lp146_james_volunteering_organization",
+    "project:memory:mem_lp146_john_new_rpg_game",
+    "project:memory:mem_lp146_james_big_project_milestone",
+    "project:memory:mem_lp146_james_cooking_class",
+    "project:memory:mem_lp146_james_first_game_released",
+    "project:memory:mem_lp146_james_gaming_platform_community",
+    "project:memory:mem_lp146_james_strategy_game_aspiration",
+    "project:memory:mem_lp146_james_samantha_move_in",
+    "project:memory:imported_8d03ba0198acca1d8e51f5c9"
+   ],
+   "gold_recalled": false,
+   "answer_chars": 775,
+   "answer_excerpt": "Ha, look at you \u2014 that's the power-outage lesson in travel form! I remember when your apartment lost power right as you hit the big reveal in your game, and you lost progress because you hadn't saved.",
+   "driver_latency_ms": 29478,
+   "driver_exit": 0,
+   "wall_s": 35.4,
+   "note": "pre-pause run: OLD binary (imp4-deeprank-target sha 4e3c249c, no content-rerank) - settings requested but not applied; invalid_output parse flake"
+  },
+  {
+   "qid": "lp_146",
+   "tag": "h1b",
+   "rep": "r1",
+   "run_id": "lph-h1b-146-r1",
+   "overrides": {
+    "recallRerankWithContent": true,
+    "recallRerankContentChars": 120
+   },
+   "ts": "2026-10-13T09:43:02",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence concerns James having severe allergy symptoms that caused him to call in sick to work, and John advising him to take care of himself. The model prediction, however, discusses an entirely ",
+   "rerank_outcomes": [
+    "empty_output"
+   ],
+   "rerank_usage": [
+    {
+     "input": 4570.0,
+     "output": 4096.0,
+     "totalTokens": 8666.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_chars": 14855,
+   "recall_ids": [
+    "project:memory:mem_john_game_tip_spoiler_free",
+    "project:memory:mem_lp146_james_road_trip_family_dogs",
+    "project:memory:mem_lp146_james_amusement_park_weekend",
+    "project:memory:mem_lp146_james_amusement_park",
+    "project:memory:mem_lp146_james_samantha_girlfriend",
+    "project:memory:mem_lp146_james_power_outage_progress_loss",
+    "project:memory:mem_lp146_travel_nuuk",
+    "project:memory:mem_lp146_james_drums_hobby",
+    "project:memory:mem_lp146_james_road_trip_sanctuary",
+    "project:memory:mem_lp146_james_canada_trip",
+    "project:memory:mem_lp146_travel_history",
+    "project:memory:mem_lp146_james_volunteering_organization",
+    "project:memory:mem_lp146_john_new_rpg_game",
+    "project:memory:mem_lp146_james_big_project_milestone",
+    "project:memory:mem_lp146_james_cooking_class",
+    "project:memory:mem_lp146_james_first_game_released",
+    "project:memory:mem_lp146_james_gaming_platform_community",
+    "project:memory:mem_lp146_james_strategy_game_aspiration",
+    "project:memory:mem_lp146_james_samantha_move_in",
+    "project:memory:imported_8d03ba0198acca1d8e51f5c9"
+   ],
+   "gold_recalled": false,
+   "answer_chars": 951,
+   "answer_excerpt": "Good instinct, James \u2014 and honestly, I'm not surprised. After that power outage knocked out your apartment right when you hit the big reveal in your game, and you lost all that progress because you ha",
+   "driver_latency_ms": 43502,
+   "driver_exit": 0,
+   "wall_s": 49.5,
+   "note": "pre-pause run: OLD binary (no content-rerank) - empty_output length"
+  },
+  {
+   "qid": "lp_146",
+   "tag": "h1c240v",
+   "rep": "r1",
+   "run_id": "lph-h1c240v-146-r1",
+   "overrides": {
+    "recallRerankWithContent": true,
+    "recallRerankContentChars": 240
+   },
+   "ts": "2026-10-13T09:58:39",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence concerns James having severe allergy symptoms that forced him to call in sick to work, and John advising him to take care of himself when unwell. The model prediction discusses entirely u",
+   "rerank_outcomes": [
+    "empty_output"
+   ],
+   "rerank_usage": [
+    {
+     "input": 10758.0,
+     "output": 4096.0,
+     "totalTokens": 14854.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_chars": 14855,
+   "recall_ids": [
+    "project:memory:mem_john_game_tip_spoiler_free",
+    "project:memory:mem_lp146_james_road_trip_family_dogs",
+    "project:memory:mem_lp146_james_amusement_park_weekend",
+    "project:memory:mem_lp146_james_amusement_park",
+    "project:memory:mem_lp146_james_samantha_girlfriend",
+    "project:memory:mem_lp146_james_power_outage_progress_loss",
+    "project:memory:mem_lp146_travel_nuuk",
+    "project:memory:mem_lp146_james_drums_hobby",
+    "project:memory:mem_lp146_james_road_trip_sanctuary",
+    "project:memory:mem_lp146_james_canada_trip",
+    "project:memory:mem_lp146_travel_history",
+    "project:memory:mem_lp146_james_volunteering_organization",
+    "project:memory:mem_lp146_john_new_rpg_game",
+    "project:memory:mem_lp146_james_big_project_milestone",
+    "project:memory:mem_lp146_james_cooking_class",
+    "project:memory:mem_lp146_james_first_game_released",
+    "project:memory:mem_lp146_james_gaming_platform_community",
+    "project:memory:mem_lp146_james_strategy_game_aspiration",
+    "project:memory:mem_lp146_james_samantha_move_in",
+    "project:memory:imported_8d03ba0198acca1d8e51f5c9"
+   ],
+   "gold_recalled": false,
+   "answer_chars": 643,
+   "answer_excerpt": "Looks like that power outage left a lasting mark \u2014 in the best way! After losing your game progress because you forgot to save, you said you'd learned to be more careful, and now you're applying that ",
+   "driver_latency_ms": 42556,
+   "driver_exit": 0,
+   "wall_s": 47.8,
+   "note": "pre-pause run: content-rerank binary - empty_output length (4096 exhausted, 0 chars)"
+  },
+  {
+   "qid": "lp_146",
+   "tag": "c240",
+   "rep": "r1",
+   "run_id": "lph-c240-146-r1",
+   "overrides": {
+    "recallRerankWithContent": true,
+    "recallRerankContentChars": 240
+   },
+   "ts": "2026-10-14T04:50:22",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence concerns James having severe allergy symptoms that forced him to call in sick to work, and John",
+   "rerank_outcomes": [
+    "invalid_output"
+   ],
+   "rerank_usage": [
+    {
+     "input": 10758.0,
+     "output": 3613.0,
+     "totalTokens": 14371.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_chars": 14855,
+   "recall_ids": [
+    "project:memory:mem_john_game_tip_spoiler_free",
+    "project:memory:mem_lp146_james_road_trip_family_dogs",
+    "project:memory:mem_lp146_james_amusement_park_weekend",
+    "project:memory:mem_lp146_james_amusement_park",
+    "project:memory:mem_lp146_james_samantha_girlfriend",
+    "project:memory:mem_lp146_james_power_outage_progress_loss",
+    "project:memory:mem_lp146_travel_nuuk",
+    "project:memory:mem_lp146_james_drums_hobby",
+    "project:memory:mem_lp146_james_road_trip_sanctuary",
+    "project:memory:mem_lp146_james_canada_trip",
+    "project:memory:mem_lp146_travel_history",
+    "project:memory:mem_lp146_james_volunteering_organization",
+    "project:memory:mem_lp146_john_new_rpg_game",
+    "project:memory:mem_lp146_james_big_project_milestone",
+    "project:memory:mem_lp146_james_cooking_class",
+    "project:memory:mem_lp146_james_first_game_released",
+    "project:memory:mem_lp146_james_gaming_platform_community",
+    "project:memory:mem_lp146_james_strategy_game_aspiration",
+    "project:memory:mem_lp146_james_samantha_move_in",
+    "project:memory:imported_8d03ba0198acca1d8e51f5c9"
+   ],
+   "gold_recalled": false,
+   "answer_chars": 938,
+   "answer_excerpt": "Smart habit \u2014 and it suits you, since you're on the road so much these days! Especially right now, with the whole family and the dogs along on this road trip, a little preparedness goes a long way.\n\nH",
+   "driver_latency_ms": 42684,
+   "driver_exit": 0,
+   "wall_s": 51.8,
+   "note": ""
+  },
+  {
+   "qid": "lp_146",
+   "tag": "c240",
+   "rep": "r2",
+   "run_id": "lph-c240-146-r2",
+   "overrides": {
+    "recallRerankWithContent": true,
+    "recallRerankContentChars": 240
+   },
+   "ts": "2026-10-14T04:51:04",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence concerns James having severe allergy symptoms that caused him to miss work, and John advising him to take care of himself when unwell. The model prediction, however, discusses entirely un",
+   "rerank_outcomes": [
+    "empty_output"
+   ],
+   "rerank_usage": [
+    {
+     "input": 10758.0,
+     "output": 4096.0,
+     "totalTokens": 14854.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_chars": 14855,
+   "recall_ids": [
+    "project:memory:mem_john_game_tip_spoiler_free",
+    "project:memory:mem_lp146_james_road_trip_family_dogs",
+    "project:memory:mem_lp146_james_amusement_park_weekend",
+    "project:memory:mem_lp146_james_amusement_park",
+    "project:memory:mem_lp146_james_samantha_girlfriend",
+    "project:memory:mem_lp146_james_power_outage_progress_loss",
+    "project:memory:mem_lp146_travel_nuuk",
+    "project:memory:mem_lp146_james_drums_hobby",
+    "project:memory:mem_lp146_james_road_trip_sanctuary",
+    "project:memory:mem_lp146_james_canada_trip",
+    "project:memory:mem_lp146_travel_history",
+    "project:memory:mem_lp146_james_volunteering_organization",
+    "project:memory:mem_lp146_john_new_rpg_game",
+    "project:memory:mem_lp146_james_big_project_milestone",
+    "project:memory:mem_lp146_james_cooking_class",
+    "project:memory:mem_lp146_james_first_game_released",
+    "project:memory:mem_lp146_james_gaming_platform_community",
+    "project:memory:mem_lp146_james_strategy_game_aspiration",
+    "project:memory:mem_lp146_james_samantha_move_in",
+    "project:memory:imported_8d03ba0198acca1d8e51f5c9"
+   ],
+   "gold_recalled": false,
+   "answer_chars": 756,
+   "answer_excerpt": "That's a smart habit, honestly \u2014 and it makes total sense coming from you. After that power outage that cost you your game progress because you hadn't saved, I'd expect nothing less than \"always be pr",
+   "driver_latency_ms": 35437,
+   "driver_exit": 0,
+   "wall_s": 41.7,
+   "note": ""
+  },
+  {
+   "qid": "lp_146",
+   "tag": "c120",
+   "rep": "r1",
+   "run_id": "lph-c120-146-r1",
+   "overrides": {
+    "recallRerankWithContent": true,
+    "recallRerankContentChars": 120
+   },
+   "ts": "2026-10-14T04:51:41",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence concerns James having severe allergy symptoms that caused him to call in sick to work, and John",
+   "rerank_outcomes": [
+    "empty_output"
+   ],
+   "rerank_usage": [
+    {
+     "input": 7870.0,
+     "output": 4096.0,
+     "totalTokens": 11966.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_chars": 14855,
+   "recall_ids": [
+    "project:memory:mem_john_game_tip_spoiler_free",
+    "project:memory:mem_lp146_james_road_trip_family_dogs",
+    "project:memory:mem_lp146_james_amusement_park_weekend",
+    "project:memory:mem_lp146_james_amusement_park",
+    "project:memory:mem_lp146_james_samantha_girlfriend",
+    "project:memory:mem_lp146_james_power_outage_progress_loss",
+    "project:memory:mem_lp146_travel_nuuk",
+    "project:memory:mem_lp146_james_drums_hobby",
+    "project:memory:mem_lp146_james_road_trip_sanctuary",
+    "project:memory:mem_lp146_james_canada_trip",
+    "project:memory:mem_lp146_travel_history",
+    "project:memory:mem_lp146_james_volunteering_organization",
+    "project:memory:mem_lp146_john_new_rpg_game",
+    "project:memory:mem_lp146_james_big_project_milestone",
+    "project:memory:mem_lp146_james_cooking_class",
+    "project:memory:mem_lp146_james_first_game_released",
+    "project:memory:mem_lp146_james_gaming_platform_community",
+    "project:memory:mem_lp146_james_strategy_game_aspiration",
+    "project:memory:mem_lp146_james_samantha_move_in",
+    "project:memory:imported_8d03ba0198acca1d8e51f5c9"
+   ],
+   "gold_recalled": false,
+   "answer_chars": 758,
+   "answer_excerpt": "That mindset suits you \u2014 it sounds like the same lesson you took from that power outage a while back, when you lost your game progress because you hadn't saved. One bad surprise was enough to make \"al",
+   "driver_latency_ms": 30034,
+   "driver_exit": 0,
+   "wall_s": 36.6,
+   "note": ""
+  },
+  {
+   "qid": "lp_146",
+   "tag": "c120",
+   "rep": "r2",
+   "run_id": "lph-c120-146-r2",
+   "overrides": {
+    "recallRerankWithContent": true,
+    "recallRerankContentChars": 120
+   },
+   "ts": "2026-10-14T04:52:27",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence concerns James having severe allergy symptoms that forced him to call in sick to work, and John advising him to take care of himself when unwell. The model prediction, however, discusses ",
+   "rerank_outcomes": [
+    "used"
+   ],
+   "rerank_usage": [
+    {
+     "input": 7870.0,
+     "output": 2200.0,
+     "totalTokens": 10070.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 5,
+   "recall_chars": 3619,
+   "recall_ids": [
+    "project:memory:mem_lp146_james_road_trip_family_dogs",
+    "project:memory:mem_lp146_james_road_trip_sanctuary",
+    "project:memory:mem_lp146_james_canada_trip",
+    "project:memory:mem_lp146_travel_history",
+    "project:memory:mem_lp146_travel_nuuk"
+   ],
+   "gold_recalled": false,
+   "answer_chars": 741,
+   "answer_excerpt": "Smart habit, James \u2014 with all the traveling you've been doing lately, I'd say it's overdue. You've had trips take unexpected turns before, like the one where you ended up staying quite a while in Nuuk",
+   "driver_latency_ms": 40354,
+   "driver_exit": 0,
+   "wall_s": 46.9,
+   "note": ""
+  },
+  {
+   "qid": "lp_146",
+   "tag": "h2w30",
+   "rep": "r1",
+   "run_id": "lph-h2w30-146-r1",
+   "overrides": {
+    "recallRerankWithContent": true,
+    "recallRerankContentChars": 240,
+    "maxRecallEntries": 30
+   },
+   "ts": "2026-10-14T04:54:42",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence concerns James having severe allergy symptoms that forced him to call in sick to work, and John",
+   "rerank_outcomes": [
+    "empty_output"
+   ],
+   "rerank_usage": [
+    {
+     "input": 10758.0,
+     "output": 4096.0,
+     "totalTokens": 14854.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 30,
+   "recall_chars": 21912,
+   "recall_ids": [
+    "project:memory:mem_john_game_tip_spoiler_free",
+    "project:memory:mem_lp146_james_road_trip_family_dogs",
+    "project:memory:mem_lp146_james_amusement_park_weekend",
+    "project:memory:mem_lp146_james_amusement_park",
+    "project:memory:mem_lp146_james_samantha_girlfriend",
+    "project:memory:mem_lp146_james_power_outage_progress_loss",
+    "project:memory:mem_lp146_travel_nuuk",
+    "project:memory:mem_lp146_james_drums_hobby",
+    "project:memory:mem_lp146_james_road_trip_sanctuary",
+    "project:memory:mem_lp146_james_canada_trip",
+    "project:memory:mem_lp146_travel_history",
+    "project:memory:mem_lp146_james_volunteering_organization",
+    "project:memory:mem_lp146_john_new_rpg_game",
+    "project:memory:mem_lp146_james_big_project_milestone",
+    "project:memory:mem_lp146_james_cooking_class",
+    "project:memory:mem_lp146_james_first_game_released",
+    "project:memory:mem_lp146_james_gaming_platform_community",
+    "project:memory:mem_lp146_james_strategy_game_aspiration",
+    "project:memory:mem_lp146_james_samantha_move_in",
+    "project:memory:imported_8d03ba0198acca1d8e51f5c9",
+    "project:memory:mem_lp146_max_swimming_frisbee",
+    "project:memory:mem_lp146_james_new_video_card_rpgs",
+    "project:memory:mem_lp146_james_puppy_vaccination",
+    "project:memory:mem_lp146_james_extreme_sports",
+    "project:memory:mem_lp146_james_new_pup_ned",
+    "project:memory:mem_lp146_james_dream_castle_labyrinth",
+    "project:memory:mem_lp146_james_game_project_bug_fixed",
+    "project:memory:mem_lp146_john_left_it_job",
+    "project:memory:mem_lp146_james_turnbased_strategy_game",
+    "project:memory:mem_lp146_james_sister"
+   ],
+   "gold_recalled": false,
+   "answer_chars": 743,
+   "answer_excerpt": "Good call \u2014 especially on this trip! With the whole family and the dogs along for the ride, you've got more than just yourself to look out for. I'll admit, when you first mentioned the vet clinic with",
+   "driver_latency_ms": 35096,
+   "driver_exit": 0,
+   "wall_s": 42.7,
+   "note": ""
+  },
+  {
+   "qid": "lp_146",
+   "tag": "h2w30",
+   "rep": "r2",
+   "run_id": "lph-h2w30-146-r2",
+   "overrides": {
+    "recallRerankWithContent": true,
+    "recallRerankContentChars": 240,
+    "maxRecallEntries": 30
+   },
+   "ts": "2026-10-14T04:55:19",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence concerns James suffering from severe allergy symptoms that caused him to miss work, and John",
+   "rerank_outcomes": [
+    "invalid_output"
+   ],
+   "rerank_usage": [
+    {
+     "input": 10758.0,
+     "output": 2975.0,
+     "totalTokens": 13733.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 30,
+   "recall_chars": 21912,
+   "recall_ids": [
+    "project:memory:mem_john_game_tip_spoiler_free",
+    "project:memory:mem_lp146_james_road_trip_family_dogs",
+    "project:memory:mem_lp146_james_amusement_park_weekend",
+    "project:memory:mem_lp146_james_amusement_park",
+    "project:memory:mem_lp146_james_samantha_girlfriend",
+    "project:memory:mem_lp146_james_power_outage_progress_loss",
+    "project:memory:mem_lp146_travel_nuuk",
+    "project:memory:mem_lp146_james_drums_hobby",
+    "project:memory:mem_lp146_james_road_trip_sanctuary",
+    "project:memory:mem_lp146_james_canada_trip",
+    "project:memory:mem_lp146_travel_history",
+    "project:memory:mem_lp146_james_volunteering_organization",
+    "project:memory:mem_lp146_john_new_rpg_game",
+    "project:memory:mem_lp146_james_big_project_milestone",
+    "project:memory:mem_lp146_james_cooking_class",
+    "project:memory:mem_lp146_james_first_game_released",
+    "project:memory:mem_lp146_james_gaming_platform_community",
+    "project:memory:mem_lp146_james_strategy_game_aspiration",
+    "project:memory:mem_lp146_james_samantha_move_in",
+    "project:memory:imported_8d03ba0198acca1d8e51f5c9",
+    "project:memory:mem_lp146_max_swimming_frisbee",
+    "project:memory:mem_lp146_james_new_video_card_rpgs",
+    "project:memory:mem_lp146_james_puppy_vaccination",
+    "project:memory:mem_lp146_james_extreme_sports",
+    "project:memory:mem_lp146_james_new_pup_ned",
+    "project:memory:mem_lp146_james_dream_castle_labyrinth",
+    "project:memory:mem_lp146_james_game_project_bug_fixed",
+    "project:memory:mem_lp146_john_left_it_job",
+    "project:memory:mem_lp146_james_turnbased_strategy_game",
+    "project:memory:mem_lp146_james_sister"
+   ],
+   "gold_recalled": false,
+   "answer_chars": 889,
+   "answer_excerpt": "That mindset suits you, honestly. After that power outage caught you off guard mid-game and you lost all that progress, you already learned the hard way that \"it won't happen to me\" doesn't really hol",
+   "driver_latency_ms": 30591,
+   "driver_exit": 0,
+   "wall_s": 36.3,
+   "note": ""
+  },
+  {
+   "qid": "lp_146",
+   "tag": "h3exp",
+   "rep": "r1",
+   "run_id": "lph-h3exp-146-r1",
+   "overrides": {
+    "recallRerankWithContent": true,
+    "recallRerankContentChars": 240,
+    "recallQueryExpansion": true,
+    "recallQueryExpansionDraws": 2
+   },
+   "ts": "2026-10-14T04:55:54",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence concerns James having severe allergy symptoms that caused him to call in sick to work, with John emphasizing self-care when unwell. The model prediction makes no reference to allergies, i",
+   "rerank_outcomes": [
+    "empty_selection"
+   ],
+   "rerank_usage": [
+    {
+     "input": 10911.0,
+     "output": 2498.0,
+     "totalTokens": 13409.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_chars": 15730,
+   "recall_ids": [
+    "project:memory:mem_lp146_james_canada_trip",
+    "project:memory:mem_lp146_travel_nuuk",
+    "project:memory:mem_lp146_travel_plan_next_year",
+    "project:memory:mem_lp146_john_motivation_rest_nature",
+    "project:memory:mem_lp146_james_pizza_happiness",
+    "project:memory:mem_lp146_travel_history",
+    "project:memory:mem_lp146_james_happiness_sources",
+    "project:memory:mem_lp146_james_turnbased_strategy_game",
+    "project:memory:imported_8d03ba0198acca1d8e51f5c9",
+    "project:memory:mem_lp146_james_book_chill_relaxation",
+    "project:memory:mem_lp146_john_csgo_charity_tournament",
+    "project:memory:mem_lp146_mgees_pub_meeting_plan",
+    "project:memory:mem_lp146_john_fifa23_recommendation",
+    "project:memory:mem_john_game_tip_spoiler_free",
+    "project:memory:mem_lp146_james_road_trip_family_dogs",
+    "project:memory:mem_lp146_baseball_game_plan_sunday",
+    "project:memory:mem_lp146_james_first_game_released",
+    "project:memory:mem_lp146_james_puppy_vaccination",
+    "project:memory:mem_lp146_james_advice_john_algorithm_outcome",
+    "project:memory:mem_lp146_john_volunteer_charity_app"
+   ],
+   "gold_recalled": false,
+   "answer_chars": 854,
+   "answer_excerpt": "That's really smart, James \u2014 and honestly, after that scare with your puppy's vet visit, I get it completely. I was so worried until you told me it was just a routine checkup and the seasonal shot. Mo",
+   "driver_latency_ms": 29063,
+   "driver_exit": 0,
+   "wall_s": 34.4,
+   "note": ""
+  },
+  {
+   "qid": "lp_146",
+   "tag": "h3exp",
+   "rep": "r2",
+   "run_id": "lph-h3exp-146-r2",
+   "overrides": {
+    "recallRerankWithContent": true,
+    "recallRerankContentChars": 240,
+    "recallQueryExpansion": true,
+    "recallQueryExpansionDraws": 2
+   },
+   "ts": "2026-10-14T04:56:50",
+   "score": 0.0,
+   "flag": null,
+   "label": "wrong",
+   "judge_reason": "The evidence concerns James suffering from severe allergy symptoms that caused him to miss work, and John",
+   "rerank_outcomes": [
+    "empty_output"
+   ],
+   "rerank_usage": [
+    {
+     "input": 10758.0,
+     "output": 4096.0,
+     "totalTokens": 14854.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 20,
+   "recall_chars": 14657,
+   "recall_ids": [
+    "project:memory:mem_lp146_travel_nuuk",
+    "project:memory:mem_lp146_james_canada_trip",
+    "project:memory:mem_lp146_travel_history",
+    "project:memory:mem_lp146_james_happiness_sources",
+    "project:memory:mem_lp146_james_pizza_happiness",
+    "project:memory:mem_lp146_travel_plan_next_year",
+    "project:memory:mem_lp146_john_motivation_rest_nature",
+    "project:memory:mem_john_game_tip_spoiler_free",
+    "project:memory:mem_lp146_james_road_trip_family_dogs",
+    "project:memory:mem_lp146_john_chess",
+    "project:memory:mem_lp146_james_three_dog_limit",
+    "project:memory:mem_lp146_james_amusement_park_weekend",
+    "project:memory:mem_lp146_james_amusement_park",
+    "project:memory:mem_lp146_james_samantha_girlfriend",
+    "project:memory:mem_lp146_james_power_outage_progress_loss",
+    "project:memory:mem_lp146_james_first_game_released",
+    "project:memory:imported_8d03ba0198acca1d8e51f5c9",
+    "project:memory:mem_lp146_james_puppy_vaccination",
+    "project:memory:mem_lp146_james_turnbased_strategy_game",
+    "project:memory:mem_lp146_james_book_chill_relaxation"
+   ],
+   "gold_recalled": false,
+   "answer_chars": 856,
+   "answer_excerpt": "Smart habit \u2014 and honestly, it fits. After that power outage caught you off guard and cost you your game progress, you said you'd learned to save more often. An emergency kit is basically the same les",
+   "driver_latency_ms": 51479,
+   "driver_exit": 0,
+   "wall_s": 57.1,
+   "note": ""
+  },
+  {
+   "qid": "lp_18",
+   "tag": "rt",
+   "rep": "r1",
+   "run_id": "lph-rt-18-r1",
+   "overrides": null,
+   "ts": "2026-10-14T05:34:05",
+   "score": 1.0,
+   "flag": null,
+   "label": "correct",
+   "judge_reason": "The prediction explicitly references the evidence: it mentions Evan getting",
+   "rerank_outcomes": [
+    "used"
+   ],
+   "rerank_usage": [
+    {
+     "input": 13872.0,
+     "output": 549.0,
+     "totalTokens": 14421.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 2,
+   "recall_chars": 962,
+   "recall_ids": [
+    "project:memory:mem_evan_recovery_codes_card",
+    "project:memory:mem_evan_email_lockout"
+   ],
+   "gold_recalled": false,
+   "answer_chars": 952,
+   "answer_excerpt": "That tracks \u2014 you're not being stubborn for no reason. After you got locked out of your work email that time, you started writing your recovery codes down on a physical card, and that card is exactly ",
+   "driver_latency_ms": 15227,
+   "driver_exit": 0,
+   "wall_s": 24.3,
+   "note": ""
+  },
+  {
+   "qid": "lp_18",
+   "tag": "rt",
+   "rep": "r2",
+   "run_id": "lph-rt-18-r2",
+   "overrides": null,
+   "ts": "2026-10-14T05:34:23",
+   "score": 1.0,
+   "flag": null,
+   "label": "correct",
+   "judge_reason": "The prediction explicitly reflects the evidence. It references the key memory elements: getting locked out of the work email account, writing recovery codes on a physical card, and how that hassle led",
+   "rerank_outcomes": [
+    "used"
+   ],
+   "rerank_usage": [
+    {
+     "input": 13872.0,
+     "output": 499.0,
+     "totalTokens": 14371.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 2,
+   "recall_chars": 962,
+   "recall_ids": [
+    "project:memory:mem_evan_recovery_codes_card",
+    "project:memory:mem_evan_email_lockout"
+   ],
+   "gold_recalled": false,
+   "answer_chars": 576,
+   "answer_excerpt": "That tracks, honestly. After you got locked out of your work email that time around the end of December, writing your recovery codes down on that card was what saved you \u2014 I can see why you'd trust it",
+   "driver_latency_ms": 11211,
+   "driver_exit": 0,
+   "wall_s": 17.0,
+   "note": ""
+  },
+  {
+   "qid": "lp_18",
+   "tag": "rt",
+   "rep": "r3",
+   "run_id": "lph-rt-18-r3",
+   "overrides": null,
+   "ts": "2026-10-14T05:34:45",
+   "score": 1.0,
+   "flag": null,
+   "label": "correct",
+   "judge_reason": "The prediction explicitly references the evidence: it mentions",
+   "rerank_outcomes": [
+    "used"
+   ],
+   "rerank_usage": [
+    {
+     "input": 13872.0,
+     "output": 578.0,
+     "totalTokens": 14450.0,
+     "reasoningTokens": null
+    }
+   ],
+   "recall_n": 2,
+   "recall_chars": 962,
+   "recall_ids": [
+    "project:memory:mem_evan_recovery_codes_card",
+    "project:memory:mem_evan_email_lockout"
+   ],
+   "gold_recalled": false,
+   "answer_chars": 709,
+   "answer_excerpt": "That instinct makes sense given what you've already been through. When you got locked out of your work email that time, writing the recovery codes on that card in your wallet was your fix \u2014 and it's a",
+   "driver_latency_ms": 15124,
+   "driver_exit": 0,
+   "wall_s": 21.9,
+   "note": ""
+  }
+ ]
+}
