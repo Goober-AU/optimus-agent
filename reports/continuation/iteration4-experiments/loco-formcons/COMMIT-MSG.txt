@@ -1,0 +1,13 @@
+formcons FINAL9 (v9): answer form-consistency refinement over FINAL8
+
+- FINAL9.json/typea-final9-stem.json: answerInstruction-only changes
+  (plain-text guard, elaboration cap, natural-form matching incl. yes/no,
+  how-many, what-means list, pronoun reference, how-feeling clause,
+  event binding, when-form precedence); importInstructions byte-identical
+  to FINAL8 (cache key d4b542a8e98deca6 unchanged).
+- Targets: 10/14 stable >= 0.5 (bar 9); q10 gate 1.0 x6.
+- Regression battery: 18-q strict +0.4889 (q33 rescue artifact),
+  clean-draw +0.5259, clean+median +0.5325; q143 fixed to 1.0 by
+  pronoun clause; fixed set q1/q54/q126/q135/q143 all 1.0.
+- Stable10: 9/10 clean holds; q138 answer-stage wobble, v9 median 0.643.
+- Runners, jobs, results, RESULTS.md, ledger-notes scripts included.

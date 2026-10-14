@@ -1,0 +1,17 @@
+{
+ "q23-smoke": {
+  "tag": "q23-smoke",
+  "qid": "conv-47_q23",
+  "run_id": "fc9-smoke-q23",
+  "rc": 0,
+  "err": null,
+  "score": 0.8,
+  "outcome": "pass",
+  "answer": "July 2022",
+  "recall_n": 24,
+  "recall_chars": 15728,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 7.8
+ }
+}

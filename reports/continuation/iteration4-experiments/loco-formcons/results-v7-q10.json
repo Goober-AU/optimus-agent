@@ -1,0 +1,47 @@
+{
+ "conv-44_q10-v7x1": {
+  "tag": "conv-44_q10-v7x1",
+  "qid": "conv-44_q10",
+  "run_id": "fc9v7-c44-q10-x1",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "June 2023",
+  "recall_n": 24,
+  "recall_chars": 15954,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 10.6
+ },
+ "conv-44_q10-v7x3": {
+  "tag": "conv-44_q10-v7x3",
+  "qid": "conv-44_q10",
+  "run_id": "fc9v7-c44-q10-x3",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "June 2023",
+  "recall_n": 24,
+  "recall_chars": 15954,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 14.1
+ },
+ "conv-44_q10-v7x2": {
+  "tag": "conv-44_q10-v7x2",
+  "qid": "conv-44_q10",
+  "run_id": "fc9v7-c44-q10-x2",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "June 2023",
+  "recall_n": 24,
+  "recall_chars": 15954,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 31.9
+ }
+}

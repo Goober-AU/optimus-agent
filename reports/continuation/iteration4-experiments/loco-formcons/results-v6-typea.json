@@ -1,0 +1,47 @@
+{
+ "conv-43_q116-v6x1": {
+  "tag": "conv-43_q116-v6x1",
+  "qid": "conv-43_q116",
+  "run_id": "fc9v6-c43-q116-x1",
+  "rc": 3,
+  "err": null,
+  "score": 0.4545454545454545,
+  "outcome": "fail",
+  "answer": "They back each other up and won't quit, and facing tough opponents drives them to get better.",
+  "recall_n": 24,
+  "recall_chars": 17418,
+  "failure_stage": "answer",
+  "mode_detail": "copy-out",
+  "latency_s": 9.5
+ },
+ "conv-43_q116-v6x2": {
+  "tag": "conv-43_q116-v6x2",
+  "qid": "conv-43_q116",
+  "run_id": "fc9v6-c43-q116-x2",
+  "rc": 3,
+  "err": null,
+  "score": 0.43478260869565216,
+  "outcome": "fail",
+  "answer": "They back each other up and won't quit \u2014 facing tough opponents drives them to get better.",
+  "recall_n": 24,
+  "recall_chars": 17418,
+  "failure_stage": "answer",
+  "mode_detail": "copy-out",
+  "latency_s": 9.9
+ },
+ "conv-43_q116-v6x3": {
+  "tag": "conv-43_q116-v6x3",
+  "qid": "conv-43_q116",
+  "run_id": "fc9v6-c43-q116-x3",
+  "rc": 3,
+  "err": null,
+  "score": 0.4761904761904762,
+  "outcome": "fail",
+  "answer": "Facing them drives the team to get better; they back each other up and won't quit.",
+  "recall_n": 24,
+  "recall_chars": 17418,
+  "failure_stage": "answer",
+  "mode_detail": "copy-out",
+  "latency_s": 11.5
+ }
+}

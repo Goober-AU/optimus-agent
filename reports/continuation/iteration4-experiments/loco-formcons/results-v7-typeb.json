@@ -1,0 +1,47 @@
+{
+ "conv-26_q33-v7x1": {
+  "tag": "conv-26_q33-v7x1",
+  "qid": "conv-26_q33",
+  "run_id": "fc9v7-c26-q33-x1",
+  "rc": 3,
+  "err": null,
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "2022",
+  "recall_n": 24,
+  "recall_chars": 15559,
+  "mode_detail": "cache-reuse",
+  "cache_key": "d4b542a8e98deca6",
+  "latency_s": 67.8
+ },
+ "conv-26_q33-v7x2": {
+  "tag": "conv-26_q33-v7x2",
+  "qid": "conv-26_q33",
+  "run_id": "fc9v7-c26-q33-x2",
+  "rc": 3,
+  "err": null,
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "2022",
+  "recall_n": 24,
+  "recall_chars": 15559,
+  "mode_detail": "cache-reuse",
+  "cache_key": "d4b542a8e98deca6",
+  "latency_s": 71.3
+ },
+ "conv-26_q33-v7x3": {
+  "tag": "conv-26_q33-v7x3",
+  "qid": "conv-26_q33",
+  "run_id": "fc9v7-c26-q33-x3",
+  "rc": 3,
+  "err": null,
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "2022",
+  "recall_n": 24,
+  "recall_chars": 15559,
+  "mode_detail": "cache-reuse",
+  "cache_key": "d4b542a8e98deca6",
+  "latency_s": 72.1
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "conv-26_q144-v5x2": {
+  "tag": "conv-26_q144-v5x2",
+  "qid": "conv-26_q144",
+  "run_id": "fc9v5-c26-q144-x2",
+  "rc": 0,
+  "err": null,
+  "score": 0.5333333333333333,
+  "outcome": "pass",
+  "answer": "He was scared but ended up okay.",
+  "recall_n": 24,
+  "recall_chars": 13938,
+  "mode_detail": "cache-reuse",
+  "cache_key": "d4b542a8e98deca6",
+  "latency_s": 11.6
+ },
+ "conv-26_q144-v5x1": {
+  "tag": "conv-26_q144-v5x1",
+  "qid": "conv-26_q144",
+  "run_id": "fc9v5-c26-q144-x1",
+  "rc": 0,
+  "err": null,
+  "score": 0.5333333333333333,
+  "outcome": "pass",
+  "answer": "He was scared but ended up okay.",
+  "recall_n": 24,
+  "recall_chars": 13938,
+  "mode_detail": "cache-reuse",
+  "cache_key": "d4b542a8e98deca6",
+  "latency_s": 13.2
+ },
+ "conv-26_q144-v5x3": {
+  "tag": "conv-26_q144-v5x3",
+  "qid": "conv-26_q144",
+  "run_id": "fc9v5-c26-q144-x3",
+  "rc": 3,
+  "err": null,
+  "score": 0.36363636363636365,
+  "outcome": "fail",
+  "answer": "He was okay.",
+  "recall_n": 24,
+  "recall_chars": 13938,
+  "mode_detail": "cache-reuse",
+  "cache_key": "d4b542a8e98deca6",
+  "latency_s": 11.8
+ }
+}
