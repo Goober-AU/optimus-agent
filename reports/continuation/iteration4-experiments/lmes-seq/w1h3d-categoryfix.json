@@ -1,0 +1,78 @@
+{
+ "schema": "lmes-seq-fix/1",
+ "qid": "0977f2af",
+ "question": "What new kitchen gadget did I invest in before getting the Air Fryer?",
+ "gold_shape": "temporal-comparison retrieval (Instant Pot vs Air Fryer)",
+ "baseline_attempt": {
+  "run_id": "lmesq4-0977f2af",
+  "score": 0.0,
+  "stage": "answer",
+  "answer": "The available memory does not record any kitchen gadget you invested in before the Air Fryer."
+ },
+ "diagnosis": "Two-stage failure. (1) Stage D retrieval: the Instant Pot note (user-new-instant-pot-may-2023) ranked 26/50 (0.1889, matched only new/the) - the question's 'kitchen gadget ... invest ... before' has zero content-word overlap with 'Instant Pot pressure cooker soups stews'; the Air Fryer note ranked 1 (0.9550). Top-8 cutoff hid the gold note. recallQueryExpansion=true did NOT help (rank unchanged; its paraphrases still lacked the item name). (2) After fixing retrieval, stage G: model listed both dates (IP 'new' 05-21, AF 'acquired ~05-20' per 'got yesterday') and abstained 'cannot establish the order' - the premise-check instruction fired on unstated purchase dates. Root chronology: IP session 05-21 05:48 precedes AF session 05-21 22:54; LME gold reads the IP as the earlier investment.",
+ "fix": "W1 write-time importInstructions clause: appliance/gadget/device/tool/equipment memories must include the generic category word in title and content (e.g. 'kitchen appliance: Instant Pot pressure cooker') so category-word queries find the item. H3d read-time answerInstruction clause: when a question's wording presupposes an ordering/fact and the notes contain exactly one candidate of the asked kind, name that candidate instead of rejecting the premise over unstated dates.",
+ "iterations": [
+  {
+   "hypothesis": "recallQueryExpansion=true (read-time)",
+   "run_id": "lmesq4-0977f2exp",
+   "target": "0.0 - rank unchanged (26), rerank invalid_output",
+   "verdict": "rejected"
+  },
+  {
+   "hypothesis": "W1 write-time category words",
+   "run_id": "lmesq4-0977f2w1",
+   "target": "retrieval fixed (both notes top-2), answer still abstained on ordering",
+   "verdict": "partial"
+  },
+  {
+   "hypothesis": "W1 + H3 (before/after mention-ordering clause)",
+   "run_id": "lmesq4-0977f2h3",
+   "target": "0.0 - still abstains",
+   "verdict": "rejected"
+  },
+  {
+   "hypothesis": "W1 + H3b (explicit anti-abstention on ordering)",
+   "run_ids": [
+    "lmesq4-0977f2h3b",
+    "lmesq4-0977fh3b2"
+   ],
+   "target": "0.0 - length-stop empty answer + blank rescue answered WITHOUT notes (degraded)",
+   "verdict": "rejected, harmful"
+  },
+  {
+   "hypothesis": "W1 + H3c (minimal mention-ordering clause)",
+   "run_id": "lmesq4-0977fh3c",
+   "target": "0.0 - coherent but still abstains 'notes do not show it was acquired first'",
+   "verdict": "rejected"
+  },
+  {
+   "hypothesis": "W1 + H3d (premise-trust: exactly one candidate => accept presupposition)",
+   "run_id": "lmesq4-0977fh3d",
+   "target": "1.0",
+   "verdict": "accepted"
+  }
+ ],
+ "regression_gate": {
+  "h3d_read_only_warm": {
+   "031748ae_abs": "1.0 (lmesq4-g-0317, premise-rejection)",
+   "0862e8bf_abs": "1.0 (lmesq4-g-0862a, abstention twin)",
+   "0862e8bf": "1.0 (lmesq4-g-0862)",
+   "07741c45": "1.0 (lmesq4-g-07745)",
+   "07741c44": "1.0 (lmesq4-g-07744)",
+   "06db6396": "1.0 (lmesq4-g-06db)",
+   "001be529": "1.0 (lmesq4-g-01be, sealed)",
+   "0100672e": "1.0 (lmesq4-g-1006, sealed)"
+  },
+  "w1h3d_reingest_cold": {
+   "07741c45": "1.0 (lmesq4-gw-07745)",
+   "031748ae_abs": "1.0 (lmesq4-gw-0317)",
+   "0862e8bf": "1.0 (lmesq4-gw-0862)",
+   "0862e8bf_abs": "1.0 (lmesq4-gw-0862a)",
+   "06db6396": "1.0 (lmesq4-gw-06db)",
+   "07741c44": "1.0 (lmesq4-gw-07744)"
+  }
+ },
+ "generalizable": true,
+ "banked_into": "lmesseq-scratch/ov-banked.json (importInstructions W1 + answerInstruction H3d; pre-fix backup ov-banked-h2b.json)",
+ "caveats": "H3b (long anti-abstention clause) triggered glm-5.3 length-stop empty answers twice; blank-rescue then answered WITHOUT the memory notes (listed unrelated topics). Instruction clauses must stay short. Blank-rescue dropping recall notes is a driver-level defect worth a ticket."
+}
