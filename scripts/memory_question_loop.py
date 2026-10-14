@@ -45,10 +45,10 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import errno
 import glob
 import hashlib
 import json
-import msvcrt
 import os
 import re
 import shutil
@@ -56,6 +56,11 @@ import subprocess
 import sys
 import time
 import uuid
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 CONTROLLER_NAME = "scripts/memory_question_loop.py"
 
@@ -69,10 +74,10 @@ DEFAULT_LEDGER = os.path.join(
 DEFAULT_MODELS_JSON = os.path.join(ROOT, "agent", "models.json")
 DEFAULT_JUDGE_MODELS_JSON = os.path.join(ROOT, "judge-models.json")
 DEFAULT_BENCH_VENV_PYTHON = os.path.join(
-    ROOT, "bench", ".venv", "Scripts", "python.exe")
+    ROOT, "bench", ".venv", *(('Scripts', 'python.exe') if os.name == 'nt' else ('bin', 'python')))
 DEFAULT_SCORING_CWD = ROOT
 DEFAULT_DRIVER = os.path.join(
-    ROOT, "target", "release", "examples", "memory_bench.exe")
+    ROOT, "target", "release", "examples", "memory_bench.exe" if os.name == "nt" else "memory_bench")
 DEFAULT_DRIVER_WORKDIR = ROOT
 DEFAULT_MANIFEST_DIRS = [
     os.path.join(ROOT, "reports", "continuation", "manifests"),
@@ -221,7 +226,7 @@ def write_jsonl(path: str, rows) -> None:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def windows_alias(path: str) -> str:
+def project_alias(path: str) -> str:
     """The projects.json alias key the Rust driver derives from a cwd.
 
     project_identity() canonicalizes the workspace and prefixes "path:";
@@ -229,11 +234,13 @@ def windows_alias(path: str) -> str:
     "path:" + \\\\?\\ + realpath (true on-disk case).
     """
     real = os.path.realpath(os.path.abspath(path))
-    return "path:" + "\\\\?\\" + real
+    if os.name == "nt" and not real.startswith("\\\\?\\"):
+        real = "\\\\?\\UNC\\" + real[2:] if real.startswith("\\\\") else "\\\\?\\" + real
+    return "path:" + real
 
 
 class LedgerLock:
-    """Cross-process exclusive lock (msvcrt.locking on Windows)."""
+    """Cross-process exclusive lock using the host's native file locking."""
 
     def __init__(self, path: str, timeout_s: float = 120.0):
         self.path = path + ".lock"
@@ -244,22 +251,33 @@ class LedgerLock:
         os.makedirs(os.path.dirname(os.path.abspath(self.path)), exist_ok=True)
         self._fd = os.open(self.path, os.O_RDWR | os.O_CREAT)
         deadline = time.monotonic() + self.timeout_s
-        while True:
-            try:
-                msvcrt.locking(self._fd, msvcrt.LK_NBLCK, 1)
-                return self
-            except OSError:
-                if time.monotonic() > deadline:
-                    os.close(self._fd)
-                    self._fd = None
-                    raise ControllerError(f"ledger lock timeout: {self.path}")
-                time.sleep(0.05)
+        try:
+            while True:
+                try:
+                    if os.name == "nt":
+                        msvcrt.locking(self._fd, msvcrt.LK_NBLCK, 1)
+                    else:
+                        fcntl.flock(self._fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    return self
+                except OSError as exc:
+                    if exc.errno not in (errno.EACCES, errno.EAGAIN, errno.EDEADLK):
+                        raise
+                    if time.monotonic() > deadline:
+                        raise ControllerError(f"ledger lock timeout: {self.path}") from exc
+                    time.sleep(0.05)
+        except BaseException:
+            os.close(self._fd)
+            self._fd = None
+            raise
 
     def __exit__(self, *exc):
         if self._fd is not None:
             try:
                 os.lseek(self._fd, 0, os.SEEK_SET)
-                msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
+                if os.name == "nt":
+                    msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
+                else:
+                    fcntl.flock(self._fd, fcntl.LOCK_UN)
             finally:
                 os.close(self._fd)
                 self._fd = None
@@ -493,7 +511,7 @@ def copy_store_into_scratch(store_env_dir: str, scratch_output_dir: str, env_id:
 
     workspace = os.path.join(dst_env, "workspace")
     os.makedirs(workspace, exist_ok=True)
-    alias = windows_alias(workspace)
+    alias = project_alias(workspace)
     projects_json = os.path.join(dst_agent, "memory", "projects.json")
     registry = read_json(projects_json) if os.path.isfile(projects_json) else {}
     registry[alias] = project_id

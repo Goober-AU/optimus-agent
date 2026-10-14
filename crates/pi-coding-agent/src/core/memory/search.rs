@@ -2151,6 +2151,103 @@ mod tests {
     }
 
     #[test]
+    fn service_cache_tracks_stemming_changes_across_project_global_and_session_corpora() {
+        use crate::core::memory::{
+            jobs::MemoryJobs, service::MemoryService, sharing::MemorySharing,
+        };
+        use crate::core::refinement::refinement::{
+            get_global_harness_state_dir, get_local_harness_state_dir, load_harness_state,
+        };
+
+        let (store, root) = fixture();
+        let session_dir = root.join("session").to_string_lossy().into_owned();
+        let service = MemoryService {
+            store: store.clone(),
+            jobs: MemoryJobs::new(store.clone()),
+            sharing: MemorySharing::new(store.clone()),
+            session_artifact_dir: Some(session_dir.clone()),
+        };
+        let mut additional = Vec::new();
+        for scope in [
+            MemoryScope::Project,
+            MemoryScope::Global,
+            MemoryScope::Session,
+        ] {
+            let mut document = empty_document(&store.project.id);
+            for field in ["title", "body", "cue", "span"] {
+                let mut note = entry(&format!("{}_{}", scope.as_str(), field), "Trip", "Outdoors");
+                note.metadata
+                    .insert("projectId".into(), serde_json::json!(store.project.id));
+                match field {
+                    "title" => note.title = "camping camps".into(),
+                    "body" => note.content = "camping camps".into(),
+                    "cue" => {
+                        note.metadata.insert(
+                            "prospectiveCues".into(),
+                            serde_json::json!(["camping camps"]),
+                        );
+                    }
+                    "span" => {
+                        note.metadata
+                            .insert("sourceSpan".into(), serde_json::json!("camping camps"));
+                    }
+                    _ => unreachable!(),
+                }
+                document
+                    .entries
+                    .get_mut("memory")
+                    .unwrap()
+                    .insert(note.id.clone(), note);
+            }
+            if scope == MemoryScope::Project {
+                std::fs::create_dir_all(&store.dir).unwrap();
+                crate::core::memory::store::write_json(
+                    &store.path,
+                    &serde_json::to_value(&document).unwrap(),
+                )
+                .unwrap();
+            } else {
+                let dir = if scope == MemoryScope::Global {
+                    get_global_harness_state_dir(&store.agent_dir)
+                } else {
+                    get_local_harness_state_dir(Some(&session_dir)).unwrap()
+                };
+                save_harness_state(&dir, &document.harness()).unwrap();
+                additional.push(SearchCorpus {
+                    state: load_harness_state(
+                        &dir,
+                        if scope == MemoryScope::Global {
+                            HarnessScope::Global
+                        } else {
+                            HarnessScope::Local
+                        },
+                    ),
+                    scope,
+                });
+            }
+        }
+        let project_identity = file_identity(&store.path);
+        for stemming in [false, true, true, false, false, true] {
+            std::fs::write(
+                Path::new(&store.agent_dir).join("settings.json"),
+                serde_json::json!({"memory": {"recallQueryStemming": stemming}}).to_string(),
+            )
+            .unwrap();
+            let hits = service.search("camped", false);
+            assert_eq!(hits.len(), if stemming { 12 } else { 0 });
+            for query in ["camped", "camping camps", "camp", ""] {
+                assert_eq!(
+                    service.search(query, false),
+                    search_memory_reference(&store, query, &additional, false),
+                    "query={query:?} stemming={stemming}",
+                );
+            }
+            assert_eq!(file_identity(&store.path), project_identity);
+        }
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
     fn cache_invalidates_when_the_store_is_written_through_the_real_api() {
         let (store, root) = fixture();
         let mut rng = TestRng(0x5EED_0000_0000_0002);
