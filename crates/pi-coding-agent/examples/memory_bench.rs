@@ -3525,6 +3525,43 @@ fn blank_rescue_needed(stop_reason: &str, answer_text: &str) -> bool {
     stop_reason == "length" && answer_text.trim().is_empty()
 }
 
+/// Hard output cap for the one-shot blank-at-cap rescue call.
+///
+/// The rescue must never inherit the answer-stage budget: the terse re-ask
+/// reuses `answerMaxTokens`-sized room in the main session, and a model that
+/// ruminates in the hidden reasoning channel can burn that entire budget and
+/// come back blank again - a rescue failing exactly like the answer it
+/// rescues (measured on LoCoMo conv-30_q44 and conv-26_q33: rescue
+/// stop_reason "length", output_tokens 8192, empty answer channel).
+///
+/// The constant is small but still covers reasoning: GLM-5.3 cannot disable
+/// thinking (its thinkingLevelMap maps every level but "max" to null, and
+/// the openai-completions path sends no thinking budget for this provider),
+/// and reasoning counts against max_tokens, so even a six-word visible
+/// answer needs headroom for the reasoning emitted before it. The value is
+/// sized from a measured ladder on the length-cap cells (conv-30_q44,
+/// conv-26_q33; forced trigger for repeatable rescue firing, natural
+/// trigger for production rates): 64 and 256 always truncated the
+/// reasoning channel (still_blank), 1024 answered 1/3 forced draws, 4096
+/// and 6144 both left 1/5 blanks under the natural trigger on the worst
+/// cell (conv-30_q44), and every historical rescue that answered at the
+/// natural trigger emitted 138-3189 output tokens (11/11 under 4096) while
+/// ruminating draws burned whatever cap they were given and stayed blank.
+/// 4096 is therefore the smallest cap that covers every measured
+/// naturally-triggered answered rescue with margin (2^12 > 3189) while
+/// sitting at half the 8192 answer cap: a converging rescue fits, and a
+/// rumination is cut at half the cost instead of silently repeating the
+/// failure.
+const BLANK_RESCUE_MAX_TOKENS: u32 = 4096;
+
+fn blank_rescue_max_tokens(answer_max_tokens: Option<u32>) -> u32 {
+    // Hard cap: deliberately ignores the manifest answer budget (and every
+    // default for it), so the rescue can never inherit the failure mode it
+    // exists to rescue.
+    let _ = answer_max_tokens;
+    BLANK_RESCUE_MAX_TOKENS
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn run_question(
     scratch: &EnvScratch,
@@ -3800,6 +3837,10 @@ async fn run_question(
                 .map_err(|error| format!("rescue recall service failed: {error}"))?;
             service.recall(&question.question).text
         };
+        // Hard, small cap for the rescue re-ask: never the answer-stage
+        // budget. Recorded on the rescue block so every draw shows the cap
+        // it ran under.
+        let rescue_max_tokens = blank_rescue_max_tokens(manifest.settings.answer_max_tokens);
         let rescue_result: Result<(String, String, Value), String> = async {
             let (api_key, headers) = registry_auth(registry.clone(), rescue_model.clone()).await?;
             let question_turn = format!(
@@ -3822,7 +3863,7 @@ async fn run_question(
                 ],
                 tools: None,
             };
-            let max_tokens = f64::from(manifest.settings.answer_max_tokens.unwrap_or(8192));
+            let max_tokens = f64::from(rescue_max_tokens);
             let options = pi_ai::types::SimpleStreamOptions {
                 stream: pi_ai::types::StreamOptions {
                     max_tokens: Some(max_tokens),
@@ -3871,6 +3912,7 @@ async fn run_question(
                     } else {
                         "answered"
                     },
+                    "rescue_max_tokens": rescue_max_tokens,
                     "rescue_stop_reason": rescue_stop_reason,
                     "rescue_usage": rescue_usage,
                 });
@@ -3883,6 +3925,7 @@ async fn run_question(
                     "mode": "direct_terse_prompt",
                     "initial_stop_reason": initial_stop_reason,
                     "initial_usage": initial_usage,
+                    "rescue_max_tokens": rescue_max_tokens,
                     "outcome": "error",
                 });
             }
@@ -4687,6 +4730,25 @@ mod tests {
         assert!(!blank_rescue_needed("error", ""));
         assert!(!blank_rescue_needed("", ""));
         assert!(!blank_rescue_needed("stop", "final answer"));
+    }
+
+    #[test]
+    fn blank_rescue_cap_is_hard_and_independent_of_the_answer_budget() {
+        // The rescue re-ask can never inherit the answer-stage budget:
+        // whatever the manifest asks for (tiny cap, default, or the full
+        // 8192 answer cap), the rescue runs under the same small hard cap.
+        for answer_cap in [None, Some(1), Some(64), Some(8192), Some(32000)] {
+            assert_eq!(
+                blank_rescue_max_tokens(answer_cap),
+                BLANK_RESCUE_MAX_TOKENS
+            );
+        }
+        // Hard ceiling: the rescue cap must sit far below the LoCoMo answer
+        // cap so a rumination is cut cheaply instead of silently burning a
+        // second full answer budget (half the 8192 cap), and at or above the
+        // 3189-token ceiling every measured naturally-triggered answering
+        // rescue needed so the terse answer plus its reasoning headroom fits.
+        assert!(BLANK_RESCUE_MAX_TOKENS >= 4096 && BLANK_RESCUE_MAX_TOKENS < 8192);
     }
 
     #[test]
