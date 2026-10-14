@@ -1,0 +1,47 @@
+{
+ "g5c48q122": {
+  "tag": "g5c48q122",
+  "qid": "conv-48_q122",
+  "run_id": "lsw-g5-c48-q122",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "The Eisenhower Matrix.",
+  "recall_n": 24,
+  "recall_chars": 17114,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 7.9
+ },
+ "g5c48q50": {
+  "tag": "g5c48q50",
+  "qid": "conv-48_q50",
+  "run_id": "lsw-g5-c48-q50",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "2020",
+  "recall_n": 24,
+  "recall_chars": 16645,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 8.6
+ },
+ "g5c48q148": {
+  "tag": "g5c48q148",
+  "qid": "conv-48_q148",
+  "run_id": "lsw-g5-c48-q148",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "a bullet journal",
+  "recall_n": 24,
+  "recall_chars": 17387,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 8.7
+ }
+}

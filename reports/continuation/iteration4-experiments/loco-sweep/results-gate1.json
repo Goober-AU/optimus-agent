@@ -1,0 +1,47 @@
+{
+ "g1c43q104": {
+  "tag": "g1c43q104",
+  "qid": "conv-43_q104",
+  "run_id": "lsw-g1-c43-q104",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "sage",
+  "recall_n": 24,
+  "recall_chars": 15930,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 7.1
+ },
+ "g1c41q77": {
+  "tag": "g1c41q77",
+  "qid": "conv-41_q77",
+  "run_id": "lsw-g1-c41-q77",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "A beginner's yoga class",
+  "recall_n": 24,
+  "recall_chars": 15685,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 8.0
+ },
+ "g1c43q119": {
+  "tag": "g1c43q119",
+  "qid": "conv-43_q119",
+  "run_id": "lsw-g1-c43-q119",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "The Smoky Mountains",
+  "recall_n": 24,
+  "recall_chars": 15677,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 8.3
+ }
+}

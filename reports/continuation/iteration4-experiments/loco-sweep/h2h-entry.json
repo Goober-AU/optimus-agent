@@ -1,0 +1,26 @@
+{
+ "schema": "iteration4-loco-h2h-summary/1",
+ "date": "2026-10-14",
+ "worker": "locosweep",
+ "purpose": "round-4 full stack (read-time) generalization sweep: all 156 FAILED LoCoMo questions outside conv-26 on frozen typeA stores",
+ "model": "dgx-glm53/glm-5.3 (only)",
+ "n_runs": 172,
+ "mode": "typeA question-scoped on frozen imp3-gate improved-s{0,1,2} stores (copy-out + skipIngest)",
+ "stack": "det extract-only recall 24/24000 + recallQueryStemming + FINAL7 answerInstruction (no write keys)",
+ "conversions": "70/156 (44.9%) FAILED -> >=0.5; mean local-F1 0.110 -> 0.438 (+0.328)",
+ "stage_mix_nonconverts": {
+  "G answer": 67,
+  "B write-time": 11,
+  "D retrieval": 8
+ },
+ "batch_gates": "15 previously-passing spot-checks (3 per ~2 conversations): 14/15 stable 1.0; conv-44_q10 wobble 0.0 -> 1.0 on re-draw",
+ "stem_scan_targets_live": "q35 0.5 CONVERT, q71 1.0 CONVERT, q52 0.5 CONVERT, q5 0.524 CONVERT; q68 0.0 (G date binding), q4/q102 0.0 (B residues, as predicted)",
+ "ops_notes": "2 transient PermissionError ledger atomic-replace collisions (conv-48_q81/q102) re-run cleanly; 2 flagged driver cells (conv-41_q50, conv-30_q44): FINAL7 length-cap loop, empty answer",
+ "verdict": "Read stack generalizes with zero new infra; round-5 split: B(11) -> re-ingest lane, D(8) -> window/rerank work, G(67, 20 near-miss 0.3-0.5) -> answer-instruction lane",
+ "artifacts": {
+  "configs_and_results": "imp4b-locosweep/reports/continuation/iteration4-experiments/loco-sweep/",
+  "attempts_root": "reports/continuation/iteration4/ql-attempts-locosweep",
+  "gate_ledger": "reports/continuation/iteration4/QUESTION-LEDGER-locosweep-gate.json",
+  "branch": "improve/mem4b-loco-sweep"
+ }
+}

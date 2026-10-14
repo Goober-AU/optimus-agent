@@ -1,0 +1,47 @@
+{
+ "g4c47q30": {
+  "tag": "g4c47q30",
+  "qid": "conv-47_q30",
+  "run_id": "lsw-g4-c47-q30",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "Canada",
+  "recall_n": 24,
+  "recall_chars": 15017,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 7.2
+ },
+ "g4c44q63": {
+  "tag": "g4c44q63",
+  "qid": "conv-44_q63",
+  "run_id": "lsw-g4-c44-q63",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "croissants, muffins, tarts",
+  "recall_n": 24,
+  "recall_chars": 14874,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 7.3
+ },
+ "g4c44q10": {
+  "tag": "g4c44q10",
+  "qid": "conv-44_q10",
+  "run_id": "lsw-g4-c44-q10",
+  "rc": 3,
+  "err": null,
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "not mentioned",
+  "recall_n": 24,
+  "recall_chars": 15954,
+  "failure_stage": "answer",
+  "mode_detail": "copy-out",
+  "latency_s": 60.2
+ }
+}
