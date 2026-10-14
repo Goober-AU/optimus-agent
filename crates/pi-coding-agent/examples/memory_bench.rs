@@ -3577,7 +3577,7 @@ async fn run_question(
         agent_dir: Some(agent_dir_str.clone()),
         auth_storage: None,
         settings_manager: Some(settings.clone()),
-        model_registry: Some(registry),
+        model_registry: Some(registry.clone()),
         extension_flag_values: None,
         no_builtin_herdr_reporter: Some(true),
         telemetry_disabled: Some(true),
@@ -3728,7 +3728,7 @@ async fn run_question(
     }
 
     // Final assistant answer + usage.
-    let mut assistant = session.agent.find_last_assistant_message();
+    let assistant = session.agent.find_last_assistant_message();
     let mut answer_text = session
         .messages()
         .iter()
@@ -3764,63 +3764,123 @@ async fn run_question(
     });
     let mut blank_rescue = json!({"attempted": false});
     if blank_rescue_needed(&initial_stop_reason, &answer_text) {
-        let rescue_prompt = "You ran out of output space before writing the final answer. Reply now with ONLY the final answer to the question above. Do not repeat your reasoning; state the answer directly.";
-        let rescue_result = tokio::time::timeout(
-            Duration::from_secs(manifest.settings.question_timeout_s),
-            async {
-                session
-                    .prompt_and_wait(rescue_prompt, None)
-                    .await
-                    .map_err(|error| format!("blank rescue prompt failed: {error}"))?;
-                session
-                    .wait_for_headless_idle()
-                    .await
-                    .map_err(|error| format!("wait_for_headless_idle failed: {error}"))?;
-                Ok::<(), String>(())
-            },
-        )
-        .await;
-        assistant = session.agent.find_last_assistant_message();
-        if let Some(text) = session
-            .messages()
-            .iter()
-            .rev()
-            .find_map(|message| {
-                let text = read_assistant_text(message);
-                if text.trim().is_empty() {
-                    None
-                } else {
-                    Some(text)
-                }
-            })
-        {
-            answer_text = text;
-        }
-        let outcome = match &rescue_result {
-            Ok(Ok(())) => {
-                if answer_text.trim().is_empty() {
-                    "still_blank"
-                } else {
-                    "answered"
-                }
-            }
-            Ok(Err(error)) => {
-                record["error"] = json!(error);
-                "error"
-            }
-            Err(_) => "timeout",
+        // The in-session follow-up replays the looped reasoning turn and an
+        // agent-session retry ruminates again (LoCoMo conv-41_q50 /
+        // conv-30_q44 both measured "still_blank" through a full agent
+        // session). Fall back to ONE direct provider call outside the agent
+        // runtime: the exact recall block the main session saw, a terse
+        // answer-first instruction, no tools, no agent system prompt. The
+        // short form converges where the agent transcript looped.
+        let rescue_model = {
+            let guard = registry
+                .lock()
+                .map_err(|_| "model registry poisoned".to_string())?;
+            guard
+                .find(&manifest.model.provider, &manifest.model.id)
+                .ok_or_else(|| {
+                    format!(
+                        "model {}/{} not found in the scratch registry",
+                        manifest.model.provider, manifest.model.id
+                    )
+                })?
         };
-        let rescue_stop_reason = assistant
-            .as_ref()
-            .map(|message| message.stop_reason.as_str().to_string());
-        blank_rescue = json!({
-            "attempted": true,
-            "trigger": "length_stop_with_empty_answer",
-            "initial_stop_reason": initial_stop_reason,
-            "initial_usage": initial_usage,
-            "outcome": outcome,
-            "rescue_stop_reason": rescue_stop_reason,
-        });
+        // The recall custom message lives only in the request context, not the
+        // session state, so recompute the exact recall the main prompt saw:
+        // the memory extension narrows the query to the trailing "Question:"
+        // text and applies the store's stemming setting, which is precisely
+        // MemoryService::search over the same scratch store.
+        let recall_text = {
+            let service = MemoryService::new(&cwd_str, &agent_dir_str, None)
+                .map_err(|error| format!("rescue recall service failed: {error}"))?;
+            service.recall(&question.question).text
+        };
+        let rescue_result: Result<(String, String, Value), String> = async {
+            let (api_key, headers) = registry_auth(registry.clone(), rescue_model.clone()).await?;
+            let question_turn = format!(
+                "Using the notes above, answer in at most six words. Reply with ONLY the answer itself.\n\nQuestion: {}",
+                question.question
+            );
+            let context = pi_ai::types::Context {
+                system_prompt: Some(
+                    "You are a question-answering assistant. Answer strictly from the provided notes. Never examine files or call tools.".to_string(),
+                ),
+                messages: vec![
+                    pi_ai::types::Message::User(pi_ai::types::UserMessage::new(
+                        pi_ai::types::UserContent::Text(recall_text.clone()),
+                        0,
+                    )),
+                    pi_ai::types::Message::User(pi_ai::types::UserMessage::new(
+                        pi_ai::types::UserContent::Text(question_turn),
+                        1,
+                    )),
+                ],
+                tools: None,
+            };
+            let max_tokens = f64::from(manifest.settings.answer_max_tokens.unwrap_or(8192));
+            let options = pi_ai::types::SimpleStreamOptions {
+                stream: pi_ai::types::StreamOptions {
+                    max_tokens: Some(max_tokens),
+                    api_key: Some(api_key),
+                    headers,
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+            let reply = tokio::time::timeout(
+                Duration::from_secs(manifest.settings.question_timeout_s),
+                pi_ai::stream::complete_simple(&rescue_model, &context, Some(&options)),
+            )
+            .await
+            .map_err(|_| "blank rescue timed out".to_string())?;
+            let text: String = reply
+                .content
+                .iter()
+                .filter_map(|block| block.as_text().map(|text| text.text.clone()))
+                .collect::<Vec<String>>()
+                .join("");
+            let rescue_stop_reason = reply.stop_reason.as_str().to_string();
+            let rescue_usage = json!({
+                "input_tokens": reply.usage.input,
+                "output_tokens": reply.usage.output,
+                "cache_read": reply.usage.cache_read,
+                "cache_write": reply.usage.cache_write,
+                "total_tokens": reply.usage.total_tokens,
+            });
+            Ok((text, rescue_stop_reason, rescue_usage))
+        }
+        .await;
+        match rescue_result {
+            Ok((text, rescue_stop_reason, rescue_usage)) => {
+                if !text.trim().is_empty() {
+                    answer_text = text;
+                }
+                blank_rescue = json!({
+                    "attempted": true,
+                    "trigger": "length_stop_with_empty_answer",
+                    "mode": "direct_terse_prompt",
+                    "initial_stop_reason": initial_stop_reason,
+                    "initial_usage": initial_usage,
+                    "outcome": if answer_text.trim().is_empty() {
+                        "still_blank"
+                    } else {
+                        "answered"
+                    },
+                    "rescue_stop_reason": rescue_stop_reason,
+                    "rescue_usage": rescue_usage,
+                });
+            }
+            Err(error) => {
+                record["error"] = json!(error);
+                blank_rescue = json!({
+                    "attempted": true,
+                    "trigger": "length_stop_with_empty_answer",
+                    "mode": "direct_terse_prompt",
+                    "initial_stop_reason": initial_stop_reason,
+                    "initial_usage": initial_usage,
+                    "outcome": "error",
+                });
+            }
+        }
     }
     record["answer_blank_rescue"] = blank_rescue;
     if let Some(assistant) = &assistant {
