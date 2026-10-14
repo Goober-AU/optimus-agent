@@ -1,0 +1,192 @@
+{
+ "wfexp": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-writefull\\reports/continuation/iteration4-experiments/loco-writefull",
+ "wt": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-writefull",
+ "base": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424",
+ "PYV": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\repo-continuation/bench/.venv/Scripts/python.exe",
+ "REMAINING": [
+  "conv-30",
+  "conv-49"
+ ],
+ "POPULATION": [
+  "conv-26",
+  "conv-30",
+  "conv-41",
+  "conv-42",
+  "conv-43",
+  "conv-44",
+  "conv-47",
+  "conv-48",
+  "conv-49",
+  "conv-50"
+ ],
+ "COVERED": {
+  "writecamp": [
+   "conv-41",
+   "conv-42",
+   "conv-43",
+   "conv-44",
+   "conv-47",
+   "conv-48",
+   "conv-50"
+  ],
+  "dd": [
+   "conv-26"
+  ]
+ },
+ "SEED_MAN": {
+  "conv-30": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s1.json",
+  "conv-49": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\imp3-gate/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-improved-s2.json"
+ },
+ "INGEST_Q": {
+  "conv-30": "q59",
+  "conv-49": "q128"
+ },
+ "GATES": {
+  "conv-30": [
+   "q36",
+   "q37",
+   "q14"
+  ],
+  "conv-49": [
+   "q138",
+   "q94",
+   "q151"
+  ]
+ },
+ "GATE_LEDGER": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\reports/continuation/iteration4/QUESTION-LEDGER-locosweep-gate.json",
+ "SPOT_CHECK": {
+  "conv-30": [
+   "conv-30_q59 (gold: passionate about dance and fashion, D8:8)",
+   "conv-30_q50 (gold: hard work's paying off, D3:3)"
+  ],
+  "conv-49": [
+   "conv-49_q128 (gold: island = a happy place, D17:18)",
+   "conv-49_q26 (gold: family, fitness tracker, adventure hikes, D5:9/11/13)"
+  ]
+ },
+ "EXPECTED_CACHE": {
+  "conv-30": "conv-30--62b3e5ece0f952f0",
+  "conv-49": "conv-49--543cedbccf0f73d9"
+ },
+ "settings_lineage": "base-det-settings.json + fullstack-final9-stem.json copied byte-identical from loco-writecamp (merged at imp4 HEAD); importInstructions byte-identical to DD fullstack manifest lf4-q149-ing; conv-41 key f3e2ba0599fbe1d1 and conv-26 key d4b542a8e98deca6 both reproduce with these settings",
+ "driver": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\imp4b-target8k/release/examples/memory_bench.exe",
+ "driver_sha256_prefix": "4d2ba13f",
+ "att_root": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\reports/continuation/iteration4/ql-attempts-writefull",
+ "cache_root": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/ql-typeb-cache",
+ "run_ids": {
+  "ingest": {
+   "conv-30": {
+    "run_id": "wf30-q59-ing",
+    "launched": "2026-10-14T12:23:25",
+    "driver_pid": 2516,
+    "status": "complete (rc=3 fail seed q59 score 0.303; cache warm 12:49:40)"
+   },
+   "conv-49": {
+    "run_id": "wf49-q128-ing",
+    "launched": "2026-10-14T12:33:52",
+    "driver_pid": 25592,
+    "status": "complete (rc=3 fail seed q128 0.167; cache warm 13:10:42; seed answer had the fact but padded)"
+   }
+  },
+  "answers": {
+   "conv-30": {
+    "launched": "2026-10-14T12:55:18",
+    "completed": "2026-10-14T13:01",
+    "workers": 2,
+    "converts": [
+     "conv-30_q12 (0.667)",
+     "conv-30_q68 (1.0)"
+    ],
+    "fails": {
+     "conv-30_q17": 0.303,
+     "conv-30_q3": 0.0,
+     "conv-30_q44": 0.0,
+     "conv-30_q50": 0.444,
+     "conv-30_q51": 0.148,
+     "conv-30_q76": 0.2
+    }
+   },
+   "conv-49": {
+    "launched": "2026-10-14T13:15:58",
+    "completed": "2026-10-14T13:22",
+    "workers": 3,
+    "converts": [
+     "conv-49_q0 (1.0)",
+     "conv-49_q1 (1.0)",
+     "conv-49_q146 (1.0)",
+     "conv-49_q2 (1.0)",
+     "conv-49_q41 (1.0)",
+     "conv-49_q52 (0.667)",
+     "conv-49_q85 (1.0)"
+    ],
+    "fails": {
+     "conv-49_q103": 0.0,
+     "conv-49_q18": 0.357,
+     "conv-49_q26": 0.222,
+     "conv-49_q46": 0.333,
+     "conv-49_q51": 0.256
+    },
+    "flagged": {
+     "conv-49_q144": "empty_answer (length-cap ramble; a2 redraw staged)"
+    }
+   }
+  },
+  "gates": {
+   "conv-30": {
+    "launched": "2026-10-14T13:01:56",
+    "workers": 3,
+    "launcher_pid": 15088,
+    "completed": "2026-10-14T13:02",
+    "results": {
+     "conv-30_q37": 1.0,
+     "conv-30_q14": 1.0,
+     "conv-30_q36": 0.8
+    },
+    "regressions": []
+   },
+   "conv-49": {
+    "launched": "2026-10-14T13:22:57",
+    "workers": 3,
+    "launcher_pid": 8756,
+    "completed": "2026-10-14T13:23",
+    "results": {
+     "conv-49_q138": 1.0,
+     "conv-49_q94": 1.0,
+     "conv-49_q151": 1.0
+    },
+    "regressions": []
+   }
+  }
+ },
+ "heartbeat_id": "9d7bf7ce-b01b-413c-be7e-29889731fb20",
+ "wmi_launch_pattern": "wmi-ing30.ps1 / wmi-ing49.ps1; staggered >= 5 min",
+ "heartbeat_interval": "7m",
+ "heartbeat_next_run": "2026-10-14T12:33:34Z",
+ "pipeline": [
+  "conv-49 launch (heartbeat, stagger ok)",
+  "ingest monitor",
+  "entry counts + gold spot-checks",
+  "wmi-answers-30 -> wmi-answers-49 (5-min stagger)",
+  "wmi-gates-30/49",
+  "RESULTS.md+commit",
+  "10-line report to parent"
+ ],
+ "scheduling": "both ingest drivers running; after EACH completes: verify store then launch that conv's answer batch (workers=3); keep <=3 of my drivers at all times (one batch at a time); gates after answers, same pattern; 5+ min between batch launches naturally satisfied by sequential batches",
+ "verification": {
+  "conv-30": {
+   "entries_fresh": 130,
+   "entries_frozen": 71,
+   "ratio": 1.83,
+   "spot_q59": "PASS - mem_gina_combining_dance_and_fashion (passion for dance and fashion, verbatim) + mem_gina_fashion_fuels_creativity",
+   "spot_q50": "PASS - mem_gina_store_mall_spot_feb_2023 (hard work... store) + mem_gina_store_tough_but_challenge (hard work pays off)"
+  },
+  "conv-49": {
+   "entries_fresh": 181,
+   "entries_frozen": 123,
+   "ratio": 1.47,
+   "spot_q128": "PASS - evan-grew-up-on-island-happy-place (island = happy place, verbatim)",
+   "spot_q26": "PASS - evan-family-motivates-health + evan-fitness-watch + evan-motivated-by-adventure-hikes (all three gold motivations present)"
+  }
+ },
+ "scheduling_note": "answers-30 at 2 workers while conv-49 ingest runs (1) = 3 of mine; after conv-49 ingest completes, answers-49 launches (3 workers ok if answers-30 still running: 3+0... keep <=3 total of mine -> answers-49 waits for answers-30 OR runs at reduced workers if conv-49 ingest is the only other driver"
+}

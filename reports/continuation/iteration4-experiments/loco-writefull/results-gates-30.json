@@ -1,0 +1,47 @@
+{
+ "conv-30_q37": {
+  "tag": "conv-30_q37",
+  "qid": "conv-30_q37",
+  "run_id": "wfg30-q37-a1",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "23 July 2023",
+  "recall_n": 24,
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "62b3e5ece0f952f0",
+  "latency_s": 7.8
+ },
+ "conv-30_q14": {
+  "tag": "conv-30_q14",
+  "qid": "conv-30_q14",
+  "run_id": "wfg30-q14-a1",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "April 2023",
+  "recall_n": 24,
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "62b3e5ece0f952f0",
+  "latency_s": 8.9
+ },
+ "conv-30_q36": {
+  "tag": "conv-30_q36",
+  "qid": "conv-30_q36",
+  "run_id": "wfg30-q36-a1",
+  "rc": 0,
+  "err": null,
+  "score": 0.8,
+  "outcome": "pass",
+  "answer": "July 2023",
+  "recall_n": 24,
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "62b3e5ece0f952f0",
+  "latency_s": 16.1
+ }
+}
