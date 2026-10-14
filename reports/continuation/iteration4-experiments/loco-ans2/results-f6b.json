@@ -1,0 +1,80 @@
+{
+ "f6-q149-r6": {
+  "tag": "f6-q149-r6",
+  "qid": "conv-26_q149",
+  "run_id": "a2bq149f6r6",
+  "rc": 0,
+  "err": null,
+  "score": 0.6666666666666666,
+  "outcome": "pass",
+  "answer": "the world, motivation, support, strength",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 19.5
+ },
+ "f6-q144-r4": {
+  "tag": "f6-q144-r4",
+  "qid": "conv-26_q144",
+  "run_id": "a2bq144f6r4",
+  "rc": 0,
+  "err": null,
+  "score": 0.6153846153846154,
+  "outcome": "pass",
+  "answer": "Scared, but he was okay.",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 17.7
+ },
+ "f6-q144-r5": {
+  "tag": "f6-q144-r5",
+  "qid": "conv-26_q144",
+  "run_id": "a2bq144f6r5",
+  "rc": 3,
+  "err": null,
+  "score": 0.3333333333333333,
+  "outcome": "fail",
+  "answer": "Scared, but thankfully okay.",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 17.8
+ },
+ "f6-q149-r5": {
+  "tag": "f6-q149-r5",
+  "qid": "conv-26_q149",
+  "run_id": "a2bq149f6r5",
+  "rc": 0,
+  "err": null,
+  "score": 0.8,
+  "outcome": "pass",
+  "answer": "strength, motivation, support",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 56.8
+ },
+ "f6-q144-r6": {
+  "tag": "f6-q144-r6",
+  "qid": "conv-26_q144",
+  "run_id": "a2bq144f6r6",
+  "rc": 3,
+  "err": null,
+  "score": 0.39999999999999997,
+  "outcome": "fail",
+  "answer": "It was scary, but he was okay.",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 12.9
+ },
+ "f6-q149-r4": {
+  "tag": "f6-q149-r4",
+  "qid": "conv-26_q149",
+  "run_id": "a2bq149f6r4",
+  "rc": 0,
+  "err": null,
+  "score": 0.6666666666666666,
+  "outcome": "pass",
+  "answer": "strength, the world, motivation, support",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 69.0
+ }
+}

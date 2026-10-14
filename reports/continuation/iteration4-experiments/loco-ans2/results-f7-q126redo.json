@@ -1,0 +1,15 @@
+{
+ "f7reg-q126-r4": {
+  "tag": "f7reg-q126-r4",
+  "qid": "conv-26_q126",
+  "run_id": "a2b7gq126r4",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "horseback riding",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 6.0
+ }
+}
