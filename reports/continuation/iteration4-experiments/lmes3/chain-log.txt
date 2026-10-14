@@ -1,0 +1,11 @@
+2026-10-14 12:28:22 chain start: 5 questions sequential, stop at first failure
+2026-10-14 13:29:30 [0db4c65d] suffix=0db4c65d rc=0 after 61.1 min (step-0db4c65d.log)
+2026-10-14 13:29:30 [0db4c65d] PASS
+2026-10-14 14:20:46 [0ddfec37] suffix=0ddfec37 rc=0 after 51.3 min (step-0ddfec37.log)
+2026-10-14 14:20:46 [0ddfec37] PASS
+2026-10-14 15:07:37 [0ddfec37_abs] suffix=0ddfe-abs rc=0 after 46.8 min (step-0ddfe-abs.log)
+2026-10-14 15:07:37 [0ddfec37_abs] PASS
+2026-10-14 15:57:08 [0e4e4c46] suffix=0e4e4c46 rc=0 after 49.5 min (step-0e4e4c46.log)
+2026-10-14 15:57:08 [0e4e4c46] PASS
+2026-10-14 16:48:27 [0e5e2d1a] suffix=0e5e2d1a rc=3 after 51.3 min (step-0e5e2d1a.log)
+2026-10-14 16:48:27 [0e5e2d1a] STOP chain (rc=3); first-failure rule
