@@ -1,0 +1,17 @@
+{
+ "conv-49_q144": {
+  "tag": "conv-49_q144",
+  "qid": "conv-49_q144",
+  "run_id": "wf49-q144-a2",
+  "rc": 3,
+  "err": null,
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "not mentioned",
+  "recall_n": 24,
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "543cedbccf0f73d9",
+  "latency_s": 12.3
+ }
+}
