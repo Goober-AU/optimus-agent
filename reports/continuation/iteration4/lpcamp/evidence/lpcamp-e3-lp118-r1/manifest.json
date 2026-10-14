@@ -1,0 +1,52 @@
+{
+ "run_id": "lpcamp-e3-lp118-r1",
+ "benchmark": "locomo_plus",
+ "variant": "improved",
+ "output_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\lpcamp-scratch\\att\\lpcamp-e3-lp118-r1",
+ "envs": [
+  {
+   "env_id": "lp_118",
+   "sessions": [],
+   "ground_truth_refs": [],
+   "family": "locomo_plus"
+  }
+ ],
+ "questions": [
+  {
+   "qid": "lp_118",
+   "env_id": "lp_118",
+   "question": "Evan: It's strange not having him around the house; it's so quiet now.",
+   "question_protocol": "optimus-normalized-cues/1.0.0",
+   "scoring_protocol": "optimus-local-scoring/1.0.0",
+   "question_sha256": "0172d6a95eaf073dd08733c6c1beff50d21fa293f9a2a4265e14094ac0046ceb"
+  }
+ ],
+ "model": {
+  "provider": "dgx-glm53",
+  "id": "glm-5.3"
+ },
+ "settings": {
+  "recallOn": true,
+  "memoryLearning": false,
+  "answerMaxTokens": 8192,
+  "maxExtractionTokens": 32000,
+  "maxImportChunkChars": 15000,
+  "maxRecallChars": 24000,
+  "maxRecallEntries": 20,
+  "questionTimeoutS": 300,
+  "ingestTimeoutS": 21600,
+  "importRunTimeoutS": 900,
+  "disableTools": true,
+  "answerInstruction": "Your task: This is a memory-aware dialogue setting. You are continuing or reflecting on a prior conversation. Show that you are aware of the relevant memory or context from the evidence when you respond; your answer should naturally connect to or acknowledge that context.",
+  "importInstructions": "You are importing a past conversation into persistent memory so the assistant can later answer factual questions about it. Create one memory entry per DISTINCT fact, event, preference, plan, date, or attribute mentioned by EITHER speaker. Cover BOTH speakers equally. Include specifics: names, dates, places, numbers, titles, and outcomes. Do not summarize multiple facts into one entry. Do not skip minor or personal facts - they are all testable. Do not add facts not present in the text. Only create edits of kind memory with cited sourceIds.",
+  "evidenceTimestamps": true,
+  "skipIngest": true,
+  "recallQueryDistillation": false,
+  "recallRerank": true,
+  "recallRerankCandidates": 500,
+  "recallQueryExtract": true,
+  "recallQueryExpansion": false,
+  "recallQueryExpansionDraws": 2,
+  "recallProspectiveIndex": true
+ }
+}
