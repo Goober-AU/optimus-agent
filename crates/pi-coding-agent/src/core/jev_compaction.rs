@@ -20,6 +20,7 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use tokio_util::sync::CancellationToken;
 
+use crate::core::compaction::charcount::count_noncontinuation;
 use crate::core::extensions::types::ExtensionContext;
 
 const MAX_MESSAGES: usize = 4096;
@@ -127,6 +128,10 @@ pub struct CompactedContext {
 }
 
 /// Streaming fingerprint: no second copy of the transcript or tool arguments.
+/// `chars` counts non-continuation bytes of the streamed serialization with
+/// the dispatched SIMD char counter (`core::compaction::charcount`) —
+/// bit-identical to the scalar per-byte filter it replaces, and equal to the
+/// Unicode scalar count of the valid UTF-8 serde_json emits.
 #[derive(Default)]
 struct FingerprintWriter {
     hasher: Sha256,
@@ -139,7 +144,10 @@ impl Write for FingerprintWriter {
         if self.bytes > MAX_CONTEXT_BYTES {
             return Err(io::Error::other("compaction input limit"));
         }
-        self.chars += bytes.iter().filter(|byte| **byte & 0xc0 != 0x80).count();
+        // Bit-identical to the previous scalar filter
+        // (`bytes.iter().filter(|byte| **byte & 0xc0 != 0x80).count()`):
+        // the dispatched SIMD kernel classifies each byte independently.
+        self.chars += count_noncontinuation(bytes);
         self.hasher.update(bytes);
         Ok(bytes.len())
     }
@@ -889,5 +897,108 @@ mod metadata_tests {
         for index in 0..70 {
             clear_session_status(&format!("{prefix}-{index}"));
         }
+    }
+}
+
+#[cfg(test)]
+mod fingerprint_count_tests {
+    use super::*;
+    use pi_ai::types::{AssistantMessage, TextContent, ToolResultMessage, UserMessage};
+
+    fn user(text: &str) -> AgentMessage {
+        UserMessage::new(UserContent::Text(text.into()), 1).into()
+    }
+
+    fn assistant(text: &str) -> AgentMessage {
+        AssistantMessage {
+            content: vec![ContentBlock::Text(TextContent::new(text))],
+            ..Default::default()
+        }
+        .into()
+    }
+
+    fn tool_result(id: &str, name: &str, text: &str) -> AgentMessage {
+        ToolResultMessage::new(
+            id,
+            name,
+            vec![ImageOrTextContent::Text(TextContent::new(text))],
+            false,
+            2,
+        )
+        .into()
+    }
+
+    fn multibyte_transcript() -> Vec<AgentMessage> {
+        vec![
+            user("Diagnose \u{e9}\u{4e2d}\u{1f600} combining a\u{301} and NUL \u{0} end."),
+            assistant("Recent \u{6587} reasoning \u{1f9d1}\u{200d}\u{1f4bb} o\u{308}."),
+            tool_result(
+                "c-1",
+                "read_file",
+                &"\u{e9}\u{4e2d}\u{1f600}\u{10ffff}\u{0}line\n".repeat(500),
+            ),
+            user(&"\u{10ffff}".repeat(300)),
+        ]
+    }
+
+    /// The counted `chars` field must equal the Unicode scalar count of the
+    /// exact serialized bytes, and the digest must remain the plain SHA-256
+    /// of that serialization (the counting change never touches the hash).
+    #[test]
+    fn fingerprint_char_count_is_the_unicode_scalar_count_of_the_serialization() {
+        let cases: Vec<Vec<AgentMessage>> = vec![vec![], vec![user("a")], multibyte_transcript()];
+        for (index, messages) in cases.iter().enumerate() {
+            let serialized = serde_json::to_vec(messages).unwrap();
+            let (digest, chars) = fingerprint(messages).unwrap();
+            let scalars = std::str::from_utf8(&serialized).unwrap().chars().count();
+            assert_eq!(chars, scalars, "case {index}");
+            // The pre-optimization scalar idiom, pinned independently.
+            let scalar = serialized
+                .iter()
+                .filter(|byte| **byte & 0xc0 != 0x80)
+                .count();
+            assert_eq!(chars, scalar, "case {index}");
+            // The hash path is untouched: digest == SHA-256(serialization).
+            let mut hasher = Sha256::new();
+            hasher.update(&serialized);
+            let expected: [u8; 32] = hasher.finalize().into();
+            assert_eq!(digest, expected, "case {index}");
+            // Multibyte content means strictly fewer scalars than bytes.
+            if index == 2 {
+                assert!(chars < serialized.len());
+            }
+        }
+    }
+
+    /// `Write` chunks are arbitrary: the count must be chunking-independent,
+    /// exactly like the scalar filter it replaces.
+    #[test]
+    fn fingerprint_writer_count_is_chunking_independent() {
+        let serialized = serde_json::to_vec(&multibyte_transcript()).unwrap();
+        let expected = serialized
+            .iter()
+            .filter(|byte| **byte & 0xc0 != 0x80)
+            .count();
+        for chunk in [1usize, 7, 16, 31, 32, 33, 64, 4096] {
+            let mut writer = FingerprintWriter::default();
+            for piece in serialized.chunks(chunk) {
+                writer.write_all(piece).unwrap();
+            }
+            assert_eq!(writer.chars, expected, "chunk {chunk}");
+        }
+        // Irregular chunk sizes (xorshift-bounded), like serde_json emits.
+        let mut state = 0x243f_6a88_85a3_08d3u64;
+        let mut writer = FingerprintWriter::default();
+        let mut rest = serialized.as_slice();
+        while !rest.is_empty() {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            let take = (1 + (state % 97) as usize).min(rest.len());
+            let (head, tail) = rest.split_at(take);
+            writer.write_all(head).unwrap();
+            rest = tail;
+        }
+        assert_eq!(writer.chars, expected);
     }
 }

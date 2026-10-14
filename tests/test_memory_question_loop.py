@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import subprocess
 import sys
 import threading
 
@@ -122,7 +123,7 @@ def make_baseline_store(root, env_id="lp_18", project_id="project_base0001"):
     os.makedirs(original_workspace, exist_ok=True)
     with open(os.path.join(env_dir, "agent", "memory", "projects.json"), "w",
               encoding="utf-8") as h:
-        json.dump({mql.windows_alias(original_workspace): project_id}, h)
+        json.dump({mql.project_alias(original_workspace): project_id}, h)
     with open(os.path.join(env_dir, "agent", "memory.lock.guard"), "w") as h:
         h.write("")  # transient lock artifact: must not be copied
     with open(os.path.join(env_dir, "agent", "settings.json"), "w", encoding="utf-8") as h:
@@ -281,7 +282,10 @@ class TestTypeAStoreCopy:
         assert os.path.isfile(doc)
         registry = json.load(open(os.path.join(scratch, "envs/lp_18/agent/memory/projects.json"),
                                   encoding="utf-8"))
-        alias = mql.windows_alias(os.path.join(scratch, "envs/lp_18/workspace"))
+        workspace = os.path.join(scratch, "envs/lp_18/workspace")
+        alias = mql.project_alias(workspace)
+        if os.name != "nt":
+            assert alias == "path:" + os.path.realpath(workspace)
         assert registry[alias] == "project_base0001"
         assert len(registry) == 2  # original + rebound
         copied = [os.path.join(dp, f) for dp, _dn, fn in os.walk(scratch) for f in fn]
@@ -361,6 +365,29 @@ class TestTypeBCacheKey:
 # --------------------------------------------------------------------------
 
 class TestLedger:
+    def test_lock_excludes_other_process_and_releases_after_exception(self, world):
+        child = '''
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("mql", sys.argv[1])
+mql = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mql)
+lock = mql.LedgerLock(sys.argv[2], timeout_s=0.1)
+try:
+    with lock:
+        pass
+except mql.ControllerError:
+    assert lock._fd is None
+    sys.exit(3)
+'''
+        command = [sys.executable, "-c", child, mql.__file__, world["ledger"]]
+        with pytest.raises(RuntimeError, match="release lock"):
+            with mql.LedgerLock(world["ledger"]):
+                result = subprocess.run(command, capture_output=True, text=True, timeout=10)
+                assert result.returncode == 3, result.stderr
+                raise RuntimeError("release lock")
+        result = subprocess.run(command, capture_output=True, text=True, timeout=10)
+        assert result.returncode == 0, result.stderr
+
     def attempt(self, outcome="fail", score=0.0):
         return {"schema": mql.ATTEMPT_SCHEMA, "ts": mql.now_iso(),
                 "qid": "lp_18", "outcome": outcome, "score": score,
@@ -520,7 +547,7 @@ class TestEndToEnd:
         assert manifest["settings"]["recallRerank"] is False
         assert manifest["settings"]["skipIngest"] is True
         assert manifest["variant"] == "improved"
-        assert manifest["model"] == {"provider": "dgx-glm53", "id": "glm-5.3"}
+        assert manifest["model"] == mql.MODEL
         assert len(manifest["envs"]) == 1 and len(manifest["questions"]) == 1
         qs = json.loads(open(world["qs_path"], encoding="utf-8").readline())
         assert question["question_sha256"] == mql.canonical_hash(qs)

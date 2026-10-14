@@ -273,7 +273,6 @@ fn assignment_at(chars: &[char], i: usize) -> Option<((usize, usize, Option<char
     if j == key_start {
         return None;
     }
-    let key: String = chars[key_start..j].iter().collect();
     let mut k = j;
     if let Some(quote) = quote {
         if chars.get(k) != Some(&quote) {
@@ -289,6 +288,10 @@ fn assignment_at(chars: &[char], i: usize) -> Option<((usize, usize, Option<char
         Some('=') if chars.get(k + 1) != Some(&'=') => {}
         _ => return None,
     }
+    // The key is only needed once the separator confirmed an assignment
+    // shape; collecting it earlier burned one String per scanned word
+    // position inside `redact_window`'s per-character loop.
+    let key: String = chars[key_start..j].iter().collect();
     if !key_is_secret(&key) {
         // Not secret: report "seen but not redacted" so the caller keeps the
         // fast path and simply copies the character.
@@ -365,17 +368,38 @@ fn is_value_delim(c: char) -> bool {
     c.is_whitespace() || matches!(c, '"' | '\'' | '`' | ',' | ';' | ')' | ']' | '}' | '>' | '|' | '\\')
 }
 
+/// Streaming prefix compare, allocation-free.
+///
+/// `redact_window` calls this for every character position and every
+/// credential prefix, so materializing `prefix` into a fresh `Vec<char>` per
+/// call dominated compaction-prepare latency (measured ~43 heap allocations
+/// per scanned character on a 1 MiB transcript; `str::chars()` has a
+/// non-exact `size_hint`, so each `collect()` also re-grows its buffer).
+/// Semantics are unchanged: true exactly when the characters starting at `i`
+/// match the prefix character sequence (a shorter tail is a mismatch).
 fn starts_with(chars: &[char], i: usize, prefix: &str) -> bool {
-    let prefix: Vec<char> = prefix.chars().collect();
-    i + prefix.len() <= chars.len() && chars[i..i + prefix.len()] == prefix[..]
+    let Some(window) = chars.get(i..) else {
+        return false;
+    };
+    let mut window = window.iter();
+    for expected in prefix.chars() {
+        match window.next() {
+            Some(&actual) if actual == expected => {}
+            _ => return false,
+        }
+    }
+    true
 }
 
+/// Streaming substring search, allocation-free for the same reason as
+/// [`starts_with`]. Same result and same bounds as the materialized form:
+/// window length is the needle's character count, not its byte length.
 fn find_sub(chars: &[char], from: usize, needle: &str) -> Option<usize> {
-    let needle: Vec<char> = needle.chars().collect();
-    if needle.is_empty() || chars.len() < needle.len() {
+    let needle_chars = needle.chars().count();
+    if needle_chars == 0 || chars.len() < needle_chars {
         return None;
     }
-    (from..=chars.len() - needle.len()).find(|&i| chars[i..i + needle.len()] == needle[..])
+    (from..=chars.len() - needle_chars).find(|&i| starts_with(chars, i, needle))
 }
 
 #[cfg(test)]
@@ -474,5 +498,84 @@ mod tests {
         let text = "é".repeat(100);
         let excerpt = bounded_excerpt(&text, 10);
         assert_eq!(excerpt.chars().count(), 10);
+    }
+
+    // ------------------------------------------------------------------
+    // Parity: the allocation-free streaming compares must return exactly
+    // what the previous `Vec<char>`-materializing implementations returned,
+    // including multi-byte prefixes (char-count windows, not byte counts).
+    // ------------------------------------------------------------------
+
+    fn materialized_starts_with(chars: &[char], i: usize, prefix: &str) -> bool {
+        let prefix: Vec<char> = prefix.chars().collect();
+        i + prefix.len() <= chars.len() && chars[i..i + prefix.len()] == prefix[..]
+    }
+
+    fn materialized_find_sub(chars: &[char], from: usize, needle: &str) -> Option<usize> {
+        let needle: Vec<char> = needle.chars().collect();
+        if needle.is_empty() || chars.len() < needle.len() {
+            return None;
+        }
+        (from..=chars.len() - needle.len()).find(|&i| chars[i..i + needle.len()] == needle[..])
+    }
+
+    #[test]
+    fn starts_with_matches_materialized_reference() {
+        let texts = [
+            "",
+            "a",
+            "sk-live-abc def ghp_token",
+            "Bearer Basic bearer basic BEARER",
+            "-----BEGIN RSA PRIVATE KEY-----",
+            "https://user:pass@host/path",
+            "plain prose without markers. More prose.",
+            "é🚀naïve café 📦\n mixed lines",
+            "e\u{0301} combining",
+        ];
+        let mut prefixes: Vec<&str> = TOKEN_PREFIXES.to_vec();
+        prefixes.extend_from_slice(&[
+            "", "B", "Be", "Bearer", "bearer", "BEARER", "Basic", "basic", "://", "----",
+            "-----BEGIN", "-----END", "xoxb-", "github_pat_", "dop_v1_", "sk-live",
+            "é", "🚀", "e\u{0301}", "naïve",
+        ]);
+        for text in texts {
+            let chars: Vec<char> = text.chars().collect();
+            for prefix in &prefixes {
+                for i in 0..=chars.len() {
+                    assert_eq!(
+                        starts_with(&chars, i, prefix),
+                        materialized_starts_with(&chars, i, prefix),
+                        "text={text:?} prefix={prefix:?} i={i}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn find_sub_matches_materialized_reference() {
+        let texts = [
+            "",
+            "a",
+            "-----BEGIN RSA PRIVATE KEY-----\n-----END KEY-----",
+            "abcabcabc",
+            "é🚀xyé🚀xy",
+            "needle in a haystack -----END here",
+        ];
+        let needles = [
+            "-----END", "-----BEGIN", "abc", "xy", "é", "🚀", "e\u{0301}", "", "zzz",
+        ];
+        for text in texts {
+            let chars: Vec<char> = text.chars().collect();
+            for needle in needles {
+                for from in 0..=chars.len() + 1 {
+                    assert_eq!(
+                        find_sub(&chars, from, needle),
+                        materialized_find_sub(&chars, from, needle),
+                        "text={text:?} needle={needle:?} from={from}"
+                    );
+                }
+            }
+        }
     }
 }

@@ -1,0 +1,5 @@
+- Changed Optimus Agent to version 0.1.29 with memory extraction and recall improvements, bounded memory and tool-schema caches, and lower CPU overhead in Unicode handling and Jev compaction.
+- Changed memory search to reuse bounded corpus indexes while preserving optional query stemming, scope filters, scores, and ordering across settings changes.
+- Changed tool-schema validation to use a bounded content-hash cache with structural collision checks, and removed redundant Unicode conversions.
+- Changed Jev redaction to avoid prefix-scan allocations and use the shared CPU character counter for compaction fingerprints.
+- Fixed the memory benchmark controller on Linux and macOS by using native file locks, canonical project aliases, and platform-appropriate executable paths while retaining Windows support.

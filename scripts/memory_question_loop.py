@@ -19,7 +19,7 @@ Runs ONE ledger question end-to-end and scores it immediately:
          skipIngest, driver output_dir = cache dir), a warm cache is
          copied out per attempt (type-A reuse, no re-ingest);
   3. invoke the driver: memory_bench <manifest> with
-     MEMORY_BENCH_MODELS_JSON (DGX GLM-5.3 only), capture driver.log;
+     MEMORY_BENCH_MODELS_JSON (the driver's provider config), capture driver.log;
   4. score QUESTION-SCOPED with the official bench evaluator (bench venv,
      campaign-root scoring cwd): a scratch qs-dir holding ONLY the target
      question's single qs record and a 1-record run.jsonl extract.
@@ -45,10 +45,10 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import errno
 import glob
 import hashlib
 import json
-import msvcrt
 import os
 import re
 import shutil
@@ -57,30 +57,38 @@ import sys
 import time
 import uuid
 
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
+
 CONTROLLER_NAME = "scripts/memory_question_loop.py"
 
-# --- campaign defaults (overridable via CLI) -------------------------------
+# --- defaults (override via CLI flags or MEMORY_BENCH_ROOT) ------------------
+# All paths resolve against MEMORY_BENCH_ROOT (default: current directory) so the
+# controller can drive any checkout without edits.
 
-DEFAULT_LEDGER = ("C:/Users/openclawuser/optimus-memory-bench-20261007-040424/"
-                 "reports/continuation/iteration4/QUESTION-LEDGER.json")
-DEFAULT_MODELS_JSON = ("C:/Users/openclawuser/optimus-memory-bench-20261007-040424/"
-                       "reports/continuation/c06-instruction-boundary/inputs/runs/"
-                       "locomo-c06-ib-system_append-q12-s0p1/envs/conv-30/agent/models.json")
-DEFAULT_JUDGE_MODELS_JSON = ("C:/Users/openclawuser/optimus-memory-bench-20261007-040424/"
-                             "reports/continuation/iteration2-inputs/lme-temporal-flip/"
-                             "judge-models.json")
-DEFAULT_BENCH_VENV_PYTHON = ("C:/Users/openclawuser/optimus-memory-bench-20261007-040424/"
-                             "repo-continuation/bench/.venv/Scripts/python.exe")
-DEFAULT_SCORING_CWD = "C:/Users/openclawuser/optimus-memory-bench-20261007-040424"
-DEFAULT_DRIVER = ("C:/Users/openclawuser/optimus-memory-bench-20261007-040424/"
-                  "imp4-targetA/release/examples/memory_bench.exe")
-DEFAULT_DRIVER_WORKDIR = "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4"
+ROOT = os.environ.get("MEMORY_BENCH_ROOT", os.getcwd())
+DEFAULT_LEDGER = os.path.join(
+    ROOT, "reports", "continuation", "iteration4", "QUESTION-LEDGER.json")
+DEFAULT_MODELS_JSON = os.path.join(ROOT, "agent", "models.json")
+DEFAULT_JUDGE_MODELS_JSON = os.path.join(ROOT, "judge-models.json")
+DEFAULT_BENCH_VENV_PYTHON = os.path.join(
+    ROOT, "bench", ".venv", *(('Scripts', 'python.exe') if os.name == 'nt' else ('bin', 'python')))
+DEFAULT_SCORING_CWD = ROOT
+DEFAULT_DRIVER = os.path.join(
+    ROOT, "target", "release", "examples", "memory_bench.exe" if os.name == "nt" else "memory_bench")
+DEFAULT_DRIVER_WORKDIR = ROOT
 DEFAULT_MANIFEST_DIRS = [
-    "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/manifests",
-    "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4-inputs/manifests",
+    os.path.join(ROOT, "reports", "continuation", "manifests"),
 ]
 
-MODEL = {"provider": "dgx-glm53", "id": "glm-5.3"}  # DGX GLM-5.3 only (user-mandated)
+# Answer model embedded in generated manifests and used for type-B cache keys.
+# Override with MEMORY_BENCH_MODEL_PROVIDER / MEMORY_BENCH_MODEL_ID.
+MODEL = {
+    "provider": os.environ.get("MEMORY_BENCH_MODEL_PROVIDER", "openai"),
+    "id": os.environ.get("MEMORY_BENCH_MODEL_ID", "gpt-4o"),
+}
 
 # ledger ordering (replicates the ledger "ordering" note)
 STATUS_RANK = {"FAILED": 0, "EVAL_ERROR": 1, "RESOLVED": 2, "UNTESTED": 3}
@@ -218,7 +226,7 @@ def write_jsonl(path: str, rows) -> None:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def windows_alias(path: str) -> str:
+def project_alias(path: str) -> str:
     """The projects.json alias key the Rust driver derives from a cwd.
 
     project_identity() canonicalizes the workspace and prefixes "path:";
@@ -226,11 +234,13 @@ def windows_alias(path: str) -> str:
     "path:" + \\\\?\\ + realpath (true on-disk case).
     """
     real = os.path.realpath(os.path.abspath(path))
-    return "path:" + "\\\\?\\" + real
+    if os.name == "nt" and not real.startswith("\\\\?\\"):
+        real = "\\\\?\\UNC\\" + real[2:] if real.startswith("\\\\") else "\\\\?\\" + real
+    return "path:" + real
 
 
 class LedgerLock:
-    """Cross-process exclusive lock (msvcrt.locking on Windows)."""
+    """Cross-process exclusive lock using the host's native file locking."""
 
     def __init__(self, path: str, timeout_s: float = 120.0):
         self.path = path + ".lock"
@@ -241,22 +251,33 @@ class LedgerLock:
         os.makedirs(os.path.dirname(os.path.abspath(self.path)), exist_ok=True)
         self._fd = os.open(self.path, os.O_RDWR | os.O_CREAT)
         deadline = time.monotonic() + self.timeout_s
-        while True:
-            try:
-                msvcrt.locking(self._fd, msvcrt.LK_NBLCK, 1)
-                return self
-            except OSError:
-                if time.monotonic() > deadline:
-                    os.close(self._fd)
-                    self._fd = None
-                    raise ControllerError(f"ledger lock timeout: {self.path}")
-                time.sleep(0.05)
+        try:
+            while True:
+                try:
+                    if os.name == "nt":
+                        msvcrt.locking(self._fd, msvcrt.LK_NBLCK, 1)
+                    else:
+                        fcntl.flock(self._fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    return self
+                except OSError as exc:
+                    if exc.errno not in (errno.EACCES, errno.EAGAIN, errno.EDEADLK):
+                        raise
+                    if time.monotonic() > deadline:
+                        raise ControllerError(f"ledger lock timeout: {self.path}") from exc
+                    time.sleep(0.05)
+        except BaseException:
+            os.close(self._fd)
+            self._fd = None
+            raise
 
     def __exit__(self, *exc):
         if self._fd is not None:
             try:
                 os.lseek(self._fd, 0, os.SEEK_SET)
-                msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
+                if os.name == "nt":
+                    msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
+                else:
+                    fcntl.flock(self._fd, fcntl.LOCK_UN)
             finally:
                 os.close(self._fd)
                 self._fd = None
@@ -490,7 +511,7 @@ def copy_store_into_scratch(store_env_dir: str, scratch_output_dir: str, env_id:
 
     workspace = os.path.join(dst_env, "workspace")
     os.makedirs(workspace, exist_ok=True)
-    alias = windows_alias(workspace)
+    alias = project_alias(workspace)
     projects_json = os.path.join(dst_agent, "memory", "projects.json")
     registry = read_json(projects_json) if os.path.isfile(projects_json) else {}
     registry[alias] = project_id
