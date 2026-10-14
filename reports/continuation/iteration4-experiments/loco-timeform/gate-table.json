@@ -1,0 +1,269 @@
+{
+ "schema": "loco-timeform-final8/1",
+ "battery": {
+  "q1": {
+   "n": 1,
+   "draws": [
+    1.0
+   ],
+   "median": 1.0,
+   "baseline": 0.0,
+   "gg_full2": 1.0,
+   "d_baseline": 1.0,
+   "d_gg": 0.0
+  },
+  "q2": {
+   "n": 1,
+   "draws": [
+    0.28571428571428575
+   ],
+   "median": 0.28571428571428575,
+   "baseline": 0.0,
+   "gg_full2": 0.2857,
+   "d_baseline": 0.2857,
+   "d_gg": 0.0
+  },
+  "q18": {
+   "n": 1,
+   "draws": [
+    1.0
+   ],
+   "median": 1.0,
+   "baseline": 0.2685,
+   "gg_full2": 1.0,
+   "d_baseline": 0.7315,
+   "d_gg": 0.0
+  },
+  "q26": {
+   "n": 1,
+   "draws": [
+    1.0
+   ],
+   "median": 1.0,
+   "baseline": 0.0606,
+   "gg_full2": 1.0,
+   "d_baseline": 0.9394,
+   "d_gg": 0.0
+  },
+  "q33": {
+   "n": 3,
+   "draws": [
+    0.6666666666666666,
+    0.6666666666666666,
+    0.6666666666666666
+   ],
+   "median": 0.6666666666666666,
+   "baseline": 0.0678,
+   "gg_full2": 1.0,
+   "d_baseline": 0.5989,
+   "d_gg": -0.3333
+  },
+  "q37": {
+   "n": 1,
+   "draws": [
+    0.0
+   ],
+   "median": 0.0,
+   "baseline": 0.0,
+   "gg_full2": 0.0,
+   "d_baseline": 0.0,
+   "d_gg": 0.0
+  },
+  "q39": {
+   "n": 1,
+   "draws": [
+    0.5333333333333333
+   ],
+   "median": 0.5333333333333333,
+   "baseline": 0.1088,
+   "gg_full2": 0.5333,
+   "d_baseline": 0.4245,
+   "d_gg": 0.0
+  },
+  "q55": {
+   "n": 1,
+   "draws": [
+    1.0
+   ],
+   "median": 1.0,
+   "baseline": 0.0,
+   "gg_full2": 1.0,
+   "d_baseline": 1.0,
+   "d_gg": 0.0
+  },
+  "q57": {
+   "n": 3,
+   "draws": [
+    0.6,
+    0.6,
+    0.6
+   ],
+   "median": 0.6,
+   "baseline": 0.0556,
+   "gg_full2": 0.0,
+   "d_baseline": 0.5444,
+   "d_gg": 0.6
+  },
+  "q66": {
+   "n": 1,
+   "draws": [
+    0.0
+   ],
+   "median": 0.0,
+   "baseline": 0.0,
+   "gg_full2": 0.0,
+   "d_baseline": 0.0,
+   "d_gg": 0.0
+  },
+  "q77": {
+   "n": 1,
+   "draws": [
+    0.0
+   ],
+   "median": 0.0,
+   "baseline": 0.0,
+   "gg_full2": 0.0,
+   "d_baseline": 0.0,
+   "d_gg": 0.0
+  },
+  "q99": {
+   "n": 1,
+   "draws": [
+    0.4827586206896552
+   ],
+   "median": 0.4827586206896552,
+   "baseline": 0.2574,
+   "gg_full2": 0.4828,
+   "d_baseline": 0.2254,
+   "d_gg": -0.0
+  },
+  "q144": {
+   "n": 3,
+   "draws": [
+    0.39999999999999997,
+    0.5714285714285715,
+    0.5714285714285715
+   ],
+   "median": 0.5714285714285715,
+   "baseline": 0.2927,
+   "gg_full2": 0.5714,
+   "d_baseline": 0.2787,
+   "d_gg": 0.0
+  },
+  "q149": {
+   "n": 1,
+   "draws": [
+    0.8
+   ],
+   "median": 0.8,
+   "baseline": 0.0741,
+   "gg_full2": 0.8,
+   "d_baseline": 0.7259,
+   "d_gg": 0.0
+  },
+  "q54": {
+   "n": 1,
+   "draws": [
+    1.0
+   ],
+   "median": 1.0,
+   "baseline": 0.1818,
+   "gg_full2": 1.0,
+   "d_baseline": 0.8182,
+   "d_gg": 0.0
+  },
+  "q126": {
+   "n": 1,
+   "draws": [
+    1.0
+   ],
+   "median": 1.0,
+   "baseline": 0.2105,
+   "gg_full2": 1.0,
+   "d_baseline": 0.7895,
+   "d_gg": 0.0
+  },
+  "q135": {
+   "n": 1,
+   "draws": [
+    1.0
+   ],
+   "median": 1.0,
+   "baseline": 0.3158,
+   "gg_full2": 1.0,
+   "d_baseline": 0.6842,
+   "d_gg": 0.0
+  },
+  "q141": {
+   "n": 1,
+   "draws": [
+    0.5555555555555556
+   ],
+   "median": 0.5555555555555556,
+   "baseline": 0.375,
+   "gg_full2": 0.5263,
+   "d_baseline": 0.1806,
+   "d_gg": 0.0293
+  },
+  "q143": {
+   "n": 1,
+   "draws": [
+    1.0
+   ],
+   "median": 1.0,
+   "baseline": null,
+   "gg_full2": 1.0,
+   "d_baseline": null,
+   "d_gg": 0.0
+  }
+ },
+ "aggregate": {
+  "n18": 18,
+  "final8_mean18": 0.6386,
+  "baseline_mean18": 0.126,
+  "delta_vs_baseline": 0.5126,
+  "gg_mean18": 0.6222,
+  "delta_vs_gg": 0.0164
+ },
+ "targets": {
+  "aggregate_ge_0.49": true,
+  "q149_ge_0.8": true,
+  "q144_ge_0.5": true,
+  "q18_eq_1.0": true,
+  "q55_ge_0.5": true,
+  "q57_ge_0.5": true,
+  "fixed_set_holds": true
+ },
+ "fixed_set": {
+  "q1": {
+   "bar": 1.0,
+   "median": 1.0,
+   "hold": true
+  },
+  "q54": {
+   "bar": 1.0,
+   "median": 1.0,
+   "hold": true
+  },
+  "q126": {
+   "bar": 1.0,
+   "median": 1.0,
+   "hold": true
+  },
+  "q135": {
+   "bar": 0.5,
+   "median": 1.0,
+   "hold": true
+  },
+  "q141": {
+   "bar": 0.5,
+   "median": 0.5555555555555556,
+   "hold": true
+  },
+  "q143": {
+   "bar": 0.5,
+   "median": 1.0,
+   "hold": true
+  }
+ }
+}
