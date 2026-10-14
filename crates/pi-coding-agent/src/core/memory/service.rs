@@ -287,6 +287,9 @@ impl MemoryService {
         // per-query empty-corpus fallback.
         let project_id = self.store.project.id.clone();
         let host_id = self.store.host_id.clone();
+        // PR #144: one stemming flag per query, applied to every corpus
+        // index and the query terms (also the flag in the cache key).
+        let stemming = self.store.settings().recall_query_stemming;
         let global_dir = get_global_harness_state_dir(&self.store.agent_dir);
         let global_path = get_harness_state_path(&global_dir);
         let mut corpora: Vec<Arc<CorpusIndex>> = vec![
@@ -295,6 +298,7 @@ impl MemoryService {
                 MemoryScope::Global,
                 &project_id,
                 &host_id,
+                stemming,
                 || {
                     let details = load_harness_state_details(&global_dir, HarnessScope::Global);
                     (details.status == HarnessStateLoadStatus::Loaded).then_some(details.state)
@@ -307,6 +311,7 @@ impl MemoryService {
                 MemoryScope::Shared,
                 &project_id,
                 &host_id,
+                stemming,
             ),
         ];
         if let Some(session_artifact_dir) = &self.session_artifact_dir {
@@ -317,6 +322,7 @@ impl MemoryService {
                     MemoryScope::Session,
                     &project_id,
                     &host_id,
+                    stemming,
                     || {
                         let details = load_harness_state_details(&dir, HarnessScope::Local);
                         (details.status == HarnessStateLoadStatus::Loaded).then_some(details.state)
@@ -325,7 +331,7 @@ impl MemoryService {
             }
         }
         // A selected shared copy of a local memory should not consume recall twice.
-        let found = search_corpora(&self.store, query, &corpora, include_inactive);
+        let found = search_corpora(&self.store, query, &corpora, include_inactive, stemming);
         let local_ids: Vec<String> = found
             .iter()
             .filter(|hit| hit.scope == MemoryScope::Project)

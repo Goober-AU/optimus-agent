@@ -103,6 +103,79 @@ fn is_word_character(character: char) -> bool {
     character.is_alphanumeric() || character == '_' || character == '-'
 }
 
+/// Morphological stem used when `memory.recallQueryStemming` is enabled:
+/// query terms and entry words both reduce to a shared stem so inflected
+/// forms match ("camped" == "camping" == "camps" -> "camp"). Deliberately
+/// minimal (suffix strip with a 3-char stem floor plus doubled-consonant
+/// collapse); it must stay deterministic, ASCII-suffix-only, and applied
+/// symmetrically to the query and the corpus so exact-match semantics are
+/// the unchanged default and scores stay comparable within one mode.
+pub fn stem(word: &str) -> String {
+    let characters: Vec<char> = word.chars().collect();
+    let collapse_double_consonant = |stem: &[char]| -> Vec<char> {
+        if stem.len() >= 3
+            && stem[stem.len() - 1] == stem[stem.len() - 2]
+            && !matches!(stem[stem.len() - 1], 'a' | 'e' | 'i' | 'o' | 'u')
+        {
+            stem[..stem.len() - 1].to_vec()
+        } else {
+            stem.to_vec()
+        }
+    };
+    let has_suffix = |suffix: &[char]| {
+        word.chars().rev().take(suffix.len()).collect::<Vec<_>>().iter().rev().eq(suffix.iter())
+    };
+    // "stories" -> "story", "studies" -> "study", "carried" -> "carry"
+    if characters.len() >= 5 && has_suffix(&['i', 'e', 's']) {
+        let mut stem: Vec<char> = characters[..characters.len() - 3].to_vec();
+        stem.push('y');
+        return stem.into_iter().collect();
+    }
+    if characters.len() >= 5 && has_suffix(&['i', 'e', 'd']) {
+        let mut stem: Vec<char> = characters[..characters.len() - 3].to_vec();
+        stem.push('y');
+        return stem.into_iter().collect();
+    }
+    // "camping" -> "camp", "running" -> "run"; short words stay whole
+    if characters.len() >= 6 && has_suffix(&['i', 'n', 'g']) {
+        let stem = collapse_double_consonant(&characters[..characters.len() - 3]);
+        if stem.len() >= 3 {
+            return stem.into_iter().collect();
+        }
+    }
+    // "camped" -> "camp", "stopped" -> "stop"
+    if characters.len() >= 5 && has_suffix(&['e', 'd']) {
+        let stem = collapse_double_consonant(&characters[..characters.len() - 2]);
+        if stem.len() >= 3 {
+            return stem.into_iter().collect();
+        }
+    }
+    // "camps" -> "camp", "faces" -> "face", "sunsets" -> "sunset";
+    // "ss"/"us"/"as" endings keep the 's' (class, plus, alas).
+    if characters.len() >= 4
+        && has_suffix(&['s'])
+        && !has_suffix(&['s', 's'])
+        && !has_suffix(&['u', 's'])
+        && !has_suffix(&['a', 's'])
+    {
+        return characters[..characters.len() - 1].iter().collect();
+    }
+    word.to_string()
+}
+
+/// Tokenize `value` into unique stems (stemming mode) or unique words.
+fn words_stemmed(value: &str) -> Vec<String> {
+    let mut seen: HashSet<String> = HashSet::new();
+    let mut result: Vec<String> = Vec::new();
+    for word in words(value) {
+        let stemmed = stem(&word);
+        if seen.insert(stemmed.clone()) {
+            result.push(stemmed);
+        }
+    }
+    result
+}
+
 pub fn sources(entry: &HarnessEntry) -> Vec<MemorySource> {
     match entry.metadata.get("sources") {
         Some(Value::Array(values)) => values
@@ -230,6 +303,14 @@ fn source_span_words(entry: &HarnessEntry) -> HashSet<String> {
     }
 }
 
+/// `sourceSpan` words reduced to stems when stemming is enabled.
+fn source_span_words_stemmed(entry: &HarnessEntry) -> HashSet<String> {
+    source_span_words(entry)
+        .into_iter()
+        .map(|word| stem(&word))
+        .collect()
+}
+
 // ---------------------------------------------------------------------------
 // Precomputed corpus index
 //
@@ -245,6 +326,10 @@ fn source_span_words(entry: &HarnessEntry) -> HashSet<String> {
 // Scores stay bit-identical: the query-time loop performs the exact
 // arithmetic of the original implementation, in the exact order, with `idf`
 // hoisted to one evaluation per query term (same inputs, same `f64` ops).
+// PR #144's `recallQueryStemming` is part of the index identity: with the
+// flag on, the term sets below are built from `words_stemmed`/`stem` exactly
+// as the original per-query loop did, and the flag rides in the cache key so
+// both modes coexist as separate indexes over the same file revision.
 // ---------------------------------------------------------------------------
 
 /// Interned term id, unique inside one corpus index.
@@ -300,11 +385,15 @@ impl CorpusIndex {
     /// the searching store's identity: entries that could never pass the
     /// original filters for this store (foreign project/host) are dropped
     /// here, which is safe because the cache key below carries both.
+    /// `stemming` selects the term mode: `words_stemmed`/`stem` for the
+    /// title/body/cue/span term sets when on, plain `words` otherwise,
+    /// matching main's per-query loop for both modes.
     pub(crate) fn build(
         state: &HarnessState,
         base_scope: MemoryScope,
         project_id: &str,
         host_id: &str,
+        stemming: bool,
     ) -> CorpusIndex {
         let mut lexicon: HashMap<String, TermId> = HashMap::new();
         let mut entries: Vec<IndexedEntry> = Vec::new();
@@ -330,22 +419,44 @@ impl CorpusIndex {
                 } else {
                     base_scope
                 };
-                let mut title: Vec<TermId> =
+                // Term mode per PR #144: stemmed title/path/id, content,
+                // cues and spans when on, plain words otherwise - exactly the
+                // term sets main's per-query loop built for either mode.
+                let mut title: Vec<TermId> = if stemming {
+                    words_stemmed(&format!("{} {} {}", entry.title, entry.path, entry.id))
+                        .iter()
+                        .map(|word| intern_term(&mut lexicon, word))
+                        .collect()
+                } else {
                     words(&format!("{} {} {}", entry.title, entry.path, entry.id))
                         .iter()
                         .map(|word| intern_term(&mut lexicon, word))
-                        .collect();
+                        .collect()
+                };
                 title.sort_unstable();
-                let mut body: Vec<TermId> = words(&entry.content)
-                    .iter()
-                    .map(|word| intern_term(&mut lexicon, word))
-                    .collect();
+                let mut body: Vec<TermId> = if stemming {
+                    words_stemmed(&entry.content)
+                        .iter()
+                        .map(|word| intern_term(&mut lexicon, word))
+                        .collect()
+                } else {
+                    words(&entry.content)
+                        .iter()
+                        .map(|word| intern_term(&mut lexicon, word))
+                        .collect()
+                };
                 for word in prospective_cue_words(entry) {
-                    body.push(intern_term(&mut lexicon, &word));
+                    let term = if stemming { stem(&word) } else { word };
+                    body.push(intern_term(&mut lexicon, &term));
                 }
                 body.sort_unstable();
                 body.dedup();
-                let mut span: Vec<TermId> = source_span_words(entry)
+                let span_words = if stemming {
+                    source_span_words_stemmed(entry)
+                } else {
+                    source_span_words(entry)
+                };
+                let mut span: Vec<TermId> = span_words
                     .iter()
                     .map(|word| intern_term(&mut lexicon, word))
                     .collect();
@@ -425,7 +536,9 @@ impl CorpusIndex {
 /// mutation goes through the temp-file + rename writer, so a rewrite always
 /// moves the mtime (NTFS stamps writes at 100 ns granularity); `project_id`,
 /// `host_id` and the corpus scope pin the per-store filter decisions baked
-/// into the index.
+/// into the index. `stemming` (PR #144's `recallQueryStemming`) selects the
+/// term mode the term sets were built in, so both modes over the same file
+/// revision coexist as separate cache entries.
 #[derive(Clone, PartialEq, Eq, Hash)]
 struct CorpusCacheKey {
     path: String,
@@ -434,6 +547,7 @@ struct CorpusCacheKey {
     scope: &'static str,
     project_id: String,
     host_id: String,
+    stemming: bool,
 }
 
 struct CorpusCacheEntry {
@@ -482,6 +596,7 @@ pub(crate) fn cached_file_corpus_index(
     base_scope: MemoryScope,
     project_id: &str,
     host_id: &str,
+    stemming: bool,
     load: impl FnOnce() -> Option<HarnessState>,
 ) -> Arc<CorpusIndex> {
     let Some((mtime_ns, len)) = file_identity(path) else {
@@ -490,6 +605,7 @@ pub(crate) fn cached_file_corpus_index(
             base_scope,
             project_id,
             host_id,
+            stemming,
         ));
     };
     let key = CorpusCacheKey {
@@ -499,6 +615,7 @@ pub(crate) fn cached_file_corpus_index(
         scope: base_scope.as_str(),
         project_id: project_id.to_string(),
         host_id: host_id.to_string(),
+        stemming,
     };
     let registry = CORPUS_INDEX_CACHE.get_or_init(|| Mutex::new(HashMap::new()));
     if let Some(cached) = registry
@@ -515,9 +632,10 @@ pub(crate) fn cached_file_corpus_index(
             base_scope,
             project_id,
             host_id,
+            stemming,
         ));
     };
-    let index = Arc::new(CorpusIndex::build(&state, base_scope, project_id, host_id));
+    let index = Arc::new(CorpusIndex::build(&state, base_scope, project_id, host_id, stemming));
     let mut caches = registry
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -548,20 +666,22 @@ pub(crate) fn adhoc_corpus_index(
     base_scope: MemoryScope,
     project_id: &str,
     host_id: &str,
+    stemming: bool,
 ) -> Arc<CorpusIndex> {
-    Arc::new(CorpusIndex::build(state, base_scope, project_id, host_id))
+    Arc::new(CorpusIndex::build(state, base_scope, project_id, host_id, stemming))
 }
 
 /// The searching store's own corpus, cached by its `harness_state.json`
 /// identity. On a read failure the original search searched an empty corpus
 /// for that query; `None` from the loader keeps that behavior without
 /// caching it.
-fn cached_store_corpus_index(store: &MemoryStore) -> Arc<CorpusIndex> {
+fn cached_store_corpus_index(store: &MemoryStore, stemming: bool) -> Arc<CorpusIndex> {
     cached_file_corpus_index(
         &store.path,
         MemoryScope::Project,
         &store.project.id,
         &store.host_id,
+        stemming,
         || store.read().ok().map(|document| document.harness()),
     )
 }
@@ -574,12 +694,21 @@ pub(crate) fn search_corpora(
     query: &str,
     additional: &[Arc<CorpusIndex>],
     include_inactive: bool,
+    stemming: bool,
 ) -> Vec<MemoryHit> {
-    let store_index = cached_store_corpus_index(store);
+    // One flag per query, exactly as main's search_memory read it: the store
+    // corpus index, the prebuilt additional indexes and the query terms all
+    // use the same mode, so stemmed terms can never hit a plain-word
+    // lexicon (and vice versa).
+    let store_index = cached_store_corpus_index(store, stemming);
     let corpora: Vec<&CorpusIndex> = std::iter::once(store_index.as_ref())
         .chain(additional.iter().map(|index| index.as_ref()))
         .collect();
-    let terms = words(query);
+    let terms = if stemming {
+        words_stemmed(query)
+    } else {
+        words(query)
+    };
     // Document frequency over every eligible entry, including nonmatches,
     // once per term. The original loop counted candidates corpus by corpus;
     // per-corpus precomputed maps sum to the same integer totals regardless
@@ -677,6 +806,9 @@ pub fn search_memory(
     additional: &[SearchCorpus],
     include_inactive: bool,
 ) -> Vec<MemoryHit> {
+    // PR #144: the per-query stemming flag applies symmetrically to the
+    // query terms and every corpus index, read once per query like main.
+    let stemming = store.settings().recall_query_stemming;
     let additional: Vec<Arc<CorpusIndex>> = additional
         .iter()
         .map(|corpus| {
@@ -685,10 +817,11 @@ pub fn search_memory(
                 corpus.scope,
                 &store.project.id,
                 &store.host_id,
+                stemming,
             )
         })
         .collect();
-    search_corpora(store, query, &additional, include_inactive)
+    search_corpora(store, query, &additional, include_inactive, stemming)
 }
 
 pub struct RecallResult {
@@ -1259,6 +1392,61 @@ mod tests {
     }
 
     #[test]
+    fn stem_reduces_inflections_to_a_shared_form() {
+        // Query-verb to note-word bridges.
+        assert_eq!(stem("camped"), stem("camping"));
+        assert_eq!(stem("camped"), stem("camps"));
+        assert_eq!(stem("stories"), stem("story"));
+        assert_eq!(stem("faces"), stem("face"));
+        assert_eq!(stem("sunsets"), stem("sunset"));
+        assert_eq!(stem("signing"), stem("sign"));
+        assert_eq!(stem("painted"), stem("paint"));
+        assert_eq!(stem("running"), stem("run"));
+        assert_eq!(stem("loves"), stem("love"));
+        // Short words and non-suffix endings stay whole.
+        assert_eq!(stem("art"), "art");
+        assert_eq!(stem("king"), "king");
+        assert_eq!(stem("class"), "class");
+        assert_eq!(stem("plus"), "plus");
+        // Stemming is deterministic and idempotent for already-bare words.
+        assert_eq!(stem("camp"), "camp");
+        assert_eq!(stem(&stem("camped")), stem("camped"));
+    }
+
+    #[test]
+    fn stemming_bridges_query_inflections_to_entry_words() {
+        let (store, root) = fixture();
+        // The query says "camped"; the notes say "camping". Exact matching
+        // finds nothing, stemming finds both trip notes.
+        let trips = corpus(
+            MemoryScope::Global,
+            vec![
+                entry("beach", "Beach notes", "They love beach camping."),
+                entry("forest", "Forest notes", "The family went camping in the forest."),
+                entry("other", "Unrelated", "A neighbor adopted a feline."),
+            ],
+        );
+        std::fs::write(
+            std::path::Path::new(&store.agent_dir).join("settings.json"),
+            serde_json::json!({"memory": {"recallQueryStemming": true}}).to_string(),
+        )
+        .unwrap();
+        let hits = search_memory(&store, "camped", std::slice::from_ref(&trips), false);
+        assert_eq!(hits.len(), 2);
+        assert!(hits.iter().all(|hit| hit.matched == vec!["camp".to_string()]));
+        // Body-only match of the only query term: score is exactly 1.0.
+        assert!(hits.iter().all(|hit| (hit.score - 1.0).abs() < 1e-12));
+
+        // Default off: the same query matches nothing (exact "camped" vs
+        // the "camping" body words).
+        std::fs::remove_file(std::path::Path::new(&store.agent_dir).join("settings.json"))
+            .unwrap();
+        let exact = search_memory(&store, "camped", std::slice::from_ref(&trips), false);
+        assert!(exact.is_empty());
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
     fn equal_scores_rank_the_newest_entry_first() {
         let (store, root) = fixture();
         let mut older = entry("older", "Amber", "shared body");
@@ -1551,7 +1739,14 @@ mod tests {
             }),
         }
         corpus.extend(additional.iter().cloned());
-        let terms = words(query);
+        // PR #144 semantics, kept verbatim from main's per-query loop: the
+        // stemming flag applies to the query terms and the entry term sets.
+        let stemming = store.settings().recall_query_stemming;
+        let terms = if stemming {
+            words_stemmed(query)
+        } else {
+            words(query)
+        };
         let mut candidates = Vec::new();
         for SearchCorpus {
             state,
@@ -1580,23 +1775,36 @@ mod tests {
                     {
                         continue;
                     }
-                    let title_set: HashSet<String> =
+                    let title_set: HashSet<String> = if stemming {
+                        words_stemmed(&format!("{} {} {}", entry.title, entry.path, entry.id))
+                            .into_iter()
+                            .collect()
+                    } else {
                         words(&format!("{} {} {}", entry.title, entry.path, entry.id))
                             .into_iter()
-                            .collect();
-                    let mut body_set: HashSet<String> = words(&entry.content).into_iter().collect();
+                            .collect()
+                    };
+                    let mut body_set: HashSet<String> = if stemming {
+                        words_stemmed(&entry.content).into_iter().collect()
+                    } else {
+                        words(&entry.content).into_iter().collect()
+                    };
                     // Prospective cues are metadata, but matching must see them:
                     // implicit-reference queries share no vocabulary with the
                     // stored content, only with the future situations the cues
                     // describe. They score like body words, not title words.
                     for word in prospective_cue_words(entry) {
-                        body_set.insert(word);
+                        body_set.insert(if stemming { stem(&word) } else { word });
                     }
                     // Verbatim source spans are metadata too, but the exact
                     // wording of the original turn must stay matchable: a
                     // span-only hit is real evidence, just weaker than the same
                     // term appearing in the stored content itself.
-                    let span_set = source_span_words(entry);
+                    let span_set = if stemming {
+                        source_span_words_stemmed(entry)
+                    } else {
+                        source_span_words(entry)
+                    };
                     let scope = if host_id.is_some() {
                         MemoryScope::Host
                     } else {
@@ -1891,6 +2099,54 @@ mod tests {
                 assert_eq!(second, reference, "cached query={:?} include_inactive={}", query, include_inactive);
             }
         }
+
+        // PR #144 parity in the stemmed mode: same corpora, same queries,
+        // `recallQueryStemming` on. The reference is main's original loop
+        // with the stemming branches, so this proves the cache's stemmed
+        // index reproduces main's arithmetic bit for bit too.
+        let settings_path = std::path::Path::new(&store.agent_dir).join("settings.json");
+        std::fs::write(
+            &settings_path,
+            serde_json::json!({"memory": {"recallQueryStemming": true}}).to_string(),
+        )
+        .unwrap();
+        for include_inactive in [false, true] {
+            for query in &queries {
+                let reference = search_memory_reference(&store, query, &additional, include_inactive);
+                let first = search_memory(&store, query, &additional, include_inactive);
+                let second = search_memory(&store, query, &additional, include_inactive);
+                assert_eq!(
+                    first, reference,
+                    "stemmed query={:?} include_inactive={}",
+                    query, include_inactive
+                );
+                assert_eq!(
+                    second, reference,
+                    "stemmed cached query={:?} include_inactive={}",
+                    query, include_inactive
+                );
+            }
+        }
+
+        // Mode coexistence: the stemming flag rides in the cache key, so
+        // alternating the flag query by query must select the matching
+        // prebuilt index for the same unchanged store file - never a
+        // cross-mode mix, never a rebuild that drifts from the reference.
+        for (flip, query) in queries.iter().step_by(11).enumerate() {
+            if flip % 2 == 0 {
+                std::fs::write(
+                    &settings_path,
+                    serde_json::json!({"memory": {"recallQueryStemming": true}}).to_string(),
+                )
+                .unwrap();
+            } else {
+                std::fs::remove_file(&settings_path).unwrap();
+            }
+            let reference = search_memory_reference(&store, query, &additional, false);
+            let hits = search_memory(&store, query, &additional, false);
+            assert_eq!(hits, reference, "alternating mode query={:?}", query);
+        }
+        let _ = std::fs::remove_file(&settings_path);
         std::fs::remove_dir_all(&root).ok();
     }
 
@@ -1935,6 +2191,23 @@ mod tests {
         // And the reference agrees after the write.
         let reference = search_memory_reference(&store, "zzzqxv beacon", &[], false);
         assert_eq!(hits, reference);
+        // Stemmed mode over the same written revision: the flag selects the
+        // other cached index (same key minus the flag) and main's stemmed
+        // loop still agrees with it.
+        let settings_path = std::path::Path::new(&store.agent_dir).join("settings.json");
+        std::fs::write(
+            &settings_path,
+            serde_json::json!({"memory": {"recallQueryStemming": true}}).to_string(),
+        )
+        .unwrap();
+        let stemmed = search_memory(&store, "zzzqxv beacon", &[], false);
+        assert_eq!(stemmed.len(), 1, "stemmed search must also see the entry");
+        assert_eq!(
+            stemmed,
+            search_memory_reference(&store, "zzzqxv beacon", &[], false),
+            "stemmed cache must match the stemmed reference"
+        );
+        let _ = std::fs::remove_file(&settings_path);
         std::fs::remove_dir_all(&root).ok();
     }
 
