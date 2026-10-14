@@ -1,0 +1,17 @@
+{
+ "conv-47_q102": {
+  "tag": "conv-47_q102",
+  "qid": "conv-47_q102",
+  "run_id": "wc47-q102-ing",
+  "rc": 0,
+  "err": null,
+  "score": 0.888888888888889,
+  "outcome": "pass",
+  "answer": "reading snuggled under the covers",
+  "recall_n": 24,
+  "failure_stage": null,
+  "mode_detail": "ingest",
+  "cache_key": "3f790289038f5b3e",
+  "latency_s": 2554.4
+ }
+}

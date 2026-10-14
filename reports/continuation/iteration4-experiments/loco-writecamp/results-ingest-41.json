@@ -1,0 +1,17 @@
+{
+ "conv-41_q135": {
+  "tag": "conv-41_q135",
+  "qid": "conv-41_q135",
+  "run_id": "wc41-q135-ing",
+  "rc": 0,
+  "err": null,
+  "score": 0.7142857142857143,
+  "outcome": "pass",
+  "answer": "So younger generations remember and appreciate those who served.",
+  "recall_n": 24,
+  "failure_stage": null,
+  "mode_detail": "ingest",
+  "cache_key": "f3e2ba0599fbe1d1",
+  "latency_s": 2537.2
+ }
+}

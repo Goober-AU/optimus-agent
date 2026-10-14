@@ -1,0 +1,17 @@
+{
+ "conv-44_q10": {
+  "tag": "conv-44_q10",
+  "qid": "conv-44_q10",
+  "run_id": "wcg44-q10-a1",
+  "rc": 2,
+  "err": "try2 error: qid conv-44_q10 not in ledger C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/QUESTION-LEDGER.json\n",
+  "score": null,
+  "outcome": null,
+  "answer": null,
+  "recall_n": null,
+  "failure_stage": null,
+  "mode_detail": null,
+  "cache_key": null,
+  "latency_s": 0.2
+ }
+}

@@ -1,0 +1,27 @@
+{
+ "ts": "2026-10-14T09:12:48.543999",
+ "warm": {
+  "conv-42": true,
+  "conv-47": true,
+  "conv-50": true
+ },
+ "ingest_results": {
+  "conv-42_q151": {
+   "score": 0.0,
+   "answer": "not mentioned",
+   "stage": "answer",
+   "gold_note_extracted": "Nate believes taking time off is incredibly important (balance is key) - 'taking that weekend off to chill with his pets'"
+  },
+  "conv-47_q102": {
+   "score": 0.8889,
+   "answer": "PASS",
+   "gold_note_extracted": "James loves reading snuggled under covers on cold winter day"
+  },
+  "conv-50_q61": {
+   "score": 0.0,
+   "answer": "not mentioned",
+   "stage": "answer",
+   "gold_note_extracted": "mustang notes present; 'nearly two months' is an inferred duration not present in notes"
+  }
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "conv-44_q10": {
+  "tag": "conv-44_q10",
+  "qid": "conv-44_q10",
+  "run_id": "wcg44-q10-a1",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "June 2023",
+  "recall_n": 24,
+  "failure_stage": "ingest",
+  "mode_detail": "cache-reuse",
+  "cache_key": "15430ae5cea336ec",
+  "latency_s": 8.7
+ }
+}

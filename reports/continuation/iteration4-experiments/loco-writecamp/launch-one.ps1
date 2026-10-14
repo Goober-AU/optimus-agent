@@ -1,0 +1,6 @@
+$p = Start-Process -FilePath 'C:/Users/openclawuser/optimus-memory-bench-20261007-040424/repo-continuation/bench/.venv/Scripts/python.exe' -ArgumentList @('"C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-writecamp/reports/continuation/iteration4-experiments/loco-writecamp/run-jobs.py"','"C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-writecamp/reports/continuation/iteration4-experiments/loco-writecamp/jobs-ingest-41.json"','"C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-writecamp/reports/continuation/iteration4-experiments/loco-writecamp/results-ingest-41.json"','1') -WorkingDirectory 'C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-writecamp' -WindowStyle Hidden -RedirectStandardOutput 'C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-writecamp/reports/continuation/iteration4-experiments/loco-writecamp/ingest-41.log' -RedirectStandardError 'C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-writecamp/reports/continuation/iteration4-experiments/loco-writecamp/ingest-41.err' -PassThru
+Write-Output ('pid: ' + $p.Id)
+Start-Sleep -Seconds 5
+Write-Output ('exited5s: ' + $p.HasExited)
+Start-Sleep -Seconds 10
+Write-Output ('exited15s: ' + $p.HasExited)
