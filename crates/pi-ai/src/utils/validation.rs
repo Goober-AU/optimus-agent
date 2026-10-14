@@ -16,6 +16,9 @@
 //! `hasTypeBoxMetadata` branch (symbol marker) does not exist in Rust and the
 //! JSON-Schema coercion path is always used.
 
+use std::collections::hash_map::DefaultHasher;
+use std::collections::HashMap;
+use std::hash::Hasher;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use regex::Regex;
@@ -335,10 +338,212 @@ fn coerce_with_json_schema(value: &Value, schema: &Value) -> Value {
 /// `Compile(schema)` - the cached JSON Schema validator.
 ///
 /// The TypeScript caches compiled validators in a `WeakMap` keyed by the schema
-/// object. Rust keys the cache by the serialized schema instead.
-fn validator_cache() -> &'static Mutex<Vec<(String, Arc<JsonSchemaValidator>)>> {
-    static CACHE: OnceLock<Mutex<Vec<(String, Arc<JsonSchemaValidator>)>>> = OnceLock::new();
-    CACHE.get_or_init(|| Mutex::new(Vec::new()))
+/// object. `serde_json::Value` has no such identity to key on (the agent loop
+/// clones `tool.parameters` into a fresh `Tool` for every model tool call), so
+/// the cache is keyed by schema CONTENT instead:
+///
+/// - [`schema_identity_hash`] hashes the schema with a fixed-key `DefaultHasher`
+///   (SipHash-1-3: deterministic for the process, no allocation, no string
+///   serialization). The hash feed reproduces the equality classes of the
+///   serialized schema string this cache was keyed by before: object entries
+///   are visited in iteration order (`preserve_order` makes the serialized
+///   form insertion-order sensitive), integers are canonicalized to `i128` so
+///   equal integer representations hash alike, floats hash their bit pattern
+///   so `1`/`1.0` and `0.0`/`-0.0` stay distinct exactly as their
+///   serializations do, and strings hash their raw bytes (JSON escaping is
+///   injective).
+/// - A hash hit is confirmed with [`schema_identity_eq`], the same equivalence
+///   compared structurally, so different schemas can never share a validator -
+///   not even across a 64-bit hash collision.
+/// - The cache holds at most [`VALIDATOR_CACHE_CAPACITY`] entries and evicts
+///   the least recently used one, bounding the growth the previous unbounded
+///   `Vec` allowed (one entry per distinct schema, forever).
+const VALIDATOR_CACHE_CAPACITY: usize = 256;
+
+struct CachedValidator {
+    last_used: u64,
+    validator: Arc<JsonSchemaValidator>,
+}
+
+struct ValidatorCache {
+    /// Schema-content hash -> validators with that hash (almost always one).
+    buckets: HashMap<u64, Vec<CachedValidator>>,
+    /// Monotonic access stamp; unique per stamp issued, so LRU ties cannot occur.
+    generation: u64,
+    len: usize,
+}
+
+fn validator_cache() -> &'static Mutex<ValidatorCache> {
+    static CACHE: OnceLock<Mutex<ValidatorCache>> = OnceLock::new();
+    CACHE.get_or_init(|| {
+        Mutex::new(ValidatorCache {
+            buckets: HashMap::new(),
+            generation: 0,
+            len: 0,
+        })
+    })
+}
+
+impl ValidatorCache {
+    /// Returns the cached validator whose schema is content-identical to
+    /// `schema`, refreshing its LRU stamp.
+    fn get(&mut self, key: u64, schema: &Value) -> Option<Arc<JsonSchemaValidator>> {
+        let bucket = self.buckets.get_mut(&key)?;
+        for entry in bucket.iter_mut() {
+            if schema_identity_eq(schema, &entry.validator.schema) {
+                entry.last_used = self.generation;
+                self.generation += 1;
+                return Some(entry.validator.clone());
+            }
+        }
+        None
+    }
+
+    /// Inserts a validator, evicting the least recently used entry at capacity.
+    fn insert(&mut self, key: u64, validator: Arc<JsonSchemaValidator>) {
+        if self.len >= VALIDATOR_CACHE_CAPACITY {
+            self.evict_least_recently_used();
+        }
+        let stamp = self.generation;
+        self.generation += 1;
+        self.buckets.entry(key).or_default().push(CachedValidator {
+            last_used: stamp,
+            validator,
+        });
+        self.len += 1;
+    }
+
+    /// Stamps are unique, so the victim is unambiguous and eviction stays
+    /// deterministic for a given access sequence.
+    fn evict_least_recently_used(&mut self) {
+        let mut victim_key = None;
+        let mut victim_index = 0;
+        let mut victim_stamp = u64::MAX;
+        for (key, bucket) in self.buckets.iter() {
+            for (index, entry) in bucket.iter().enumerate() {
+                if entry.last_used < victim_stamp {
+                    victim_stamp = entry.last_used;
+                    victim_key = Some(*key);
+                    victim_index = index;
+                }
+            }
+        }
+        let Some(key) = victim_key else {
+            return;
+        };
+        let Some(bucket) = self.buckets.get_mut(&key) else {
+            return;
+        };
+        if victim_index < bucket.len() {
+            bucket.swap_remove(victim_index);
+            if bucket.is_empty() {
+                self.buckets.remove(&key);
+            }
+            self.len -= 1;
+        }
+    }
+}
+
+/// Feeds the schema content to `state` with the same equality classes
+/// `serde_json::to_string` has (see [`validator_cache`]).
+fn write_schema_identity(schema: &Value, state: &mut impl Hasher) {
+    match schema {
+        Value::Null => state.write_u8(b'n'),
+        Value::Bool(flag) => {
+            state.write_u8(b'b');
+            state.write_u8(u8::from(*flag));
+        }
+        Value::Number(number) => write_number_identity(number, state),
+        Value::String(text) => {
+            state.write_u8(b's');
+            state.write_usize(text.len());
+            state.write(text.as_bytes());
+        }
+        Value::Array(items) => {
+            state.write_u8(b'[');
+            for item in items {
+                write_schema_identity(item, state);
+            }
+            state.write_u8(b']');
+        }
+        Value::Object(entries) => {
+            state.write_u8(b'{');
+            for (key, value) in entries {
+                state.write_usize(key.len());
+                state.write(key.as_bytes());
+                write_schema_identity(value, state);
+            }
+            state.write_u8(b'}');
+        }
+    }
+}
+
+fn write_number_identity(number: &serde_json::Number, state: &mut impl Hasher) {
+    if let Some(value) = number.as_u64() {
+        // One integer class: equal integers serialize identically.
+        state.write_u8(b'i');
+        state.write_i128(i128::from(value));
+    } else if let Some(value) = number.as_i64() {
+        state.write_u8(b'i');
+        state.write_i128(i128::from(value));
+    } else if let Some(value) = number.as_f64() {
+        // Bit pattern: `1.0` vs `1` and `-0.0` vs `0.0` stay distinct, exactly
+        // like their serializations.
+        state.write_u8(b'f');
+        state.write_u64(value.to_bits());
+    } else {
+        // `serde_json::Number` is always u64, i64 or a finite f64; keep the
+        // feed deterministic if that ever changes instead of panicking.
+        state.write_u8(b'?');
+    }
+}
+
+fn schema_identity_hash(schema: &Value) -> u64 {
+    let mut state = DefaultHasher::new();
+    write_schema_identity(schema, &mut state);
+    state.finish()
+}
+
+/// Structural equality over the same classes [`write_schema_identity`] hashes;
+/// object entries compare in iteration order.
+fn schema_identity_eq(left: &Value, right: &Value) -> bool {
+    match (left, right) {
+        (Value::Null, Value::Null) => true,
+        (Value::Bool(left), Value::Bool(right)) => left == right,
+        (Value::Number(left), Value::Number(right)) => number_identity_eq(left, right),
+        (Value::String(left), Value::String(right)) => left == right,
+        (Value::Array(left), Value::Array(right)) => {
+            left.len() == right.len()
+                && left
+                    .iter()
+                    .zip(right.iter())
+                    .all(|(left, right)| schema_identity_eq(left, right))
+        }
+        (Value::Object(left), Value::Object(right)) => {
+            left.len() == right.len()
+                && left.iter().zip(right.iter()).all(
+                    |((left_key, left_value), (right_key, right_value))| {
+                        left_key == right_key && schema_identity_eq(left_value, right_value)
+                    },
+                )
+        }
+        _ => false,
+    }
+}
+
+fn number_identity_eq(left: &serde_json::Number, right: &serde_json::Number) -> bool {
+    if left.is_u64() || right.is_u64() {
+        // Both must be the same non-negative integer (`1` vs `1.0` differ).
+        return left.as_u64() == right.as_u64();
+    }
+    if left.is_i64() || right.is_i64() {
+        return left.as_i64() == right.as_i64();
+    }
+    match (left.as_f64(), right.as_f64()) {
+        // Bitwise: `-0.0` != `0.0`, exactly as their serializations differ.
+        (Some(left), Some(right)) => left.to_bits() == right.to_bits(),
+        _ => false,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -355,22 +560,17 @@ pub struct JsonSchemaValidator {
 }
 
 pub fn get_validator(schema: &Value) -> Arc<JsonSchemaValidator> {
-    let key = serde_json::to_string(schema).unwrap_or_default();
-    {
-        let cache = validator_cache()
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if let Some((_, validator)) = cache.iter().find(|(cached_key, _)| *cached_key == key) {
-            return validator.clone();
-        }
+    let key = schema_identity_hash(schema);
+    let mut cache = validator_cache()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    if let Some(validator) = cache.get(key, schema) {
+        return validator;
     }
     let validator = Arc::new(JsonSchemaValidator {
         schema: schema.clone(),
     });
-    let mut cache = validator_cache()
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
-    cache.push((key, validator.clone()));
+    cache.insert(key, validator.clone());
     validator
 }
 
@@ -1723,5 +1923,272 @@ mod tests {
             value,
             json!({"count": 42.0, "flag": true, "name": "7", "items": [1.0, 2.0]})
         );
+    }
+
+    // ---- validator cache (branch perf/validator-cache) ----------------------
+
+    fn validator_cache_len() -> usize {
+        validator_cache()
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .len
+    }
+
+    /// The content identity that keys the cache must classify schemas exactly
+    /// like the serialized JSON string the cache was keyed by before: equal
+    /// identity iff equal `to_string`, and equal hash iff equal identity.
+    #[test]
+    fn schema_identity_matches_serialized_key_semantics() {
+        let cases: Vec<(Value, Value)> = vec![
+            (json!({"a": 1, "b": 2}), json!({"a": 1, "b": 2})),
+            // `preserve_order`: same entries in another order serialize differently.
+            (json!({"a": 1, "b": 2}), json!({"b": 2, "a": 1})),
+            (json!([1, 2]), json!([2, 1])),
+            (json!(1), json!(1.0)),
+            (json!(0.0), json!(-0.0)),
+            (
+                json!({"const": [1, {"x": null}]}),
+                json!({"const": [1, {"x": null}]}),
+            ),
+            (json!({"type": "s"}), json!({"type": "s"})),
+            (json!("a"), json!("a")),
+            (json!("a"), json!("b")),
+            (json!(null), json!(null)),
+            (json!(true), json!(false)),
+            (
+                json!({"nested": {"deep": [[["v"]]]}}),
+                json!({"nested": {"deep": [[["v"]]]}}),
+            ),
+            (
+                json!({"nested": {"deep": [[["v"]]]}}),
+                json!({"nested": {"deep": [[["w"]]]}}),
+            ),
+        ];
+        for (left, right) in cases {
+            let serialized_eq = left.to_string() == right.to_string();
+            assert_eq!(
+                schema_identity_eq(&left, &right),
+                serialized_eq,
+                "identity mismatch for {left} vs {right}"
+            );
+            assert_eq!(
+                schema_identity_hash(&left) == schema_identity_hash(&right),
+                serialized_eq,
+                "hash mismatch for {left} vs {right}"
+            );
+        }
+    }
+
+    /// Identical schemas share one cached validator; a content-equal rebuild
+    /// (the agent loop clones `tool.parameters` into a fresh `Tool` per model
+    /// tool call) hits the same entry.
+    #[test]
+    fn identical_schemas_share_one_validator_instance() {
+        let schema = json!({
+            "type": "object",
+            "properties": {"value": {"type": "string", "minLength": 2}},
+            "required": ["value"]
+        });
+        let first = get_validator(&schema);
+        let second = get_validator(&schema);
+        assert!(Arc::ptr_eq(&first, &second));
+
+        let rebuilt = serde_json::from_str::<Value>(&schema.to_string()).unwrap();
+        let third = get_validator(&rebuilt);
+        assert!(Arc::ptr_eq(&first, &third));
+
+        // Insertion order stays part of the identity, exactly as it was part
+        // of the serialized-string key: same entries, different order, distinct
+        // entries (the validators emit errors in their own key order).
+        let reordered = json!({
+            "properties": {"value": {"minLength": 2, "type": "string"}},
+            "required": ["value"],
+            "type": "object"
+        });
+        let other = get_validator(&reordered);
+        assert!(!Arc::ptr_eq(&first, &other));
+        assert!(!schema_identity_eq(&schema, &reordered));
+        assert_ne!(schema.to_string(), reordered.to_string());
+    }
+
+    /// N distinct schemas never collide: every validator classifies exactly its
+    /// own schema, and identically to an uncached validator.
+    #[test]
+    fn distinct_schemas_keep_distinct_validators() {
+        let count = 64;
+        let schemas: Vec<Value> = (0..count).map(|index| json!({ "const": index })).collect();
+        let validators: Vec<Arc<JsonSchemaValidator>> = schemas.iter().map(get_validator).collect();
+        for (index, validator) in validators.iter().enumerate() {
+            for probe in 0..count {
+                assert_eq!(
+                    validator.check(&json!(probe)),
+                    probe == index,
+                    "validator for const {index} misclassified {probe}"
+                );
+            }
+        }
+        for (schema, validator) in schemas.iter().zip(validators.iter()) {
+            let fresh = JsonSchemaValidator {
+                schema: schema.clone(),
+            };
+            for probe in [
+                json!(0),
+                json!(count / 2),
+                json!(count - 1),
+                json!(null),
+                json!("x"),
+            ] {
+                assert_eq!(
+                    validator.check(&probe),
+                    fresh.check(&probe),
+                    "cached and fresh validators disagree on {probe}"
+                );
+            }
+        }
+    }
+
+    /// The cache is bounded: beyond capacity the least recently used entries
+    /// are evicted, and an evicted schema gets a behaviorally identical fresh
+    /// validator on its next use.
+    #[test]
+    fn validator_cache_is_bounded_and_evicts_least_recently_used() {
+        // Schemas unique to this test so parallel tests cannot re-stamp them.
+        let marker = |index: i64| json!({ "const": { "eviction-marker": index } });
+        let retained = get_validator(&marker(0));
+        for index in 1..(VALIDATOR_CACHE_CAPACITY as i64 + 64) {
+            get_validator(&marker(index));
+        }
+        assert_eq!(validator_cache_len(), VALIDATOR_CACHE_CAPACITY);
+
+        // marker(0) was inserted first and never touched again: with
+        // CAPACITY + 63 fresher entries it must have been evicted.
+        let refreshed = get_validator(&marker(0));
+        assert!(!Arc::ptr_eq(&retained, &refreshed));
+        // The replacement is behaviorally identical to the evicted validator.
+        assert_eq!(
+            refreshed.check(&json!({ "eviction-marker": 0 })),
+            retained.check(&json!({ "eviction-marker": 0 }))
+        );
+        assert!(refreshed.check(&json!({ "eviction-marker": 0 })));
+        assert!(!refreshed.check(&json!({ "eviction-marker": 1 })));
+
+        // Recency keeps an entry alive: touch, overflow the cache once, and the
+        // touched schema must still be the cached instance.
+        let touched = get_validator(&marker(1));
+        get_validator(&json!({ "const": { "eviction-marker-overflow": 0 } }));
+        let again = get_validator(&marker(1));
+        assert!(Arc::ptr_eq(&touched, &again));
+    }
+
+    /// Union candidates (the per-candidate `get_validator` calls inside
+    /// `validate_against_schema` and `coerce_with_union_schema`) validate
+    /// identically across repeated tool calls, valid and invalid payloads.
+    #[test]
+    fn union_candidates_validate_identically_across_repeated_calls() {
+        let any_of = json!({
+            "anyOf": [
+                {"type": "string", "minLength": 2},
+                {"type": "number"},
+                {
+                    "type": "object",
+                    "properties": {"k": {"const": 7}},
+                    "required": ["k"]
+                }
+            ]
+        });
+        let tool = tool_with_schema(any_of);
+        for _ in 0..3 {
+            for good in [json!("ab"), json!(3.5), json!({"k": 7})] {
+                assert!(
+                    validate_tool_arguments(&tool, &tool_call(good.clone())).is_ok(),
+                    "anyOf must accept {good}"
+                );
+            }
+            for bad in [json!("a"), json!({"k": 8}), json!([])] {
+                assert!(
+                    validate_tool_arguments(&tool, &tool_call(bad.clone())).is_err(),
+                    "anyOf must reject {bad}"
+                );
+            }
+        }
+
+        // `oneOf` requires exactly one matching candidate.
+        let one_of = json!({
+            "oneOf": [{"type": "number"}, {"type": "integer"}]
+        });
+        let tool = tool_with_schema(one_of);
+        for _ in 0..3 {
+            assert!(validate_tool_arguments(&tool, &tool_call(json!(2.5))).is_ok());
+            assert!(validate_tool_arguments(&tool, &tool_call(json!(3))).is_err());
+        }
+    }
+
+    /// Nested arrays/objects/pattern validation is unchanged across repeated
+    /// calls (second and third iterations run on cached validators).
+    #[test]
+    fn nested_schemas_validate_identically_across_repeated_calls() {
+        let nested = json!({
+            "type": "object",
+            "properties": {
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {"id": {"type": "string", "pattern": "^r\\d+$"}},
+                        "required": ["id"],
+                        "additionalProperties": false
+                    }
+                }
+            },
+            "required": ["rows"]
+        });
+        let tool = Tool {
+            name: "rows".to_string(),
+            description: String::new(),
+            parameters: nested,
+        };
+        let call = |value: Value| {
+            ToolCall::new("id", "rows", value.as_object().cloned().unwrap_or_default())
+        };
+        for _ in 0..3 {
+            assert!(validate_tool_arguments(
+                &tool,
+                &call(json!({"rows": [{"id": "r1"}, {"id": "r42"}]}))
+            )
+            .is_ok());
+            let error =
+                validate_tool_arguments(&tool, &call(json!({"rows": [{"id": "x"}]}))).unwrap_err();
+            assert!(error.contains("must match pattern"), "{}", error);
+            let error =
+                validate_tool_arguments(&tool, &call(json!({"rows": [{"id": "r1", "extra": 1}]})))
+                    .unwrap_err();
+            assert!(
+                error.contains("must not have additional properties"),
+                "{}",
+                error
+            );
+        }
+    }
+
+    /// Cached and freshly constructed validators produce identical error lists.
+    #[test]
+    fn cached_validator_errors_match_fresh_validators() {
+        let schema = json!({
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "minLength": 3},
+                "tags": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+            },
+            "required": ["name", "tags"],
+            "additionalProperties": false
+        });
+        let cached = get_validator(&schema);
+        let fresh = JsonSchemaValidator {
+            schema: schema.clone(),
+        };
+        let payload = json!({"name": "ab", "tags": [], "extra": 1});
+        assert_eq!(cached.errors(&payload), fresh.errors(&payload));
+        assert_eq!(cached.check(&payload), fresh.check(&payload));
+        assert!(!cached.check(&payload));
     }
 }
