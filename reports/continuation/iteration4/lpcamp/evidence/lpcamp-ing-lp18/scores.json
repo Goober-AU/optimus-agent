@@ -1,0 +1,64 @@
+{
+ "schema": "memory-bench-scores/1",
+ "bench": "locomo_plus",
+ "judge_profile": "official-lp-v1",
+ "run_file": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\lpcamp-scratch\\att\\lpcamp-ing-lp18\\scoring\\run.jsonl",
+ "run": {
+  "run_id": "lpcamp-ing-lp18",
+  "variant": "improved",
+  "benchmark": "locomo_plus"
+ },
+ "overall": {
+  "n": 1,
+  "n_flagged": 0,
+  "mean_score": 1.0,
+  "acc_ge_0.5": 1.0,
+  "wilson95_lo": 0.2065,
+  "wilson95_hi": 1.0,
+  "mean_judge_latency_ms": 2727.0
+ },
+ "by_category": {
+  "causal|rank_tercile_2": {
+   "n": 1,
+   "n_flagged": 0,
+   "mean_score": 1.0,
+   "acc_ge_0.5": 1.0,
+   "wilson95_lo": 0.2065,
+   "wilson95_hi": 1.0,
+   "mean_judge_latency_ms": 2727.0
+  }
+ },
+ "counts": {
+  "questions_total": 1,
+  "records": 1,
+  "duplicate_qids_in_run": 0,
+  "questions_without_record": 0,
+  "flagged": 0
+ },
+ "judge_stats": {
+  "requests": 1,
+  "cache_hits": 0,
+  "retries": 0,
+  "failures": 0
+ },
+ "lme_v2_unknown": null,
+ "eval_wall_s": 2.7,
+ "results": [
+  {
+   "qid": "lp_18",
+   "env_id": "lp_18",
+   "category": "causal|rank_tercile_2",
+   "eval_type": "llm_judge",
+   "score": 1.0,
+   "flag": null,
+   "label": "correct",
+   "judge_reason": "The prediction explicitly reflects the evidence. It references the memory of Evan getting locked out of his work email, writing recovery codes on a physical card (",
+   "judge_raw": "{\"label\": \"correct\", \"reason\": \"The prediction explicitly reflects the evidence. It references the memory of Evan getting locked out of his work email, writing recovery codes on a physical card ('that card in your wallet'), and directly echoes Sam's statement that 'the hassle was worth it, since it pushed you to build a solid backup plan.' The entire response is built around this remembered incident and its consequences, showing a clear and explicit link to the evidence.\"}",
+   "judge": "locomo_plus_official",
+   "judge_profile": "official-lp-v1",
+   "lp_template": "Cognitive",
+   "judge_latency_ms": 2727,
+   "driver_latency_ms": 14509
+  }
+ ]
+}
