@@ -1,0 +1,28 @@
+{
+ "c30-44-x5": {
+  "tag": "c30-44-x5",
+  "qid": "conv-30_q44",
+  "run_id": "f10s-c30-q44-x5",
+  "rc": 3,
+  "err": null,
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "A creative space for dancers matters.",
+  "mode_detail": "copy-out",
+  "failure_stage": "answer",
+  "latency_s": 89.7
+ },
+ "c30-44-x4": {
+  "tag": "c30-44-x4",
+  "qid": "conv-30_q44",
+  "run_id": "f10s-c30-q44-x4",
+  "rc": 3,
+  "err": null,
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "Her friends from dance class.",
+  "mode_detail": "copy-out",
+  "failure_stage": "answer",
+  "latency_s": 90.4
+ }
+}
