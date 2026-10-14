@@ -1,50 +1,19 @@
 {
- "updated": "2026-10-14T12:30:09",
- "worker": "lmesq3b (batch-3 disjoint slice)",
- "worktree": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-lmes3",
- "branch": "improve/mem4b-lmes3 (fresh from imp4 HEAD 85c63983a)",
- "binary": "imp4b-target8k sha 4d2ba13f (verified at launch by run_one.py)",
- "slice": [
-  "0db4c65d",
-  "0ddfec37",
-  "0ddfec37_abs",
-  "0e4e4c46",
-  "0e5e2d1a"
- ],
- "slice_rationale": "BB ledger frontier 0862e8bf_abs (idx12) + in-flight 08e075c7/08f4fc43 (idx13-14, PIDs 26500/7060 alive at 12:24) + 10-question buffer -> official-order idx 25-29; all UNTESTED, zero attempts",
- "config": "banked smoke5 base + ov-banked (KU+A+G4+H1+H2b), typeB, captureProtocol forced",
- "runs": {},
- "chain": {
-  "script": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration4\\lmes3-scratch\\chain_runner.py",
-  "order": [
-   "0db4c65d",
-   "0ddfec37",
-   "0ddfec37_abs",
-   "0e4e4c46",
-   "0e5e2d1a"
-  ],
-  "policy": "sequential; stop at first rc!=0; rc==2 retried 2x with 300s stagger; first driver gate 12:31:00",
-  "log": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration4\\lmes3-scratch\\chain.log",
-  "status": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\reports\\continuation\\iteration4\\lmes3-scratch\\chain-status.json"
+ "updated": "2026-10-14T16:50:29",
+ "phase": "COMPLETE",
+ "results": {
+  "0db4c65d": "1.0 pass",
+  "0ddfec37": "1.0 pass",
+  "0ddfec37_abs": "1.0 pass",
+  "0e4e4c46": "1.0 pass",
+  "0e5e2d1a": "0.0 fail (write-side assistant-fact drop; see SUMMARY.md)"
  },
- "resume": {
-  "how_to_check": [
-   "chain status: reports/continuation/iteration4/lmes3-scratch/chain-status.json (phase, results)",
-   "chain log: reports/continuation/iteration4/lmes3-scratch/chain.log (one line per question)",
-   "ledger: reports/continuation/iteration4/QUESTION-LEDGER.json -> entries where benchmark=longmemeval_s, worker=lmesq3b"
-  ],
-  "inflight": {
-   "chain_pid_hint": "bash handle pid 15632; python chain_runner.py; drivers memory_bench.exe from imp4b-target8k",
-   "order": [
-    "0db4c65d",
-    "0ddfec37",
-    "0ddfec37_abs",
-    "0e4e4c46",
-    "0e5e2d1a"
-   ],
-   "policy": "sequential; stop at first failure (rc 3/4); rc 2 auto-retried 2x; stagger gate was 12:31:00 for first driver"
-  },
-  "resume_cmd": "If chain died before phase=done: check ledger for lmesq3b attempts, then rerun remaining questions via repo-continuation venv python reports/continuation/iteration4/lmes3-scratch/run_one.py <qid> <suffix> (same first-failure policy; results auto-append to ledger).",
-  "post_completion": "verify 5 ledger attempts, commit evidence to improve/mem4b-lmes3 in worktree imp4b-lmes3, run regression gates ONLY if a fix was applied, 10-line report to parent."
- }
+ "commits": [
+  "2ab798251",
+  "9ac107f55"
+ ],
+ "branch": "improve/mem4b-lmes3 (worktree imp4b-lmes3)",
+ "ledger_worker": "lmesq3b (5 attempts auto-appended)",
+ "diagnosis": "0e5e2d1a stage-B: gold fact only in assistant reply (answer_ultrachat_113156); import excluded it; recall+abstention behaved correctly. Writecamp lane: permit assistant-stated study facts answering user questions.",
+ "no_fix_applied": "no settings/code changes; regression not required"
 }
