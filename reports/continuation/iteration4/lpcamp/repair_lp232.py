@@ -123,6 +123,11 @@ def main():
     log("queue done; repairing lp_232")
     for attempt in range(1, 4):
         run_id = f"lpcamp-rep232-{attempt}"
+        n = 0
+        while os.path.isdir(os.path.join(SCRATCH, "att", run_id)):
+            n += 1
+            suffix = f"x{n}"
+            run_id = (f"lpcamp-rep232-{attempt}"[:20 - len(suffix)] + suffix)
         write_state({"phase": "repair", "attempt": attempt, "run_id": run_id})
         log(f"repair attempt {attempt} ({run_id})")
         t0 = time.time()
