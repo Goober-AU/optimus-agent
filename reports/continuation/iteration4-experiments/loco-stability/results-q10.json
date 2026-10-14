@@ -1,0 +1,47 @@
+{
+ "c44q10x3": {
+  "tag": "c44q10x3",
+  "qid": "conv-44_q10",
+  "run_id": "lstb-c44-q10-x3",
+  "rc": 3,
+  "err": null,
+  "score": 0.28571428571428575,
+  "outcome": "fail",
+  "answer": "the month after 11 May 2023",
+  "recall_n": 24,
+  "recall_chars": 15954,
+  "failure_stage": "answer",
+  "mode_detail": "copy-out",
+  "latency_s": 13.5
+ },
+ "c44q10x2": {
+  "tag": "c44q10x2",
+  "qid": "conv-44_q10",
+  "run_id": "lstb-c44-q10-x2",
+  "rc": 3,
+  "err": null,
+  "score": 0.28571428571428575,
+  "outcome": "fail",
+  "answer": "the month after 11 May 2023",
+  "recall_n": 24,
+  "recall_chars": 15954,
+  "failure_stage": "answer",
+  "mode_detail": "copy-out",
+  "latency_s": 24.2
+ },
+ "c44q10x1": {
+  "tag": "c44q10x1",
+  "qid": "conv-44_q10",
+  "run_id": "lstb-c44-q10-x1",
+  "rc": 3,
+  "err": null,
+  "score": 0.0,
+  "outcome": "fail",
+  "answer": "not mentioned",
+  "recall_n": 24,
+  "recall_chars": 15954,
+  "failure_stage": "answer",
+  "mode_detail": "copy-out",
+  "latency_s": 67.5
+ }
+}

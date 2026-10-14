@@ -1,0 +1,17 @@
+{
+ "c41q91d1r": {
+  "tag": "c41q91d1r",
+  "qid": "conv-41_q91",
+  "run_id": "lstb-c41-q91-d1r",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "a tech-for-good convention",
+  "recall_n": 24,
+  "recall_chars": 17695,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 13.1
+ }
+}
