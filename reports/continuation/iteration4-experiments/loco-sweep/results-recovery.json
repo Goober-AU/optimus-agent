@@ -1,0 +1,32 @@
+{
+ "rcv48q102": {
+  "tag": "rcv48q102",
+  "qid": "conv-48_q102",
+  "run_id": "lsw-rc-c48-q102",
+  "rc": 3,
+  "err": null,
+  "score": 0.4,
+  "outcome": "fail",
+  "answer": "A huge robotics project assigned by her engineering professor",
+  "recall_n": 24,
+  "recall_chars": 17253,
+  "failure_stage": "answer",
+  "mode_detail": "copy-out",
+  "latency_s": 6.9
+ },
+ "rcv48q81": {
+  "tag": "rcv48q81",
+  "qid": "conv-48_q81",
+  "run_id": "lsw-rc-c48-q81",
+  "rc": 3,
+  "err": null,
+  "score": 0.3333333333333333,
+  "outcome": "fail",
+  "answer": "September 17, 2023",
+  "recall_n": 24,
+  "recall_chars": 16211,
+  "failure_stage": "answer",
+  "mode_detail": "copy-out",
+  "latency_s": 7.5
+ }
+}

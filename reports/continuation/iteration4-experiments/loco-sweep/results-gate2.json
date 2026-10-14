@@ -1,0 +1,47 @@
+{
+ "g2c49q138": {
+  "tag": "g2c49q138",
+  "qid": "conv-49_q138",
+  "run_id": "lsw-g2-c49-q138",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "Running in the mornings",
+  "recall_n": 24,
+  "recall_chars": 13835,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 7.2
+ },
+ "g2c49q94": {
+  "tag": "g2c49q94",
+  "qid": "conv-49_q94",
+  "run_id": "lsw-g2-c49-q94",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "flavored seltzer water",
+  "recall_n": 24,
+  "recall_chars": 15191,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 7.2
+ },
+ "g2c50q42": {
+  "tag": "g2c50q42",
+  "qid": "conv-50_q42",
+  "run_id": "lsw-g2-c50-q42",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "no",
+  "recall_n": 24,
+  "recall_chars": 17904,
+  "failure_stage": null,
+  "mode_detail": "copy-out",
+  "latency_s": 12.9
+ }
+}
