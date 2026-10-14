@@ -1031,7 +1031,7 @@ fn create_memory_extension_impl(
                                             &rerank_ctx,
                                             rerank_system,
                                             &rerank_user_prompt,
-                                            4096.0,
+                                            8192.0,
                                         ).await;
                                         let mut report = result.report;
                                         rerank_usage_total.absorb(&report.usage);
@@ -2487,7 +2487,7 @@ mod recall_runtime_tests {
             }
             let expected: Vec<_> = [
                 (distill, RECALL_DISTILL_SYSTEM, 2048.0),
-                (rerank, RECALL_RERANK_SYSTEM, 4096.0),
+                (rerank, RECALL_RERANK_SYSTEM, 8192.0),
             ]
             .into_iter()
             .filter(|(enabled, _, _)| *enabled)
