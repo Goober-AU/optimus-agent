@@ -1,0 +1,64 @@
+{
+  "started": 1791813237.925271,
+  "finished": 1791813538.251352,
+  "killed_by_limit": true,
+  "args": {
+    "shards": [
+      "s0",
+      "s1"
+    ],
+    "concurrency": 2,
+    "time_limit": 300.0,
+    "binary": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3/target/release/examples/memory_bench.exe",
+    "workdir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3",
+    "models_json": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/c06-instruction-boundary/inputs/runs/locomo-c06-ib-system_append-q12-s0p1/envs/conv-30/agent/models.json"
+  },
+  "shards": [
+    {
+      "name": "s0",
+      "manifest": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\imp3-lplaunch\\dryrun\\lp_smoke_v1_s0.json",
+      "log": "dryrun/logs\\s0.log",
+      "run_id": "lp_smoke_v1_s0",
+      "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lplaunch/dryrun/runs/lp_smoke_v1_s0",
+      "state": "KILLED",
+      "exit_code": 1,
+      "attempts": 1,
+      "started_at": 1791813238.6333306,
+      "ended_at": 1791813538.1104074,
+      "log_lines": 5,
+      "envs_started": 1,
+      "envs_done": 0,
+      "env_total": 1,
+      "questions_done": 0,
+      "question_total": 1,
+      "jobs_applied": 1,
+      "jobs_seen": 2,
+      "fatal_lines": 0,
+      "retry_lines": 0,
+      "last_line": "[env 1/1] lp_18 ingesting 25 session(s)"
+    },
+    {
+      "name": "s1",
+      "manifest": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\imp3-lplaunch\\dryrun\\lp_smoke_v1_s1.json",
+      "log": "dryrun/logs\\s1.log",
+      "run_id": "lp_smoke_v1_s1",
+      "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lplaunch/dryrun/runs/lp_smoke_v1_s1",
+      "state": "KILLED",
+      "exit_code": 1,
+      "attempts": 1,
+      "started_at": 1791813243.0345194,
+      "ended_at": 1791813538.2493534,
+      "log_lines": 5,
+      "envs_started": 1,
+      "envs_done": 0,
+      "env_total": 1,
+      "questions_done": 0,
+      "question_total": 1,
+      "jobs_applied": 1,
+      "jobs_seen": 2,
+      "fatal_lines": 0,
+      "retry_lines": 0,
+      "last_line": "[env 1/1] lp_118 ingesting 25 session(s)"
+    }
+  ]
+}
