@@ -184,6 +184,9 @@ pub fn build_rlm_prompt(options: &RlmPromptOptions) -> String {
         parts.push(
             "Agent messaging is restricted to your parent, siblings, and direct children; roots are siblings, and deeper communication relays through the intermediate child.".to_string(),
         );
+        parts.push(
+            "For structured task and result communication with other agents, encode agent_message bodies as OCC-1 compact structured English (see the agent-message skill; codec preinstalled as rlm.occ1). Plain English remains fine for conversational replies.".to_string(),
+        );
     }
     if has_agent_observe && has_ipython {
         parts.push(

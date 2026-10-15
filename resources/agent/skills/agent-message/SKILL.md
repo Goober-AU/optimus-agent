@@ -47,6 +47,49 @@ if child is not None:
   the target's current work allows (`send` does not block waiting for that).
   Delivered receipts carry `deliveredAt`, queued receipts carry `queuedAt`.
 
+## OCC-1 structured messages (default for task and result communication)
+
+For structured communication - task assignments, result reports,
+evidence, blocked/cancelled notices - encode the message body as OCC-1
+compact structured English. Plain English stays fine for conversational
+replies. OCC-1 is a deterministic `KEY=VALUE` line grammar that both sides
+can parse losslessly; the kernel-side codec is preinstalled as
+`rlm.occ1` (pure stdlib).
+
+```
+OCC/1
+TASK=t42
+KIND=RESULT
+STATUS=done
+F1=race window on session lock
+E1=src:src/session.rs
+EL1=218-235
+VERIFY=session_race:fail
+NEXT=inspect_lock
+```
+
+Rules:
+- Line 1 is exactly `OCC/1`; every following line is `KEY=VALUE` with
+  `KEY = [A-Z][A-Z0-9_]*`; repeated keys (e.g. `NEXT`) keep order.
+- Required fields: `TASK`, `KIND` (TASK/PROGRESS/RESULT/EVIDENCE/
+  REQUEST_DETAIL/ACK/CORRECTION/BLOCKED/CANCELLED), `STATUS` (pending/
+  in_progress/done/partial/blocked/failed/cancelled); `EVIDENCE` also
+  needs `E1`.
+- Indexed families (`F<n>`, `E<n>`, `ART<n>`, `DEP<n>`) must be
+  contiguous from 1; gaps are corruption and must be rejected, never
+  partially decoded.
+- Reference evidence (`E<n>=<kind>:<locator>` with optional `EL<n>` line
+  range, `ED<n>` digest, `ER<n>` revision) instead of pasting file
+  contents.
+- Sender identity stays daemon-derived; never put a `SENDER` field in
+  outgoing text.
+
+Kernel helpers: `from rlm.occ1 import Occ1Message` -
+`Occ1Message.decode(text)` (raises on any malformed input),
+`message.encode()`, `message.get/get_all/has`, and
+`validate_index_gaps(message)` for the contiguity rule. Malformed OCC-1
+must be rejected, never guessed.
+
 ## Safety
 
 - Do not delete a child immediately after `send`: delivered follow-ups may still
