@@ -17,6 +17,10 @@
 //!   message with no findings: an empty PROGRESS with unchanged status and
 //!   no new evidence is a suppressed heartbeat, and an empty RESULT with no
 //!   new evidence is suppressed as `DuplicateFindings`.
+//! - Suppression only ever applies to content the digests cover: any
+//!   message carrying required next actions, artifact paths or a
+//!   verification record is delivered regardless of duplicate findings,
+//!   because no suppression rule accounts for that content.
 //! - "Dependencies the recipient has not seen" counts a task as seen only
 //!   when a delivered record exists for it; mentions inside other
 //!   messages' dependency lists do not count, which biases toward delivery.
@@ -68,7 +72,7 @@ pub enum PruneDecision {
 }
 
 /// Summary of one delivered message, as kept in history.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DeliveryRecord {
     pub message_id: Option<String>,
     pub task_id: String,
@@ -77,6 +81,11 @@ pub struct DeliveryRecord {
     pub sequence: Option<u64>,
     pub finding_digests: Vec<String>,
     pub evidence_digests: Vec<String>,
+    /// The message's verification record when it carried one; used to tell
+    /// a verbatim verification repeat (suppressible) from a new claim or a
+    /// flipped status (must deliver). Compared by value; the record is not
+    /// serialized as part of pruning history.
+    pub verification: Option<crate::core::occ::contract::Verification>,
 }
 
 /// sha256 hex over the normalized statement.
@@ -193,6 +202,32 @@ impl Pruner {
         if message.status == statuses::FAILED {
             return true;
         }
+        // Content the digest heuristics do not cover must never be
+        // suppressed: required next actions, artifact paths, and any
+        // verification record whose claim or status differs from the last
+        // delivered verification for the task. A verbatim repeat of an
+        // already-delivered verification adds nothing, but a new claim or
+        // a flipped status does. Finding digests only cover statements;
+        // evidence digests only cover kind/locator/digest. Without this
+        // guard a RESULT repeating known findings while carrying new next
+        // actions would be silently dropped.
+        if !message.next_actions.is_empty() || !message.artifacts.is_empty() {
+            return true;
+        }
+        if let Some(record) = &message.verification {
+            let changed = self
+                .last_delivered(&message.task_id)
+                .and_then(|last| last.verification.as_ref())
+                .map_or(true, |previous| {
+                    normalized_statement(&previous.claim) != normalized_statement(&record.claim)
+                        || previous.status != record.status
+                        || previous.method != record.method
+                        || previous.receipt != record.receipt
+                });
+            if changed {
+                return true;
+            }
+        }
         if message
             .verification
             .as_ref()
@@ -248,6 +283,7 @@ impl Pruner {
                 sequence: message.sequence,
                 finding_digests,
                 evidence_digests,
+                verification: message.verification.clone(),
             },
             finding_statuses,
         });

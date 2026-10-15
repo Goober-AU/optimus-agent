@@ -22,9 +22,7 @@ use std::collections::BTreeSet;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::core::occ::occ1::{
-    is_known_kind, is_known_status, Occ1Error, Occ1Message, OCC1_HEADER,
-};
+use crate::core::occ::occ1::{is_known_kind, is_known_status, Occ1Error, Occ1Message};
 
 /// Protocol identity stamped on every typed message.
 pub const AGENT_COMM_PROTOCOL: &str = "optimus.agent-comm.v1";

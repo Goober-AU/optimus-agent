@@ -338,7 +338,7 @@ fn contradictory_findings_against_history_are_delivered() {
     first.verification = Some(verification_record("The build passes", verification::PASS));
     assert_eq!(pruner.classify(&first), PruneDecision::Deliver);
 
-    let mut contradiction = {
+    let contradiction = {
         let mut m = first.clone();
         m.message_id = Some("m2".to_string());
         m.findings[0].statement = "the build PASSES".to_string();
@@ -349,7 +349,7 @@ fn contradictory_findings_against_history_are_delivered() {
 
     // The contradiction is now recorded, so any further position on the same
     // statement disagrees with one of the delivered records and is delivered.
-    let mut repeat = {
+    let repeat = {
         let mut m = first.clone();
         m.message_id = Some("m3".to_string());
         m.findings[0].statement = "the build PASSES".to_string();
@@ -505,6 +505,7 @@ fn delivery_records_are_capped_and_shaped() {
             sequence: Some(2),
             finding_digests: vec![finding_digest("Second finding")],
             evidence_digests: vec![evidence_digest(&expected_evidence)],
+            verification: None,
         }
     );
 }
@@ -569,4 +570,38 @@ fn digests_are_stable_sha256_hex_over_canonical_content() {
         evidence_digest(&ranged),
         evidence_digest(&src_evidence("E1", "src/a.rs", "d1"))
     );
+}
+
+#[test]
+fn result_with_new_next_actions_or_artifacts_is_never_suppressed() {
+    // Review finding: duplicate findings plus uncovered content (next
+    // actions, artifacts, a verification record) must deliver, not
+    // suppress - no digest covers that content.
+    let mut pruner = Pruner::new(PrunePolicy::default());
+    let first = message(kinds::RESULT, "t1", statuses::DONE);
+    assert!(matches!(pruner.classify(&first), PruneDecision::Deliver));
+
+    let mut repeat = message(kinds::RESULT, "t1", statuses::DONE);
+    repeat.findings = first.findings.clone();
+    repeat.next_actions.push("run regression tests".to_string());
+    assert!(matches!(pruner.classify(&repeat), PruneDecision::Deliver));
+
+    let mut artifact_repeat = message(kinds::RESULT, "t1", statuses::DONE);
+    artifact_repeat.artifacts.push("reports/out.txt".to_string());
+    assert!(matches!(
+        pruner.classify(&artifact_repeat),
+        PruneDecision::Deliver
+    ));
+
+    let mut verified_repeat = message(kinds::RESULT, "t1", statuses::DONE);
+    verified_repeat.verification = Some(crate::core::occ::contract::Verification {
+        claim: "tests pass".to_string(),
+        status: crate::core::occ::contract::verification::PASS.to_string(),
+        method: "cargo_test".to_string(),
+        receipt: None,
+    });
+    assert!(matches!(
+        pruner.classify(&verified_repeat),
+        PruneDecision::Deliver
+    ));
 }

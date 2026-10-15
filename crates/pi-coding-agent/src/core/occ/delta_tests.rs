@@ -1112,7 +1112,7 @@ fn to_occ1_rejects_unrepresentable_deltas() {
     ));
 
     // malformed task id
-    let mut delta = plain(2, 1, "");
+    let delta = plain(2, 1, "");
     assert!(matches!(
         delta.to_occ1(),
         Err(ContractError::InvalidTaskId(_))
