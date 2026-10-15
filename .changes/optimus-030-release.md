@@ -1,0 +1,4 @@
+- Changed Optimus Agent to version 0.1.30.
+- Fixed memory recall reranking to retry invalid or empty selections once with the identical request, preserve lexical fallback after an unusable retry, and report retry counts with combined usage and latency.
+- Changed the memory rerank output budget to 8192 tokens to reduce reasoning-model output starvation.
+- Added the centered Telemus AI logo to the top of the README.
