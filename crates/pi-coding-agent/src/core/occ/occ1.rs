@@ -118,7 +118,9 @@ pub enum Occ1Error {
     /// A value contained a forbidden control character.
     #[error("line {line}: value of {key:?} contains a control character")]
     ControlChar { line: usize, key: String },
-    /// An interior line was empty or whitespace-only.
+    /// An interior line was empty. A whitespace-only line is not blank in
+    /// this sense: it carries characters without `=`, so it fails with
+    /// [`Occ1Error::MissingSeparator`] instead.
     #[error("line {line}: blank lines are not allowed")]
     BlankLine { line: usize },
     /// The message exceeded the byte bound.
