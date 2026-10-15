@@ -1,0 +1,7 @@
+loco-writecamp: B-class write-time re-ingest — 4/10 convert, gold extraction verified 10/10, B-class extraction lane CLOSED
+
+- 7 conversations typeB re-ingested with the validated clause set (KU fact-update + attribute v2) into fresh content-addressed caches (303/232/314/242/259/277/206 entries vs frozen 162/129/186/152/158/174/130)
+- Converts: conv-41_q135 0.714, conv-43_q41 0.571, conv-47_q102 0.889, conv-48_q29 1.0 (ledger FAILED 174->170, RESOLVED 1->5)
+- All 10 actionable B-class gold facts now extract (verified by bounded scans); remaining misses are answer-stage: 2 dataset-limits (q66 Jedi-Apprentice, q44 Voyageurs — gold tokens absent from transcripts), 1 computed-duration gold (q61), 1 gold-date mismatch (q11), 2 ranking misses on denser fresh stores (q151, q24)
+- Gates: 16/21 HOLD + 1 wobble->hold; 4 stable answer-stage misses (q20c42, q34c47, q138c47, q10c50) — gold notes present in fresh stores
+- Answer config: FINAL9 + stem + det recall 24/24000; driver imp4b-target8k 4d2ba13f

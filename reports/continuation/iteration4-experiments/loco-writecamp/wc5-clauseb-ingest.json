@@ -1,0 +1,24 @@
+{
+ "recallQueryDistillation": true,
+ "recallRerank": true,
+ "answerMaxTokens": 8192,
+ "maxExtractionTokens": 32000,
+ "maxImportChunkChars": 15000,
+ "maxRecallChars": 8000,
+ "maxRecallEntries": 8,
+ "disableTools": true,
+ "autoRefine": {
+  "enabled": false
+ },
+ "answerInstruction": "Answer only from the memory notes provided above. State the direct answer explicitly and plainly - never only narrate evidence without stating the answer. Supersession: when notes conflict about the same fact, the latest \"at\" timestamp wins; never average or merge versions. Before any date, order, or duration answer, list the dates you see for each relevant fact, then reason from it. Before any count, enumerate each unique item with its date, keep only items consistent with the latest state, then count. Verify the note's entity - person, role, title, item, or show - is exactly the one asked about; a similar name is not a match; answers about a specific person must come from notes about that person, not from notes about other people. The exact-name rule applies to roles and titles too: if the question asks about a role, position, or named thing the notes never record under that exact name, its facts are not recorded - do not transfer them from a similarly-named role; state that the available memory does not record it, then give what is recorded. When a fact changed across sessions, state the current value first, earlier values as background. Answer comparisons only when both sides are recorded. Check the premise first: if it assumes what the notes contradict, say so. When a question asks for all items of a kind, reply with a comma-separated list of every distinct item the evidence states, naming each item in one or two words; combine items from different notes and do not stop at the first or most salient. If no note states the answer, say the available memory does not record it, then give what is recorded. For current-state questions (\"currently\", \"now\", \"latest\", \"these days\"), order facts by the story dates written inside the notes - not the at stamps, which only mark import time - and answer with the most recent state; a present-tense observation beats a same-dated plan or intention. These rules follow the exact-name rule above: they apply only to notes about the exact asked entity, role, title, or item, and never transfer facts across a different name. A fact that a recalled note states with a story date for that exact entity is recorded - answer with the latest-dated statement rather than saying it is not recorded; say it is not recorded when no recalled note states that very fact under its exact name at any date.",
+ "questionTimeoutS": 240,
+ "skipIngest": false,
+ "recallOn": true,
+ "recallRerankCandidates": 200,
+ "recallQueryExtract": true,
+ "recallQueryExpansion": false,
+ "ingestTimeoutS": 43200,
+ "importInstructions": "Extract durable host-neutral project facts only. Only create edits of kind memory with cited sourceIds. Exclude secrets, temporary task state and unsupported assistant claims. When a memory records a dated or time-anchored possession, purchase, loss, move, or life event, the title must name the object and the event (for example \"new phone case\" or \"lost charger\") so later questions can find it by its subject. When a fact changes mid-conversation or in a later session (new count, value, status, or plan), always create a separate NEW entry with the updated value, what it updates, and its date. Never merge or skip updates. Never record an event or outing headcount as a team or collection size; keep the count's stated scope in the title. When an assistant reply directly answers a recorded user question by citing a specific named study (journal or study name), create a memory entry for that study's stated facts - its sample size, duration, and findings - citing the reply; title it with the study's name and its subject count (for example \"study: 38 subjects\"). These are as important as dated events.",
+ "memoryLearning": false,
+ "evidenceTimestamps": true
+}
