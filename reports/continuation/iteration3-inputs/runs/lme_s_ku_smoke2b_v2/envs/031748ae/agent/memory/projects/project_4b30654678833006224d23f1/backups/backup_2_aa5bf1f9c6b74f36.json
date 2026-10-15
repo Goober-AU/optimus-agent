@@ -1,0 +1,1385 @@
+{
+  "schema": 1,
+  "sha256": "aa5bf1f9c6b74f364e209efbcfcdb21917c4b27ab9f316a233347b81588d01a0",
+  "state": {
+    "schema": 1.0,
+    "entries": {
+      "memory": {
+        "team_outing_plan_outdoor_games": {
+          "id": "team_outing_plan_outdoor_games",
+          "kind": "memory",
+          "title": "Team outing plan: rooftop outdoor games (giant Jenga) for a group of 5",
+          "content": "On 2023-05-11 the user said they are planning a team outing for their engineers and liked the outdoor-games idea, specifically giant Jenga or something similar. They asked for rooftop spaces in the city that could accommodate a group of 5 people. (This initial guest count was later increased; see the updated team outing headcount entry.)",
+          "path": "team-outing",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "projectReusable": false,
+            "sourceIds": [
+              "m_0001:0",
+              "m_0003:0"
+            ],
+            "date": "2023-05-11",
+            "sources": [
+              {
+                "id": "m_0001:0",
+                "origin": "user",
+                "sha256": "5367aaf7f4b66c71946d9229a36eee83ec0607f45317664992d95ee318e96d4f",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L1"
+              },
+              {
+                "id": "m_0003:0",
+                "origin": "user",
+                "sha256": "7ff310eca898bece5f120cfb51e0d20c75e3425de3f07661d4ce387ad4be87e5",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L3"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T19:05:56.617Z",
+          "updated_at": "2026-10-12T19:05:56.617Z",
+          "version": 1
+        },
+        "team_outing_headcount_update_6": {
+          "id": "team_outing_headcount_update_6",
+          "kind": "memory",
+          "title": "Team outing headcount update: 5 engineers plus manager Rachel (6 people)",
+          "content": "On 2023-05-11 the user updated the outing headcount from the earlier group of 5: they will invite their manager Rachel, so the outing will consist of the user's 5 engineers plus 1 manager, 6 people total. This is the outing's guest list, not a statement of the total number of engineers the user leads.",
+          "path": "team-outing",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "projectReusable": false,
+            "sourceIds": [
+              "m_0005:0"
+            ],
+            "date": "2023-05-11",
+            "updates": "team_outing_plan_outdoor_games (initial outing guest count of 5)",
+            "sources": [
+              {
+                "id": "m_0005:0",
+                "origin": "user",
+                "sha256": "7e2050ae5b8bd23411b095a042ab862b6530aaa059a6198ada73efa8de7caf64",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L5"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T19:05:56.618Z",
+          "updated_at": "2026-10-12T19:05:56.618Z",
+          "version": 1
+        },
+        "team_outing_venue_city_view_rooftop": {
+          "id": "team_outing_venue_city_view_rooftop",
+          "kind": "memory",
+          "title": "Team outing venue choice: City View Rooftop, Corporate Team Building Package inquiry",
+          "content": "On 2023-05-11 the user chose City View Rooftop as the venue for the engineer team outing and said they would reach out to its events contact, Samantha, to ask about the Corporate Team Building Package for 6 people. They were considering including some structured activities to encourage teamwork alongside free-form mingling.",
+          "path": "team-outing",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "projectReusable": false,
+            "sourceIds": [
+              "m_0005:0",
+              "m_0007:0"
+            ],
+            "date": "2023-05-11",
+            "sources": [
+              {
+                "id": "m_0005:0",
+                "origin": "user",
+                "sha256": "7e2050ae5b8bd23411b095a042ab862b6530aaa059a6198ada73efa8de7caf64",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L5"
+              },
+              {
+                "id": "m_0007:0",
+                "origin": "user",
+                "sha256": "ab63d99612b33a213669001788ebe5861ad878e48652de3d6eba6f29089bba6b",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L7"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T19:05:56.618Z",
+          "updated_at": "2026-10-12T19:05:56.618Z",
+          "version": 1
+        },
+        "user_role_senior_software_engineer": {
+          "id": "user_role_senior_software_engineer",
+          "kind": "memory",
+          "title": "New role: Senior Software Engineer",
+          "content": "As of 2023-05-11, the user referred to having a new role as Senior Software Engineer in which they lead engineers; they did not state how many engineers they lead.",
+          "path": "profile",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "projectReusable": false,
+            "sourceIds": [
+              "m_0009:0"
+            ],
+            "date": "2023-05-11",
+            "sources": [
+              {
+                "id": "m_0009:0",
+                "origin": "user",
+                "sha256": "9c45e4665e96ce2f91c46dbb50c611f478732e5a8fdccf912f6ce0766209bb57",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L9"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T19:05:56.618Z",
+          "updated_at": "2026-10-12T19:05:56.618Z",
+          "version": 1
+        },
+        "user-role-senior-software-engineer": {
+          "id": "user-role-senior-software-engineer",
+          "kind": "memory",
+          "title": "User's role: Senior Software Engineer (new role)",
+          "content": "The user has taken on a new role as Senior Software Engineer (stated 2023-05-11). Durable work-role fact; in this role the user leads a team of engineers (see separate team-size entry).",
+          "path": "user/work",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0011:0"
+            ],
+            "projectReusable": true,
+            "date": "2023-05-11",
+            "sources": [
+              {
+                "id": "m_0011:0",
+                "origin": "user",
+                "sha256": "92d3faa78bda4350dc26575e8efe7a9074c21b82df63f1ee6dcee0301f6d472d",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L11"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T19:05:56.618Z",
+          "updated_at": "2026-10-12T19:05:56.618Z",
+          "version": 1
+        },
+        "engineering-team-size-4": {
+          "id": "engineering-team-size-4",
+          "kind": "memory",
+          "title": "Engineering team led by user: 4 engineers",
+          "content": "The user leads a team of 4 engineers in their new role as Senior Software Engineer (stated 2023-05-11). Scope: size of the engineering team the user leads; this is distinct from the team outing attendance headcount of 5 people (separate entry).",
+          "path": "user/work",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0011:0"
+            ],
+            "projectReusable": true,
+            "date": "2023-05-11",
+            "sources": [
+              {
+                "id": "m_0011:0",
+                "origin": "user",
+                "sha256": "92d3faa78bda4350dc26575e8efe7a9074c21b82df63f1ee6dcee0301f6d472d",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L11"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T19:05:56.618Z",
+          "updated_at": "2026-10-12T19:05:56.618Z",
+          "version": 1
+        },
+        "user-manager-rachel": {
+          "id": "user-manager-rachel",
+          "kind": "memory",
+          "title": "User's manager: Rachel",
+          "content": "The user's manager is named Rachel (referenced 2023-05-11 in connection with the user's Senior Software Engineer role and team outing planning).",
+          "path": "user/work",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0011:0"
+            ],
+            "projectReusable": true,
+            "date": "2023-05-11",
+            "sources": [
+              {
+                "id": "m_0011:0",
+                "origin": "user",
+                "sha256": "92d3faa78bda4350dc26575e8efe7a9074c21b82df63f1ee6dcee0301f6d472d",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L11"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T19:05:56.618Z",
+          "updated_at": "2026-10-12T19:05:56.618Z",
+          "version": 1
+        },
+        "team-outing-attendance-5": {
+          "id": "team-outing-attendance-5",
+          "kind": "memory",
+          "title": "Team outing attendance: 5 people (planned)",
+          "content": "For the team outing being planned as of 2023-05-11, attendance is 5 people total from the team: 4 engineers plus the user's manager Rachel (user-stated). This updates an earlier assumed count of 6 attendees mentioned in the conversation. Scope: outing/event attendance, not the size of the user's engineering team.",
+          "path": "events/outings",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0011:0",
+              "m_0010:0"
+            ],
+            "projectReusable": false,
+            "date": "2023-05-11",
+            "sources": [
+              {
+                "id": "m_0010:0",
+                "origin": "assistant",
+                "sha256": "8f632023fc47376eef3dc4d7ebee9fa6215616f7a67d98923583fa03e95596d4",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L10"
+              },
+              {
+                "id": "m_0011:0",
+                "origin": "user",
+                "sha256": "92d3faa78bda4350dc26575e8efe7a9074c21b82df63f1ee6dcee0301f6d472d",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L11"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T19:05:56.618Z",
+          "updated_at": "2026-10-12T19:05:56.618Z",
+          "version": 1
+        },
+        "user-dietary-gluten-reduction": {
+          "id": "user-dietary-gluten-reduction",
+          "kind": "memory",
+          "title": "User dietary preference: cutting back on gluten",
+          "content": "On 2023-06-15, while asking about bakeries in Amsterdam, the user stated they are 'trying to cut back on gluten' and asked which bakeries offer gluten-free options; they later said the gluten-free options were 'perfect for me'. Durable dietary preference: when recommending food, restaurants, cafés, or bakeries, highlight or prioritize gluten-free options for this user.",
+          "path": "user/diet",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0009:0",
+              "m_0011:0"
+            ],
+            "sources": [
+              {
+                "id": "m_0009:0",
+                "origin": "user",
+                "sha256": "a20837bd5e668a443da9cc822ea27ffa6a31a71841d916b1cb491b15fde20d52",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L9"
+              },
+              {
+                "id": "m_0011:0",
+                "origin": "user",
+                "sha256": "042c2e95fdca81226633a6c72ee30a3f710c0f938c36126721e5ab779520f59b",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L11"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T19:06:41.777Z",
+          "updated_at": "2026-10-12T19:06:41.777Z",
+          "version": 1
+        },
+        "user-interest-vegan-desserts-amsterdam": {
+          "id": "user-interest-vegan-desserts-amsterdam",
+          "kind": "memory",
+          "title": "User interest: vegan dessert options in Amsterdam",
+          "content": "On 2023-06-15, after receiving gluten-free bakery suggestions, the user asked 'what about vegan options?' and whether any of these bakeries offer vegan desserts as well. This indicates interest in vegan dessert availability when choosing where to eat. The user did not state they are vegan or dairy-free, so treat this as an interest rather than a dietary restriction.",
+          "path": "user/diet",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0011:0"
+            ],
+            "sources": [
+              {
+                "id": "m_0011:0",
+                "origin": "user",
+                "sha256": "042c2e95fdca81226633a6c72ee30a3f710c0f938c36126721e5ab779520f59b",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L11"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T19:06:41.777Z",
+          "updated_at": "2026-10-12T19:06:41.777Z",
+          "version": 1
+        },
+        "amsterdam-visit-interest-2023-06": {
+          "id": "amsterdam-visit-interest-2023-06",
+          "kind": "memory",
+          "title": "Amsterdam interest: events, food, desserts, and bakeries (June 2023)",
+          "content": "On 2023-06-15 the user asked for unique events to attend in Amsterdam, then asked about unique food experiences, desserts, and bakeries, including gluten-free and vegan dessert options. This indicates interest in Amsterdam, likely trip planning or an upcoming visit; the user stated no travel dates, bookings, or whether they live there. Scope: Amsterdam travel/food interest only, unrelated to the earlier team outing planning.",
+          "path": "travel/amsterdam",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0001:0",
+              "m_0003:0",
+              "m_0005:0",
+              "m_0007:0",
+              "m_0009:0",
+              "m_0011:0"
+            ],
+            "sources": [
+              {
+                "id": "m_0001:0",
+                "origin": "user",
+                "sha256": "bfd5431e529001a05690487a1308b5d4a30c19b497feb05834aaa6e76e044bd8",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L1"
+              },
+              {
+                "id": "m_0003:0",
+                "origin": "user",
+                "sha256": "43c18e0e0132d7829ff44f26d5951dc561150f1123b16eb0eb79b59f9e68b4ce",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L3"
+              },
+              {
+                "id": "m_0005:0",
+                "origin": "user",
+                "sha256": "292b07957214e99952c7ac336fc711363efa413fccc30836290f29ad313fdacb",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L5"
+              },
+              {
+                "id": "m_0007:0",
+                "origin": "user",
+                "sha256": "7da342ff881b51e73ff362db2c3e6cb1b877a936230c405e1b1bea4cfaee664b",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L7"
+              },
+              {
+                "id": "m_0009:0",
+                "origin": "user",
+                "sha256": "a20837bd5e668a443da9cc822ea27ffa6a31a71841d916b1cb491b15fde20d52",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L9"
+              },
+              {
+                "id": "m_0011:0",
+                "origin": "user",
+                "sha256": "042c2e95fdca81226633a6c72ee30a3f710c0f938c36126721e5ab779520f59b",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L11"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T19:06:41.777Z",
+          "updated_at": "2026-10-12T19:06:41.777Z",
+          "version": 1
+        },
+        "user-tried-dutch-pancakes": {
+          "id": "user-tried-dutch-pancakes",
+          "kind": "memory",
+          "title": "User food experience: has tried Dutch pancakes before",
+          "content": "On 2023-06-15 the user said they have tried Dutch pancakes before and were curious about other unique desserts in Amsterdam. Scope: a past food experience; when recommending Dutch food, Dutch pancakes are not a new item for this user.",
+          "path": "user/food",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0005:0"
+            ],
+            "sources": [
+              {
+                "id": "m_0005:0",
+                "origin": "user",
+                "sha256": "292b07957214e99952c7ac336fc711363efa413fccc30836290f29ad313fdacb",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L5"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T19:06:41.777Z",
+          "updated_at": "2026-10-12T19:06:41.777Z",
+          "version": 1
+        }
+      },
+      "prompt": {},
+      "skill": {},
+      "subagent": {}
+    },
+    "refinements": [
+      {
+        "id": "import_c85a9fd4e60ff156983c0a32",
+        "trigger": "Import import_c85a9fd4e60ff156983c0a32",
+        "changes": [
+          "create memory:team_outing_plan_outdoor_games",
+          "create memory:team_outing_headcount_update_6",
+          "create memory:team_outing_venue_city_view_rooftop",
+          "create memory:user_role_senior_software_engineer",
+          "create memory:user-role-senior-software-engineer",
+          "create memory:engineering-team-size-4",
+          "create memory:user-manager-rachel",
+          "create memory:team-outing-attendance-5"
+        ],
+        "evidence": "Selected session ac47c272e7fa624dd2eb3b721874eca24a4049167db490647eccd3869db89007",
+        "outcome": "Recover selected project knowledge with original evidence",
+        "created_at": "2026-10-12T19:05:56.618Z"
+      },
+      {
+        "id": "import_1612b2788b17197add4adcc4",
+        "trigger": "Import import_1612b2788b17197add4adcc4",
+        "changes": [
+          "create memory:user-dietary-gluten-reduction",
+          "create memory:user-interest-vegan-desserts-amsterdam",
+          "create memory:amsterdam-visit-interest-2023-06",
+          "create memory:user-tried-dutch-pancakes"
+        ],
+        "evidence": "Selected session 217a4dc00c95bdaa362f398399f6d6170710752efdf250d61e0f1ba81c88fc64",
+        "outcome": "Recover selected project knowledge with original evidence",
+        "created_at": "2026-10-12T19:06:41.777Z"
+      }
+    ],
+    "memory": {
+      "schema": 1.0,
+      "projectId": "project_4b30654678833006224d23f1",
+      "revision": 2,
+      "history": [
+        {
+          "id": "import_c85a9fd4e60ff156983c0a32",
+          "summary": "Import import_c85a9fd4e60ff156983c0a32",
+          "rationale": "Selected session ac47c272e7fa624dd2eb3b721874eca24a4049167db490647eccd3869db89007",
+          "expectedOutcome": "Recover selected project knowledge with original evidence",
+          "appliedEdits": [
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Team outing plan: rooftop outdoor games (giant Jenga) for a group of 5",
+              "content": "On 2023-05-11 the user said they are planning a team outing for their engineers and liked the outdoor-games idea, specifically giant Jenga or something similar. They asked for rooftop spaces in the city that could accommodate a group of 5 people. (This initial guest count was later increased; see the updated team outing headcount entry.)",
+              "path": "team-outing",
+              "metadata": {
+                "scope": "local",
+                "projectReusable": false,
+                "sourceIds": [
+                  "m_0001:0",
+                  "m_0003:0"
+                ],
+                "date": "2023-05-11",
+                "sources": [
+                  {
+                    "id": "m_0001:0",
+                    "origin": "user",
+                    "sha256": "5367aaf7f4b66c71946d9229a36eee83ec0607f45317664992d95ee318e96d4f",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L1"
+                  },
+                  {
+                    "id": "m_0003:0",
+                    "origin": "user",
+                    "sha256": "7ff310eca898bece5f120cfb51e0d20c75e3425de3f07661d4ce387ad4be87e5",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L3"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Captures the user's stated outing plan, activity preference, and the initial outing guest count with its event scope preserved.",
+              "id": "team_outing_plan_outdoor_games",
+              "after": {
+                "id": "team_outing_plan_outdoor_games",
+                "kind": "memory",
+                "title": "Team outing plan: rooftop outdoor games (giant Jenga) for a group of 5",
+                "content": "On 2023-05-11 the user said they are planning a team outing for their engineers and liked the outdoor-games idea, specifically giant Jenga or something similar. They asked for rooftop spaces in the city that could accommodate a group of 5 people. (This initial guest count was later increased; see the updated team outing headcount entry.)",
+                "path": "team-outing",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "projectReusable": false,
+                  "sourceIds": [
+                    "m_0001:0",
+                    "m_0003:0"
+                  ],
+                  "date": "2023-05-11",
+                  "sources": [
+                    {
+                      "id": "m_0001:0",
+                      "origin": "user",
+                      "sha256": "5367aaf7f4b66c71946d9229a36eee83ec0607f45317664992d95ee318e96d4f",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L1"
+                    },
+                    {
+                      "id": "m_0003:0",
+                      "origin": "user",
+                      "sha256": "7ff310eca898bece5f120cfb51e0d20c75e3425de3f07661d4ce387ad4be87e5",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L3"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T19:05:56.617Z",
+                "updated_at": "2026-10-12T19:05:56.617Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Team outing headcount update: 5 engineers plus manager Rachel (6 people)",
+              "content": "On 2023-05-11 the user updated the outing headcount from the earlier group of 5: they will invite their manager Rachel, so the outing will consist of the user's 5 engineers plus 1 manager, 6 people total. This is the outing's guest list, not a statement of the total number of engineers the user leads.",
+              "path": "team-outing",
+              "metadata": {
+                "scope": "local",
+                "projectReusable": false,
+                "sourceIds": [
+                  "m_0005:0"
+                ],
+                "date": "2023-05-11",
+                "updates": "team_outing_plan_outdoor_games (initial outing guest count of 5)",
+                "sources": [
+                  {
+                    "id": "m_0005:0",
+                    "origin": "user",
+                    "sha256": "7e2050ae5b8bd23411b095a042ab862b6530aaa059a6198ada73efa8de7caf64",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L5"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Records the changed outing headcount as a separate new entry with the updated value, what it updates, and its date, while keeping the count scoped to the outing rather than a team size.",
+              "id": "team_outing_headcount_update_6",
+              "after": {
+                "id": "team_outing_headcount_update_6",
+                "kind": "memory",
+                "title": "Team outing headcount update: 5 engineers plus manager Rachel (6 people)",
+                "content": "On 2023-05-11 the user updated the outing headcount from the earlier group of 5: they will invite their manager Rachel, so the outing will consist of the user's 5 engineers plus 1 manager, 6 people total. This is the outing's guest list, not a statement of the total number of engineers the user leads.",
+                "path": "team-outing",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "projectReusable": false,
+                  "sourceIds": [
+                    "m_0005:0"
+                  ],
+                  "date": "2023-05-11",
+                  "updates": "team_outing_plan_outdoor_games (initial outing guest count of 5)",
+                  "sources": [
+                    {
+                      "id": "m_0005:0",
+                      "origin": "user",
+                      "sha256": "7e2050ae5b8bd23411b095a042ab862b6530aaa059a6198ada73efa8de7caf64",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L5"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T19:05:56.618Z",
+                "updated_at": "2026-10-12T19:05:56.618Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Team outing venue choice: City View Rooftop, Corporate Team Building Package inquiry",
+              "content": "On 2023-05-11 the user chose City View Rooftop as the venue for the engineer team outing and said they would reach out to its events contact, Samantha, to ask about the Corporate Team Building Package for 6 people. They were considering including some structured activities to encourage teamwork alongside free-form mingling.",
+              "path": "team-outing",
+              "metadata": {
+                "scope": "local",
+                "projectReusable": false,
+                "sourceIds": [
+                  "m_0005:0",
+                  "m_0007:0"
+                ],
+                "date": "2023-05-11",
+                "sources": [
+                  {
+                    "id": "m_0005:0",
+                    "origin": "user",
+                    "sha256": "7e2050ae5b8bd23411b095a042ab862b6530aaa059a6198ada73efa8de7caf64",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L5"
+                  },
+                  {
+                    "id": "m_0007:0",
+                    "origin": "user",
+                    "sha256": "ab63d99612b33a213669001788ebe5861ad878e48652de3d6eba6f29089bba6b",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L7"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Captures the user's selected venue and stated next step; assistant-provided pricing and contact details were excluded as unverified assistant claims.",
+              "id": "team_outing_venue_city_view_rooftop",
+              "after": {
+                "id": "team_outing_venue_city_view_rooftop",
+                "kind": "memory",
+                "title": "Team outing venue choice: City View Rooftop, Corporate Team Building Package inquiry",
+                "content": "On 2023-05-11 the user chose City View Rooftop as the venue for the engineer team outing and said they would reach out to its events contact, Samantha, to ask about the Corporate Team Building Package for 6 people. They were considering including some structured activities to encourage teamwork alongside free-form mingling.",
+                "path": "team-outing",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "projectReusable": false,
+                  "sourceIds": [
+                    "m_0005:0",
+                    "m_0007:0"
+                  ],
+                  "date": "2023-05-11",
+                  "sources": [
+                    {
+                      "id": "m_0005:0",
+                      "origin": "user",
+                      "sha256": "7e2050ae5b8bd23411b095a042ab862b6530aaa059a6198ada73efa8de7caf64",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L5"
+                    },
+                    {
+                      "id": "m_0007:0",
+                      "origin": "user",
+                      "sha256": "ab63d99612b33a213669001788ebe5861ad878e48652de3d6eba6f29089bba6b",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L7"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T19:05:56.618Z",
+                "updated_at": "2026-10-12T19:05:56.618Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "New role: Senior Software Engineer",
+              "content": "As of 2023-05-11, the user referred to having a new role as Senior Software Engineer in which they lead engineers; they did not state how many engineers they lead.",
+              "path": "profile",
+              "metadata": {
+                "scope": "local",
+                "projectReusable": false,
+                "sourceIds": [
+                  "m_0009:0"
+                ],
+                "date": "2023-05-11",
+                "sources": [
+                  {
+                    "id": "m_0009:0",
+                    "origin": "user",
+                    "sha256": "9c45e4665e96ce2f91c46dbb50c611f478732e5a8fdccf912f6ce0766209bb57",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L9"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Records the user's directly stated new job role as a durable personal fact for future recall.",
+              "id": "user_role_senior_software_engineer",
+              "after": {
+                "id": "user_role_senior_software_engineer",
+                "kind": "memory",
+                "title": "New role: Senior Software Engineer",
+                "content": "As of 2023-05-11, the user referred to having a new role as Senior Software Engineer in which they lead engineers; they did not state how many engineers they lead.",
+                "path": "profile",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "projectReusable": false,
+                  "sourceIds": [
+                    "m_0009:0"
+                  ],
+                  "date": "2023-05-11",
+                  "sources": [
+                    {
+                      "id": "m_0009:0",
+                      "origin": "user",
+                      "sha256": "9c45e4665e96ce2f91c46dbb50c611f478732e5a8fdccf912f6ce0766209bb57",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L9"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T19:05:56.618Z",
+                "updated_at": "2026-10-12T19:05:56.618Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "User's role: Senior Software Engineer (new role)",
+              "content": "The user has taken on a new role as Senior Software Engineer (stated 2023-05-11). Durable work-role fact; in this role the user leads a team of engineers (see separate team-size entry).",
+              "path": "user/work",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0011:0"
+                ],
+                "projectReusable": true,
+                "date": "2023-05-11",
+                "sources": [
+                  {
+                    "id": "m_0011:0",
+                    "origin": "user",
+                    "sha256": "92d3faa78bda4350dc26575e8efe7a9074c21b82df63f1ee6dcee0301f6d472d",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L11"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "User directly stated their new role; durable, host-neutral fact useful for future work-context questions.",
+              "id": "user-role-senior-software-engineer",
+              "after": {
+                "id": "user-role-senior-software-engineer",
+                "kind": "memory",
+                "title": "User's role: Senior Software Engineer (new role)",
+                "content": "The user has taken on a new role as Senior Software Engineer (stated 2023-05-11). Durable work-role fact; in this role the user leads a team of engineers (see separate team-size entry).",
+                "path": "user/work",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0011:0"
+                  ],
+                  "projectReusable": true,
+                  "date": "2023-05-11",
+                  "sources": [
+                    {
+                      "id": "m_0011:0",
+                      "origin": "user",
+                      "sha256": "92d3faa78bda4350dc26575e8efe7a9074c21b82df63f1ee6dcee0301f6d472d",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L11"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T19:05:56.618Z",
+                "updated_at": "2026-10-12T19:05:56.618Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Engineering team led by user: 4 engineers",
+              "content": "The user leads a team of 4 engineers in their new role as Senior Software Engineer (stated 2023-05-11). Scope: size of the engineering team the user leads; this is distinct from the team outing attendance headcount of 5 people (separate entry).",
+              "path": "user/work",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0011:0"
+                ],
+                "projectReusable": true,
+                "date": "2023-05-11",
+                "sources": [
+                  {
+                    "id": "m_0011:0",
+                    "origin": "user",
+                    "sha256": "92d3faa78bda4350dc26575e8efe7a9074c21b82df63f1ee6dcee0301f6d472d",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L11"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "User-confirmed team size; kept scoped to the team the user leads so it is not confused with the outing headcount.",
+              "id": "engineering-team-size-4",
+              "after": {
+                "id": "engineering-team-size-4",
+                "kind": "memory",
+                "title": "Engineering team led by user: 4 engineers",
+                "content": "The user leads a team of 4 engineers in their new role as Senior Software Engineer (stated 2023-05-11). Scope: size of the engineering team the user leads; this is distinct from the team outing attendance headcount of 5 people (separate entry).",
+                "path": "user/work",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0011:0"
+                  ],
+                  "projectReusable": true,
+                  "date": "2023-05-11",
+                  "sources": [
+                    {
+                      "id": "m_0011:0",
+                      "origin": "user",
+                      "sha256": "92d3faa78bda4350dc26575e8efe7a9074c21b82df63f1ee6dcee0301f6d472d",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L11"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T19:05:56.618Z",
+                "updated_at": "2026-10-12T19:05:56.618Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "User's manager: Rachel",
+              "content": "The user's manager is named Rachel (referenced 2023-05-11 in connection with the user's Senior Software Engineer role and team outing planning).",
+              "path": "user/work",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0011:0"
+                ],
+                "projectReusable": true,
+                "date": "2023-05-11",
+                "sources": [
+                  {
+                    "id": "m_0011:0",
+                    "origin": "user",
+                    "sha256": "92d3faa78bda4350dc26575e8efe7a9074c21b82df63f1ee6dcee0301f6d472d",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L11"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "User directly identified their manager by name; durable reporting-relationship fact.",
+              "id": "user-manager-rachel",
+              "after": {
+                "id": "user-manager-rachel",
+                "kind": "memory",
+                "title": "User's manager: Rachel",
+                "content": "The user's manager is named Rachel (referenced 2023-05-11 in connection with the user's Senior Software Engineer role and team outing planning).",
+                "path": "user/work",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0011:0"
+                  ],
+                  "projectReusable": true,
+                  "date": "2023-05-11",
+                  "sources": [
+                    {
+                      "id": "m_0011:0",
+                      "origin": "user",
+                      "sha256": "92d3faa78bda4350dc26575e8efe7a9074c21b82df63f1ee6dcee0301f6d472d",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L11"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T19:05:56.618Z",
+                "updated_at": "2026-10-12T19:05:56.618Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Team outing attendance: 5 people (planned)",
+              "content": "For the team outing being planned as of 2023-05-11, attendance is 5 people total from the team: 4 engineers plus the user's manager Rachel (user-stated). This updates an earlier assumed count of 6 attendees mentioned in the conversation. Scope: outing/event attendance, not the size of the user's engineering team.",
+              "path": "events/outings",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0011:0",
+                  "m_0010:0"
+                ],
+                "projectReusable": false,
+                "date": "2023-05-11",
+                "sources": [
+                  {
+                    "id": "m_0010:0",
+                    "origin": "assistant",
+                    "sha256": "8f632023fc47376eef3dc4d7ebee9fa6215616f7a67d98923583fa03e95596d4",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L10"
+                  },
+                  {
+                    "id": "m_0011:0",
+                    "origin": "user",
+                    "sha256": "92d3faa78bda4350dc26575e8efe7a9074c21b82df63f1ee6dcee0301f6d472d",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L11"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Records the corrected, user-confirmed outing headcount as a separate new entry per the update rule; the title keeps the count scoped to the event so it is not mistaken for team size.",
+              "id": "team-outing-attendance-5",
+              "after": {
+                "id": "team-outing-attendance-5",
+                "kind": "memory",
+                "title": "Team outing attendance: 5 people (planned)",
+                "content": "For the team outing being planned as of 2023-05-11, attendance is 5 people total from the team: 4 engineers plus the user's manager Rachel (user-stated). This updates an earlier assumed count of 6 attendees mentioned in the conversation. Scope: outing/event attendance, not the size of the user's engineering team.",
+                "path": "events/outings",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0011:0",
+                    "m_0010:0"
+                  ],
+                  "projectReusable": false,
+                  "date": "2023-05-11",
+                  "sources": [
+                    {
+                      "id": "m_0010:0",
+                      "origin": "assistant",
+                      "sha256": "8f632023fc47376eef3dc4d7ebee9fa6215616f7a67d98923583fa03e95596d4",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L10"
+                    },
+                    {
+                      "id": "m_0011:0",
+                      "origin": "user",
+                      "sha256": "92d3faa78bda4350dc26575e8efe7a9074c21b82df63f1ee6dcee0301f6d472d",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_c85a9fd4e60ff156983c0a32.source.jsonl#L11"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T19:05:56.618Z",
+                "updated_at": "2026-10-12T19:05:56.618Z",
+                "version": 1
+              },
+              "applied": true
+            }
+          ],
+          "harnessStatePath": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2\\envs\\031748ae\\agent\\memory\\projects\\project_4b30654678833006224d23f1\\harness_state.json",
+          "scope": "local"
+        },
+        {
+          "id": "import_1612b2788b17197add4adcc4",
+          "summary": "Import import_1612b2788b17197add4adcc4",
+          "rationale": "Selected session 217a4dc00c95bdaa362f398399f6d6170710752efdf250d61e0f1ba81c88fc64",
+          "expectedOutcome": "Recover selected project knowledge with original evidence",
+          "appliedEdits": [
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "User dietary preference: cutting back on gluten",
+              "content": "On 2023-06-15, while asking about bakeries in Amsterdam, the user stated they are 'trying to cut back on gluten' and asked which bakeries offer gluten-free options; they later said the gluten-free options were 'perfect for me'. Durable dietary preference: when recommending food, restaurants, cafés, or bakeries, highlight or prioritize gluten-free options for this user.",
+              "path": "user/diet",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0009:0",
+                  "m_0011:0"
+                ],
+                "sources": [
+                  {
+                    "id": "m_0009:0",
+                    "origin": "user",
+                    "sha256": "a20837bd5e668a443da9cc822ea27ffa6a31a71841d916b1cb491b15fde20d52",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L9"
+                  },
+                  {
+                    "id": "m_0011:0",
+                    "origin": "user",
+                    "sha256": "042c2e95fdca81226633a6c72ee30a3f710c0f938c36126721e5ab779520f59b",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L11"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Direct user statement of a durable dietary preference; directly useful for all future food and dining recommendations.",
+              "id": "user-dietary-gluten-reduction",
+              "after": {
+                "id": "user-dietary-gluten-reduction",
+                "kind": "memory",
+                "title": "User dietary preference: cutting back on gluten",
+                "content": "On 2023-06-15, while asking about bakeries in Amsterdam, the user stated they are 'trying to cut back on gluten' and asked which bakeries offer gluten-free options; they later said the gluten-free options were 'perfect for me'. Durable dietary preference: when recommending food, restaurants, cafés, or bakeries, highlight or prioritize gluten-free options for this user.",
+                "path": "user/diet",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0009:0",
+                    "m_0011:0"
+                  ],
+                  "sources": [
+                    {
+                      "id": "m_0009:0",
+                      "origin": "user",
+                      "sha256": "a20837bd5e668a443da9cc822ea27ffa6a31a71841d916b1cb491b15fde20d52",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L9"
+                    },
+                    {
+                      "id": "m_0011:0",
+                      "origin": "user",
+                      "sha256": "042c2e95fdca81226633a6c72ee30a3f710c0f938c36126721e5ab779520f59b",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L11"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T19:06:41.777Z",
+                "updated_at": "2026-10-12T19:06:41.777Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "User interest: vegan dessert options in Amsterdam",
+              "content": "On 2023-06-15, after receiving gluten-free bakery suggestions, the user asked 'what about vegan options?' and whether any of these bakeries offer vegan desserts as well. This indicates interest in vegan dessert availability when choosing where to eat. The user did not state they are vegan or dairy-free, so treat this as an interest rather than a dietary restriction.",
+              "path": "user/diet",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0011:0"
+                ],
+                "sources": [
+                  {
+                    "id": "m_0011:0",
+                    "origin": "user",
+                    "sha256": "042c2e95fdca81226633a6c72ee30a3f710c0f938c36126721e5ab779520f59b",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L11"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "User-reported interest that complements the gluten preference when making food and dessert recommendations; carefully framed as interest, not a claimed restriction.",
+              "id": "user-interest-vegan-desserts-amsterdam",
+              "after": {
+                "id": "user-interest-vegan-desserts-amsterdam",
+                "kind": "memory",
+                "title": "User interest: vegan dessert options in Amsterdam",
+                "content": "On 2023-06-15, after receiving gluten-free bakery suggestions, the user asked 'what about vegan options?' and whether any of these bakeries offer vegan desserts as well. This indicates interest in vegan dessert availability when choosing where to eat. The user did not state they are vegan or dairy-free, so treat this as an interest rather than a dietary restriction.",
+                "path": "user/diet",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0011:0"
+                  ],
+                  "sources": [
+                    {
+                      "id": "m_0011:0",
+                      "origin": "user",
+                      "sha256": "042c2e95fdca81226633a6c72ee30a3f710c0f938c36126721e5ab779520f59b",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L11"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T19:06:41.777Z",
+                "updated_at": "2026-10-12T19:06:41.777Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Amsterdam interest: events, food, desserts, and bakeries (June 2023)",
+              "content": "On 2023-06-15 the user asked for unique events to attend in Amsterdam, then asked about unique food experiences, desserts, and bakeries, including gluten-free and vegan dessert options. This indicates interest in Amsterdam, likely trip planning or an upcoming visit; the user stated no travel dates, bookings, or whether they live there. Scope: Amsterdam travel/food interest only, unrelated to the earlier team outing planning.",
+              "path": "travel/amsterdam",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0001:0",
+                  "m_0003:0",
+                  "m_0005:0",
+                  "m_0007:0",
+                  "m_0009:0",
+                  "m_0011:0"
+                ],
+                "sources": [
+                  {
+                    "id": "m_0001:0",
+                    "origin": "user",
+                    "sha256": "bfd5431e529001a05690487a1308b5d4a30c19b497feb05834aaa6e76e044bd8",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L1"
+                  },
+                  {
+                    "id": "m_0003:0",
+                    "origin": "user",
+                    "sha256": "43c18e0e0132d7829ff44f26d5951dc561150f1123b16eb0eb79b59f9e68b4ce",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L3"
+                  },
+                  {
+                    "id": "m_0005:0",
+                    "origin": "user",
+                    "sha256": "292b07957214e99952c7ac336fc711363efa413fccc30836290f29ad313fdacb",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L5"
+                  },
+                  {
+                    "id": "m_0007:0",
+                    "origin": "user",
+                    "sha256": "7da342ff881b51e73ff362db2c3e6cb1b877a936230c405e1b1bea4cfaee664b",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L7"
+                  },
+                  {
+                    "id": "m_0009:0",
+                    "origin": "user",
+                    "sha256": "a20837bd5e668a443da9cc822ea27ffa6a31a71841d916b1cb491b15fde20d52",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L9"
+                  },
+                  {
+                    "id": "m_0011:0",
+                    "origin": "user",
+                    "sha256": "042c2e95fdca81226633a6c72ee30a3f710c0f938c36126721e5ab779520f59b",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L11"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Time-anchored user interest with the subject (Amsterdam) and scope named in the title; provides context for follow-up Amsterdam questions.",
+              "id": "amsterdam-visit-interest-2023-06",
+              "after": {
+                "id": "amsterdam-visit-interest-2023-06",
+                "kind": "memory",
+                "title": "Amsterdam interest: events, food, desserts, and bakeries (June 2023)",
+                "content": "On 2023-06-15 the user asked for unique events to attend in Amsterdam, then asked about unique food experiences, desserts, and bakeries, including gluten-free and vegan dessert options. This indicates interest in Amsterdam, likely trip planning or an upcoming visit; the user stated no travel dates, bookings, or whether they live there. Scope: Amsterdam travel/food interest only, unrelated to the earlier team outing planning.",
+                "path": "travel/amsterdam",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0001:0",
+                    "m_0003:0",
+                    "m_0005:0",
+                    "m_0007:0",
+                    "m_0009:0",
+                    "m_0011:0"
+                  ],
+                  "sources": [
+                    {
+                      "id": "m_0001:0",
+                      "origin": "user",
+                      "sha256": "bfd5431e529001a05690487a1308b5d4a30c19b497feb05834aaa6e76e044bd8",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L1"
+                    },
+                    {
+                      "id": "m_0003:0",
+                      "origin": "user",
+                      "sha256": "43c18e0e0132d7829ff44f26d5951dc561150f1123b16eb0eb79b59f9e68b4ce",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L3"
+                    },
+                    {
+                      "id": "m_0005:0",
+                      "origin": "user",
+                      "sha256": "292b07957214e99952c7ac336fc711363efa413fccc30836290f29ad313fdacb",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L5"
+                    },
+                    {
+                      "id": "m_0007:0",
+                      "origin": "user",
+                      "sha256": "7da342ff881b51e73ff362db2c3e6cb1b877a936230c405e1b1bea4cfaee664b",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L7"
+                    },
+                    {
+                      "id": "m_0009:0",
+                      "origin": "user",
+                      "sha256": "a20837bd5e668a443da9cc822ea27ffa6a31a71841d916b1cb491b15fde20d52",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L9"
+                    },
+                    {
+                      "id": "m_0011:0",
+                      "origin": "user",
+                      "sha256": "042c2e95fdca81226633a6c72ee30a3f710c0f938c36126721e5ab779520f59b",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L11"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T19:06:41.777Z",
+                "updated_at": "2026-10-12T19:06:41.777Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "User food experience: has tried Dutch pancakes before",
+              "content": "On 2023-06-15 the user said they have tried Dutch pancakes before and were curious about other unique desserts in Amsterdam. Scope: a past food experience; when recommending Dutch food, Dutch pancakes are not a new item for this user.",
+              "path": "user/food",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0005:0"
+                ],
+                "sources": [
+                  {
+                    "id": "m_0005:0",
+                    "origin": "user",
+                    "sha256": "292b07957214e99952c7ac336fc711363efa413fccc30836290f29ad313fdacb",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L5"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Direct, durable user statement about prior food experience; prevents re-recommending Dutch pancakes as a novel suggestion.",
+              "id": "user-tried-dutch-pancakes",
+              "after": {
+                "id": "user-tried-dutch-pancakes",
+                "kind": "memory",
+                "title": "User food experience: has tried Dutch pancakes before",
+                "content": "On 2023-06-15 the user said they have tried Dutch pancakes before and were curious about other unique desserts in Amsterdam. Scope: a past food experience; when recommending Dutch food, Dutch pancakes are not a new item for this user.",
+                "path": "user/food",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0005:0"
+                  ],
+                  "sources": [
+                    {
+                      "id": "m_0005:0",
+                      "origin": "user",
+                      "sha256": "292b07957214e99952c7ac336fc711363efa413fccc30836290f29ad313fdacb",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_1612b2788b17197add4adcc4.source.jsonl#L5"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T19:06:41.777Z",
+                "updated_at": "2026-10-12T19:06:41.777Z",
+                "version": 1
+              },
+              "applied": true
+            }
+          ],
+          "harnessStatePath": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v2\\envs\\031748ae\\agent\\memory\\projects\\project_4b30654678833006224d23f1\\harness_state.json",
+          "scope": "local"
+        }
+      ],
+      "events": {
+        "import_c85a9fd4e60ff156983c0a32": "614612b2a7099c89f25090e97b4c924e366a674111f77e4e21a81ad79787590b",
+        "import_1612b2788b17197add4adcc4": "28ab22b6294262b486e7ad8aed7c219a0811bf61df0a069ce31dfee28f27336b"
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+bench(reports): lme_s KU extraction smoke — importInstructions update-capture validated 2/2
+
+All 3 lme_s_full_smoke5 misses traced to un-extracted late-session fact
+updates (25 new postcards 2023-11-30; team of five engineers 2023-10-24;
+Dr. Smith visit 2023-03-03). This smoke adds a manifest-level
+memory.importInstructions to the LME-S stack: the built-in default
+extraction instruction plus a 58-word addition demanding a separate NEW
+entry per changed fact (updated value + what it updates + date, never
+merge or skip) and scoping counts so event/outing headcounts are never
+recorded as team or collection sizes.
+
+- manifests: lme_s_ku_smoke2_v1 (47-word addition, 1/2) and _v2 (58-word
+  addition with the scoping clause, 2/2), each as a 2-env record manifest
+  plus two 1-env execution splits; envs verbatim from the committed smoke5
+  manifest (deep-equal data/common/longmemeval/full)
+- v1 fixed the postcards question (25, judge yes) but amplified outing-
+  talk extraction into a same-date "Team of 5 engineers" pseudo-conflict;
+  v2's scoping clause fixes the engineers question (4 then, 5 now)
+- sealed run: both 0.0; v2 run: both 1.0 (official-lme-v1, dgx glm-5.3)
+- store check: both update entries created, titled, and recalled
+- binary: isolated build imp3-target4 (imp3/target untouched; Rust tree
+  identical to the sealed smoke5 binary, reports-only diff b95ca6aad)
+- core default untouched: instruction lives in the manifests only

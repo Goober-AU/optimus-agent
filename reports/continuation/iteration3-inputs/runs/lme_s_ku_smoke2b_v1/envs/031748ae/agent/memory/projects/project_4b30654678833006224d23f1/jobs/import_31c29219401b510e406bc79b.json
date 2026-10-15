@@ -1,0 +1,54 @@
+{
+  "schema": 1.0,
+  "id": "import_31c29219401b510e406bc79b",
+  "source": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1\\envs\\031748ae\\sessions\\sharegpt_3D7sTTH_0.jsonl",
+  "sourceHash": "753f393ddfa8a863fa21ccbeb9745c4694396e068a0d6035fb1ffd13685f2d58",
+  "status": "applied",
+  "chunks": [
+    {
+      "records": [
+        {
+          "id": "m_0001:0",
+          "origin": "user",
+          "text": "Trust types in Active Directory",
+          "sha256": "4cf9f3837d4d0c9b35ceb5f8b83cfd6837b2310c00a0d244a61af508e406f5d4",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_31c29219401b510e406bc79b.source.jsonl#L1",
+          "timestamp": 1699384920000.0
+        },
+        {
+          "id": "m_0002:0",
+          "origin": "assistant",
+          "text": "Active Directory (AD) is a directory service developed by Microsoft. It uses a hierarchical structure to store information about objects on a network, such as users, computers, and groups. Trusts are an important part of AD that allow different domains and forests to share resources and authenticate users. There are several types of trusts in AD, including:\n\n1. Parent-child trusts: These are automatic two-way trusts that are created between parent and child domains in a domain tree. They allow users to access resources in both domains without having to authenticate again.\n2. Shortcut trusts: These are two-way trusts that can be created between non-parent domains in the same forest to optimize authentication performance. They allow users to authenticate more quickly when accessing resources in the other domain.\n3. Forest trusts: These are two-way trusts that can be created between different forests. They allow users in one forest to access resources in another forest, and they can be transitive or non-transitive.\n4. External trusts: These are one-way or two-way trusts that can be created between an AD domain and a non-AD domain. They allow users in the non-AD domain to access resources in the AD domain.\n5. Realm trusts: These are one-way or two-way trusts that can be created between AD domains and non-Microsoft Kerberos realms. They allow users in the Kerberos realm to access resources in the AD domain.\n\nEach type of trust has its own specific purpose and characteristics, and they can be configured and managed using the Active Directory Domains and Trusts console.",
+          "sha256": "d135ce03eb1206926ddfcf727646d4dc1d8ebcd1789b3906a3479d047f661f8d",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_31c29219401b510e406bc79b.source.jsonl#L2",
+          "timestamp": 1699384920000.0
+        }
+      ],
+      "startLine": 1,
+      "endLine": 2,
+      "proposal": {
+        "summary": "No edits: the trajectory contains no durable, host-neutral user or project facts, only a bare knowledge question and an assistant-generated answer.",
+        "rationale": "The single user-originated record (m_0001:0) is a topical information request ('Trust types in Active Directory') with no personal, preference, project, or environment context; it establishes no durable fact about the user or any project and is at most transient task state, which the refinement rules exclude. The remainder of the trajectory (m_0002:0) is the assistant's own explanation of AD trust types — general technical knowledge and an assistant claim with no user or tool verification — which the instructions explicitly bar from being persisted as memory. Creating an entry from it would enshrine unverified assistant-generated content, and no fact changed or updated here that would warrant a new entry.",
+        "edits": [],
+        "expectedOutcome": "The continual harness stays free of noise: no unverified assistant-generated technical claims and no low-signal query records enter memory. Validation: confirm that no entry cites m_0002:0 or restates the AD trust taxonomy, and that future trajectories containing actual user-stated facts (roles, environments, preferences, plans, or updates to prior values) are extracted with proper sourceIds at that time."
+      }
+    }
+  ],
+  "nextChunk": 1,
+  "expectedRevision": 41,
+  "coverage": {
+    "lines": 3,
+    "evidenceRecords": 2,
+    "excludedLines": []
+  },
+  "usage": {
+    "input": 5932.0,
+    "output": 9542.0
+  },
+  "acceptedProposal": {
+    "summary": "Import import_31c29219401b510e406bc79b",
+    "rationale": "Selected session 753f393ddfa8a863fa21ccbeb9745c4694396e068a0d6035fb1ffd13685f2d58",
+    "edits": [],
+    "expectedOutcome": "Recover selected project knowledge with original evidence"
+  }
+}

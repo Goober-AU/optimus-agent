@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "global_default": "off",
+  "features": {
+    "tool_requirement": true,
+    "complexity": true,
+    "tool_candidates": false,
+    "context_relevance": false,
+    "code_search_relevance": false,
+    "code_search_filtering": false,
+    "memory": false,
+    "memory_relevance": false,
+    "result_sufficiency": false,
+    "loop_control": false,
+    "retry_classification": false,
+    "verification": false,
+    "trace_observer": false,
+    "code_search_reranking": false,
+    "line_find": false,
+    "skill_suggestion": false,
+    "guardrails_input": false,
+    "guardrails_output": false,
+    "retrieval_safety": false,
+    "citation_check": false,
+    "dynamic": false
+  },
+  "compaction_enabled": false,
+  "compaction": {
+    "keep_threshold": 0.5,
+    "preserve_recent_messages": 6,
+    "max_state_tokens": 25000,
+    "max_request_tokens": 30000,
+    "truncate_head_chars": 300,
+    "minimum_reduction_ratio": 0.25
+  },
+  "filtering": {
+    "optional_tool_names": [],
+    "mandatory_tool_names": [
+      "ipython"
+    ],
+    "min_confidence": 0.9,
+    "max_candidates": 8,
+    "max_decision_age_ms": 3000
+  },
+  "sessions": {},
+  "credential_configured": false,
+  "disclosure_shown": false,
+  "write_revision": 1
+}

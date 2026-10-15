@@ -1,0 +1,26 @@
+{
+  "autoRefine": {
+    "enabled": false
+  },
+  "retry": {
+    "enabled": false
+  },
+  "compaction": {
+    "enabled": false
+  },
+  "telemetryEnabled": false,
+  "agentTracesEnabled": false,
+  "quietStartup": true,
+  "memory": {
+    "recall": true,
+    "recallQueryDistillation": true,
+    "recallRerank": true,
+    "recallQueryExtract": true,
+    "recallRerankCandidates": 200,
+    "maxRecallChars": 8000,
+    "importInstructions": "Extract durable host-neutral project facts only. Only create edits of kind memory with cited sourceIds. Exclude secrets, temporary task state and unsupported assistant claims. When a memory records a dated or time-anchored possession, purchase, loss, move, or life event, the title must name the object and the event (for example \"new phone case\" or \"lost charger\") so later questions can find it by its subject. When a fact changes mid-conversation or in a later session (new count, new value, new status, revised plan), always create a separate NEW entry capturing the updated value, what it updates, and its date. Never merge or skip updates. The question may ask about the latest state.",
+    "maxRecallEntries": 8,
+    "maxExtractionTokens": 32000,
+    "maxImportChunkChars": 15000
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "worktree": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku",
+  "branch": "improve/mem3-ku-extraction",
+  "base_commit": "b95ca6aad",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/manifests/lme_s_ku_smoke2_v1.json",
+  "run_id": "lme_s_ku_smoke2_v1",
+  "output_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2_v1",
+  "log": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2_v1.log",
+  "binary": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-target4/release/examples/memory_bench.exe",
+  "build_handle_pid": 15936,
+  "new_instruction": "Extract durable host-neutral project facts only. Only create edits of kind memory with cited sourceIds. Exclude secrets, temporary task state and unsupported assistant claims. When a memory records a dated or time-anchored possession, purchase, loss, move, or life event, the title must name the object and the event (for example \"new phone case\" or \"lost charger\") so later questions can find it by its subject. When a fact changes mid-conversation or in a later session (new count, new value, new status, revised plan), always create a separate NEW entry capturing the updated value, what it updates, and its date. Never merge or skip updates. The question may ask about the latest state.",
+  "ku_qids": [
+    "01493427",
+    "031748ae"
+  ],
+  "driver_models_json": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/c06-instruction-boundary/inputs/runs/locomo-c06-ib-system_append-q12-s0p1/envs/conv-30/agent/models.json",
+  "judge_models_json": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration2-inputs/lme-temporal-flip/judge-models.json",
+  "scorer_py": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/repo-continuation/bench/.venv/Scripts/python.exe",
+  "campaign_root": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424",
+  "v2_instruction": "Extract durable host-neutral project facts only. Only create edits of kind memory with cited sourceIds. Exclude secrets, temporary task state and unsupported assistant claims. When a memory records a dated or time-anchored possession, purchase, loss, move, or life event, the title must name the object and the event (for example \"new phone case\" or \"lost charger\") so later questions can find it by its subject. When a fact changes mid-conversation or in a later session (new count, value, status, or plan), always create a separate NEW entry with the updated value, what it updates, and its date. Never merge or skip updates. Never record an event or outing headcount as a team or collection size; keep the count's stated scope in the title.",
+  "v1_result": {
+    "01493427": 1.0,
+    "031748ae": 0.0
+  },
+  "driver_handles_v2": {
+    "a": 22280,
+    "b": 19140
+  },
+  "v2_manifests": [
+    "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/manifests/lme_s_ku_smoke2_v2.json",
+    "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/manifests/lme_s_ku_smoke2a_v2.json",
+    "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/manifests/lme_s_ku_smoke2b_v2.json"
+  ]
+}

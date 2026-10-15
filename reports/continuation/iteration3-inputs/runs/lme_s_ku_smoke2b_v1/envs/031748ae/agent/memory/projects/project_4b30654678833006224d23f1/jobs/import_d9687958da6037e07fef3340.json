@@ -1,0 +1,375 @@
+{
+  "schema": 1.0,
+  "id": "import_d9687958da6037e07fef3340",
+  "source": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1\\envs\\031748ae\\sessions\\803b3655_1.jsonl",
+  "sourceHash": "71602fa9918c16180dccca2054355464c791aba9aabad6ac7570f9c441040b8c",
+  "status": "applied",
+  "chunks": [
+    {
+      "records": [
+        {
+          "id": "m_0001:0",
+          "origin": "user",
+          "text": "I'm looking for some new Indian food recipes to try at home. Can you recommend any popular dishes that are relatively easy to make? By the way, I recently ordered from Tandoori Nights and it took over an hour to arrive, so I'm motivated to cook my own Indian food now!",
+          "sha256": "fe060f1fbc56ad9dc4ae86a391b8a14d55cfb1468825f39e9c6bfa3319a9e670",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L1",
+          "timestamp": 1698769920000.0
+        },
+        {
+          "id": "m_0002:0",
+          "origin": "assistant",
+          "text": "I'm glad you're motivated to cook your own Indian food! There are countless delicious and easy-to-make Indian dishes that you can try at home. Here are some popular ones to get you started:\n\n1. **Chana Masala**: A North Indian favorite made with chickpeas in a rich, spicy tomato-based sauce. It's a simple and flavorful dish that's ready in under 30 minutes.\n2. **Chicken Tikka Masala**: A British-Indian classic that's easy to make and always a crowd-pleaser. Marinate chicken in yogurt and spices, grill or bake, and serve with a creamy tomato sauce.\n3. **Palak Paneer**: A creamy spinach curry with paneer (Indian cheese) that's quick to prepare and packed with nutrients. Blend cooked spinach with garlic, ginger, and spices, then add paneer and serve with rice or naan.\n4. **Samosas**: Crunchy fried or baked pastries filled with spiced potatoes and peas. You can use store-bought samosa wrappers or make your own dough from scratch.\n5. **Butter Chicken**: A popular North Indian dish made by marinating chicken in yogurt and spices, then cooking it in a rich, buttery tomato sauce. Serve with basmati rice or naan.\n6. **Saag Aloo**: A spicy mustard green curry with potatoes that's easy to make and flavorful. Simply sauté onions, ginger, and garlic, then add potatoes, mustard greens, and spices.\n7. **Mattar Paneer**: A creamy pea and paneer curry that's quick to prepare and delicious with rice or roti. Blend cooked peas, onions, and spices with heavy cream and serve with paneer.\n8. **Baingan Bharta**: A roasted eggplant mash that's smoky, flavorful, and easy to make. Simply roast eggplant over an open flame or in the oven, then mash with onions, garlic, and spices.\n9. **Chole**: A popular North Indian chickpea curry made with a flavorful tomato-based sauce. Serve with rice, roti, or naan.\n10. **Gajar Ka Halwa**: A rich, creamy carrot pudding that's a popular Indian dessert. Simply cook grated carrots with milk, sugar, and spices, then garnish with nuts and dried fruits.\n\nThese dishes are all relatively easy to make and require minimal ingredients. You can adjust the spice levels to your taste, and feel free to experiment with different variations and ingredients.\n\nAs for Tandoori Nights, sorry to hear that your order took over an hour to arrive! But now you have the perfect motivation to cook your own delicious Indian food at home.\n\nWhich of these dishes sounds appealing to you, or do you have a specific type of Indian cuisine or dish in mind?",
+          "sha256": "f567c5cf4af358ce120eb0c56a0c394b8d4ef2e87a2bf0f6b66f2b57bf316790",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L2",
+          "timestamp": 1698769920000.0
+        },
+        {
+          "id": "m_0003:0",
+          "origin": "user",
+          "text": "I'm interested in trying out Chana Masala and Chicken Tikka Masala. Can you provide me with a simple recipe for each dish, and also some tips on how to make them more authentic?",
+          "sha256": "461634abd74e56c6b8419f3ccda1261ec5282c8eb6a5f7f4026848e4886c2d8a",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L3",
+          "timestamp": 1698769920000.0
+        },
+        {
+          "id": "m_0004:0",
+          "origin": "assistant",
+          "text": "Chana Masala and Chicken Tikka Masala are two of the most popular Indian dishes, and they're relatively easy to make at home. Here are simple recipes for each dish, along with some tips to make them more authentic:\n\n**Recipe 1: Chana Masala**\n\n** Servings: 4-6**\n\nIngredients:\n\n* 1 can chickpeas (14 oz), drained and rinsed\n* 2 medium onions, chopped\n* 2 cloves garlic, minced\n* 1 medium tomato, diced\n* 1 teaspoon ground cumin\n* 1 teaspoon ground coriander\n* 1/2 teaspoon ground cinnamon\n* 1/2 teaspoon ground cardamom\n* 1/4 teaspoon ground cayenne pepper (optional)\n* 1/2 teaspoon salt\n* 1/4 teaspoon black pepper\n* 2 tablespoons vegetable oil\n* 2 tablespoons tomato puree\n* 1 cup water\n* Fresh cilantro, chopped (for garnish)\n\nInstructions:\n\n1. Heat oil in a large pan over medium heat. Add cumin seeds and let them sizzle for a few seconds.\n2. Add onions, garlic, and ginger (if using). Cook until onions are lightly browned (5-6 minutes).\n3. Add the chickpeas, cumin, coriander, cinnamon, cardamom, cayenne pepper (if using), salt, and black pepper. Cook for 1-2 minutes.\n4. Add the tomato puree, water, and chopped tomato. Bring to a boil, then reduce the heat to low and simmer for 20-25 minutes or until the sauce thickens.\n5. Garnish with chopped cilantro and serve over basmati rice or with naan.\n\n**Tips for an authentic Chana Masala:**\n\n* Use a mixture of spices: Chana Masala is a North Indian dish, and the spice blend is a key component. Use a combination of ground spices like cumin, coriander, cinnamon, and cardamom to get the authentic flavor.\n* Don't overcook the chickpeas: Chickpeas should be tender but still retain some crunch. Avoid overcooking them, as they can become mushy.\n* Use a flavorful oil: Use a neutral oil like canola or vegetable oil, but add a few drops of ghee (clarified butter) towards the end of cooking to add a rich, nutty flavor.\n\n**Recipe 2: Chicken Tikka Masala**\n\n**Servings: 4-6**\n\nIngredients:\n\n* 1 1/2 pounds boneless, skinless chicken breast or thighs, cut into 1-inch pieces\n* 1/2 cup plain yogurt\n* 2 tablespoons lemon juice\n* 2 tablespoons ghee or vegetable oil\n* 2 medium onions, chopped\n* 2 cloves garlic, minced\n* 1 medium tomato, diced\n* 1 teaspoon ground cumin\n* 1 teaspoon ground coriander\n* 1/2 teaspoon ground cinnamon\n* 1/2 teaspoon ground cardamom\n* 1/4 teaspoon ground cayenne pepper (optional)\n* 1/2 teaspoon salt\n* 1/4 teaspoon black pepper\n* 1 cup chicken broth\n* 1 cup heavy cream\n* Fresh cilantro, chopped (for garnish)\n\nInstructions:\n\n1. In a large bowl, whisk together yogurt, lemon juice, ghee or oil, cumin, coriander, cinnamon, cardamom, cayenne pepper (if using), salt, and black pepper.\n2. Add the chicken pieces to the marinade and mix well. Cover and refrigerate for at least 2 hours or overnight.\n3. Preheat the grill or oven to medium-high heat. Remove the chicken from the marinade, letting any excess liquid drip off.",
+          "sha256": "1fc0063586089014d009d777116cefade80bd464a2554cf71a36326256d5b0a4",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L4",
+          "timestamp": 1698769920000.0
+        },
+        {
+          "id": "m_0005:0",
+          "origin": "user",
+          "text": "I'm excited to try out these recipes! For the Chicken Tikka Masala, can you tell me more about the grilling or baking process? How long should I grill or bake the chicken for, and what's the best way to get that perfect char on the outside?",
+          "sha256": "54321488803a2c7cb5e4e46364cc8696de16a48cfa55ee6d2181af376059867f",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L5",
+          "timestamp": 1698769920000.0
+        },
+        {
+          "id": "m_0006:0",
+          "origin": "assistant",
+          "text": "The grilling or baking process is a crucial step in making Chicken Tikka Masala, as it gives the chicken that tender, charred exterior and smoky flavor. Here are some tips to help you achieve that perfect char:\n\n**Grilling:**\n\n1. **Preheat your grill:** Preheat your grill to medium-high heat (around 400°F to 425°F). You can use a gas or charcoal grill, but charcoal will give you a more authentic, smoky flavor.\n2. **Thread the chicken:** Thread the marinated chicken pieces onto skewers, leaving a little space between each piece. This will help them cook evenly and prevent them from sticking together.\n3. **Grill the chicken:** Place the skewers on the grill and cook for 6-8 minutes per side, or until the chicken is cooked through and slightly charred. You may need to adjust the heat depending on your grill and the thickness of the chicken pieces.\n4. **Get that char:** To get a nice char on the chicken, make sure to grill them over direct heat. You can also use a grill mat or a piece of aluminum foil with holes punched in it to prevent the chicken from sticking to the grill.\n\n**Baking:**\n\n1. **Preheat your oven:** Preheat your oven to 400°F (200°C).\n2. **Line a baking sheet:** Line a baking sheet with aluminum foil or parchment paper, and brush with a little oil to prevent the chicken from sticking.\n3. **Bake the chicken:** Place the marinated chicken pieces on the prepared baking sheet, leaving some space between each piece. Bake for 15-20 minutes, or until the chicken is cooked through and slightly charred.\n4. **Broil for extra char:** To get a nice char on the chicken, broil them for an additional 2-3 minutes, watching carefully to prevent burning.\n\n**Tips for achieving that perfect char:**\n\n* Make sure the chicken is at room temperature before grilling or baking. This will help it cook more evenly and prevent it from steaming instead of browning.\n* Don't overcrowd the grill or baking sheet, as this can prevent the chicken from cooking evenly and getting that nice char.\n* Don't stir the chicken too much while it's grilling or baking. Let it develop a nice crust on one side before flipping or stirring.\n* If you're having trouble getting a char, try increasing the heat or using a broiler for a few minutes.\n\nOnce you've grilled or baked the chicken, let it rest for a few minutes before adding it to the tomato-based sauce. This will help the juices redistribute, making the chicken even more tender and flavorful.\n\nI hope these tips help you achieve that perfect char on your Chicken Tikka Masala!",
+          "sha256": "353cb2a254ad8b1a6d8030f1e312d3d4526610e714c73cc7ff9d05ba671f8b56",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L6",
+          "timestamp": 1698769920000.0
+        },
+        {
+          "id": "m_0007:0",
+          "origin": "user",
+          "text": "That's really helpful, thanks! For both Chana Masala and Chicken Tikka Masala, can you recommend some naan recipes to go with them? I've had naan at Indian restaurants before, but I've never tried making it at home.",
+          "sha256": "5d1e0bab5ffa50b47422351f27ae9ca959b2e29a038e3ee5302271413ed2c2f8",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L7",
+          "timestamp": 1698769920000.0
+        }
+      ],
+      "startLine": 1,
+      "endLine": 7,
+      "proposal": {
+        "summary": "Recorded the user's new interest in cooking Indian food at home (motivated by a slow Tandoori Nights delivery), their chosen dishes Chana Masala and Chicken Tikka Masala, and the fact that they have never made naan at home.",
+        "rationale": "The conversation on 2023-10-31 contains direct user statements establishing durable facts with no existing harness coverage: the user wants easy Indian recipes to cook at home after a Tandoori Nights order took over an hour (m_0001:0); they selected Chana Masala and Chicken Tikka Masala and asked for authentic preparation and char techniques (m_0003:0, m_0005:0); and they have eaten naan at restaurants but never made it at home (m_0007:0). These are user-reported facts, not assistant claims, and are useful for future cooking, restaurant, and food-delivery recommendations.",
+        "edits": [
+          {
+            "action": "create",
+            "kind": "memory",
+            "id": "mem_user_indian_cooking_home_2023_10_31",
+            "title": "Tandoori Nights delivery took over an hour; user motivated to cook Indian food at home (2023-10-31)",
+            "content": "On 2023-10-31 the user said they are looking for new Indian food recipes to try at home and asked for popular dishes that are relatively easy to make. Their stated motivation: a recent order from the Indian restaurant Tandoori Nights took over an hour to arrive, so they want to cook their own Indian food. For future food-related recommendations: the user had a slow-delivery experience with Tandoori Nights, and when suggesting recipes they prefer relatively easy-to-make dishes.",
+            "path": "user/cooking",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0001:0"
+              ],
+              "projectReusable": false,
+              "sources": [
+                {
+                  "id": "m_0001:0",
+                  "origin": "user",
+                  "sha256": "fe060f1fbc56ad9dc4ae86a391b8a14d55cfb1468825f39e9c6bfa3319a9e670",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L1"
+                }
+              ],
+              "evidenceStatus": "cited"
+            },
+            "reason": "Durable user-reported fact capturing a new home-cooking interest and a negative restaurant delivery experience that is relevant to future restaurant and recipe recommendations."
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "id": "mem_user_indian_dishes_selected_2023_10_31",
+            "title": "Indian cooking plan: chose Chana Masala and Chicken Tikka Masala; first time making naan at home (2023-10-31)",
+            "content": "On 2023-10-31 the user selected Chana Masala and Chicken Tikka Masala as the Indian dishes they want to cook at home, asking for simple recipes plus tips to make them more authentic (including grilling/baking times for the chicken and how to achieve a charred exterior). They also requested naan recipes to go with both dishes and said they have had naan at Indian restaurants before but have never tried making it at home. Current state: the user's Indian-cooking plan is Chana Masala and Chicken Tikka Masala with homemade naan, and they are a beginner at making naan.",
+            "path": "user/cooking",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0003:0",
+                "m_0005:0",
+                "m_0007:0"
+              ],
+              "projectReusable": false,
+              "sources": [
+                {
+                  "id": "m_0003:0",
+                  "origin": "user",
+                  "sha256": "461634abd74e56c6b8419f3ccda1261ec5282c8eb6a5f7f4026848e4886c2d8a",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L3"
+                },
+                {
+                  "id": "m_0005:0",
+                  "origin": "user",
+                  "sha256": "54321488803a2c7cb5e4e46364cc8696de16a48cfa55ee6d2181af376059867f",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L5"
+                },
+                {
+                  "id": "m_0007:0",
+                  "origin": "user",
+                  "sha256": "5d1e0bab5ffa50b47422351f27ae9ca959b2e29a038e3ee5302271413ed2c2f8",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L7"
+                }
+              ],
+              "evidenceStatus": "cited"
+            },
+            "reason": "Durable facts about the user's chosen dishes and cooking experience level (never made naan) that should inform future Indian cooking guidance and recipe difficulty tailoring."
+          }
+        ],
+        "expectedOutcome": "Future sessions can tailor advice correctly: suggest easy-to-make Indian dishes, treat the user as currently cooking Chana Masala and Chicken Tikka Masala, treat them as a first-time naan maker, and factor in the negative Tandoori Nights delivery experience when recommending Indian restaurants or delivery. Validate by confirming these memories surface for later questions about Indian cooking, naan, or Indian restaurants."
+      }
+    },
+    {
+      "records": [
+        {
+          "id": "m_0008:0",
+          "origin": "assistant",
+          "text": "Naan is a staple in Indian cuisine, and it's actually quite easy to make at home. Here are two simple naan recipes that pair perfectly with Chana Masala and Chicken Tikka Masala:\n\n**Recipe 1: Classic Naan**\n\n**Servings: 6-8 naan**\n\nIngredients:\n\n* 1 1/2 cups all-purpose flour\n* 1/4 teaspoon salt\n* 1/4 teaspoon sugar\n* 1/2 teaspoon active dry yeast\n* 1/2 cup lukewarm water\n* 2 tablespoons vegetable oil\n* Chopped cilantro or scallions for garnish (optional)\n\nInstructions:\n\n1. In a large mixing bowl, combine flour, salt, sugar, and yeast.\n2. Gradually add lukewarm water and mix until a dough forms.\n3. Knead the dough for 5-7 minutes until it becomes smooth and elastic.\n4. Place the dough in a greased bowl, cover with a damp cloth, and let it rise in a warm place for 1-2 hours or until it doubles in size.\n5. Preheat a non-stick skillet or tava over medium heat.\n6. Divide the dough into 6-8 equal portions and roll each portion into a ball.\n7. Roll out each ball into a thin circle, about 6-7 inches in diameter.\n8. Place a naan in the skillet and cook for 1-2 minutes or until it starts to puff up and the edges start to curl.\n9. Flip the naan and cook for another 1-2 minutes or until it's golden brown and cooked through.\n10. Brush with melted butter or ghee, if desired, and garnish with chopped cilantro or scallions.\n\n**Recipe 2: Garlic Naan**\n\n**Servings: 6-8 naan**\n\nIngredients:\n\n* 1 1/2 cups all-purpose flour\n* 1/4 teaspoon salt\n* 1/4 teaspoon sugar\n* 1/2 teaspoon active dry yeast\n* 1/2 cup lukewarm water\n* 2 tablespoons vegetable oil\n* 2 cloves garlic, minced\n* Chopped cilantro or scallions for garnish (optional)\n\nInstructions:\n\n1. Follow the same instructions as the Classic Naan recipe until step 6.\n2. After rolling out each naan, brush the surface with a little water and sprinkle with minced garlic.\n3. Fold the naan in half to enclose the garlic, and then roll it out again into a thin circle.\n4. Cook the naan as instructed in step 8-9 of the Classic Naan recipe.\n5. Brush with melted butter or ghee, if desired, and garnish with chopped cilantro or scallions.\n\nTips for making perfect naan:\n\n* Use a high-quality all-purpose flour that has a good protein content, as it will help the dough rise better.\n* Make sure the yeast is active and fresh, as it will help the dough rise.\n* Don't overwork the dough, as it can make the naan dense and tough.\n* Use a non-stick skillet or tava to prevent the naan from sticking and to make it easier to flip.\n* Don't overcrowd the skillet, cook the naan one by one to ensure they cook evenly.\n\nThese naan recipes pair perfectly with both Chana Masala and Chicken Tikka Masala. The garlic naan adds an extra layer of flavor, but the classic naan is a great option if you prefer a simpler flavor profile. Enjoy!",
+          "sha256": "db7cebefa9e35b205ba2fdaea1105f5d5481173cb5d73ec30009fe4393973130",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L8",
+          "timestamp": 1698769920000.0
+        },
+        {
+          "id": "m_0009:0",
+          "origin": "user",
+          "text": "I'm excited to try out these naan recipes! I've had garlic naan at Indian restaurants before, and it's always a favorite. Do you have any tips on how to store leftover naan, and how to reheat them? Sometimes I have leftover naan that goes stale quickly, and I'd love to know the best way to keep them fresh.",
+          "sha256": "f1b5976b49992d876ebad6d6971d690534100c725d7b59bea4a2e81fe42e1c56",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L9",
+          "timestamp": 1698769920000.0
+        },
+        {
+          "id": "m_0010:0",
+          "origin": "assistant",
+          "text": "Storing and reheating naan can be a bit tricky, but I've got some tips to help you keep them fresh and delicious for a longer period.\n\n**Storing Leftover Naan:**\n\n1. **Cool completely:** Before storing, make sure the naan has cooled down completely to room temperature. This will help prevent moisture from building up and making the naan soggy.\n2. **Air-tight container:** Store the cooled naan in an air-tight container, such as a plastic bag or a glass container with a tight-fitting lid.\n3. **Room temperature:** Store the container at room temperature for up to 2 days. You can also store it in the refrigerator for up to 5 days.\n4. **Freeze for longer storage:** If you don't plan to use the naan within 5 days, consider freezing it. Place the cooled naan in a single layer on a baking sheet, and then transfer it to a freezer-safe bag or container. Frozen naan can be stored for up to 2 months.\n\n**Reheating Naan:**\n\n1. **Oven:** Preheat your oven to 350°F (180°C). Wrap the naan in foil and bake for 5-7 minutes, or until warmed through.\n2. **Microwave:** Wrap the naan in a damp paper towel and microwave for 20-30 seconds, or until warmed through.\n3. **Pan:** Heat a non-stick pan or skillet over medium heat. Place the naan in the pan and cook for 30-45 seconds on each side, or until warmed through.\n4. **Grill:** If you want to add a crispy texture, grill the naan for 30-45 seconds on each side, or until warmed through.\n\nTips for keeping naan fresh:\n\n* **Use a bread keeper:** If you have a bread keeper or a ceramic container with a lid, use it to store your naan. These containers help maintain humidity and keep the bread fresh.\n* **Keep it away from light:** Naan can become stale quickly if exposed to direct sunlight. Store it in a dark place to keep it fresh.\n* **Don't stack them:** When storing naan, try not to stack them on top of each other. This can cause them to become soggy and stick together.\n* **Freeze individual portions:** If you're freezing naan, consider freezing individual portions. This will make it easier to thaw and reheat only what you need.\n\nBy following these tips, you should be able to keep your naan fresh for a longer period and enjoy it with your favorite Indian dishes!",
+          "sha256": "b62a8be9d92e348fad6e64b52d2c858951988d01ad9fbf97918f013f4afe1c69",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L10",
+          "timestamp": 1698769920000.0
+        },
+        {
+          "id": "m_0011:0",
+          "origin": "user",
+          "text": "I'm glad I could help! I think I'll try out the Chana Masala and Chicken Tikka Masala recipes this weekend, and maybe even make some naan to go with it. Thanks for the chat!",
+          "sha256": "e1c6536dd12547b776beda47d3e4aa47cc3ea6653abfae5238d6858d4c6d3b4f",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L11",
+          "timestamp": 1698769920000.0
+        },
+        {
+          "id": "m_0012:0",
+          "origin": "assistant",
+          "text": "That sounds like a delicious plan! I'm excited for you to try out the recipes and enjoy a flavorful Indian-inspired meal. Don't hesitate to reach out if you have any more questions or need any further assistance.\n\nRemember, the key to making great Indian dishes is to use high-quality spices and to not be afraid to experiment and adjust the flavors to your taste. And don't forget to have fun and enjoy the process of cooking and sharing a meal with loved ones!\n\nIf you'd like more recipe ideas or cooking tips, feel free to ask me anytime. I'm always here to help. Happy cooking, and I hope you have a wonderful weekend!",
+          "sha256": "292514f56b2b044c4ed8693edc207bc3f0b21a244d1e5308506a5ede3ecf5c9c",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L12",
+          "timestamp": 1698769920000.0
+        }
+      ],
+      "startLine": 8,
+      "endLine": 12,
+      "proposal": {
+        "summary": "Create two local memory entries capturing the user's garlic naan preference/leftover-naan concern and their dated weekend cooking plan for Chana Masala and Chicken Tikka Masala with naan.",
+        "rationale": "The trajectory contains direct user statements with evidence IDs m_0009:0 and m_0011:0. In m_0009:0 the user reports garlic naan is always a favorite at Indian restaurants and that their leftover naan often goes stale, requesting storage/reheating tips — a durable food preference matching the existing memory pattern (e.g., mem_user_tried_dutch_pancakes, mem_user_gluten_reduction). In m_0011:0 the user states a dated plan to cook Chana Masala and Chicken Tikka Masala that weekend and possibly make naan to accompany it — a time-anchored plan that warrants its own entry per the update policy, so later questions about the meal or Indian cooking can find the latest state. Assistant-provided recipes and storage instructions (m_0008:0, m_0010:0, m_0012:0) are excluded as unverified assistant claims. No prior visible entry covers these facts, and no global entries are affected.",
+        "edits": [
+          {
+            "action": "create",
+            "kind": "memory",
+            "title": "Garlic naan favorite; leftover naan often goes stale (user/preferences)",
+            "content": "On 2023-10-31 the user said they have had garlic naan at Indian restaurants before and it is always a favorite. They also reported that their leftover naan often goes stale quickly and asked for tips on storing and reheating naan to keep it fresh. For future food, recipe, and cooking recommendations for this user: garlic naan is a known favorite, and guidance on storing/reheating leftover breads is directly relevant to them.",
+            "path": "user/preferences",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0009:0"
+              ],
+              "date": "2023-10-31",
+              "sources": [
+                {
+                  "id": "m_0009:0",
+                  "origin": "user",
+                  "sha256": "f1b5976b49992d876ebad6d6971d690534100c725d7b59bea4a2e81fe42e1c56",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L9"
+                }
+              ],
+              "evidenceStatus": "cited"
+            },
+            "reason": "Durable, host-neutral dietary preference stated directly by the user, consistent with how other food preferences are stored in this harness; enables better future recipe and food recommendations."
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "title": "Weekend cooking plan: Chana Masala and Chicken Tikka Masala with naan (2023-10-31)",
+            "content": "On 2023-10-31 the user said they plan to try the Chana Masala and Chicken Tikka Masala recipes that weekend, and maybe make some naan to go with them. This is a dated plan (the weekend following 2023-10-31), not a completed event, and it is the latest known cooking plan as of that date. If the user later mentions the Indian meal, these dishes, or naan-making, this plan is the context; if plans change, a new dated entry should record the update rather than editing this one.",
+            "path": "user/cooking-plans",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0011:0"
+              ],
+              "date": "2023-10-31",
+              "sources": [
+                {
+                  "id": "m_0011:0",
+                  "origin": "user",
+                  "sha256": "e1c6536dd12547b776beda47d3e4aa47cc3ea6653abfae5238d6858d4c6d3b4f",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L11"
+                }
+              ],
+              "evidenceStatus": "cited"
+            },
+            "reason": "Time-anchored user plan stated directly with a clear object and event; stored as a separate new entry per the update policy so later questions about the latest state can find it."
+          }
+        ],
+        "expectedOutcome": "Future food and cooking recommendations for this user will account for their garlic naan preference and interest in keeping leftover breads fresh, and follow-up conversations about the Indian meal can anchor to the recorded weekend-of-2023-10-31 plan. Validate by asking about Indian food or leftover naan and confirming the harness surfaces these entries; if the plan later changes, a new dated entry should supersede it."
+      }
+    }
+  ],
+  "nextChunk": 2,
+  "expectedRevision": 24,
+  "coverage": {
+    "lines": 13,
+    "evidenceRecords": 12,
+    "excludedLines": []
+  },
+  "usage": {
+    "input": 16446.0,
+    "output": 7531.0
+  },
+  "acceptedProposal": {
+    "summary": "Import import_d9687958da6037e07fef3340",
+    "rationale": "Selected session 71602fa9918c16180dccca2054355464c791aba9aabad6ac7570f9c441040b8c",
+    "edits": [
+      {
+        "action": "create",
+        "kind": "memory",
+        "id": "mem_user_indian_cooking_home_2023_10_31",
+        "title": "Tandoori Nights delivery took over an hour; user motivated to cook Indian food at home (2023-10-31)",
+        "content": "On 2023-10-31 the user said they are looking for new Indian food recipes to try at home and asked for popular dishes that are relatively easy to make. Their stated motivation: a recent order from the Indian restaurant Tandoori Nights took over an hour to arrive, so they want to cook their own Indian food. For future food-related recommendations: the user had a slow-delivery experience with Tandoori Nights, and when suggesting recipes they prefer relatively easy-to-make dishes.",
+        "path": "user/cooking",
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0001:0"
+          ],
+          "projectReusable": false,
+          "sources": [
+            {
+              "id": "m_0001:0",
+              "origin": "user",
+              "sha256": "fe060f1fbc56ad9dc4ae86a391b8a14d55cfb1468825f39e9c6bfa3319a9e670",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L1"
+            }
+          ],
+          "evidenceStatus": "cited"
+        },
+        "reason": "Durable user-reported fact capturing a new home-cooking interest and a negative restaurant delivery experience that is relevant to future restaurant and recipe recommendations."
+      },
+      {
+        "action": "create",
+        "kind": "memory",
+        "id": "mem_user_indian_dishes_selected_2023_10_31",
+        "title": "Indian cooking plan: chose Chana Masala and Chicken Tikka Masala; first time making naan at home (2023-10-31)",
+        "content": "On 2023-10-31 the user selected Chana Masala and Chicken Tikka Masala as the Indian dishes they want to cook at home, asking for simple recipes plus tips to make them more authentic (including grilling/baking times for the chicken and how to achieve a charred exterior). They also requested naan recipes to go with both dishes and said they have had naan at Indian restaurants before but have never tried making it at home. Current state: the user's Indian-cooking plan is Chana Masala and Chicken Tikka Masala with homemade naan, and they are a beginner at making naan.",
+        "path": "user/cooking",
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0003:0",
+            "m_0005:0",
+            "m_0007:0"
+          ],
+          "projectReusable": false,
+          "sources": [
+            {
+              "id": "m_0003:0",
+              "origin": "user",
+              "sha256": "461634abd74e56c6b8419f3ccda1261ec5282c8eb6a5f7f4026848e4886c2d8a",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L3"
+            },
+            {
+              "id": "m_0005:0",
+              "origin": "user",
+              "sha256": "54321488803a2c7cb5e4e46364cc8696de16a48cfa55ee6d2181af376059867f",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L5"
+            },
+            {
+              "id": "m_0007:0",
+              "origin": "user",
+              "sha256": "5d1e0bab5ffa50b47422351f27ae9ca959b2e29a038e3ee5302271413ed2c2f8",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L7"
+            }
+          ],
+          "evidenceStatus": "cited"
+        },
+        "reason": "Durable facts about the user's chosen dishes and cooking experience level (never made naan) that should inform future Indian cooking guidance and recipe difficulty tailoring."
+      },
+      {
+        "action": "create",
+        "kind": "memory",
+        "id": "imported_681a50183618584028e04d6f",
+        "title": "Garlic naan favorite; leftover naan often goes stale (user/preferences)",
+        "content": "On 2023-10-31 the user said they have had garlic naan at Indian restaurants before and it is always a favorite. They also reported that their leftover naan often goes stale quickly and asked for tips on storing and reheating naan to keep it fresh. For future food, recipe, and cooking recommendations for this user: garlic naan is a known favorite, and guidance on storing/reheating leftover breads is directly relevant to them.",
+        "path": "user/preferences",
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0009:0"
+          ],
+          "date": "2023-10-31",
+          "sources": [
+            {
+              "id": "m_0009:0",
+              "origin": "user",
+              "sha256": "f1b5976b49992d876ebad6d6971d690534100c725d7b59bea4a2e81fe42e1c56",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L9"
+            }
+          ],
+          "evidenceStatus": "cited"
+        },
+        "reason": "Durable, host-neutral dietary preference stated directly by the user, consistent with how other food preferences are stored in this harness; enables better future recipe and food recommendations."
+      },
+      {
+        "action": "create",
+        "kind": "memory",
+        "id": "imported_e82a87768b4484646a3b5875",
+        "title": "Weekend cooking plan: Chana Masala and Chicken Tikka Masala with naan (2023-10-31)",
+        "content": "On 2023-10-31 the user said they plan to try the Chana Masala and Chicken Tikka Masala recipes that weekend, and maybe make some naan to go with them. This is a dated plan (the weekend following 2023-10-31), not a completed event, and it is the latest known cooking plan as of that date. If the user later mentions the Indian meal, these dishes, or naan-making, this plan is the context; if plans change, a new dated entry should record the update rather than editing this one.",
+        "path": "user/cooking-plans",
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0011:0"
+          ],
+          "date": "2023-10-31",
+          "sources": [
+            {
+              "id": "m_0011:0",
+              "origin": "user",
+              "sha256": "e1c6536dd12547b776beda47d3e4aa47cc3ea6653abfae5238d6858d4c6d3b4f",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2b_v1/envs/031748ae/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d9687958da6037e07fef3340.source.jsonl#L11"
+            }
+          ],
+          "evidenceStatus": "cited"
+        },
+        "reason": "Time-anchored user plan stated directly with a clear object and event; stored as a separate new entry per the update policy so later questions about the latest state can find it."
+      }
+    ],
+    "expectedOutcome": "Recover selected project knowledge with original evidence"
+  }
+}

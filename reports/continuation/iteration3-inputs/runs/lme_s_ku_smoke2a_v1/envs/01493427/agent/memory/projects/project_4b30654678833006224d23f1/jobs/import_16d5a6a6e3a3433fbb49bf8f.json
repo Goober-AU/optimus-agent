@@ -1,0 +1,164 @@
+{
+  "schema": 1.0,
+  "id": "import_16d5a6a6e3a3433fbb49bf8f",
+  "source": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2a_v1\\envs\\01493427\\sessions\\ultrachat_212645.jsonl",
+  "sourceHash": "581f792b0b6468a1b57cd0893c9f8495c90bf572f6619a2855b44f2f22fa9afe",
+  "status": "applied",
+  "chunks": [
+    {
+      "records": [
+        {
+          "id": "m_0001:0",
+          "origin": "user",
+          "text": "How did mammoths adapt to changes in their environment to find vegetation to eat?",
+          "sha256": "933990b6fa25a13c82e5ce28eda931c63964b71c1622dc8ce0893f2eb4bbb48f",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2a_v1/envs/01493427/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_16d5a6a6e3a3433fbb49bf8f.source.jsonl#L1",
+          "timestamp": 1703034000000.0
+        },
+        {
+          "id": "m_0002:0",
+          "origin": "assistant",
+          "text": "Mammoths were adapted to living in cold environments, and they had several adaptations that allowed them to find and eat vegetation in their surroundings. Firstly, mammoths had long and curved tusks that they used to dig through snow and ice to access the vegetation underneath. Secondly, they had long and coarse hair that acted as insulation and protected them from the harsh cold climate.  Additionally, mammoths had a specialized digestive system that allowed them to break down tough and coarse vegetation like grass, sedges, and shrubs. Lastly, they traveled in herds and migrated to different areas in search of fresh vegetation. This allowed them to find enough food to survive in changing environments.",
+          "sha256": "e4c5e819c568ac16578469d2f20bc97a1df172a1f2ff96da55dedcf186d564d0",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2a_v1/envs/01493427/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_16d5a6a6e3a3433fbb49bf8f.source.jsonl#L2",
+          "timestamp": 1703034000000.0
+        },
+        {
+          "id": "m_0003:0",
+          "origin": "user",
+          "text": "That's really interesting. Did mammoths have any predators to worry about?",
+          "sha256": "716ba41b3787ed2e33532d3fa5cd3a9f1fa0123b69301a5c284e101e0239e109",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2a_v1/envs/01493427/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_16d5a6a6e3a3433fbb49bf8f.source.jsonl#L3",
+          "timestamp": 1703034000000.0
+        },
+        {
+          "id": "m_0004:0",
+          "origin": "assistant",
+          "text": "Yes, mammoths did have predators to worry about. Some of their predators included sabre-toothed cats, wolves, and humans. However, their large size and the presence of tusks made them formidable prey, and they could fend off predators when they needed to. Scientists also believe that mammoths lived in herds which was a possible defense mechanism against predators. This way, they could protect each other and help to deter predators. Despite these defenses, it is believed that hunting contributed to the eventual extinction of mammoths.",
+          "sha256": "1d55ec291a9be58a4588aa0c0a0dfec015986a99eecc215208b07f034538f448",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2a_v1/envs/01493427/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_16d5a6a6e3a3433fbb49bf8f.source.jsonl#L4",
+          "timestamp": 1703034000000.0
+        },
+        {
+          "id": "m_0005:0",
+          "origin": "user",
+          "text": "It's too bad that mammoths aren't around anymore. It would have been amazing to see them in person.",
+          "sha256": "8deb2c26a0f1621b40c7a845f9241265a077e806351a1e249c54a7fd2e91b579",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2a_v1/envs/01493427/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_16d5a6a6e3a3433fbb49bf8f.source.jsonl#L5",
+          "timestamp": 1703034000000.0
+        },
+        {
+          "id": "m_0006:0",
+          "origin": "assistant",
+          "text": "As an AI language model, I share the same sentiment with you. Mammoths were indeed majestic creatures, and it would have been an incredible experience to see them in person. However, there are ongoing efforts by scientists to revive mammoths through cloning techniques. While it is still a distant possibility, these cloning efforts may one day bring back mammoths to their former glory. Additionally, fossils and preserved remains of mammoths continue to provide invaluable insights into their behavior, adaptation to changing environments, and evolution.",
+          "sha256": "f3c2733f8b59fbf21f0b68bf35819a1dfa180fb9e0d26a962e2b95525fa1e850",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2a_v1/envs/01493427/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_16d5a6a6e3a3433fbb49bf8f.source.jsonl#L6",
+          "timestamp": 1703034000000.0
+        }
+      ],
+      "startLine": 1,
+      "endLine": 6,
+      "proposal": {
+        "summary": "Created one local memory capturing the user's expressed interest in mammoths and prehistoric life from the 2023-12-20 discussion.",
+        "rationale": "The user initiated and sustained an educational discussion about mammoths (m_0001:0 asking about vegetation-finding adaptations, m_0003:0 asking about predators) and directly expressed durable sentiment in m_0005:0: it is 'too bad that mammoths aren't around anymore' and it 'would have been amazing to see them in person.' This is a durable, host-neutral user interest directly evidenced by user statements, matching the pattern of existing interest memories (e.g., sports-media, cybersecurity, ocean-conservation). The mammoth biology details and cloning-effort claims came from assistant messages and are excluded as unsupported assistant assertions per the evidence rules.",
+        "edits": [
+          {
+            "action": "create",
+            "kind": "memory",
+            "id": "user-interest-mammoths-prehistoric-life",
+            "title": "User interest in mammoths and prehistoric life (2023-12-20)",
+            "content": "On 2023-12-20, the user engaged in an educational discussion about mammoths, asking how mammoths adapted to environmental changes to find vegetation and whether mammoths had predators. The user explicitly expressed that it is too bad mammoths are no longer around and said it would have been amazing to see them in person, indicating a genuine interest in mammoths and prehistoric megafauna. Relevant for future recommendations such as natural history museums, paleontology exhibits, documentaries, or de-extinction news. No related purchases, museum visits, or other follow-up commitments were reported by the user in this conversation.",
+            "path": "interests/mammoths",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0001:0",
+                "m_0003:0",
+                "m_0005:0"
+              ],
+              "sources": [
+                {
+                  "id": "m_0001:0",
+                  "origin": "user",
+                  "sha256": "933990b6fa25a13c82e5ce28eda931c63964b71c1622dc8ce0893f2eb4bbb48f",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2a_v1/envs/01493427/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_16d5a6a6e3a3433fbb49bf8f.source.jsonl#L1"
+                },
+                {
+                  "id": "m_0003:0",
+                  "origin": "user",
+                  "sha256": "716ba41b3787ed2e33532d3fa5cd3a9f1fa0123b69301a5c284e101e0239e109",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2a_v1/envs/01493427/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_16d5a6a6e3a3433fbb49bf8f.source.jsonl#L3"
+                },
+                {
+                  "id": "m_0005:0",
+                  "origin": "user",
+                  "sha256": "8deb2c26a0f1621b40c7a845f9241265a077e806351a1e249c54a7fd2e91b579",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2a_v1/envs/01493427/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_16d5a6a6e3a3433fbb49bf8f.source.jsonl#L5"
+                }
+              ],
+              "evidenceStatus": "cited"
+            },
+            "reason": "Captures a durable user interest directly evidenced by user messages, consistent with the existing interest-memory pattern; assistant-generated educational content about mammoth biology and cloning efforts is intentionally excluded."
+          }
+        ],
+        "expectedOutcome": "Future sessions can recall that the user is interested in mammoths and prehistoric megafauna when recommending natural history museums, documentaries, exhibits, or de-extinction news, and can time-anchor that interest to 2023-12-20. Validate by checking the entry appears under interests/mammoths and cites m_0001:0, m_0003:0, and m_0005:0."
+      }
+    }
+  ],
+  "nextChunk": 1,
+  "expectedRevision": 45,
+  "coverage": {
+    "lines": 7,
+    "evidenceRecords": 6,
+    "excludedLines": []
+  },
+  "usage": {
+    "input": 6731.0,
+    "output": 2300.0
+  },
+  "acceptedProposal": {
+    "summary": "Import import_16d5a6a6e3a3433fbb49bf8f",
+    "rationale": "Selected session 581f792b0b6468a1b57cd0893c9f8495c90bf572f6619a2855b44f2f22fa9afe",
+    "edits": [
+      {
+        "action": "create",
+        "kind": "memory",
+        "id": "user-interest-mammoths-prehistoric-life",
+        "title": "User interest in mammoths and prehistoric life (2023-12-20)",
+        "content": "On 2023-12-20, the user engaged in an educational discussion about mammoths, asking how mammoths adapted to environmental changes to find vegetation and whether mammoths had predators. The user explicitly expressed that it is too bad mammoths are no longer around and said it would have been amazing to see them in person, indicating a genuine interest in mammoths and prehistoric megafauna. Relevant for future recommendations such as natural history museums, paleontology exhibits, documentaries, or de-extinction news. No related purchases, museum visits, or other follow-up commitments were reported by the user in this conversation.",
+        "path": "interests/mammoths",
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0001:0",
+            "m_0003:0",
+            "m_0005:0"
+          ],
+          "sources": [
+            {
+              "id": "m_0001:0",
+              "origin": "user",
+              "sha256": "933990b6fa25a13c82e5ce28eda931c63964b71c1622dc8ce0893f2eb4bbb48f",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2a_v1/envs/01493427/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_16d5a6a6e3a3433fbb49bf8f.source.jsonl#L1"
+            },
+            {
+              "id": "m_0003:0",
+              "origin": "user",
+              "sha256": "716ba41b3787ed2e33532d3fa5cd3a9f1fa0123b69301a5c284e101e0239e109",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2a_v1/envs/01493427/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_16d5a6a6e3a3433fbb49bf8f.source.jsonl#L3"
+            },
+            {
+              "id": "m_0005:0",
+              "origin": "user",
+              "sha256": "8deb2c26a0f1621b40c7a845f9241265a077e806351a1e249c54a7fd2e91b579",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-ku/reports/continuation/iteration3-inputs/runs/lme_s_ku_smoke2a_v1/envs/01493427/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_16d5a6a6e3a3433fbb49bf8f.source.jsonl#L5"
+            }
+          ],
+          "evidenceStatus": "cited"
+        },
+        "reason": "Captures a durable user interest directly evidenced by user messages, consistent with the existing interest-memory pattern; assistant-generated educational content about mammoth biology and cloning efforts is intentionally excluded."
+      }
+    ],
+    "expectedOutcome": "Recover selected project knowledge with original evidence"
+  }
+}
