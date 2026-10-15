@@ -1,0 +1,60 @@
+{
+  "started": 1791811939.8587072,
+  "finished": 1791812840.1118472,
+  "killed_by_limit": true,
+  "args": {
+    "shards": [
+      "s00",
+      "s01"
+    ],
+    "concurrency": 2,
+    "time_limit": 900.0,
+    "binary": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3/target/release/examples/memory_bench.exe",
+    "workdir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3",
+    "models_json": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/c06-instruction-boundary/inputs/runs/locomo-c06-ib-system_append-q12-s0p1/envs/conv-30/agent/models.json"
+  },
+  "shards": [
+    {
+      "name": "s00",
+      "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/manifests\\lme_m_full_v1_s00.json",
+      "log": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmemlaunch/dryrun/logs\\s00.log",
+      "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs\\lme_m_full_v1_s00",
+      "state": "KILLED",
+      "exit_code": 1,
+      "attempts": 1,
+      "started_at": 1791811939.869296,
+      "ended_at": 1791812839.9915671,
+      "log_lines": 5,
+      "envs_started": 1,
+      "envs_done": 0,
+      "env_total": 25,
+      "questions_done": 0,
+      "jobs_applied": 17,
+      "jobs_seen": 18,
+      "fatal_lines": 0,
+      "retry_lines": 0,
+      "last_line": "[env 1/25] 001be529 ingesting 476 session(s)"
+    },
+    {
+      "name": "s01",
+      "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/manifests\\lme_m_full_v1_s01.json",
+      "log": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmemlaunch/dryrun/logs\\s01.log",
+      "run_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs\\lme_m_full_v1_s01",
+      "state": "KILLED",
+      "exit_code": 1,
+      "attempts": 1,
+      "started_at": 1791811942.8719187,
+      "ended_at": 1791812840.1093438,
+      "log_lines": 5,
+      "envs_started": 1,
+      "envs_done": 0,
+      "env_total": 25,
+      "questions_done": 0,
+      "jobs_applied": 20,
+      "jobs_seen": 21,
+      "fatal_lines": 0,
+      "retry_lines": 0,
+      "last_line": "[env 1/25] 0bc8ad92 ingesting 477 session(s)"
+    }
+  ]
+}
