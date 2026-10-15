@@ -49,11 +49,25 @@ def _refuse(kind: str, reason: str) -> None:
 
 def _literal(word: str) -> bool:
     # Quote removal deliberately does not make expansions look trustworthy.
-    return bool(word) and not any(c in word for c in "$`*?[]{}~\\")
+    # A backslash only survives shlex's posix quote removal inside quotes, so on
+    # Windows it is the native separator of a literal quoted path; POSIX
+    # commands never need one, and the historical refusal stays unchanged there.
+    unsafe = "$`*?[]{}~\\" if os.name != "nt" else "$`*?[]{}~"
+    return bool(word) and not any(c in word for c in unsafe)
 
 
 def _basename(word: str) -> str:
     return word.rsplit("/", 1)[-1]
+
+
+def _path_untranslatable(path: Path) -> bool:
+    """Windows-only: True for a rooted path without a drive letter ("/tmp").
+
+    Windows path resolution anchors such a path on the current drive, while
+    the Git Bash/MSYS shell anchors it on the shell installation root; the
+    two disagree, so these operands and targets cannot be checked statically.
+    """
+    return os.name == "nt" and not path.drive and bool(path.root)
 
 
 def _without_comments(command: str) -> str:
@@ -146,14 +160,14 @@ def _git_site(words: list[str], cwd: Path) -> tuple[Path, bool, bool] | None:
         option = args[index]
         if option == "-C" and index + 1 < len(args):
             path = args[index + 1]
-            if _literal(path):
+            if _literal(path) and not _path_untranslatable(Path(path)):
                 cwd = cwd / path
             else:
                 unknown = True
             index += 2
         elif option.startswith("-C") and len(option) > 2:
             path = option[2:]
-            if _literal(path):
+            if _literal(path) and not _path_untranslatable(Path(path)):
                 cwd = cwd / path
             else:
                 unknown = True
@@ -306,8 +320,10 @@ def guard_command(command: str, *, cwd: str, env: dict[str, str],
             continue
         name = _basename(words[0])
         if name == "cd":
-            if (len(words) == 2 and _literal(words[1]) and ".." not in Path(words[1]).parts
-                    and (not env.get("CDPATH") or Path(words[1]).is_absolute())
+            cd_path = Path(words[1]) if len(words) == 2 else None
+            if (cd_path is not None and _literal(words[1]) and ".." not in cd_path.parts
+                    and (not env.get("CDPATH") or cd_path.is_absolute())
+                    and not _path_untranslatable(cd_path)
                     and separator == "&&" and not wrapped):
                 target = target / words[1]
             else:
@@ -333,8 +349,6 @@ def guard_command(command: str, *, cwd: str, env: dict[str, str],
         elif name == "rm" and not allow_destructive_rm:
             operands = _rm_operands(words)
             if operands is not None:
-                if os.name != "posix":
-                    _refuse("rm", "Native shell path translation is not supported on this platform.")
                 if uncertain or wrapped or separator not in ("", ";", "\n", "&&", "||"):
                     _refuse("rm", "Shell syntax or directory relocation is not statically supported.")
                 if not operands:
@@ -343,6 +357,8 @@ def guard_command(command: str, *, cwd: str, env: dict[str, str],
                     if not _literal(operand) or operand == "-":
                         _refuse("rm", "An operand is dynamic or unsupported.")
                     path = Path(operand)
+                    if _path_untranslatable(path):
+                        _refuse("rm", "A rooted operand without a drive letter is ambiguous under the Windows shell.")
                     if any(part == ".." or (part.startswith(".") and part != ".") for part in path.parts):
                         _refuse("rm", "An operand contains a parent or hidden path component.")
                     try:

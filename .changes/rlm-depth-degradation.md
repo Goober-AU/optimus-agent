@@ -1,0 +1,1 @@
+Changed: the RLM recursion depth limit now degrades gracefully: the spawn error keeps its machine-readable limit facts and tells the deepest agent to answer directly from its current context, and max-depth child prompts state the same duty instead of silently omitting the spawn guidance.

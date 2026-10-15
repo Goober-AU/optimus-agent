@@ -17,9 +17,13 @@
 
 ## Upgrade and recovery
 
-Legacy directory locks remain fail-closed, regardless of their age. Their format
-cannot prove whether a slow writer is alive. Stop **all** old and new writers
-before inspecting and manually removing a confirmed legacy lock directory.
+Legacy directory locks are judged and reclaimed automatically when they carry
+only the `pid` marker and that owner is dead; a legacy directory holding any
+other state (for example registry or session files) stays fail-closed, as do
+symlinks and locks with a live owner. The old format cannot prove a slow
+writer is alive, so for anything beyond the reclaimable pid-marker case: stop
+**all** old and new writers before inspecting and manually removing a
+confirmed legacy lock directory.
 Do not delete regular lock files or perform recovery while a writer is running.
 Old writers cannot acquire the new regular-file lock through `mkdir`; mixed
 versions fail closed rather than running concurrent transactions.

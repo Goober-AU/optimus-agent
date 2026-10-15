@@ -185,6 +185,12 @@ class HarnessStateTest(unittest.TestCase):
 
             self.assertEqual(os.stat(state.file_path).st_mode & 0o777, 0)
 
+    @unittest.skipUnless(
+        os.name == "posix",
+        "POSIX permission bits beyond the read-only flag are not representable "
+        "on Windows: os.stat reports any writable file as 0o666, so an exact "
+        "0o600 round-trip cannot be observed there.",
+    )
     def test_save_preserves_restrictive_file_mode(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             state = HarnessState(Path(temp_dir) / "harness_state.json")
@@ -195,6 +201,12 @@ class HarnessStateTest(unittest.TestCase):
 
             self.assertEqual(os.stat(state.file_path).st_mode & 0o777, 0o600)
 
+    @unittest.skipUnless(
+        os.name == "posix",
+        "The requested creation mode cannot be observed on Windows: the "
+        "read-only flag is the only mappable bit, and 0o600 is writable, so "
+        "os.open mode arguments read back as 0o666.",
+    )
     def test_save_temp_file_is_never_looser_than_the_destination(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             state = HarnessState(Path(temp_dir) / "harness_state.json")

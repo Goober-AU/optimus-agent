@@ -104,6 +104,11 @@ pub fn build_rlm_prompt(options: &RlmPromptOptions) -> String {
     parts.push(format!("Working directory: {}", options.cwd));
     parts.push(format!("Conversation log: {}", options.messages_path));
     parts.push(format!("Recursive agent depth: {depth}"));
+    if !allow_recursion {
+        parts.push(
+            "This is the maximum recursion depth: you are the deepest agent, so answer directly from your current context instead of delegating further; `rlm(...)` spawns fail with the depth limit.".to_string(),
+        );
+    }
     if has_ipython {
         parts.push(format!(
             "Pre-installed Python packages: {}.",
@@ -178,6 +183,9 @@ pub fn build_rlm_prompt(options: &RlmPromptOptions) -> String {
     if has_agent_message && has_ipython {
         parts.push(
             "Agent messaging is restricted to your parent, siblings, and direct children; roots are siblings, and deeper communication relays through the intermediate child.".to_string(),
+        );
+        parts.push(
+            "For structured task and result communication with other agents, encode agent_message bodies as OCC-1 compact structured English (see the agent-message skill; codec preinstalled as rlm.occ1). Plain English remains fine for conversational replies.".to_string(),
         );
     }
     if has_agent_observe && has_ipython {
@@ -359,6 +367,22 @@ mod tests {
         assert!(prompt.contains("Discover its CLI usage with `<skill> --help`."));
         assert!(!prompt.contains("Installed Python skill modules (pre-imported)"));
         assert!(!prompt.contains("await rlm('sub-task')"));
+    }
+
+    #[test]
+    fn max_depth_prompt_states_the_deepest_agent_degrades_directly() {
+        let options = RlmPromptOptions {
+            depth: Some(3),
+            allow_recursion: Some(false),
+            ..base()
+        };
+        let prompt = build_rlm_prompt(&options);
+        assert!(prompt.contains("Recursive agent depth: 3"));
+        assert!(
+            prompt.contains("you are the deepest agent, so answer directly from your current context instead of delegating further")
+        );
+        // The spawn guidance block must be absent when recursion is disallowed.
+        assert!(!prompt.contains("A callable `rlm` is already in your global namespace."));
     }
 
     #[test]

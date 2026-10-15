@@ -139,10 +139,9 @@ impl AgentSession {
             assert_direct_agent_message_target(name)?;
         }
         if self.rlm_depth >= self.rlm_max_depth() {
-            return Err(format!(
-                "RLM recursion depth limit reached (RLM_DEPTH={}, RLM_MAX_DEPTH={})",
+            return Err(crate::core::rlm_max_depth::rlm_depth_limit_reached_error(
                 self.rlm_depth,
-                self.rlm_max_depth()
+                self.rlm_max_depth(),
             ));
         }
         let mut reservation = requested_name

@@ -15,6 +15,33 @@ from unittest import mock
 
 SRC = os.path.join(os.path.dirname(__file__), "..", "src")
 
+if os.name == "nt":
+    import ctypes
+
+    _STILL_ACTIVE = 259
+
+    def _pid_alive(pid: int) -> bool:
+        """Windows-safe liveness probe (os.kill(pid, 0) is unsupported)."""
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not handle:
+            return False
+        try:
+            exit_code = ctypes.c_ulong()
+            if not kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+                return True
+            return exit_code.value == _STILL_ACTIVE
+        finally:
+            kernel32.CloseHandle(handle)
+else:
+    def _pid_alive(pid: int) -> bool:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        return True
+
 _EOF = object()
 
 
@@ -417,7 +444,11 @@ class ReplTest(unittest.TestCase):
         # the command past an interrupt.
         with tempfile.TemporaryDirectory() as tmp:
             marker = os.path.join(tmp, "marker")
-            code = f"from rlm import bash\nr = await bash('sleep 1.5 && touch {marker}')"
+            # Forward slashes: a Windows path spliced into the shell command would
+            # otherwise put \\U escapes inside a Python string literal (SyntaxError)
+            # and backslash-escapes inside the bash command.
+            marker_cmd = marker.replace(os.sep, "/")
+            code = f"from rlm import bash\nr = await bash('sleep 1.5 && touch {marker_cmd}')"
             self.repl.send({"type": "execute", "id": "ibash", "code": code})
             time.sleep(0.4)
             self.repl.send({"type": "interrupt"})
@@ -472,6 +503,12 @@ class ReplTest(unittest.TestCase):
         follow = self.repl.execute("after-await", "2+2")
         self.assertEqual(one(follow, "result")["text"], "4")
 
+    @unittest.skipIf(
+        os.name == "nt",
+        "On Windows selectors.DefaultSelector.select() with nothing registered "
+        "raises OSError immediately (WinError 10093) instead of blocking, and a "
+        "blocking select cannot be interrupted by the in-process SIGINT path.",
+    )
     def test_interrupt_sync_blocked_in_selectors(self):
         events = self._interrupt_after_running(
             "sel", "import selectors\ns = selectors.DefaultSelector()\ns.select()"
@@ -518,6 +555,13 @@ class ReplTest(unittest.TestCase):
         follow = self.repl.execute("after-race", "5+5")
         self.assertEqual(one(follow, "result")["text"], "10")
 
+    @unittest.skipIf(
+        os.name == "nt",
+        "The stray-signal step uses an external os.kill(pid, SIGINT); on Windows "
+        "CTRL_C_EVENT delivery requires a shared console process group and "
+        "instead terminates the stdio protocol child, so the scenario is not "
+        "deliverable there.",
+    )
     def test_stale_target_from_finished_interrupt_ignores_later_sigint_on_reused_id(self):
         # A targeted interrupt completes "reuse"; a later request reusing the id
         # must not be cancelled by a delayed/external SIGINT that only matches
@@ -532,6 +576,14 @@ class ReplTest(unittest.TestCase):
         self.assertEqual(one(events, "done")["status"], "ok")
         self.assertIn("survived", stream_text(events, "stdout"))
 
+    @unittest.skipIf(
+        os.name == "nt",
+        "On Windows the finishing-window interrupt is queued and lands at the "
+        "sleep's natural completion instead of waking it (the interrupt event "
+        "cannot break a main-thread sleep without also erroring the request "
+        "mid-finishing); test_repl_windows_finish.py pins the native contract, "
+        "including the explicit kill/restart path for a nonresponsive repr.",
+    )
     def test_interrupt_during_slow_repr_cancels_finishing_request(self):
         # The cell body finishes instantly; the interrupt lands while the
         # trailing-expression repr is sleeping (post-run finishing window).
@@ -729,9 +781,7 @@ class ReplTest(unittest.TestCase):
         # Shutdown kills live bash process groups; the sleep must be gone.
         deadline = time.monotonic() + 5
         while time.monotonic() < deadline:
-            try:
-                os.kill(pid, 0)
-            except ProcessLookupError:
+            if not _pid_alive(pid):
                 return
             time.sleep(0.05)
         self.fail(f"bash child {pid} survived runtime shutdown")
@@ -911,7 +961,13 @@ class ReplTest(unittest.TestCase):
                     + ("await handle\n" if awaited else "")
                     + "await asyncio.wait_for(handle._wait(), 3)\nhandle._group_alive()",
                 )
-                self.assertEqual(one(events, "result")["text"], "True")
+                # POSIX keeps the process group alive until kill(); on Windows the
+                # kill-on-close job is the group and it is torn down with the
+                # leader, so a backgrounded child is already reaped here (and
+                # provably dead: nothing escapes the job). The rest of the
+                # notice/reap contract below runs unchanged on both platforms.
+                expected_alive = "True" if os.name != "nt" else "False"
+                self.assertEqual(one(events, "result")["text"], expected_alive)
                 self.assertIsNone(one(events, "host_request"))
                 self.assertFalse(
                     any(event.get("data", {}).get(mime, {}).get("active") is False for event in events)
@@ -1049,8 +1105,11 @@ class ReplTest(unittest.TestCase):
         self.repl.send(
             {
                 "type": "execute",
+                # 5s (was 0.2s): the bash.completed notice must arrive before this
+                # cell's done; on Windows process creation alone can exceed 200ms,
+                # which raced the done event past the notice.
                 "id": "reused-cell-id",
-                "code": "reuse_gate.set()\nawait asyncio.sleep(0.2)",
+                "code": "reuse_gate.set()\nawait asyncio.sleep(5.0)",
             }
         )
         request = None
@@ -1920,22 +1979,46 @@ class RestoreApplyShieldTest(unittest.TestCase):
 
         from rlm.repl import _restore_state
 
+        import rlm.snapshot as snapshot_module
+
+        # _write_snapshot starts fresh, so the store is CAS v2 (fresh sessions
+        # default to it) and deserialization goes through
+        # snapshot.load_snapshot_value, not dill.loads. Patch the loader the
+        # active format uses (and dill.loads for any legacy fallback) so the
+        # contract fires mid-deserialize regardless of format.
         real_loads = dill.loads
+        real_loader = snapshot_module.load_snapshot_value
         calls = {"n": 0}
 
-        def loads_then_sigint(blob):
-            calls["n"] += 1
-            if calls["n"] == 2:
-                # Synchronous SIGINT mid-deserialize: nothing may have touched ns yet.
-                signal.raise_signal(signal.SIGINT)
-            return real_loads(blob)
+        def nth_deserialize_then_sigint(real, arity):
+            if arity == 2:
+                # load_snapshot_value(dill, source)
+                def wrapped(dill_module, source):
+                    calls["n"] += 1
+                    if calls["n"] == 2:
+                        # Synchronous SIGINT mid-deserialize: nothing may have touched ns yet.
+                        signal.raise_signal(signal.SIGINT)
+                    return real(dill_module, source)
+            else:
+                # dill.loads(blob)
+                def wrapped(blob):
+                    calls["n"] += 1
+                    if calls["n"] == 2:
+                        # Synchronous SIGINT mid-deserialize: nothing may have touched ns yet.
+                        signal.raise_signal(signal.SIGINT)
+                    return real(blob)
+
+            return wrapped
 
         with tempfile.TemporaryDirectory() as tmp:
             path = self._write_snapshot(tmp, {"a": 1, "b": 2})
             ns = {"a": "old", "unrelated": "keep"}
-            with mock.patch.object(dill, "loads", loads_then_sigint):
-                with self.assertRaises(KeyboardInterrupt):
-                    _restore_state(ns, path)
+            with mock.patch.object(dill, "loads", nth_deserialize_then_sigint(real_loads, 1)):
+                with mock.patch.object(
+                    snapshot_module, "load_snapshot_value", nth_deserialize_then_sigint(real_loader, 2)
+                ):
+                    with self.assertRaises(KeyboardInterrupt):
+                        _restore_state(ns, path)
         # The old namespace is byte-identical: no partial old/new mixture.
         self.assertEqual(ns, {"a": "old", "unrelated": "keep"})
 

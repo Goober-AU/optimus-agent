@@ -75,10 +75,13 @@ reaped probe is never signalled by PID/PGID afterward, avoiding identity reuse.
 The normal BashHandle lifecycle is unchanged.
 
 On Windows, detected destructive Git commands refuse because this change does
-not provide a bounded native Git probe or Git Bash path translation. Detected
-recursive-force rm also refuses there for the same path-translation reason.
-Explicit per-call overrides are available after review. Ordinary commands do
-not need a probe. POSIX host tests do not establish live Windows behavior.
+not provide a bounded native Git probe. Detected recursive-force rm is analyzed
+with the same workspace-boundary rules as on POSIX: relative, drive-qualified,
+and UNC operands are checked, and quoted backslash paths count as literal.
+Rooted paths without a drive letter ("/tmp") refuse because Windows resolves
+them on the current drive while the Git Bash/MSYS shell resolves them on its
+installation root. Explicit per-call overrides are available after review.
+Ordinary commands do not need a probe. POSIX host tests do not establish live Windows behavior.
 Commands executed *inside* an SSH payload are not checked as remote commands;
 the guard does not reinterpret local paths as paths on the remote machine.
 

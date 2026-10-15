@@ -1872,8 +1872,10 @@ pub fn create_extension_runner(
     session_manager: Arc<dyn SessionManager>,
     model_registry: Arc<dyn ModelRegistry>,
 ) -> Arc<ExtensionRunner> {
-    // Jev comparison observer (guarded): with default Off settings this is
-    // one cheap settings read and no extension is added. See
+    // Jev comparison observer: `maybe_register_jev_observer` always adds the
+    // dormant observer extension (so `/jev compare` can take effect in the
+    // same session); at default-Off settings its handlers stay cheap no-ops
+    // and only the Active handler follows the setting. See
     // `core::jev_bridge`. Repair-overlap note: the ONLY lane-B edit in this
     // file; integration may relocate the call to the session assembly site.
     let mut extensions = extensions;
@@ -2371,14 +2373,21 @@ mod tests {
 
     #[tokio::test]
     async fn session_shutdown_helper_reports_whether_handlers_existed() {
+        // `create_extension_runner` always injects the internal Jev
+        // extensions, and the observer extension carries a
+        // `session_shutdown` handler even at default-Off settings (the
+        // dormant adapter must exist so `/jev compare` can take effect in
+        // the same session). The helper's boolean contract is therefore
+        // tested on bare `ExtensionRunner`s whose only difference is the
+        // presence of a `session_shutdown` handler.
         let runtime = create_extension_runtime();
-        let runner = create_extension_runner(
+        let runner = Arc::new(ExtensionRunner::new(
             Vec::new(),
             runtime,
             "/cwd".to_string(),
             null_session_manager(),
             null_model_registry(),
-        );
+        ));
         let event = ExtensionEvent::SessionShutdown(SessionShutdownPayload {
             reason: "quit".to_string(),
             target_session_file: None,
@@ -2387,13 +2396,13 @@ mod tests {
 
         let runtime = create_extension_runtime();
         let extension = extension_with_handler("session_shutdown", Arc::new(|_, _| Box::pin(async { None })));
-        let runner = create_extension_runner(
+        let runner = Arc::new(ExtensionRunner::new(
             vec![extension],
             runtime,
             "/cwd".to_string(),
             null_session_manager(),
             null_model_registry(),
-        );
+        ));
         assert!(emit_session_shutdown_event(&runner, event).await);
     }
 

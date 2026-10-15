@@ -391,10 +391,43 @@ print('nested-ready',flush=True)
 threading.Event().wait()
 "#;
         let mut opts = options();
+        // The nested rlm runtime is repo-shipped, so derive its inputs instead of
+        // demanding three undocumented env vars next to KERNEL_CONTAINMENT_TEST_PYTHON.
+        // The explicit KERNEL_CONTAINMENT_TEST_* overrides stay for staged copies, and
+        // overriding matters even under an agent-inherited environment: PYTHONPATH and
+        // the journal must not leak the host's own runtime state into the child.
+        let mut runtime_src = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        runtime_src.pop();
+        runtime_src.pop();
+        runtime_src.push("prime-agent-runtime");
+        runtime_src.push("src");
+        let runtime_src = std::env::var("KERNEL_CONTAINMENT_TEST_RUNTIME_SRC")
+            .unwrap_or_else(|_| runtime_src.to_string_lossy().into_owned());
+        // Same canonical, never-PATH Git Bash resolution the real kernel uses:
+        // the runtime's bash() refuses PATH lookup on Windows by design.
+        let shell = std::env::var("KERNEL_CONTAINMENT_TEST_BASH")
+            .ok()
+            .or_else(|| crate::utils::shell::resolve_kernel_bash_shell(None));
+        let Some(shell) = shell else {
+            // No canonical Git Bash install and no explicit override: the nested
+            // bash() would only raise its teaching error on this machine, so the
+            // capability is genuinely absent here. The containment assertions
+            // below still run wherever a shell exists.
+            eprintln!("skipping: no canonical Git Bash for the nested runtime bash() (install Git Bash in its default location or set KERNEL_CONTAINMENT_TEST_BASH)");
+            return;
+        };
+        // Scratch journal the child appends to only when a kernel owner pid is also
+        // inherited; a per-run temp file keeps that write out of any live journal.
+        let journal = std::env::var("KERNEL_CONTAINMENT_TEST_JOURNAL").unwrap_or_else(|_| {
+            std::env::temp_dir()
+                .join(format!("pi-coding-agent-kernel-containment-journal-{}.jsonl", std::process::id()))
+                .to_string_lossy()
+                .into_owned()
+        });
         opts.env.as_mut().unwrap().extend([
-            ("PYTHONPATH".into(), std::env::var("KERNEL_CONTAINMENT_TEST_RUNTIME_SRC").unwrap()),
-            ("PRIME_AGENT_BASH_SHELL".into(), std::env::var("KERNEL_CONTAINMENT_TEST_BASH").unwrap()),
-            ("PRIME_AGENT_INTERNAL_ORPHAN_PROCESS_JOURNAL".into(), std::env::var("KERNEL_CONTAINMENT_TEST_JOURNAL").unwrap()),
+            ("PYTHONPATH".into(), runtime_src),
+            ("PRIME_AGENT_BASH_SHELL".into(), shell),
+            ("PRIME_AGENT_INTERNAL_ORPHAN_PROCESS_JOURNAL".into(), journal),
         ]);
         let mut child = spawn_kernel(&python(), &["-u".into(), "-c".into(), code.into()], opts).unwrap();
         let mut stdout = BufReader::new(child.stdout.take().unwrap());

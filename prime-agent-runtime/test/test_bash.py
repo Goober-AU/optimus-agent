@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import resource
 import shutil
 import signal
 import socket
@@ -14,14 +13,43 @@ import threading
 import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from types import FunctionType, SimpleNamespace
 from unittest import mock
 
 from rlm import bash
 
+# POSIX-only stdlib module (rlimit probing); Windows lacks it entirely.
+try:
+    import resource
+except ImportError:
+    resource = None
+
 # The package re-exports the bash() function under the same name, so reach the
 # module through sys.modules for internals.
 bash_module = sys.modules["rlm.bash"]
+
+# The Windows-path tests spawn a real process through the _winjob stand-in:
+# "/bin/sh" exists on POSIX CI, while Windows has none and needs the configured
+# shell (or, failing that, the current interpreter) to spawn.
+_SHELL_STANDIN = "/bin/sh" if bash_module._IS_POSIX else (
+    os.environ.get("PRIME_AGENT_BASH_SHELL") or sys.executable)
+
+# Windows has no SIGKILL; handle.kill() terminates the job there and ignores
+# the signal value, so the tests use the closest portable constant.
+_SIGKILL = getattr(signal, "SIGKILL", signal.SIGTERM)
+
+
+def _unconfigured_journal_env() -> dict[str, str]:
+    """The current environment without any orphan-journal configuration.
+
+    A live kernel exports PRIME_AGENT_INTERNAL_ORPHAN_PROCESS_JOURNAL and
+    PRIME_AGENT_KERNEL_OWNER_PID into this process; tests that model an
+    unconfigured journal must strip them explicitly.
+    """
+    return {key: value for key, value in os.environ.items()
+            if key not in ("PRIME_AGENT_INTERNAL_ORPHAN_PROCESS_JOURNAL",
+                           "PRIME_AGENT_KERNEL_OWNER_PID")}
 
 
 def _pid_alive(pid: int) -> bool:
@@ -57,6 +85,13 @@ def _win_spawn(procs=None, resume=True):
 
 
 class BashTest(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        # A live kernel exports the orphan-journal variables into this process;
+        # the suite models a plain runtime without them (journal tests
+        # configure their own journals explicitly), which also keeps every
+        # spawn off the slow Windows start-id lookup.
+        self.enterContext(mock.patch.dict(os.environ, _unconfigured_journal_env(), clear=True))
+
     async def test_await_returns_result(self):
         result = await bash("echo hi")
         self.assertEqual(result.exit_code, 0)
@@ -69,7 +104,8 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_pipeline_reports_a_failing_producer(self):
         # `python ... | tee log` must not report the consumer's success.
-        result = await bash(f"{sys.executable} -c 'import sys; sys.exit(3)' 2>&1 | cat")
+        python = Path(sys.executable).as_posix()  # a backslash path would hit bash quoting
+        result = await bash(f"{python} -c 'import sys; sys.exit(3)' 2>&1 | cat")
         self.assertEqual(result.exit_code, 3)
 
         result = await bash("false | cat")
@@ -140,6 +176,10 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         self.assertNotEqual(result.exit_code, 0)
 
     async def test_kill_escalates_to_sigkill(self):
+        if not bash_module._IS_POSIX:
+            # Windows kills via job termination (exit code 1); the negative
+            # -SIGKILL exit code is POSIX signal-escalation semantics.
+            self.skipTest("POSIX TERM-trap escalation to a -SIGKILL exit code")
         handle = bash("trap '' TERM; echo up; sleep 30")
         for _ in range(100):
             if "up" in handle.output():
@@ -157,7 +197,9 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn("bytes dropped", result.output)
 
     async def test_env_prefix_and_journal(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        # Windows AV/indexers can briefly hold the just-fsynced journal file,
+        # failing scratch-dir teardown after every assertion already passed.
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             journal = os.path.join(tmp, "journal.jsonl")
             with mock.patch.dict(
                 os.environ,
@@ -181,9 +223,14 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(record["pid"], handle.pid)
                 self.assertEqual(record["ownerPid"], os.getpid())
                 self.assertEqual(record["kernelPid"], os.getpid())
-            self.assertTrue(records[0]["processStartId"].startswith(("proc:", "ps:")))
+            # proc:/ps: are the POSIX start-id formats; win: is the Windows one.
+            self.assertTrue(records[0]["processStartId"].startswith(("proc:", "ps:", "win:")))
 
     async def test_await_returns_when_shell_backgrounds_child(self):
+        if not bash_module._IS_POSIX:
+            # The POSIX status script ends in `wait`, keeping the shell alive
+            # as group leader; the Windows pipeline script cannot anchor it.
+            self.skipTest("POSIX status channel and process-group anchoring")
         with tempfile.TemporaryDirectory() as tmp:
             journal = os.path.join(tmp, "journal.jsonl")
             with mock.patch.dict(
@@ -201,7 +248,7 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
                 os.killpg(handle.pid, 0)
                 records = await _poll_journal(journal, count=1)
                 self.assertTrue(records[-1]["active"])
-                handle.kill(signal.SIGKILL)
+                handle.kill(_SIGKILL)
                 records = await _poll_journal(journal, count=2)
             self.assertFalse(records[-1]["active"])
 
@@ -210,10 +257,11 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         result = await asyncio.wait_for(handle, timeout=5)
         self.assertEqual(result.exit_code, 7)
         # The leader died without draining, so the stale group must be killed.
-        await _poll_group_dead(handle.pid)
+        await _poll_handle_dead(handle)
 
     async def test_term_ignoring_child_is_escalated(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        # Windows AV/indexers can briefly hold the just-fsynced journal file.
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             journal = os.path.join(tmp, "journal.jsonl")
             with mock.patch.dict(
                 os.environ,
@@ -231,9 +279,11 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
                 handle.kill(signal.SIGTERM)
                 records = await _poll_journal(journal, count=2, timeout=10)
             self.assertFalse(records[-1]["active"])
-            await _poll_group_dead(handle.pid)
+            await _poll_handle_dead(handle)
 
     async def test_delivered_status_wins_when_shell_dies_during_completion(self):
+        if not bash_module._IS_POSIX:
+            self.skipTest("POSIX status channel: delivered status vs shell death")
         entered = threading.Event()
         release = threading.Event()
         original = bash_module.BashHandle._wait_for_completion
@@ -266,6 +316,8 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.exit_code, 0)
 
     async def test_delivered_status_wins_when_reporter_is_slow(self):
+        if not bash_module._IS_POSIX:
+            self.skipTest("POSIX status channel: delivered status vs shell death")
         parsed = threading.Event()
         release = threading.Event()
         original = bash_module.BashHandle._read_status
@@ -295,6 +347,8 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
     async def test_status_survives_pipe_fds_above_fd_setsize(self):
         # select.select() rejects fds >= FD_SETSIZE (1024); the delivered status
         # must still win when the status/wake pipes land above that boundary.
+        if resource is None:
+            self.skipTest("POSIX-only resource module (RLIMIT_NOFILE)")
         limits = resource.getrlimit(resource.RLIMIT_NOFILE)
         if limits[0] < 1100:
             try:
@@ -310,7 +364,7 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
             if fd >= 1024:
                 break
         handle = bash("echo hi; sleep 30 & true")
-        self.addCleanup(handle.kill, signal.SIGKILL)
+        self.addCleanup(handle.kill, _SIGKILL)
         result = await asyncio.wait_for(handle, timeout=5)
         self.assertEqual(result.exit_code, 0)
         self.assertIn("hi", result.output)
@@ -338,13 +392,17 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn("a" * 1000 + "b" * 1000, text)
 
     async def test_running_reflects_group_liveness(self):
+        if not bash_module._IS_POSIX:
+            # POSIX: the shell waits on background jobs, anchoring the group;
+            # Windows terminates the whole job when the leader exits.
+            self.skipTest("POSIX process-group anchoring of background jobs")
         handle = bash("echo fg; sleep 30 &")
         result = await asyncio.wait_for(handle, timeout=5)
         self.assertEqual(result.exit_code, 0)
         # The foreground result is in, but the group still anchors `sleep 30 &`.
         self.assertIsNotNone(handle.poll())
         self.assertTrue(handle.running)
-        handle.kill(signal.SIGKILL)
+        handle.kill(_SIGKILL)
         for _ in range(100):
             if not handle.running:
                 break
@@ -384,7 +442,7 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
                         handle.kill()
                     proc_kill.assert_called_once()
         finally:
-            handle.kill(signal.SIGKILL)
+            handle.kill(_SIGKILL)
             await asyncio.wait_for(handle, timeout=5)
 
     def test_gate_eof_without_journal_prevents_command_execution(self):
@@ -457,7 +515,8 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_cancelled_direct_await_kills_group(self):
         with tempfile.TemporaryDirectory() as tmp:
-            marker = os.path.join(tmp, "marker")
+            # Forward slashes: bash quoting eats backslashes in command lines.
+            marker = os.path.join(tmp, "marker").replace(os.sep, "/")
             pids: list[int] = []
             original_init = bash_module.BashHandle.__init__
 
@@ -485,7 +544,8 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         # A TERM-trapping command must be group-KILLed before the cancel
         # resolves, so its later side effects never land.
         with tempfile.TemporaryDirectory() as tmp:
-            marker = os.path.join(tmp, "marker")
+            # Forward slashes: bash quoting eats backslashes in command lines.
+            marker = os.path.join(tmp, "marker").replace(os.sep, "/")
             pids: list[int] = []
             original_init = bash_module.BashHandle.__init__
 
@@ -564,9 +624,9 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
             await task
         handle = handles[0]
         try:
-            os.killpg(handle._pid, 0)  # still alive
+            self.assertTrue(handle.running)  # still alive (group/job liveness)
         finally:
-            handle.kill(signal.SIGKILL)
+            handle.kill(_SIGKILL)
         await asyncio.wait_for(handle, timeout=5)
 
     async def test_cancelling_await_on_released_handle_does_not_kill(self):
@@ -582,9 +642,9 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(asyncio.CancelledError):
             await task
         try:
-            os.killpg(handle._pid, 0)  # still alive
+            self.assertTrue(handle.running)  # still alive (group/job liveness)
         finally:
-            handle.kill(signal.SIGKILL)
+            handle.kill(_SIGKILL)
         await asyncio.wait_for(handle, timeout=5)
 
     async def test_second_await_after_cancelled_oneshot_only_waits(self):
@@ -601,11 +661,13 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         # cancelled task is re-cancelled immediately; the shielded confirm task
         # must survive repeated cancels and the group must be dead on return.
         pids: list[int] = []
+        handles: list[bash_module.BashHandle] = []
         original_init = bash_module.BashHandle.__init__
 
         def capturing_init(handle_self, command):
             original_init(handle_self, command)
             pids.append(handle_self._pid)
+            handles.append(handle_self)
 
         async def run_oneshot():
             await bash("trap '' TERM; sleep 30")
@@ -621,21 +683,33 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
                 task.cancel()
                 with self.assertRaises(asyncio.CancelledError):
                     await task
-        with self.assertRaises(ProcessLookupError):
-            os.killpg(pids[0], 0)
+        if bash_module._IS_POSIX:
+            with self.assertRaises(ProcessLookupError):
+                os.killpg(pids[0], 0)
+        else:
+            # Windows kill terminates the job; confirm the tree is reaped dead.
+            await _poll_handle_dead(handles[0])
 
     async def test_windows_without_bash_raises_teaching_error(self):
         # Windows must raise without consulting PATH: a which() hit would be
         # the same repo-controlled-PATH hole the host-side resolution closed.
-        with mock.patch.object(bash_module, "_IS_POSIX", False):
-            with mock.patch.object(
-                bash_module.shutil, "which", return_value=r"C:\evil\bash.exe"
-            ) as which:
-                with self.assertRaisesRegex(RuntimeError, "PRIME_AGENT_BASH_SHELL"):
-                    bash_module._shell()
-                which.assert_not_called()
+        # The host may export PRIME_AGENT_BASH_SHELL (it does on this machine),
+        # so remove it to model a Windows host without a POSIX shell.
+        env = {k: v for k, v in os.environ.items() if k != "PRIME_AGENT_BASH_SHELL"}
+        with mock.patch.dict(os.environ, env, clear=True):
+            with mock.patch.object(bash_module, "_IS_POSIX", False):
+                with mock.patch.object(
+                    bash_module.shutil, "which", return_value=r"C:\evil\bash.exe"
+                ) as which:
+                    with self.assertRaisesRegex(RuntimeError, "PRIME_AGENT_BASH_SHELL"):
+                        bash_module._shell()
+                    which.assert_not_called()
 
     async def test_pump_delayed_past_old_quiescence_bound_captures_all_output(self):
+        if not bash_module._IS_POSIX:
+            # The ordered completion sentinel is POSIX-only; the Windows exit
+            # drain is a documented best-effort quiescence heuristic.
+            self.skipTest("POSIX completion-sentinel fence")
         # The ordered sentinel must wait through a pump delay beyond the old 500 ms bound.
         original_write = bash_module._BoundedBuffer.write
         delayed_once = threading.Event()
@@ -657,6 +731,10 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.output, "exact-pre-fence-output")
 
     async def test_slow_pump_does_not_lose_foreground_output(self):
+        if not bash_module._IS_POSIX:
+            # The ordered completion sentinel is POSIX-only; the Windows exit
+            # drain is a documented best-effort quiescence heuristic.
+            self.skipTest("POSIX completion-sentinel fence")
         # Finalization waits for the pump to parse the ordered sentinel.
         original_pump = bash_module.BashHandle._pump
 
@@ -698,7 +776,7 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(result.exit_code, 0)
             self.assertNotIn("alias-expanded", result.output)
         finally:
-            handle.kill(signal.SIGKILL)
+            handle.kill(_SIGKILL)
             await _poll_group_dead(handle.pid)
 
     async def test_user_function_cannot_replace_completion_emitter(self):
@@ -711,14 +789,18 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(result.exit_code, 0)
             self.assertNotIn("function-expanded", result.output)
         finally:
-            handle.kill(signal.SIGKILL)
-            await _poll_group_dead(handle.pid)
+            handle.kill(_SIGKILL)
+            await _poll_handle_dead(handle)
 
     async def test_shell_killed_before_sentinel_finalizes_from_exit(self):
+        if not bash_module._IS_POSIX:
+            # Windows subprocess exit codes are unsigned; -SIGKILL is the
+            # POSIX convention for a signal-killed process.
+            self.skipTest("POSIX negative signal exit code")
         result = await asyncio.wait_for(
             bash("printf output-before-shell-kill; kill -KILL $$"), timeout=5
         )
-        self.assertEqual(result.exit_code, -signal.SIGKILL)
+        self.assertEqual(result.exit_code, -_SIGKILL)
         self.assertIn("output-before-shell-kill", result.output)
 
     async def test_relative_bash_shell_override_rejected(self):
@@ -730,24 +812,31 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         # No pid-only pre-record on Windows: the kill-on-close job replaces it
         # (a kernel death reaps the tree via handle closure, so a bare-pid
         # anchor would only ever justify killing a reused pid).
-        with tempfile.TemporaryDirectory() as tmp:
+        # Windows AV/indexers can briefly hold the just-fsynced journal file.
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             journal = os.path.join(tmp, "journal.jsonl")
             with mock.patch.dict(
                 os.environ,
                 {
                     "PRIME_AGENT_INTERNAL_ORPHAN_PROCESS_JOURNAL": journal,
                     "PRIME_AGENT_KERNEL_OWNER_PID": str(os.getpid()),
-                    "PRIME_AGENT_BASH_SHELL": "/bin/sh",
+                    "PRIME_AGENT_BASH_SHELL": _SHELL_STANDIN,
                 },
             ):
                 with mock.patch.object(bash_module, "_IS_POSIX", False):
-                    with mock.patch.object(bash_module._winjob, "spawn_in_job", _win_spawn()):
-                        with mock.patch.object(bash_module._winjob, "create_job", return_value=7):
-                            with mock.patch.object(
-                                bash_module._winjob, "terminate", return_value=True
-                            ):
-                                with mock.patch.object(bash_module._winjob, "close"):
-                                    handle = bash("echo hi")
+                    # The Popen stand-in does not suspend the child, so a real
+                    # start-id lookup would race its exit; the record shape is
+                    # what this test pins, not the start-id acquisition.
+                    with mock.patch.object(
+                        bash_module, "_process_start_id", return_value="win:170000000000000000"
+                    ):
+                        with mock.patch.object(bash_module._winjob, "spawn_in_job", _win_spawn()):
+                            with mock.patch.object(bash_module._winjob, "create_job", return_value=7):
+                                with mock.patch.object(
+                                    bash_module._winjob, "terminate", return_value=True
+                                ):
+                                    with mock.patch.object(bash_module._winjob, "close"):
+                                        handle = bash("echo hi")
                                     await asyncio.wait_for(handle, timeout=5)
                                     for _ in range(100):
                                         if handle._reaped:
@@ -774,7 +863,7 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
             proc.resume = mock.Mock(side_effect=lambda: order.append("resume") or True)
             return proc
 
-        self.enterContext(mock.patch.dict(os.environ, {"PRIME_AGENT_BASH_SHELL": "/bin/sh"}))
+        self.enterContext(mock.patch.dict(os.environ, {"PRIME_AGENT_BASH_SHELL": _SHELL_STANDIN}))
         with mock.patch.object(bash_module, "_IS_POSIX", False):
             with mock.patch.object(bash_module._winjob, "spawn_in_job", spawn):
                 with mock.patch.object(bash_module, "_record_journal", journal):
@@ -790,7 +879,7 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(
                         spawned[-1].spawn_argv,
                         [
-                            "/bin/sh", "-c",
+                            _SHELL_STANDIN, "-c",
                             bash_module._pipeline_script(bash_module._with_prefix("sleep 30")),
                         ],
                     )
@@ -799,7 +888,7 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(handle._job, sentinel)
                 finally:
                     handle._job = None
-                    handle.kill(signal.SIGKILL)
+                    handle.kill(_SIGKILL)
                     await asyncio.wait_for(handle, timeout=5)
 
     async def test_windows_create_job_failure_fails_closed(self):
@@ -809,7 +898,7 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
             journal_calls.append((pid, active))
             return True
 
-        self.enterContext(mock.patch.dict(os.environ, {"PRIME_AGENT_BASH_SHELL": "/bin/sh"}))
+        self.enterContext(mock.patch.dict(os.environ, {"PRIME_AGENT_BASH_SHELL": _SHELL_STANDIN}))
         with mock.patch.object(bash_module, "_IS_POSIX", False):
             with mock.patch.object(bash_module._winjob, "spawn_in_job") as spawn:
                 with mock.patch.object(bash_module, "_record_journal", journal):
@@ -834,7 +923,7 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
             spawned[0].kill()
             return True
 
-        self.enterContext(mock.patch.dict(os.environ, {"PRIME_AGENT_BASH_SHELL": "/bin/sh"}))
+        self.enterContext(mock.patch.dict(os.environ, {"PRIME_AGENT_BASH_SHELL": _SHELL_STANDIN}))
         with mock.patch.object(bash_module, "_IS_POSIX", False):
             with mock.patch.object(
                 bash_module._winjob, "spawn_in_job", _win_spawn(spawned, resume=False)
@@ -869,7 +958,7 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
             spawned[0].kill()
             return True
 
-        self.enterContext(mock.patch.dict(os.environ, {"PRIME_AGENT_BASH_SHELL": "/bin/sh"}))
+        self.enterContext(mock.patch.dict(os.environ, {"PRIME_AGENT_BASH_SHELL": _SHELL_STANDIN}))
         with mock.patch.object(bash_module, "_IS_POSIX", False):
             with mock.patch.object(bash_module._winjob, "spawn_in_job", _win_spawn(spawned)):
                 with mock.patch.object(bash_module, "_record_journal", journal):
@@ -900,7 +989,7 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         def spawn(job, argv, cwd, env):
             raise OSError("spawn failed")
 
-        self.enterContext(mock.patch.dict(os.environ, {"PRIME_AGENT_BASH_SHELL": "/bin/sh"}))
+        self.enterContext(mock.patch.dict(os.environ, {"PRIME_AGENT_BASH_SHELL": _SHELL_STANDIN}))
         with mock.patch.object(bash_module, "_IS_POSIX", False):
             with mock.patch.object(bash_module._winjob, "spawn_in_job", spawn):
                 with mock.patch.object(bash_module, "_record_journal", journal):
@@ -939,7 +1028,9 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
             order.append(("taskkill", spawned[0].close.called))
             return True
 
-        self.enterContext(mock.patch.dict(os.environ, {"PRIME_AGENT_BASH_SHELL": "/bin/sh"}))
+        self.enterContext(mock.patch.dict(
+            os.environ, {"PRIME_AGENT_BASH_SHELL": _SHELL_STANDIN, **_unconfigured_journal_env()},
+            clear=True))
         with mock.patch.object(bash_module, "_IS_POSIX", False):
             with mock.patch.object(bash_module._winjob, "spawn_in_job", spawn):
                 with mock.patch.object(bash_module._winjob, "create_job", return_value=777):
@@ -971,7 +1062,9 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
             assert release.wait(timeout=10)
             return True
 
-        self.enterContext(mock.patch.dict(os.environ, {"PRIME_AGENT_BASH_SHELL": "/bin/sh"}))
+        self.enterContext(mock.patch.dict(
+            os.environ, {"PRIME_AGENT_BASH_SHELL": _SHELL_STANDIN, **_unconfigured_journal_env()},
+            clear=True))
         with mock.patch.object(bash_module, "_IS_POSIX", False):
             with mock.patch.object(bash_module._winjob, "spawn_in_job", spawn):
                 with mock.patch.object(bash_module._winjob, "create_job", return_value=778):
@@ -1061,7 +1154,7 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
             assert tk_release.wait(timeout=10)
             return True
 
-        self.enterContext(mock.patch.dict(os.environ, {"PRIME_AGENT_BASH_SHELL": "/bin/sh"}))
+        self.enterContext(mock.patch.dict(os.environ, {"PRIME_AGENT_BASH_SHELL": _SHELL_STANDIN}))
         loop = asyncio.get_running_loop()
         with mock.patch.object(bash_module, "_IS_POSIX", False):
             with mock.patch.object(bash_module._winjob, "spawn_in_job", spawn):
@@ -1144,7 +1237,7 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         finally:
             handle._reaped = False
             handle._job = None
-            handle.kill(signal.SIGKILL)
+            handle.kill(_SIGKILL)
             await asyncio.wait_for(handle, timeout=5)
 
     async def test_windows_failed_job_terminate_falls_back_to_taskkill(self):
@@ -1170,7 +1263,7 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         finally:
             handle._reaped = False
             handle._job = None
-            handle.kill(signal.SIGKILL)
+            handle.kill(_SIGKILL)
             await asyncio.wait_for(handle, timeout=5)
 
     async def test_windows_failed_terminate_and_taskkill_leaves_record_active(self):
@@ -1198,7 +1291,9 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
 
     def test_darwin_start_id_uses_absolute_ps(self):
         completed = mock.Mock(stdout="Mon Jan  1 00:00:00 2026\n")
-        with mock.patch.object(bash_module.sys, "platform", "darwin"):
+        # Simulate darwin completely: os.name must leave the Windows branch too.
+        with mock.patch.object(bash_module.os, "name", "posix"), \
+                mock.patch.object(bash_module.sys, "platform", "darwin"):
             with mock.patch("builtins.open", side_effect=OSError):
                 with mock.patch.object(bash_module.subprocess, "run", return_value=completed) as run:
                     self.assertEqual(
@@ -1232,29 +1327,32 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(len(records), 1)
                     self.assertTrue(records[-1]["active"])
                 finally:
-                    handle.kill(signal.SIGKILL)
+                    handle.kill(_SIGKILL)
                     await asyncio.wait_for(handle, timeout=5)
 
     async def test_signal_group_reports_delivery(self):
         if not bash_module._IS_POSIX:
             self.skipTest("POSIX signal-delivery semantics")
         with mock.patch.object(bash_module.os, "killpg", side_effect=ProcessLookupError):
-            self.assertTrue(bash_module._signal_group(1234567, signal.SIGKILL))
+            self.assertTrue(bash_module._signal_group(1234567, _SIGKILL))
         with mock.patch.object(bash_module.os, "killpg", side_effect=PermissionError):
-            self.assertFalse(bash_module._signal_group(1234567, signal.SIGKILL))
+            self.assertFalse(bash_module._signal_group(1234567, _SIGKILL))
         with mock.patch.object(bash_module.os, "killpg", side_effect=OSError):
-            self.assertFalse(bash_module._signal_group(1234567, signal.SIGKILL))
+            self.assertFalse(bash_module._signal_group(1234567, _SIGKILL))
 
     async def test_journal_configured_but_unwritable_kills_child_and_raises(self):
         with tempfile.TemporaryDirectory() as tmp:
-            marker = os.path.join(tmp, "marker")
+            # Forward slashes: bash quoting eats backslashes in command lines.
+            marker = os.path.join(tmp, "marker").replace(os.sep, "/")
             pids: list[int] = []
-            real_popen = subprocess.Popen
+            real_journal = bash_module._record_journal
 
-            def capturing_popen(*args, **kwargs):
-                proc = real_popen(*args, **kwargs)
-                pids.append(proc.pid)
-                return proc
+            def capturing_journal(pid: int, active: bool) -> bool:
+                # Windows spawns through _winjob (CreateProcessW), so patching
+                # subprocess.Popen would capture nothing there; the journal
+                # enrollment sees the pid on every platform.
+                pids.append(pid)
+                return real_journal(pid, active)
 
             with mock.patch.dict(
                 os.environ,
@@ -1263,10 +1361,13 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
                     "PRIME_AGENT_KERNEL_OWNER_PID": str(os.getpid()),
                 },
             ):
-                with mock.patch.object(bash_module.subprocess, "Popen", capturing_popen):
+                with mock.patch.object(bash_module, "_record_journal", capturing_journal):
                     with self.assertRaises(RuntimeError):
                         bash(f"touch {marker}")
-            await _poll_group_dead(pids[0])
+            if bash_module._IS_POSIX:
+                await _poll_group_dead(pids[0])
+            # Windows already confirmed death synchronously: the abort path
+            # terminates the job and waits on the suspended child's handle.
             await asyncio.sleep(0.2)
             self.assertFalse(os.path.exists(marker))
             with bash_module._live_lock:
@@ -1343,8 +1444,11 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_unconfigured_journal_stays_permissive(self):
         # Permissiveness is about configuration, not start-id availability.
-        with mock.patch.object(bash_module, "_process_start_id", return_value=None):
-            result = await bash("echo ok")
+        # A live kernel exports the journal variables into this process, so
+        # the unconfigured state must be established explicitly.
+        with mock.patch.dict(os.environ, _unconfigured_journal_env(), clear=True):
+            with mock.patch.object(bash_module, "_process_start_id", return_value=None):
+                result = await bash("echo ok")
         self.assertEqual(result.exit_code, 0)
         self.assertIn("ok", result.output)
 
@@ -1360,6 +1464,19 @@ async def _poll_group_dead(pgid: int, timeout: float = 5.0) -> None:
             pass  # transient teardown state on macOS
         await asyncio.sleep(0.05)
     raise AssertionError(f"process group {pgid} still alive after {timeout}s")
+
+
+async def _poll_handle_dead(handle, timeout: float = 5.0) -> None:
+    """Portable tree-death poll: the POSIX group probe or the Windows reap state."""
+    if bash_module._IS_POSIX:
+        await _poll_group_dead(handle.pid)
+        return
+    deadline = asyncio.get_running_loop().time() + timeout
+    while asyncio.get_running_loop().time() < deadline:
+        if not handle.running:  # Windows: reap terminated and closed the job
+            return
+        await asyncio.sleep(0.05)
+    raise AssertionError(f"handle pid {handle.pid} still alive after {timeout}s")
 
 
 async def _poll_journal(path: str, count: int, timeout: float = 2.0) -> list[dict]:

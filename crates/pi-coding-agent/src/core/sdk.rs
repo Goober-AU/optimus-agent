@@ -909,9 +909,10 @@ mod tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn real_session_prompts_the_faux_provider_and_delivers_events() {
         use pi_ai::providers::faux::{register_faux_provider, RegisterFauxProviderOptions, FauxResponseStep, faux_assistant_message, FauxAssistantContent};
-        let root = tempfile::Builder::new().prefix("sdk-faux-").tempdir_in(
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.port-env/tmp"),
-        ).unwrap();
+        let root = tempfile::Builder::new()
+            .prefix("sdk-faux-")
+            .tempdir_in(std::env::temp_dir())
+            .unwrap();
         let cwd = root.path().to_string_lossy().to_string();
         let provider = register_faux_provider(Some(RegisterFauxProviderOptions {
             provider: Some(format!("session-test-{}", uuid::Uuid::new_v4())),

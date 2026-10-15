@@ -30,9 +30,33 @@ pub struct SetRlmMaxDepthResult {
     pub global_error: Option<String>,
 }
 
+/// Error returned when a session at the recursion limit tries to spawn a
+/// child. Mirrors the reference RLM rule that an RLM at max depth degrades
+/// to a plain LM: the message keeps the machine-readable limit facts and
+/// tells the deepest agent to answer directly instead of delegating.
+pub fn rlm_depth_limit_reached_error(rlm_depth: i64, rlm_max_depth: i64) -> String {
+    format!(
+        "RLM recursion depth limit reached (RLM_DEPTH={rlm_depth}, RLM_MAX_DEPTH={rlm_max_depth}); \
+you are the deepest agent: answer directly from your current context instead of delegating further"
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn depth_limit_error_keeps_limit_facts_and_adds_degradation_guidance() {
+        let message = rlm_depth_limit_reached_error(3, 3);
+        assert!(
+            message.starts_with("RLM recursion depth limit reached (RLM_DEPTH=3, RLM_MAX_DEPTH=3)"),
+            "machine-readable prefix must stay stable: {message}"
+        );
+        assert!(
+            message.contains("answer directly from your current context"),
+            "the deepest agent must be told how to degrade: {message}"
+        );
+    }
 
     #[test]
     fn status_serializes_camel_case_and_omits_absent_error() {
