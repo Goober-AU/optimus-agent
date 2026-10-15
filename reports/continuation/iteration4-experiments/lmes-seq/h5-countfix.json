@@ -1,0 +1,27 @@
+{
+ "schema": "lmes-seq-fix/1",
+ "qid": "0a995998",
+ "question": "How many items of clothing do I need to pick up or return from a store?",
+ "gold_shape": "pending-action count (3: blazer dry-clean pickup, Zara boots pickup, lent-out sweater return awaited)",
+ "baseline_attempt": {
+  "run_id": "lmesq6-0a995998",
+  "score": 0.0,
+  "stage": "answer",
+  "answer": "2 items (boots + blazer); excluded the lent-out green sweater"
+ },
+ "diagnosis": "Stage G count-scope: the model enumerated store pickups only (blazer, boots) and excluded the green sweater lent to the sister ('return date unknown'), reading 'return' too narrowly. LME gold counts all three pending pickup/return actions the notes record.",
+ "fix": "H5 read-time answerInstruction clause: when counting items to pick up or return, include every pending action the notes record - items waiting at a store/dry cleaner/repair shop, items to return to a store, and lent-out items whose return you await; count each distinct item once.",
+ "h5_attempt": {
+  "run_id": "lmesq6-0a9959h5",
+  "score": 1.0
+ },
+ "regression_gate": {
+  "06db6396": "1.0",
+  "07741c44": "1.0",
+  "07741c45": "1.0",
+  "031748ae_abs": "1.0",
+  "0862e8bf_abs": "1.0"
+ },
+ "generalizable": true,
+ "banked_into": "lmesseq-scratch/ov-banked.json (answerInstruction H5; backup ov-banked-w2h4.json)"
+}
