@@ -1,19 +1,18 @@
 {
- "updated": "2026-10-14T16:50:29",
- "phase": "COMPLETE",
- "results": {
-  "0db4c65d": "1.0 pass",
-  "0ddfec37": "1.0 pass",
-  "0ddfec37_abs": "1.0 pass",
-  "0e4e4c46": "1.0 pass",
-  "0e5e2d1a": "0.0 fail (write-side assistant-fact drop; see SUMMARY.md)"
- },
- "commits": [
-  "2ab798251",
-  "9ac107f55"
+ "updated": "2026-10-14T23:01:31",
+ "worker": "lmesq3b (batch-4 disjoint slice)",
+ "worktree": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424\\imp4b-lmes3",
+ "branch": "improve/mem4b-lmes3 @ 234bbf7da (merged imp4 HEAD 4cd56bd67: W1+W2 write, H2b+H3d+H4 read)",
+ "binary": "imp4b-target8k sha 4d2ba13f (verified)",
+ "slice": [
+  "0ea62687",
+  "0edc2aef",
+  "0f05491a",
+  "10d9b85a",
+  "10e09553"
  ],
- "branch": "improve/mem4b-lmes3 (worktree imp4b-lmes3)",
- "ledger_worker": "lmesq3b (5 attempts auto-appended)",
- "diagnosis": "0e5e2d1a stage-B: gold fact only in assistant reply (answer_ultrachat_113156); import excluded it; recall+abstention behaved correctly. Writecamp lane: permit assistant-stated study facts answering user questions.",
- "no_fix_applied": "no settings/code changes; regression not required"
+ "slice_rationale": "idx 30-34, next 5 UNTESTED after my idx-29 frontier; BB live on 0a995998 (idx 21); all 5 have zero attempts from any worker (ledger 22:57:30 state)",
+ "config": "banked smoke5 base + ov-banked from imp4 HEAD 4cd56bd67 (W1+W2 + H2b+H3d+H4), typeB, captureProtocol forced",
+ "ledger_note": "BATCH-3 INTEGRITY FLAG: ledger rewrite at 22:57:30 kept only 0db4c65d of my 5 attempts; 0ddfec37/0ddfec37_abs/0e4e4c46/0e5e2d1a attempts and 0e5e2d1a FAILED status were lost (also BB 0977f2af attempt). Run dirs + scores intact in C:/Users/openclawuser/lmesq3-att; recoverable.",
+ "runs": {}
 }
