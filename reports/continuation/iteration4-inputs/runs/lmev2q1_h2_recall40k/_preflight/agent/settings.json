@@ -1,0 +1,23 @@
+{
+  "autoRefine": {
+    "enabled": false
+  },
+  "retry": {
+    "enabled": false
+  },
+  "compaction": {
+    "enabled": false
+  },
+  "telemetryEnabled": false,
+  "agentTracesEnabled": false,
+  "quietStartup": true,
+  "memory": {
+    "recall": true,
+    "recallRerank": true,
+    "maxRecallChars": 32000,
+    "importInstructions": "Extract durable host-neutral project facts only. Only create edits of kind memory with cited sourceIds. Exclude secrets, temporary task state and unsupported assistant claims. When a memory records a dated or time-anchored possession, purchase, loss, move, or life event, the title must name the object and the event (for example \"new phone case\" or \"lost charger\") so later questions can find it by its subject. When an observation shows a page, screen, or form layout, create an entry for that page's structure: name the page (route or URL plus page title), list each sidebar or panel section heading visible on the page, and for every section record the exact item or link names and their count (for example \"the 'Main menu' sidebar section lists 4 links: Home, Products, Support, About\"). Record the same page separately for each distinct viewing context in which it was observed (for example an owner's or moderator's view versus a plain subscriber's or viewer's view) and state how the sections differ between those views. Do not skip a section because it looks like boilerplate: on-screen section names, item labels and counts are durable facts.",
+    "maxRecallEntries": 27,
+    "maxExtractionTokens": 32000,
+    "maxImportChunkChars": 15000
+  }
+}
