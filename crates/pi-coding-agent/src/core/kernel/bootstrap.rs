@@ -935,6 +935,14 @@ async fn run(command: &str, args: Vec<String>, stdio: RunStdio) -> Result<(), Ke
             RunStdio::Ignore => {
                 process.stdout(Stdio::null());
                 process.stderr(Stdio::null());
+                // Bootstrap helpers (uv/python probes) are noninteractive;
+                // headless parents must not allocate a console window.
+                #[cfg(windows)]
+                {
+                    use std::os::windows::process::CommandExt;
+                    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+                    process.creation_flags(CREATE_NO_WINDOW);
+                }
             }
             RunStdio::Inherit => {
                 process.stdout(Stdio::inherit());
@@ -1147,10 +1155,16 @@ async fn is_process_alive(pid: u32) -> bool {
     }
     #[cfg(windows)]
     {
-        let output = tokio::process::Command::new("tasklist")
-            .args(["/FI", &format!("PID eq {pid}"), "/NH", "/FO", "CSV"])
-            .output()
-            .await;
+        let mut tasklist = tokio::process::Command::new("tasklist");
+        tasklist
+            .args(["/FI", &format!("PID eq {pid}"), "/NH", "/FO", "CSV"]);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            tasklist.creation_flags(CREATE_NO_WINDOW);
+        }
+        let output = tasklist.output().await;
         return match output {
             Ok(output) => {
                 let text = String::from_utf8_lossy(&output.stdout);

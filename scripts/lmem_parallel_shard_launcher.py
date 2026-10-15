@@ -243,6 +243,7 @@ def run_shard(sh: Shard, args: argparse.Namespace) -> None:
                 stdout=fh,
                 stderr=subprocess.STDOUT,
                 env=env,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
         except OSError as exc:
             sh.launch_error = f"launch failed: {exc}"
