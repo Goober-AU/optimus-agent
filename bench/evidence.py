@@ -26,7 +26,7 @@ def prepare_question_declaration(question: dict) -> dict:
     caller declaration, not independent proof of gold or actual presentation.
     """
     family = question.get("family")
-    if family not in {"locomo", "locomo_plus", "longmemeval", "lme_v2"}:
+    if family not in {"locomo", "locomo_plus", "longmemeval", "lme_v2", "pmem"}:
         raise ValueError("unsupported scoring-question family")
     validate_question_protocol(question, family)
     visible = question.get("presented_question", question.get("question"))

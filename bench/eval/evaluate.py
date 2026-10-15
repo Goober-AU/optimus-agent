@@ -31,7 +31,7 @@ from bench.protocol import canonical_hash, evaluator_identity, validate_question
 DEFAULT_DATA_COMMON = Path(os.environ.get("MEMORY_BENCH_COMMON_ROOT") or
                            Path(__file__).resolve().parents[2] / "data" / "common")
 
-FAMILIES = ("longmemeval", "locomo", "lme_v2", "locomo_plus")
+FAMILIES = ("longmemeval", "locomo", "lme_v2", "locomo_plus", "pmem")
 JUDGE_TYPES = {"llm_judge", "llm_abstention", "llm_gotchas"}
 
 
@@ -207,6 +207,8 @@ def infer_family(q: dict) -> str:
         return "locomo_plus"
     if q.get("raw_eval_function") is not None or q.get("domain") is not None:
         return "lme_v2"
+    if ev.get("type") == "pmem_mcq" or q.get("question_uuid") is not None:
+        return "pmem"
     if q.get("presented_question") is not None or ev.get("type") in ("f1", "abstain_f1"):
         return "locomo"
     return "unknown"

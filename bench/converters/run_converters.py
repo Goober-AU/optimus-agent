@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 """Entry point: regenerate the common-format benchmark files.
 
-Default (no flags): dev subsets + dev/full manifests for all four families.
+Default (no flags): dev subsets + dev/full manifests for the families below.
   longmemeval   100 envs/questions      (data/common/longmemeval/)
   locomo        10 envs, 300 questions  (data/common/locomo/)
   lme_v2        2 envs, 120 questions  (data/common/lme_v2/)
   locomo_plus   120 envs/questions      (data/common/locomo_plus/)
+  pmem          32k split: 222 slice envs, 60-question dev subset
+                (data/common/pmem/; PersonaMem v1 official per-question slices)
 
 --full ADDITIONALLY emits the complete env/qs sets under <family>/full/
 for the supplied inputs. --full first regenerates dev outputs in the family
@@ -18,6 +20,8 @@ Usage:
   python -m bench.converters.run_converters                     # dev subsets
   python -m bench.converters.run_converters --family locomo     # one family
   python -m bench.converters.run_converters --full              # dev + full sets
+  python -m bench.converters.run_converters --family pmem --full --pmem-split 32k \
+      --data-root <pmem-data> --out-dir <pmem-common>           # PersonaMem v1
 """
 
 from __future__ import annotations
@@ -25,7 +29,7 @@ from __future__ import annotations
 import argparse
 import time
 
-FAMILY_NAMES = ("longmemeval", "locomo", "lme_v2", "locomo_plus")
+FAMILY_NAMES = ("longmemeval", "locomo", "lme_v2", "locomo_plus", "pmem")
 
 
 def main(argv=None) -> int:
@@ -43,6 +47,11 @@ def main(argv=None) -> int:
                          "value is recorded in each env's notes.axtree_cap_chars and in "
                          "the family manifest stats. Use a large explicit value (for "
                          "example 1000000) for effectively-full capture.")
+    ap.add_argument("--pmem-split", default=None, choices=("32k", "128k", "1m", "1M"),
+                    help="PersonaMem v1 split to convert (sets PMEM_SPLIT for this "
+                         "invocation; default 32k). Output lands under "
+                         "<out-dir>/pmem/<split>/ with the full set in "
+                         "<out-dir>/pmem/<split>/full/ (runner contract A1/A2).")
     args = ap.parse_args(argv)
 
     # The lme_v2 converter resolves LME_V2_AXTREE_CAP at import time, so the
@@ -52,14 +61,18 @@ def main(argv=None) -> int:
             ap.error("--lme-v2-axtree-cap must be >= 1")
         import os
         os.environ["LME_V2_AXTREE_CAP"] = str(args.lme_v2_axtree_cap)
+    if args.pmem_split is not None:
+        import os
+        os.environ["PMEM_SPLIT"] = args.pmem_split.lower()
 
-    from . import longmemeval, locomo, lme_v2, locomo_plus
+    from . import longmemeval, locomo, lme_v2, locomo_plus, pmem
     from .common import configure_paths
     families = {
         "longmemeval": longmemeval,
         "locomo": locomo,
         "lme_v2": lme_v2,
         "locomo_plus": locomo_plus,
+        "pmem": pmem,
     }
     configure_paths(args.data_root, args.out_dir)
 

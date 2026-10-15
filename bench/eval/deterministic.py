@@ -175,6 +175,51 @@ def mc_choice_set_match(
     return set(pred_letters) == set(answer_letters)
 
 
+def _pmem_extract_only_options(text: str) -> set:
+    """Official PersonaMem option extraction (PersonaMem inference.py
+    Evaluation.extract_answer._extract_only_options): prefer (a)-(d) in
+    parentheses, fall back to single a-d words."""
+    text = text.lower()
+    in_parens = re.findall(r"\(([a-d])\)", text)
+    if in_parens:
+        return set(in_parens)
+    return set(re.findall(r"\b([a-d])\b", text))
+
+
+def pmem_letter_set_match(
+    prediction,
+    answer,
+    *,
+    require_non_empty: bool = True,
+    **_,
+) -> bool:
+    """Official PersonaMem MCQ scoring, ported verbatim.
+
+    Extract the answer from after the last ``<final_answer>`` token when
+    present, else the whole response; letters via ``\\(([a-d])\\)`` with a
+    ``\\b([a-d])\\b`` fallback; correct iff the extracted set equals the
+    singleton gold letter. The full response is a second chance (official
+    fallback); two letters or an unparseable response score 0. No retry.
+    """
+    if prediction is None or answer is None:
+        return False
+    if not isinstance(prediction, str):
+        prediction = str(prediction)
+    if not isinstance(answer, str):
+        answer = str(answer)
+    correct = answer.strip().lower().strip("() ")
+    if require_non_empty and (not correct or len(correct) != 1 or correct not in "abcd"):
+        return False
+    candidate = prediction.strip()
+    if "<final_answer>" in candidate:
+        candidate = candidate.split("<final_answer>")[-1].strip()
+    if candidate.endswith("</final_answer>"):
+        candidate = candidate[: -len("</final_answer>")].strip()
+    if _pmem_extract_only_options(candidate) == {correct}:
+        return True
+    return _pmem_extract_only_options(prediction.strip()) == {correct}
+
+
 def extract_boxed_answer(text: str) -> str:
     """Balanced-brace-aware \boxed{...} parser adapted from licensed LongMemEval-V2.
 
@@ -284,7 +329,18 @@ def score_deterministic(
         )
         return {"score": 1.0 if ok else 0.0, "details": {"metric": "lme_v2_mc_choice_set_match"}}
 
+    if eval_type == "pmem_mcq":
+        ok = pmem_letter_set_match(
+            prediction, answer,
+            require_non_empty=bool(params.get("require_non_empty", True)),
+        )
+        return {"score": 1.0 if ok else 0.0, "details": {
+            "metric": "pmem_official_extract_answer",
+            "source": params.get("source"),
+        }}
+
     raise ValueError(f"Unknown deterministic eval type: {eval_type!r}")
 
 
-DETERMINISTIC_TYPES = {"f1", "abstain_f1", "em", "phrase_set", "phrase_set_ordered", "mc_choice", "mc_choice_set"}
+DETERMINISTIC_TYPES = {"f1", "abstain_f1", "em", "phrase_set", "phrase_set_ordered", "mc_choice",
+                       "mc_choice_set", "pmem_mcq"}
