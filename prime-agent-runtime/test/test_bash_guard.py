@@ -70,6 +70,38 @@ class GuardTests(unittest.TestCase):
             with self.subTest(command=command):
                 self.check(command)
 
+    def test_windows_rm_operands_are_analyzed_not_blanket_refused(self):
+        # Regression (Windows): recursive-force rm used to refuse every operand
+        # list with "Native shell path translation is not supported on this
+        # platform" instead of analyzing the operands like on POSIX.
+        with mock.patch.object(guard.os, "name", "nt"):
+            for command in ["rm -rf sub", "rm -fr ./sub", "rm -rf 'my dir'",
+                            "rm -rf sub/nested", "rm -rf missing"]:
+                with self.subTest(command=command):
+                    self.check(command)
+            # Rooted paths without a drive letter diverge between Windows
+            # drive-relative resolution and the MSYS shell installation root,
+            # so they must keep refusing.
+            for command in ["rm -rf /tmp", "rm -rf /sub/nested"]:
+                with self.subTest(command=command), self.assertRaisesRegex(
+                        DestructiveRmRefusalError, "drive letter"):
+                    self.check(command)
+
+    @unittest.skipUnless(os.name == "nt", "Windows backslash path semantics")
+    def test_windows_backslash_paths_are_literal_operands_and_targets(self):
+        # Regression (Windows): a quoted backslash path is a literal word after
+        # posix quote removal, but _literal() used to reject every backslash,
+        # so `cd 'C:\...' && git reset --hard` and backslash rm operands were
+        # refused instead of being analyzed.
+        with mock.patch.object(guard, "_probe", return_value=[]) as probe:
+            self.check("cd " + shlex.quote(str(self.workspace)) + " && git reset --hard")
+            self.assertEqual(probe.call_args.args[0], self.workspace)
+            self.check("rm -rf " + shlex.quote(str(self.workspace / "sub")))
+        outside = self.root / "outside"
+        outside.mkdir()
+        with self.assertRaises(DestructiveRmRefusalError):
+            self.check("rm -rf " + shlex.quote(str(outside)))
+
     def test_home_is_protected_even_when_nested_under_the_working_directory(self):
         self.env["HOME"] = str(self.workspace / "home")
         with self.assertRaises(DestructiveRmRefusalError):
