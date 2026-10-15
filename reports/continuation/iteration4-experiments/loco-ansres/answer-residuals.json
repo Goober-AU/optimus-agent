@@ -1,0 +1,2944 @@
+{
+ "schema": "loco-ansres-answer-residuals/1",
+ "ts": "2026-10-15T00:00:00+00:00",
+ "worker": "ansres",
+ "worktree": "imp4b-ansres (branch improve/mem4b-ansres, base 240e9fbc9 = imp4 HEAD)",
+ "method": "LOCAL-ONLY: QUESTION-LEDGER.json FAILED set + drank task1-rank-analysis.json (8-store gold ranks) + offline search_replay.py replication for conv-30/49 fresh stores (replay verified 24/24 vs wf30-q17-a1 binary recall; conv-30_q3 gold rank 130 reproduces drank's consolidation note) + run.jsonl answer traces from the latest banked-family attempt per question (FINAL7/8/9, window 24, stem, no rerank)",
+ "enumeration": {
+  "locomo_failed": 158,
+  "answer_stage_gold_in_w24": 144,
+  "not_answer_stage": {
+   "beyond_36": [
+    "conv-41_q50",
+    "conv-42_q56",
+    "conv-47_q11",
+    "conv-48_q185",
+    "conv-50_q40",
+    "conv-42_q151",
+    "conv-44_q24",
+    "conv-30_q3"
+   ],
+   "no_extracted_gold": [
+    "conv-42_q184",
+    "conv-50_q140",
+    "conv-30_q76"
+   ],
+   "w25_32": [
+    "conv-50_q28",
+    "conv-49_q51"
+   ],
+   "w33_36": [
+    "conv-47_q97"
+   ]
+  },
+  "draw_split": {
+   "fail_latest_banked_draw": 82,
+   "pass_latest_banked_draw": 62
+  },
+  "pass_composition": {
+   "stability_STABLE_flip_pending": 45,
+   "variance_band": 4,
+   "conv26_final9_battery": 13
+  },
+  "measurement_caveat": "59 of the 82 fail-latest cells were last measured under FINAL7 on frozen stores; 23 have FINAL9 w24 runs (20 fail every FINAL9 draw = FINAL9-confirmed; conv-26_q33 + conv-47_q138/q34 pass some FINAL9 draws)",
+  "non_locomo_failed": {
+   "lme_v2::499488a6": "write-time (axtree cap)",
+   "lme_v2::f928c075": "fixed 1.0x3 (unflipped)",
+   "longmemeval_s::00ca467f": "fixed via update-drop (unflipped)",
+   "longmemeval_s::0e5e2d1a": "write-side assistant-fact exclusion (round-5 KU clause)"
+  }
+ },
+ "cluster_counts_fail_latest": {
+  "brevity/over-elaboration": 19,
+  "binding (event/aspect/fact)": 16,
+  "temporal-form/date-form": 9,
+  "paraphrase/natural-form": 11,
+  "list completeness": 8,
+  "abstention/sufficiency": 12,
+  "open-world/dataset-limit": 6,
+  "list precision (over-inclusion)": 0,
+  "payload/length-stop": 1
+ },
+ "rows": [
+  {
+   "qid": "conv-26_q1",
+   "category": "temporal",
+   "question": "When did Melanie paint a sunrise?",
+   "gold": "2022",
+   "latest_answer": "2022",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:58:20+00:00"
+   },
+   "taxonomy": "temporal-form",
+   "fix_family": "temporal-form/date-form",
+   "family_detail": "date-form precedence (FINAL9 r1)",
+   "note": "battery 1.0 under FINAL8/9; flip-pending",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-26_q126",
+   "category": "single-hop",
+   "question": "What activity did Caroline used to do with her dad?",
+   "gold": "Horseback riding",
+   "latest_answer": "Horseback riding",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q126",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:59:41+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE convert; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-26_q135",
+   "category": "single-hop",
+   "question": "What setback did Melanie face in October 2023?",
+   "gold": "She got hurt and had to take a break from pottery.",
+   "latest_answer": "she got hurt and had to take a break from pottery",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q135",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:59:50+00:00"
+   },
+   "taxonomy": "paraphrase",
+   "fix_family": "paraphrase/natural-form",
+   "family_detail": "natural-form matching (note-echo)",
+   "note": "note-echo wobble class; FINAL9 battery 1.0",
+   "drank_gold_rank": 4
+  },
+  {
+   "qid": "conv-26_q141",
+   "category": "single-hop",
+   "question": "What does Caroline's drawing symbolize for her?",
+   "gold": "Freedom and being true to herself.",
+   "latest_answer": "freedom and being real \u2014 a nudge to stay true to herself and embrace her womanhood",
+   "latest_score": 0.5555555555555556,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q141",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:59:51+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity/attribute phrasing",
+   "note": "means-question adds extra attribute wording (0.556)",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-26_q143",
+   "category": "single-hop",
+   "question": "What happened to Melanie's son on their road trip?",
+   "gold": "He got into an accident",
+   "latest_answer": "he got into an accident",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q143",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:59:52+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-26_q144",
+   "category": "single-hop",
+   "question": "How did Melanie's son handle the accident?",
+   "gold": "He was scared but reassured by his family",
+   "latest_answer": "he was scared but okay",
+   "latest_score": 0.6153846153846154,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q144",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:59:35+00:00"
+   },
+   "taxonomy": "paraphrase",
+   "fix_family": "paraphrase/natural-form",
+   "family_detail": "natural-form matching",
+   "note": "'okay' vs 'reassured by his family' (0.615)",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-26_q149",
+   "category": "single-hop",
+   "question": "What do Melanie's family give her?",
+   "gold": "Strength and motivation",
+   "latest_answer": "strength, motivation, support",
+   "latest_score": 0.8,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q149",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:59:44+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "list precision (over-inclusion)",
+   "family_detail": "list precision",
+   "note": "extra item 'support' beyond gold (0.8)",
+   "drank_gold_rank": 6
+  },
+  {
+   "qid": "conv-26_q18",
+   "category": "multi-hop",
+   "question": "Where has Melanie camped?",
+   "gold": "beach, mountains, forest",
+   "latest_answer": "forest, beach, mountains",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q18",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:58:21+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "stem fix convert; flip-pending",
+   "drank_gold_rank": 6
+  },
+  {
+   "qid": "conv-26_q2",
+   "category": "open-domain",
+   "question": "What fields would Caroline be likely to pursue in her educaton?",
+   "gold": "Psychology, counseling certification",
+   "latest_answer": "counseling or mental health work",
+   "latest_score": 0.25,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "resq",
+    "run_id": "rsqc-c26-q2-v3",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T07:46:06+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "open-world/dataset-limit",
+   "family_detail": "open-domain synthesis",
+   "note": "education-fields inference, 'mental health work' vs 'Psychology, counseling certification'",
+   "drank_gold_rank": 21
+  },
+  {
+   "qid": "conv-26_q26",
+   "category": "temporal",
+   "question": "When did Melanie read the book \"nothing is impossible\"?",
+   "gold": "2022",
+   "latest_answer": "2022",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q26",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:58:28+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending (year-form 1.0)",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-26_q33",
+   "category": "temporal",
+   "question": "When did Caroline go to a pride parade during the summer?",
+   "gold": "The week before 3 July 2023",
+   "latest_answer": "",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "resq",
+    "run_id": "rsqc-c26-q33-v4",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T07:45:21+00:00"
+   },
+   "taxonomy": "payload-glitch",
+   "fix_family": "payload/length-stop",
+   "family_detail": "length-stop rescue hygiene",
+   "note": "empty answer, stop=length + degraded rescue",
+   "drank_gold_rank": 3
+  },
+  {
+   "qid": "conv-26_q37",
+   "category": "multi-hop",
+   "question": "What did Melanie paint recently?",
+   "gold": "sunset",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q37",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:59:21+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "abstention/sufficiency",
+   "family_detail": "abstention policy",
+   "note": "'not mentioned' vs gold 'sunset' in-window",
+   "drank_gold_rank": 7
+  },
+  {
+   "qid": "conv-26_q39",
+   "category": "multi-hop",
+   "question": "In what ways is Caroline participating in the LGBTQ community?",
+   "gold": "Joining activist group, going to pride parades, participating in an art show, mentoring program",
+   "latest_answer": "School talk, pride parade, conference, activist group, youth mentoring, youth center volunteering, art show, advocacy art",
+   "latest_score": 0.6583333333333333,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q39",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:58:48+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "list precision (over-inclusion)",
+   "family_detail": "list precision",
+   "note": "8 items vs 4 gold (over-inclusion)",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-26_q54",
+   "category": "temporal",
+   "question": "When did Caroline draw a self-portrait?",
+   "gold": "The week before 23 August 2023",
+   "latest_answer": "the week before 23 August 2023",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q54",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:59:42+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-26_q55",
+   "category": "multi-hop",
+   "question": "What subject have Caroline and Melanie both painted?",
+   "gold": "Sunsets",
+   "latest_answer": "Sunsets",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q55",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:58:59+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-26_q66",
+   "category": "multi-hop",
+   "question": "What does Melanie do with her family on hikes?",
+   "gold": "Roast marshmallows, tell stories",
+   "latest_answer": "Connect with nature and each other.",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q66",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:59:17+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "event binding",
+   "note": "generalization note wins over specific activities 'roast marshmallows, tell stories'",
+   "drank_gold_rank": 15
+  },
+  {
+   "qid": "conv-26_q77",
+   "category": "open-domain",
+   "question": "Would Melanie go on another roadtrip soon?",
+   "gold": "Likely no; since this one went badly",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c26-q77",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T06:59:27+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "abstention/sufficiency",
+   "family_detail": "abstention policy (open-domain)",
+   "note": "'not mentioned' vs 'Likely no' inference",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-26_q99",
+   "category": "single-hop",
+   "question": "What motivated Caroline to pursue counseling?",
+   "gold": "her own journey and the support she received, and how counseling improved her life",
+   "latest_answer": "Her own journey and the support she received, which made her want to help people going through the same things.",
+   "latest_score": 0.5,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "resq",
+    "run_id": "rsqc-c26-q99-v3",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T07:45:00+00:00"
+   },
+   "taxonomy": "paraphrase",
+   "fix_family": "paraphrase/natural-form",
+   "family_detail": "natural-form matching",
+   "note": "borderline 0.5 phrasing",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-30_q17",
+   "category": "multi-hop",
+   "question": "Why did Gina decide to start her own clothing store?",
+   "gold": "She always loved fashion trends and finding unique pieces and she lost her job so decided it was time to start her own business.",
+   "latest_answer": "To take control of her own destiny after losing her job.",
+   "latest_score": 0.30303030303030304,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writefull",
+    "run_id": "wf30-q17-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T12:55:31+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "multi-part motivation completeness",
+   "note": "destiny/job-loss only vs passion+job-loss gold",
+   "drank_gold_rank": null
+  },
+  {
+   "qid": "conv-30_q44",
+   "category": "single-hop",
+   "question": "What does Gina say about the dancers in the photo?",
+   "gold": "They look graceful",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writefull",
+    "run_id": "wf30-q44-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T12:56:50+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "abstention/sufficiency",
+   "family_detail": "abstention policy",
+   "note": "'not mentioned' vs 'They look graceful' (rank 12)",
+   "drank_gold_rank": null
+  },
+  {
+   "qid": "conv-30_q50",
+   "category": "single-hop",
+   "question": "What did Jon say about Gina's progress with her store?",
+   "gold": "hard work's paying off",
+   "latest_answer": "He said she found the perfect spot for her store and her hard work's paying off.",
+   "latest_score": 0.4444444444444445,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writefull",
+    "run_id": "wf30-q50-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T12:56:29+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "'perfect spot' clause appended to gold phrase",
+   "drank_gold_rank": null
+  },
+  {
+   "qid": "conv-30_q51",
+   "category": "single-hop",
+   "question": "What made Gina choose the furniture and decor for her store?",
+   "gold": "personal style and customer comfort",
+   "latest_answer": "She designed the space to reflect her own style and make customers feel cozy, creating a \"cool oasis\" experience that makes them want to come back.",
+   "latest_score": 0.14814814814814817,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writefull",
+    "run_id": "wf30-q51-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T12:56:39+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "full design rationale vs 'personal style and customer comfort'",
+   "drank_gold_rank": null
+  },
+  {
+   "qid": "conv-30_q59",
+   "category": "single-hop",
+   "question": "Why did Gina combine her clothing business with dance?",
+   "gold": "she is passionate about dance and fashion",
+   "latest_answer": "She's passionate about dance and fashion, so combining them lets her show her creativity and share her love with others, plus she can add dance-inspired items to her store.",
+   "latest_score": 0.303030303030303,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writefull",
+    "run_id": "wf30-q59-ing",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T12:49:40+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "3-clause expansion (ingest seed draw)",
+   "drank_gold_rank": null
+  },
+  {
+   "qid": "conv-41_q110",
+   "category": "single-hop",
+   "question": "What exciting news did Maria share on 16 June, 2023?",
+   "gold": "joined a gym",
+   "latest_answer": "She joined a new gym.",
+   "latest_score": 0.6666666666666666,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg41-q110-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:45:11+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold (0.667)",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-41_q115",
+   "category": "single-hop",
+   "question": "What kind of event did John and his family attend in June 2023?",
+   "gold": "live music event",
+   "latest_answer": "a live music event",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c41-q115-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:49:27+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE convert; flip-pending",
+   "drank_gold_rank": 11
+  },
+  {
+   "qid": "conv-41_q125",
+   "category": "single-hop",
+   "question": "What does John appreciate about the veteran's hospital visit?",
+   "gold": "the resilience of the veterans and their inspiring stories",
+   "latest_answer": "What he has and the need to give back",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c41-q125",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:15:58+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "event binding",
+   "note": "'what he has/give back' vs 'resilience of veterans' (different note)",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-41_q131",
+   "category": "single-hop",
+   "question": "What community service did Maria mention that she was involved in on 31 July, 2023?",
+   "gold": "volunteered at a homeless shelter",
+   "latest_answer": "Dropping off baked goods she had made at the homeless shelter where she volunteers.",
+   "latest_score": 0.47058823529411764,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c41-q131-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:49:21+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "correct fact + detail padding (0.471; FINAL9 0.5-0.571 wobble)",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-41_q137",
+   "category": "single-hop",
+   "question": "What happened to John's job in August 2023?",
+   "gold": "John lost his job at the mechanical engineering company.",
+   "latest_answer": "He lost his job at the mechanical engineering company when it went under.",
+   "latest_score": 0.7000000000000001,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c41-q137-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:49:28+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-41_q138",
+   "category": "single-hop",
+   "question": "What activity did Maria take up with her friends from church in August 2023?",
+   "gold": "community work",
+   "latest_answer": "Community work",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c41-q138-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:49:32+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 4
+  },
+  {
+   "qid": "conv-41_q18",
+   "category": "multi-hop",
+   "question": "Who did John go to yoga with?",
+   "gold": "Rob",
+   "latest_answer": "a colleague",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c41-q18",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:15:08+00:00"
+   },
+   "taxonomy": "paraphrase",
+   "fix_family": "paraphrase/natural-form",
+   "family_detail": "entity-name preference",
+   "note": "'a colleague' vs gold name 'Rob'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-41_q20",
+   "category": "temporal",
+   "question": "When did John take a road trip to the Pacific Northwest?",
+   "gold": "2022",
+   "latest_answer": "2022",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg41-q20-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:45:06+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-41_q35",
+   "category": "multi-hop",
+   "question": "What states has Maria vacationed at?",
+   "gold": "Oregon, Florida",
+   "latest_answer": "Florida",
+   "latest_score": 0.5,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c41-q35-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:49:39+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "list completeness",
+   "family_detail": "list completeness",
+   "note": "'Florida' vs 'Oregon, Florida' (1 of 2, 0.5)",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-41_q47",
+   "category": "multi-hop",
+   "question": "What exercises has John done?",
+   "gold": "Weight training, Circuit training, Kickboxing, yoga",
+   "latest_answer": "yoga, kickboxing, weight training",
+   "latest_score": 0.875,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c41-q47-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:49:44+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 6
+  },
+  {
+   "qid": "conv-41_q54",
+   "category": "temporal",
+   "question": "When did Maria take up community work with her church friends?",
+   "gold": "August 4, 2023",
+   "latest_answer": "the day before 5 August 2023",
+   "latest_score": 0.5,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c41-q54-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:49:50+00:00"
+   },
+   "taxonomy": "temporal-form",
+   "fix_family": "temporal-form/date-form",
+   "family_detail": "date-form precedence",
+   "note": "anchored-relative vs calendar (0.5)",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-41_q57",
+   "category": "multi-hop",
+   "question": "What causes has John done events for?",
+   "gold": "Toy drive, Community food drive, veterans, domestic violence",
+   "latest_answer": "veterans' rights, domestic abuse victims, unemployed folks, veterans and their families",
+   "latest_score": 0.26666666666666666,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c41-q57",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:15:34+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "list completeness",
+   "family_detail": "list completeness",
+   "note": "missing toy/food drives; paraphrased items (0.267)",
+   "drank_gold_rank": 3
+  },
+  {
+   "qid": "conv-41_q60",
+   "category": "multi-hop",
+   "question": "What are Maria's dogs' names?",
+   "gold": "Coco, Shadow",
+   "latest_answer": "Coco, Shadow",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c41-q60-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:49:54+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 12
+  },
+  {
+   "qid": "conv-41_q68",
+   "category": "single-hop",
+   "question": "What type of workout class did Maria start doing in December 2023?",
+   "gold": "aerial yoga",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c41-q68",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:15:37+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "abstention/sufficiency",
+   "family_detail": "abstention policy",
+   "note": "'not mentioned' vs 'aerial yoga' in-window",
+   "drank_gold_rank": 9
+  },
+  {
+   "qid": "conv-41_q82",
+   "category": "single-hop",
+   "question": "What did John receive a certificate for?",
+   "gold": "completion of a university degree",
+   "latest_answer": "Completing a university degree.",
+   "latest_score": 0.8571428571428571,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c41-q82",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T07:00:00+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 8
+  },
+  {
+   "qid": "conv-41_q91",
+   "category": "temporal",
+   "question": "What did John attend with his colleagues in March 2023?",
+   "gold": "a tech-for-good convention",
+   "latest_answer": "a tech-for-good convention",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c41-q91-d1r",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:55:43+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-42_q11",
+   "category": "multi-hop",
+   "question": "What is Joanna allergic to?",
+   "gold": "Most reptiles,animals with fur,cockroaches, dairy",
+   "latest_answer": "most reptiles and animals with fur",
+   "latest_score": 0.33035714285714285,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c42-q11",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:25:25+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "list completeness",
+   "family_detail": "list completeness",
+   "note": "2 of 4 allergens",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-42_q125",
+   "category": "single-hop",
+   "question": "Who did Nate plan to invite to his gaming party in June 2022?",
+   "gold": "Tournament friends, old friends, teammates",
+   "latest_answer": "his tournament friends, old friends, and teammates from other tournaments",
+   "latest_score": 0.7142857142857143,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg42-q125-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:45:18+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-42_q138",
+   "category": "single-hop",
+   "question": "What did Joanna discover at the library in Woodhaven?",
+   "gold": "cool old book collection",
+   "latest_answer": "A super cool book from the 1900s with stories and sketches about the town and its people",
+   "latest_score": 0.25,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c42-q138",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:27:13+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "specific book description vs 'cool old book collection'",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-42_q143",
+   "category": "single-hop",
+   "question": "How did Joanna feel when someone wrote her a letter after reading her blog post?",
+   "gold": "Touched",
+   "latest_answer": "Touched; realizing her words' power was awesome",
+   "latest_score": 0.25,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c42-q143",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:27:19+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity (how-feeling)",
+   "note": "feeling + reason appended vs bare 'Touched'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-42_q165",
+   "category": "single-hop",
+   "question": "What did Nate share a photo of when mentioning unwinding at home?",
+   "gold": "a bookcase filled with dvds and movies",
+   "latest_answer": "Cyberpunk 2077",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c42-q165",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:27:49+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "event binding",
+   "note": "'Cyberpunk 2077' (game note) vs bookcase photo",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-42_q168",
+   "category": "single-hop",
+   "question": "What helps Joanna stay focused and brings her joy?",
+   "gold": "stuffed animal dog named Tilly",
+   "latest_answer": "Her stuffed animal dog Tilly.",
+   "latest_score": 0.8000000000000002,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg42-q168-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:45:14+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-42_q170",
+   "category": "single-hop",
+   "question": "Why did Joanna name the stuffed animal dog Tilly?",
+   "gold": "after a dog she had in Michigan",
+   "latest_answer": "Named after her former dog Tilly in Michigan, to remember her from when she could hold and squeeze animals before her allergy developed.",
+   "latest_score": 0.35714285714285715,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c42-q170",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:27:34+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "full rationale vs 'after a dog she had in Michigan'",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-42_q175",
+   "category": "single-hop",
+   "question": "What does Joanna use to remember her dog from Michigan?",
+   "gold": "naming a stuffed animal dog Tilly",
+   "latest_answer": "her stuffed animal dog Tilly",
+   "latest_score": 0.8000000000000002,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c42-q175-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:50:12+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-42_q197",
+   "category": "single-hop",
+   "question": "What does Nate love most about having turtles?",
+   "gold": "They make him feel calm and don't require much looking after",
+   "latest_answer": "Seeing them eat fruit",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c42-q197",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:28:02+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "aspect binding",
+   "note": "'seeing them eat fruit' vs 'calm + low maintenance'",
+   "drank_gold_rank": 5
+  },
+  {
+   "qid": "conv-42_q20",
+   "category": "temporal",
+   "question": "When did Nate adopt Max?",
+   "gold": "May 2022",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg42-q20-a2",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:48:29+00:00"
+   },
+   "taxonomy": "temporal-form",
+   "fix_family": "temporal-form/date-form",
+   "family_detail": "date inference from evidence",
+   "note": "'not mentioned': adoption note carries no date; gold May 2022",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-42_q24",
+   "category": "temporal",
+   "question": "When is Nate hosting a gaming party?",
+   "gold": "The weekend after 3June, 2022.",
+   "latest_answer": "Two weekends after June 3, 2022",
+   "latest_score": 0.6,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c42-q24-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:50:14+00:00"
+   },
+   "taxonomy": "temporal-form",
+   "fix_family": "temporal-form/date-form",
+   "family_detail": "date-form precedence",
+   "note": "'two weekends after' vs 'the weekend after' (wobble 0.6)",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-42_q28",
+   "category": "temporal",
+   "question": "When did Nate make vegan icecream and share it with a vegan diet group?",
+   "gold": "The Friday before 24June, 2022.",
+   "latest_answer": "the Friday before 24 June 2022",
+   "latest_score": 0.6666666666666665,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c42-q28-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:50:21+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-42_q31",
+   "category": "temporal",
+   "question": "When did Nate win his fourth video game tournament?",
+   "gold": "The Friday before 10July, 2022.",
+   "latest_answer": "the Friday before 10 July 2022",
+   "latest_score": 0.6666666666666665,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c42-q31-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:50:25+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-42_q4",
+   "category": "open-domain",
+   "question": "What pets wouldn't cause any discomfort to Joanna?",
+   "gold": "Hairless cats or pigs,since they don't have fur, which is one of the main causes of Joanna's allergy.",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c42-q4",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:25:25+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "open-world/dataset-limit",
+   "family_detail": "open-domain (dataset-limit)",
+   "note": "hairless-cats inference; abstained",
+   "drank_gold_rank": 6
+  },
+  {
+   "qid": "conv-42_q41",
+   "category": "temporal",
+   "question": "When did Joanna make a chocolate tart with raspberries?",
+   "gold": "5 October, 2022",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c42-q41",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:26:45+00:00"
+   },
+   "taxonomy": "temporal-form",
+   "fix_family": "abstention/sufficiency",
+   "family_detail": "abstention policy (temporal)",
+   "note": "'not mentioned' vs '5 October 2022'",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-42_q47",
+   "category": "multi-hop",
+   "question": "What places has Nate met new people?",
+   "gold": "A tournament and agaming convention.",
+   "latest_answer": "game convention, tournaments",
+   "latest_score": 0.5,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c42-q47-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:50:29+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-42_q63",
+   "category": "multi-hop",
+   "question": "What video games does Nate play?",
+   "gold": "Valorant, Counter Strike:Global Offensive,Xenoblade Chronicles, StreetFighter, Cyberpunk 2077",
+   "latest_answer": "Counter-Strike: Global Offensive, Street Fighter, Cyberpunk 2077, Xenoblade Chronicles",
+   "latest_score": 0.4666666666666666,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c42-q63",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:26:16+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "list completeness",
+   "family_detail": "list completeness",
+   "note": "4 of 5 games (missing Valorant)",
+   "drank_gold_rank": 6
+  },
+  {
+   "qid": "conv-42_q64",
+   "category": "temporal",
+   "question": "When did Nate win a big Valorant tourney?",
+   "gold": "The Saturday before 7November, 2022",
+   "latest_answer": "the Saturday before 7 November 2022",
+   "latest_score": 0.6666666666666665,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c42-q64-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:50:35+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-42_q71",
+   "category": "multi-hop",
+   "question": "What do both Joanna and Nate appreciate the beauty of?",
+   "gold": "Nature",
+   "latest_answer": "nature",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c42-q71-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:50:39+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 19
+  },
+  {
+   "qid": "conv-42_q75",
+   "category": "multi-hop",
+   "question": "What are Nate's favorite desserts?",
+   "gold": "coconut milk icecream, dairy-free chocolate cake with berries, chocolate and mixed-berry icecream, dairy-free chocolate mousse",
+   "latest_answer": "Coconut milk ice cream, dairy-free chocolate mousse.",
+   "latest_score": 0.6011904761904763,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c42-q75",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T07:00:03+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "list completeness",
+   "family_detail": "list completeness",
+   "note": "2 of 4 desserts (0.601)",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-42_q85",
+   "category": "open-domain",
+   "question": "What kind of job is Joanna beginning to preform the duties of because of her movie scripts?",
+   "gold": "filmmaker.",
+   "latest_answer": "a book author",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c42-q85",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:28:32+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "open-world/dataset-limit",
+   "family_detail": "open-domain synthesis",
+   "note": "'book author' vs 'filmmaker'",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-42_q91",
+   "category": "single-hop",
+   "question": "What is Nate's favorite book series about?",
+   "gold": "dragons",
+   "latest_answer": "world building, battles, and storytelling",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c42-q91",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:26:57+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "aspect binding",
+   "note": "'world building, battles' vs subject 'dragons'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-42_q99",
+   "category": "single-hop",
+   "question": "What are Joanna's plans for her finished screenplay in January 2022?",
+   "gold": "submit it to film festivals and get producers and directors to check it out",
+   "latest_answer": "Submit it to film festivals, hoping producers and directors would check it out.",
+   "latest_score": 0.8333333333333334,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c42-q99-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:50:45+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 4
+  },
+  {
+   "qid": "conv-43_q116",
+   "category": "single-hop",
+   "question": "How does John say his team handles tough opponents?",
+   "gold": "by backing each other up and not quitting",
+   "latest_answer": "Tough opponents drive the team to get better; they back each other up and won't quit.",
+   "latest_score": 0.4761904761904762,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c43-q116-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:50:54+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "adds 'drive to get better' (0.476 wobble)",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-43_q12",
+   "category": "temporal",
+   "question": "What year did John start surfing?",
+   "gold": "2018",
+   "latest_answer": "2018",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg43-q12-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:45:19+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-43_q122",
+   "category": "single-hop",
+   "question": "What has John been able to help the younger players achieve?",
+   "gold": "reach their goals",
+   "latest_answer": "develop and reach their goals",
+   "latest_score": 0.8571428571428571,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg43-q122-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:45:32+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold",
+   "drank_gold_rank": 3
+  },
+  {
+   "qid": "conv-43_q138",
+   "category": "single-hop",
+   "question": "How did John overcome his ankle injury from last season?",
+   "gold": "stayed focused on recovery and worked hard to strengthen his body",
+   "latest_answer": "Frustrating, but patience and perseverance got him through.",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c43-q138",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:18:30+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "aspect binding",
+   "note": "manner 'patience/perseverance' vs method 'focus on recovery/strengthen'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-43_q142",
+   "category": "single-hop",
+   "question": "How did \"The Alchemist\" impact John's perspective on following dreams?",
+   "gold": "made him think again about following dreams and searching for personal legends",
+   "latest_answer": "Inspiring; it motivated him to keep chasing dreams.",
+   "latest_score": 0.2105263157894737,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c43-q142",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:18:41+00:00"
+   },
+   "taxonomy": "paraphrase",
+   "fix_family": "paraphrase/natural-form",
+   "family_detail": "natural-form matching",
+   "note": "'keep chasing dreams' vs 'personal legends' rewording",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-43_q16",
+   "category": "temporal",
+   "question": "After how many weeks did Tim reconnect with the fellow Harry Potter fan from California?",
+   "gold": "three weeks",
+   "latest_answer": "about four weeks",
+   "latest_score": 0.4,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c43-q16",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:18:02+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "count precision",
+   "note": "'about four weeks' vs 'three weeks'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-43_q164",
+   "category": "single-hop",
+   "question": "What language does Tim know besides German?",
+   "gold": "Spanish",
+   "latest_answer": "French.",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c43-q164",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:18:29+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "fact binding",
+   "note": "'French' vs 'Spanish'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-43_q20",
+   "category": "temporal",
+   "question": "Which city was John in before traveling to Chicago?",
+   "gold": "Seattle",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c43-q20",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:17:25+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "abstention/sufficiency",
+   "family_detail": "abstention policy",
+   "note": "'not mentioned' vs 'Seattle' in-window",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-43_q38",
+   "category": "multi-hop",
+   "question": "which country has Tim visited most frequently in his travels?",
+   "gold": "UK",
+   "latest_answer": "the UK",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg43-q38-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:45:27+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold",
+   "drank_gold_rank": 11
+  },
+  {
+   "qid": "conv-43_q45",
+   "category": "temporal",
+   "question": "Which country was Tim visiting in the second week of November?",
+   "gold": "UK",
+   "latest_answer": "the UK",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c43-q45-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:51:15+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 14
+  },
+  {
+   "qid": "conv-43_q59",
+   "category": "multi-hop",
+   "question": "Which career-high performances did John achieve in 2023?",
+   "gold": "highest point score, highest assist",
+   "latest_answer": "career-high 40 points, career-high in assists",
+   "latest_score": 0.3666666666666667,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c43-q59",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:17:43+00:00"
+   },
+   "taxonomy": "paraphrase",
+   "fix_family": "paraphrase/natural-form",
+   "family_detail": "natural-form matching",
+   "note": "'career-high 40 points' vs 'highest point score'",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-43_q61",
+   "category": "multi-hop",
+   "question": "What books has John read?",
+   "gold": "inpsiring book on dreaming big, The Alchemist, fantasy series, non-fiction books on personal development, Dune",
+   "latest_answer": "The Alchemist, The Hobbit, Dune",
+   "latest_score": 0.4,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c43-q61",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:17:51+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "list completeness",
+   "family_detail": "list completeness",
+   "note": "3 of 5 books + wrong item (Hobbit)",
+   "drank_gold_rank": 6
+  },
+  {
+   "qid": "conv-43_q66",
+   "category": "open-domain",
+   "question": "What is a Star Wars book that Tim might enjoy?",
+   "gold": "Star Wars: Jedi Apprentice by Judy Blundell and David Farland. It is a highly rated and immersive series about his favorite movies.",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wc43-q66-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:44:37+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "open-world/dataset-limit",
+   "family_detail": "open-domain (dataset-limit)",
+   "note": "Jedi Apprentice world-knowledge gold",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-43_q71",
+   "category": "single-hop",
+   "question": "Which team did John sign with on 21 May, 2023?",
+   "gold": "The Minnesota Wolves",
+   "latest_answer": "The Minnesota Wolves",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c43-q71-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:51:17+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-43_q76",
+   "category": "single-hop",
+   "question": "What kind of picture did Tim share as part of their Harry Potter book collection?",
+   "gold": "MinaLima's creation from the Harry Potter films",
+   "latest_answer": "A picture from MinaLima, the studio that created all the props for the Harry Potter films.",
+   "latest_score": 0.5555555555555556,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c43-q76-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:51:23+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE (0.556)",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-43_q84",
+   "category": "single-hop",
+   "question": "Which two fantasy novels does Tim particularly enjoy writing about?",
+   "gold": "Harry Potter and Game of Thrones",
+   "latest_answer": "Harry Potter and Game of Thrones",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c43-q84-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:51:26+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 21
+  },
+  {
+   "qid": "conv-43_q87",
+   "category": "single-hop",
+   "question": "How did John describe the team bond?",
+   "gold": "Awesome",
+   "latest_answer": "Awesome and like a family away from home.",
+   "latest_score": 0.2857142857142857,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c43-q87",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:18:21+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "'Awesome and like a family away from home' vs 'Awesome'",
+   "drank_gold_rank": 22
+  },
+  {
+   "qid": "conv-43_q9",
+   "category": "multi-hop",
+   "question": "Which endorsement deals has John been offered?",
+   "gold": "basketball shoes and gear deal with Nike, potential sponsorship with Gatorade, Moxie a popular beverage company, outdoor gear company",
+   "latest_answer": "beverage company, outdoor gear company",
+   "latest_score": 0.4722222222222222,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c43-q9",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:17:20+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "list completeness",
+   "family_detail": "list completeness",
+   "note": "2 of 4 endorsement deals",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-43_q90",
+   "category": "single-hop",
+   "question": "What organization is John teaming up with for his charity work?",
+   "gold": "A local organization helping disadvantaged kids with sports and school",
+   "latest_answer": "a local organization that helps disadvantaged kids with sports and school",
+   "latest_score": 0.9411764705882353,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c43-q90",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T07:00:11+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-44_q121",
+   "category": "single-hop",
+   "question": "What is Andrew planning to do with Scout, Toby, and Buddy?",
+   "gold": "Take them to a nearby park",
+   "latest_answer": "Take the dogs to the groomer soon, and take Scout on a first trip with Toby and Buddy to a nearby park.",
+   "latest_score": 0.38095238095238093,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c44-q121",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:29:30+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "groomer plan + names appended vs 'take them to a nearby park'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-44_q14",
+   "category": "multi-hop",
+   "question": "What is something that Andrew really misses while working in the city?",
+   "gold": "being in nature",
+   "latest_answer": "The peacefulness of hiking.",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c44-q14",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:28:48+00:00"
+   },
+   "taxonomy": "paraphrase",
+   "fix_family": "paraphrase/natural-form",
+   "family_detail": "natural-form matching",
+   "note": "'peacefulness of hiking' vs 'being in nature'",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-44_q22",
+   "category": "temporal",
+   "question": "Where did Andrew go during the first weekend of August 2023?",
+   "gold": "camping with girlfriend",
+   "latest_answer": "Camping with his girlfriend and Toby.",
+   "latest_score": 0.7499999999999999,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg44-q22-a2",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:48:30+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold (wobble 0.75)",
+   "drank_gold_rank": 10
+  },
+  {
+   "qid": "conv-44_q41",
+   "category": "multi-hop",
+   "question": "What are the breeds of Audrey's dogs?",
+   "gold": "Mongrel mixed with Lab for Pepper and Panda. Mongrel mixed with Chihuahua for Precious and Pixie.",
+   "latest_answer": "Two Jack Russell mixes and two Chihuahua mixes, all mutts.",
+   "latest_score": 0.2857142857142857,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c44-q41",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:28:55+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "fact binding",
+   "note": "'Jack Russell mixes' vs 'Mongrel mixed with Lab'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-44_q44",
+   "category": "open-domain",
+   "question": "Which national park could Audrey and Andrew be referring to in their conversations?",
+   "gold": "Voyageurs National Park",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wc44-q44-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:44:32+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "open-world/dataset-limit",
+   "family_detail": "open-domain (dataset-limit)",
+   "note": "Voyageurs National Park inference",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-44_q47",
+   "category": "temporal",
+   "question": "How many months passed between Andrew adopting Buddy and Scout",
+   "gold": "one month",
+   "latest_answer": "About one month",
+   "latest_score": 0.8,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c44-q47-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:51:45+00:00"
+   },
+   "taxonomy": "temporal-form",
+   "fix_family": "temporal-form/date-form",
+   "family_detail": "date-form precedence",
+   "note": "'About one month' numeric-form wobble (0.8)",
+   "drank_gold_rank": 3
+  },
+  {
+   "qid": "conv-44_q68",
+   "category": "single-hop",
+   "question": "Why did Audrey sign up for a workshop about bonding with pets?",
+   "gold": "Strengthen the bond with her pets",
+   "latest_answer": "to learn how to train her dogs better",
+   "latest_score": 0.15384615384615385,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c44-q68",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:29:04+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "aspect binding",
+   "note": "'train dogs better' vs 'strengthen the bond'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-44_q73",
+   "category": "single-hop",
+   "question": "What challenge is Andrew facing in their search for a pet?",
+   "gold": "Finding a pet-friendly spot in the city",
+   "latest_answer": "finding a pet-friendly place to live",
+   "latest_score": 0.4000000000000001,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c44-q73-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:51:46+00:00"
+   },
+   "taxonomy": "paraphrase",
+   "fix_family": "paraphrase/natural-form",
+   "family_detail": "natural-form matching",
+   "note": "'pet-friendly place to live' vs 'pet-friendly spot in the city' (lexical gold)",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-44_q74",
+   "category": "single-hop",
+   "question": "How does Andrew feel about their search for a pet-friendly place?",
+   "gold": "Discouraged but determined",
+   "latest_answer": "Challenged, but he will keep searching.",
+   "latest_score": 0.2222222222222222,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c44-q74",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:29:14+00:00"
+   },
+   "taxonomy": "paraphrase",
+   "fix_family": "paraphrase/natural-form",
+   "family_detail": "natural-form matching",
+   "note": "'Challenged, but keep searching' vs 'Discouraged but determined'",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-44_q85",
+   "category": "single-hop",
+   "question": "What type of classes did Audrey start with her pups recently on 4 August, 2023?",
+   "gold": "Agility classes",
+   "latest_answer": "agility classes",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg44-q85-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:45:27+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-44_q9",
+   "category": "multi-hop",
+   "question": "What kind of classes or groups has Audrey joined to take better care of her dogs?",
+   "gold": "positive reinforcement training workshop to bond with pets, dog training course, agility training course, grooming course, dog-owners group",
+   "latest_answer": "dog owners group, agility classes, dog grooming course",
+   "latest_score": 0.4533333333333333,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c44-q9",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:28:49+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "list completeness",
+   "family_detail": "list completeness",
+   "note": "3 of 5 classes/groups",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-44_q92",
+   "category": "single-hop",
+   "question": "How does Audrey describe the new beds for her dogs?",
+   "gold": "Super cozy and comfy",
+   "latest_answer": "extra comfort, like a cloud for snuggling",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c44-q92",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:29:14+00:00"
+   },
+   "taxonomy": "paraphrase",
+   "fix_family": "paraphrase/natural-form",
+   "family_detail": "natural-form matching",
+   "note": "'extra comfort, like a cloud' vs 'Super cozy and comfy'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-47_q119",
+   "category": "single-hop",
+   "question": "What kind of programs are John's siblings making?",
+   "gold": "basic games and stories",
+   "latest_answer": "basic games and stories",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg47-q119-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:45:39+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-47_q138",
+   "category": "single-hop",
+   "question": "What inspired James to create his game?",
+   "gold": "Witcher 3",
+   "latest_answer": "The Witcher 3, with its amazing world and story.",
+   "latest_score": 0.4444444444444445,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg47-q138-a2",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:48:44+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "'The Witcher 3, with its amazing world and story' padding",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-47_q139",
+   "category": "single-hop",
+   "question": "What sparked James' passion for gaming when he was a kid?",
+   "gold": "Super Mario and The Legend of Zelda games",
+   "latest_answer": "Playing Super Mario and The Legend of Zelda on the Nintendo console that belonged to his mother and her army friend.",
+   "latest_score": 0.4347826086956522,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c47-q139-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:51:54+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "console provenance appended (0.435; FINAL9 fixed 0.571-0.632)",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-47_q142",
+   "category": "single-hop",
+   "question": "What was the purpose of the gaming tournament organized by John on 31 October, 2022?",
+   "gold": "To raise money for a children's hospital",
+   "latest_answer": "To raise money for a children's hospital.",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c47-q142-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:52:03+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 8
+  },
+  {
+   "qid": "conv-47_q147",
+   "category": "single-hop",
+   "question": "What did John suggest James practice before playing FIFA 23 together?",
+   "gold": "Control with a gamepad and timing",
+   "latest_answer": "FIFA 23",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c47-q147-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:52:06+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "aspect binding",
+   "note": "'FIFA 23' (the game) vs 'control with a gamepad and timing' (what to practice)",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-47_q21",
+   "category": "temporal",
+   "question": "When did John first organize a charity tournament with his friends?",
+   "gold": "May 7, 2022",
+   "latest_answer": "the day before 2022-05-08",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c47-q21-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:52:11+00:00"
+   },
+   "taxonomy": "ISO-leak",
+   "fix_family": "temporal-form/date-form",
+   "family_detail": "ISO ban enforcement",
+   "note": "'the day before 2022-05-08' vs 'May 7, 2022'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-47_q23",
+   "category": "temporal",
+   "question": "When will John start his new job?",
+   "gold": "In July, 2022",
+   "latest_answer": "the month after 13 June 2022",
+   "latest_score": 0.25,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c47-q23-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:53:06+00:00"
+   },
+   "taxonomy": "temporal-form",
+   "fix_family": "temporal-form/date-form",
+   "family_detail": "month-span resolution",
+   "note": "'the month after 13 June 2022' vs gold 'In July, 2022'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-47_q27",
+   "category": "multi-hop",
+   "question": "What kind of classes has James joined?",
+   "gold": "game design course, cooking classes",
+   "latest_answer": "A cooking class.",
+   "latest_score": 0.5,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c47-q27-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:52:20+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "list completeness",
+   "family_detail": "list completeness",
+   "note": "1 of 2 classes (0.5)",
+   "drank_gold_rank": 22
+  },
+  {
+   "qid": "conv-47_q34",
+   "category": "multi-hop",
+   "question": "Which countries did James visit in July 2022?",
+   "gold": "Canada, Greenland",
+   "latest_answer": "Canada and Nuuk.",
+   "latest_score": 0.3333333333333333,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg47-q34-a2",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:48:29+00:00"
+   },
+   "taxonomy": "paraphrase",
+   "fix_family": "paraphrase/natural-form",
+   "family_detail": "natural-form matching (entity)",
+   "note": "'Nuuk' vs 'Greenland' naming",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-47_q43",
+   "category": "temporal",
+   "question": "When did John plan his next meeting with his siblings?",
+   "gold": "In September, 2022",
+   "latest_answer": "the month after 21 August 2022",
+   "latest_score": 0.25,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c47-q43",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:29:53+00:00"
+   },
+   "taxonomy": "temporal-form",
+   "fix_family": "temporal-form/date-form",
+   "family_detail": "month-span resolution",
+   "note": "'the month after 21 August 2022' vs 'In September, 2022'",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-47_q49",
+   "category": "multi-hop",
+   "question": "What gaming equipments did John buy or refurbish?",
+   "gold": "Sennheiser headphones, Logitech mouse, gaming desk",
+   "latest_answer": "Sennheiser headphones, Logitech mouse, gaming desk",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c47-q49-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:52:35+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-47_q52",
+   "category": "temporal",
+   "question": "When did John start working on his 2D Adventure mobile game?",
+   "gold": "approximately summer of 2022",
+   "latest_answer": "the few months before 20 September 2022",
+   "latest_score": 0.2,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c47-q52",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:29:59+00:00"
+   },
+   "taxonomy": "temporal-form",
+   "fix_family": "temporal-form/date-form",
+   "family_detail": "approximation granularity",
+   "note": "'the few months before 20 Sept 2022' vs 'approximately summer of 2022'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-48_q101",
+   "category": "single-hop",
+   "question": "When did Jolene buy her pet snake?",
+   "gold": "A year ago",
+   "latest_answer": "early 2022",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c48-q101",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:33:04+00:00"
+   },
+   "taxonomy": "temporal-form",
+   "fix_family": "temporal-form/date-form",
+   "family_detail": "date-form precedence",
+   "note": "'early 2022' vs relative gold 'A year ago'",
+   "drank_gold_rank": 9
+  },
+  {
+   "qid": "conv-48_q102",
+   "category": "single-hop",
+   "question": "What project was Jolene working on as of 1 February, 2023?",
+   "gold": "Robotics project",
+   "latest_answer": "A huge robotics project assigned by her engineering professor",
+   "latest_score": 0.4,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-rc-c48-q102",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:34:39+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "'huge robotics project assigned by her engineering professor'",
+   "drank_gold_rank": 24
+  },
+  {
+   "qid": "conv-48_q124",
+   "category": "single-hop",
+   "question": "How does Jolene plan to pursue her dream of learning to surf?",
+   "gold": "gathering information, watching videos, getting a beginners' guide",
+   "latest_answer": "Gathering information, watching videos, getting a beginners' guide to surfing, and finding the right time and place to get a lesson.",
+   "latest_score": 0.6086956521739131,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c48-q124-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:52:42+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-48_q14",
+   "category": "multi-hop",
+   "question": "What were Deborah's mother's hobbies?",
+   "gold": "reading, traveling, art, cooking",
+   "latest_answer": "Reading, cooking, art, flowers.",
+   "latest_score": 0.75,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg48-q14-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:46:23+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-48_q16",
+   "category": "single-hop",
+   "question": "What are the names of Jolene's snakes?",
+   "gold": "Susie, Seraphim",
+   "latest_answer": "Susie, Seraphim",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg48-q16-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:45:58+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold",
+   "drank_gold_rank": 12
+  },
+  {
+   "qid": "conv-48_q162",
+   "category": "single-hop",
+   "question": "What type of projects is Jolene interested in getting involved in the future?",
+   "gold": "Sustainable initiatives and developing innovative solutions for environmental issues",
+   "latest_answer": "Solar renewable energy, clean water access, and green tech for disadvantaged areas.",
+   "latest_score": 0.10526315789473685,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c48-q162",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:33:55+00:00"
+   },
+   "taxonomy": "paraphrase",
+   "fix_family": "paraphrase/natural-form",
+   "family_detail": "abstraction-level matching",
+   "note": "specific instances vs general categories",
+   "drank_gold_rank": 3
+  },
+  {
+   "qid": "conv-48_q172",
+   "category": "single-hop",
+   "question": "What was one of Jolene's favorite games to play with her mom on the nintendo wii game system?",
+   "gold": "Monster Hunter: World",
+   "latest_answer": "Monster Hunter: World",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c48-q172-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:53:16+00:00"
+   },
+   "taxonomy": "payload-glitch",
+   "fix_family": "payload/length-stop",
+   "family_detail": "payload hygiene (code)",
+   "note": "d1 echoed <memory_data> JSON (0.054); d2 1.0",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-48_q173",
+   "category": "single-hop",
+   "question": "What course did Jolene sign up for on 6 September 2023?",
+   "gold": "meditation",
+   "latest_answer": "A meditation course at a retreat near a lake.",
+   "latest_score": 0.2857142857142857,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c48-q173",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:33:42+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "'at a retreat near a lake' appended",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-48_q181",
+   "category": "single-hop",
+   "question": "Where did Deborah get married?",
+   "gold": "on the beach",
+   "latest_answer": "At the beach where she discovered her love for surfing",
+   "latest_score": 0.1818181818181818,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c48-q181",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:33:44+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "'where she discovered her love for surfing' appended",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-48_q35",
+   "category": "temporal",
+   "question": "When did Deborah go for her first morning jog in a nearby park?",
+   "gold": "24 February, 2023",
+   "latest_answer": "the day before 25 February 2023",
+   "latest_score": 0.5,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c48-q35-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:53:13+00:00"
+   },
+   "taxonomy": "temporal-form",
+   "fix_family": "temporal-form/date-form",
+   "family_detail": "date-form precedence",
+   "note": "anchored-relative vs calendar (0.5)",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-48_q58",
+   "category": "single-hop",
+   "question": "What games does Jolene recommend for Deborah?",
+   "gold": "Zelda BOTW for Switch , Animal Crossing: New Horizons, Overcooked 2",
+   "latest_answer": "Zelda: Breath of the Wild, Animal Crossing: New Horizons, Overcooked 2",
+   "latest_score": 0.7,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "formcons",
+    "run_id": "fc9z9-c48-q58",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T07:00:18+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-48_q65",
+   "category": "temporal",
+   "question": "Which country was Jolene located in during the last week of August 2023?",
+   "gold": "Brazil",
+   "latest_answer": "Brazil",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg48-q65-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:46:41+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold",
+   "drank_gold_rank": 18
+  },
+  {
+   "qid": "conv-48_q69",
+   "category": "single-hop",
+   "question": "Have Deborah and Jolene been to Rio de Janeiro?",
+   "gold": "yes",
+   "latest_answer": "Both have: Deborah around 2020, Jolene in August 2023.",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c48-q69",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:32:52+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "yes/no form",
+   "note": "dates appended to bare 'yes'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-48_q81",
+   "category": "temporal",
+   "question": "When did the Deboran and Jolene agree to go surfing?",
+   "gold": "in October 2023",
+   "latest_answer": "September 17, 2023",
+   "latest_score": 0.3333333333333333,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-rc-c48-q81",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:34:40+00:00"
+   },
+   "taxonomy": "temporal-form",
+   "fix_family": "temporal-form/date-form",
+   "family_detail": "date selection",
+   "note": "'September 17, 2023' vs 'in October 2023'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-48_q82",
+   "category": "multi-hop",
+   "question": "Which locations does Deborah practice her yoga at?",
+   "gold": "at her mother's old home, park, yoga studio, beach",
+   "latest_answer": "the park near her house, the beach, her mother's old home, a local care home, a yoga retreat near her mom's place",
+   "latest_score": 0.6347222222222222,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c48-q82-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:53:49+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "list completeness",
+   "family_detail": "list completeness",
+   "note": "4 of 5 + extra (0.635)",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-49_q103",
+   "category": "single-hop",
+   "question": "What kind of recipe did Evan request from Sam on 19 August, 2023?",
+   "gold": "recipes with more vegetables",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writefull",
+    "run_id": "wf49-q103-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T13:17:18+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "abstention/sufficiency",
+   "family_detail": "abstention policy",
+   "note": "'not mentioned' vs 'recipes with more vegetables' (rank 14)",
+   "drank_gold_rank": null
+  },
+  {
+   "qid": "conv-49_q128",
+   "category": "single-hop",
+   "question": "How does Evan describe the island he grew up on?",
+   "gold": "A happy place",
+   "latest_answer": "His happy place \u2014 it shaped him, always holds a special place in his heart, feels peaceful and serene, and is \"a little slice of paradise.\"",
+   "latest_score": 0.16666666666666669,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writefull",
+    "run_id": "wf49-q128-ing",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T13:10:42+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "4-clause sentiment expansion vs 'A happy place'",
+   "drank_gold_rank": null
+  },
+  {
+   "qid": "conv-49_q144",
+   "category": "single-hop",
+   "question": "What did Evan share with Sam after their hiking trip?",
+   "gold": "a photo of a man standing on a rock looking out over a valley",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writefull",
+    "run_id": "wf49-q144-a2",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T13:23:32+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "event binding (person-scoped photo)",
+   "note": "Sam's trip photo note vs Evan's photo question",
+   "drank_gold_rank": null
+  },
+  {
+   "qid": "conv-49_q18",
+   "category": "multi-hop",
+   "question": "What kind of healthy food suggestions has Evan given to Sam?",
+   "gold": "flavored seltzer water, dark chocolate with high cocoa content, air-popped popcorn and fruit, veggies, healthy sandwich snacks, energy balls, grilled chicken salad with avocado",
+   "latest_answer": "flavored seltzer water, dark chocolate, cookies, energy balls",
+   "latest_score": 0.35714285714285715,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writefull",
+    "run_id": "wf49-q18-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T13:16:46+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "list completeness",
+   "family_detail": "list completeness",
+   "note": "4 of 7 suggestions + wrong item (cookies)",
+   "drank_gold_rank": null
+  },
+  {
+   "qid": "conv-49_q26",
+   "category": "multi-hop",
+   "question": "What motivates Evan to take care of his health?",
+   "gold": "family, fitness tracker, thirst for adventure on interesting hikes",
+   "latest_answer": "his family",
+   "latest_score": 0.2222222222222222,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writefull",
+    "run_id": "wf49-q26-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T13:17:15+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "list completeness",
+   "family_detail": "list completeness",
+   "note": "1 of 3 motivations merged",
+   "drank_gold_rank": null
+  },
+  {
+   "qid": "conv-49_q46",
+   "category": "open-domain",
+   "question": "How do Evan and Sam use creative outlets to cope with life's challenges?",
+   "gold": "Evan and Sam use creative activities, like painting and writing, as therapeutic tools to express themselves and cope with stress.",
+   "latest_answer": "Sam uses painting as a calming hobby to relax and express himself, alongside drawing and writing; Evan paints what he's feeling - good memories or places he wants to go - expressing himself through ar",
+   "latest_score": 0.33333333333333337,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writefull",
+    "run_id": "wf49-q46-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T13:17:30+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "open-world/dataset-limit",
+   "family_detail": "open-domain synthesis",
+   "note": "partial synthesis of coping mechanisms",
+   "drank_gold_rank": null
+  },
+  {
+   "qid": "conv-50_q10",
+   "category": "temporal",
+   "question": "When did Calvin's place get flooded in Tokyo?",
+   "gold": "On a week before 16 May, 2023",
+   "latest_answer": "around 9 May 2023",
+   "latest_score": 0.4,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg50-q10-a2",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:48:40+00:00"
+   },
+   "taxonomy": "temporal-form",
+   "fix_family": "temporal-form/date-form",
+   "family_detail": "date-form precedence",
+   "note": "'around 9 May 2023' vs 'a week before 16 May 2023'",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-50_q135",
+   "category": "single-hop",
+   "question": "What does Calvin believe makes an artist create something extraordinary?",
+   "gold": "Paying attention to small details",
+   "latest_answer": "Paying attention to small details.",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg50-q135-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:46:48+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-50_q137",
+   "category": "single-hop",
+   "question": "When did Calvin first get interested in cars?",
+   "gold": "at an early age",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c50-q137",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:22:11+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "abstention/sufficiency",
+   "family_detail": "abstention policy",
+   "note": "'not mentioned' vs 'at an early age'",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-50_q143",
+   "category": "single-hop",
+   "question": "What did Dave recently start a blog about?",
+   "gold": "Car mods",
+   "latest_answer": "car mods",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wcg50-q143-a1",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:46:30+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "gate hold",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-50_q147",
+   "category": "single-hop",
+   "question": "What tools does Calvin use to boost his motivation for music?",
+   "gold": "Writing lyrics and notes",
+   "latest_answer": "Staying up-to-date on world events.",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c50-q147",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:22:53+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "fact binding",
+   "note": "'world events' vs 'writing lyrics and notes'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-50_q155",
+   "category": "single-hop",
+   "question": "What did Calvin discuss with the cool artist he met at the gala?",
+   "gold": "Music and art",
+   "latest_answer": "His favorite artists and how the power of music connects people.",
+   "latest_score": 0.1818181818181818,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c50-q155",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:22:18+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "favorite-artists detail vs 'Music and art'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-50_q16",
+   "category": "temporal",
+   "question": "When did Dave take a trip to mountainous regions?",
+   "gold": "July 2023",
+   "latest_answer": "the month after 9 June 2023",
+   "latest_score": 0.28571428571428575,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c50-q16",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:20:12+00:00"
+   },
+   "taxonomy": "temporal-form",
+   "fix_family": "temporal-form/date-form",
+   "family_detail": "month-span resolution",
+   "note": "'the month after 9 June 2023' vs 'July 2023'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-50_q24",
+   "category": "multi-hop",
+   "question": "Can Dave work with engines?",
+   "gold": "yes",
+   "latest_answer": "Yes.",
+   "latest_score": 1.0,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c50-q24-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:54:36+00:00"
+   },
+   "taxonomy": "-",
+   "fix_family": "fixed/flip-pending",
+   "family_detail": "-",
+   "note": "STABLE; flip-pending",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-50_q48",
+   "category": "temporal",
+   "question": "What was Dave doing in the first weekend of October 2023?",
+   "gold": "attending a car show",
+   "latest_answer": "Went to a car show and got to mess with car mods",
+   "latest_score": 0.30769230769230765,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c50-q48",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:20:20+00:00"
+   },
+   "taxonomy": "over-elaboration",
+   "fix_family": "brevity/over-elaboration",
+   "family_detail": "brevity",
+   "note": "'+ got to mess with car mods' appended",
+   "drank_gold_rank": 8
+  },
+  {
+   "qid": "conv-50_q5",
+   "category": "multi-hop",
+   "question": "What are Dave's dreams?",
+   "gold": "open a car maintenance shop, work on classic cars, build a custom car from scratch",
+   "latest_answer": "visiting Tokyo, building a custom car, working on classic cars",
+   "latest_score": 0.6785714285714285,
+   "latest_draw": "pass",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c50-q5-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:54:40+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "list completeness",
+   "family_detail": "list completeness",
+   "note": "3 of 3 + wrong item 'visiting Tokyo' (0.679)",
+   "drank_gold_rank": 8
+  },
+  {
+   "qid": "conv-50_q61",
+   "category": "temporal",
+   "question": "How long did Dave's work on the Ford Mustang take?",
+   "gold": "nearly two months",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "writecamp",
+    "run_id": "wc50-q61-a2",
+    "variant": "FINAL9",
+    "ts": "2026-10-14T09:56:24+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "abstention/sufficiency",
+   "family_detail": "abstention policy (duration arithmetic)",
+   "note": "'not mentioned' vs computed 'nearly two months'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-50_q67",
+   "category": "temporal",
+   "question": "Where was Calvin located in the last week of October 2023?",
+   "gold": "Tokyo",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c50-q67",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:21:38+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "abstention/sufficiency",
+   "family_detail": "abstention policy",
+   "note": "'not mentioned' vs 'Tokyo'",
+   "drank_gold_rank": 5
+  },
+  {
+   "qid": "conv-50_q85",
+   "category": "single-hop",
+   "question": "What is Dave doing to relax on weekends?",
+   "gold": "exploring parks",
+   "latest_answer": "Listening to vinyl while working on his car.",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c50-q85",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:20:44+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "fact binding",
+   "note": "'vinyl while working on his car' vs 'exploring parks'",
+   "drank_gold_rank": 2
+  },
+  {
+   "qid": "conv-50_q87",
+   "category": "single-hop",
+   "question": "What was Calvin excited to do after getting his car fixed on 7 July, 2023?",
+   "gold": "get back on the road",
+   "latest_answer": "drive and show off the car again",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c50-q87",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:20:44+00:00"
+   },
+   "taxonomy": "paraphrase",
+   "fix_family": "paraphrase/natural-form",
+   "family_detail": "natural-form matching",
+   "note": "'drive and show off the car again' vs 'get back on the road'",
+   "drank_gold_rank": 3
+  },
+  {
+   "qid": "conv-50_q88",
+   "category": "single-hop",
+   "question": "What did Calvin and his friends arrange for in the park?",
+   "gold": "regular walks together",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c50-q88",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:22:06+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "abstention/sufficiency",
+   "family_detail": "abstention policy",
+   "note": "'not mentioned' vs 'regular walks together'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-50_q89",
+   "category": "single-hop",
+   "question": "What kind of music has Calvin been creating lately?",
+   "gold": "experimenting with different genres",
+   "latest_answer": "Music collaborations with Japanese artists.",
+   "latest_score": 0.22222222222222224,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locostab",
+    "run_id": "lstb-c50-q89-d2",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:55:01+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "binding (event/aspect/fact)",
+   "family_detail": "fact binding (variance)",
+   "note": "'collaborations with Japanese artists' vs 'experimenting with genres' (UNSTABLE)",
+   "drank_gold_rank": 3
+  },
+  {
+   "qid": "conv-50_q90",
+   "category": "single-hop",
+   "question": "How does Calvin describe his process of adding electronic elements to his songs?",
+   "gold": "gives them a fresh vibe",
+   "latest_answer": "An exciting process of self-discovery and growth",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c50-q90",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:21:46+00:00"
+   },
+   "taxonomy": "paraphrase",
+   "fix_family": "paraphrase/natural-form",
+   "family_detail": "natural-form matching",
+   "note": "'self-discovery and growth' vs 'fresh vibe'",
+   "drank_gold_rank": 1
+  },
+  {
+   "qid": "conv-50_q97",
+   "category": "single-hop",
+   "question": "What does Dave say is important for making his custom cars unique?",
+   "gold": "attention to small details",
+   "latest_answer": "not mentioned",
+   "latest_score": 0.0,
+   "latest_draw": "fail",
+   "latest_attempt": {
+    "worker": "locosweep",
+    "run_id": "lsw-c50-q97",
+    "variant": "FINAL7",
+    "ts": "2026-10-14T05:21:55+00:00"
+   },
+   "taxonomy": "wrong-content",
+   "fix_family": "abstention/sufficiency",
+   "family_detail": "abstention policy",
+   "note": "'not mentioned' vs 'attention to small details'",
+   "drank_gold_rank": 4
+  }
+ ]
+}
