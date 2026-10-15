@@ -1,0 +1,133 @@
+{
+  "schema": "c04-temporal-inputs-selection/v1",
+  "prepared_at": "2026-10-10T07:35:04+00:00",
+  "benchmark": "locomo",
+  "split": "dev",
+  "purpose": "Prepare the approved temporal-memory benchmark inputs: one dev conversation environment, full history, temporal category-2 dev questions plus fixed non-temporal controls, two fresh capture manifests differing only in settings.evidenceTimestamps.",
+  "dev_split": {
+    "source": "existing LoCoMo DEV split (300 questions, 10 environments, seed 20261007)",
+    "regenerated_with_current_converter": true,
+    "qid_set_matches_existing_dev_split": true,
+    "note": "Dev question rows were regenerated with the current repo-continuation converter (optimus-locomo-conversion/2.0.0) into c04-temporal-inputs/common/locomo; the selected qid set was verified identical to the existing dev split qids. The converter's full planning manifest under common/locomo/full/ contains gold and was never read for selection.",
+    "category_labels_current_converter": {
+      "1": "multi-hop",
+      "2": "temporal",
+      "3": "open-domain",
+      "4": "single-hop",
+      "5": "adversarial"
+    },
+    "temporal_category": "2"
+  },
+  "selection_blindness": {
+    "env_selected_before_outcome_inspection": true,
+    "questions_selected_before_outcome_inspection": true,
+    "rule": "Env and question selection use only stable SHA-256 hashes of ids and dev-split metadata (category counts). No scores, answers, gold, evidence, or run outcomes were read or used at any selection step.",
+    "heldout_questions_or_gold_read": false
+  },
+  "env_selection": {
+    "rule": "Order the 10 dev environment ids by SHA256('<env_seed>:<env_id>') ascending, ties by env_id; take rank 1.",
+    "env_seed": "c04-temporal-inputs-env-v1",
+    "hashes": {
+      "conv-26": "ffa25eb5c3e165288ce3f5b701b9f816907e0d433c4cafbd09d6608567792ece",
+      "conv-30": "de4de0060a0b44e4a3b92e8147e567f4569b448820fcf283af8f0192bef4207e",
+      "conv-41": "0dda56b0700fcd5f64698bc241c09d2141e413ab7f2262fc95271ef629bce5b8",
+      "conv-42": "53d49a1230fa2b2650b35528dd51540267ba15f6863f4132fd729ecab63a4ed1",
+      "conv-43": "6e88eaef32605d31f0bbcdf326e55ef99821edf7115d538003b3cf4a14b15c23",
+      "conv-44": "20072ff6322b107bc65881d46c0c34f81c817201f59ed8b82ae4d5dbf68e1fbe",
+      "conv-47": "d932d5f9389d2f8a96b2f6842fa868aa7b170d5eff0e357ac78a420c86a4bb28",
+      "conv-48": "24aee2842f15b79d261867a88b483164f542e6b12396c1a64dbf902e43b46283",
+      "conv-49": "6fc6a5faa2f26d5f6a858557f4c1f9c3d1857e03e2b61c22b6bf6460ebc10f7e",
+      "conv-50": "6d44d5fc8ae410f18c4addb08445ea9985925cd6ac0714cb78cc2c240fbefa6b"
+    },
+    "ranking": [
+      "conv-41",
+      "conv-44",
+      "conv-48",
+      "conv-42",
+      "conv-50",
+      "conv-43",
+      "conv-49",
+      "conv-47",
+      "conv-30",
+      "conv-26"
+    ],
+    "chosen_env": "conv-41",
+    "chosen_env_rank": 1
+  },
+  "question_selection": {
+    "temporal": {
+      "rule": "From the chosen env's dev questions with category=='2' (temporal), order by SHA256('<q_seed>:<qid>') ascending, ties by qid; take the first <=8.",
+      "q_seed": "c04-temporal-q-v1",
+      "available": 4,
+      "bound": 8,
+      "selected": [
+        "conv-41_q91",
+        "conv-41_q20",
+        "conv-41_q46",
+        "conv-41_q54"
+      ],
+      "selection_hashes": {
+        "conv-41_q91": "167bec70a57373ff9aca49a95e7f8e9b967f2c66eb622a4855db1410c7956c4e",
+        "conv-41_q20": "60707e7f6f3d526be0185f9702190ebf39a9d88bdd7cdbfcc90071bfa51ebd2f",
+        "conv-41_q46": "b9d654e6d040618736a4e95a4744581c9e1cd4872f9cea5e0ec960e69fe2fbcb",
+        "conv-41_q54": "d8db62d3a56a176155e99e4da323e85933bed74587de640a083185f76a772e0a"
+      }
+    },
+    "controls": {
+      "rule": "From the chosen env's remaining dev questions (category!='2'), order by SHA256('<control_seed>:<qid>') ascending, ties by qid; take the first <=2.",
+      "control_seed": "c04-temporal-control-v1",
+      "available": 25,
+      "bound": 2,
+      "selected": [
+        "conv-41_q170",
+        "conv-41_q77"
+      ],
+      "selection_hashes": {
+        "conv-41_q170": "010916d4ce536c9ecd7f26d8cc63f6a7096a3cebbb000a5b266284be04903c9c",
+        "conv-41_q77": "116ad21f6360d9fe1bd51bb0a2ffb86256c7324d39e7927af4bb132b369918ce"
+      },
+      "categories": {
+        "conv-41_q170": "5",
+        "conv-41_q77": "4"
+      }
+    },
+    "total_per_arm": 6
+  },
+  "arms": {
+    "tsoff": {
+      "manifest": "manifests/locomo-c04-tsoff-s0p1.json",
+      "run_id": "locomo_dev_c04_temporal_tsoff_s0p1",
+      "variant": "c04tsoff",
+      "settings.evidenceTimestamps": false
+    },
+    "tson": {
+      "manifest": "manifests/locomo-c04-tson-s0p1.json",
+      "run_id": "locomo_dev_c04_temporal_tson_s0p1",
+      "variant": "c04tson",
+      "settings.evidenceTimestamps": true
+    },
+    "only_difference": "settings.evidenceTimestamps (false vs true). Env (verbatim full history, roles, event.ts), question declarations, prompts (answerInstruction/importInstructions), all other settings, and model dgx-glm53/glm-5.3 are byte-identical between arms. run_id, variant and output_dir differ as run identity only.",
+    "capture": {
+      "captureProtocol": "optimus-memory-capture/temporal-authority/1.0.0",
+      "role_policy": "driver SourceAuthorityV1: locomo user/assistant events both imported as user evidence (identical both arms)",
+      "timestamp_source": "converter event.ts only; no synthetic clock; naive ISO preserved as UTC",
+      "stores": "fresh independent capture stores per arm; no reuse of existing stores/jobs"
+    }
+  },
+  "cost_bounds": {
+    "sessions_ingested_per_arm": 32,
+    "events_per_arm": 663,
+    "extraction_chunks_planned": {
+      "tsoff": 64,
+      "tson": 68
+    },
+    "extraction_chunk_floor": 32,
+    "answer_calls_per_arm": 6,
+    "preflight_calls_per_arm": 1,
+    "chunk_budget_chars": 8000,
+    "estimator": "Python replication of driver write_session_files + jobs.rs import chunk packing; validated exactly against the historical conv-41 run (33 chunks at 15000, legacy undated) in campaign runs/locomo/s2",
+    "gate": "<=20 planned extraction chunks/arm",
+    "gate_status": "BLOCKED",
+    "blocker": "conv-41 needs >=32 extraction chunks/arm (one import job per session, >=1 chunk per job) and 64/68 at the baseline 8000-char chunk budget. The <=20 gate cannot be met by conv-41 at any chunk budget. No replacement env was chosen; see README for parent options."
+  }
+}

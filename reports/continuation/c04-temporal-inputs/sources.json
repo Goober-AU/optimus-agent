@@ -1,0 +1,84 @@
+{
+  "schema": "c04-temporal-inputs-sources/v1",
+  "raw_input": {
+    "data/locomo10.json": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4"
+  },
+  "regenerated_common_outputs": {
+    "common/locomo/env_conv-41.json": "c70ab55a112121aa07665ddf5265d604841d0b509cd1dc34b56d10ae692bb72d",
+    "common/locomo/qs_conv-41.jsonl": "4f41a88f90f085314827bb0f000dfa4e7eefe13c4cacceeb340ab49005a223a6",
+    "common/locomo/manifest.json": "241c16b734a4c554a15824d84edf1ce724f04d90f5d760437f8dbd501c9335d9",
+    "common/locomo/full/manifest.json (private planning manifest, never read for selection)": "0cc4fd751adefec1e997f21ac10ebf262a666f9b8d1d45fa717fcda88d3d07e6"
+  },
+  "evaluator_identity": {
+    "version": "optimus-memory-evaluation/2.0.0",
+    "question_protocols": {
+      "locomo": "optimus-locomo-conversion/2.0.0",
+      "locomo_plus": "optimus-normalized-cues/1.0.0",
+      "longmemeval": "optimus-longmemeval-adapter/2.0.0",
+      "lme_v2": "optimus-lme-v2-adapter/2.0.0"
+    },
+    "scoring_protocols": {
+      "locomo": "optimus-local-scoring/1.0.0",
+      "locomo_plus": "optimus-local-scoring/1.0.0",
+      "longmemeval": "optimus-longmemeval-dgx-port/2.0.0",
+      "lme_v2": "optimus-lme-v2-dgx-port/2.0.0"
+    },
+    "source_sha256": {
+      "protocol.py": "09bc0778d0e4de414eedbdbb00c512a13e97cca702f00bf488a3c97b4e07f840",
+      "evidence.py": "fe04579799dd6292854d1ff83521f15a04625b2a7050129bba52cb7b20f46b0f",
+      "io.py": "bdcecf95b0639a8e20bd28555dbf86cb2525ff98dedade4bad5430289f724ce2",
+      "eval/evaluate.py": "cbdf6407c92aa9a337b3edcefaeddf4a8b2afd64580a5bbfe7e42a5046f9823a",
+      "eval/deterministic.py": "896d75adbf194509264f3d9b20dad58ce06fba263a40048c425ee7a1fd27560b",
+      "eval/porter.py": "21bd50dc9d08bd4ae87029e346bd16e58558fb3097b7ce4a6ae0fb0350031884",
+      "eval/judges.py": "cd0770427045e95a3b5f8d388b095529a5a9d7d8576d48eabdddd69c48941ae1",
+      "eval/local_scoring.py": "0e5d64df9e01064fa22755675b82314a2623fb63b20151ac68074053d160d4ba",
+      "eval/local_adapters.py": "b8a67036b832d1c72024936bf95f145a90fcadf4d5d4083bc4899c69aa3e5364",
+      "converters/common.py": "6346cb73e135a618c32cd57d515241adcf14d42e7a2c6a9b20dd637bc3e9602a",
+      "converters/locomo.py": "dc38b9ec42dd06719a5e93308187346faafbbde28ddf134437e6780ee95633f3",
+      "converters/locomo_plus.py": "6d2ced0108ff9ed81bc873b6e24b0cc37e367d17da28d49febe8a754da7617d9",
+      "converters/longmemeval.py": "d762d653d16e3db2807c539c15875123131580389c073a57df269d08d49bf844",
+      "converters/lme_v2.py": "869cccaa208b51a3ee14d0342e385d63003c0896fc072ae8f670d5e591a580b5"
+    },
+    "judge_settings": {
+      "provider": "dgx-glm53",
+      "model": "glm-5.3",
+      "jev": false,
+      "longmemeval": {
+        "temperature": 0,
+        "max_tokens": 2048
+      },
+      "locomo_plus": {
+        "temperature": 0,
+        "max_tokens": 512
+      },
+      "lme_v2": {
+        "temperature": null,
+        "max_tokens": 4096
+      }
+    },
+    "sha256": "6e841d945880686b31da807835c1077f91404ef049d15fd6ec22e71ddd2b620f"
+  },
+  "driver_source": {
+    "crates/pi-coding-agent/examples/memory_bench.rs": "9ab215d92ea737c997341ab351e6618f4bedfb5dcaf40a925f840d2a15c5b0e7"
+  },
+  "temporal_authority_patch_receipt": {
+    "path": "../../reports/continuation/temporal-authority-applied.json (campaign)",
+    "sha256": "280d193941aaef5dca8e54209bc8eccab615d93daf15bbc219dc0f7aaa65ce22",
+    "patch_sha256": "5d011644372206f54ca3922a21b8e1943afd44d40be519252859d312da3c96fd",
+    "all_pinned_files_match_repo": true
+  },
+  "artifacts": {
+    "manifests/locomo-c04-tsoff-s0p1.json": "c815c53420a11152542f7d80d20c6f135a4dbb1750036a960b985a291d8e4b94",
+    "manifests/locomo-c04-tson-s0p1.json": "b283cf13ae576693c22d596cbd8503891ca1af63ea9286735aefd7a1b415636a",
+    "declarations/locomo-c04-model-questions.jsonl": "b8c6955dc290db655da4c2a9c46a95e2955be61020f17c293ea56c7efe61bfa2",
+    "scoring/qs_conv-41.jsonl (private)": "a4bbda65d340629de482c7d725df2b5021cdb917bde89684cb992987bee57708",
+    "selection.json": "1e7f6bc35e0afbaea65df45bf4e6b89b49650592b9de5a1f0c89d67666c60e64"
+  },
+  "commands_used": [
+    "bench/.venv/Scripts/python.exe -B -m bench.converters.run_converters --family locomo --data-root <campaign>/data --out-dir <c04>/common/locomo",
+    "bench/.venv/Scripts/python.exe -B -m bench.prepare_questions --bench locomo --qs-dir <c04>/scoring --out <c04>/declarations/locomo-c04-model-questions.jsonl",
+    "bench/.venv/Scripts/python.exe -B <c04>/validation.py",
+    "bench/.venv/Scripts/python.exe -B -c 'from bench.protocol import evaluator_identity' (offline identity probe)"
+  ],
+  "python": "bench/.venv/Scripts/python.exe (3.11.15), TEMP/TMP/TMPDIR redirected to <campaign>/tmp-continuation"
+}
