@@ -367,7 +367,7 @@ fn matching_status_repeat_is_a_plain_duplicate() {
     first.verification = Some(verification_record("The build passes", verification::PASS));
     assert_eq!(pruner.classify(&first), PruneDecision::Deliver);
 
-    let mut repeat = {
+    let repeat = {
         let mut m = first.clone();
         m.message_id = Some("m2".to_string());
         m.findings[0].statement = "the build PASSES".to_string();
