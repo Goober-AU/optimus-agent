@@ -32,9 +32,10 @@ Statuses: NEW / REPRODUCED / ROOT_CAUSED / FIX_IN_PROGRESS / FIXED / VERIFIED / 
 - Verification tests: `contract::tests::index_gaps_are_rejected_not_silently_truncated`
   (F-gap and E-gap both rejected); worker A's adversarial suite stages
   matching cases.
-- Regression results: pending the shared-tree occ suite run (blocked on
-  concurrent worker files mid-iteration, then run).
-- Fix commit: (recorded after verification)
+- Regression results: core::occ suite 178 passed, 0 failed after the fix
+  (worker A's gap tests stayed active and assert the new error text);
+  fidelity suite t05 pins the rejecting behavior.
+- Fix commit: cc1ec0870
 
 ## BASELINE-001 — Windows test-env failures on clean main
 

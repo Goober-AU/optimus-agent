@@ -934,11 +934,10 @@ fn t04_fault_injection_never_silently_passes() {
 
         // Duplicates stay valid Occ1Messages under the standard dialect
         // for kinds whose required fields the contract encoder emits.
-        // Frozen-foundation note: Occ1Dialect::standard() requires GOAL, REF,
-        // WANT or WHY for TASK, ACK, CORRECTION, REQUEST_DETAIL and BLOCKED,
-        // none of which AgentCommMessage::to_occ1 ever emits, so dialect
-        // validation of contract-encoded messages of those kinds fails.
-        // Reported to the parent; not worked around here.
+        // BUG-002 fixed the misalignment this note used to describe: the
+        // standard dialect now mirrors the contract encoder (TASK/KIND/
+        // STATUS plus E1 for EVIDENCE), so contract-encoded messages of
+        // every kind validate.
         if matches!(message.kind.as_str(), "PROGRESS" | "RESULT" | "CANCELLED")
             || (message.kind == "EVIDENCE" && !message.evidence.is_empty())
         {
