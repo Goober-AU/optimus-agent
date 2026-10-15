@@ -1,0 +1,91 @@
+{
+  "gate": "lmev2-full-env-dev5",
+  "ts": "2026-10-15T07:50:09.996934",
+  "store": {
+    "cache": "reports/continuation/iteration4/ql-typeb-cache/web--46c8aec059fe9cec",
+    "project": "project_ead60b3acb4cc976961fd654",
+    "memory_entries": 1916,
+    "raw_shard_entries": 1951,
+    "cross_shard_dupes": 35,
+    "history_import_jobs": 100,
+    "harness_state_bytes": 21441301,
+    "capture_axtree_max_chars": 40000
+  },
+  "ingest": {
+    "sessions": 100,
+    "shards": {
+      "s1": 34,
+      "s2": 33,
+      "s3": 23,
+      "s3a": 1,
+      "s3b": 1,
+      "s3a2": 4,
+      "s3b2": 1,
+      "s3b3": 3
+    },
+    "entries_per_shard": {
+      "s1": 675,
+      "s2": 298,
+      "s3": 600,
+      "s3a": 71,
+      "s3b": 92,
+      "s3a2": 50,
+      "s3b2": 86,
+      "s3b3": 79
+    }
+  },
+  "questions": {
+    "36fe48ef": {
+      "v3": 1.0,
+      "full_env": 1.0,
+      "source": "H3 ledger (mini store; not re-answered per instruction)"
+    },
+    "99b6e22f": {
+      "v3": 1.0,
+      "full_env": 0.0,
+      "answer": "\\boxed{C}",
+      "recall_ids": 12,
+      "recall_chars": 31996,
+      "failure": "action-path evidence (order view Edit/Ship) in store but outside 12-entry recall window -> ranking gap"
+    },
+    "a59d50f7": {
+      "v3": 1.0,
+      "full_env": 1.0,
+      "answer": "\\boxed{three, Proceed to Checkout, Next, Place Order}",
+      "recall_ids": 11,
+      "recall_chars": 24042
+    },
+    "f928c075": {
+      "v3": 0.0,
+      "full_env": 0.0,
+      "answer": "\\boxed{Toolbox}",
+      "gold": "moderator",
+      "recall_ids": 5,
+      "recall_chars": 16294,
+      "failure": "gold evidence ('MarvelsGrantMan136 is a moderator on:' section) present in store AND recall (entry postmill-user-profile-submissions-listing-page); model answered Toolbox -> comparison failure"
+    },
+    "499488a6": {
+      "v3": 0.0,
+      "full_env": 0.0,
+      "answer": "\\boxed{UNKNOWN}",
+      "gold": "none",
+      "recall_ids": 9,
+      "recall_chars": 31996,
+      "failure": "'Hide this forum' evidence recalled but viewing contexts not labeled creator/subscriber-only/viewer-only -> UNKNOWN"
+    }
+  },
+  "score": {
+    "full_env": 0.4,
+    "correct": 2,
+    "of": 5,
+    "v3_same_5": 3,
+    "target": ">= 4/5",
+    "verdict": "NOT validated"
+  },
+  "pipeline_fixes": [
+    "merge: entries are dict-of-category dicts -> per-category union (was list-extend crash)",
+    "recall-0 root cause: each shard bound its own projectId; merged doc mixed 8 projectIds -> validate_document rejects -> store.read() fails -> empty corpus; normalized 1242 entry projectIds",
+    "typeA: read-settings.json passed as --settings (write-time keys rejected) -> base-settings only",
+    "direct runs: raw copytree skipped projects.json rebind -> controller copy_store_into_scratch"
+  ]
+}
