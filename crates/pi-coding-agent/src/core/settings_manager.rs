@@ -262,6 +262,49 @@ pub struct TelemetrySettings {
     pub notice_shown: Option<bool>,
 }
 
+/// Typed view of the optional `localGateway` settings object.
+///
+/// Configures recovery for a local model gateway (for example a loopback
+/// provider such as `http://127.0.0.1:<port>/...`): when a call through such a
+/// provider fails because the gateway is down, the agent can run
+/// `startCommand` once, wait up to `startTimeoutMs` for the port to accept
+/// connections, and retry the model call once. The feature is default-off
+/// (`autoStart: false`) so existing deployments are unaffected until the user
+/// opts in.
+///
+/// Unknown inner keys are ignored (forward compatibility), and a missing
+/// `localGateway` object resolves to [`Default`]. Note the feature is wired to
+/// the settings layer only here; detection/retry behavior lives elsewhere.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct LocalGatewaySettings {
+    /// Opt-in switch: run the start command when a loopback provider fails.
+    /// Default `false`.
+    pub auto_start: bool,
+    /// Shell command that starts the local gateway task/service. `None` means
+    /// no command is configured, so auto-start stays inert even when
+    /// `autoStart` is `true`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_command: Option<String>,
+    /// Timeout for the TCP connect probe against the gateway port, in
+    /// milliseconds. Default 1500.
+    pub probe_timeout_ms: u64,
+    /// Bounded wait after running the start command for the port to accept
+    /// connections, in milliseconds. Default 20000.
+    pub start_timeout_ms: u64,
+}
+
+impl Default for LocalGatewaySettings {
+    fn default() -> Self {
+        LocalGatewaySettings {
+            auto_start: false,
+            start_command: None,
+            probe_timeout_ms: 1500,
+            start_timeout_ms: 20_000,
+        }
+    }
+}
+
 /// A7: resolved automatic-compaction retry pacing.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -891,6 +934,11 @@ mod keys {
     pub const TURN_INTERVAL: &str = "turnInterval";
     pub const COMPACT: &str = "compact";
     pub const COOLDOWN_MS: &str = "cooldownMs";
+    pub const LOCAL_GATEWAY: &str = "localGateway";
+    pub const AUTO_START: &str = "autoStart";
+    pub const START_COMMAND: &str = "startCommand";
+    pub const PROBE_TIMEOUT_MS: &str = "probeTimeoutMs";
+    pub const START_TIMEOUT_MS: &str = "startTimeoutMs";
 }
 
 type NestedModifiedFields = BTreeMap<String, BTreeSet<String>>;
@@ -1543,6 +1591,48 @@ fn top_string_array(settings: &Settings, key: &str) -> Vec<String> {
 
 fn env_flag(name: &str) -> Option<String> {
     std::env::var(name).ok()
+}
+
+/// Parse the optional `localGateway` settings object into its typed view.
+///
+/// An absent key, a non-object value, or unknown inner keys resolve to the
+/// per-field defaults (unknown keys stay untouched in the raw map). A field
+/// with a wrong JSON type falls back per field instead of discarding valid
+/// sibling fields.
+pub fn local_gateway_settings(settings: &Settings) -> LocalGatewaySettings {
+    let Some(value) = settings.get(keys::LOCAL_GATEWAY) else {
+        return LocalGatewaySettings::default();
+    };
+    if !value.is_object() {
+        return LocalGatewaySettings::default();
+    }
+    if let Ok(parsed) = LocalGatewaySettings::deserialize(value) {
+        return parsed;
+    }
+    // Wrong-typed field: keep correctly typed siblings.
+    let defaults = LocalGatewaySettings::default();
+    LocalGatewaySettings {
+        auto_start: nested_bool(settings, keys::LOCAL_GATEWAY, keys::AUTO_START)
+            .unwrap_or(defaults.auto_start),
+        start_command: nested_string(settings, keys::LOCAL_GATEWAY, keys::START_COMMAND),
+        probe_timeout_ms: nested_u64(settings, keys::LOCAL_GATEWAY, keys::PROBE_TIMEOUT_MS)
+            .unwrap_or(defaults.probe_timeout_ms),
+        start_timeout_ms: nested_u64(settings, keys::LOCAL_GATEWAY, keys::START_TIMEOUT_MS)
+            .unwrap_or(defaults.start_timeout_ms),
+    }
+}
+
+/// Typed accessor for the optional `localGateway` settings object on the
+/// JSON-object [`Settings`] map, so callers can use `settings.local_gateway()`.
+pub trait SettingsLocalGateway {
+    /// Parse the `localGateway` object; an absent key resolves to defaults.
+    fn local_gateway(&self) -> LocalGatewaySettings;
+}
+
+impl SettingsLocalGateway for Settings {
+    fn local_gateway(&self) -> LocalGatewaySettings {
+        local_gateway_settings(self)
+    }
 }
 
 impl SettingsManager {
@@ -2600,6 +2690,18 @@ impl SettingsManager {
         self.mark_modified(keys::WARNINGS, None);
         self.save();
     }
+
+    // -- local gateway recovery ---------------------------------------------
+
+    /// Typed view of the optional `localGateway` settings object.
+    ///
+    /// Reads the merged (global + project) settings. An absent key resolves
+    /// to the default (feature off); reads never mark the field modified, so
+    /// saving unrelated settings preserves a missing or existing
+    /// `localGateway` object verbatim.
+    pub fn get_local_gateway_settings(&self) -> LocalGatewaySettings {
+        self.settings.local_gateway()
+    }
 }
 
 #[cfg(test)]
@@ -3497,5 +3599,245 @@ mod extra_tests {
         });
         let manager = SettingsManager::from_storage(storage);
         assert!(!manager.get_telemetry_enabled());
+    }
+}
+
+#[cfg(test)]
+mod local_gateway_tests {
+    use super::tests_support::*;
+    use super::*;
+
+    const FULL_JSON: &str = r#"{
+        "localGateway": {
+            "autoStart": true,
+            "startCommand": "schtasks /run /tn \\\"ModelGateway\\\"",
+            "probeTimeoutMs": 800,
+            "startTimeoutMs": 45000
+        }
+    }"#;
+
+    #[test]
+    fn local_gateway_defaults_when_key_absent() {
+        let settings = settings_from(r#"{"theme":"dark"}"#);
+        assert_eq!(settings.local_gateway(), LocalGatewaySettings::default());
+        assert_eq!(
+            settings.local_gateway(),
+            LocalGatewaySettings {
+                auto_start: false,
+                start_command: None,
+                probe_timeout_ms: 1500,
+                start_timeout_ms: 20000,
+            }
+        );
+
+        // Non-object values resolve to defaults instead of erroring.
+        for value in [Value::Bool(true), Value::String("x".to_string()), serde_json::json!(42)] {
+            let mut settings = Settings::new();
+            settings.insert("localGateway".to_string(), value);
+            assert_eq!(
+                settings.local_gateway(),
+                LocalGatewaySettings::default(),
+                "non-object localGateway must resolve to defaults"
+            );
+        }
+
+        // Empty object == defaults.
+        assert_eq!(settings_from(r#"{"localGateway":{}}"#).local_gateway(), LocalGatewaySettings::default());
+
+        let manager = SettingsManager::in_memory(Settings::new());
+        assert_eq!(manager.get_local_gateway_settings(), LocalGatewaySettings::default());
+    }
+
+    #[test]
+    fn local_gateway_full_parse() {
+        let settings = settings_from(FULL_JSON);
+        assert_eq!(
+            settings.local_gateway(),
+            LocalGatewaySettings {
+                auto_start: true,
+                start_command: Some("schtasks /run /tn \\\"ModelGateway\\\"".to_string()),
+                probe_timeout_ms: 800,
+                start_timeout_ms: 45000,
+            }
+        );
+        let manager = SettingsManager::in_memory(settings_from(FULL_JSON));
+        assert_eq!(manager.get_local_gateway_settings().auto_start, true);
+        assert_eq!(
+            manager.get_local_gateway_settings().start_command.as_deref(),
+            Some("schtasks /run /tn \\\"ModelGateway\\\"")
+        );
+    }
+
+    #[test]
+    fn local_gateway_partial_fields_take_defaults() {
+        let settings = settings_from(r#"{"localGateway":{"autoStart":true}}"#);
+        assert_eq!(
+            settings.local_gateway(),
+            LocalGatewaySettings {
+                auto_start: true,
+                start_command: None,
+                probe_timeout_ms: 1500,
+                start_timeout_ms: 20000,
+            }
+        );
+
+        let settings = settings_from(r#"{"localGateway":{"startCommand":"start-gateway.sh"}}"#);
+        assert_eq!(
+            settings.local_gateway(),
+            LocalGatewaySettings {
+                auto_start: false,
+                start_command: Some("start-gateway.sh".to_string()),
+                probe_timeout_ms: 1500,
+                start_timeout_ms: 20000,
+            }
+        );
+
+        let settings = settings_from(r#"{"localGateway":{"probeTimeoutMs":250}}"#);
+        assert_eq!(
+            settings.local_gateway(),
+            LocalGatewaySettings {
+                auto_start: false,
+                start_command: None,
+                probe_timeout_ms: 250,
+                start_timeout_ms: 20000,
+            }
+        );
+    }
+
+    #[test]
+    fn local_gateway_round_trip_preserves_values() {
+        // Struct-level round trip.
+        let original = LocalGatewaySettings {
+            auto_start: true,
+            start_command: Some("node gateway.js".to_string()),
+            probe_timeout_ms: 1200,
+            start_timeout_ms: 30000,
+        };
+        let value = serde_json::to_value(&original).unwrap();
+        assert_eq!(
+            value,
+            serde_json::json!({
+                "autoStart": true,
+                "startCommand": "node gateway.js",
+                "probeTimeoutMs": 1200,
+                "startTimeoutMs": 30000
+            })
+        );
+        let parsed: LocalGatewaySettings = serde_json::from_value(value).unwrap();
+        assert_eq!(parsed, original);
+
+        // Settings-map level round trip: the raw object survives a
+        // stringify/parse cycle unchanged.
+        let settings = settings_from(FULL_JSON);
+        let reparsed = parse_settings(&stringify_settings(&settings)).unwrap();
+        assert_eq!(reparsed.get("localGateway"), settings.get("localGateway"));
+        assert_eq!(reparsed.local_gateway(), settings.local_gateway());
+
+        // Serialize skips `startCommand` when absent.
+        let without_command = LocalGatewaySettings {
+            auto_start: true,
+            start_command: None,
+            probe_timeout_ms: 1500,
+            start_timeout_ms: 20000,
+        };
+        let value = serde_json::to_value(&without_command).unwrap();
+        assert!(value.get("startCommand").is_none());
+        assert_eq!(serde_json::from_value::<LocalGatewaySettings>(value).unwrap(), without_command);
+    }
+
+    #[test]
+    fn local_gateway_unknown_keys_tolerated() {
+        let settings = settings_from(
+            r#"{"localGateway":{"autoStart":true,"futureKnob":"keep-me"}}"#,
+        );
+        assert_eq!(settings.local_gateway().auto_start, true);
+        // Unknown keys stay in the raw map so a write-back keeps them.
+        assert_eq!(settings["localGateway"]["futureKnob"], Value::String("keep-me".to_string()));
+    }
+
+    #[test]
+    fn local_gateway_wrong_typed_field_keeps_valid_siblings() {
+        let settings = settings_from(
+            r#"{"localGateway":{"autoStart":true,"probeTimeoutMs":"fast","startTimeoutMs":-5}}"#,
+        );
+        assert_eq!(
+            settings.local_gateway(),
+            LocalGatewaySettings {
+                auto_start: true,
+                start_command: None,
+                probe_timeout_ms: 1500,
+                start_timeout_ms: 20000,
+            }
+        );
+    }
+
+    #[test]
+    fn local_gateway_missing_stays_missing_when_other_settings_save() {
+        let temp = TempDir::new();
+        let agent_dir = temp.child("agent");
+        let project_dir = temp.child("project");
+        let settings_path = join_path(&agent_dir, "settings.json");
+        std::fs::write(&settings_path, r#"{"theme":"dark"}"#).unwrap();
+
+        let mut manager = SettingsManager::create(&project_dir, Some(&agent_dir));
+        assert_eq!(manager.get_local_gateway_settings(), LocalGatewaySettings::default());
+        manager.set_retry_enabled(true);
+        let saved = read_json(&settings_path);
+        assert!(!saved.contains_key("localGateway"), "reads must not add localGateway");
+        assert_eq!(saved["retry"]["enabled"], Value::Bool(true));
+    }
+
+    #[test]
+    fn local_gateway_existing_object_round_trips_when_other_settings_save() {
+        let temp = TempDir::new();
+        let agent_dir = temp.child("agent");
+        let project_dir = temp.child("project");
+        let settings_path = join_path(&agent_dir, "settings.json");
+        std::fs::write(
+            &settings_path,
+            r#"{"theme":"dark","localGateway":{"autoStart":true,"startCommand":"start-gateway.sh","probeTimeoutMs":800,"startTimeoutMs":45000,"futureKnob":"keep-me"}}"#,
+        )
+        .unwrap();
+
+        let mut manager = SettingsManager::create(&project_dir, Some(&agent_dir));
+        let before = manager.get_local_gateway_settings();
+        manager.set_retry_enabled(true);
+
+        // The untouched object survives the write-back verbatim, unknown keys included.
+        let saved = read_json(&settings_path);
+        assert_eq!(saved["localGateway"]["autoStart"], Value::Bool(true));
+        assert_eq!(saved["localGateway"]["startCommand"], Value::String("start-gateway.sh".to_string()));
+        assert_eq!(saved["localGateway"]["probeTimeoutMs"], json_number(800.0));
+        assert_eq!(saved["localGateway"]["startTimeoutMs"], json_number(45000.0));
+        assert_eq!(saved["localGateway"]["futureKnob"], Value::String("keep-me".to_string()));
+
+        // And a fresh manager re-reads the same typed values.
+        let mut reloaded = SettingsManager::create(&project_dir, Some(&agent_dir));
+        assert_eq!(reloaded.get_local_gateway_settings(), before);
+        reloaded.set_retry_enabled(false);
+        let saved_again = read_json(&settings_path);
+        assert_eq!(saved_again["localGateway"], saved["localGateway"]);
+    }
+
+    #[test]
+    fn local_gateway_manager_reads_merged_settings() {
+        let storage = Arc::new(InMemorySettingsStorage::new());
+        storage.with_lock(SETTINGS_SCOPE_GLOBAL, &mut |_| {
+            Some(r#"{"localGateway":{"autoStart":true,"startCommand":"global.sh","probeTimeoutMs":800}}"#.to_string())
+        });
+        storage.with_lock(SETTINGS_SCOPE_PROJECT, &mut |_| {
+            Some(r#"{"localGateway":{"probeTimeoutMs":900}}"#.to_string())
+        });
+        let manager = SettingsManager::from_storage(storage);
+        // Deep merge: project overrides the nested fields it names, global fills the rest.
+        assert_eq!(
+            manager.get_local_gateway_settings(),
+            LocalGatewaySettings {
+                auto_start: true,
+                start_command: Some("global.sh".to_string()),
+                probe_timeout_ms: 900,
+                start_timeout_ms: 20000,
+            }
+        );
     }
 }

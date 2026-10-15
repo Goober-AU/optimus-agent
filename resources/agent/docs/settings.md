@@ -174,6 +174,30 @@ When a provider requests a retry delay longer than `retry.provider.maxRetryDelay
 }
 ```
 
+### Local Gateway
+
+Recovery for a local model gateway behind loopback provider base URLs (for example `http://127.0.0.1:43120/azure-openai/v1`). Default-off; nothing runs unless you opt in.
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `localGateway.autoStart` | boolean | `false` | Opt in to automatic gateway recovery on loopback provider failure |
+| `localGateway.startCommand` | string | - | Shell command that starts the local gateway task/service |
+| `localGateway.probeTimeoutMs` | number | `1500` | Timeout for each TCP connect probe against the gateway port (ms) |
+| `localGateway.startTimeoutMs` | number | `20000` | Bounded wait after running the start command for the port to come up (ms) |
+
+```json
+{
+  "localGateway": {
+    "autoStart": true,
+    "startCommand": "schtasks /run /tn \"ModelGateway\"",
+    "probeTimeoutMs": 1500,
+    "startTimeoutMs": 20000
+  }
+}
+```
+
+When `autoStart` is enabled and a model call through a loopback provider fails, Optimus runs `startCommand` once, waits up to `startTimeoutMs` for the gateway port to accept connections, and retries the model call once. Unknown keys inside `localGateway` are ignored, and omitting the object is equivalent to the defaults shown above. A missing `localGateway` object stays missing when other settings are saved.
+
 ### Message Delivery
 
 | Setting | Type | Default | Description |
