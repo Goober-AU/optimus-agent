@@ -21,7 +21,6 @@ use std::process::Stdio;
 use std::sync::Arc;
 use std::time::Duration;
 
-use futures_util::future::BoxFuture;
 use pi_ai::types::{AssistantMessage, STOP_REASON_ERROR};
 use serde_json::Value;
 
