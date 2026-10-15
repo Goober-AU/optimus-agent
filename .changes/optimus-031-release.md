@@ -1,0 +1,1 @@
+- Changed Optimus Agent to version 0.1.31 with compact structured agent communication, graceful recursion-depth guidance, shell and legacy-lock fixes, opt-in local model gateway recovery, and persistent refinement-failure records.

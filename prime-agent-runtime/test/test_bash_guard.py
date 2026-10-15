@@ -9,6 +9,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 from rlm.bash_guard import (guard_command, DestructiveGitRefusalError,
@@ -74,7 +75,8 @@ class GuardTests(unittest.TestCase):
         # Regression (Windows): recursive-force rm used to refuse every operand
         # list with "Native shell path translation is not supported on this
         # platform" instead of analyzing the operands like on POSIX.
-        with mock.patch.object(guard.os, "name", "nt"):
+        # Keep pathlib on the host's native path class while testing Windows policy.
+        with mock.patch.object(guard, "os", SimpleNamespace(name="nt")):
             for command in ["rm -rf sub", "rm -fr ./sub", "rm -rf 'my dir'",
                             "rm -rf sub/nested", "rm -rf missing"]:
                 with self.subTest(command=command):
