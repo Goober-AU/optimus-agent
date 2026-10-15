@@ -37,6 +37,51 @@ Statuses: NEW / REPRODUCED / ROOT_CAUSED / FIX_IN_PROGRESS / FIXED / VERIFIED / 
   fidelity suite t05 pins the rejecting behavior.
 - Fix commit: cc1ec0870
 
+## BUG-003 — PATH bin-dir prepend suppressed by inherited mid-list copy
+
+- Status: FIXED (commit in this PR)
+- Found by: worker fix-bash-shell-path (both PATH-assertion tests).
+- Root cause: `shell_env_with_bin_dir` skipped the prepend entirely when
+  bin_dir appeared ANYWHERE in the inherited PATH, so an inherited
+  mid-list copy left managed tools shadowed by harness prefixes — the
+  documented prepend invariant (bin_dir leads exactly once) was violated.
+  Platform-independent logic, triggered by this host's env shape.
+- Fix: unconditionally place bin_dir first and filter existing copies;
+  empty entries still dropped; idempotent.
+- Regression: `shell_env_moves_an_inherited_mid_list_bin_dir_to_the_front`
+  (fails without the fix); both original tests now assert first-entry +
+  exactly-once precisely.
+
+## BUG-004 — Legacy directory-lock reclaim unreachable (95c9308cd2 regression)
+
+- Status: FIXED (commit in this PR)
+- Found by: worker fix-dir-lock.
+- Root cause: two blanket "directory at the lock path means Held" guards
+  made the legacy-reclaim path dead code on every platform, regressing
+  the ported TypeScript contract (a legacy lock dir with ownerless/stale
+  pid must be judged and reclaimed).
+- Fix: guard scoped to non-legacy directories (entries empty or exactly
+  {pid}); registry-shaped directories stay Held untouched; aside removal
+  loses only the pid marker via remove_dir, never remove_dir_all.
+- Regression: dead-owner legacy lock reclaims; registry-shaped lock stays
+  Held with files intact.
+
+## BUG-005 — bash guard blanket-refused Windows rm; backslash paths misclassified
+
+- Status: FIXED (commit in this PR)
+- Found by: worker fix-rt-bash-guard (9 rm subTest errors + relocation
+  and cdpath errors).
+- Root cause: (a) the rm branch refused all rm on non-POSIX platforms
+  instead of analyzing operands; (b) `_literal()` rejected backslash, but
+  after posix-mode shlex a surviving backslash is quote-protected, so
+  quoted Windows absolute paths were misclassified as dynamic.
+- Fix: per-operand rm analysis on Windows (.. / hidden / outside-repo
+  checks retained), backslash-quoted paths are literal, git -C sites
+  treat untranslatable paths as unknown, and the genuinely ambiguous
+  driveless-rooted class (/tmp) gets a targeted refusal.
+- Regression: two tests pin both fixes (one portable via os.name mock,
+  one skipUnless nt).
+
 ## BASELINE-001 — Windows test-env failures on clean main
 
 - Status: BASELINE_EXISTING (partially: 14 of 22 cleared by setting the env var)
@@ -66,3 +111,13 @@ Statuses: NEW / REPRODUCED / ROOT_CAUSED / FIX_IN_PROGRESS / FIXED / VERIFIED / 
   are recorded as the clean-main Windows baseline and are not attributed to
   campaign changes unless a run regresses beyond them. Fixing them is out of
   campaign scope (none block the OCC work), recorded honestly here.
+- RESOLUTION UPDATE (follow-up request): all 8 are now fixed in this branch.
+  Classifications: 6 test defects (sdk scratch dir, kernel_job env
+  derivation, ipython fixture CRLF, extensions runner fixture isolation,
+  t10 async poll, mcp/lifecycle runtime probes), 2 product bugs
+  (BUG-003 PATH prepend, BUG-004 legacy dir-lock reclaim; the latter is a
+  platform-independent regression from 95c9308cd2, not Windows-specific).
+  The runtime suite's 9F/17E resolved into: bash guard product bugs
+  (BUG-005, fixed), POSIX-only test assumptions (fixed with reason-tagged
+  skips or portable probes), and repl/harness platform semantics (fixed by
+  the follow-up lane).

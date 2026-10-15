@@ -7,9 +7,10 @@
 //! interchangeable encodings of one typed payload, not separate agent
 //! lifecycles:
 //!
-//! - OCC-0: ordinary English (the existing default; no code needed here).
+//! - OCC-0: ordinary English (always available; the default for
+//!   conversational prose).
 //! - OCC-1: compact structured English ([`occ1`]) encoding the typed contract
-//!   ([`contract`]).
+//!   ([`contract`]); the default for structured task and result bodies.
 //! - OCC-2: learned symbolic dialects (offline discovery; not implemented
 //!   yet).
 //! - OCC-3: true latent communication between compatible local models (not
