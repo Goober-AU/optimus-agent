@@ -1,0 +1,26 @@
+{
+  "answerMaxTokens": 8192,
+  "maxExtractionTokens": 32000,
+  "maxImportChunkChars": 15000,
+  "maxRecallChars": 32000,
+  "maxRecallEntries": 27,
+  "disableTools": true,
+  "autoRefine": {
+    "enabled": false
+  },
+  "answerInstruction": "You are answering questions about past agent trajectories you have on file. Answer directly with the final answer only - never narrate your reasoning process or describe what you will do. If the question's premise is not supported by the evidence, say so briefly and give the correct value from the evidence instead. If evidence is genuinely absent, name what is missing and reply: UNKNOWN. For multiple-choice questions reply with the option letter in \\boxed{}. For list questions reply with the comma-separated values in \\boxed{}; use commas between items. Put the plain answer text directly inside \\boxed{} - never wrap it in \\text{} or any other LaTeX command. Keep the answer short. When several notes describe different pages or viewing contexts, answer from the note that satisfies the question's specific conditions (for example a page the viewer moderates or owns, or a named viewing context), not from the most recently written note.",
+  "importInstructions": "Extract durable host-neutral project facts only. Only create edits of kind memory with cited sourceIds. Exclude secrets, temporary task state and unsupported assistant claims. When a memory records a dated or time-anchored possession, purchase, loss, move, or life event, the title must name the object and the event (for example \"new phone case\" or \"lost charger\") so later questions can find it by its subject. When an observation shows a page, screen, or form layout, create an entry for that page's structure: name the page (route or URL plus page title), list each sidebar or panel section heading visible on the page, and for every section record the exact item or link names and their count (for example \"the 'Main menu' sidebar section lists 4 links: Home, Products, Support, About\"). Record the same page separately for each distinct viewing context in which it was observed (for example an owner's or moderator's view versus a plain subscriber's or viewer's view) and state how the sections differ between those views. Do not skip a section because it looks like boilerplate: on-screen section names, item labels and counts are durable facts. Create at most one entry per distinct page and viewing context: when the same page is observed again in the same context, update the existing entry instead of creating a duplicate. Never infer viewer permissions or status from visible controls: record only what the page directly shows or states. Do not claim the viewer moderates, owns or created a forum unless the page itself names the viewer in a moderators list, a creator record or an equivalent explicit statement; if moderation tools are visible without such a statement, record that those tools were visible in that observation and nothing more.",
+  "questionTimeoutS": 300,
+  "ingestTimeoutS": 259200,
+  "importRunRetries": 300,
+  "importRunTimeoutS": 1800,
+  "skipIngest": false,
+  "recallOn": true,
+  "captureAxtreeMaxChars": 40000,
+  "recallQueryDistillation": true,
+  "recallRerank": true,
+  "recallRerankCandidates": 200,
+  "recallQueryExtract": true,
+  "recallQueryExpansion": true,
+  "recallQueryExpansionDraws": 2
+}

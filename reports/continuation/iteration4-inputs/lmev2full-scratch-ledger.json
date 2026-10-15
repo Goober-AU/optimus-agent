@@ -1,0 +1,66 @@
+{
+ "schema": "iteration4-question-ledger/2",
+ "created": "2026-10-13T09:00:00+00:00",
+ "purpose": "scratch ledger for the two dev5 lme_v2 questions absent from the main QUESTION-LEDGER (99b6e22f, a59d50f7): procedure questions answered by the lme_v2_dev5_full_v4 full-env re-capture gate; controller attempts append here",
+ "rescoring": {
+  "note": "question-scoped single-record scoring only (v1c pattern)"
+ },
+ "entries": [
+  {
+   "benchmark": "lme_v2",
+   "category": "agent-procedure",
+   "status": "UNTESTED",
+   "baseline": 1.0,
+   "env_id": "web",
+   "store_path": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/ql-typeb-cache/web--46c8aec059fe9cec/envs/web",
+   "qs_path": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/lme-v2-comparison-inputs/private-scoring-questions/qs_web.jsonl",
+   "judge_profile": "default",
+   "source_run": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_v2_dev5_improved_v3/run.jsonl",
+   "queue": "dev5",
+   "qid": "99b6e22f",
+   "note": "procedure: magento admin orders page minimum-actions comparison; v3 baseline 1.0; regression target for full-env cap-40k re-capture"
+  },
+  {
+   "benchmark": "lme_v2",
+   "category": "agent-procedure",
+   "status": "UNTESTED",
+   "baseline": 1.0,
+   "env_id": "web",
+   "store_path": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/ql-typeb-cache/web--46c8aec059fe9cec/envs/web",
+   "qs_path": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/lme-v2-comparison-inputs/private-scoring-questions/qs_web.jsonl",
+   "judge_profile": "default",
+   "source_run": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_v2_dev5_improved_v3/run.jsonl",
+   "queue": "dev5",
+   "qid": "a59d50f7",
+   "note": "procedure: magento cart minimum buttons to place order; v3 baseline 1.0; regression target for full-env cap-40k re-capture"
+  },
+  {
+   "benchmark": "lme_v2",
+   "category": "static-environment",
+   "status": "UNTESTED",
+   "baseline": 1.0,
+   "env_id": "web",
+   "store_path": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/ql-typeb-cache/web--46c8aec059fe9cec/envs/web",
+   "qs_path": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/lme-v2-comparison-inputs/private-scoring-questions/qs_web.jsonl",
+   "judge_profile": "default",
+   "source_run": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_v2_dev5_improved_v3/run.jsonl",
+   "queue": "dev5",
+   "qid": "f928c075",
+   "note": "static: own-vs-other profile additional section; gold 'moderator'; mini-env-unanswerable (H2 comparative-uniqueness fix 3/3 was mini-store general-UI); this run = full-env evidence-based check"
+  },
+  {
+   "benchmark": "lme_v2",
+   "category": "static-environment",
+   "status": "UNTESTED",
+   "baseline": 1.0,
+   "env_id": "web",
+   "store_path": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration4/ql-typeb-cache/web--46c8aec059fe9cec/envs/web",
+   "qs_path": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/lme-v2-comparison-inputs/private-scoring-questions/qs_web.jsonl",
+   "judge_profile": "default",
+   "source_run": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_v2_dev5_improved_v3/run.jsonl",
+   "queue": "dev5",
+   "qid": "499488a6",
+   "note": "static: forum views without 'Hide this forum'; gold 'none'; needs creator/subscriber/viewer views absent from mini env; full-env check"
+  }
+ ]
+}
