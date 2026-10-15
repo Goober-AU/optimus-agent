@@ -1,0 +1,39 @@
+{
+ "schema": "lmes-seq-driver-gaps/1",
+ "updated": "2026-10-15",
+ "gaps": [
+  {
+   "id": "question-date-visibility",
+   "qid": "0bc8ad92",
+   "severity": "high",
+   "symptom": "'How many months since X' questions: model anchored 'now' to its system date (2026) and answered 48 vs gold 5",
+   "cause": "question_declaration is gold-free AND date-free; the answer model never sees question_date",
+   "fix_ideas": "expose question_date (or a story-horizon marker like 'latest session ts') in the question prompt; keep gold hidden",
+   "rejected_read_time": "H6 'now = shortly after newest recalled note' collapses to the recalled subset (only the Oct note was recalled)"
+  },
+  {
+   "id": "blank-rescue-note-loss",
+   "qids": [
+    "0977f2af (h3b x2)",
+    "0bc8ad93"
+   ],
+   "severity": "high",
+   "symptom": "length-stop empty answer -> rescue answers WITHOUT the memory notes, listing unrelated topics",
+   "cause": "glm-5.3 native thinking can consume the whole output budget; the rescue prompt apparently drops the recall context",
+   "fix_ideas": "rescue must re-include the recall notes; or raise answerMaxTokens for thinking models; or disable thinking for rescue"
+  },
+  {
+   "id": "expansion-nondeterminism",
+   "qid": "09d032c9",
+   "severity": "medium",
+   "symptom": "recallQueryExpansion draw hit the needed paraphrase once and missed once",
+   "cause": "single-draw paraphrase sampling"
+  },
+  {
+   "id": "judge-empty-content",
+   "qid": "09d032c9 (lmesq5-09dexp)",
+   "severity": "low",
+   "symptom": "judge returned empty content -> eval_error"
+  }
+ ]
+}
