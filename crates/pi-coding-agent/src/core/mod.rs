@@ -20,6 +20,7 @@ pub mod exec;
 pub mod export_html;
 pub mod extensions;
 pub mod footer_data_provider;
+pub mod gateway_health;
 pub mod goals;
 pub mod jev_active;
 pub mod jev_bridge;

@@ -90,6 +90,16 @@ pub(crate) fn completion_fn_for(
                         .collect(),
                     tools: None,
                 };
+                // TODO(integration): route this completion through
+                // `crate::core::gateway_health::complete_with_gateway_recovery`
+                // so a dead local model gateway is probed, auto-started from
+                // `localGateway.startCommand`, retried once, and (on failure)
+                // returned with an actionable `[local gateway recovery: ...]`
+                // note instead of failing silently. Wiring it needs the
+                // `LocalGatewaySettings` (from settings.json `localGateway`)
+                // threaded into `completion_fn_for`/`extract` plus the
+                // model's `base_url`; that plumbing exceeds this file's
+                // scope, so it is left to the integration pass.
                 let response = crate::core::provider_retry::complete_with_provider_retry(
                     || pi_ai::stream::complete_simple(&model, &context, Some(&options)),
                     crate::core::provider_retry::ProviderRetryExecutionOptions {

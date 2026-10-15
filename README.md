@@ -190,6 +190,34 @@ Use the model appropriate to each task: a planner or reviewer, an implementation
 
 See [Providers](https://github.com/telemusai/optimus-agent/blob/main/resources/agent/docs/providers.md) and [Custom models](https://github.com/telemusai/optimus-agent/blob/main/resources/agent/docs/models.md).
 
+### Local model gateway recovery
+
+Some deployments route model traffic through a local gateway (for example, a provider base URL like `http://127.0.0.1:43120/azure-openai/v1`). When the machine reboots or the gateway task stops, calls through such loopback providers fail with connection errors or timeouts, and background features that call the model — like automatic memory refinement — fail too.
+
+Optimus can recover a down local gateway automatically. The feature is **off by default**; nothing runs until you opt in with the `localGateway` settings object (global or project `settings.json`):
+
+```json
+{
+  "localGateway": {
+    "autoStart": false,
+    "startCommand": null,
+    "probeTimeoutMs": 1500,
+    "startTimeoutMs": 20000
+  }
+}
+```
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `localGateway.autoStart` | boolean | `false` | Opt in to automatic recovery. Off by default. |
+| `localGateway.startCommand` | string | - | Shell command that starts the local gateway task or service. |
+| `localGateway.probeTimeoutMs` | number | `1500` | Timeout for each TCP connect probe against the gateway port, in milliseconds. |
+| `localGateway.startTimeoutMs` | number | `20000` | Bounded wait after running the start command for the port to accept connections, in milliseconds. |
+
+When enabled, the semantics are: detect that a failed model call used a loopback provider, run `startCommand` once, wait up to `startTimeoutMs` for the gateway port to accept connections, and retry the model call once. Recovery does not loop and does not restart a gateway that is already up.
+
+Separately, when a refinement or other model-backed background operation still fails, the failure is now persisted — a record lands in the harness refinements log and a notice appears in the session transcript — so the loss is loud and auditable instead of silent. See [Settings](https://github.com/telemusai/optimus-agent/blob/main/resources/agent/docs/settings.md).
+
 #### Claude Code login
 
 When Claude Code is installed and signed in, Optimus automatically uses its saved OAuth login for the **Anthropic** provider and pins request headers to the installed `claude --version`. Optimus retains its native agent loop, tools, and execution modes. The provider picker identifies the source as `Claude Code <version> OAuth`.

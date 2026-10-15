@@ -848,3 +848,248 @@ async fn rf_memory_hook_failure_is_typed_and_prevents_duplicate_planning() {
     );
     t.session.dispose_async(Some(false)).await;
 }
+
+// ---------------------------------------------------------------------------
+// GW-FAILLOUD: failed refinement runs must stay loud and persisted. A failed
+// run leaves (1) a `status: "failed"` record in the harness
+// `refinements.jsonl` and (2) a durable, model-facing transcript notice, so
+// daemon/RLM sessions see the failure next turn even after a restart.
+// ---------------------------------------------------------------------------
+
+/// The global harness history path the fixture's env-scoped agent dir resolves.
+fn rf_global_history_dir() -> String {
+    crate::core::refinement::refinement::get_global_harness_state_dir(
+        &crate::config::get_agent_dir(),
+    )
+}
+
+/// Every row currently in the fixture's global `refinements.jsonl`.
+fn rf_history_rows() -> Vec<Value> {
+    let path = crate::core::refinement::refinement::get_refinement_history_path(
+        &rf_global_history_dir(),
+    );
+    match std::fs::read_to_string(&path) {
+        Ok(raw) => raw
+            .lines()
+            .filter(|line| !line.trim().is_empty())
+            .map(|line| serde_json::from_str(line).expect("history row is valid JSON"))
+            .collect(),
+        Err(_) => Vec::new(),
+    }
+}
+
+/// Queue the provider response whose AssistantMessage reports a provider
+/// ERROR (the incident shape: the local gateway never answers, so the planner
+/// call fails instead of returning a proposal).
+fn rf_queue_provider_error(t: &T11Session) {
+    t.provider
+        .append_responses(vec![FauxResponseStep::Message(faux_assistant_message(
+            FauxAssistantContent::Text(String::new()),
+            Some(FauxAssistantMessageOptions {
+                stop_reason: Some("error".to_string()),
+                error_message: Some("gateway did not answer".to_string()),
+                ..Default::default()
+            }),
+        ))]);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn rf_failed_refinement_persists_a_failure_record_and_transcript_notice() {
+    let t = T11Session::new(
+        "rf-fail-loud",
+        false,
+        serde_json::json!({"enabled": false}),
+        vec![],
+    )
+    .await;
+    append_user_turn(&t);
+    rf_queue_provider_error(&t);
+    let error = rf_bounded(t.session.refine_with_options(&RefineOptions::default(), false, None))
+        .await
+        .unwrap_err();
+    assert!(
+        error.contains("Refinement provider request failed"),
+        "the provider error surfaces: {error}"
+    );
+
+    // (1) The harness refinements.jsonl gained a failed record.
+    let rows = rf_history_rows();
+    let failure = rows
+        .iter()
+        .find(|row| row.get("status").and_then(Value::as_str) == Some("failed"))
+        .expect("the failed run appended a status=failed record");
+    assert!(
+        failure
+            .get("id")
+            .and_then(Value::as_str)
+            .unwrap()
+            .starts_with("refine_fail_"),
+        "failure ids are distinguishable: {failure}"
+    );
+    assert_eq!(
+        failure.get("appliedEdits").and_then(Value::as_array).map(Vec::len),
+        Some(0),
+        "a failed run applies no edits"
+    );
+    let recorded_error = failure
+        .get("error")
+        .and_then(Value::as_str)
+        .expect("the record carries the error text");
+    assert!(
+        recorded_error.contains("Refinement provider request failed"),
+        "the record carries the sanitized error text: {recorded_error}"
+    );
+    assert_eq!(
+        failure.get("failureCategory").and_then(Value::as_str),
+        Some("provider_error"),
+        "the typed category is stored snake_case"
+    );
+    assert!(
+        failure
+            .get("attemptDurationsMs")
+            .and_then(Value::as_array)
+            .is_some(),
+        "the record carries the sanitized per-attempt durations"
+    );
+    assert_eq!(
+        failure.get("scope").and_then(Value::as_str),
+        Some("global"),
+        "the audit record names the store it lives in"
+    );
+
+    // (2) The session transcript persisted the failure notice.
+    let transcript = std::fs::read_to_string(t.transcript()).unwrap();
+    assert!(
+        transcript.contains("\"customType\":\"refinement_notice\""),
+        "the notice is a durable refinement_notice entry: {transcript}"
+    );
+    assert!(
+        transcript.contains("Refinement failed: Refinement provider request failed"),
+        "the notice names the failure: {transcript}"
+    );
+    assert!(
+        transcript.contains("[category: provider_error]"),
+        "the notice carries the category: {transcript}"
+    );
+    assert!(
+        transcript
+            .contains("no harness changes were saved"),
+        "the notice states that nothing was saved: {transcript}"
+    );
+    assert!(
+        transcript.contains("refine_fail_"),
+        "the notice carries the record id for correlation: {transcript}"
+    );
+    // The wire event shape is unchanged (requirement 3): the daemon CLI line
+    // still renders from RefineFailed, which is emitted independently.
+    t.session.dispose_async(Some(false)).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn rf_successful_refinement_writes_no_failure_record_or_notice() {
+    let t = T11Session::new(
+        "rf-loud-success",
+        false,
+        serde_json::json!({"enabled": false}),
+        vec![],
+    )
+    .await;
+    append_user_turn(&t);
+    // A GLOBAL success so its record is the one that lands in the shared
+    // refinements.jsonl next to the failure rows.
+    let options = RefineOptions {
+        global: Some(true),
+        ..Default::default()
+    };
+    t.queue_json(proposal_json("rf-loud-success-memory"));
+    let result = rf_bounded(t.session.refine_with_options(&options, false, None))
+        .await
+        .unwrap();
+    assert!(
+        result.applied_edits.iter().any(|edit| edit.applied),
+        "precondition: the refinement saved"
+    );
+    // No failed row exists...
+    assert!(
+        rf_history_rows()
+            .iter()
+            .all(|row| row.get("status").is_none()),
+        "a successful refinement writes no failure record"
+    );
+    // ...and its own row keeps the exact legacy shape (no failure fields).
+    let success = rf_history_rows()
+        .into_iter()
+        .find(|row| row.get("id").is_some() && row.get("appliedEdits").is_some())
+        .expect("the successful record is in the shared history");
+    for absent_field in ["status", "error", "failureCategory", "attemptDurationsMs"] {
+        assert!(
+            success.get(absent_field).is_none(),
+            "successful records keep their legacy shape: {success}"
+        );
+    }
+    // The transcript has the success rows, but no failure notice.
+    let transcript = std::fs::read_to_string(t.transcript()).unwrap();
+    assert!(
+        transcript.contains("refinement_outcome"),
+        "precondition: the success outcome row exists"
+    );
+    assert!(
+        !transcript.contains("no harness changes were saved"),
+        "no failure notice is persisted for a success: {transcript}"
+    );
+    assert!(
+        !transcript.contains("Refinement failed: "),
+        "no failure notice text is persisted for a success: {transcript}"
+    );
+    t.session.dispose_async(Some(false)).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn rf_failure_record_survives_reload_of_the_history_file() {
+    let t = T11Session::new(
+        "rf-fail-reload",
+        false,
+        serde_json::json!({"enabled": false}),
+        vec![],
+    )
+    .await;
+    append_user_turn(&t);
+    rf_queue_provider_error(&t);
+    let error = rf_bounded(t.session.refine_with_options(&RefineOptions::default(), false, None))
+        .await
+        .unwrap_err();
+    let global_dir = rf_global_history_dir();
+
+    // The loader (rollback/history consumers) re-parses the row.
+    let loaded = crate::core::refinement::refinement::load_global_refinement_history(&global_dir);
+    let failed = loaded
+        .iter()
+        .find(|result| {
+            result.status
+                == Some(crate::core::refinement::refinement::RefinementRecordStatus::Failed)
+        })
+        .expect("the failure record survives the history loader");
+    assert_eq!(failed.error.as_deref(), Some(error.as_str()));
+    assert_eq!(failed.failure_category.as_deref(), Some("provider_error"));
+    assert_eq!(
+        failed.attempt_durations_ms.as_deref().map(<[u64]>::len),
+        Some(1),
+        "one planner attempt is recorded"
+    );
+    assert_eq!(failed.applied_edits.len(), 0);
+    assert_eq!(failed.scope, Some(HarnessScope::Global));
+
+    // A raw re-parse of the file line deserializes into the same envelope.
+    let raw = std::fs::read_to_string(
+        crate::core::refinement::refinement::get_refinement_history_path(&global_dir),
+    )
+    .unwrap();
+    let line = raw
+        .lines()
+        .find(|line| line.contains("\"status\":\"failed\""))
+        .expect("the failed row is on disk");
+    let record: RefinementResult = serde_json::from_str(line).unwrap();
+    assert_eq!(record.status, Some(crate::core::refinement::refinement::RefinementRecordStatus::Failed));
+    assert_eq!(record.error.as_deref(), Some(error.as_str()));
+    t.session.dispose_async(Some(false)).await;
+}

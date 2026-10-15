@@ -317,6 +317,35 @@ pub struct RefinementResult {
     pub rollback_of: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub scope: Option<HarnessScope>,
+    /// Outcome marker for audit rows (GW-FAILLOUD). Successful records keep
+    /// their exact legacy shape: all four failure fields below are skipped
+    /// while `None`, and old rows deserialize with them absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status: Option<RefinementRecordStatus>,
+    /// The sanitized failure text of a failed run, e.g. the typed planner
+    /// summary (fixed vocabulary; no prompts, completions, or auth material).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+    /// Snake-case `RefinementFailureCategory` name, or `unknown` when the
+    /// carried error text has no typed markers.
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "failureCategory")]
+    pub failure_category: Option<String>,
+    /// Sanitized per-attempt planner wall-clock durations, ascending by
+    /// attempt index. Durations only - never prompts, completions, or auth.
+    #[serde(default, skip_serializing_if = "Option::is_none", rename = "attemptDurationsMs")]
+    pub attempt_durations_ms: Option<Vec<u64>>,
+}
+
+/// Audit outcome of a `refinements.jsonl` row (GW-FAILLOUD). Successful rows
+/// carry no `status` at all; failed rows carry `failed`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RefinementRecordStatus {
+    Failed,
+    /// Any unrecognized status string still parses, so a forward-compatible
+    /// reader never drops a row it cannot name.
+    #[serde(other)]
+    Unknown,
 }
 
 /// Minimal local shape of pi-ai's `AssistantMessage` (blocked_on: pi-ai types).
@@ -1127,6 +1156,113 @@ pub fn append_global_refinement_reported(
             get_refinement_history_path(harness_state_dir)
         )),
     }
+}
+
+/// Snake-case form of a failure category name. The typed summaries carry the
+/// Rust enum's `Debug` spelling (`ProviderError`); the hook summaries and the
+/// stored `failureCategory` field use snake case, so both spellings normalize
+/// to the same value.
+fn snake_case_category(name: &str) -> String {
+    let mut snake = String::with_capacity(name.len() + 8);
+    for (index, character) in name.chars().enumerate() {
+        if character.is_ascii_uppercase() {
+            if index > 0 {
+                snake.push('_');
+            }
+            snake.push(character.to_ascii_lowercase());
+        } else {
+            snake.push(character.to_ascii_lowercase());
+        }
+    }
+    if snake.is_empty() {
+        "unknown".to_string()
+    } else {
+        snake
+    }
+}
+
+/// Extract the typed failure markers a sanitized failure summary carries:
+/// `"... (category: ProviderError, attempts: 1, attemptMs: [120, 240])"`.
+///
+/// Both producers (`RefinementFailureError::sanitized_summary` and the
+/// `session_before_refine` hook bridge) append the same parenthesized tail,
+/// so one parser serves both. An error without markers degrades to
+/// `("unknown", [])` instead of failing: the record must still be written.
+pub fn refinement_failure_markers(error: &str) -> (String, Vec<u64>) {
+    let category = error
+        .find("category: ")
+        .map(|start| {
+            let rest = &error[start + "category: ".len()..];
+            let end = rest
+                .find([',', ')'])
+                .unwrap_or(rest.len());
+            snake_case_category(rest[..end].trim())
+        })
+        .unwrap_or_else(|| "unknown".to_string());
+    let attempt_durations_ms = error
+        .find("attemptMs: [")
+        .map(|start| {
+            let rest = &error[start + "attemptMs: [".len()..];
+            let end = rest.find(']').unwrap_or(rest.len());
+            rest[..end]
+                .split(',')
+                .filter_map(|value| value.trim().parse::<u64>().ok())
+                .collect()
+        })
+        .unwrap_or_default();
+    (category, attempt_durations_ms)
+}
+
+/// Mint an audit id in the `refine_fail_<timestamp>` format. The sequence
+/// suffix keeps two failures inside the same millisecond distinct, because
+/// `refinements.jsonl` rows are de-duplicated by id when merged.
+pub fn generate_refinement_failure_id() -> String {
+    static SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let digits: String = now()
+        .chars()
+        .filter(|character| character.is_ascii_digit())
+        .collect();
+    let sequence = SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    format!(
+        "refine_fail_{}_{}",
+        digits.chars().take(17).collect::<String>(),
+        sequence
+    )
+}
+
+/// Build the audit record for a failed refinement run (GW-FAILLOUD).
+///
+/// The record reuses the successful `RefinementResult` envelope (same file,
+/// same row schema) with `appliedEdits: []` and the failure carried in the
+/// additive `status` / `error` / `failureCategory` / `attemptDurationsMs`
+/// fields, so a rollback of it is a no-op by construction and old readers
+/// that only know the envelope keep parsing it.
+pub fn refinement_failure_record(error: &str, harness_state_dir: &str) -> RefinementResult {
+    let (failure_category, attempt_durations_ms) = refinement_failure_markers(error);
+    RefinementResult {
+        id: generate_refinement_failure_id(),
+        summary: compact_text(&format!("Refinement failed: {error}"), 200),
+        rationale: "The refinement run failed; no harness changes were saved.".to_string(),
+        expected_outcome: "No harness changes were saved.".to_string(),
+        applied_edits: Vec::new(),
+        harness_state_path: get_harness_state_path(harness_state_dir),
+        rollback_of: None,
+        scope: Some(HarnessScope::Global),
+        status: Some(RefinementRecordStatus::Failed),
+        error: Some(error.to_string()),
+        failure_category: Some(failure_category),
+        attempt_durations_ms: Some(attempt_durations_ms),
+    }
+}
+
+/// Append a failed-run record to the cross-session history log with the same
+/// durable append the successful refinements use. Returns the history path.
+pub fn append_refinement_failure(
+    harness_state_dir: &str,
+    error: &str,
+) -> Result<String, String> {
+    let record = refinement_failure_record(error, harness_state_dir);
+    append_global_refinement(harness_state_dir, &record)
 }
 
 pub fn load_global_refinement_history(harness_state_dir: &str) -> Vec<RefinementResult> {
@@ -2076,6 +2212,10 @@ pub fn apply_refinement_proposal(
         harness_state_path: String::new(),
         rollback_of: options.rollback_of,
         scope: options.scope,
+        status: None,
+        error: None,
+        failure_category: None,
+        attempt_durations_ms: None,
     }
 }
 
@@ -3400,6 +3540,10 @@ mod tests {
             harness_state_path: get_harness_state_path(&dir_text),
             rollback_of: None,
             scope: Some(HarnessScope::Global),
+            status: None,
+            error: None,
+            failure_category: None,
+            attempt_durations_ms: None,
         };
         // Healthy directory: the append succeeds and reports nothing.
         assert!(append_global_refinement_reported(&dir_text, &result).is_none());
@@ -3434,6 +3578,10 @@ mod tests {
             harness_state_path: String::new(),
             rollback_of: None,
             scope: Some(HarnessScope::Global),
+            status: None,
+            error: None,
+            failure_category: None,
+            attempt_durations_ms: None,
         };
         append_global_refinement(&dir_text, &result).unwrap();
         let raw = std::fs::read_to_string(get_refinement_history_path(&dir_text)).unwrap();
@@ -3455,6 +3603,10 @@ mod tests {
             harness_state_path: String::new(),
             rollback_of: None,
             scope: None,
+            status: None,
+            error: None,
+            failure_category: None,
+            attempt_durations_ms: None,
         };
         append_global_refinement(&dir.to_string_lossy(), &result).unwrap();
         append_global_refinement(&dir.to_string_lossy(), &result).unwrap();
@@ -3493,6 +3645,10 @@ mod tests {
             harness_state_path: String::new(),
             rollback_of: None,
             scope: None,
+            status: None,
+            error: None,
+            failure_category: None,
+            attempt_durations_ms: None,
         };
         std::fs::write(
             &history,
@@ -3534,6 +3690,10 @@ mod tests {
             harness_state_path: String::new(),
             rollback_of: None,
             scope: Some(HarnessScope::Global),
+            status: None,
+            error: None,
+            failure_category: None,
+            attempt_durations_ms: None,
         };
         let session_result = RefinementResult {
             summary: "session".to_string(),
