@@ -24,7 +24,9 @@ impl DirLockAttempt {
 
 /// link(2)-published lock file: born with its owner content, EEXIST the only
 /// collision signal; stale locks are renamed aside, verified, then deleted or
-/// restored. Directories at the lock path are preserved and require owner intervention.
+/// restored. A directory at the lock path is a legacy lock from the old
+/// protocol: it is judged by its `pid` marker and reclaimed only when nothing
+/// else lives inside it.
 const CANDIDATE_SWEEP_AGE_MS: u128 = 60 * 60 * 1000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -144,11 +146,10 @@ where
 {
     let lock_path = lock_path.to_string();
     async move {
-        // A directory can contain shared registry state or an old lock whose
-        // owner is still publishing its marker. Neither is safe to reclaim.
-        if std::fs::symlink_metadata(&lock_path)
-            .is_ok_and(|m| m.is_dir() || m.file_type().is_symlink())
-        {
+        // A symbolic link can pivot under any path probe, so it is never judged.
+        // A directory is a legacy lock: acquire_attempt judges its `pid` marker
+        // and refuses to touch any directory holding more than that marker.
+        if std::fs::symlink_metadata(&lock_path).is_ok_and(|m| m.file_type().is_symlink()) {
             return Ok(DirLockAttempt::Held);
         }
         sweep_abandoned_candidates(&lock_path);
@@ -275,8 +276,10 @@ where
     Fut: Future<Output = bool> + Send,
 {
     // A registry, session directory, or unexpected legacy payload is durable
-    // state, not a disposable lock. Never rename or recursively delete it.
-    if captured.is_dir {
+    // state, not a disposable lock: it is never renamed or deleted. A legacy
+    // directory lock owns only its `pid` marker, so any other entry inside the
+    // directory keeps it Held and requires owner intervention.
+    if captured.is_dir && !is_legacy_lock_directory(lock_path) {
         return Ok(DirLockAttempt::Held);
     }
     let judged = read_owner_raw(lock_path, captured.is_dir);
@@ -314,10 +317,18 @@ where
     let aside = stat_identity(Path::new(&aside_path));
     if let Some(aside) = aside {
         if aside.dev == captured.dev && aside.ino == captured.ino {
-            // Only a pinned regular file can enter this path. Never recursively
-            // remove a directory, even if a caller chose the wrong lock path.
+            // Only the judged legacy shape or a pinned regular file can enter
+            // this path. The directory loses only its `pid` marker, and
+            // remove_dir fails on anything raced in: never remove_dir_all.
             if aside.is_dir {
-                return Ok(DirLockAttempt::Held);
+                if !is_legacy_lock_directory(&aside_path) {
+                    return Ok(DirLockAttempt::Held);
+                }
+                let _ = std::fs::remove_file(Path::new(&aside_path).join("pid"));
+                if std::fs::remove_dir(&aside_path).is_err() {
+                    return Ok(DirLockAttempt::Held);
+                }
+                return Ok(DirLockAttempt::Reclaimed);
             }
             std::fs::remove_file(&aside_path)?;
             return Ok(DirLockAttempt::Reclaimed);
@@ -338,6 +349,18 @@ where
         }
     }
     Ok(DirLockAttempt::Held)
+}
+
+// A legacy directory lock owns only its `pid` marker; an empty directory is a
+// lock whose owner died before publishing. Any other entry is durable state -
+// a registry or session directory - that no reclaim may rename or delete.
+fn is_legacy_lock_directory(path: &str) -> bool {
+    let Ok(entries) = std::fs::read_dir(path) else {
+        return false;
+    };
+    entries
+        .flatten()
+        .all(|entry| entry.file_name() == std::ffi::OsStr::new("pid"))
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -436,6 +459,38 @@ mod tests {
             .unwrap();
         assert_eq!(attempt, DirLockAttempt::Reclaimed);
         assert!(!lock.exists());
+    }
+
+    #[tokio::test]
+    async fn reclaims_a_legacy_directory_lock_with_a_dead_owner() {
+        let dir = temp_dir();
+        let lock = dir.join("session.lock");
+        std::fs::create_dir_all(&lock).unwrap();
+        std::fs::write(lock.join("pid"), "999999\n").unwrap();
+        // The published legacy shape: a `pid` marker whose owner is gone.
+        let attempt = try_acquire_dir_lock(lock.to_str().unwrap(), |_| async { false })
+            .await
+            .unwrap();
+        assert_eq!(attempt, DirLockAttempt::Reclaimed);
+        assert!(!lock.exists());
+    }
+
+    #[tokio::test]
+    async fn preserves_a_legacy_directory_lock_with_durable_state() {
+        let dir = temp_dir();
+        let lock = dir.join("session.lock");
+        std::fs::create_dir_all(&lock).unwrap();
+        std::fs::write(lock.join("pid"), "999999\n").unwrap();
+        std::fs::write(lock.join("registry.json"), "{}\n").unwrap();
+        // A directory holding more than the `pid` marker is a registry or
+        // session directory: never renamed, never deleted, even ownerless.
+        let attempt = try_acquire_dir_lock(lock.to_str().unwrap(), |_| async { false })
+            .await
+            .unwrap();
+        assert_eq!(attempt, DirLockAttempt::Held);
+        assert!(lock.is_dir());
+        assert!(lock.join("pid").exists());
+        assert!(lock.join("registry.json").exists());
     }
 
     #[tokio::test]
