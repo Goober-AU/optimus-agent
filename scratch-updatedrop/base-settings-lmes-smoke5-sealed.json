@@ -1,0 +1,21 @@
+{
+ "recallQueryDistillation": true,
+ "recallRerank": true,
+ "answerMaxTokens": 8192,
+ "maxExtractionTokens": 32000,
+ "maxImportChunkChars": 15000,
+ "maxRecallChars": 8000,
+ "maxRecallEntries": 8,
+ "disableTools": true,
+ "autoRefine": {
+  "enabled": false
+ },
+ "answerInstruction": "Answer only from the memory notes provided above. Supersession: when notes conflict about the same fact, the latest \"at\" timestamp wins; never average or merge versions. Before any date, order, or duration answer, list the dates you see for each relevant fact, then reason from it. Before any count, enumerate each unique item with its date, keep only items consistent with the latest state, then count. Verify the note's entity \u2014 person, item, or show \u2014 is exactly the one asked about; a similar name is not a match. When a fact changed across sessions, state the current value first, earlier values as background. Answer comparisons only when both sides are recorded. Check the premise first: if it assumes what the notes contradict, say so. If no note states the answer, say the available memory does not record it, then give what is recorded.",
+ "questionTimeoutS": 240,
+ "skipIngest": false,
+ "recallOn": true,
+ "recallRerankCandidates": 200,
+ "recallQueryExtract": true,
+ "recallQueryExpansion": true,
+ "ingestTimeoutS": 43200
+}

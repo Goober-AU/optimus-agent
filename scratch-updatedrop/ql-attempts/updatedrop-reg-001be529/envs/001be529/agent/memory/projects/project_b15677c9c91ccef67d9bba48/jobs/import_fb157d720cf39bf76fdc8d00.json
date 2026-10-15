@@ -1,0 +1,344 @@
+{
+  "schema": 1.0,
+  "id": "import_fb157d720cf39bf76fdc8d00",
+  "source": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1\\envs\\001be529\\sessions\\0b64c6cb_2.jsonl",
+  "sourceHash": "bde4d78379656719ff678c95162a3294666834238432db1d166dcd7cc7cd4924",
+  "status": "applied",
+  "chunks": [
+    {
+      "records": [
+        {
+          "id": "m_0001:0",
+          "origin": "user",
+          "text": "I'm looking for some recommendations on sports bars in LA. I'm planning to catch a game with my coworkers soon. By the way, I just watched the College Football National Championship game with my family at home last week, and it was an amazing experience. We were all cheering on Georgia, and it was a great time.",
+          "sha256": "e9c8076dc2d3a3a7f47c3253b13aaf6591a3fa7646dcebc9b3a5c05b050f2f31",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L1",
+          "timestamp": 1684910520000.0
+        },
+        {
+          "id": "m_0002:0",
+          "origin": "assistant",
+          "text": "Sounds like you had a blast watching the College Football National Championship game with your family! Catching a game with your coworkers at a sports bar in LA can be just as exciting!\n\nLA has plenty of great sports bars to choose from, but here are some top recommendations:\n\n1. **The Parlor**: Located in Hollywood, The Parlor has over 30 TVs, a massive selection of beers, and a menu featuring classic pub grub. It's a popular spot for watching sports, especially football.\n2. **The Sportsmen's Lodge**: This Studio City institution has been around since 1945 and has over 40 TVs, making it an ideal spot to catch a game. They also have a great selection of craft beers and a menu featuring burgers, sandwiches, and salads.\n3. **Barney's Beanery**: With multiple locations in LA, Barney's is a sports bar staple. They have a huge selection of TVs, a fun atmosphere, and a menu featuring classic American comfort food.\n4. **The Garage**: Located in Santa Monica, The Garage has over 20 TVs, a great selection of craft beers, and a menu featuring burgers, tacos, and salads. It's a popular spot for watching sports, especially for USC and UCLA fans.\n5. **The Short Stop**: This Echo Park spot has a cozy atmosphere, a great selection of craft beers, and a menu featuring burgers, sandwiches, and salads. It's a popular spot for watching sports, especially for Dodgers and Lakers fans.\n6. **The Village Idiot**: Located in Hollywood, The Village Idiot has over 20 TVs, a great selection of beers, and a menu featuring classic pub grub. It's a popular spot for watching sports, especially for British Premier League and Champions League fans.\n\nThese are just a few of the many great sports bars in LA. Be sure to check out reviews, menus, and atmospheres to find the perfect spot for you and your coworkers.\n\nWhich team will you be cheering on with your coworkers?",
+          "sha256": "03620bdfecb114722d5a5afce5706f38b91363cbf003611d21b7bc96f2f92586",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L2",
+          "timestamp": 1684910520000.0
+        },
+        {
+          "id": "m_0003:0",
+          "origin": "user",
+          "text": "We're planning to catch a Lakers game, so we're looking for a sports bar that's close to the Staples Center. Do you know any good options in that area? By the way, I'm still on a high from watching the College Football National Championship game with my family at home - my dad and I were rooting for Georgia, and it was a close game!",
+          "sha256": "96d1fd0da9d4553ed7ed671e7436493501eb13a99c1b54b5237625df1ffa7ea3",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L3",
+          "timestamp": 1684910520000.0
+        },
+        {
+          "id": "m_0004:0",
+          "origin": "assistant",
+          "text": "Catching a Lakers game at the Staples Center is always an exciting experience! There are plenty of great sports bars near the Staples Center that'll get you pumped up for the game. Here are some top recommendations:\n\n1. **The Lab Gastropub**: Located just a block away from the Staples Center, The Lab offers a wide selection of craft beers, delicious pub grub, and over 20 TVs to catch the pre-game action.\n2. **Tom's Urban**: This modern sports bar is just a 5-minute walk from the Staples Center and features a massive 20-foot LED screen, over 20 TVs, and a menu featuring gourmet burgers and sandwiches.\n3. **The Mixing Room**: This upscale sports bar is located inside the JW Marriott Los Angeles L.A. Live hotel, just a short walk from the Staples Center. They offer a wide selection of craft cocktails, a menu featuring small plates and snacks, and plenty of TVs to catch the game.\n4. **The Farm of Beverly Hills**: This farm-to-table sports bar is about a 10-minute walk from the Staples Center and features a menu featuring healthy options, a wide selection of craft beers, and plenty of TVs to catch the game.\n5. **Rеспublic**: This modern sports bar is located in the LA Live complex, just a short walk from the Staples Center. They offer a menu featuring gourmet pub grub, a wide selection of craft beers, and plenty of TVs to catch the game.\n\nThese sports bars offer a great atmosphere, delicious food and drinks, and plenty of TVs to get you pumped up for the Lakers game!\n\nGlad to hear you and your dad were rooting for Georgia in the College Football National Championship game! It was definitely a thrilling game, and I'm sure you had a blast watching it with your family.",
+          "sha256": "f3ae56ba657e73ea89f5751df373711e7d8a216d09c07da742275bba7f90a078",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L4",
+          "timestamp": 1684910520000.0
+        },
+        {
+          "id": "m_0005:0",
+          "origin": "user",
+          "text": "I'm actually thinking of meeting up with my coworkers at the pub before the game to grab some burgers and beers. Do any of these sports bars have a good selection of burgers?",
+          "sha256": "ee2e4dce4a05f5b4dfefe1d2557ade3a258dbcfe16a7786c888e78e406438182",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L5",
+          "timestamp": 1684910520000.0
+        },
+        {
+          "id": "m_0006:0",
+          "origin": "assistant",
+          "text": "Grabbing burgers and beers with your coworkers before the game sounds like a great way to get the evening started!\n\nAll of the sports bars I mentioned earlier have a solid selection of burgers, but here's a breakdown of their burger options:\n\n1. **The Lab Gastropub**: They have a variety of creative burgers, including the \"Lab Burger\" (topped with cheddar, bacon, and caramelized onions), the \"Frenchie\" (topped with brie, prosciutto, and fig jam), and the \"Southwest Burger\" (topped with pepper jack, chipotle mayo, and avocado).\n2. **Tom's Urban**: They offer a range of gourmet burgers, including the \"Urban Burger\" (topped with cheddar, bacon, and caramelized onions), the \"Fungi Burger\" (topped with mushrooms, Swiss, and truffle aioli), and the \"Korean BBQ Burger\" (topped with kimchi, bulgogi beef, and spicy Gochujang mayo).\n3. **The Mixing Room**: They have a more upscale take on burgers, with options like the \"Classic Burger\" (topped with cheddar, lettuce, and tomato), the \"Bleu Burger\" (topped with crumbled bleu cheese, caramelized onions, and balsamic glaze), and the \"Wagyu Burger\" (topped with caramelized onions, mushrooms, and truffle aioli).\n4. **The Farm of Beverly Hills**: They offer a few gourmet burger options, including the \"Farm Burger\" (topped with cheddar, lettuce, and tomato), the \"Mushroom Swiss Burger\" (topped with sautéed mushrooms and Swiss cheese), and the \"Bacon BBQ Burger\" (topped with crispy bacon, cheddar, and BBQ sauce).\n5. **Rеспубли**: They have a few unique burger options, including the \"Classic Burger\" (topped with cheddar, lettuce, and tomato), the \"Greek Burger\" (topped with feta, olives, and sun-dried tomatoes), and the \"Korean Burger\" (topped with kimchi, bulgogi beef, and spicy Gochujang mayo).\n\nAll of these sports bars have great burger options, but if I had to pick a standout, I'd say Tom's Urban has one of the most creative and diverse burger menus.\n\nHope this helps, and I'm sure you and your coworkers will have a blast grabbing burgers and beers before the game!",
+          "sha256": "853211fb9d6662f2d939037db957cad20b5f8f0c5be48c0f1b75357458a5256a",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L6",
+          "timestamp": 1684910520000.0
+        },
+        {
+          "id": "m_0007:0",
+          "origin": "user",
+          "text": "I think I'll go with Tom's Urban, their burger options sound amazing. By the way, speaking of amazing, did I tell you that I watched the College Football National Championship game between Georgia and Alabama with my family at home, and it was such a close game? My mom and sister were rooting for Alabama, but my dad and I were all about Georgia.",
+          "sha256": "0ce51d6c5820fe6d85c8e49f5dbbf46f52767a8e7df538378edb2c4514dc7ca7",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L7",
+          "timestamp": 1684910520000.0
+        },
+        {
+          "id": "m_0008:0",
+          "origin": "assistant",
+          "text": "Tom's Urban is a fantastic spot for burgers and a fun atmosphere.\n\nAnd yes, you mentioned earlier that you watched the College Football National Championship game with your family and had a great time cheering on Georgia with your dad! It's always exciting to watch sports with family and friends, especially when it's a close game like that. I'm sure the atmosphere at your house was electric!\n\nEnjoy your burgers and beers at Tom's Urban, and I hope the Lakers game is just as thrilling! Let me know if you need any more recommendations or have any other questions.",
+          "sha256": "355da8b34c3f7bdac5112f3d45722df32124feb7b7a9cc40211408ea58c98239",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L8",
+          "timestamp": 1684910520000.0
+        },
+        {
+          "id": "m_0009:0",
+          "origin": "user",
+          "text": "I'm thinking of getting to Tom's Urban a bit early to grab a good spot to watch some pre-game coverage. Do they have a lot of TVs, and are they usually busy before a Lakers game?",
+          "sha256": "ad2e72916eb7ed24ab8d4d64ddb7c97472ddfe2628bee792417d61bcb258cf30",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L9",
+          "timestamp": 1684910520000.0
+        },
+        {
+          "id": "m_0010:0",
+          "origin": "assistant",
+          "text": "Tom's Urban is a popular spot, especially before a Lakers game, and they do have a lot of TVs to catch all the pre-game action.\n\nThey have over 20 HD TVs, including a massive 20-foot LED screen, so you'll have no problem finding a good spot to catch the pre-game coverage. Plus, they have a great sound system, so you'll feel like you're right there at the Staples Center!\n\nAs for the crowd, Tom's Urban can get pretty busy before a Lakers game, especially since it's located in the LA Live complex, which is just a short walk from the Staples Center. I'd recommend getting there at least an hour or two before the game to grab a good spot, especially if you want to sit near the big screen or at the bar.\n\nBut don't worry, the staff at Tom's Urban are pros at handling big crowds, and they'll make sure you're taken care of. They'll have plenty of servers and bartenders on hand to keep the drinks and food flowing, so you can focus on cheering on the Lakers!\n\nGet there early, grab a good spot, and enjoy the pre-game atmosphere!",
+          "sha256": "13352a6cfcb241399eae207e7bf0ea70dd8ccb04506444c3177fb82603cc1014",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L10",
+          "timestamp": 1684910520000.0
+        },
+        {
+          "id": "m_0011:0",
+          "origin": "user",
+          "text": "I'll make sure to get to Tom's Urban a bit early to grab a good spot. Thanks for the tip! By the way, I'm still thinking about that College Football National Championship game between Georgia and Alabama... my family had such a great time watching it together at home. We even had a big bowl of popcorn and some sodas to snack on while we watched the game.",
+          "sha256": "35bc68f25e7c96c7bb7eff267e3ec7a9dcee05d5481edb05c7f0997200608e11",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L11",
+          "timestamp": 1684910520000.0
+        },
+        {
+          "id": "m_0012:0",
+          "origin": "assistant",
+          "text": "You're welcome! I'm glad I could help.\n\nAnd aw, that sounds like an amazing way to spend time with your family! Watching sports with loved ones is always a great way to create memories, and it's even better when you have some delicious snacks to enjoy together. Popcorn and sodas are a classic combo for game day, and I'm sure it added to the excitement of watching the College Football National Championship game.\n\nIt's great that you and your family had such a great time together, and I'm sure you'll have just as much fun with your coworkers at Tom's Urban before the Lakers game. Enjoy the game, and don't hesitate to reach out if you need any more recommendations or tips!",
+          "sha256": "b2aac293a776a27ec421e40561b26365d5276ac5c199df280b108c8d86eb7bba",
+          "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L12",
+          "timestamp": 1684910520000.0
+        }
+      ],
+      "startLine": 1,
+      "endLine": 12,
+      "proposal": {
+        "summary": "Two local memory edits capturing the user's family College Football National Championship viewing and their planned Lakers game outing at Tom's Urban.",
+        "rationale": "The user made multiple direct, first-person reports on 2023-05-24 that are durable and host-neutral: (1) they watched the College Football National Championship (Georgia vs Alabama) at home with family the previous week, with dad and the user rooting for Georgia, mom and sister for Alabama, and popcorn and sodas as snacks (m_0001:0, m_0003:0, m_0007:0, m_0011:0); (2) they are planning to attend a Lakers game with coworkers and, after requesting sports bars near the Staples Center, chose Tom's Urban for pre-game burgers and beers and intends to arrive early for a good spot (m_0001:0, m_0003:0, m_0005:0, m_0007:0, m_0009:0, m_0011:0). Neither fact duplicates any existing harness entry. Assistant-authored venue details (TV counts, crowd levels) are excluded as unsupported assistant claims; only user-reported decisions are recorded.",
+        "edits": [
+          {
+            "action": "create",
+            "kind": "memory",
+            "id": "mem-user-cfb-championship-family-viewing-may2023",
+            "title": "College Football National Championship game (Georgia vs Alabama) watched at home with family (May 2023)",
+            "content": "On 2023-05-24 the user reported that the previous week they watched the College Football National Championship game between Georgia and Alabama at home with their family, describing it as an amazing, close game and revisiting it fondly several times. The user and their dad rooted for Georgia, while their mom and sister rooted for Alabama. They snacked on a big bowl of popcorn and sodas while watching. The user is a Georgia college football fan and clearly enjoys watching games with family.",
+            "path": "user/interests",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0001:0",
+                "m_0003:0",
+                "m_0007:0",
+                "m_0011:0"
+              ],
+              "sources": [
+                {
+                  "id": "m_0001:0",
+                  "origin": "user",
+                  "sha256": "e9c8076dc2d3a3a7f47c3253b13aaf6591a3fa7646dcebc9b3a5c05b050f2f31",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L1"
+                },
+                {
+                  "id": "m_0003:0",
+                  "origin": "user",
+                  "sha256": "96d1fd0da9d4553ed7ed671e7436493501eb13a99c1b54b5237625df1ffa7ea3",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L3"
+                },
+                {
+                  "id": "m_0007:0",
+                  "origin": "user",
+                  "sha256": "0ce51d6c5820fe6d85c8e49f5dbbf46f52767a8e7df538378edb2c4514dc7ca7",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L7"
+                },
+                {
+                  "id": "m_0011:0",
+                  "origin": "user",
+                  "sha256": "35bc68f25e7c96c7bb7eff267e3ec7a9dcee05d5481edb05c7f0997200608e11",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L11"
+                }
+              ],
+              "evidenceStatus": "cited"
+            },
+            "reason": "Durable user/family sports fandom fact stated directly and repeatedly by the user; useful for any future sports conversation, team references, or family-related context."
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "id": "mem-user-lakers-game-toms-urban-may2023",
+            "title": "Lakers game with coworkers: pre-game burgers and beers at Tom's Urban planned (May 2023)",
+            "content": "On 2023-05-24 the user was planning to attend a Lakers game with coworkers and asked for sports bar recommendations near the Staples Center in Los Angeles. After asking specifically about burger options, they decided to meet their coworkers at Tom's Urban before the game for burgers and beers, and said they will get there a bit early to grab a good spot to watch pre-game coverage.",
+            "path": "projects/lakers-game-outing",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0001:0",
+                "m_0003:0",
+                "m_0005:0",
+                "m_0007:0",
+                "m_0009:0",
+                "m_0011:0"
+              ],
+              "sources": [
+                {
+                  "id": "m_0001:0",
+                  "origin": "user",
+                  "sha256": "e9c8076dc2d3a3a7f47c3253b13aaf6591a3fa7646dcebc9b3a5c05b050f2f31",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L1"
+                },
+                {
+                  "id": "m_0003:0",
+                  "origin": "user",
+                  "sha256": "96d1fd0da9d4553ed7ed671e7436493501eb13a99c1b54b5237625df1ffa7ea3",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L3"
+                },
+                {
+                  "id": "m_0005:0",
+                  "origin": "user",
+                  "sha256": "ee2e4dce4a05f5b4dfefe1d2557ade3a258dbcfe16a7786c888e78e406438182",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L5"
+                },
+                {
+                  "id": "m_0007:0",
+                  "origin": "user",
+                  "sha256": "0ce51d6c5820fe6d85c8e49f5dbbf46f52767a8e7df538378edb2c4514dc7ca7",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L7"
+                },
+                {
+                  "id": "m_0009:0",
+                  "origin": "user",
+                  "sha256": "ad2e72916eb7ed24ab8d4d64ddb7c97472ddfe2628bee792417d61bcb258cf30",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L9"
+                },
+                {
+                  "id": "m_0011:0",
+                  "origin": "user",
+                  "sha256": "35bc68f25e7c96c7bb7eff267e3ec7a9dcee05d5481edb05c7f0997200608e11",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L11"
+                }
+              ],
+              "evidenceStatus": "cited"
+            },
+            "reason": "Captures the user's current outing plan (venue choice, group, timing intent) so follow-up questions about the Lakers game or the pre-game meetup can be answered consistently; assistant claims about the venue itself were deliberately excluded."
+          }
+        ],
+        "expectedOutcome": "Future turns can recall the user's Georgia fandom and family sports-viewing details without re-asking, and can follow up accurately on the Lakers outing plan (Tom's Urban, early arrival) if the user references the game, the bar, or LA plans. Validate by checking that a later question about the championship game or the Lakers outing retrieves these memories with correct family affiliations and venue choice."
+      }
+    }
+  ],
+  "nextChunk": 1,
+  "expectedRevision": 22,
+  "coverage": {
+    "lines": 13,
+    "evidenceRecords": 12,
+    "excludedLines": []
+  },
+  "usage": {
+    "input": 9526.0,
+    "output": 4177.0
+  },
+  "acceptedProposal": {
+    "summary": "Import import_fb157d720cf39bf76fdc8d00",
+    "rationale": "Selected session bde4d78379656719ff678c95162a3294666834238432db1d166dcd7cc7cd4924",
+    "edits": [
+      {
+        "action": "create",
+        "kind": "memory",
+        "id": "mem-user-cfb-championship-family-viewing-may2023",
+        "title": "College Football National Championship game (Georgia vs Alabama) watched at home with family (May 2023)",
+        "content": "On 2023-05-24 the user reported that the previous week they watched the College Football National Championship game between Georgia and Alabama at home with their family, describing it as an amazing, close game and revisiting it fondly several times. The user and their dad rooted for Georgia, while their mom and sister rooted for Alabama. They snacked on a big bowl of popcorn and sodas while watching. The user is a Georgia college football fan and clearly enjoys watching games with family.",
+        "path": "user/interests",
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0001:0",
+            "m_0003:0",
+            "m_0007:0",
+            "m_0011:0"
+          ],
+          "sources": [
+            {
+              "id": "m_0001:0",
+              "origin": "user",
+              "sha256": "e9c8076dc2d3a3a7f47c3253b13aaf6591a3fa7646dcebc9b3a5c05b050f2f31",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L1"
+            },
+            {
+              "id": "m_0003:0",
+              "origin": "user",
+              "sha256": "96d1fd0da9d4553ed7ed671e7436493501eb13a99c1b54b5237625df1ffa7ea3",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L3"
+            },
+            {
+              "id": "m_0007:0",
+              "origin": "user",
+              "sha256": "0ce51d6c5820fe6d85c8e49f5dbbf46f52767a8e7df538378edb2c4514dc7ca7",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L7"
+            },
+            {
+              "id": "m_0011:0",
+              "origin": "user",
+              "sha256": "35bc68f25e7c96c7bb7eff267e3ec7a9dcee05d5481edb05c7f0997200608e11",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L11"
+            }
+          ],
+          "evidenceStatus": "cited"
+        },
+        "reason": "Durable user/family sports fandom fact stated directly and repeatedly by the user; useful for any future sports conversation, team references, or family-related context."
+      },
+      {
+        "action": "create",
+        "kind": "memory",
+        "id": "mem-user-lakers-game-toms-urban-may2023",
+        "title": "Lakers game with coworkers: pre-game burgers and beers at Tom's Urban planned (May 2023)",
+        "content": "On 2023-05-24 the user was planning to attend a Lakers game with coworkers and asked for sports bar recommendations near the Staples Center in Los Angeles. After asking specifically about burger options, they decided to meet their coworkers at Tom's Urban before the game for burgers and beers, and said they will get there a bit early to grab a good spot to watch pre-game coverage.",
+        "path": "projects/lakers-game-outing",
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0001:0",
+            "m_0003:0",
+            "m_0005:0",
+            "m_0007:0",
+            "m_0009:0",
+            "m_0011:0"
+          ],
+          "sources": [
+            {
+              "id": "m_0001:0",
+              "origin": "user",
+              "sha256": "e9c8076dc2d3a3a7f47c3253b13aaf6591a3fa7646dcebc9b3a5c05b050f2f31",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L1"
+            },
+            {
+              "id": "m_0003:0",
+              "origin": "user",
+              "sha256": "96d1fd0da9d4553ed7ed671e7436493501eb13a99c1b54b5237625df1ffa7ea3",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L3"
+            },
+            {
+              "id": "m_0005:0",
+              "origin": "user",
+              "sha256": "ee2e4dce4a05f5b4dfefe1d2557ade3a258dbcfe16a7786c888e78e406438182",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L5"
+            },
+            {
+              "id": "m_0007:0",
+              "origin": "user",
+              "sha256": "0ce51d6c5820fe6d85c8e49f5dbbf46f52767a8e7df538378edb2c4514dc7ca7",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L7"
+            },
+            {
+              "id": "m_0009:0",
+              "origin": "user",
+              "sha256": "ad2e72916eb7ed24ab8d4d64ddb7c97472ddfe2628bee792417d61bcb258cf30",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L9"
+            },
+            {
+              "id": "m_0011:0",
+              "origin": "user",
+              "sha256": "35bc68f25e7c96c7bb7eff267e3ec7a9dcee05d5481edb05c7f0997200608e11",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/reports/continuation/iteration3-inputs/runs/lme_s_full_smoke5_v1/envs/001be529/agent/memory/projects/project_b15677c9c91ccef67d9bba48/jobs/import_fb157d720cf39bf76fdc8d00.source.jsonl#L11"
+            }
+          ],
+          "evidenceStatus": "cited"
+        },
+        "reason": "Captures the user's current outing plan (venue choice, group, timing intent) so follow-up questions about the Lakers game or the pre-game meetup can be answered consistently; assistant claims about the venue itself were deliberately excluded."
+      }
+    ],
+    "expectedOutcome": "Recover selected project knowledge with original evidence"
+  }
+}

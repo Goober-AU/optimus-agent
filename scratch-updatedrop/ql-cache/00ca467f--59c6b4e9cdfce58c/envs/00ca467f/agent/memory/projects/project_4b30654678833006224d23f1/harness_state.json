@@ -1,0 +1,1642 @@
+{
+  "schema": 1.0,
+  "entries": {
+    "memory": {
+      "mem-health-knee-thompson-followup": {
+        "id": "mem-health-knee-thompson-followup",
+        "kind": "memory",
+        "title": "knee healing well after March 20 orthopedic follow-up with Dr. Thompson",
+        "content": "The user had a follow-up appointment with their orthopedic surgeon, Dr. Thompson, on March 20th, and reported that their knee is healing well.",
+        "path": "user/health",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0001:0"
+          ],
+          "projectReusable": true,
+          "sources": [
+            {
+              "id": "m_0001:0",
+              "origin": "user",
+              "sha256": "286e626de3c10c9591b7f8345eaec6bd7bb02211fd876782fffa6b5e57668056",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L1"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:36:11.768Z",
+        "updated_at": "2026-10-13T08:36:11.768Z",
+        "version": 1
+      },
+      "mem-health-lingering-cough-guaifenesin": {
+        "id": "mem-health-lingering-cough-guaifenesin",
+        "kind": "memory",
+        "title": "lingering cough for weeks — guaifenesin providing little relief",
+        "content": "The user has had a lingering cough lasting several weeks. They take over-the-counter guaifenesin as an expectorant but report it does not seem to be helping much, and they are considering asking their doctor about other treatment options.",
+        "path": "user/health",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0001:0",
+            "m_0003:0",
+            "m_0005:0"
+          ],
+          "projectReusable": true,
+          "sources": [
+            {
+              "id": "m_0001:0",
+              "origin": "user",
+              "sha256": "286e626de3c10c9591b7f8345eaec6bd7bb02211fd876782fffa6b5e57668056",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L1"
+            },
+            {
+              "id": "m_0003:0",
+              "origin": "user",
+              "sha256": "b663188da526a982266931258531b694f0ae371507437f7195aec44f5b33dc30",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L3"
+            },
+            {
+              "id": "m_0005:0",
+              "origin": "user",
+              "sha256": "203e7a32402fe74b23ef8d3b580529f2a9ca1f955f6a322e49666270ea0d3744",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L5"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:36:11.769Z",
+        "updated_at": "2026-10-13T08:36:11.769Z",
+        "version": 1
+      },
+      "mem-health-heartburn-reflux-patel": {
+        "id": "mem-health-heartburn-reflux-patel",
+        "kind": "memory",
+        "title": "occasional heartburn and acid reflux — gastroenterologist Dr. Patel, natural remedies interest",
+        "content": "The user experiences occasional heartburn and acid reflux symptoms. Their gastroenterologist is Dr. Patel, and they are considering scheduling an appointment to discuss further treatment. They are interested in natural remedies such as ginger and aloe vera juice, and in understanding whether stress contributes to their symptoms.",
+        "path": "user/health",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0005:0",
+            "m_0007:0",
+            "m_0009:0"
+          ],
+          "projectReusable": true,
+          "sources": [
+            {
+              "id": "m_0005:0",
+              "origin": "user",
+              "sha256": "203e7a32402fe74b23ef8d3b580529f2a9ca1f955f6a322e49666270ea0d3744",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L5"
+            },
+            {
+              "id": "m_0007:0",
+              "origin": "user",
+              "sha256": "f8481dfe8cc4f8761cd62d497585205ab29c6b8583d84a069778feaa583632c2",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L7"
+            },
+            {
+              "id": "m_0009:0",
+              "origin": "user",
+              "sha256": "2ca479aceef4e8af810cc521f3d461b27fcb4f64fade756c0919ce70302bcf05",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L9"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:36:11.769Z",
+        "updated_at": "2026-10-13T08:36:11.769Z",
+        "version": 1
+      },
+      "imported_f5d0eca4726d00749d254da5": {
+        "id": "imported_f5d0eca4726d00749d254da5",
+        "kind": "memory",
+        "title": "Heartburn and acid reflux symptoms",
+        "content": "The user reported experiencing heartburn and acid reflux symptoms. They are exploring stress as a possible contributor and stress management as a way to alleviate the symptoms.",
+        "path": "general",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0011:0"
+          ],
+          "projectReusable": true,
+          "sources": [
+            {
+              "id": "m_0011:0",
+              "origin": "user",
+              "sha256": "8b8b88b8f5d412208bbad289edfb971c195f32c777ddef061b4e14cf0ea8eefc",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L11"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:36:11.769Z",
+        "updated_at": "2026-10-13T08:36:11.769Z",
+        "version": 1
+      },
+      "imported_69331b0912bfa0e0be7c5aeb": {
+        "id": "imported_69331b0912bfa0e0be7c5aeb",
+        "kind": "memory",
+        "title": "Heartburn and acid reflux — plan to ask Dr. Patel about stress management",
+        "content": "The user plans to ask Dr. Patel, a healthcare provider they consult, about stress management techniques that could help alleviate their heartburn and acid reflux symptoms. They may start with relaxation exercises to see if that makes a difference.",
+        "path": "general",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0011:0"
+          ],
+          "sources": [
+            {
+              "id": "m_0011:0",
+              "origin": "user",
+              "sha256": "8b8b88b8f5d412208bbad289edfb971c195f32c777ddef061b4e14cf0ea8eefc",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L11"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:36:11.769Z",
+        "updated_at": "2026-10-13T08:36:11.769Z",
+        "version": 1
+      },
+      "mem-health-lefthand-numbness-emg-johnson": {
+        "id": "mem-health-lefthand-numbness-emg-johnson",
+        "kind": "memory",
+        "title": "left hand numbness — EMG test scheduled April 1 with neurologist Dr. Johnson",
+        "content": "The user reports numbness in their left hand. To rule out nerve damage, an EMG test is scheduled with their neurologist, Dr. Johnson, on April 1st. The user is anxious about what to expect during the procedure.",
+        "path": "user/health",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0001:0",
+            "m_0007:0"
+          ],
+          "projectReusable": true,
+          "sources": [
+            {
+              "id": "m_0001:0",
+              "origin": "user",
+              "sha256": "2218af52612a25dfb1266c2124fe07a0eb09a573fdd62b93b988f73b8d9ca590",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L1"
+            },
+            {
+              "id": "m_0007:0",
+              "origin": "user",
+              "sha256": "4a2b1cff714e8f2815ccc2bf43d88ecfbc7485016029569afdd6d91e00527322",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L7"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:37:36.082Z",
+        "updated_at": "2026-10-13T08:37:36.082Z",
+        "version": 1
+      },
+      "mem-health-lingering-cough-antibiotic-pcp": {
+        "id": "mem-health-lingering-cough-antibiotic-pcp",
+        "kind": "memory",
+        "title": "lingering cough — antibiotic from primary care physician did not fully clear it",
+        "content": "The user has had a lingering cough for several weeks. They saw their primary care physician, who prescribed an antibiotic, but the antibiotic did not fully clear up the cough.",
+        "path": "user/health",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0001:0"
+          ],
+          "projectReusable": true,
+          "sources": [
+            {
+              "id": "m_0001:0",
+              "origin": "user",
+              "sha256": "2218af52612a25dfb1266c2124fe07a0eb09a573fdd62b93b988f73b8d9ca590",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L1"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:37:36.082Z",
+        "updated_at": "2026-10-13T08:37:36.082Z",
+        "version": 1
+      },
+      "mem-health-heartburn-onset-diet-antacids": {
+        "id": "mem-health-heartburn-onset-diet-antacids",
+        "kind": "memory",
+        "title": "heartburn and acid reflux since late January — managed with diet changes and antacids",
+        "content": "The user's heartburn and acid reflux symptoms started around late January. They are managing the symptoms by adjusting their diet and taking antacids as needed.",
+        "path": "user/health",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0003:0"
+          ],
+          "projectReusable": true,
+          "sources": [
+            {
+              "id": "m_0003:0",
+              "origin": "user",
+              "sha256": "6edb93dec1fcdefa4608b54f84321b669f925b6a7b3e30a14e2edd92b90e7da2",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L3"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:37:36.082Z",
+        "updated_at": "2026-10-13T08:37:36.082Z",
+        "version": 1
+      },
+      "imported_c25bfe8c067be7c43080370a": {
+        "id": "imported_c25bfe8c067be7c43080370a",
+        "kind": "memory",
+        "title": "torn ACL — physical therapy twice weekly starting March 25 after Dr. Thompson clearance",
+        "content": "The user is recovering from a torn ACL. Their orthopedic surgeon, Dr. Thompson, cleared them to start physical therapy, with sessions scheduled twice a week beginning March 25 to strengthen their leg muscles. The user hopes the physical therapy will help them recover from the torn ACL.",
+        "path": "user/health",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "category": "user/health",
+          "projectReusable": false,
+          "sourceIds": [
+            "m_0011:0"
+          ],
+          "sources": [
+            {
+              "id": "m_0011:0",
+              "origin": "user",
+              "sha256": "5138ead22e87174d332c4cfd45dd5fa67e10eb37a0acb463854f6b1f0d15a70e",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L11"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:37:36.082Z",
+        "updated_at": "2026-10-13T08:37:36.082Z",
+        "version": 1
+      },
+      "imported_5ff1dcee403677c60ebf2d12": {
+        "id": "imported_5ff1dcee403677c60ebf2d12",
+        "kind": "memory",
+        "title": "upcoming EMG test — user worried, asked about physical therapy for nerve issues",
+        "content": "The user has an upcoming EMG test and reported feeling a bit worried about it. In that context, they asked how physical therapy can help with nerve damage or compression.",
+        "path": "user/health",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "category": "user/health",
+          "projectReusable": false,
+          "sourceIds": [
+            "m_0009:0"
+          ],
+          "sources": [
+            {
+              "id": "m_0009:0",
+              "origin": "user",
+              "sha256": "0a932ef39a5bbedccda063bb001b6210c07cf50dc4e433d6aead69246a510bc5",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L9"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:37:36.082Z",
+        "updated_at": "2026-10-13T08:37:36.082Z",
+        "version": 1
+      },
+      "mem-health-bronchitis-diagnosis-smith": {
+        "id": "mem-health-bronchitis-diagnosis-smith",
+        "kind": "memory",
+        "title": "bronchitis diagnosis — lingering cough diagnosed by Dr. Smith on March 3",
+        "content": "The user has had a lingering cough for about six weeks. On March 3rd they saw their primary care physician, Dr. Smith, who diagnosed them with bronchitis. They asked about natural remedies to help soothe symptoms.",
+        "path": "user/health",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "category": "user/health",
+          "sourceIds": [
+            "m_0001:0"
+          ],
+          "sources": [
+            {
+              "id": "m_0001:0",
+              "origin": "user",
+              "sha256": "30e32fe7f6cfb57e5d209b8a35e79f4af7445bf09eba2814a0c1547e669b1aa3",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L1"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:39:33.800Z",
+        "updated_at": "2026-10-13T08:39:33.800Z",
+        "version": 1
+      },
+      "mem-health-bronchitis-night-cough-remedies": {
+        "id": "mem-health-bronchitis-night-cough-remedies",
+        "kind": "memory",
+        "title": "bronchitis night cough — honey and steam inhalation already tried, chest x-ray being considered",
+        "content": "For their bronchitis cough, the user already uses steam inhalation and honey and has tried general sleep tips, but still wakes with a bad cough at night. They are thinking about getting a chest x-ray to rule out other issues and intend to discuss it with Dr. Smith.",
+        "path": "user/health",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "category": "user/health",
+          "sourceIds": [
+            "m_0003:0",
+            "m_0005:0"
+          ],
+          "sources": [
+            {
+              "id": "m_0003:0",
+              "origin": "user",
+              "sha256": "c81eddaef65c364e5df057e9d5ad2f73ffd84918c2196aa0b364f8e230ee7a65",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L3"
+            },
+            {
+              "id": "m_0005:0",
+              "origin": "user",
+              "sha256": "f917c2be2580115febf3930414b64e92a703c854e2534d16f445251d897d2422",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L5"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:39:33.800Z",
+        "updated_at": "2026-10-13T08:39:33.800Z",
+        "version": 1
+      },
+      "imported_9ee11965dbc42a6534a8991e": {
+        "id": "imported_9ee11965dbc42a6534a8991e",
+        "kind": "memory",
+        "title": "left hand numbness — noticed around March 15, EMG April 1 with neurologist Dr. Johnson",
+        "content": "The user reports numbness in their left hand, first noticed around March 15th. To rule out nerve damage, an EMG test is scheduled with their neurologist, Dr. Johnson, on April 1st; the user is anxious about what to expect during the procedure. They plan to schedule appointments with both Dr. Smith and Dr. Johnson to discuss the numbness, and will keep a symptom journal tracking the numbness and any other symptoms.",
+        "path": "user/health",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "category": "user/health",
+          "sourceIds": [
+            "m_0007:0",
+            "m_0009:0"
+          ],
+          "sources": [
+            {
+              "id": "m_0007:0",
+              "origin": "user",
+              "sha256": "142c857c6d2d5bd6f45d15468921d9fa2a1efd189ef9f15ca5af54f9a06d29bb",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L7"
+            },
+            {
+              "id": "m_0009:0",
+              "origin": "user",
+              "sha256": "b2e6a58996fb213f49772a6fe627881e1d8edf7bfe62106a81e33cbdce85bee4",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L9"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "updateTargetId": "mem-health-lefthand-numbness-emg-johnson",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:39:33.800Z",
+        "updated_at": "2026-10-13T08:39:33.800Z",
+        "version": 1
+      },
+      "mem-health-bronchitis-dr-smith-treatment": {
+        "id": "mem-health-bronchitis-dr-smith-treatment",
+        "kind": "memory",
+        "title": "bronchitis — treatment plan from Dr. Smith, possible link to left hand numbness",
+        "content": "The user has bronchitis and is following a treatment plan from Dr. Smith. The user asked whether the bronchitis could be connected to the numbness in their left hand, which is being evaluated by neurologist Dr. Johnson (EMG scheduled for April 1), or whether the two conditions are separate issues.",
+        "path": "user/health",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0010:0",
+            "m_0011:0"
+          ],
+          "sources": [
+            {
+              "id": "m_0010:0",
+              "origin": "user",
+              "sha256": "fc7145d5fdc1aac59c189874704e03bdecae33ac0697344f92b48472e65e1392",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L10"
+            },
+            {
+              "id": "m_0011:0",
+              "origin": "user",
+              "sha256": "ce141b65ff65f0e1ab71ff7d60cdf4fa97fc67c1927335713c5fea67a8dbd721",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L11"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:39:33.800Z",
+        "updated_at": "2026-10-13T08:39:33.800Z",
+        "version": 1
+      },
+      "mem-health-symptom-journal-lefthand-numbness": {
+        "id": "mem-health-symptom-journal-lefthand-numbness",
+        "kind": "memory",
+        "title": "symptom journal for left hand numbness — shared with Dr. Smith and Dr. Johnson",
+        "content": "The user is keeping a detailed symptom journal to track the numbness in their left hand, intended to help Dr. Smith and Dr. Johnson understand the condition and make an accurate diagnosis.",
+        "path": "user/health",
+        "scope": "local",
+        "reference": {},
+        "arguments": {},
+        "metadata": {
+          "scope": "local",
+          "sourceIds": [
+            "m_0010:0"
+          ],
+          "sources": [
+            {
+              "id": "m_0010:0",
+              "origin": "user",
+              "sha256": "fc7145d5fdc1aac59c189874704e03bdecae33ac0697344f92b48472e65e1392",
+              "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L10"
+            }
+          ],
+          "evidenceStatus": "cited",
+          "projectId": "project_4b30654678833006224d23f1",
+          "status": "current"
+        },
+        "source": "refine",
+        "created_at": "2026-10-13T08:39:33.800Z",
+        "updated_at": "2026-10-13T08:39:33.800Z",
+        "version": 1
+      }
+    },
+    "prompt": {},
+    "skill": {},
+    "subagent": {}
+  },
+  "refinements": [
+    {
+      "id": "import_d8732e451db6214c7a784a29",
+      "trigger": "Import import_d8732e451db6214c7a784a29",
+      "changes": [
+        "create memory:mem-health-knee-thompson-followup",
+        "create memory:mem-health-lingering-cough-guaifenesin",
+        "create memory:mem-health-heartburn-reflux-patel",
+        "create memory:imported_f5d0eca4726d00749d254da5",
+        "create memory:imported_69331b0912bfa0e0be7c5aeb"
+      ],
+      "evidence": "Selected session f149285dac23d3c479a2cbb059ed1d4110d5697933d309a534798b52008e2bc7",
+      "outcome": "Recover selected project knowledge with original evidence",
+      "created_at": "2026-10-13T08:36:11.769Z"
+    },
+    {
+      "id": "import_0979968b5f68171e127a5532",
+      "trigger": "Import import_0979968b5f68171e127a5532",
+      "changes": [
+        "create memory:mem-health-lefthand-numbness-emg-johnson",
+        "create memory:mem-health-lingering-cough-antibiotic-pcp",
+        "create memory:mem-health-heartburn-onset-diet-antacids",
+        "create memory:imported_c25bfe8c067be7c43080370a",
+        "create memory:imported_5ff1dcee403677c60ebf2d12"
+      ],
+      "evidence": "Selected session 5388186061c1b442e435a51be47de8037f46d8cd1362dc73117538da41dc0995",
+      "outcome": "Recover selected project knowledge with original evidence",
+      "created_at": "2026-10-13T08:37:36.082Z"
+    },
+    {
+      "id": "import_e7422f647a5242d9114dc7c5",
+      "trigger": "Import import_e7422f647a5242d9114dc7c5",
+      "changes": [
+        "create memory:mem-health-bronchitis-diagnosis-smith",
+        "create memory:mem-health-bronchitis-night-cough-remedies",
+        "create memory:imported_9ee11965dbc42a6534a8991e",
+        "create memory:mem-health-bronchitis-dr-smith-treatment",
+        "create memory:mem-health-symptom-journal-lefthand-numbness"
+      ],
+      "evidence": "Selected session b612063479ed6d9844560387c2eab2a6ade0447193121fecbcb0cf3341eb9a5e",
+      "outcome": "Recover selected project knowledge with original evidence",
+      "created_at": "2026-10-13T08:39:33.800Z"
+    }
+  ],
+  "memory": {
+    "schema": 1.0,
+    "projectId": "project_4b30654678833006224d23f1",
+    "revision": 3,
+    "history": [
+      {
+        "id": "import_d8732e451db6214c7a784a29",
+        "summary": "Import import_d8732e451db6214c7a784a29",
+        "rationale": "Selected session f149285dac23d3c479a2cbb059ed1d4110d5697933d309a534798b52008e2bc7",
+        "expectedOutcome": "Recover selected project knowledge with original evidence",
+        "appliedEdits": [
+          {
+            "action": "create",
+            "kind": "memory",
+            "title": "knee healing well after March 20 orthopedic follow-up with Dr. Thompson",
+            "content": "The user had a follow-up appointment with their orthopedic surgeon, Dr. Thompson, on March 20th, and reported that their knee is healing well.",
+            "path": "user/health",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0001:0"
+              ],
+              "projectReusable": true,
+              "sources": [
+                {
+                  "id": "m_0001:0",
+                  "origin": "user",
+                  "sha256": "286e626de3c10c9591b7f8345eaec6bd7bb02211fd876782fffa6b5e57668056",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L1"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "Durable, dated health event reported directly by the user; the title names the object (knee) and event (follow-up appointment) so later questions can find it by subject.",
+            "id": "mem-health-knee-thompson-followup",
+            "after": {
+              "id": "mem-health-knee-thompson-followup",
+              "kind": "memory",
+              "title": "knee healing well after March 20 orthopedic follow-up with Dr. Thompson",
+              "content": "The user had a follow-up appointment with their orthopedic surgeon, Dr. Thompson, on March 20th, and reported that their knee is healing well.",
+              "path": "user/health",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0001:0"
+                ],
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0001:0",
+                    "origin": "user",
+                    "sha256": "286e626de3c10c9591b7f8345eaec6bd7bb02211fd876782fffa6b5e57668056",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L1"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:36:11.768Z",
+              "updated_at": "2026-10-13T08:36:11.768Z",
+              "version": 1
+            },
+            "applied": true
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "title": "lingering cough for weeks — guaifenesin providing little relief",
+            "content": "The user has had a lingering cough lasting several weeks. They take over-the-counter guaifenesin as an expectorant but report it does not seem to be helping much, and they are considering asking their doctor about other treatment options.",
+            "path": "user/health",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0001:0",
+                "m_0003:0",
+                "m_0005:0"
+              ],
+              "projectReusable": true,
+              "sources": [
+                {
+                  "id": "m_0001:0",
+                  "origin": "user",
+                  "sha256": "286e626de3c10c9591b7f8345eaec6bd7bb02211fd876782fffa6b5e57668056",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L1"
+                },
+                {
+                  "id": "m_0003:0",
+                  "origin": "user",
+                  "sha256": "b663188da526a982266931258531b694f0ae371507437f7195aec44f5b33dc30",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L3"
+                },
+                {
+                  "id": "m_0005:0",
+                  "origin": "user",
+                  "sha256": "203e7a32402fe74b23ef8d3b580529f2a9ca1f955f6a322e49666270ea0d3744",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L5"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "Durable health condition and medication response reported directly by the user across three turns; useful for personalized follow-up discussion.",
+            "id": "mem-health-lingering-cough-guaifenesin",
+            "after": {
+              "id": "mem-health-lingering-cough-guaifenesin",
+              "kind": "memory",
+              "title": "lingering cough for weeks — guaifenesin providing little relief",
+              "content": "The user has had a lingering cough lasting several weeks. They take over-the-counter guaifenesin as an expectorant but report it does not seem to be helping much, and they are considering asking their doctor about other treatment options.",
+              "path": "user/health",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0001:0",
+                  "m_0003:0",
+                  "m_0005:0"
+                ],
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0001:0",
+                    "origin": "user",
+                    "sha256": "286e626de3c10c9591b7f8345eaec6bd7bb02211fd876782fffa6b5e57668056",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L1"
+                  },
+                  {
+                    "id": "m_0003:0",
+                    "origin": "user",
+                    "sha256": "b663188da526a982266931258531b694f0ae371507437f7195aec44f5b33dc30",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L3"
+                  },
+                  {
+                    "id": "m_0005:0",
+                    "origin": "user",
+                    "sha256": "203e7a32402fe74b23ef8d3b580529f2a9ca1f955f6a322e49666270ea0d3744",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L5"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:36:11.769Z",
+              "updated_at": "2026-10-13T08:36:11.769Z",
+              "version": 1
+            },
+            "applied": true
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "title": "occasional heartburn and acid reflux — gastroenterologist Dr. Patel, natural remedies interest",
+            "content": "The user experiences occasional heartburn and acid reflux symptoms. Their gastroenterologist is Dr. Patel, and they are considering scheduling an appointment to discuss further treatment. They are interested in natural remedies such as ginger and aloe vera juice, and in understanding whether stress contributes to their symptoms.",
+            "path": "user/health",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0005:0",
+                "m_0007:0",
+                "m_0009:0"
+              ],
+              "projectReusable": true,
+              "sources": [
+                {
+                  "id": "m_0005:0",
+                  "origin": "user",
+                  "sha256": "203e7a32402fe74b23ef8d3b580529f2a9ca1f955f6a322e49666270ea0d3744",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L5"
+                },
+                {
+                  "id": "m_0007:0",
+                  "origin": "user",
+                  "sha256": "f8481dfe8cc4f8761cd62d497585205ab29c6b8583d84a069778feaa583632c2",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L7"
+                },
+                {
+                  "id": "m_0009:0",
+                  "origin": "user",
+                  "sha256": "2ca479aceef4e8af810cc521f3d461b27fcb4f64fade756c0919ce70302bcf05",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L9"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "Durable symptom profile, care provider, and treatment interests reported directly by the user; supports coherent follow-up on GERD management discussions.",
+            "id": "mem-health-heartburn-reflux-patel",
+            "after": {
+              "id": "mem-health-heartburn-reflux-patel",
+              "kind": "memory",
+              "title": "occasional heartburn and acid reflux — gastroenterologist Dr. Patel, natural remedies interest",
+              "content": "The user experiences occasional heartburn and acid reflux symptoms. Their gastroenterologist is Dr. Patel, and they are considering scheduling an appointment to discuss further treatment. They are interested in natural remedies such as ginger and aloe vera juice, and in understanding whether stress contributes to their symptoms.",
+              "path": "user/health",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0005:0",
+                  "m_0007:0",
+                  "m_0009:0"
+                ],
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0005:0",
+                    "origin": "user",
+                    "sha256": "203e7a32402fe74b23ef8d3b580529f2a9ca1f955f6a322e49666270ea0d3744",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L5"
+                  },
+                  {
+                    "id": "m_0007:0",
+                    "origin": "user",
+                    "sha256": "f8481dfe8cc4f8761cd62d497585205ab29c6b8583d84a069778feaa583632c2",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L7"
+                  },
+                  {
+                    "id": "m_0009:0",
+                    "origin": "user",
+                    "sha256": "2ca479aceef4e8af810cc521f3d461b27fcb4f64fade756c0919ce70302bcf05",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L9"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:36:11.769Z",
+              "updated_at": "2026-10-13T08:36:11.769Z",
+              "version": 1
+            },
+            "applied": true
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "title": "Heartburn and acid reflux symptoms",
+            "content": "The user reported experiencing heartburn and acid reflux symptoms. They are exploring stress as a possible contributor and stress management as a way to alleviate the symptoms.",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0011:0"
+              ],
+              "projectReusable": true,
+              "sources": [
+                {
+                  "id": "m_0011:0",
+                  "origin": "user",
+                  "sha256": "8b8b88b8f5d412208bbad289edfb971c195f32c777ddef061b4e14cf0ea8eefc",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L11"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "Directly user-reported ongoing health condition; durable, host-neutral fact with direct user evidence, useful for personalized follow-up in this project.",
+            "id": "imported_f5d0eca4726d00749d254da5",
+            "after": {
+              "id": "imported_f5d0eca4726d00749d254da5",
+              "kind": "memory",
+              "title": "Heartburn and acid reflux symptoms",
+              "content": "The user reported experiencing heartburn and acid reflux symptoms. They are exploring stress as a possible contributor and stress management as a way to alleviate the symptoms.",
+              "path": "general",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0011:0"
+                ],
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0011:0",
+                    "origin": "user",
+                    "sha256": "8b8b88b8f5d412208bbad289edfb971c195f32c777ddef061b4e14cf0ea8eefc",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L11"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:36:11.769Z",
+              "updated_at": "2026-10-13T08:36:11.769Z",
+              "version": 1
+            },
+            "applied": true
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "title": "Heartburn and acid reflux — plan to ask Dr. Patel about stress management",
+            "content": "The user plans to ask Dr. Patel, a healthcare provider they consult, about stress management techniques that could help alleviate their heartburn and acid reflux symptoms. They may start with relaxation exercises to see if that makes a difference.",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0011:0"
+              ],
+              "sources": [
+                {
+                  "id": "m_0011:0",
+                  "origin": "user",
+                  "sha256": "8b8b88b8f5d412208bbad289edfb971c195f32c777ddef061b4e14cf0ea8eefc",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L11"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "Time-anchored user plan/life event; the title names the object (heartburn and acid reflux) and the event (asking Dr. Patel about stress management) so later questions can find it by its subject.",
+            "id": "imported_69331b0912bfa0e0be7c5aeb",
+            "after": {
+              "id": "imported_69331b0912bfa0e0be7c5aeb",
+              "kind": "memory",
+              "title": "Heartburn and acid reflux — plan to ask Dr. Patel about stress management",
+              "content": "The user plans to ask Dr. Patel, a healthcare provider they consult, about stress management techniques that could help alleviate their heartburn and acid reflux symptoms. They may start with relaxation exercises to see if that makes a difference.",
+              "path": "general",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0011:0"
+                ],
+                "sources": [
+                  {
+                    "id": "m_0011:0",
+                    "origin": "user",
+                    "sha256": "8b8b88b8f5d412208bbad289edfb971c195f32c777ddef061b4e14cf0ea8eefc",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L11"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:36:11.769Z",
+              "updated_at": "2026-10-13T08:36:11.769Z",
+              "version": 1
+            },
+            "applied": true
+          }
+        ],
+        "harnessStatePath": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache\\00ca467f--59c6b4e9cdfce58c\\envs\\00ca467f\\agent\\memory\\projects\\project_4b30654678833006224d23f1\\harness_state.json",
+        "scope": "local"
+      },
+      {
+        "id": "import_0979968b5f68171e127a5532",
+        "summary": "Import import_0979968b5f68171e127a5532",
+        "rationale": "Selected session 5388186061c1b442e435a51be47de8037f46d8cd1362dc73117538da41dc0995",
+        "expectedOutcome": "Recover selected project knowledge with original evidence",
+        "appliedEdits": [
+          {
+            "action": "create",
+            "kind": "memory",
+            "title": "left hand numbness — EMG test scheduled April 1 with neurologist Dr. Johnson",
+            "content": "The user reports numbness in their left hand. To rule out nerve damage, an EMG test is scheduled with their neurologist, Dr. Johnson, on April 1st. The user is anxious about what to expect during the procedure.",
+            "path": "user/health",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0001:0",
+                "m_0007:0"
+              ],
+              "projectReusable": true,
+              "sources": [
+                {
+                  "id": "m_0001:0",
+                  "origin": "user",
+                  "sha256": "2218af52612a25dfb1266c2124fe07a0eb09a573fdd62b93b988f73b8d9ca590",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L1"
+                },
+                {
+                  "id": "m_0007:0",
+                  "origin": "user",
+                  "sha256": "4a2b1cff714e8f2815ccc2bf43d88ecfbc7485016029569afdd6d91e00527322",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L7"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "Durable, time-anchored health event with direct user evidence; recording the object (left hand numbness / EMG test) and event (scheduled April 1 with Dr. Johnson) allows later questions about the test or the numbness to find it.",
+            "id": "mem-health-lefthand-numbness-emg-johnson",
+            "after": {
+              "id": "mem-health-lefthand-numbness-emg-johnson",
+              "kind": "memory",
+              "title": "left hand numbness — EMG test scheduled April 1 with neurologist Dr. Johnson",
+              "content": "The user reports numbness in their left hand. To rule out nerve damage, an EMG test is scheduled with their neurologist, Dr. Johnson, on April 1st. The user is anxious about what to expect during the procedure.",
+              "path": "user/health",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0001:0",
+                  "m_0007:0"
+                ],
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0001:0",
+                    "origin": "user",
+                    "sha256": "2218af52612a25dfb1266c2124fe07a0eb09a573fdd62b93b988f73b8d9ca590",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L1"
+                  },
+                  {
+                    "id": "m_0007:0",
+                    "origin": "user",
+                    "sha256": "4a2b1cff714e8f2815ccc2bf43d88ecfbc7485016029569afdd6d91e00527322",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L7"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:37:36.082Z",
+              "updated_at": "2026-10-13T08:37:36.082Z",
+              "version": 1
+            },
+            "applied": true
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "title": "lingering cough — antibiotic from primary care physician did not fully clear it",
+            "content": "The user has had a lingering cough for several weeks. They saw their primary care physician, who prescribed an antibiotic, but the antibiotic did not fully clear up the cough.",
+            "path": "user/health",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0001:0"
+              ],
+              "projectReusable": true,
+              "sources": [
+                {
+                  "id": "m_0001:0",
+                  "origin": "user",
+                  "sha256": "2218af52612a25dfb1266c2124fe07a0eb09a573fdd62b93b988f73b8d9ca590",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L1"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "Records a treatment outcome for the ongoing cough directly reported by the user; distinct from the existing guaifenesin memory and useful context for any future discussion of the cough.",
+            "id": "mem-health-lingering-cough-antibiotic-pcp",
+            "after": {
+              "id": "mem-health-lingering-cough-antibiotic-pcp",
+              "kind": "memory",
+              "title": "lingering cough — antibiotic from primary care physician did not fully clear it",
+              "content": "The user has had a lingering cough for several weeks. They saw their primary care physician, who prescribed an antibiotic, but the antibiotic did not fully clear up the cough.",
+              "path": "user/health",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0001:0"
+                ],
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0001:0",
+                    "origin": "user",
+                    "sha256": "2218af52612a25dfb1266c2124fe07a0eb09a573fdd62b93b988f73b8d9ca590",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L1"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:37:36.082Z",
+              "updated_at": "2026-10-13T08:37:36.082Z",
+              "version": 1
+            },
+            "applied": true
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "title": "heartburn and acid reflux since late January — managed with diet changes and antacids",
+            "content": "The user's heartburn and acid reflux symptoms started around late January. They are managing the symptoms by adjusting their diet and taking antacids as needed.",
+            "path": "user/health",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0003:0"
+              ],
+              "projectReusable": true,
+              "sources": [
+                {
+                  "id": "m_0003:0",
+                  "origin": "user",
+                  "sha256": "6edb93dec1fcdefa4608b54f84321b669f925b6a7b3e30a14e2edd92b90e7da2",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L3"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "Adds the onset timing and current self-management approach for the reflux symptoms, which existing heartburn memories (Dr. Patel, natural remedies, stress management) do not record.",
+            "id": "mem-health-heartburn-onset-diet-antacids",
+            "after": {
+              "id": "mem-health-heartburn-onset-diet-antacids",
+              "kind": "memory",
+              "title": "heartburn and acid reflux since late January — managed with diet changes and antacids",
+              "content": "The user's heartburn and acid reflux symptoms started around late January. They are managing the symptoms by adjusting their diet and taking antacids as needed.",
+              "path": "user/health",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0003:0"
+                ],
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0003:0",
+                    "origin": "user",
+                    "sha256": "6edb93dec1fcdefa4608b54f84321b669f925b6a7b3e30a14e2edd92b90e7da2",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L3"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:37:36.082Z",
+              "updated_at": "2026-10-13T08:37:36.082Z",
+              "version": 1
+            },
+            "applied": true
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "title": "torn ACL — physical therapy twice weekly starting March 25 after Dr. Thompson clearance",
+            "content": "The user is recovering from a torn ACL. Their orthopedic surgeon, Dr. Thompson, cleared them to start physical therapy, with sessions scheduled twice a week beginning March 25 to strengthen their leg muscles. The user hopes the physical therapy will help them recover from the torn ACL.",
+            "path": "user/health",
+            "metadata": {
+              "scope": "local",
+              "category": "user/health",
+              "projectReusable": false,
+              "sourceIds": [
+                "m_0011:0"
+              ],
+              "sources": [
+                {
+                  "id": "m_0011:0",
+                  "origin": "user",
+                  "sha256": "5138ead22e87174d332c4cfd45dd5fa67e10eb37a0acb463854f6b1f0d15a70e",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L11"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "Direct user report of a durable injury (torn ACL), a dated PT start (March 25), session frequency (twice weekly), and the treating surgeon (Dr. Thompson); none of this is captured by existing memories, which only note the knee was healing well at the March 20 follow-up.",
+            "id": "imported_c25bfe8c067be7c43080370a",
+            "after": {
+              "id": "imported_c25bfe8c067be7c43080370a",
+              "kind": "memory",
+              "title": "torn ACL — physical therapy twice weekly starting March 25 after Dr. Thompson clearance",
+              "content": "The user is recovering from a torn ACL. Their orthopedic surgeon, Dr. Thompson, cleared them to start physical therapy, with sessions scheduled twice a week beginning March 25 to strengthen their leg muscles. The user hopes the physical therapy will help them recover from the torn ACL.",
+              "path": "user/health",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "category": "user/health",
+                "projectReusable": false,
+                "sourceIds": [
+                  "m_0011:0"
+                ],
+                "sources": [
+                  {
+                    "id": "m_0011:0",
+                    "origin": "user",
+                    "sha256": "5138ead22e87174d332c4cfd45dd5fa67e10eb37a0acb463854f6b1f0d15a70e",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L11"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:37:36.082Z",
+              "updated_at": "2026-10-13T08:37:36.082Z",
+              "version": 1
+            },
+            "applied": true
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "title": "upcoming EMG test — user worried, asked about physical therapy for nerve issues",
+            "content": "The user has an upcoming EMG test and reported feeling a bit worried about it. In that context, they asked how physical therapy can help with nerve damage or compression.",
+            "path": "user/health",
+            "metadata": {
+              "scope": "local",
+              "category": "user/health",
+              "projectReusable": false,
+              "sourceIds": [
+                "m_0009:0"
+              ],
+              "sources": [
+                {
+                  "id": "m_0009:0",
+                  "origin": "user",
+                  "sha256": "0a932ef39a5bbedccda063bb001b6210c07cf50dc4e433d6aead69246a510bc5",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L9"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "Direct user report of a scheduled medical test and the user's anxiety about it, useful for empathetic follow-up (e.g., asking about EMG results) in future turns; not covered by any existing memory.",
+            "id": "imported_5ff1dcee403677c60ebf2d12",
+            "after": {
+              "id": "imported_5ff1dcee403677c60ebf2d12",
+              "kind": "memory",
+              "title": "upcoming EMG test — user worried, asked about physical therapy for nerve issues",
+              "content": "The user has an upcoming EMG test and reported feeling a bit worried about it. In that context, they asked how physical therapy can help with nerve damage or compression.",
+              "path": "user/health",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "category": "user/health",
+                "projectReusable": false,
+                "sourceIds": [
+                  "m_0009:0"
+                ],
+                "sources": [
+                  {
+                    "id": "m_0009:0",
+                    "origin": "user",
+                    "sha256": "0a932ef39a5bbedccda063bb001b6210c07cf50dc4e433d6aead69246a510bc5",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_0979968b5f68171e127a5532.source.jsonl#L9"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:37:36.082Z",
+              "updated_at": "2026-10-13T08:37:36.082Z",
+              "version": 1
+            },
+            "applied": true
+          }
+        ],
+        "harnessStatePath": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache\\00ca467f--59c6b4e9cdfce58c\\envs\\00ca467f\\agent\\memory\\projects\\project_4b30654678833006224d23f1\\harness_state.json",
+        "scope": "local"
+      },
+      {
+        "id": "import_e7422f647a5242d9114dc7c5",
+        "summary": "Import import_e7422f647a5242d9114dc7c5",
+        "rationale": "Selected session b612063479ed6d9844560387c2eab2a6ade0447193121fecbcb0cf3341eb9a5e",
+        "expectedOutcome": "Recover selected project knowledge with original evidence",
+        "appliedEdits": [
+          {
+            "action": "create",
+            "kind": "memory",
+            "id": "mem-health-bronchitis-diagnosis-smith",
+            "title": "bronchitis diagnosis — lingering cough diagnosed by Dr. Smith on March 3",
+            "content": "The user has had a lingering cough for about six weeks. On March 3rd they saw their primary care physician, Dr. Smith, who diagnosed them with bronchitis. They asked about natural remedies to help soothe symptoms.",
+            "path": "user/health",
+            "metadata": {
+              "scope": "local",
+              "category": "user/health",
+              "sourceIds": [
+                "m_0001:0"
+              ],
+              "sources": [
+                {
+                  "id": "m_0001:0",
+                  "origin": "user",
+                  "sha256": "30e32fe7f6cfb57e5d209b8a35e79f4af7445bf09eba2814a0c1547e669b1aa3",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L1"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "The bronchitis diagnosis with named physician and date is a durable health fact reported directly by the user and is absent from all existing cough-related memories.",
+            "after": {
+              "id": "mem-health-bronchitis-diagnosis-smith",
+              "kind": "memory",
+              "title": "bronchitis diagnosis — lingering cough diagnosed by Dr. Smith on March 3",
+              "content": "The user has had a lingering cough for about six weeks. On March 3rd they saw their primary care physician, Dr. Smith, who diagnosed them with bronchitis. They asked about natural remedies to help soothe symptoms.",
+              "path": "user/health",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "category": "user/health",
+                "sourceIds": [
+                  "m_0001:0"
+                ],
+                "sources": [
+                  {
+                    "id": "m_0001:0",
+                    "origin": "user",
+                    "sha256": "30e32fe7f6cfb57e5d209b8a35e79f4af7445bf09eba2814a0c1547e669b1aa3",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L1"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:39:33.800Z",
+              "updated_at": "2026-10-13T08:39:33.800Z",
+              "version": 1
+            },
+            "applied": true
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "id": "mem-health-bronchitis-night-cough-remedies",
+            "title": "bronchitis night cough — honey and steam inhalation already tried, chest x-ray being considered",
+            "content": "For their bronchitis cough, the user already uses steam inhalation and honey and has tried general sleep tips, but still wakes with a bad cough at night. They are thinking about getting a chest x-ray to rule out other issues and intend to discuss it with Dr. Smith.",
+            "path": "user/health",
+            "metadata": {
+              "scope": "local",
+              "category": "user/health",
+              "sourceIds": [
+                "m_0003:0",
+                "m_0005:0"
+              ],
+              "sources": [
+                {
+                  "id": "m_0003:0",
+                  "origin": "user",
+                  "sha256": "c81eddaef65c364e5df057e9d5ad2f73ffd84918c2196aa0b364f8e230ee7a65",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L3"
+                },
+                {
+                  "id": "m_0005:0",
+                  "origin": "user",
+                  "sha256": "f917c2be2580115febf3930414b64e92a703c854e2534d16f445251d897d2422",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L5"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "Captures which remedies the user has already tried and the unresolved nighttime symptoms plus the chest x-ray consideration, so future advice does not repeat failed suggestions and can follow up on the x-ray decision.",
+            "after": {
+              "id": "mem-health-bronchitis-night-cough-remedies",
+              "kind": "memory",
+              "title": "bronchitis night cough — honey and steam inhalation already tried, chest x-ray being considered",
+              "content": "For their bronchitis cough, the user already uses steam inhalation and honey and has tried general sleep tips, but still wakes with a bad cough at night. They are thinking about getting a chest x-ray to rule out other issues and intend to discuss it with Dr. Smith.",
+              "path": "user/health",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "category": "user/health",
+                "sourceIds": [
+                  "m_0003:0",
+                  "m_0005:0"
+                ],
+                "sources": [
+                  {
+                    "id": "m_0003:0",
+                    "origin": "user",
+                    "sha256": "c81eddaef65c364e5df057e9d5ad2f73ffd84918c2196aa0b364f8e230ee7a65",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L3"
+                  },
+                  {
+                    "id": "m_0005:0",
+                    "origin": "user",
+                    "sha256": "f917c2be2580115febf3930414b64e92a703c854e2534d16f445251d897d2422",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L5"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:39:33.800Z",
+              "updated_at": "2026-10-13T08:39:33.800Z",
+              "version": 1
+            },
+            "applied": true
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "id": "imported_9ee11965dbc42a6534a8991e",
+            "title": "left hand numbness — noticed around March 15, EMG April 1 with neurologist Dr. Johnson",
+            "content": "The user reports numbness in their left hand, first noticed around March 15th. To rule out nerve damage, an EMG test is scheduled with their neurologist, Dr. Johnson, on April 1st; the user is anxious about what to expect during the procedure. They plan to schedule appointments with both Dr. Smith and Dr. Johnson to discuss the numbness, and will keep a symptom journal tracking the numbness and any other symptoms.",
+            "path": "user/health",
+            "metadata": {
+              "scope": "local",
+              "category": "user/health",
+              "sourceIds": [
+                "m_0007:0",
+                "m_0009:0"
+              ],
+              "sources": [
+                {
+                  "id": "m_0007:0",
+                  "origin": "user",
+                  "sha256": "142c857c6d2d5bd6f45d15468921d9fa2a1efd189ef9f15ca5af54f9a06d29bb",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L7"
+                },
+                {
+                  "id": "m_0009:0",
+                  "origin": "user",
+                  "sha256": "b2e6a58996fb213f49772a6fe627881e1d8edf7bfe62106a81e33cbdce85bee4",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L9"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "updateTargetId": "mem-health-lefthand-numbness-emg-johnson",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "The existing numbness memory lacks the symptom onset date the user reported, and new evidence adds the plan to consult both Dr. Smith and Dr. Johnson and keep a symptom journal; updating keeps this symptom's facts in one retrievable entry.",
+            "after": {
+              "id": "imported_9ee11965dbc42a6534a8991e",
+              "kind": "memory",
+              "title": "left hand numbness — noticed around March 15, EMG April 1 with neurologist Dr. Johnson",
+              "content": "The user reports numbness in their left hand, first noticed around March 15th. To rule out nerve damage, an EMG test is scheduled with their neurologist, Dr. Johnson, on April 1st; the user is anxious about what to expect during the procedure. They plan to schedule appointments with both Dr. Smith and Dr. Johnson to discuss the numbness, and will keep a symptom journal tracking the numbness and any other symptoms.",
+              "path": "user/health",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "category": "user/health",
+                "sourceIds": [
+                  "m_0007:0",
+                  "m_0009:0"
+                ],
+                "sources": [
+                  {
+                    "id": "m_0007:0",
+                    "origin": "user",
+                    "sha256": "142c857c6d2d5bd6f45d15468921d9fa2a1efd189ef9f15ca5af54f9a06d29bb",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L7"
+                  },
+                  {
+                    "id": "m_0009:0",
+                    "origin": "user",
+                    "sha256": "b2e6a58996fb213f49772a6fe627881e1d8edf7bfe62106a81e33cbdce85bee4",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L9"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "updateTargetId": "mem-health-lefthand-numbness-emg-johnson",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:39:33.800Z",
+              "updated_at": "2026-10-13T08:39:33.800Z",
+              "version": 1
+            },
+            "applied": true
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "id": "mem-health-bronchitis-dr-smith-treatment",
+            "title": "bronchitis — treatment plan from Dr. Smith, possible link to left hand numbness",
+            "content": "The user has bronchitis and is following a treatment plan from Dr. Smith. The user asked whether the bronchitis could be connected to the numbness in their left hand, which is being evaluated by neurologist Dr. Johnson (EMG scheduled for April 1), or whether the two conditions are separate issues.",
+            "path": "user/health",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0010:0",
+                "m_0011:0"
+              ],
+              "sources": [
+                {
+                  "id": "m_0010:0",
+                  "origin": "user",
+                  "sha256": "fc7145d5fdc1aac59c189874704e03bdecae33ac0697344f92b48472e65e1392",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L10"
+                },
+                {
+                  "id": "m_0011:0",
+                  "origin": "user",
+                  "sha256": "ce141b65ff65f0e1ab71ff7d60cdf4fa97fc67c1927335713c5fea67a8dbd721",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L11"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "Records the newly identified bronchitis diagnosis, the treating physician Dr. Smith, and the user's open question about a connection to their left-hand numbness; no existing memory covers bronchitis or Dr. Smith, and this links naturally to the existing cough and numbness entries for follow-up conversations.",
+            "after": {
+              "id": "mem-health-bronchitis-dr-smith-treatment",
+              "kind": "memory",
+              "title": "bronchitis — treatment plan from Dr. Smith, possible link to left hand numbness",
+              "content": "The user has bronchitis and is following a treatment plan from Dr. Smith. The user asked whether the bronchitis could be connected to the numbness in their left hand, which is being evaluated by neurologist Dr. Johnson (EMG scheduled for April 1), or whether the two conditions are separate issues.",
+              "path": "user/health",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0010:0",
+                  "m_0011:0"
+                ],
+                "sources": [
+                  {
+                    "id": "m_0010:0",
+                    "origin": "user",
+                    "sha256": "fc7145d5fdc1aac59c189874704e03bdecae33ac0697344f92b48472e65e1392",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L10"
+                  },
+                  {
+                    "id": "m_0011:0",
+                    "origin": "user",
+                    "sha256": "ce141b65ff65f0e1ab71ff7d60cdf4fa97fc67c1927335713c5fea67a8dbd721",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L11"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:39:33.800Z",
+              "updated_at": "2026-10-13T08:39:33.800Z",
+              "version": 1
+            },
+            "applied": true
+          },
+          {
+            "action": "create",
+            "kind": "memory",
+            "id": "mem-health-symptom-journal-lefthand-numbness",
+            "title": "symptom journal for left hand numbness — shared with Dr. Smith and Dr. Johnson",
+            "content": "The user is keeping a detailed symptom journal to track the numbness in their left hand, intended to help Dr. Smith and Dr. Johnson understand the condition and make an accurate diagnosis.",
+            "path": "user/health",
+            "metadata": {
+              "scope": "local",
+              "sourceIds": [
+                "m_0010:0"
+              ],
+              "sources": [
+                {
+                  "id": "m_0010:0",
+                  "origin": "user",
+                  "sha256": "fc7145d5fdc1aac59c189874704e03bdecae33ac0697344f92b48472e65e1392",
+                  "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L10"
+                }
+              ],
+              "evidenceStatus": "cited",
+              "projectId": "project_4b30654678833006224d23f1",
+              "status": "current"
+            },
+            "reason": "Captures the user's ongoing symptom-tracking practice for the left-hand numbness so future conversations can reference, reinforce, or follow up on the journal when discussing the condition with Dr. Smith and Dr. Johnson.",
+            "after": {
+              "id": "mem-health-symptom-journal-lefthand-numbness",
+              "kind": "memory",
+              "title": "symptom journal for left hand numbness — shared with Dr. Smith and Dr. Johnson",
+              "content": "The user is keeping a detailed symptom journal to track the numbness in their left hand, intended to help Dr. Smith and Dr. Johnson understand the condition and make an accurate diagnosis.",
+              "path": "user/health",
+              "scope": "local",
+              "reference": {},
+              "arguments": {},
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0010:0"
+                ],
+                "sources": [
+                  {
+                    "id": "m_0010:0",
+                    "origin": "user",
+                    "sha256": "fc7145d5fdc1aac59c189874704e03bdecae33ac0697344f92b48472e65e1392",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e7422f647a5242d9114dc7c5.source.jsonl#L10"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "source": "refine",
+              "created_at": "2026-10-13T08:39:33.800Z",
+              "updated_at": "2026-10-13T08:39:33.800Z",
+              "version": 1
+            },
+            "applied": true
+          }
+        ],
+        "harnessStatePath": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache\\00ca467f--59c6b4e9cdfce58c\\envs\\00ca467f\\agent\\memory\\projects\\project_4b30654678833006224d23f1\\harness_state.json",
+        "scope": "local"
+      }
+    ],
+    "events": {
+      "import_d8732e451db6214c7a784a29": "f98c074afba82858bf90f2ee74d5b3e0e39a45535ab4ca1ab87fdf6c48fa21db",
+      "import_0979968b5f68171e127a5532": "23fcd645db826f0270e1a46831497b7baeeee92733db0958deff01ab608967ce",
+      "import_e7422f647a5242d9114dc7c5": "d9a68649f37c120f56e22510d35b1a4ba9bffe6a8da2a97e8dd32a578cd45292"
+    }
+  }
+}

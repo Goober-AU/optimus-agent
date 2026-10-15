@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "sha256": "8054919037f1416315e45b9291727e551a25d66328e2e27b1579951a165cb771",
+  "state": {
+    "schema": 1.0,
+    "entries": {
+      "memory": {},
+      "prompt": {},
+      "skill": {},
+      "subagent": {}
+    },
+    "refinements": [],
+    "memory": {
+      "schema": 1.0,
+      "projectId": "project_b15677c9c91ccef67d9bba48",
+      "revision": 0,
+      "history": [],
+      "events": {}
+    }
+  }
+}

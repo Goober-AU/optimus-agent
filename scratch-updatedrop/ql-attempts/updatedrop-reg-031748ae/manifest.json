@@ -1,0 +1,50 @@
+{
+ "run_id": "updatedrop-reg-031748ae",
+ "benchmark": "longmemeval_s",
+ "variant": "improved",
+ "output_dir": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-attempts\\updatedrop-reg-031748ae",
+ "envs": [
+  {
+   "env_id": "031748ae",
+   "sessions": [],
+   "ground_truth_refs": [],
+   "family": "longmemeval"
+  }
+ ],
+ "questions": [
+  {
+   "qid": "031748ae",
+   "env_id": "031748ae",
+   "question": "How many engineers do I lead when I just started my new role as Senior Software Engineer? How many engineers do I lead now?",
+   "question_protocol": "optimus-longmemeval-adapter/2.0.0",
+   "scoring_protocol": "optimus-longmemeval-dgx-port/2.0.0",
+   "question_sha256": "caebb799f4752ec04a2760dc576b79ba8e75559ad66fbe679adc0a641b59bb4d"
+  }
+ ],
+ "model": {
+  "provider": "dgx-glm53",
+  "id": "glm-5.3"
+ },
+ "settings": {
+  "recallQueryDistillation": true,
+  "recallRerank": true,
+  "answerMaxTokens": 8192,
+  "maxExtractionTokens": 32000,
+  "maxImportChunkChars": 15000,
+  "maxRecallChars": 8000,
+  "maxRecallEntries": 8,
+  "disableTools": true,
+  "autoRefine": {
+   "enabled": false
+  },
+  "answerInstruction": "Answer only from the memory notes provided above. Supersession: when notes conflict about the same fact, the latest \"at\" timestamp wins; never average or merge versions. Before any date, order, or duration answer, list the dates you see for each relevant fact, then reason from it. Before any count, enumerate each unique item with its date, keep only items consistent with the latest state, then count. Verify the note's entity — person, item, or show — is exactly the one asked about; a similar name is not a match. When a fact changed across sessions, state the current value first, earlier values as background. Answer comparisons only when both sides are recorded. Check the premise first: if it assumes what the notes contradict, say so. If no note states the answer, say the available memory does not record it, then give what is recorded.",
+  "questionTimeoutS": 240,
+  "skipIngest": true,
+  "recallOn": true,
+  "recallRerankCandidates": 200,
+  "recallQueryExtract": true,
+  "recallQueryExpansion": false,
+  "ingestTimeoutS": 43200,
+  "memoryLearning": false
+ }
+}

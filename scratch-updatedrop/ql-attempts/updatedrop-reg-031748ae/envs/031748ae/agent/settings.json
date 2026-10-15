@@ -1,0 +1,29 @@
+{
+  "autoRefine": {
+    "enabled": false
+  },
+  "retry": {
+    "enabled": false
+  },
+  "compaction": {
+    "enabled": false
+  },
+  "telemetryEnabled": false,
+  "agentTracesEnabled": false,
+  "quietStartup": true,
+  "memory": {
+    "recall": true,
+    "learning": false,
+    "recallQueryDistillation": true,
+    "recallRerank": true,
+    "recallQueryExtract": true,
+    "recallRerankCandidates": 200,
+    "recallQueryExpansion": false,
+    "recallProspectiveIndex": false,
+    "recallSourceSpans": false,
+    "maxRecallChars": 8000,
+    "maxRecallEntries": 8,
+    "maxExtractionTokens": 32000,
+    "maxImportChunkChars": 15000
+  }
+}

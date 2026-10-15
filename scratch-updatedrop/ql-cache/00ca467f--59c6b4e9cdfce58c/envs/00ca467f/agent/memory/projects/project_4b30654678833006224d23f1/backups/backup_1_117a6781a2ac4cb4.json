@@ -1,0 +1,589 @@
+{
+  "schema": 1,
+  "sha256": "117a6781a2ac4cb43b40c00d4937c383001e600d3cf2b7d113624ae67cc6c8e1",
+  "state": {
+    "schema": 1.0,
+    "entries": {
+      "memory": {
+        "mem-health-knee-thompson-followup": {
+          "id": "mem-health-knee-thompson-followup",
+          "kind": "memory",
+          "title": "knee healing well after March 20 orthopedic follow-up with Dr. Thompson",
+          "content": "The user had a follow-up appointment with their orthopedic surgeon, Dr. Thompson, on March 20th, and reported that their knee is healing well.",
+          "path": "user/health",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0001:0"
+            ],
+            "projectReusable": true,
+            "sources": [
+              {
+                "id": "m_0001:0",
+                "origin": "user",
+                "sha256": "286e626de3c10c9591b7f8345eaec6bd7bb02211fd876782fffa6b5e57668056",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L1"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-13T08:36:11.768Z",
+          "updated_at": "2026-10-13T08:36:11.768Z",
+          "version": 1
+        },
+        "mem-health-lingering-cough-guaifenesin": {
+          "id": "mem-health-lingering-cough-guaifenesin",
+          "kind": "memory",
+          "title": "lingering cough for weeks — guaifenesin providing little relief",
+          "content": "The user has had a lingering cough lasting several weeks. They take over-the-counter guaifenesin as an expectorant but report it does not seem to be helping much, and they are considering asking their doctor about other treatment options.",
+          "path": "user/health",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0001:0",
+              "m_0003:0",
+              "m_0005:0"
+            ],
+            "projectReusable": true,
+            "sources": [
+              {
+                "id": "m_0001:0",
+                "origin": "user",
+                "sha256": "286e626de3c10c9591b7f8345eaec6bd7bb02211fd876782fffa6b5e57668056",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L1"
+              },
+              {
+                "id": "m_0003:0",
+                "origin": "user",
+                "sha256": "b663188da526a982266931258531b694f0ae371507437f7195aec44f5b33dc30",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L3"
+              },
+              {
+                "id": "m_0005:0",
+                "origin": "user",
+                "sha256": "203e7a32402fe74b23ef8d3b580529f2a9ca1f955f6a322e49666270ea0d3744",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L5"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-13T08:36:11.769Z",
+          "updated_at": "2026-10-13T08:36:11.769Z",
+          "version": 1
+        },
+        "mem-health-heartburn-reflux-patel": {
+          "id": "mem-health-heartburn-reflux-patel",
+          "kind": "memory",
+          "title": "occasional heartburn and acid reflux — gastroenterologist Dr. Patel, natural remedies interest",
+          "content": "The user experiences occasional heartburn and acid reflux symptoms. Their gastroenterologist is Dr. Patel, and they are considering scheduling an appointment to discuss further treatment. They are interested in natural remedies such as ginger and aloe vera juice, and in understanding whether stress contributes to their symptoms.",
+          "path": "user/health",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0005:0",
+              "m_0007:0",
+              "m_0009:0"
+            ],
+            "projectReusable": true,
+            "sources": [
+              {
+                "id": "m_0005:0",
+                "origin": "user",
+                "sha256": "203e7a32402fe74b23ef8d3b580529f2a9ca1f955f6a322e49666270ea0d3744",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L5"
+              },
+              {
+                "id": "m_0007:0",
+                "origin": "user",
+                "sha256": "f8481dfe8cc4f8761cd62d497585205ab29c6b8583d84a069778feaa583632c2",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L7"
+              },
+              {
+                "id": "m_0009:0",
+                "origin": "user",
+                "sha256": "2ca479aceef4e8af810cc521f3d461b27fcb4f64fade756c0919ce70302bcf05",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L9"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-13T08:36:11.769Z",
+          "updated_at": "2026-10-13T08:36:11.769Z",
+          "version": 1
+        },
+        "imported_f5d0eca4726d00749d254da5": {
+          "id": "imported_f5d0eca4726d00749d254da5",
+          "kind": "memory",
+          "title": "Heartburn and acid reflux symptoms",
+          "content": "The user reported experiencing heartburn and acid reflux symptoms. They are exploring stress as a possible contributor and stress management as a way to alleviate the symptoms.",
+          "path": "general",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0011:0"
+            ],
+            "projectReusable": true,
+            "sources": [
+              {
+                "id": "m_0011:0",
+                "origin": "user",
+                "sha256": "8b8b88b8f5d412208bbad289edfb971c195f32c777ddef061b4e14cf0ea8eefc",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L11"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-13T08:36:11.769Z",
+          "updated_at": "2026-10-13T08:36:11.769Z",
+          "version": 1
+        },
+        "imported_69331b0912bfa0e0be7c5aeb": {
+          "id": "imported_69331b0912bfa0e0be7c5aeb",
+          "kind": "memory",
+          "title": "Heartburn and acid reflux — plan to ask Dr. Patel about stress management",
+          "content": "The user plans to ask Dr. Patel, a healthcare provider they consult, about stress management techniques that could help alleviate their heartburn and acid reflux symptoms. They may start with relaxation exercises to see if that makes a difference.",
+          "path": "general",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0011:0"
+            ],
+            "sources": [
+              {
+                "id": "m_0011:0",
+                "origin": "user",
+                "sha256": "8b8b88b8f5d412208bbad289edfb971c195f32c777ddef061b4e14cf0ea8eefc",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L11"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-13T08:36:11.769Z",
+          "updated_at": "2026-10-13T08:36:11.769Z",
+          "version": 1
+        }
+      },
+      "prompt": {},
+      "skill": {},
+      "subagent": {}
+    },
+    "refinements": [
+      {
+        "id": "import_d8732e451db6214c7a784a29",
+        "trigger": "Import import_d8732e451db6214c7a784a29",
+        "changes": [
+          "create memory:mem-health-knee-thompson-followup",
+          "create memory:mem-health-lingering-cough-guaifenesin",
+          "create memory:mem-health-heartburn-reflux-patel",
+          "create memory:imported_f5d0eca4726d00749d254da5",
+          "create memory:imported_69331b0912bfa0e0be7c5aeb"
+        ],
+        "evidence": "Selected session f149285dac23d3c479a2cbb059ed1d4110d5697933d309a534798b52008e2bc7",
+        "outcome": "Recover selected project knowledge with original evidence",
+        "created_at": "2026-10-13T08:36:11.769Z"
+      }
+    ],
+    "memory": {
+      "schema": 1.0,
+      "projectId": "project_4b30654678833006224d23f1",
+      "revision": 1,
+      "history": [
+        {
+          "id": "import_d8732e451db6214c7a784a29",
+          "summary": "Import import_d8732e451db6214c7a784a29",
+          "rationale": "Selected session f149285dac23d3c479a2cbb059ed1d4110d5697933d309a534798b52008e2bc7",
+          "expectedOutcome": "Recover selected project knowledge with original evidence",
+          "appliedEdits": [
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "knee healing well after March 20 orthopedic follow-up with Dr. Thompson",
+              "content": "The user had a follow-up appointment with their orthopedic surgeon, Dr. Thompson, on March 20th, and reported that their knee is healing well.",
+              "path": "user/health",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0001:0"
+                ],
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0001:0",
+                    "origin": "user",
+                    "sha256": "286e626de3c10c9591b7f8345eaec6bd7bb02211fd876782fffa6b5e57668056",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L1"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Durable, dated health event reported directly by the user; the title names the object (knee) and event (follow-up appointment) so later questions can find it by subject.",
+              "id": "mem-health-knee-thompson-followup",
+              "after": {
+                "id": "mem-health-knee-thompson-followup",
+                "kind": "memory",
+                "title": "knee healing well after March 20 orthopedic follow-up with Dr. Thompson",
+                "content": "The user had a follow-up appointment with their orthopedic surgeon, Dr. Thompson, on March 20th, and reported that their knee is healing well.",
+                "path": "user/health",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0001:0"
+                  ],
+                  "projectReusable": true,
+                  "sources": [
+                    {
+                      "id": "m_0001:0",
+                      "origin": "user",
+                      "sha256": "286e626de3c10c9591b7f8345eaec6bd7bb02211fd876782fffa6b5e57668056",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L1"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-13T08:36:11.768Z",
+                "updated_at": "2026-10-13T08:36:11.768Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "lingering cough for weeks — guaifenesin providing little relief",
+              "content": "The user has had a lingering cough lasting several weeks. They take over-the-counter guaifenesin as an expectorant but report it does not seem to be helping much, and they are considering asking their doctor about other treatment options.",
+              "path": "user/health",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0001:0",
+                  "m_0003:0",
+                  "m_0005:0"
+                ],
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0001:0",
+                    "origin": "user",
+                    "sha256": "286e626de3c10c9591b7f8345eaec6bd7bb02211fd876782fffa6b5e57668056",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L1"
+                  },
+                  {
+                    "id": "m_0003:0",
+                    "origin": "user",
+                    "sha256": "b663188da526a982266931258531b694f0ae371507437f7195aec44f5b33dc30",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L3"
+                  },
+                  {
+                    "id": "m_0005:0",
+                    "origin": "user",
+                    "sha256": "203e7a32402fe74b23ef8d3b580529f2a9ca1f955f6a322e49666270ea0d3744",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L5"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Durable health condition and medication response reported directly by the user across three turns; useful for personalized follow-up discussion.",
+              "id": "mem-health-lingering-cough-guaifenesin",
+              "after": {
+                "id": "mem-health-lingering-cough-guaifenesin",
+                "kind": "memory",
+                "title": "lingering cough for weeks — guaifenesin providing little relief",
+                "content": "The user has had a lingering cough lasting several weeks. They take over-the-counter guaifenesin as an expectorant but report it does not seem to be helping much, and they are considering asking their doctor about other treatment options.",
+                "path": "user/health",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0001:0",
+                    "m_0003:0",
+                    "m_0005:0"
+                  ],
+                  "projectReusable": true,
+                  "sources": [
+                    {
+                      "id": "m_0001:0",
+                      "origin": "user",
+                      "sha256": "286e626de3c10c9591b7f8345eaec6bd7bb02211fd876782fffa6b5e57668056",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L1"
+                    },
+                    {
+                      "id": "m_0003:0",
+                      "origin": "user",
+                      "sha256": "b663188da526a982266931258531b694f0ae371507437f7195aec44f5b33dc30",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L3"
+                    },
+                    {
+                      "id": "m_0005:0",
+                      "origin": "user",
+                      "sha256": "203e7a32402fe74b23ef8d3b580529f2a9ca1f955f6a322e49666270ea0d3744",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L5"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-13T08:36:11.769Z",
+                "updated_at": "2026-10-13T08:36:11.769Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "occasional heartburn and acid reflux — gastroenterologist Dr. Patel, natural remedies interest",
+              "content": "The user experiences occasional heartburn and acid reflux symptoms. Their gastroenterologist is Dr. Patel, and they are considering scheduling an appointment to discuss further treatment. They are interested in natural remedies such as ginger and aloe vera juice, and in understanding whether stress contributes to their symptoms.",
+              "path": "user/health",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0005:0",
+                  "m_0007:0",
+                  "m_0009:0"
+                ],
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0005:0",
+                    "origin": "user",
+                    "sha256": "203e7a32402fe74b23ef8d3b580529f2a9ca1f955f6a322e49666270ea0d3744",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L5"
+                  },
+                  {
+                    "id": "m_0007:0",
+                    "origin": "user",
+                    "sha256": "f8481dfe8cc4f8761cd62d497585205ab29c6b8583d84a069778feaa583632c2",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L7"
+                  },
+                  {
+                    "id": "m_0009:0",
+                    "origin": "user",
+                    "sha256": "2ca479aceef4e8af810cc521f3d461b27fcb4f64fade756c0919ce70302bcf05",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L9"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Durable symptom profile, care provider, and treatment interests reported directly by the user; supports coherent follow-up on GERD management discussions.",
+              "id": "mem-health-heartburn-reflux-patel",
+              "after": {
+                "id": "mem-health-heartburn-reflux-patel",
+                "kind": "memory",
+                "title": "occasional heartburn and acid reflux — gastroenterologist Dr. Patel, natural remedies interest",
+                "content": "The user experiences occasional heartburn and acid reflux symptoms. Their gastroenterologist is Dr. Patel, and they are considering scheduling an appointment to discuss further treatment. They are interested in natural remedies such as ginger and aloe vera juice, and in understanding whether stress contributes to their symptoms.",
+                "path": "user/health",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0005:0",
+                    "m_0007:0",
+                    "m_0009:0"
+                  ],
+                  "projectReusable": true,
+                  "sources": [
+                    {
+                      "id": "m_0005:0",
+                      "origin": "user",
+                      "sha256": "203e7a32402fe74b23ef8d3b580529f2a9ca1f955f6a322e49666270ea0d3744",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L5"
+                    },
+                    {
+                      "id": "m_0007:0",
+                      "origin": "user",
+                      "sha256": "f8481dfe8cc4f8761cd62d497585205ab29c6b8583d84a069778feaa583632c2",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L7"
+                    },
+                    {
+                      "id": "m_0009:0",
+                      "origin": "user",
+                      "sha256": "2ca479aceef4e8af810cc521f3d461b27fcb4f64fade756c0919ce70302bcf05",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L9"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-13T08:36:11.769Z",
+                "updated_at": "2026-10-13T08:36:11.769Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Heartburn and acid reflux symptoms",
+              "content": "The user reported experiencing heartburn and acid reflux symptoms. They are exploring stress as a possible contributor and stress management as a way to alleviate the symptoms.",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0011:0"
+                ],
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0011:0",
+                    "origin": "user",
+                    "sha256": "8b8b88b8f5d412208bbad289edfb971c195f32c777ddef061b4e14cf0ea8eefc",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L11"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Directly user-reported ongoing health condition; durable, host-neutral fact with direct user evidence, useful for personalized follow-up in this project.",
+              "id": "imported_f5d0eca4726d00749d254da5",
+              "after": {
+                "id": "imported_f5d0eca4726d00749d254da5",
+                "kind": "memory",
+                "title": "Heartburn and acid reflux symptoms",
+                "content": "The user reported experiencing heartburn and acid reflux symptoms. They are exploring stress as a possible contributor and stress management as a way to alleviate the symptoms.",
+                "path": "general",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0011:0"
+                  ],
+                  "projectReusable": true,
+                  "sources": [
+                    {
+                      "id": "m_0011:0",
+                      "origin": "user",
+                      "sha256": "8b8b88b8f5d412208bbad289edfb971c195f32c777ddef061b4e14cf0ea8eefc",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L11"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-13T08:36:11.769Z",
+                "updated_at": "2026-10-13T08:36:11.769Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Heartburn and acid reflux — plan to ask Dr. Patel about stress management",
+              "content": "The user plans to ask Dr. Patel, a healthcare provider they consult, about stress management techniques that could help alleviate their heartburn and acid reflux symptoms. They may start with relaxation exercises to see if that makes a difference.",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0011:0"
+                ],
+                "sources": [
+                  {
+                    "id": "m_0011:0",
+                    "origin": "user",
+                    "sha256": "8b8b88b8f5d412208bbad289edfb971c195f32c777ddef061b4e14cf0ea8eefc",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L11"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Time-anchored user plan/life event; the title names the object (heartburn and acid reflux) and the event (asking Dr. Patel about stress management) so later questions can find it by its subject.",
+              "id": "imported_69331b0912bfa0e0be7c5aeb",
+              "after": {
+                "id": "imported_69331b0912bfa0e0be7c5aeb",
+                "kind": "memory",
+                "title": "Heartburn and acid reflux — plan to ask Dr. Patel about stress management",
+                "content": "The user plans to ask Dr. Patel, a healthcare provider they consult, about stress management techniques that could help alleviate their heartburn and acid reflux symptoms. They may start with relaxation exercises to see if that makes a difference.",
+                "path": "general",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0011:0"
+                  ],
+                  "sources": [
+                    {
+                      "id": "m_0011:0",
+                      "origin": "user",
+                      "sha256": "8b8b88b8f5d412208bbad289edfb971c195f32c777ddef061b4e14cf0ea8eefc",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache/00ca467f--59c6b4e9cdfce58c/envs/00ca467f/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_d8732e451db6214c7a784a29.source.jsonl#L11"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-13T08:36:11.769Z",
+                "updated_at": "2026-10-13T08:36:11.769Z",
+                "version": 1
+              },
+              "applied": true
+            }
+          ],
+          "harnessStatePath": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4-updatedrop/scratch-updatedrop/ql-cache\\00ca467f--59c6b4e9cdfce58c\\envs\\00ca467f\\agent\\memory\\projects\\project_4b30654678833006224d23f1\\harness_state.json",
+          "scope": "local"
+        }
+      ],
+      "events": {
+        "import_d8732e451db6214c7a784a29": "f98c074afba82858bf90f2ee74d5b3e0e39a45535ab4ca1ab87fdf6c48fa21db"
+      }
+    }
+  }
+}
