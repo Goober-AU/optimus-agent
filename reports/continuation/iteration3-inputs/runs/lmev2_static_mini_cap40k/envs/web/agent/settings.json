@@ -1,0 +1,21 @@
+{
+  "autoRefine": {
+    "enabled": false
+  },
+  "retry": {
+    "enabled": false
+  },
+  "compaction": {
+    "enabled": false
+  },
+  "telemetryEnabled": false,
+  "agentTracesEnabled": false,
+  "quietStartup": true,
+  "memory": {
+    "recall": true,
+    "maxRecallChars": 12000,
+    "maxRecallEntries": 12,
+    "maxExtractionTokens": 32000,
+    "maxImportChunkChars": 15000
+  }
+}

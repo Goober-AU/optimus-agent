@@ -1,0 +1,47 @@
+{
+  "providers": {
+    "dgx-glm53": {
+      "api": "openai-completions",
+      "baseUrl": "https://a8349d0f-f602-991e-52c5-963eb2f2e949-in-docker-k3.apps.launchpad.nvidia.com/v1",
+      "apiKey": "!\"C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe\" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/openclawuser/Optimus-Assistant/profile/agent/skill-state/dgx-k3-login/glm53-resolvers/8be6a7f12df9454a93a10eaa0164c1c5.ps1\"",
+      "headers": {
+        "X-Pomerium-Authorization": "!powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:/Users/openclawuser/optimus-rust-test-20260915/profile/agent/credentials/Get-K3PomeriumJwt.ps1\""
+      },
+      "compat": {
+        "sendSessionAffinityHeaders": false,
+        "supportsStore": false,
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false,
+        "maxTokensField": "max_tokens",
+        "supportsStrictMode": false,
+        "supportsLongCacheRetention": false,
+        "sglangTokenBudget": true,
+        "thinkingFormat": "openai",
+        "requiresThinkingAsText": false,
+        "requiresReasoningContentOnAssistantMessages": true
+      },
+      "models": [
+        {
+          "id": "glm-5.3",
+          "name": "GLM-5.3 - DGX MTP",
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": null,
+            "xhigh": null,
+            "max": "max"
+          },
+          "input": [
+            "text"
+          ],
+          "contextWindow": 1048576,
+          "maxTokens": 262144,
+          "defaultMaxTokens": 131072
+        }
+      ]
+    }
+  }
+}

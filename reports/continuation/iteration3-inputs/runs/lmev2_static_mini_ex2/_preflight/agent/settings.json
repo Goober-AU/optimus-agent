@@ -1,0 +1,23 @@
+{
+  "autoRefine": {
+    "enabled": false
+  },
+  "retry": {
+    "enabled": false
+  },
+  "compaction": {
+    "enabled": false
+  },
+  "telemetryEnabled": false,
+  "agentTracesEnabled": false,
+  "quietStartup": true,
+  "memory": {
+    "recall": true,
+    "recallQueryExtract": true,
+    "maxRecallChars": 12000,
+    "importInstructions": "Extract durable host-neutral project facts only. Only create edits of kind memory with cited sourceIds. Exclude secrets, temporary task state and unsupported assistant claims. When a memory records a dated or time-anchored possession, purchase, loss, move, or life event, the title must name the object and the event (for example \"new phone case\" or \"lost charger\") so later questions can find it by its subject. When a page shows a named sidebar or right-hand section (for example a Toolbox), record one entry per page type naming the page type and section in the title, with the section's full ordered link list and count; never merge lists from different page types. Record named page controls and features with the page type or view they appear on.",
+    "maxRecallEntries": 12,
+    "maxExtractionTokens": 32000,
+    "maxImportChunkChars": 15000
+  }
+}

@@ -1,0 +1,786 @@
+{
+  "schema": 1,
+  "sha256": "33fa8d67f451acc92123867b3b110ca406e8c4bfea7af4d58897ece1849e9915",
+  "state": {
+    "schema": 1.0,
+    "entries": {
+      "memory": {
+        "web-env-postmill-space": {
+          "id": "web-env-postmill-space",
+          "kind": "memory",
+          "title": "Web environment: Postmill forum at localhost:9080, logged in as MarvelsGrantMan136",
+          "content": "The web environment under test is a Postmill forum instance served at http://localhost:9080/. The active browser session is authenticated as forum user \"MarvelsGrantMan136\" (shown as the account menu button in the top navigation). Persistent top-level navigation includes Home, Forums, Wiki, a search box, Notifications, and Submit. A forum named \"space\" exists and its submissions appear on the front page, each with submitter, a t3_ submission ID, timestamp, comment count link, and upvote/downvote controls.",
+          "path": "projects/web-env",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "projectReusable": false,
+            "sourceIds": [
+              "m_0002:0"
+            ],
+            "evidenceOrigin": "tool observation of the Postmill front page accessibility tree",
+            "sources": [
+              {
+                "id": "m_0002:0",
+                "origin": "tool",
+                "sha256": "17fca0851c84d2ec6e541c8f445ce01719ee637a2cd5fd40ec0ee0fd01929a79",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L2"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T20:10:02.727Z",
+          "updated_at": "2026-10-12T20:10:02.727Z",
+          "version": 1
+        },
+        "imported_a2c893cb8c13befc3cc77167": {
+          "id": "imported_a2c893cb8c13befc3cc77167",
+          "kind": "memory",
+          "title": "Project forum site runs Postmill",
+          "content": "The project's web forum environment is powered by Postmill (site footer link reads 'Running Postmill'). The UI is a Reddit-style link aggregator: posts show submitter, timestamp, comment count, and upvote/downvote scores; permalinks use t3_-prefixed IDs (e.g., t3_12241ym); content is organized into forums such as 'space' shown in a 'Subscribed forums' sidebar.",
+          "path": "projects/web-environment",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0002:14542"
+            ],
+            "origin": "tool",
+            "projectReusable": true,
+            "sources": [
+              {
+                "id": "m_0002:14542",
+                "origin": "tool",
+                "sha256": "17fca0851c84d2ec6e541c8f445ce01719ee637a2cd5fd40ec0ee0fd01929a79",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L2"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T20:10:02.727Z",
+          "updated_at": "2026-10-12T20:10:02.727Z",
+          "version": 1
+        },
+        "imported_548eb1e7f26454a7ee1ee00c": {
+          "id": "imported_548eb1e7f26454a7ee1ee00c",
+          "kind": "memory",
+          "title": "Subscribed forums on Postmill account: cmu_lti, Karaoke, sci_fi, space",
+          "content": "The logged-in account on the project's Postmill site is subscribed to four forums: cmu_lti, Karaoke, sci_fi, and space (observed in the 'Subscribed forums' sidebar). Snapshot at time of observation; subscriptions may change if forums are joined, left, or newly created.",
+          "path": "projects/web-environment",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0002:14542"
+            ],
+            "origin": "tool",
+            "sources": [
+              {
+                "id": "m_0002:14542",
+                "origin": "tool",
+                "sha256": "17fca0851c84d2ec6e541c8f445ce01719ee637a2cd5fd40ec0ee0fd01929a79",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L2"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T20:10:02.727Z",
+          "updated_at": "2026-10-12T20:10:02.727Z",
+          "version": 1
+        },
+        "postmill_create_forum_form": {
+          "id": "postmill_create_forum_form",
+          "kind": "memory",
+          "title": "Postmill create-forum form required fields",
+          "content": "The forum site in this project is a Postmill instance. Its 'Create forum' page (route /create_forum) has four required fields — Name, Title, Description, and Sidebar — while Tags is the only optional field. The Description is the text search engines present in their results, and the Sidebar accepts Markdown. A forum is created by filling all four required fields and clicking the 'Create forum' button on that page.",
+          "path": "web/postmill",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0006:0"
+            ],
+            "projectReusable": true,
+            "sources": [
+              {
+                "id": "m_0006:0",
+                "origin": "tool",
+                "sha256": "91bd290cd7f371ca3a52dfad26d258d0601c5b3816cbdddb789b7a59f853f3a5",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L6"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T20:10:02.727Z",
+          "updated_at": "2026-10-12T20:10:02.727Z",
+          "version": 1
+        },
+        "postmill_env_account": {
+          "id": "postmill_env_account",
+          "kind": "memory",
+          "title": "Postmill forum environment and acting account",
+          "content": "The Postmill forum instance for this project is observed at http://localhost:9080, and browser actions there run under the logged-in account 'MarvelsGrantMan136' (shown in the header user menu on both /forums and /create_forum). The /forums listing is sorted by submission count (top entry: AskReddit with 10,041 submissions) and is paginated across multiple pages.",
+          "path": "web/postmill",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0004:0",
+              "m_0006:0"
+            ],
+            "projectReusable": true,
+            "sources": [
+              {
+                "id": "m_0004:0",
+                "origin": "tool",
+                "sha256": "2212ab4a9778e39a61bc17f6030461ad7340fc9eb916ad8a692509f6b780c87b",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L4"
+              },
+              {
+                "id": "m_0006:0",
+                "origin": "tool",
+                "sha256": "91bd290cd7f371ca3a52dfad26d258d0601c5b3816cbdddb789b7a59f853f3a5",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L6"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T20:10:02.727Z",
+          "updated_at": "2026-10-12T20:10:02.727Z",
+          "version": 1
+        },
+        "imported_4d82a90b0bd2d6b05b9eb375": {
+          "id": "imported_4d82a90b0bd2d6b05b9eb375",
+          "kind": "memory",
+          "title": "Postmill create_forum form required fields",
+          "content": "In the Postmill web application, the 'Create new forum' form (/create_forum) has four required text fields: Name, Title, Description, and Sidebar. Name and Title are distinct required fields. Tags is optional. The Sidebar field supports Markdown ('Markdown allowed.' note on the form), and the Description help text states it is a short description shown to search engines. The form is submitted with the 'Create forum' button at the bottom. Field order in the accessibility tree: Name, Title, Description, Sidebar, Tags.",
+          "path": "web/postmill",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "sourceIds": [
+              "m_0008:0",
+              "m_0010:0",
+              "m_0012:0"
+            ],
+            "projectReusable": true,
+            "sources": [
+              {
+                "id": "m_0008:0",
+                "origin": "tool",
+                "sha256": "717e3aa557d1bca034792550128652447272d4725a0e2bb12c043e25eafb43e9",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L8"
+              },
+              {
+                "id": "m_0010:0",
+                "origin": "tool",
+                "sha256": "eddfea517c531765c01edb5086533893687fb5887432eceda4c724660dd28e39",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L10"
+              },
+              {
+                "id": "m_0012:0",
+                "origin": "tool",
+                "sha256": "b1859013bc6ce035f4dd5d9464823d566330d1c009658921d1a457a9d1fdd374",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L12"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T20:10:02.727Z",
+          "updated_at": "2026-10-12T20:10:02.727Z",
+          "version": 1
+        },
+        "mem_postmill_cyberpunk_forum_created": {
+          "id": "mem_postmill_cyberpunk_forum_created",
+          "kind": "memory",
+          "title": "Cyberpunk forum created on Postmill site",
+          "content": "A forum named 'Cyberpunk' was created on the Postmill site (local instance at http://localhost:9080) on March 12, 2026 at 7:31:27 PM EDT. It is reachable at /f/Cyberpunk with title 'Cyberpunk', description 'Welcome to the future', and a sidebar listing Games, Books, Movies, and Future. It was created by user MarvelsGrantMan136, who is its moderator and was its only subscriber at creation time.",
+          "path": "postmill/forums",
+          "scope": "local",
+          "reference": {},
+          "arguments": {},
+          "metadata": {
+            "scope": "local",
+            "projectReusable": true,
+            "sourceIds": [
+              "m_0014:0",
+              "m_0016:0"
+            ],
+            "sources": [
+              {
+                "id": "m_0014:0",
+                "origin": "tool",
+                "sha256": "f54677be73f089e0f6ceee54b0ab659e096b779aa0cb724060a54565c64cf8d0",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L14"
+              },
+              {
+                "id": "m_0016:0",
+                "origin": "tool",
+                "sha256": "41b260ebdc156ccc9a81ce94b243f4b3c6298ad86557e3e1966005883768206f",
+                "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L16"
+              }
+            ],
+            "evidenceStatus": "cited",
+            "projectId": "project_4b30654678833006224d23f1",
+            "status": "current"
+          },
+          "source": "refine",
+          "created_at": "2026-10-12T20:10:02.727Z",
+          "updated_at": "2026-10-12T20:10:02.727Z",
+          "version": 1
+        }
+      },
+      "prompt": {},
+      "skill": {},
+      "subagent": {}
+    },
+    "refinements": [
+      {
+        "id": "import_e54359daf04211a7f5722625",
+        "trigger": "Import import_e54359daf04211a7f5722625",
+        "changes": [
+          "create memory:web-env-postmill-space",
+          "create memory:imported_a2c893cb8c13befc3cc77167",
+          "create memory:imported_548eb1e7f26454a7ee1ee00c",
+          "create memory:postmill_create_forum_form",
+          "create memory:postmill_env_account",
+          "create memory:imported_4d82a90b0bd2d6b05b9eb375",
+          "create memory:mem_postmill_cyberpunk_forum_created"
+        ],
+        "evidence": "Selected session 521828582064d4ab36a15bd98ebeb036db66a03f2744823335a0626a1551ced0",
+        "outcome": "Recover selected project knowledge with original evidence",
+        "created_at": "2026-10-12T20:10:02.727Z"
+      }
+    ],
+    "memory": {
+      "schema": 1.0,
+      "projectId": "project_4b30654678833006224d23f1",
+      "revision": 1,
+      "history": [
+        {
+          "id": "import_e54359daf04211a7f5722625",
+          "summary": "Import import_e54359daf04211a7f5722625",
+          "rationale": "Selected session 521828582064d4ab36a15bd98ebeb036db66a03f2744823335a0626a1551ced0",
+          "expectedOutcome": "Recover selected project knowledge with original evidence",
+          "appliedEdits": [
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Web environment: Postmill forum at localhost:9080, logged in as MarvelsGrantMan136",
+              "content": "The web environment under test is a Postmill forum instance served at http://localhost:9080/. The active browser session is authenticated as forum user \"MarvelsGrantMan136\" (shown as the account menu button in the top navigation). Persistent top-level navigation includes Home, Forums, Wiki, a search box, Notifications, and Submit. A forum named \"space\" exists and its submissions appear on the front page, each with submitter, a t3_ submission ID, timestamp, comment count link, and upvote/downvote controls.",
+              "path": "projects/web-env",
+              "metadata": {
+                "scope": "local",
+                "projectReusable": false,
+                "sourceIds": [
+                  "m_0002:0"
+                ],
+                "evidenceOrigin": "tool observation of the Postmill front page accessibility tree",
+                "sources": [
+                  {
+                    "id": "m_0002:0",
+                    "origin": "tool",
+                    "sha256": "17fca0851c84d2ec6e541c8f445ce01719ee637a2cd5fd40ec0ee0fd01929a79",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L2"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Directly observed, stable environment facts (app type, base URL, authenticated account, navigation structure) that support all subsequent web interaction in this session; transient page content was deliberately excluded.",
+              "id": "web-env-postmill-space",
+              "after": {
+                "id": "web-env-postmill-space",
+                "kind": "memory",
+                "title": "Web environment: Postmill forum at localhost:9080, logged in as MarvelsGrantMan136",
+                "content": "The web environment under test is a Postmill forum instance served at http://localhost:9080/. The active browser session is authenticated as forum user \"MarvelsGrantMan136\" (shown as the account menu button in the top navigation). Persistent top-level navigation includes Home, Forums, Wiki, a search box, Notifications, and Submit. A forum named \"space\" exists and its submissions appear on the front page, each with submitter, a t3_ submission ID, timestamp, comment count link, and upvote/downvote controls.",
+                "path": "projects/web-env",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "projectReusable": false,
+                  "sourceIds": [
+                    "m_0002:0"
+                  ],
+                  "evidenceOrigin": "tool observation of the Postmill front page accessibility tree",
+                  "sources": [
+                    {
+                      "id": "m_0002:0",
+                      "origin": "tool",
+                      "sha256": "17fca0851c84d2ec6e541c8f445ce01719ee637a2cd5fd40ec0ee0fd01929a79",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L2"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T20:10:02.727Z",
+                "updated_at": "2026-10-12T20:10:02.727Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Project forum site runs Postmill",
+              "content": "The project's web forum environment is powered by Postmill (site footer link reads 'Running Postmill'). The UI is a Reddit-style link aggregator: posts show submitter, timestamp, comment count, and upvote/downvote scores; permalinks use t3_-prefixed IDs (e.g., t3_12241ym); content is organized into forums such as 'space' shown in a 'Subscribed forums' sidebar.",
+              "path": "projects/web-environment",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0002:14542"
+                ],
+                "origin": "tool",
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0002:14542",
+                    "origin": "tool",
+                    "sha256": "17fca0851c84d2ec6e541c8f445ce01719ee637a2cd5fd40ec0ee0fd01929a79",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L2"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Directly observed platform fact that shapes how the agent should interact with the site (Postmill conventions, forum structure) and is reusable across the project.",
+              "id": "imported_a2c893cb8c13befc3cc77167",
+              "after": {
+                "id": "imported_a2c893cb8c13befc3cc77167",
+                "kind": "memory",
+                "title": "Project forum site runs Postmill",
+                "content": "The project's web forum environment is powered by Postmill (site footer link reads 'Running Postmill'). The UI is a Reddit-style link aggregator: posts show submitter, timestamp, comment count, and upvote/downvote scores; permalinks use t3_-prefixed IDs (e.g., t3_12241ym); content is organized into forums such as 'space' shown in a 'Subscribed forums' sidebar.",
+                "path": "projects/web-environment",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0002:14542"
+                  ],
+                  "origin": "tool",
+                  "projectReusable": true,
+                  "sources": [
+                    {
+                      "id": "m_0002:14542",
+                      "origin": "tool",
+                      "sha256": "17fca0851c84d2ec6e541c8f445ce01719ee637a2cd5fd40ec0ee0fd01929a79",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L2"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T20:10:02.727Z",
+                "updated_at": "2026-10-12T20:10:02.727Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Subscribed forums on Postmill account: cmu_lti, Karaoke, sci_fi, space",
+              "content": "The logged-in account on the project's Postmill site is subscribed to four forums: cmu_lti, Karaoke, sci_fi, and space (observed in the 'Subscribed forums' sidebar). Snapshot at time of observation; subscriptions may change if forums are joined, left, or newly created.",
+              "path": "projects/web-environment",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0002:14542"
+                ],
+                "origin": "tool",
+                "sources": [
+                  {
+                    "id": "m_0002:14542",
+                    "origin": "tool",
+                    "sha256": "17fca0851c84d2ec6e541c8f445ce01719ee637a2cd5fd40ec0ee0fd01929a79",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L2"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Directly observed account state useful for navigation and forum selection in the current session; recorded locally as a snapshot because it is mutable.",
+              "id": "imported_548eb1e7f26454a7ee1ee00c",
+              "after": {
+                "id": "imported_548eb1e7f26454a7ee1ee00c",
+                "kind": "memory",
+                "title": "Subscribed forums on Postmill account: cmu_lti, Karaoke, sci_fi, space",
+                "content": "The logged-in account on the project's Postmill site is subscribed to four forums: cmu_lti, Karaoke, sci_fi, and space (observed in the 'Subscribed forums' sidebar). Snapshot at time of observation; subscriptions may change if forums are joined, left, or newly created.",
+                "path": "projects/web-environment",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0002:14542"
+                  ],
+                  "origin": "tool",
+                  "sources": [
+                    {
+                      "id": "m_0002:14542",
+                      "origin": "tool",
+                      "sha256": "17fca0851c84d2ec6e541c8f445ce01719ee637a2cd5fd40ec0ee0fd01929a79",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L2"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T20:10:02.727Z",
+                "updated_at": "2026-10-12T20:10:02.727Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Postmill create-forum form required fields",
+              "content": "The forum site in this project is a Postmill instance. Its 'Create forum' page (route /create_forum) has four required fields — Name, Title, Description, and Sidebar — while Tags is the only optional field. The Description is the text search engines present in their results, and the Sidebar accepts Markdown. A forum is created by filling all four required fields and clicking the 'Create forum' button on that page.",
+              "path": "web/postmill",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0006:0"
+                ],
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0006:0",
+                    "origin": "tool",
+                    "sha256": "91bd290cd7f371ca3a52dfad26d258d0601c5b3816cbdddb789b7a59f853f3a5",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L6"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "The form structure is stable application behavior directly observed in tool evidence; recording it lets future forum-creation steps fill the form completely on the first attempt without re-inspecting the DOM.",
+              "id": "postmill_create_forum_form",
+              "after": {
+                "id": "postmill_create_forum_form",
+                "kind": "memory",
+                "title": "Postmill create-forum form required fields",
+                "content": "The forum site in this project is a Postmill instance. Its 'Create forum' page (route /create_forum) has four required fields — Name, Title, Description, and Sidebar — while Tags is the only optional field. The Description is the text search engines present in their results, and the Sidebar accepts Markdown. A forum is created by filling all four required fields and clicking the 'Create forum' button on that page.",
+                "path": "web/postmill",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0006:0"
+                  ],
+                  "projectReusable": true,
+                  "sources": [
+                    {
+                      "id": "m_0006:0",
+                      "origin": "tool",
+                      "sha256": "91bd290cd7f371ca3a52dfad26d258d0601c5b3816cbdddb789b7a59f853f3a5",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L6"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T20:10:02.727Z",
+                "updated_at": "2026-10-12T20:10:02.727Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Postmill forum environment and acting account",
+              "content": "The Postmill forum instance for this project is observed at http://localhost:9080, and browser actions there run under the logged-in account 'MarvelsGrantMan136' (shown in the header user menu on both /forums and /create_forum). The /forums listing is sorted by submission count (top entry: AskReddit with 10,041 submissions) and is paginated across multiple pages.",
+              "path": "web/postmill",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0004:0",
+                  "m_0006:0"
+                ],
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0004:0",
+                    "origin": "tool",
+                    "sha256": "2212ab4a9778e39a61bc17f6030461ad7340fc9eb916ad8a692509f6b780c87b",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L4"
+                  },
+                  {
+                    "id": "m_0006:0",
+                    "origin": "tool",
+                    "sha256": "91bd290cd7f371ca3a52dfad26d258d0601c5b3816cbdddb789b7a59f853f3a5",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L6"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "The environment endpoint, provisioned account, and listing layout are durable environment facts with direct tool evidence; knowing the acting account helps verify ownership of content created in this environment.",
+              "id": "postmill_env_account",
+              "after": {
+                "id": "postmill_env_account",
+                "kind": "memory",
+                "title": "Postmill forum environment and acting account",
+                "content": "The Postmill forum instance for this project is observed at http://localhost:9080, and browser actions there run under the logged-in account 'MarvelsGrantMan136' (shown in the header user menu on both /forums and /create_forum). The /forums listing is sorted by submission count (top entry: AskReddit with 10,041 submissions) and is paginated across multiple pages.",
+                "path": "web/postmill",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0004:0",
+                    "m_0006:0"
+                  ],
+                  "projectReusable": true,
+                  "sources": [
+                    {
+                      "id": "m_0004:0",
+                      "origin": "tool",
+                      "sha256": "2212ab4a9778e39a61bc17f6030461ad7340fc9eb916ad8a692509f6b780c87b",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L4"
+                    },
+                    {
+                      "id": "m_0006:0",
+                      "origin": "tool",
+                      "sha256": "91bd290cd7f371ca3a52dfad26d258d0601c5b3816cbdddb789b7a59f853f3a5",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L6"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T20:10:02.727Z",
+                "updated_at": "2026-10-12T20:10:02.727Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Postmill create_forum form required fields",
+              "content": "In the Postmill web application, the 'Create new forum' form (/create_forum) has four required text fields: Name, Title, Description, and Sidebar. Name and Title are distinct required fields. Tags is optional. The Sidebar field supports Markdown ('Markdown allowed.' note on the form), and the Description help text states it is a short description shown to search engines. The form is submitted with the 'Create forum' button at the bottom. Field order in the accessibility tree: Name, Title, Description, Sidebar, Tags.",
+              "path": "web/postmill",
+              "metadata": {
+                "scope": "local",
+                "sourceIds": [
+                  "m_0008:0",
+                  "m_0010:0",
+                  "m_0012:0"
+                ],
+                "projectReusable": true,
+                "sources": [
+                  {
+                    "id": "m_0008:0",
+                    "origin": "tool",
+                    "sha256": "717e3aa557d1bca034792550128652447272d4725a0e2bb12c043e25eafb43e9",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L8"
+                  },
+                  {
+                    "id": "m_0010:0",
+                    "origin": "tool",
+                    "sha256": "eddfea517c531765c01edb5086533893687fb5887432eceda4c724660dd28e39",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L10"
+                  },
+                  {
+                    "id": "m_0012:0",
+                    "origin": "tool",
+                    "sha256": "b1859013bc6ce035f4dd5d9464823d566330d1c009658921d1a457a9d1fdd374",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L12"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Durable, host-neutral fact about the Postmill application's forum-creation form observed directly in tool output; recording it prevents re-inspection in later form-filling turns while temporary task values (forum name, description, sidebar content) are intentionally excluded as session task state.",
+              "id": "imported_4d82a90b0bd2d6b05b9eb375",
+              "after": {
+                "id": "imported_4d82a90b0bd2d6b05b9eb375",
+                "kind": "memory",
+                "title": "Postmill create_forum form required fields",
+                "content": "In the Postmill web application, the 'Create new forum' form (/create_forum) has four required text fields: Name, Title, Description, and Sidebar. Name and Title are distinct required fields. Tags is optional. The Sidebar field supports Markdown ('Markdown allowed.' note on the form), and the Description help text states it is a short description shown to search engines. The form is submitted with the 'Create forum' button at the bottom. Field order in the accessibility tree: Name, Title, Description, Sidebar, Tags.",
+                "path": "web/postmill",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "sourceIds": [
+                    "m_0008:0",
+                    "m_0010:0",
+                    "m_0012:0"
+                  ],
+                  "projectReusable": true,
+                  "sources": [
+                    {
+                      "id": "m_0008:0",
+                      "origin": "tool",
+                      "sha256": "717e3aa557d1bca034792550128652447272d4725a0e2bb12c043e25eafb43e9",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L8"
+                    },
+                    {
+                      "id": "m_0010:0",
+                      "origin": "tool",
+                      "sha256": "eddfea517c531765c01edb5086533893687fb5887432eceda4c724660dd28e39",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L10"
+                    },
+                    {
+                      "id": "m_0012:0",
+                      "origin": "tool",
+                      "sha256": "b1859013bc6ce035f4dd5d9464823d566330d1c009658921d1a457a9d1fdd374",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L12"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T20:10:02.727Z",
+                "updated_at": "2026-10-12T20:10:02.727Z",
+                "version": 1
+              },
+              "applied": true
+            },
+            {
+              "action": "create",
+              "kind": "memory",
+              "title": "Cyberpunk forum created on Postmill site",
+              "content": "A forum named 'Cyberpunk' was created on the Postmill site (local instance at http://localhost:9080) on March 12, 2026 at 7:31:27 PM EDT. It is reachable at /f/Cyberpunk with title 'Cyberpunk', description 'Welcome to the future', and a sidebar listing Games, Books, Movies, and Future. It was created by user MarvelsGrantMan136, who is its moderator and was its only subscriber at creation time.",
+              "path": "postmill/forums",
+              "metadata": {
+                "scope": "local",
+                "projectReusable": true,
+                "sourceIds": [
+                  "m_0014:0",
+                  "m_0016:0"
+                ],
+                "sources": [
+                  {
+                    "id": "m_0014:0",
+                    "origin": "tool",
+                    "sha256": "f54677be73f089e0f6ceee54b0ab659e096b779aa0cb724060a54565c64cf8d0",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L14"
+                  },
+                  {
+                    "id": "m_0016:0",
+                    "origin": "tool",
+                    "sha256": "41b260ebdc156ccc9a81ce94b243f4b3c6298ad86557e3e1966005883768206f",
+                    "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L16"
+                  }
+                ],
+                "evidenceStatus": "cited",
+                "projectId": "project_4b30654678833006224d23f1",
+                "status": "current"
+              },
+              "reason": "Durable project fact with direct tool evidence: the created forum page confirms all properties, enabling future lookups about the forum without re-verification.",
+              "id": "mem_postmill_cyberpunk_forum_created",
+              "after": {
+                "id": "mem_postmill_cyberpunk_forum_created",
+                "kind": "memory",
+                "title": "Cyberpunk forum created on Postmill site",
+                "content": "A forum named 'Cyberpunk' was created on the Postmill site (local instance at http://localhost:9080) on March 12, 2026 at 7:31:27 PM EDT. It is reachable at /f/Cyberpunk with title 'Cyberpunk', description 'Welcome to the future', and a sidebar listing Games, Books, Movies, and Future. It was created by user MarvelsGrantMan136, who is its moderator and was its only subscriber at creation time.",
+                "path": "postmill/forums",
+                "scope": "local",
+                "reference": {},
+                "arguments": {},
+                "metadata": {
+                  "scope": "local",
+                  "projectReusable": true,
+                  "sourceIds": [
+                    "m_0014:0",
+                    "m_0016:0"
+                  ],
+                  "sources": [
+                    {
+                      "id": "m_0014:0",
+                      "origin": "tool",
+                      "sha256": "f54677be73f089e0f6ceee54b0ab659e096b779aa0cb724060a54565c64cf8d0",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L14"
+                    },
+                    {
+                      "id": "m_0016:0",
+                      "origin": "tool",
+                      "sha256": "41b260ebdc156ccc9a81ce94b243f4b3c6298ad86557e3e1966005883768206f",
+                      "uri": "file:///C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-lmev2ing/reports/continuation/iteration3-inputs/runs/lmev2_static_mini_cap40k/envs/web/agent/memory/projects/project_4b30654678833006224d23f1/jobs/import_e54359daf04211a7f5722625.source.jsonl#L16"
+                    }
+                  ],
+                  "evidenceStatus": "cited",
+                  "projectId": "project_4b30654678833006224d23f1",
+                  "status": "current"
+                },
+                "source": "refine",
+                "created_at": "2026-10-12T20:10:02.727Z",
+                "updated_at": "2026-10-12T20:10:02.727Z",
+                "version": 1
+              },
+              "applied": true
+            }
+          ],
+          "harnessStatePath": "C:\\Users\\openclawuser\\optimus-memory-bench-20261007-040424\\imp3-lmev2ing\\reports\\continuation\\iteration3-inputs\\runs\\lmev2_static_mini_cap40k\\envs\\web\\agent\\memory\\projects\\project_4b30654678833006224d23f1\\harness_state.json",
+          "scope": "local"
+        }
+      ],
+      "events": {
+        "import_e54359daf04211a7f5722625": "9699154a58b7f7c65c3d30ea1bd8802d333f1c921c3a403b3e528bf63f6a1ccf"
+      }
+    }
+  }
+}
