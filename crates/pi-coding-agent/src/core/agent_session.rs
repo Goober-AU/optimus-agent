@@ -127,10 +127,10 @@ use crate::core::messages::{
     HarnessDigestDetails, RefinementSource, RlmChildFailureDetails, RlmChildTerminalNoticeDetails,
     SessionSlashCommandResultDetails, ASYNC_BASH_COMPLETION_CUSTOM_TYPE,
     ASYNC_BASH_COMPLETION_PREVIEW_LABEL, HARNESS_DIGEST_CUSTOM_TYPE, HEARTBEAT_PROMPT_CUSTOM_TYPE,
-    HEARTBEAT_PROMPT_PREVIEW_LABEL, IPYTHON_STATE_RESTORED_CUSTOM_TYPE, REFINEMENT_SOURCE_AUTO,
-    REFINEMENT_SOURCE_SELF, REFINEMENT_SOURCE_USER, RLM_CHILD_FAILURE_CUSTOM_TYPE,
-    RLM_CHILD_TERMINAL_NOTICE_CUSTOM_TYPE, SESSION_SLASH_COMMAND_CUSTOM_TYPE,
-    SESSION_SLASH_COMMAND_RESULT_CUSTOM_TYPE,
+    HEARTBEAT_PROMPT_PREVIEW_LABEL, IPYTHON_STATE_RESTORED_CUSTOM_TYPE,
+    REFINEMENT_NOTICE_CUSTOM_TYPE, REFINEMENT_SOURCE_AUTO, REFINEMENT_SOURCE_SELF,
+    REFINEMENT_SOURCE_USER, RLM_CHILD_FAILURE_CUSTOM_TYPE, RLM_CHILD_TERMINAL_NOTICE_CUSTOM_TYPE,
+    SESSION_SLASH_COMMAND_CUSTOM_TYPE, SESSION_SLASH_COMMAND_RESULT_CUSTOM_TYPE,
 };
 use crate::core::model_tool_output_policy::{
     apply_model_tool_output_policy, ModelToolOutputPolicy, ModelToolOutputPolicyOptions,
@@ -140,16 +140,18 @@ use crate::core::prompt_templates::{expand_prompt_template, PromptTemplate};
 #[cfg(test)]
 use crate::core::refinement::refinement::save_harness_state;
 use crate::core::refinement::refinement::{
-    append_global_refinement_reported, apply_refinement_proposal, format_harness_state_for_prompt,
-    generate_refinement_id, get_global_harness_state_dir, get_local_harness_state_dir,
-    get_refinement_history, infer_refinement_result_scope, load_global_refinement_history_reported,
-    load_harness_state, load_harness_state_details, merge_harness_states, merge_refinement_history,
-    normalize_refinement_proposal, plan_refinement, review_auto_refine, save_harness_state_checked,
-    ApplyRefinementOptions, AutoRefineReason, AutoRefineReview, AutoRefineReviewContext,
-    CompletionFn, HarnessScope, HarnessState, PlanRefinementRequest, ProviderRetryPolicy,
-    RefineModel, RefineOptions, RefinementCompletionRequest, RefinementFailureError,
-    RefinementPlan, RefinementProposal, RefinementResult, ReviewAutoRefineRequest,
-    REFINEMENT_CUSTOM_TYPE, REFINEMENT_FAILURE_CUSTOM_TYPE, REFINE_SKILL_NAME,
+    append_global_refinement, append_global_refinement_reported, apply_refinement_proposal,
+    format_harness_state_for_prompt, generate_refinement_id, get_global_harness_state_dir,
+    get_local_harness_state_dir, get_refinement_history, get_refinement_history_path,
+    infer_refinement_result_scope, load_global_refinement_history_reported, load_harness_state,
+    load_harness_state_details, merge_harness_states, merge_refinement_history,
+    normalize_refinement_proposal, plan_refinement, refinement_failure_record, review_auto_refine,
+    save_harness_state_checked, ApplyRefinementOptions, AutoRefineReason, AutoRefineReview,
+    AutoRefineReviewContext, CompletionFn, HarnessScope, HarnessState, PlanRefinementRequest,
+    ProviderRetryPolicy, RefineModel, RefineOptions, RefinementCompletionRequest,
+    RefinementFailureError, RefinementPlan, RefinementProposal, RefinementResult,
+    ReviewAutoRefineRequest, REFINEMENT_CUSTOM_TYPE, REFINEMENT_FAILURE_CUSTOM_TYPE,
+    REFINE_SKILL_NAME,
 };
 pub use crate::core::resource_loader::{ResourceExtensionPaths, ResourceLoader};
 pub use crate::core::rlm_runtime::{
@@ -2157,6 +2159,16 @@ pub const REFINEMENT_SKIPPED_MESSAGE: &str = "Refinement skipped by extension";
 /// `error instanceof RefineSkippedError` for the port's `Result<_, String>` rail.
 pub fn is_refinement_skipped_error(error: &str) -> bool {
     error == REFINEMENT_SKIPPED_MESSAGE
+}
+
+/// GW-FAILLOUD: whether a refinement error describes a FAILED run that must
+/// leave a persisted audit trail, rather than an intentional skip or a
+/// user/session-initiated cancellation (the same classes `RefinementProgress`
+/// distinguishes as "Refinement skipped" / "Refinement cancelled").
+pub fn should_persist_refinement_failure(error: &str) -> bool {
+    !is_refinement_skipped_error(error)
+        && !error.contains("aborted")
+        && !error.contains("cancelled")
 }
 
 /// Format a `session_before_refine` hook's typed failure for the
@@ -8123,9 +8135,15 @@ impl AgentSession {
         if let Some(pending) = pending {
             let options = pending.options;
             // Best-effort drain; refinement errors must not block disposal.
-            let _ = self
+            // GW-FAILLOUD: this is the last observer of the drained run, and
+            // the session is about to disappear - persist the failure trail
+            // here so the drained request cannot fail silently.
+            if let Err(error) = self
                 .run_serialized_refine(&options, REFINEMENT_SOURCE_SELF)
-                .await;
+                .await
+            {
+                self.record_refinement_failure(&error);
+            }
             // Stamp cooldown and reset counter so the interval check below
             // does not trigger a duplicate refine after the explicit drain.
             *self.last_auto_refine_review_at.lock().unwrap() = now_ms();
@@ -15255,6 +15273,12 @@ impl AgentSession {
             .apply_refine_with_context(plan, options, source, signal, None, false, false, &progress)
             .await;
         progress.finish_result(&outcome);
+        // GW-FAILLOUD: `apply_refine` is an outer entry point of its own, so
+        // its failed runs persist their trail exactly once (the callers that
+        // route through `refine_with_options_at_epoch` persist there).
+        if let Err(error) = &outcome {
+            self.record_refinement_failure(error);
+        }
         outcome
     }
 
@@ -15491,6 +15515,14 @@ impl AgentSession {
         let progress = RefinementProgress::new(self);
         let outcome = self.refine_with_progress(options, skip_abort, source, epoch, &progress).await;
         progress.finish_result(&outcome);
+        // GW-FAILLOUD: this is the single outer funnel for a direct refine
+        // run (manual /refine in a non-serialized session, programmatic
+        // callers, the non-serialized auto-refine rail). Its error reaches
+        // callers that may swallow it, so the failure trail is persisted
+        // here - exactly once per run.
+        if let Err(error) = &outcome {
+            self.record_refinement_failure(error);
+        }
         self.notify_session_input_checkpoint_change();
         self.schedule_session_input_pump();
         outcome
@@ -16182,6 +16214,59 @@ impl AgentSession {
             true,
             now_ms_i64(),
         ));
+    }
+
+    /// GW-FAILLOUD: a failed refinement run must not vanish in daemon/RLM
+    /// sessions. Append a failed-run record to the cross-session harness
+    /// `refinements.jsonl` (same envelope and durable append as successful
+    /// refinements) and a durable, model-facing transcript notice, so the
+    /// failure stays visible and auditable even after a restart.
+    ///
+    /// Intentional skips and user/session-initiated cancellations stay quiet:
+    /// only a genuinely failed run leaves the trail. The session-side notice
+    /// is suppressed once the session is disposed or disposing (no late
+    /// notices into aborted sessions); the history record is still written,
+    /// because it is an append-only audit file, not session state.
+    fn record_refinement_failure(&self, error: &str) {
+        if !should_persist_refinement_failure(error) {
+            return;
+        }
+        let global_dir = get_global_harness_state_dir(&crate::config::get_agent_dir());
+        let record = refinement_failure_record(error, &global_dir);
+        if let Err(persist_error) = append_global_refinement(&global_dir, &record) {
+            eprintln!(
+                "Warning: refinement failure record could not be written to {}: {persist_error}",
+                get_refinement_history_path(&global_dir)
+            );
+        }
+        if self.disposed.load(Ordering::SeqCst) || self.disposing.load(Ordering::SeqCst) {
+            return;
+        }
+        let notice = format!(
+            "Refinement failed: {error} [category: {}] — no harness changes were saved.",
+            record
+                .failure_category
+                .clone()
+                .unwrap_or_else(|| "unknown".to_string())
+        );
+        let details = serde_json::json!({
+            "refinementId": record.id,
+            "summary": record.summary,
+            "scope": record.scope.unwrap_or(HarnessScope::Global).as_str(),
+            "edits": [],
+            "status": "failed",
+            "error": error,
+            "failureCategory": record.failure_category,
+            "attemptDurationsMs": record.attempt_durations_ms,
+        });
+        self.append_durable_refine_message(&CustomMessage {
+            role: "custom".to_string(),
+            custom_type: REFINEMENT_NOTICE_CUSTOM_TYPE.to_string(),
+            content: CustomMessageContent::Text(notice),
+            display: true,
+            details: Some(details),
+            timestamp: now_ms_i64(),
+        });
     }
 
     /// `_appendDurableRefineMessage(message)`.
@@ -18646,7 +18731,12 @@ impl AgentSession {
     }
 
     /// `_emitRefineFailed(error)` (agent-session.ts:8482-8487).
+    ///
+    /// GW-FAILLOUD: the wire event alone is not durable - in daemon/RLM
+    /// sessions it vanishes without a transcript row. Persist the failure
+    /// (history record + durable notice) before the event is emitted.
     fn emit_refine_failed(&self, error: &str) {
+        self.record_refinement_failure(error);
         self.emit(AgentSessionEvent::RefineFailed {
             error: error.to_string(),
         });
@@ -23440,7 +23530,8 @@ mod post_compaction_continuation_tests {
         use super::*;
         use pi_ai::providers::faux::{
             faux_assistant_message, register_faux_provider, FauxAssistantContent,
-            FauxProviderRegistration, FauxResponseStep, RegisterFauxProviderOptions,
+            FauxAssistantMessageOptions, FauxProviderRegistration, FauxResponseStep,
+            RegisterFauxProviderOptions,
         };
         use std::sync::atomic::AtomicUsize;
 
