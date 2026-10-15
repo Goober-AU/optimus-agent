@@ -278,6 +278,9 @@ pub struct AgentCommMessage {
     /// Task ids this task depends on.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub dependencies: Vec<String>,
+    /// Required next actions for the recipient, in priority order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub next_actions: Vec<String>,
     /// Sequence number within the task, for ordering and delta bases.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sequence: Option<u64>,
@@ -308,6 +311,7 @@ impl AgentCommMessage {
             artifacts: Vec::new(),
             verification: None,
             dependencies: Vec::new(),
+            next_actions: Vec::new(),
             sequence: None,
             protocol: AGENT_COMM_PROTOCOL.to_string(),
             timestamp: None,
@@ -439,6 +443,9 @@ impl AgentCommMessage {
         }
         for (index, dependency) in self.dependencies.iter().enumerate() {
             out.push(&format!("DEP{}", index + 1), dependency);
+        }
+        for action in &self.next_actions {
+            out.push("NEXT", action);
         }
         if let Some(timestamp) = &self.timestamp {
             out.push("TS", timestamp);
@@ -602,6 +609,7 @@ impl AgentCommMessage {
             };
             out.dependencies.push(dependency.to_string());
         }
+        out.next_actions = message.get_all("NEXT").iter().map(|s| s.to_string()).collect();
         out.timestamp = message.get("TS").map(str::to_string);
         out.expiry = message.get("EXP").map(str::to_string);
         out.validate()?;
@@ -651,6 +659,8 @@ mod tests {
         });
         message.artifacts.push("reports/race.txt".into());
         message.dependencies.push("t41".into());
+        message.next_actions.push("inspect_lock".into());
+        message.next_actions.push("regression_test".into());
         message
     }
 
