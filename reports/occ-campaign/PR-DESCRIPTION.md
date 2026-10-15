@@ -1,6 +1,6 @@
 # OCC: compact agent communication + RLM depth-limit degradation
 
-Branch `improve/rlm-multi-agent-comm` (18 commits at tip `b040ee116`, base `159ce68cc` = v0.1.30 main). 43 files changed, 13,904 insertions(+), 124 deletions(-). No dependency changes.
+Branch `improve/rlm-multi-agent-comm` (20 commits at tip `054fc445d`, base `159ce68cc` = v0.1.30 main). 43 files changed, 13,904 insertions(+), 124 deletions(-). No dependency changes.
 
 ## Summary
 
