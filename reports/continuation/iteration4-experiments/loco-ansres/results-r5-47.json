@@ -1,0 +1,184 @@
+{
+ "conv-47_q139": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c47-q139-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.7142857142857143,
+    "outcome": "pass",
+    "answer": "Playing Super Mario and The Legend of Zelda on the Nintendo.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "3f790289038f5b3e",
+    "latency_s": 9.7
+   }
+  ]
+ },
+ "conv-47_q147": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c47-q147-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "FIFA 23 itself, a little.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "3f790289038f5b3e",
+    "latency_s": 10.7
+   }
+  ]
+ },
+ "conv-47_q21": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c47-q21-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "May 7, 2022",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "3f790289038f5b3e",
+    "latency_s": 9.2
+   }
+  ]
+ },
+ "conv-47_q23": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c47-q23-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.8,
+    "outcome": "pass",
+    "answer": "July 2022",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "3f790289038f5b3e",
+    "latency_s": 11.1
+   }
+  ]
+ },
+ "conv-47_q43": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c47-q43-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.8,
+    "outcome": "pass",
+    "answer": "September 2022",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "3f790289038f5b3e",
+    "latency_s": 9.2
+   }
+  ]
+ },
+ "conv-47_q52": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c47-q52-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.2,
+    "outcome": "fail",
+    "answer": "a few months before 20 September 2022",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "3f790289038f5b3e",
+    "latency_s": 10.5
+   }
+  ]
+ },
+ "conv-47_q119": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c47-q119-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "basic games and stories",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "3f790289038f5b3e",
+    "latency_s": 11.6
+   }
+  ]
+ },
+ "conv-47_q142": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c47-q142-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "to raise money for a children's hospital",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "3f790289038f5b3e",
+    "latency_s": 9.9
+   }
+  ]
+ },
+ "conv-47_q27": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c47-q27-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.28571428571428575,
+    "outcome": "fail",
+    "answer": "A course combining gaming and programming.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "3f790289038f5b3e",
+    "latency_s": 21.1
+   },
+   {
+    "run_id": "ar5-c47-q27-a2",
+    "rc": 3,
+    "err": null,
+    "score": 0.28571428571428575,
+    "outcome": "fail",
+    "answer": "a course combining gaming and programming",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "3f790289038f5b3e",
+    "latency_s": 21.5
+   }
+  ]
+ },
+ "conv-47_q49": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c47-q49-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "Sennheiser headphones, Logitech mouse, gaming desk",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "3f790289038f5b3e",
+    "latency_s": 11.8
+   }
+  ]
+ }
+}

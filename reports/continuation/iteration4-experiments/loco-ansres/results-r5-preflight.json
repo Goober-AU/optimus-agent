@@ -1,0 +1,19 @@
+{
+ "conv-42_q11": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q11-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.75,
+    "outcome": "pass",
+    "answer": "most reptiles, animals with fur, and cockroaches",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 7.5
+   }
+  ]
+ }
+}

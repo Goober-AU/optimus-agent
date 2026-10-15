@@ -1,0 +1,354 @@
+{
+ "conv-42_q138": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q138-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.3333333333333333,
+    "outcome": "fail",
+    "answer": "A super cool book from the 1900s with stories and sketches",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 8.1
+   }
+  ]
+ },
+ "conv-42_q143": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q143-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.2857142857142857,
+    "outcome": "fail",
+    "answer": "she felt touched; it was awesome",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 12.8
+   }
+  ]
+ },
+ "conv-42_q165": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q165-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "not mentioned",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 89.3
+   }
+  ]
+ },
+ "conv-42_q170": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q170-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.35714285714285715,
+    "outcome": "fail",
+    "answer": "She named her after a real dog she used to have in Michigan, to remember when she could hold animals without an allergic reaction.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 9.4
+   }
+  ]
+ },
+ "conv-42_q197": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q197-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "not mentioned",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 121.3
+   }
+  ]
+ },
+ "conv-42_q4": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q4-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "not mentioned",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 9.5
+   }
+  ]
+ },
+ "conv-42_q41": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q41-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "not mentioned",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 103.3
+   }
+  ]
+ },
+ "conv-42_q63": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q63-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.4666666666666666,
+    "outcome": "fail",
+    "answer": "Counter-Strike: Global Offensive, Street Fighter, Xenoblade Chronicles, Cyberpunk 2077",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 8.1
+   }
+  ]
+ },
+ "conv-42_q85": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q85-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "A movie director",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 29.4
+   }
+  ]
+ },
+ "conv-42_q91": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q91-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "adventures, magic, and great characters",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 10.3
+   }
+  ]
+ },
+ "conv-42_q125": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q125-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.7692307692307693,
+    "outcome": "pass",
+    "answer": "tournament friends, old friends, teammates from other tournaments",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 7.3
+   }
+  ]
+ },
+ "conv-42_q168": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q168-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.8000000000000002,
+    "outcome": "pass",
+    "answer": "Tilly, her stuffed animal dog",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 6.8
+   }
+  ]
+ },
+ "conv-42_q175": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q175-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "A stuffed animal dog named Tilly",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 8.3
+   }
+  ]
+ },
+ "conv-42_q28": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q28-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.6666666666666665,
+    "outcome": "pass",
+    "answer": "the Friday before 24 June 2022",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 10.7
+   }
+  ]
+ },
+ "conv-42_q31": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q31-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.6666666666666665,
+    "outcome": "pass",
+    "answer": "the Friday before 10 July 2022",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 11.3
+   }
+  ]
+ },
+ "conv-42_q47": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q47-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.5,
+    "outcome": "pass",
+    "answer": "game convention, tournament, on a walk with Max",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 7.6
+   }
+  ]
+ },
+ "conv-42_q64": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q64-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.6666666666666665,
+    "outcome": "pass",
+    "answer": "the Saturday before 7 November 2022",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 9.7
+   }
+  ]
+ },
+ "conv-42_q71": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q71-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "nature",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 8.2
+   }
+  ]
+ },
+ "conv-42_q75": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q75-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.3833333333333333,
+    "outcome": "fail",
+    "answer": "coconut milk ice cream and dairy-free chocolate mousse",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 8.9
+   },
+   {
+    "run_id": "ar5-c42-q75-a2",
+    "rc": 3,
+    "err": null,
+    "score": 0.3833333333333333,
+    "outcome": "fail",
+    "answer": "coconut milk ice cream and dairy-free chocolate mousse",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 27.7
+   }
+  ]
+ },
+ "conv-42_q99": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c42-q99-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.923076923076923,
+    "outcome": "pass",
+    "answer": "Submit it to some film festivals and hopefully get producers and directors to check it out.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "beda05a45ceb6a91",
+    "latency_s": 7.7
+   }
+  ]
+ }
+}

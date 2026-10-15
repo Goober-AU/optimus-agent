@@ -1,0 +1,257 @@
+{
+ "conv-50_q137": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q137-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "not mentioned",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 9.6
+   }
+  ]
+ },
+ "conv-50_q147": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q147-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "his Ferrari, music videos, concerts, artist documentaries",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 20.3
+   }
+  ]
+ },
+ "conv-50_q155": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q155-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.3076923076923077,
+    "outcome": "fail",
+    "answer": "their favorite artists, art, and how the power of music connects us all",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 8.2
+   }
+  ]
+ },
+ "conv-50_q16": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q16-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "July 2023",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 9.6
+   }
+  ]
+ },
+ "conv-50_q48": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q48-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.28571428571428575,
+    "outcome": "fail",
+    "answer": "He went to the car show and got to mess with car mods.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 9.9
+   }
+  ]
+ },
+ "conv-50_q67": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q67-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "At his Japanese house in Japan, where he threw his new album party.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 15.9
+   }
+  ]
+ },
+ "conv-50_q85": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q85-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.5,
+    "outcome": "pass",
+    "answer": "Taking walks and exploring parks on the weekends.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 7.8
+   }
+  ]
+ },
+ "conv-50_q87": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q87-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "cruise around in his fixed red sports car",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 15.5
+   }
+  ]
+ },
+ "conv-50_q88": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q88-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "not mentioned",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 8.9
+   }
+  ]
+ },
+ "conv-50_q89": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q89-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.46153846153846156,
+    "outcome": "fail",
+    "answer": "Different genres with electronic elements added for a fresh vibe.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 8.6
+   }
+  ]
+ },
+ "conv-50_q90": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q90-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.5333333333333333,
+    "outcome": "pass",
+    "answer": "It gives them a fresh vibe \u2014 an exciting process of self-discovery and growth.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 10.5
+   }
+  ]
+ },
+ "conv-50_q97": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q97-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.36363636363636365,
+    "outcome": "fail",
+    "answer": "Small details that make it unique and personalized.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 9.6
+   }
+  ]
+ },
+ "conv-50_q135": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q135-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "Paying attention to small details.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 9.4
+   }
+  ]
+ },
+ "conv-50_q143": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q143-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "car mods",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 6.7
+   }
+  ]
+ },
+ "conv-50_q5": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c50-q5-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.75,
+    "outcome": "pass",
+    "answer": "Building a custom car from scratch, working on classic cars, visiting Tokyo.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "a3366924dfa549d5",
+    "latency_s": 24.8
+   }
+  ]
+ }
+}

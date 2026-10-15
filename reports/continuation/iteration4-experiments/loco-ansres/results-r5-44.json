@@ -1,0 +1,172 @@
+{
+ "conv-44_q121": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c44-q121-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "take them to a nearby park",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "15430ae5cea336ec",
+    "latency_s": 7.3
+   }
+  ]
+ },
+ "conv-44_q14": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c44-q14-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.4,
+    "outcome": "fail",
+    "answer": "being outdoors",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "15430ae5cea336ec",
+    "latency_s": 80.9
+   }
+  ]
+ },
+ "conv-44_q41": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c44-q41-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.4210526315789473,
+    "outcome": "fail",
+    "answer": "Pepper and Panda are Lab mixes, and Precious and Pixie are Chihuahua mixes (all mutts).",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "15430ae5cea336ec",
+    "latency_s": 8.9
+   }
+  ]
+ },
+ "conv-44_q68": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c44-q68-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.6666666666666666,
+    "outcome": "pass",
+    "answer": "To learn new stuff and strengthen her bond with her pets.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "15430ae5cea336ec",
+    "latency_s": 7.9
+   }
+  ]
+ },
+ "conv-44_q73": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c44-q73-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.3076923076923077,
+    "outcome": "fail",
+    "answer": "Finding a pet-friendly place to live, and finding the right dog.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "15430ae5cea336ec",
+    "latency_s": 12.2
+   }
+  ]
+ },
+ "conv-44_q74": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c44-q74-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.7499999999999999,
+    "outcome": "pass",
+    "answer": "he was discouraged but determined",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "15430ae5cea336ec",
+    "latency_s": 14.1
+   }
+  ]
+ },
+ "conv-44_q9": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c44-q9-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.7066666666666666,
+    "outcome": "pass",
+    "answer": "Dog owners group, dog training course, agility classes, dog grooming course, positive reinforcement training workshop",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "15430ae5cea336ec",
+    "latency_s": 35.6
+   }
+  ]
+ },
+ "conv-44_q92": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c44-q92-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.33333333333333337,
+    "outcome": "fail",
+    "answer": "She says they're super cozy and comfy - her dogs curl up and snuggle like they're in a cloud.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "15430ae5cea336ec",
+    "latency_s": 9.4
+   }
+  ]
+ },
+ "conv-44_q22": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c44-q22-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.7499999999999999,
+    "outcome": "pass",
+    "answer": "Camping with his girlfriend and Toby.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "15430ae5cea336ec",
+    "latency_s": 11.3
+   }
+  ]
+ },
+ "conv-44_q85": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c44-q85-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "Agility classes.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "15430ae5cea336ec",
+    "latency_s": 6.8
+   }
+  ]
+ }
+}
