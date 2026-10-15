@@ -1,0 +1,161 @@
+{
+ "launches": [
+  {
+   "run_id": "c30",
+   "pid": 19384,
+   "manifest": "C:/Users/openclawuser/loco-official\\manifests\\c30.json",
+   "binary": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-target8k/release/examples/memory_bench.exe",
+   "ts": "2026-10-15T01:16:06"
+  },
+  {
+   "run_id": "c30",
+   "pid": 15532,
+   "manifest": "C:/Users/openclawuser/loco-official\\manifests\\locooff-c30.json",
+   "binary": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-target8k/release/examples/memory_bench.exe",
+   "ts": "2026-10-15T01:17:18"
+  },
+  {
+   "run_id": "c44",
+   "pid": 6588,
+   "manifest": "C:/Users/openclawuser/loco-official\\manifests\\locooff-c44.json",
+   "binary": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-target8k/release/examples/memory_bench.exe",
+   "ts": "2026-10-15T03:23:22"
+  },
+  {
+   "run_id": "c47",
+   "pid": 3236,
+   "manifest": "C:/Users/openclawuser/loco-official\\manifests\\locooff-c47.json",
+   "binary": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-target8k/release/examples/memory_bench.exe",
+   "ts": "2026-10-15T03:28:29"
+  },
+  {
+   "run_id": "c26",
+   "pid": 7416,
+   "manifest": "C:/Users/openclawuser/loco-official\\manifests\\locooff-c26.json",
+   "binary": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-target8k/release/examples/memory_bench.exe",
+   "ts": "2026-10-15T04:23:25"
+  },
+  {
+   "run_id": "c50",
+   "pid": 12600,
+   "manifest": "C:/Users/openclawuser/loco-official\\manifests\\locooff-c50.json",
+   "binary": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-target8k/release/examples/memory_bench.exe",
+   "ts": "2026-10-15T04:30:14"
+  },
+  {
+   "run_id": "c41",
+   "pid": 26300,
+   "manifest": "C:/Users/openclawuser/loco-official\\manifests\\locooff-c41.json",
+   "binary": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-target8k/release/examples/memory_bench.exe",
+   "ts": "2026-10-15T04:35:20"
+  },
+  {
+   "run_id": "c49",
+   "pid": 25476,
+   "manifest": "C:/Users/openclawuser/loco-official\\manifests\\locooff-c49.json",
+   "binary": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-target8k/release/examples/memory_bench.exe",
+   "ts": "2026-10-15T04:40:26"
+  },
+  {
+   "run_id": "c48",
+   "pid": 26160,
+   "manifest": "C:/Users/openclawuser/loco-official\\manifests\\locooff-c48.json",
+   "binary": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-target8k/release/examples/memory_bench.exe",
+   "ts": "2026-10-15T04:45:32"
+  },
+  {
+   "run_id": "c43",
+   "pid": 25932,
+   "manifest": "C:/Users/openclawuser/loco-official\\manifests\\locooff-c43.json",
+   "binary": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-target8k/release/examples/memory_bench.exe",
+   "ts": "2026-10-15T04:50:38"
+  },
+  {
+   "run_id": "c42",
+   "pid": 17612,
+   "manifest": "C:/Users/openclawuser/loco-official\\manifests\\locooff-c42.json",
+   "binary": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-target8k/release/examples/memory_bench.exe",
+   "ts": "2026-10-15T04:55:43"
+  }
+ ],
+ "progress_final": {
+  "phase": "complete",
+  "done": [
+   {
+    "run_id": "c30",
+    "exit_code": 0,
+    "records": 17,
+    "expected": 17
+   },
+   {
+    "run_id": "c44",
+    "exit_code": 0,
+    "records": 23,
+    "expected": 23
+   },
+   {
+    "run_id": "c47",
+    "exit_code": 0,
+    "records": 28,
+    "expected": 28
+   },
+   {
+    "run_id": "c26",
+    "exit_code": 0,
+    "records": 30,
+    "expected": 30
+   },
+   {
+    "run_id": "c50",
+    "exit_code": 0,
+    "records": 31,
+    "expected": 31
+   },
+   {
+    "run_id": "c41",
+    "exit_code": 0,
+    "records": 29,
+    "expected": 29
+   },
+   {
+    "run_id": "c49",
+    "exit_code": 0,
+    "records": 29,
+    "expected": 29
+   },
+   {
+    "run_id": "c48",
+    "exit_code": 0,
+    "records": 36,
+    "expected": 36
+   },
+   {
+    "run_id": "c43",
+    "exit_code": 0,
+    "records": 37,
+    "expected": 37
+   },
+   {
+    "run_id": "c42",
+    "exit_code": 0,
+    "records": 40,
+    "expected": 40
+   }
+  ],
+  "records": {
+   "c30": 17,
+   "c44": 23,
+   "c47": 28,
+   "c26": 30,
+   "c50": 31,
+   "c41": 29,
+   "c49": 29,
+   "c48": 36,
+   "c43": 37,
+   "c42": 40
+  },
+  "ts": "2026-10-15T05:01:03"
+ },
+ "score_file": "C:/Users/openclawuser/loco-official/merged/scores-official.json",
+ "run_file": "C:/Users/openclawuser/loco-official/merged/run.jsonl"
+}
