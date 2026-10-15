@@ -48,6 +48,14 @@ struct RecallHelperUsage {
     reasoning_tokens: Option<f64>,
 }
 
+fn sum_usage_values(first: Option<f64>, last: Option<f64>) -> Option<f64> {
+    match (first, last) {
+        (Some(first), Some(last)) => Some(first + last),
+        (Some(only), None) | (None, Some(only)) => Some(only),
+        (None, None) => None,
+    }
+}
+
 impl RecallHelperUsage {
     fn observe(&mut self, observation: pi_ai::types::ProviderUsageObservation) {
         // Observations are counter snapshots, not deltas. An absent field keeps
@@ -78,6 +86,7 @@ struct RecallHelperReport {
     usage_source: Option<&'static str>,
     cancelled: Option<bool>,
     provider_error: Option<bool>,
+    retried: Option<bool>,
 }
 
 impl RecallHelperReport {
@@ -93,6 +102,7 @@ impl RecallHelperReport {
             usage_source: None,
             cancelled: None,
             provider_error: None,
+            retried: None,
         }
     }
 
@@ -275,6 +285,23 @@ fn recall_rerank_ids(
         return None;
     }
     Some(ordered)
+}
+
+/// Whether a recall rerank result carries a usable non-empty selection.
+/// No text, unparseable text, or an empty selection all count as unusable;
+/// those outcomes discard the whole candidate pool, which is what the
+/// bounded single retry exists to recover from.
+fn rerank_selection_usable(
+    result: &RecallLlmResult,
+    hits: &[crate::core::memory::search::MemoryHit],
+    pool: usize,
+) -> bool {
+    match result.text.as_deref() {
+        None => false,
+        Some(text) => {
+            recall_rerank_ids(text, hits, pool).map_or(false, |ordered| !ordered.is_empty())
+        }
+    }
 }
 
 /// Deterministic recall-query extraction: no LLM call. Benchmark wrappers bury
@@ -987,15 +1014,41 @@ fn create_memory_extension_impl(
                                                     .collect(),
                                             )
                                         };
-                                    let result = recall_llm_text(
+                                    let rerank_prompt = format!(
+                                        "Query: {normal_query}\n\nCandidates:\n{}",
+                                        candidates.join("\n")
+                                    );
+                                    let mut result = recall_llm_text(
                                         &rerank_ctx,
                                         rerank_system,
-                                        &format!(
-                                            "Query: {normal_query}\n\nCandidates:\n{}",
-                                            candidates.join("\n")
-                                        ),
+                                        &rerank_prompt,
                                         4096.0,
                                     ).await;
+                                    // A rerank flake (no output, unparseable output, or an
+                                    // empty selection) discards the whole candidate pool,
+                                    // so the same call is retried exactly once before the
+                                    // lexical fallback stands. Cancelled requests are not
+                                    // retried. The surviving report keeps the final call's
+                                    // outcome; usage is summed across both calls so token
+                                    // accounting stays honest.
+                                    if result.report.cancelled != Some(true)
+                                        && !rerank_selection_usable(&result, &candidate_hits, rerank_pool)
+                                    {
+                                        let first_usage = result.report.usage.clone();
+                                        result = recall_llm_text(
+                                            &rerank_ctx,
+                                            rerank_system,
+                                            &rerank_prompt,
+                                            4096.0,
+                                        ).await;
+                                        result.report.retried = Some(true);
+                                        result.report.usage = RecallHelperUsage {
+                                            input: sum_usage_values(first_usage.input, result.report.usage.input),
+                                            output: sum_usage_values(first_usage.output, result.report.usage.output),
+                                            total_tokens: sum_usage_values(first_usage.total_tokens, result.report.usage.total_tokens),
+                                            reasoning_tokens: sum_usage_values(first_usage.reasoning_tokens, result.report.usage.reasoning_tokens),
+                                        };
+                                    }
                                     rerank_report = result.report;
                                     if let Some(text) = result.text {
                                         match recall_rerank_ids(&text, &candidate_hits, rerank_pool) {
@@ -2572,13 +2625,30 @@ mod recall_runtime_tests {
             text_response(r#"["global:memory:alpha"]"#),
         ] {
             let fixture = RecallFixture::new(false, true).await;
+            // Every no-selection outcome now consumes the bounded retry too.
+            fixture.queue(response.clone());
             fixture.queue(response);
             assert_eq!(
                 recall_ids(&fixture.recall("quasar", 1).await),
                 vec![BETA, ALPHA]
             );
-            assert_eq!(fixture.requests.lock().unwrap().len(), 1);
+            assert_eq!(fixture.requests.lock().unwrap().len(), 2);
+            let rerank = &fixture.last_diagnostic()["recallHelpers"]["rerank"];
+            assert_eq!(rerank["retried"], json!(true));
         }
+    }
+
+    #[tokio::test]
+    async fn runtime_recall_rerank_retries_once_and_uses_the_recovered_selection() {
+        let fixture = RecallFixture::new(false, true).await;
+        fixture.queue(text_response("not JSON"));
+        fixture.queue(text_response(&json!([BETA]).to_string()));
+        assert_eq!(recall_ids(&fixture.recall("quasar", 1).await), vec![BETA]);
+        let requests = fixture.requests.lock().unwrap();
+        assert_eq!(requests.len(), 2, "exactly one retry, no third call");
+        let rerank = &fixture.last_diagnostic()["recallHelpers"]["rerank"];
+        assert_eq!(rerank["outcome"], json!("used"));
+        assert_eq!(rerank["retried"], json!(true));
     }
 
     #[tokio::test]
