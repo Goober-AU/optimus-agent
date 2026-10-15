@@ -1168,3 +1168,82 @@ fn serde_round_trips_confidence_triple() {
     assert_eq!(back, state);
     assert_eq!(DeltaTracker::restore(back).state(), state);
 }
+
+#[test]
+fn eadd_round_trips_add_evidence_updates() {
+    let mut delta = plain(4, 3, "t1");
+    let evidence = EvidenceRef {
+        id: "E1".to_string(),
+        kind: "src".to_string(),
+        locator: "crates/a.rs".to_string(),
+        line_range: Some((1, 9)),
+        digest: Some("d1".to_string()),
+        revision: Some("r1".to_string()),
+        verified: Some(true),
+    };
+    delta.new_evidence.push(evidence.clone());
+    delta
+        .updates
+        .push(FieldUpdate::AddEvidence(evidence));
+    let wire = delta.to_occ1().expect("encodes");
+    let text = wire.encode().expect("wire");
+    assert!(
+        text.lines().any(|line| line == "EADD=E1"),
+        "missing EADD line: {text}"
+    );
+    let decoded = Delta::from_occ1(&Occ1Message::decode(&text).expect("parses"))
+        .expect("decodes");
+    assert_eq!(decoded, delta);
+}
+
+#[test]
+fn eadd_rejects_references_to_evidence_the_delta_does_not_introduce() {
+    let mut delta = plain(4, 3, "t1");
+    delta.new_evidence.push(EvidenceRef {
+        id: "E1".to_string(),
+        kind: "src".to_string(),
+        locator: "crates/a.rs".to_string(),
+        line_range: None,
+        digest: None,
+        revision: None,
+        verified: None,
+    });
+    delta.updates.push(FieldUpdate::AddEvidence(EvidenceRef {
+        id: "E9".to_string(),
+        kind: "src".to_string(),
+        locator: "crates/other.rs".to_string(),
+        line_range: None,
+        digest: None,
+        revision: None,
+        verified: None,
+    }));
+    let err = delta.to_occ1().expect_err("must reject foreign evidence");
+    assert!(
+        err.to_string().contains("does not introduce"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
+fn eadd_wire_reference_out_of_range_is_rejected() {
+    let mut base = plain(4, 3, "t1");
+    base.new_evidence.push(EvidenceRef {
+        id: "E1".to_string(),
+        kind: "src".to_string(),
+        locator: "crates/a.rs".to_string(),
+        line_range: None,
+        digest: None,
+        revision: None,
+        verified: None,
+    });
+    let mut wire = base.to_occ1().expect("encodes");
+    wire.push("EADD", "E2");
+    let err = Delta::from_occ1(&wire).expect_err("out of range");
+    assert!(
+        err.to_string().contains("outside 1..=1"),
+        "unexpected error: {err}"
+    );
+    let mut bad_prefix = base.to_occ1().expect("encodes");
+    bad_prefix.push("EADD", "X2");
+    assert!(Delta::from_occ1(&bad_prefix).is_err());
+}

@@ -332,6 +332,11 @@ impl AgentCommMessage {
         if !is_known_status(&self.status) {
             return Err(ContractError::UnknownStatus(self.status.clone()));
         }
+        if self.kind == kinds::EVIDENCE && self.evidence.is_empty() {
+            return Err(ContractError::Occ1Conversion(
+                "an EVIDENCE message must carry at least one evidence reference".to_string(),
+            ));
+        }
         if self.protocol != AGENT_COMM_PROTOCOL {
             return Err(ContractError::ProtocolMismatch(self.protocol.clone()));
         }
@@ -480,8 +485,8 @@ impl AgentCommMessage {
                     .map_err(|_| ContractError::Occ1Conversion(format!("SEQ {seq:?} is not a u64")))?,
             );
         }
-        let evidence_count = indexed_count(message, "E");
-        let finding_count = indexed_count(message, "F");
+        let evidence_count = indexed_count(message, "E")?;
+        let finding_count = indexed_count(message, "F")?;
         for index in 1..=finding_count {
             let Some(statement) = message.get(&format!("F{index}")) else {
                 return Err(ContractError::Occ1Conversion(format!(
@@ -574,7 +579,7 @@ impl AgentCommMessage {
             }
             out.evidence.push(evidence);
         }
-        let artifact_count = indexed_count(message, "ART");
+        let artifact_count = indexed_count(message, "ART")?;
         for index in 1..=artifact_count {
             let Some(artifact) = message.get(&format!("ART{index}")) else {
                 return Err(ContractError::Occ1Conversion(format!(
@@ -600,7 +605,7 @@ impl AgentCommMessage {
         } else if message.has("VS") || message.has("VM") {
             return Err(ContractError::Occ1Conversion("VS/VM without V".into()));
         }
-        let dependency_count = indexed_count(message, "DEP");
+        let dependency_count = indexed_count(message, "DEP")?;
         for index in 1..=dependency_count {
             let Some(dependency) = message.get(&format!("DEP{index}")) else {
                 return Err(ContractError::Occ1Conversion(format!(
@@ -617,14 +622,28 @@ impl AgentCommMessage {
     }
 }
 
-/// Counts the contiguous indexed keys `PREFIX1..PREFIXn` present on the
-/// message. Gaps make the count stop at the first missing index.
-fn indexed_count(message: &Occ1Message, prefix: &str) -> usize {
-    let mut count = 0;
-    while message.has(&format!("{prefix}{}", count + 1)) {
-        count += 1;
+/// Counts the indexed keys `PREFIX1..PREFIXn` and rejects gaps: when the
+/// highest index is N, every index 1..=N must be present. A stream with a
+/// hole (e.g. `F1` then `F3`) is corruption, not truncation, so it is
+/// rejected instead of silently decoding a prefix.
+fn indexed_count(message: &Occ1Message, prefix: &str) -> Result<usize, ContractError> {
+    let mut highest = 0usize;
+    for (key, _) in message.iter() {
+        let Some(rest) = key.strip_prefix(prefix) else {
+            continue;
+        };
+        if let Ok(index) = rest.parse::<usize>() {
+            highest = highest.max(index);
+        }
     }
-    count
+    for index in 1..=highest {
+        if !message.has(&format!("{prefix}{index}")) {
+            return Err(ContractError::Occ1Conversion(format!(
+                "{prefix} index {index} missing below the highest index {highest}"
+            )));
+        }
+    }
+    Ok(highest)
 }
 
 #[cfg(test)]
@@ -672,6 +691,75 @@ mod tests {
         let decoded = Occ1Message::decode(&encoded).expect("parses");
         let back = AgentCommMessage::from_occ1(&decoded).expect("decodes");
         assert_eq!(back, message);
+    }
+
+    #[test]
+    fn every_contract_encoded_kind_passes_the_standard_dialect() {
+        // BUG-002 regression: the dialect table once demanded GOAL/REF/WANT/
+        // WHY, which to_occ1 never emits, so contract-encoded messages of
+        // those kinds failed dialect validation. Every kind must now pass.
+        let dialect = crate::core::occ::occ1::Occ1Dialect::standard();
+        for (kind, status) in [
+            (kinds::TASK, statuses::PENDING),
+            (kinds::PROGRESS, statuses::IN_PROGRESS),
+            (kinds::RESULT, statuses::DONE),
+            (kinds::EVIDENCE, statuses::DONE),
+            (kinds::REQUEST_DETAIL, statuses::PENDING),
+            (kinds::ACK, statuses::DONE),
+            (kinds::CORRECTION, statuses::IN_PROGRESS),
+            (kinds::BLOCKED, statuses::BLOCKED),
+            (kinds::CANCELLED, statuses::CANCELLED),
+        ] {
+            let mut message = AgentCommMessage::new(kind, "t1", status);
+            if kind == kinds::EVIDENCE {
+                message.evidence.push(EvidenceRef {
+                    id: "E1".into(),
+                    kind: evidence_kinds::SOURCE.into(),
+                    locator: "src/a.rs".into(),
+                    line_range: None,
+                    digest: None,
+                    revision: None,
+                    verified: None,
+                });
+            }
+            let encoded = message.to_occ1().expect("encodes").encode().expect("wire");
+            let decoded = Occ1Message::decode(&encoded).expect("parses");
+            dialect
+                .validate(&decoded)
+                .unwrap_or_else(|error| panic!("kind {kind} failed the standard dialect: {error}"));
+        }
+    }
+
+    #[test]
+    fn evidence_kind_without_evidence_is_rejected() {
+        let message = AgentCommMessage::new(kinds::EVIDENCE, "t1", statuses::DONE);
+        let err = message.validate().expect_err("EVIDENCE needs evidence");
+        assert!(err.to_string().contains("at least one evidence reference"));
+    }
+
+    #[test]
+    fn index_gaps_are_rejected_not_silently_truncated() {
+        // F1 then F3 with F2 absent must be an error, not a decode that
+        // quietly drops F3.
+        let gapped = Occ1Message::new()
+            .with("TASK", "t1")
+            .with("KIND", "RESULT")
+            .with("STATUS", "done")
+            .with("F1", "first finding")
+            .with("F3", "third finding");
+        let err = AgentCommMessage::from_occ1(&gapped).expect_err("gap must be rejected");
+        assert!(
+            err.to_string().contains("index 2 missing below the highest index 3"),
+            "unexpected error: {err}"
+        );
+        // Same rule for evidence indices.
+        let gapped_evidence = Occ1Message::new()
+            .with("TASK", "t1")
+            .with("KIND", "EVIDENCE")
+            .with("STATUS", "done")
+            .with("E1", "src:a.rs")
+            .with("E3", "src:b.rs");
+        assert!(AgentCommMessage::from_occ1(&gapped_evidence).is_err());
     }
 
     #[test]

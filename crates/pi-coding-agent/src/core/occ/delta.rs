@@ -59,10 +59,13 @@
 //! Wire limits enforced by the codec - the frozen grammar cannot express
 //! these, so they are rejected, never silently dropped:
 //! - new findings and new evidence carry positional ids (`N1..`, `E1..`);
-//! - `FieldUpdate::AddEvidence` has no wire form;
+//! - `FieldUpdate::AddEvidence` is representable only when it repeats,
+//!   field-for-field, one of this delta's own new-evidence entries; the
+//!   wire form is `EADD=E<n>` after the `E<n>` entries, and references to
+//!   evidence the delta does not introduce are rejected;
 //! - `updates` must be canonical (optional `SetStatus` first, then
-//!   `UpdateFinding` entries, then optional `SetVerification`) with unique
-//!   finding ids;
+//!   `UpdateFinding` entries, then `AddEvidence` entries, then optional
+//!   `SetVerification`) with unique finding ids;
 //! - reference ids must be non-empty and free of `:`, `=` and `,`.
 //!
 //! Decoding is strict on every field it understands and ignores unrelated
@@ -278,6 +281,7 @@ impl Delta {
         let mut status: Option<&str> = None;
         let mut finding_updates: Vec<(&str, &FindingPatch)> = Vec::new();
         let mut verification_update: Option<&Verification> = None;
+        let mut add_evidence_positions: Vec<usize> = Vec::new();
         for update in &self.updates {
             match update {
                 FieldUpdate::SetStatus(value) => {
@@ -327,10 +331,29 @@ impl Delta {
                     }
                     finding_updates.push((id.as_str(), patch));
                 }
-                FieldUpdate::AddEvidence(_) => {
-                    return Err(ContractError::Occ1Conversion(
-                        "FieldUpdate::AddEvidence has no OCC-1 delta encoding".into(),
-                    ));
+                FieldUpdate::AddEvidence(evidence) => {
+                    if verification_update.is_some() {
+                        return Err(ContractError::Occ1Conversion(
+                            "SetVerification must be the last update".into(),
+                        ));
+                    }
+                    let Some(position) = self
+                        .new_evidence
+                        .iter()
+                        .position(|candidate| candidate == evidence)
+                    else {
+                        return Err(ContractError::Occ1Conversion(format!(
+                            "AddEvidence references evidence {:?} that this delta does not introduce; the grammar only carries references to new evidence",
+                            evidence.id
+                        )));
+                    };
+                    if add_evidence_positions.contains(&position) {
+                        return Err(ContractError::Occ1Conversion(format!(
+                            "duplicate AddEvidence for evidence E{}",
+                            position + 1
+                        )));
+                    }
+                    add_evidence_positions.push(position);
                 }
                 FieldUpdate::SetVerification(value) => {
                     if verification_update.is_some() {
@@ -444,6 +467,9 @@ impl Delta {
                     if verified { "pass" } else { "fail" },
                 );
             }
+        }
+        for position in &add_evidence_positions {
+            out.push("EADD", format!("E{}", position + 1));
         }
         if let Some(value) = verification_update {
             out.push("V", value.claim.as_str());
@@ -713,6 +739,26 @@ impl Delta {
                 }
             }
             delta.new_evidence.push(evidence);
+        }
+
+        for reference in message.get_all("EADD") {
+            let Some(suffix) = reference.strip_prefix('E') else {
+                return Err(ContractError::Occ1Conversion(format!(
+                    "EADD {reference:?} must be E<n>"
+                )));
+            };
+            let number: usize = suffix.parse().map_err(|_| {
+                ContractError::Occ1Conversion(format!("EADD {reference:?} is not E<n>"))
+            })?;
+            if number == 0 || number > delta.new_evidence.len() {
+                return Err(ContractError::Occ1Conversion(format!(
+                    "EADD {reference:?} is outside 1..={}",
+                    delta.new_evidence.len()
+                )));
+            }
+            delta
+                .updates
+                .push(FieldUpdate::AddEvidence(delta.new_evidence[number - 1].clone()));
         }
 
         if let Some(claim) = single(message, "V")? {

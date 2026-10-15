@@ -393,18 +393,22 @@ impl Default for Occ1Dialect {
 }
 
 impl Occ1Dialect {
-    /// The standard required-field table.
+    /// The standard required-field table. It mirrors exactly what the
+    /// `optimus.agent-comm.v1` contract encoder emits for every kind
+    /// (`TASK`, `KIND`, `STATUS`, and `E1` for evidence-bearing messages),
+    /// so a contract-encoded message always passes and nothing else is
+    /// demanded that the encoder cannot produce.
     pub fn standard() -> Self {
         let table: Vec<(&'static str, Vec<&'static str>)> = vec![
-            (KIND_TASK, vec!["TASK", "KIND", "GOAL"]),
+            (KIND_TASK, vec!["TASK", "KIND", "STATUS"]),
             (KIND_PROGRESS, vec!["TASK", "KIND", "STATUS"]),
             (KIND_RESULT, vec!["TASK", "KIND", "STATUS"]),
-            (KIND_EVIDENCE, vec!["TASK", "KIND", "E1"]),
-            (KIND_REQUEST_DETAIL, vec!["TASK", "KIND", "WANT"]),
-            (KIND_ACK, vec!["TASK", "KIND", "REF"]),
-            (KIND_CORRECTION, vec!["TASK", "KIND", "REF"]),
-            (KIND_BLOCKED, vec!["TASK", "KIND", "WHY"]),
-            (KIND_CANCELLED, vec!["TASK", "KIND"]),
+            (KIND_EVIDENCE, vec!["TASK", "KIND", "STATUS", "E1"]),
+            (KIND_REQUEST_DETAIL, vec!["TASK", "KIND", "STATUS"]),
+            (KIND_ACK, vec!["TASK", "KIND", "STATUS"]),
+            (KIND_CORRECTION, vec!["TASK", "KIND", "STATUS"]),
+            (KIND_BLOCKED, vec!["TASK", "KIND", "STATUS"]),
+            (KIND_CANCELLED, vec!["TASK", "KIND", "STATUS"]),
         ];
         Self {
             required_by_kind: table,

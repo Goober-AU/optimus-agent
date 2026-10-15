@@ -107,6 +107,11 @@
 //! - `STATUS=<status>` encodes `SetStatus`.
 //! - `UPDATE=<finding-id>:<field>=<value>` encodes one `FindingPatch` item;
 //!   `<field>` is `stmt`, `conf`, `ev+<id>` or `ev-<id>`.
+//! - `EADD=<evidence-id>` (repeatable, after any `E<n>` entries) encodes
+//!   `FieldUpdate::AddEvidence` references to evidence introduced by this
+//!   same delta; the referenced id must exist among the delta's new
+//!   evidence. Non-positional new-evidence ids therefore cannot
+//!   round-trip, matching the finding-id rule.
 //! - `NEW<n>=<statement>` encodes new findings (1-based contiguous), with
 //!   optional `NEWC<n>=<confidence>` and `NEWE<n>=E1,E2` evidence links.
 //! - `E<n>=<kind>:<locator>` with optional `EL<n>`, `ED<n>`, `ER<n>`, `EV<n>`
