@@ -1,10 +1,10 @@
-# OCC: optional compact agent communication + RLM depth-limit degradation
+# OCC: compact agent communication + RLM depth-limit degradation
 
-Branch `improve/rlm-multi-agent-comm` (10 commits, base `159ce68cc` = v0.1.30 main). 22 files changed, 12,023 insertions(+), 3 deletions(-). No dependency changes.
+Branch `improve/rlm-multi-agent-comm` (18 commits at tip `b040ee116`, base `159ce68cc` = v0.1.30 main). 43 files changed, 13,904 insertions(+), 124 deletions(-). No dependency changes.
 
 ## Summary
 
-This PR adds an optional, offline-validated communication layer for multi-agent runs: the OCC (Optimus Compact Communication) modules under `crates/pi-coding-agent/src/core/occ/` — the OCC-1 compact structured English codec, the `optimus.agent-comm.v1` typed task/result contract, delta-based messaging, MOC-inspired evidence consolidation and AgentPrune-inspired redundant-message pruning — plus a graceful-degradation change to the RLM recursion depth limit (an RLM at max depth is told to answer directly instead of failing to delegate). Everything is pure, deterministic, offline-testable logic: the daemon transport stays authoritative, sender identity, family scoping, reach restrictions and the plain-English default are unchanged, and no model API was called for any number in this PR. All claims below come from the offline suites in this branch.
+This PR adds an optional, offline-validated communication layer for multi-agent runs: the OCC (Optimus Compact Communication) modules under `crates/pi-coding-agent/src/core/occ/` — the OCC-1 compact structured English codec, the `optimus.agent-comm.v1` typed task/result contract, delta-based messaging, MOC-inspired evidence consolidation and AgentPrune-inspired redundant-message pruning — plus a graceful-degradation change to the RLM recursion depth limit (an RLM at max depth is told to answer directly instead of failing to delegate). Everything is pure, deterministic, offline-testable logic: the daemon transport stays authoritative, sender identity, family scoping and reach restrictions are unchanged, plain English remains fine for conversational replies, and no model API was called for any number in this PR. A follow-up pass (see the Follow-up section) turns OCC-1 on by default for structured agent messages and repairs the recorded Windows test baseline. All claims below come from the offline suites in this branch.
 
 ## Motivation
 
@@ -31,7 +31,7 @@ License handling: rlm, MARBLE and silo-bench are permissive (small algorithmic a
 
 ## Code changes
 
-All new OCC code is under `crates/pi-coding-agent/src/core/occ/`; the daemon transport is untouched.
+All new OCC code is under `crates/pi-coding-agent/src/core/occ/`; the daemon transport is untouched. (The follow-up later adds the kernel-side Python codec and skill documentation; see the Follow-up section.)
 
 - `crates/pi-coding-agent/src/core/mod.rs` — registers the new `occ` module.
 - `crates/pi-coding-agent/src/core/occ/mod.rs` (new, 270 lines) — OCC definition and level model: OCC-0 plain English (default, unchanged), OCC-1 compact structured English (implemented), OCC-2 learned symbolic dialects and OCC-3 latent communication (reserved, not implemented). States the campaign rules: pure deterministic offline-testable logic, no network/model APIs/filesystem, never silently drop contradictory evidence or uncertainty, reject instead of inventing values, ordered collections only. Carries the frozen API specs for the worker modules.
@@ -54,6 +54,33 @@ Both were found by the new test suites in this PR, not by inspection first. Deta
 - BUG-001 — index-gap silent truncation (high severity, fixed in `cc1ec0870`). `AgentCommMessage::from_occ1` accepted a message with `F1` and `F3` but no `F2`: `indexed_count` counted contiguous presence, stopped at the first missing index, and silently dropped `F3`, decoding a corrupted message as a shorter valid one. Fix: `indexed_count` now validates that every index up to the highest present exists and returns `Result<usize, ContractError>`; all four call sites (F/E/ART/DEP families) propagate. Corrupted compact messages are now rejected safely, never partially accepted. Regression tests: `index_gaps_are_rejected_not_silently_truncated`, adversarial gap cases, and fidelity t05.
 - BUG-002 — dialect/encoder misalignment (fixed in `cc1ec0870`). The standard `Occ1Dialect` required-field table demanded GOAL/REF/WANT/WHY fields that the contract encoder never emits, so contract-encoded messages failed standard dialect validation. Fix: the standard table now mirrors exactly what the encoder emits for every kind (`TASK`, `KIND`, `STATUS`, plus `E1` for evidence-bearing messages), and the contract additionally requires EVIDENCE-kind messages to carry at least one evidence reference. Regression tests: `every_contract_encoded_kind_passes_the_standard_dialect`, `evidence_kind_without_evidence_is_rejected`, dialect table tests.
 - Related correction in the same commit: `FieldUpdate::AddEvidence` gained its `EADD=E<n>` wire form, closing the last delta variant that could not round-trip through OCC-1; references to evidence the delta does not introduce stay rejected.
+
+## Follow-up: Windows test repair + OCC-1 default
+
+Six commits land after the packaging point above: `f449fa3fb` (consolidated evidence index), `b4ce7fdc9` (the Windows pre-existing failures green), `ff05fbf9c` (OCC-1 on by default), `278dd7651` (legacy directory-lock reclaim), `f32ab2e97` (bash-guard Windows analysis), `b040ee116` (ledger records, changelog fragment, and doc wording alignment). Ledger records: the BUG-003/004/005 entries and the BASELINE-001 resolution update in `reports/occ-campaign/BUG-LEDGER.md`; the per-fix evidence table in `reports/occ-campaign/PR-EVIDENCE.md` (section 7).
+
+### OCC-1 on by default for structured agent messages (`ff05fbf9c`)
+
+- The OCC-1 codec ships kernel-side as the `rlm.occ1` module (`prime-agent-runtime/src/rlm/occ1.py`, 372 lines, stdlib only), lifted from the tested reference implementation. 44 golden tests (`prime-agent-runtime/test/test_occ1_codec.py`) pin parity with the Rust codec, reusing the exact strings from the `occ1.rs`/`codec_tests.rs` unit tests plus the BUG-001 index-gap rule.
+- The agent-message skill documents OCC-1 as the default encoding for structured task/result bodies with evidence references: the line grammar, required fields per kind, indexed-family contiguity (a gap is corruption and must be rejected, never partially decoded), evidence references instead of pasted file contents, and no daemon-derived sender fields in message text.
+- The RLM prompt now tells agents to encode structured task and result communication as OCC-1 (codec preinstalled as `rlm.occ1`); plain English remains fine for conversational replies.
+- Daemon transport, sender identity, family scoping and reach restrictions are unchanged: OCC-1 rides the existing message text. The Rust `core::occ` modules remain the offline-validated definition (178 unit tests + 7 fidelity).
+
+### All 8 previously failing cargo lib tests on Windows are fixed
+
+Honest classification (per the ledger): 2 product bugs and 6 test defects; the two PATH-assertion failures share one product fix, and the sixth defect item covers the mcp/lifecycle runtime probes.
+
+- BUG-003 — product bug (`b4ce7fdc9`, `crates/pi-coding-agent/src/utils/shell.rs`): `shell_env_with_bin_dir` suppressed the prepend whenever bin_dir appeared anywhere in the inherited PATH, so an inherited mid-list copy left managed tools shadowed by harness prefixes - the documented invariant (bin_dir leads PATH exactly once) was violated. Platform-independent logic, triggered by this host's env shape. Regression test `shell_env_moves_an_inherited_mid_list_bin_dir_to_the_front` (fails without the fix); both original tests now assert first-entry + exactly-once. Repairs `shell::shell_env_prepends_the_bin_dir_once` and `core::tools::bash::spawn_context_env_uses_the_shell_env_owner`.
+- BUG-004 — product bug (`278dd7651`, `crates/pi-coding-agent/src/utils/dir_lock.rs`): the legacy directory-lock reclaim has been unreachable on every platform since `95c9308cd2` (blanket "directory at the lock path means Held" guards) - a platform-independent regression of the ported TypeScript contract, not Windows-specific. The guard is now scoped to non-legacy directories; registry-shaped locks stay Held untouched; the verified-identity aside loses only its pid marker (`remove_dir`, never `remove_dir_all`). Regression tests: `reclaims_a_legacy_directory_lock_with_a_dead_owner` (fails without the fix) and `preserves_a_legacy_directory_lock_with_durable_state` (a registry-shaped lock stays Held with its files intact). Repairs `utils::dir_lock::reclaims_a_legacy_directory_lock_without_an_owner`.
+- 6 test defects (`b4ce7fdc9`): the sdk faux session uses a scratch dir under `std::env::temp_dir` (was the missing repo-local `.port-env/tmp`); kernel_job containment derives its env from the repo runtime (PYTHONPATH, the canonical never-PATH `PRIME_AGENT_BASH_SHELL` resolver, a per-run journal path; env overrides kept); the ipython bootstrap fixture reads protocol logs with `newline='\n'` so Windows CRLF translation cannot break the suffix assertion; extensions test runners are built with `ExtensionRunner::new` so the always-injected dormant Jev observer cannot make the no-handlers branch untestable; the rlm t10 admission snapshot bounded-polls after `fence.release()` (owner clear is asynchronous by design); and the mcp/lifecycle runtime probes use a Windows-correct liveness check (OpenProcess/GetExitCodeProcess instead of POSIX `os.kill(pid, 0)`), with the lifecycle test loading the real agent_message skill source when the kernel has not injected it.
+- Result: zero failing cargo lib tests on Windows where the recorded baseline had 8 (BASELINE-001 fully repaired).
+
+### Runtime suite recovery
+
+- BUG-005 — product bug (`f32ab2e97`, `prime-agent-runtime/src/rlm/bash_guard.py`): the kernel bash guard blanket-refused every rm on non-POSIX platforms instead of analyzing operands, and quoted backslash paths were misclassified as dynamic (after posix-mode shlex a surviving backslash is quote-protected). rm is now analyzed per operand on Windows (the `..`/hidden/outside-repo checks are retained), quoted backslash paths are literal, git `-C` sites treat untranslatable paths as unknown, and the genuinely ambiguous driveless-rooted class (`/tmp` under Git Bash) gets a targeted refusal. Two regression tests pin both fixes (`test_windows_rm_operands_are_analyzed_not_blanket_refused`, portable via an os.name mock; `test_windows_backslash_paths_are_literal_operands_and_targets`, skipUnless nt).
+- `test_bash.py` now imports on Windows (resource-gated; POSIX-only semantics skip with reasons: Ran 60 tests, 15 reason-tagged skips, all POSIX-only semantics or tools - status channel/process-group/signal delivery, POSIX-only fds and RLIMIT_NOFILE, bash alias expansion, GNU timeout), using the canonical shell standin, a SIGTERM fallback for SIGKILL, unconfigured journal env, and handle-based liveness probes.
+- Per the ledger's resolution update, the runtime suite's 9F/17E resolved into: bash guard product bugs (BUG-005, fixed), POSIX-only test assumptions (fixed with reason-tagged skips or portable probes), and repl/harness platform semantics.
+- Repl/harness lane - in flight: the remaining Windows runtime failures in `test_repl.py`/`test_harness.py` are being repaired by a parallel lane on this branch; its commits are not in the branch at the time of writing. In flight; recorded at push time.
 
 ## Benchmark baseline
 
@@ -100,7 +127,7 @@ Aggregate corpus totals: plain English 28,022 bytes / 5,171 proxy tokens; concis
 ## Latency impact
 
 - Codec means: 24.8 us encode, 40.5 us decode (mean of per-scenario means, 100 iterations per scenario; worst case and the 5 ms/op budget are asserted by the suite).
-- This is negligible against network and model latency on any agent-message path; the codec is not on a hot loop today because the OCC modules are not yet wired into delivery.
+- This is negligible against network and model latency on any agent-message path; after the follow-up the codec runs once per structured agent message (kernel-side `rlm.occ1`), not in any inner loop.
 
 ## Reliability impact
 
@@ -122,29 +149,35 @@ cargo test --locked -p pi-coding-agent --test occ_comm_fidelity -- --test-thread
 # expected: 7 passed
 
 cargo test --locked --workspace --lib -- --test-threads=1
-# expected: no new failures beyond the 8 recorded pre-existing Windows failures
-# (BASELINE-001: dir_lock legacy reclaim, bash spawn_context_env PATH order,
-# sdk faux-provider .port-env/tmp, ipython bootstrap restore, extensions
-# session-shutdown env, rlm_session_t10 admission waiter, kernel_job nested
-# runtime bash/worker, shell bin-dir prepend)
+# expected: zero failing lib tests on Windows where the baseline had 8
+# (BASELINE-001 fully repaired by the follow-up: the BUG-003 and BUG-004
+# product fixes plus the six test-defect fixes; see the Follow-up section)
 
 python -m unittest discover -s tests -p 'test_*.py'
 # expected: 282 tests OK (10 skipped)
 
 uv run --locked --project prime-agent-runtime python -m unittest discover -s prime-agent-runtime/test
-# expected: the pre-existing 8 failures / 17 errors / 30 skips, unchanged
+# expected: runtime suite recovery on Windows (follow-up). Verified at
+# f32ab2e97 on this host: test_bash.py imports and runs (Ran 60 tests,
+# 15 reason-tagged POSIX-only skips), test_bash_guard.py 38 tests with 21
+# POSIX git-fixture skips and 17 passing, test_occ1_codec.py 44/44,
+# test_lifecycle.py 12/12, test_mcp.py 32/32, all green. The remaining
+# Windows failures (test_repl.py, test_harness.py) belong to the in-flight
+# repl/harness lane, recorded at push time.
 ```
 
 Recorded campaign result on this branch: 178/178 in `core::occ`, 7/7 fidelity, and no new failures beyond the recorded 8-failure Windows baseline. The depth-limit change adds 3 tests (2 unit, 1 prompt) with the machine-readable error prefix asserted byte-identical.
+
+Follow-up recorded result: the 8-failure Windows baseline itself is repaired (see the Follow-up section); the 8 formerly failing tests plus the 3 new Rust regression tests re-ran green at `f32ab2e97` on this host (11 passed, 0 failed, 3,454 filtered out).
 
 ## Known limitations
 
 - Windows-host-only verification in this phase; the Linux CI environment is expected to be cleaner than the recorded Windows baseline, and the Linux-only probe scripts were not executed here.
 - `scripts/check.sh` invokes `python3`, which is not on PATH on this Windows host; the equivalent steps were run with `python` directly (recorded in the final report).
 - `scripts/test-native-subagents.mjs` and `scripts/test-subagent-modes.py` assert Linux `/proc`; untested here, recorded as a platform blocker.
-- The OCC modules are not yet wired into live `agent_message` delivery. This PR is the foundation plus suites: codec, contract, delta, consolidation, prune and the fidelity harness. The daemon transport, family scoping and plain-English defaults are unchanged; integration comes in a follow-up.
+- The Rust `core::occ` modules are not wired into daemon-side parsing: the daemon treats message text opaquely and stays authoritative for sender identity, family scoping and delivery. OCC-1 is enabled by documentation and tooling (kernel-side `rlm.occ1` codec, agent-message skill, RLM prompt) rather than by a daemon capability; the delta, consolidation and prune modules remain library code with offline suites.
 - GOAL/WANT/REF/WHY remain legal optional OCC-1 grammar extras (the codec tests pin that they stay legal) but are not yet first-class contract fields.
 
 ## Experimental feature flags
 
-None added. No feature flag, config switch or daemon capability gates OCC in this PR: it is a pure optional library module (`core::occ`) with no runtime integration yet. Wiring OCC-1 into `agent_message` delivery will come as a follow-up behind a proper capability gate, per the daemon protocol rules.
+None added. No feature flag, config switch or daemon capability gates OCC: OCC-1 is on by default as the documented encoding for structured task/result bodies (agent-message skill, RLM prompt, kernel-side `rlm.occ1` codec), riding the existing message text; the daemon transport, sender identity and family scoping are unchanged. The Rust `core::occ` delta/consolidation/prune modules remain pure library code behind offline suites.
