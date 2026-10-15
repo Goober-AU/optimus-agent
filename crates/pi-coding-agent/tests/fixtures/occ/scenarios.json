@@ -1,0 +1,1453 @@
+[
+  {
+    "id": "s01",
+    "holdout": false,
+    "plain_english": "Task occ-7 is finished and I am reporting the result now. The main thing I found is that the session token refresh path has a race window: when two agent threads call refresh at the same time, both can pass the expiry check before either one takes the lock, and I am about ninety percent sure of this reading of the code. The relevant lines are in crates/pi-coding-agent/src/core/auth_storage.rs, lines 218 to 235, which I read at revision 159ce68cc; the sha256 digest of the file at that revision is 0ec5bee4d4abaec6d8e81ebdd5c6b81ac6ecaab1330ed3dd6775f87250e267a0 and I confirmed the digest again after the run so the line numbers are trustworthy. I also have the stress log at logs/occ7-refresh-stress.log where the bad interleaving shows up twice, though that log itself is from a manual run and has not been independently re-checked. To be explicit about verification: my independent check FAILED to reproduce the race with the regression test we have today, so the claim is currently marked fail and should not be treated as proven; the method was cargo test and the receipt lives at reports/occ7-verify.txt. The only artifact I produced is the writeup at reports/occ7-race-window.md. This work depended on task t41 being merged first. Next actions, in priority order: please inspect the mutex guarding refresh, and then add a regression test for concurrent refresh before we close the task.",
+    "payload": {
+      "task_id": "occ-7",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-101",
+      "trace_id": "trace-occ-7",
+      "sender_identity": "agent://worker-a",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "session token refresh has a race window when two threads pass the expiry check before taking the lock",
+          "confidence": 0.9,
+          "evidence": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/auth_storage.rs",
+          "line_range": [
+            218,
+            235
+          ],
+          "digest": "0ec5bee4d4abaec6d8e81ebdd5c6b81ac6ecaab1330ed3dd6775f87250e267a0",
+          "revision": "159ce68cc",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "log",
+          "locator": "logs/occ7-refresh-stress.log",
+          "verified": false
+        }
+      ],
+      "artifacts": [
+        "reports/occ7-race-window.md"
+      ],
+      "verification": {
+        "claim": "token refresh race reproduces under the existing regression test",
+        "status": "fail",
+        "method": "cargo_test",
+        "receipt": "reports/occ7-verify.txt"
+      },
+      "dependencies": [
+        "t41"
+      ],
+      "next_actions": [
+        "inspect the mutex guarding refresh",
+        "add a regression test for concurrent refresh"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-15T09:12:00Z"
+    }
+  },
+  {
+    "id": "s02",
+    "holdout": false,
+    "plain_english": "Quick progress update on task occ-7, still in progress, message two in the stream. I have two findings so far. First, the refresh mutex is held across an await point, which widens the race window I reported earlier; I would put confidence around 0.75 on that because the async flow is genuinely hard to follow there. Second, the stress harness now runs 500 iterations per configuration, up from 50, and I have no confidence estimate for that yet because I have not profiled it. For evidence: the mutex issue is in crates/pi-coding-agent/src/core/session_manager.rs, lines 242 to 260, at revision 159ce68cc, file digest ec7e6bcd9b0dc524f80aa0147d78eb4044d9a63f6d976861c2397a9bf9f8b2f4, and I verified that reading myself. The harness change is recorded under tool receipt receipts/occ7-harness-run.txt. This update depends on both task t41 and task t39 being current. Next I will move the await outside the lock and then re-run the stress harness with the higher iteration count.",
+    "payload": {
+      "task_id": "occ-7",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-102",
+      "trace_id": "trace-occ-7",
+      "sender_identity": "agent://worker-a",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the refresh mutex is held across an await point, widening the race window",
+          "confidence": 0.75,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "the stress harness now runs 500 iterations per configuration",
+          "confidence": null,
+          "evidence": [
+            "E2"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/session_manager.rs",
+          "line_range": [
+            242,
+            260
+          ],
+          "digest": "ec7e6bcd9b0dc524f80aa0147d78eb4044d9a63f6d976861c2397a9bf9f8b2f4",
+          "revision": "159ce68cc",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "tool",
+          "locator": "receipts/occ7-harness-run.txt"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "t41",
+        "t39"
+      ],
+      "next_actions": [
+        "move the await outside the lock",
+        "re-run the stress harness at 500 iterations"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-15T10:40:00Z"
+    }
+  },
+  {
+    "id": "s03",
+    "holdout": false,
+    "plain_english": "Correction on task occ-9, and this one matters: the requirements changed under us. The retention requirement moved from 30 days to 90 days before any pruning happens, so every plan built on the old number is wrong now; I am 95 percent sure because the policy owner confirmed it twice. On top of that, the prune threshold must now be computed from the policy file instead of the compiled-in constant, and I have no confidence number for that yet because we have not decided which policy file wins on conflict. The prior requirement statement is recorded in message m-104, which is the thing being corrected here. This task lives under parent task t50 on trace trace-occ-9 and this is sequence 4. Next actions: update the policy loader to read the 90 day value, then re-run the prune tests so nothing still assumes 30 days.",
+    "payload": {
+      "task_id": "occ-9",
+      "kind": "CORRECTION",
+      "status": "in_progress",
+      "message_id": "m-104",
+      "parent_task_id": "t50",
+      "trace_id": "trace-occ-9",
+      "sender_identity": "agent://worker-c",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the retention requirement changed from 30 days to 90 days before pruning",
+          "confidence": 0.95,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "the prune threshold must be computed from the policy file, not the compiled-in constant",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "finding",
+          "locator": "m-104"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "update the policy loader for the 90 day retention",
+        "re-run the prune tests"
+      ],
+      "sequence": 4,
+      "timestamp": "2026-10-15T11:05:00Z"
+    }
+  },
+  {
+    "id": "s04",
+    "holdout": true,
+    "plain_english": "Acknowledgement for task occ-12, the security scan. I confirm receipt of the scan request that was sent as message m-104 earlier today, and I am starting work on it now; the acknowledgement itself is complete, so the status is done for this message even though the scan is only beginning. This is a security-relevant channel, so to be explicit about who is talking: the sender identity on this message is agent://security-auditor and the intended recipient is agent://worker-e; the daemon transport is the only authority on those identities and this text is just a claim that the transport will overwrite if it disagrees. I am fully confident, 1.0, that the request was received intact because the message id matches what the coordinator logged. Please begin the credential sweep within 24 hours, and note that this acknowledgement expires at 2026-10-16T09:00:00Z, after which it should not be acted on. Next action: begin the credential sweep within 24 hours of receipt.",
+    "payload": {
+      "task_id": "occ-12",
+      "kind": "ACK",
+      "status": "done",
+      "message_id": "m-105",
+      "trace_id": "trace-occ-12",
+      "sender_identity": "agent://security-auditor",
+      "recipient_identity": "agent://worker-e",
+      "findings": [
+        {
+          "statement": "receipt of the security scan request m-104 is confirmed",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "finding",
+          "locator": "m-104"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "begin the credential sweep within 24 hours"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-15T08:55:00Z",
+      "expiry": "2026-10-16T09:00:00Z"
+    }
+  },
+  {
+    "id": "s05",
+    "holdout": false,
+    "plain_english": "Result for task occ-11, and it is a negative one. I claim that the search index rebuild is safe under concurrent writes, and my verification of that claim FAILED, so treat the claim as unsupported for now; my confidence in the claim itself is only 0.7 for that reason. The evidence is the conflict log at logs/occ11-index-conflict.log, which came out of a cargo test run and which I re-checked and could not validate, so that log is marked unverified. Concretely, two rebuild passes interleaved and produced a duplicated posting list entry in the on-disk index, which is exactly the kind of corruption the claim said could not happen. This is message m-106 from worker-b on the occ-11 trace. The task itself is done in the sense that the investigation finished; the finding stands unproven. Next action: stop the index rollout until this is re-examined by someone who can reproduce it independently.",
+    "payload": {
+      "task_id": "occ-11",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-106",
+      "trace_id": "trace-occ-11",
+      "sender_identity": "agent://worker-b",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "search index rebuild is safe under concurrent writes",
+          "confidence": 0.7,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ11-index-conflict.log",
+          "verified": false
+        }
+      ],
+      "artifacts": [],
+      "verification": {
+        "claim": "index rebuild is safe under concurrent writes",
+        "status": "fail",
+        "method": "cargo_test",
+        "receipt": "logs/occ11-index-conflict.log"
+      },
+      "dependencies": [],
+      "next_actions": [
+        "stop the index rollout until the conflict is re-examined"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-14T16:20:00Z"
+    }
+  },
+  {
+    "id": "s06",
+    "holdout": false,
+    "plain_english": "Result for task occ-11 from worker-d, and I am reporting the opposite of what worker-b said in m-106. I claim the same statement, that the search index rebuild is safe under concurrent writes, but my verification PASSED and my confidence is 0.9. Where worker-b saw a duplicated posting list entry, I see a stale index from an earlier manual run: with a clean checkout at build builds/occ11-index-bench, which I verified myself, and the bench log at logs/occ11-bench-20261014.log, also independently verified, the rebuild ran 200 concurrent writers with zero corruption across three repetitions. The numbers: 200 concurrent writer threads, 3 repetitions, 0 corrupted entries. I used manual_review plus the benchmark run as the method, and the receipt is in reports/occ11-bench-receipt.txt. So the two of us hold conflicting verification statuses for the same claim and the coordinator should not drop either position. Next actions: resume the index rollout only after the conflict is reconciled, and have a third agent reproduce the counterexample from m-106.",
+    "payload": {
+      "task_id": "occ-11",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-107",
+      "trace_id": "trace-occ-11",
+      "sender_identity": "agent://worker-d",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "search index rebuild is safe under concurrent writes",
+          "confidence": 0.9,
+          "evidence": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "build",
+          "locator": "builds/occ11-index-bench",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "log",
+          "locator": "logs/occ11-bench-20261014.log",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": {
+        "claim": "index rebuild is safe under concurrent writes",
+        "status": "pass",
+        "method": "manual_review",
+        "receipt": "reports/occ11-bench-receipt.txt"
+      },
+      "dependencies": [],
+      "next_actions": [
+        "resume the index rollout after the conflict is reconciled",
+        "have a third agent reproduce the m-106 counterexample"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-14T18:45:00Z"
+    }
+  },
+  {
+    "id": "s07",
+    "holdout": false,
+    "plain_english": "Blocked report for task occ-13. I cannot proceed: the signing key vault is sealed pending policy approval, and I am completely certain of that because the vault API returns the sealed state on every call; the tool receipt is receipts/occ13-vault-status.txt and I verified it directly. The direct consequence is that no artifacts can be signed until the vault unseals, and for that consequence I have no separate confidence estimate because it follows deterministically from the sealed state. Nothing has been produced and nothing is half-signed, so there is no inconsistent state to worry about. This is message m-108, sequence 2 on the task. The only way forward is out of my hands: request vault approval from the release manager, and once the vault is open I will re-run the signing step and report back with a fresh result message.",
+    "payload": {
+      "task_id": "occ-13",
+      "kind": "BLOCKED",
+      "status": "blocked",
+      "message_id": "m-108",
+      "trace_id": "trace-occ-13",
+      "sender_identity": "agent://worker-a",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the signing key vault is sealed pending policy approval",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "no artifacts can be signed until the vault unseals",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "tool",
+          "locator": "receipts/occ13-vault-status.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "request vault approval from the release manager"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-15T07:30:00Z"
+    }
+  },
+  {
+    "id": "s08",
+    "holdout": true,
+    "plain_english": "Partial result for task occ-14, the migration to the new session builder API. Three of the five call sites were migrated and pass their tests, so the status is partial, not done; I am 90 percent sure of that count because I re-ran the suite after each migration. The migrated sites are covered by the diff in crates/pi-coding-agent/src/core/session_manager.rs, lines 88 to 140, at revision 159ce68cc with file digest ec7e6bcd9b0dc524f80aa0147d78eb4044d9a63f6d976861c2397a9bf9f8b2f4, and I verified that range myself after the last edit. The remaining two call sites still construct AgentSession directly; those are at lines 310 to 355 of the same file, digest ec7e6bcd9b0dc524f80aa0147d78eb40 (same file, so the same digest applies), and my confidence there is 0.8 because one of them is behind a feature flag I have not compiled. The patch so far is at patches/occ14-builder-migration.patch. This task depended on occ-7 finishing first. Next actions: migrate the remaining 2 call sites, then re-run cargo test -p pi-coding-agent --lib before calling this done.",
+    "payload": {
+      "task_id": "occ-14",
+      "kind": "RESULT",
+      "status": "partial",
+      "message_id": "m-109",
+      "trace_id": "trace-occ-14",
+      "sender_identity": "agent://worker-a",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "3 of 5 call sites were migrated to the new session builder API",
+          "confidence": 0.9,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "2 call sites still construct AgentSession directly",
+          "confidence": 0.8,
+          "evidence": [
+            "E2"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/session_manager.rs",
+          "line_range": [
+            88,
+            140
+          ],
+          "digest": "ec7e6bcd9b0dc524f80aa0147d78eb4044d9a63f6d976861c2397a9bf9f8b2f4",
+          "revision": "159ce68cc",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/session_manager.rs",
+          "line_range": [
+            310,
+            355
+          ],
+          "digest": "ec7e6bcd9b0dc524f80aa0147d78eb4044d9a63f6d976861c2397a9bf9f8b2f4",
+          "revision": "159ce68cc"
+        }
+      ],
+      "artifacts": [
+        "patches/occ14-builder-migration.patch"
+      ],
+      "verification": null,
+      "dependencies": [
+        "occ-7"
+      ],
+      "next_actions": [
+        "migrate the remaining 2 call sites",
+        "re-run cargo test -p pi-coding-agent --lib"
+      ],
+      "sequence": 3,
+      "timestamp": "2026-10-15T12:10:00Z"
+    }
+  },
+  {
+    "id": "s09",
+    "holdout": false,
+    "plain_english": "Result for task occ-15, and the honest headline is that I do not know the cause yet. The finding is that the cause of the intermittent deadlock in the transport reader is not yet determined, and I deliberately have no confidence estimate attached because guessing one would be worse than saying nothing; unknown means unknown here. What I do have is the deadlock trace at logs/occ15-deadlock-trace.log, which is unverified in the sense that nobody has independently reproduced it yet. My verification record for the claim that the root cause is identified is unknown, method manual_review, because we simply have not gotten there. The deadlock has appeared 4 times in 200 runs, always in the same reader thread, and the stack always ends in the same three frames, which is a clue and not a conclusion. Next actions: collect 3 more stack dumps before changing any code, and only then form a hypothesis; anything else would be premature.",
+    "payload": {
+      "task_id": "occ-15",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-110",
+      "trace_id": "trace-occ-15",
+      "sender_identity": "agent://worker-c",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the cause of the intermittent deadlock in the transport reader is not yet determined",
+          "confidence": null,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ15-deadlock-trace.log"
+        }
+      ],
+      "artifacts": [],
+      "verification": {
+        "claim": "deadlock root cause identified",
+        "status": "unknown",
+        "method": "manual_review"
+      },
+      "dependencies": [],
+      "next_actions": [
+        "collect 3 more stack dumps before changing code"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-15T13:00:00Z"
+    }
+  },
+  {
+    "id": "s10",
+    "holdout": false,
+    "plain_english": "Evidence-only payload for task occ-16, no findings attached, status done for the collection step itself. Two pieces of evidence. First, the commit that landed the flamegraph support: commit 4f2a91c37, which I verified myself by checking out the tree and re-running the profile. Second, the artifact digest of the flamegraph produced from that commit, 7bb732e33dde70b686dd7230ee1a419d0547357f927884f2ce47cb92f2e193c0, for the file target/occ16-flamegraph.svg. The artifact itself is listed under artifacts so the coordinator can pull it without asking me again. The context: this evidence is meant to support the later decision on whether the hot loop is the lexer or the registry lookup, but I am making no claim about that here, only handing over the raw material. Next action: profile the hot loop again after the patch lands, using the same flags, so the numbers stay comparable.",
+    "payload": {
+      "task_id": "occ-16",
+      "kind": "EVIDENCE",
+      "status": "done",
+      "message_id": "m-111",
+      "trace_id": "trace-occ-16",
+      "sender_identity": "agent://worker-b",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "commit",
+          "locator": "4f2a91c37",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "artifact",
+          "locator": "target/occ16-flamegraph.svg",
+          "digest": "7bb732e33dde70b686dd7230ee1a419d0547357f927884f2ce47cb92f2e193c0"
+        }
+      ],
+      "artifacts": [
+        "target/occ16-flamegraph.svg"
+      ],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "profile the hot loop again after the patch lands"
+      ],
+      "sequence": 3,
+      "timestamp": "2026-10-14T14:30:00Z"
+    }
+  },
+  {
+    "id": "s11",
+    "holdout": false,
+    "plain_english": "Result for task occ-17, the latency work, with the numbers. Mean first-token latency dropped from 87 ms to 41 ms measured on 2026-10-12, and I am 85 percent confident in that comparison because both runs used the same fixture and the same machine; the before log is logs/occ17-bench-before.log and the after log is logs/occ17-bench-after.log, both independently verified. The p99 latency is 118 ms, down 46 percent from 219 ms, and my confidence there is 0.8 because the p99 estimate is noisier with only 500 samples per run. The full table is in reports/occ17-latency.md, which is the artifact for this task. One caveat worth stating plainly: the shared runner had background cargo activity during the before run, so if anything the 87 ms baseline is optimistic and the real improvement is larger. Next action: publish the benchmark table in the PR description so reviewers see the same numbers I do.",
+    "payload": {
+      "task_id": "occ-17",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-112",
+      "trace_id": "trace-occ-17",
+      "sender_identity": "agent://worker-d",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "mean first-token latency dropped from 87 ms to 41 ms on 2026-10-12",
+          "confidence": 0.85,
+          "evidence": [
+            "E1",
+            "E2"
+          ]
+        },
+        {
+          "statement": "p99 latency is 118 ms, down 46 percent from 219 ms",
+          "confidence": 0.8,
+          "evidence": [
+            "E2"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ17-bench-before.log",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "log",
+          "locator": "logs/occ17-bench-after.log",
+          "verified": true
+        }
+      ],
+      "artifacts": [
+        "reports/occ17-latency.md"
+      ],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "publish the benchmark table in the PR description"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-13T09:00:00Z"
+    }
+  },
+  {
+    "id": "s12",
+    "holdout": true,
+    "plain_english": "Progress update for task occ-18, still in progress, and this message is mostly about constraints rather than results. Two things must NOT be done, and I want them on record as findings so they survive compaction. First: do not delete the target directory during cleanup; cargo rebuilds take 25 minutes on the shared runner and wiping it wastes everyone's evening, and I am fully confident, 1.0, because I measured exactly that on 2026-10-11. The evidence is the tool receipt receipts/occ18-cleanup-run.txt, verified by me. Second: do not run cargo clean as part of the benchmark either; same reason, and that constraint has no attached evidence because it follows from the first one plus the shared-runner policy. The cleanup work itself is going fine otherwise. Next action: restrict the cleanup script to the scratch directory only, so the constraint is enforced by code and not by memory.",
+    "payload": {
+      "task_id": "occ-18",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-113",
+      "trace_id": "trace-occ-18",
+      "sender_identity": "agent://worker-a",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "do not delete the target directory during cleanup; rebuilds take 25 minutes on the shared runner",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "do not run cargo clean as part of the benchmark",
+          "confidence": 1.0,
+          "evidence": []
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "tool",
+          "locator": "receipts/occ18-cleanup-run.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "restrict the cleanup script to the scratch directory only"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-15T14:20:00Z"
+    }
+  },
+  {
+    "id": "s13",
+    "holdout": false,
+    "plain_english": "Result for task occ-19 on the delta tracker behavior, status done. Finding one: the tracker buffers out-of-order messages and the buffer cap is 1024, which I am 95 percent sure of because I read the implementation and then confirmed it with a replay run; the log is logs/occ19-delta-replay.log and it is independently verified. Finding two: when the buffer overflows, the tracker returns BaseUnavailable instead of panicking, and my confidence is 0.9; the same log covers it because the replay deliberately pushed 1025 deltas past a gap. The source for both findings is crates/pi-coding-agent/src/core/session_manager.rs, lines 410 to 448, at revision 159ce68cc, with file digest ec7e6bcd9b0dc524f80aa0147d78eb4044d9a63f6d976861c2397a9bf9f8b2f4, and I verified that digest after checkout so the line numbers correspond to what I actually read. The overflow path was the one I was most worried about, so it is good news that it degrades instead of crashing. Next actions: none required for correctness; optionally add a metric on buffer high-water mark so we can see it coming.",
+    "payload": {
+      "task_id": "occ-19",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-115",
+      "trace_id": "trace-occ-19",
+      "sender_identity": "agent://worker-c",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the delta tracker buffers out-of-order messages up to a cap of 1024",
+          "confidence": 0.95,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "on buffer overflow the tracker returns BaseUnavailable instead of panicking",
+          "confidence": 0.9,
+          "evidence": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/session_manager.rs",
+          "line_range": [
+            410,
+            448
+          ],
+          "digest": "ec7e6bcd9b0dc524f80aa0147d78eb4044d9a63f6d976861c2397a9bf9f8b2f4",
+          "revision": "159ce68cc",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "log",
+          "locator": "logs/occ19-delta-replay.log",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "add a metric on the buffer high-water mark"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-15T15:05:00Z"
+    }
+  },
+  {
+    "id": "s14",
+    "holdout": false,
+    "plain_english": "Task assignment for occ-20, status pending until someone picks it up. The goal: implement the OCC-2 dialect discovery prototype behind a feature flag. I am attaching no confidence to that as a finding because it is an assignment, not a claim about the world. The work sits under parent task t50 on trace trace-occ-20, and it depends on three things being in place first: occ-7, t39, and t41, all three, because the prototype needs the codec frozen, the harness data, and the merged transport changes respectively. Next actions in priority order: survey the existing OCC-1 call sites so the prototype plugs into real traffic, draft the discovery loop that proposes and validates dialect candidates offline, and keep the feature flag off by default so nothing ships enabled. The assignment expires on 2026-10-18: if nobody has started by then, the coordinator should reassign rather than let it drift.",
+    "payload": {
+      "task_id": "occ-20",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-116",
+      "parent_task_id": "t50",
+      "trace_id": "trace-occ-20",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-b",
+      "findings": [
+        {
+          "statement": "implement the OCC-2 dialect discovery prototype behind a feature flag",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "occ-7",
+        "t39",
+        "t41"
+      ],
+      "next_actions": [
+        "survey the existing OCC-1 call sites",
+        "draft the offline discovery loop",
+        "keep the feature flag off by default"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-15T08:00:00Z",
+      "expiry": "2026-10-18T08:00:00Z"
+    }
+  },
+  {
+    "id": "s15",
+    "holdout": false,
+    "plain_english": "Cancellation notice for task occ-21, the telegram parity work. The task is cancelled because the upstream API changed underneath us: the message-format endpoint we built the parity tests against was removed in the 2026-10-03 upstream release, and I am 90 percent sure that is the reason of record because the cancelling decision cites commit 8c31d0af2, which is the upstream change, and I verified that commit exists and says what the decision says it says. Nothing was merged from this task, so there is no half-finished state to clean up; the branch exists but was never based on anything current. The task sits under parent t50 on trace trace-occ-21, and this is sequence 5 on the task stream, which is why the cancellation comes now rather than earlier. Next action: archive the branch improve/telegram-parity so it is findable if the endpoint ever comes back.",
+    "payload": {
+      "task_id": "occ-21",
+      "kind": "CANCELLED",
+      "status": "cancelled",
+      "message_id": "m-117",
+      "parent_task_id": "t50",
+      "trace_id": "trace-occ-21",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-d",
+      "findings": [
+        {
+          "statement": "the telegram parity work was cancelled because the upstream API changed",
+          "confidence": 0.9,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "commit",
+          "locator": "8c31d0af2",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "archive the branch improve/telegram-parity"
+      ],
+      "sequence": 5,
+      "timestamp": "2026-10-15T16:00:00Z"
+    }
+  },
+  {
+    "id": "s16",
+    "holdout": true,
+    "plain_english": "Progress update for task occ-7, sequence 5 on the task stream, still in progress. Note the sequence jump: the previous progress message I sent was sequence 2, so sequences 3 and 4 are missing from what you have seen, which means an interrupted stretch of work, not silent skipping; the payload here is well-formed and the gap is a fact, not an error to paper over. The stress harness was interrupted mid-run at iteration 340 of 500 when the runner was reclaimed, and I attach no confidence to that count because it is simply what the partial log says; the log is logs/occ7-refresh-stress-partial.log and it is unverified in the strong sense, since the run never completed. So far the partial results show no additional races beyond the one I reported in message m-101, and my confidence in that is only 0.6 precisely because 340 of 500 iterations is not the full picture; the comparison point is the finding recorded as m-101. Next actions: restart the stress harness from iteration 340, and keep the lock fix branch checked out so the run measures the patched code.",
+    "payload": {
+      "task_id": "occ-7",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-118",
+      "trace_id": "trace-occ-7",
+      "sender_identity": "agent://worker-a",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the stress harness was interrupted mid-run at iteration 340 of 500",
+          "confidence": null,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "results so far show no additional races beyond the one reported in m-101",
+          "confidence": 0.6,
+          "evidence": [
+            "E2"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ7-refresh-stress-partial.log"
+        },
+        {
+          "id": "E2",
+          "kind": "finding",
+          "locator": "m-101"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "t41",
+        "t39"
+      ],
+      "next_actions": [
+        "restart the stress harness from iteration 340",
+        "keep the lock fix branch checked out"
+      ],
+      "sequence": 5,
+      "timestamp": "2026-10-15T17:30:00Z"
+    }
+  },
+  {
+    "id": "s17",
+    "holdout": false,
+    "plain_english": "Result for task occ-22 and it is a failure: the bootstrap suite does not pass on Windows. The finding: bootstrap_t01 fails on Windows when the profile path exceeds 260 characters, which I am 95 percent sure of because it fails deterministically at the same assert in 6 consecutive runs. The failing assert is in crates/pi-coding-agent/tests/bootstrap_t01.rs, lines 40 to 77, at revision 159ce68cc, file digest 0aa1f3427e2641c30e0915503c6d32a02396e4a9c374767a81de48b47833283c, and I verified that reading myself; the failure log is logs/occ22-bootstrap-fail.log and it could not be independently verified because the second runner hit the same wall. My verification record: the claim that bootstrap_t01 passes on Windows is FAIL, method cargo_test, receipt in the log. The workaround that is already known: use a short temp path for the fixture profile. Next actions: switch the fixture to a short temp path, then re-run the bootstrap suite to confirm the count goes back to all green before anyone merges.",
+    "payload": {
+      "task_id": "occ-22",
+      "kind": "RESULT",
+      "status": "failed",
+      "message_id": "m-120",
+      "trace_id": "trace-occ-22",
+      "sender_identity": "agent://worker-b",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "bootstrap_t01 fails on Windows when the profile path exceeds 260 characters",
+          "confidence": 0.95,
+          "evidence": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ22-bootstrap-fail.log",
+          "verified": false
+        },
+        {
+          "id": "E2",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/tests/bootstrap_t01.rs",
+          "line_range": [
+            40,
+            77
+          ],
+          "digest": "0aa1f3427e2641c30e0915503c6d32a02396e4a9c374767a81de48b47833283c",
+          "revision": "159ce68cc"
+        }
+      ],
+      "artifacts": [],
+      "verification": {
+        "claim": "bootstrap_t01 passes on Windows",
+        "status": "fail",
+        "method": "cargo_test",
+        "receipt": "logs/occ22-bootstrap-fail.log"
+      },
+      "dependencies": [],
+      "next_actions": [
+        "switch the fixture to a short temp path",
+        "re-run the bootstrap suite"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-15T11:45:00Z"
+    }
+  },
+  {
+    "id": "s18",
+    "holdout": false,
+    "plain_english": "Result for task occ-23, status done, and this one is a clean pass. The finding: cargo test -p pi-coding-agent --lib core::occ passes 41 tests with 0 failures, and I am fully confident, 1.0, because I ran it three times with a cold target directory each time and got 41 passed, 0 failed, 0 ignored on every run. The log is logs/occ23-occ-lib.log and it is independently verified, meaning a second runner re-executed the same command and compared byte for byte. My verification record agrees: claim occ unit suite green, status pass, method cargo_test, receipt in the log. The log itself is the artifact for this task so reviewers do not have to take my word for the count. Next action: merge the codec branch, since nothing in the suite is skipped or flaky and the numbers are stable across runs.",
+    "payload": {
+      "task_id": "occ-23",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-122",
+      "trace_id": "trace-occ-23",
+      "sender_identity": "agent://worker-c",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "cargo test -p pi-coding-agent --lib core::occ passes 41 tests with 0 failures",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ23-occ-lib.log",
+          "verified": true
+        }
+      ],
+      "artifacts": [
+        "logs/occ23-occ-lib.log"
+      ],
+      "verification": {
+        "claim": "occ unit suite green",
+        "status": "pass",
+        "method": "cargo_test",
+        "receipt": "logs/occ23-occ-lib.log"
+      },
+      "dependencies": [],
+      "next_actions": [
+        "merge the codec branch"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-15T09:50:00Z"
+    }
+  },
+  {
+    "id": "s19",
+    "holdout": false,
+    "plain_english": "Security-relevant evidence for task occ-12, in progress, sent over the restricted channel. Sender identity on this message is agent://security-auditor, recipient is daemon://coordinator; the daemon owns those identities and this text only claims them. Two findings. First, the exported transcript contains a bearer token in the authorization header, confidence 1.0, because the scanner found it at line 512 of the export and the match is exact, and the scan receipt is receipts/occ12-transcript-scan.txt, verified by the scanner itself. Second, that token must be redacted before the transcript is shared with anyone, confidence 1.0, same receipt, because a live bearer token in a shared transcript is an immediate credential leak. The expiry on this message is 2026-10-15T18:00:00Z: if redaction has not happened by then, escalate rather than wait. Next actions, in order: redact line 512 of the export, then rotate the token, because redaction without rotation leaves the copied token live.",
+    "payload": {
+      "task_id": "occ-12",
+      "kind": "EVIDENCE",
+      "status": "in_progress",
+      "message_id": "m-119",
+      "trace_id": "trace-occ-12",
+      "sender_identity": "agent://security-auditor",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the exported transcript contains a bearer token in the authorization header",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "the token must be redacted before the transcript is shared",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "tool",
+          "locator": "receipts/occ12-transcript-scan.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "redact line 512 of the export",
+        "rotate the token"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-15T10:15:00Z",
+      "expiry": "2026-10-15T18:00:00Z"
+    }
+  },
+  {
+    "id": "s20",
+    "holdout": true,
+    "plain_english": "Re-verification result for task occ-11, third message on the trace. The verification status for the recurring claim has changed again, and the change is the point of this message: the claim that the search index rebuild is safe under concurrent writes is now PASS by my measurement, after it was FAIL in m-106 and PASS in m-107 with different evidence. My confidence in the claim is now 0.95. What settled it: I re-ran the bench from logs/occ11-bench-20261014.log, independently verified, and added a dedicated re-check under tool receipt receipts/occ11-recheck-run.txt, also verified, which replays worker-b's exact counterexample scenario 50 times with a clean index each time; zero corruption, 50 of 50 clean runs. The original counterexample depended on a stale on-disk index left by a manual run, which the clean-index protocol eliminates. Method manual_review, receipt in reports/occ11-recheck.md. Next actions: close the conflict in the tracker, and record the recheck outcome in the PR so the decision trail is complete.",
+    "payload": {
+      "task_id": "occ-11",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-124",
+      "trace_id": "trace-occ-11",
+      "sender_identity": "agent://worker-e",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "search index rebuild is safe under concurrent writes",
+          "confidence": 0.95,
+          "evidence": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ11-bench-20261014.log",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "tool",
+          "locator": "receipts/occ11-recheck-run.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": {
+        "claim": "index rebuild is safe under concurrent writes",
+        "status": "pass",
+        "method": "manual_review",
+        "receipt": "reports/occ11-recheck.md"
+      },
+      "dependencies": [],
+      "next_actions": [
+        "close the conflict in the tracker",
+        "record the recheck outcome in the PR"
+      ],
+      "sequence": 3,
+      "timestamp": "2026-10-15T12:40:00Z"
+    }
+  },
+  {
+    "id": "s21",
+    "holdout": false,
+    "plain_english": "Detail request for task occ-24, in progress. I need one thing from whoever ran the occ-23 suite: the exact cargo command and feature flags used for the run that produced logs/occ23-occ-lib.log, because my local invocation selects a different default feature set and I cannot tell whether the 41-test count depends on the flags. I attach no confidence to this request because it is a request, not a claim, and there is no evidence behind it beyond the existence of the log itself, which is why the finding carries no evidence references either. The request sits under parent task t50 on trace trace-occ-24, sequence 1. Next action, and it is a single one: reply with the command line and the lockfile digest used for that run, so I can reproduce the environment bit for bit rather than approximating it.",
+    "payload": {
+      "task_id": "occ-24",
+      "kind": "REQUEST_DETAIL",
+      "status": "in_progress",
+      "message_id": "m-121",
+      "parent_task_id": "t50",
+      "trace_id": "trace-occ-24",
+      "sender_identity": "agent://worker-e",
+      "recipient_identity": "agent://worker-c",
+      "findings": [
+        {
+          "statement": "request the exact cargo command and feature flags used for the occ-23 run",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "reply with the command line and the lockfile digest"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-15T10:05:00Z"
+    }
+  },
+  {
+    "id": "s22",
+    "holdout": false,
+    "plain_english": "Result for task occ-25, the compaction throughput work, status done, numbers attached. Compaction throughput improved 3.2x, from 12.4 MB/s to 39.7 MB/s on the 500 MB fixture, confidence 0.9; three sources back that number, the before log logs/occ25-bench-before.log, the after log logs/occ25-bench-after.log, and the build record builds/occ25-bench-run, all three independently verified. Second finding: peak RSS stayed at 640 MB, within the 700 MB budget, confidence 0.85, backed by the build record which captures the sampler output. The fixture is the same 500 MB synthetic transcript we agreed on, so the comparison is apples to apples, and both runs were on the same machine with the same background load, which is why I am willing to put 0.9 on the 3.2x figure rather than hedging. The full table with per-phase timings is in reports/occ25-throughput.md, listed as the artifact. This task depended on occ-14 because it reuses the migrated builder API. Next action: attach the benchmark table to the PR, and nothing else is pending on my side.",
+    "payload": {
+      "task_id": "occ-25",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-125",
+      "trace_id": "trace-occ-25",
+      "sender_identity": "agent://worker-d",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "compaction throughput improved 3.2x, from 12.4 MB/s to 39.7 MB/s on the 500 MB fixture",
+          "confidence": 0.9,
+          "evidence": [
+            "E1",
+            "E2",
+            "E3"
+          ]
+        },
+        {
+          "statement": "peak RSS stayed at 640 MB, within the 700 MB budget",
+          "confidence": 0.85,
+          "evidence": [
+            "E3"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ25-bench-before.log",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "log",
+          "locator": "logs/occ25-bench-after.log",
+          "verified": true
+        },
+        {
+          "id": "E3",
+          "kind": "build",
+          "locator": "builds/occ25-bench-run",
+          "verified": true
+        }
+      ],
+      "artifacts": [
+        "reports/occ25-throughput.md"
+      ],
+      "verification": null,
+      "dependencies": [
+        "occ-14"
+      ],
+      "next_actions": [
+        "attach the benchmark table to the PR"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-15T13:35:00Z"
+    }
+  },
+  {
+    "id": "s23",
+    "holdout": false,
+    "plain_english": "Progress update for task occ-26, the consolidation prototype, still in progress. This task sits on top of three others at once: occ-7, occ-11, and t39, so it is the most dependency-heavy thing I have running and that is deliberate, because consolidation is exactly about combining what other tasks produced. Finding one: the prototype merges duplicate findings but keeps conflicting verification statuses separate instead of averaging them away, confidence 0.9, and it is backed by the implementation in crates/pi-coding-agent/src/core/session_manager.rs lines 512 to 560 at revision 159ce68cc with digest ec7e6bcd9b0dc524f80aa0147d78eb4044d9a63f6d976861c2397a9bf9f8b2f4, plus both sides of the occ-11 conflict, which are the findings recorded as m-106 and m-107. Finding two: the merge order follows first appearance, so results are stable across runs, confidence 0.8, backed by the same implementation reading. Keeping the conflict positions alive matters more than the merge itself; if the prototype ever drops one side, it is wrong and I will say so loudly. Next actions: wire the consolidator into the daemon fan-in, then add a parity test against the reference implementation.",
+    "payload": {
+      "task_id": "occ-26",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-126",
+      "parent_task_id": "t50",
+      "trace_id": "trace-occ-26",
+      "sender_identity": "agent://worker-c",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the consolidation prototype merges duplicate findings but keeps conflicting verification statuses separate",
+          "confidence": 0.9,
+          "evidence": [
+            "E1",
+            "E2",
+            "E3"
+          ]
+        },
+        {
+          "statement": "the merge order follows first appearance, so results are stable across runs",
+          "confidence": 0.8,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/session_manager.rs",
+          "line_range": [
+            512,
+            560
+          ],
+          "digest": "ec7e6bcd9b0dc524f80aa0147d78eb4044d9a63f6d976861c2397a9bf9f8b2f4",
+          "revision": "159ce68cc",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "finding",
+          "locator": "m-106"
+        },
+        {
+          "id": "E3",
+          "kind": "finding",
+          "locator": "m-107"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "occ-7",
+        "occ-11",
+        "t39"
+      ],
+      "next_actions": [
+        "wire the consolidator into the daemon fan-in",
+        "add a parity test against the reference implementation"
+      ],
+      "sequence": 3,
+      "timestamp": "2026-10-15T14:55:00Z"
+    }
+  },
+  {
+    "id": "s24",
+    "holdout": true,
+    "plain_english": "Progress update for task occ-27, the restart-recovery work, in progress, sequence 3. This message carries the full optional field set so the fan-in can route it without guessing: message id m-127, parent task t50, trace trace-occ-27, sender agent://worker-e, recipient daemon://coordinator, timestamped 2026-10-15T16:10:00Z and expiring 2026-10-16T16:10:00Z. Findings: the delta stream replayed 128 messages with no gaps after the restart, confidence 0.9, backed by logs/occ27-delta-replay.log which is independently verified; and the tracker requested a full snapshot exactly once, at sequence 47, for which I attach no confidence because it is a single observation that I have not yet repeated. The restart path is the one place where silent state loss would be catastrophic, so both facts matter even though one of them is less certain than the other. The task depends on occ-26 for the consolidator interface. Next action: persist the applied-sequence list every 32 deltas so a crash mid-stream loses at most 32 messages instead of everything.",
+    "payload": {
+      "task_id": "occ-27",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-127",
+      "parent_task_id": "t50",
+      "trace_id": "trace-occ-27",
+      "sender_identity": "agent://worker-e",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the delta stream replayed 128 messages with no gaps after the restart",
+          "confidence": 0.9,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "the tracker requested a full snapshot exactly once, at sequence 47",
+          "confidence": null,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ27-delta-replay.log",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "occ-26"
+      ],
+      "next_actions": [
+        "persist the applied-sequence list every 32 deltas"
+      ],
+      "sequence": 3,
+      "timestamp": "2026-10-15T16:10:00Z",
+      "expiry": "2026-10-16T16:10:00Z"
+    }
+  },
+  {
+    "id": "s25",
+    "holdout": false,
+    "plain_english": "Result for task occ-28, status done: the OCC-1 grammar reference and the fidelity harness are complete, and I am fully confident, 1.0, because the harness ran green on the full fixture set. The grammar reference is grounded in the implementation at crates/pi-coding-agent/src/core/occ/occ1.rs, lines 1 to 60, at revision 159ce68cc with digest 017e701f3dee5c5179ee9e1c7aa0fa18f14b0ced03eb1ce04360666feb9fdbec, which I verified after the last edit, and the harness run itself is captured as build builds/occ28-fidelity-run, independently verified, so the green claim does not rest on my say-so. Three artifacts came out of this: docs/occ1-grammar.md, crates/pi-coding-agent/tests/occ_comm_fidelity.rs, and crates/pi-coding-agent/tests/fixtures/occ/scenarios.json. The holdout split was chosen by rule and not by looking at results, which matters because a fidelity harness that tunes itself on its own holdout proves nothing. Next actions: review the holdout split for reasonableness, then merge.",
+    "payload": {
+      "task_id": "occ-28",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-128",
+      "trace_id": "trace-occ-28",
+      "sender_identity": "agent://worker-e",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the OCC-1 grammar reference and the fidelity harness are complete",
+          "confidence": 1.0,
+          "evidence": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/occ/occ1.rs",
+          "line_range": [
+            1,
+            60
+          ],
+          "digest": "017e701f3dee5c5179ee9e1c7aa0fa18f14b0ced03eb1ce04360666feb9fdbec",
+          "revision": "159ce68cc",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "build",
+          "locator": "builds/occ28-fidelity-run",
+          "verified": true
+        }
+      ],
+      "artifacts": [
+        "docs/occ1-grammar.md",
+        "crates/pi-coding-agent/tests/occ_comm_fidelity.rs",
+        "crates/pi-coding-agent/tests/fixtures/occ/scenarios.json"
+      ],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "review the holdout split",
+        "merge the fidelity harness"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-15T17:00:00Z"
+    }
+  },
+  {
+    "id": "s26",
+    "holdout": false,
+    "plain_english": "Partial result for task occ-29 with the uncertainty left in place rather than smoothed over. The status is partial because the flaky test is still unexplained. My best current guess is that the intermittent failure may be caused by the shared target-dir lock, and I am attaching a deliberately low confidence of 0.35 to that, because the correlation is present in 3 of 7 failures and absent in the rest, which is close to noise. The evidence is logs/occ29-flaky-test.log, and I am explicitly marking it unverified: nobody has independently reproduced the failure pattern yet, so treat the log as raw material and not as confirmation. My verification record for the claim that the failure is caused by the target-dir lock is unknown, method manual_review, and it stays unknown until someone runs the suite on an isolated target directory and compares. Low-confidence findings are still findings; they just need to travel with their number. Next actions: re-run the suite on an isolated target directory, then compare the failure timings against the lock contention windows.",
+    "payload": {
+      "task_id": "occ-29",
+      "kind": "RESULT",
+      "status": "partial",
+      "message_id": "m-129",
+      "trace_id": "trace-occ-29",
+      "sender_identity": "agent://worker-b",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the intermittent failure may be caused by the shared target-dir lock",
+          "confidence": 0.35,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ29-flaky-test.log"
+        }
+      ],
+      "artifacts": [],
+      "verification": {
+        "claim": "failure is caused by the target-dir lock",
+        "status": "unknown",
+        "method": "manual_review"
+      },
+      "dependencies": [],
+      "next_actions": [
+        "re-run the suite on an isolated target directory",
+        "compare the failure timings against the lock contention windows"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-15T15:40:00Z"
+    }
+  },
+  {
+    "id": "s27",
+    "holdout": false,
+    "plain_english": "Cancellation notice for task occ-30, the oauth migration. The task is cancelled in favor of the workload identity plan, and I am 90 percent sure of the reason as stated because the decision record points at the prior finding m-133, which is the workload identity proposal, and I verified that m-133 says what the decision claims it says. Second finding: no code was merged from this task and the branch is archived, confidence 1.0, because I checked the merge queue myself and this branch never entered it, and that second fact needs no evidence reference beyond the archive action itself. The task sits under parent t50 on trace trace-occ-30, message m-134, sequence 1, timestamped 2026-10-15T16:35:00Z. There is nothing half-applied in the tree, so the cancellation is clean: no feature flags to flip off, no config to roll back. Next action: archive branch improve/oauth-migration, so the work stays findable if the identity plan ever changes direction again.",
+    "payload": {
+      "task_id": "occ-30",
+      "kind": "CANCELLED",
+      "status": "cancelled",
+      "message_id": "m-134",
+      "parent_task_id": "t50",
+      "trace_id": "trace-occ-30",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-a",
+      "findings": [
+        {
+          "statement": "the oauth migration was cancelled in favor of the workload identity plan",
+          "confidence": 0.9,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "no code was merged; the branch is archived",
+          "confidence": 1.0,
+          "evidence": []
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "finding",
+          "locator": "m-133"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "archive branch improve/oauth-migration"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-15T16:35:00Z"
+    }
+  },
+  {
+    "id": "s28",
+    "holdout": true,
+    "plain_english": "Final composite result for task occ-31, status done, sequence 7 on the trace, and this message deliberately carries the heaviest payload in the suite: four findings, five pieces of evidence, three dependencies, three next actions, verification with a receipt, identities, timestamps and an expiry. Finding one: the OCC codec round-trips all 28 fidelity scenarios with zero semantic loss, confidence 1.0, backed by builds/occ31-fidelity-run, logs/occ31-roundtrip.log and logs/occ31-latency.log, all independently verified. Finding two: OCC-1 encodings are smaller than the plain English ground truth in every scenario, confidence 0.95, backed by the fidelity run. Finding three: the largest scenario encodes in under 1 ms on the shared runner, confidence 0.7, backed by the latency log and the timing receipt receipts/occ31-timing.txt. Finding four: the holdout split is exactly one quarter of the suite, confidence 1.0, backed by the fixture itself at crates/pi-coding-agent/tests/fixtures/occ/scenarios.json, digest dedf29e5b0ad8979b32b4651b1c2c4a3ee394ca0a0a1acdf9fb779561cb25feb, revision 159ce68cc, which I verified. My verification record: claim fidelity suite green, status pass, method cargo_test, receipt logs/occ31-final.log. The task depended on occ-7, occ-11 and occ-14 together. Artifacts: reports/occ31-fidelity-summary.md. This report expires 2026-10-16T17:45:00Z. Next actions: publish the aggregate comparison table, and link the fidelity report from the PR description so reviewers can see the measured numbers rather than trusting the summary.",
+    "payload": {
+      "task_id": "occ-31",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-140",
+      "parent_task_id": "t50",
+      "trace_id": "trace-occ-31",
+      "sender_identity": "agent://worker-e",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the OCC codec round-trips all 28 fidelity scenarios with zero semantic loss",
+          "confidence": 1.0,
+          "evidence": [
+            "E1",
+            "E2",
+            "E3"
+          ]
+        },
+        {
+          "statement": "OCC-1 encodings are smaller than the plain English ground truth in every scenario",
+          "confidence": 0.95,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "the largest scenario encodes in under 1 ms on the shared runner",
+          "confidence": 0.7,
+          "evidence": [
+            "E3",
+            "E4"
+          ]
+        },
+        {
+          "statement": "the holdout split is exactly one quarter of the suite",
+          "confidence": 1.0,
+          "evidence": [
+            "E5"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "build",
+          "locator": "builds/occ31-fidelity-run",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "log",
+          "locator": "logs/occ31-roundtrip.log",
+          "verified": true
+        },
+        {
+          "id": "E3",
+          "kind": "log",
+          "locator": "logs/occ31-latency.log",
+          "verified": true
+        },
+        {
+          "id": "E4",
+          "kind": "tool",
+          "locator": "receipts/occ31-timing.txt",
+          "verified": true
+        },
+        {
+          "id": "E5",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/tests/fixtures/occ/scenarios.json",
+          "digest": "dedf29e5b0ad8979b32b4651b1c2c4a3ee394ca0a0a1acdf9fb779561cb25feb",
+          "revision": "159ce68cc",
+          "verified": true
+        }
+      ],
+      "artifacts": [
+        "reports/occ31-fidelity-summary.md"
+      ],
+      "verification": {
+        "claim": "fidelity suite green",
+        "status": "pass",
+        "method": "cargo_test",
+        "receipt": "logs/occ31-final.log"
+      },
+      "dependencies": [
+        "occ-7",
+        "occ-11",
+        "occ-14"
+      ],
+      "next_actions": [
+        "publish the aggregate comparison table",
+        "link the fidelity report from the PR description"
+      ],
+      "sequence": 7,
+      "timestamp": "2026-10-15T17:45:00Z",
+      "expiry": "2026-10-16T17:45:00Z"
+    }
+  }
+]
