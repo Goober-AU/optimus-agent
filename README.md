@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://telemus.ai/">
+    <img src="https://telemus.ai/img/logo.svg?v=3" alt="Telemus AI" width="420">
+  </a>
+</p>
+
 # Optimus Agent
 
 **A self-improving, multi-model harness for coding, research, and long-running work, implemented in Rust with a persistent Python runtime.**
