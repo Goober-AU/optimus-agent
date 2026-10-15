@@ -23,7 +23,7 @@ I2_GATE = os.path.join(CAMPAIGN, "reports", "continuation", "iteration2-inputs",
 QS_DIR = os.path.join(I2_GATE, "common", "locomo")
 RUNS = os.path.join(GATE, "runs-stack")
 SCORES = os.path.join(GATE, "scores")
-SHARDS = ["stack-s0", "stack-s1", "stack-s2"]
+SHARDS = ["stack-s0", "stack-s1b", "stack-s2"]
 VARIANT = "improved-stack"
 
 ANCHOR_IT2 = {

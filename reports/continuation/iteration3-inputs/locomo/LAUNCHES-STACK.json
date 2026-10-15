@@ -25,5 +25,15 @@
   "started_at": "2026-10-12T18:21:35.894691+00:00",
   "binary_sha256": "ab1e1474af636a18b47b8969c22fa1e82cfbd811ad5efe71b30be0122ee169fc",
   "launch_mode": "kernel_popen_detached"
+ },
+ {
+  "shard": "s1b (relaunch of s1 after silent death mid conv-48 ingest, pid 9516 gone)",
+  "manifest": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-locostack/reports/continuation/iteration3-inputs/locomo/manifests/locomo-gate3-stack-s1b.json",
+  "log": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp3-locostack/reports/continuation/iteration3-inputs/locomo/logs/stack-s1b.log",
+  "memory_bench_pid": 9952,
+  "started_at": "2026-10-12T22:16:42.103072+00:00",
+  "binary_sha256": "ab1e1474af636a18b47b8969c22fa1e82cfbd811ad5efe71b30be0122ee169fc",
+  "launch_mode": "kernel_popen_detached",
+  "replaces": "stack-s1 (pid 9516, died ~22:10-22:16 UTC mid conv-48 ingest after transient credential error)"
  }
 ]
