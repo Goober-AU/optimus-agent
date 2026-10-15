@@ -78,6 +78,13 @@ pub struct MemorySettings {
     /// recall can bridge implicit-reference questions. Default false.
     #[serde(default, rename = "recallProspectiveIndex")]
     pub recall_prospective_index: bool,
+    /// Classify the recall query into six question types (temporal,
+    /// knowledge-update, multi-session, counting, abstention-prone, default)
+    /// with deterministic pattern matching before any LLM helper runs, then
+    /// append one type-specific guidance line to the recall header and widen
+    /// the entry budget for temporal questions (bounded). Default false.
+    #[serde(default, rename = "recallTypeRouting")]
+    pub recall_type_routing: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shared: Option<Option<SharedConfig>>,
 }
@@ -114,6 +121,7 @@ pub fn default_memory_settings() -> MemorySettings {
         recall_query_expansion: false,
         recall_query_expansion_draws: default_recall_query_expansion_draws(),
         recall_prospective_index: false,
+        recall_type_routing: false,
         shared: None,
     }
 }
@@ -275,6 +283,7 @@ pub struct PartialMemorySettings {
     pub recall_query_expansion_draws: Option<i64>,
     pub shared: Option<Option<SharedConfig>>,
     pub recall_prospective_index: Option<bool>,
+    pub recall_type_routing: Option<bool>,
 }
 
 const LIMITS: [(&str, i64, i64); 8] = [
@@ -299,6 +308,7 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
         "recallQueryExtract",
         "recallQueryExpansion",
         "recallProspectiveIndex",
+        "recallTypeRouting",
     ] {
         if let Some(raw) = source.get(key) {
             let boolean = raw
@@ -315,6 +325,9 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
                 "recallQueryExpansion" => result.recall_query_expansion = Some(boolean),
                 "recallProspectiveIndex" => {
                     result.recall_prospective_index = Some(boolean)
+                }
+                "recallTypeRouting" => {
+                    result.recall_type_routing = Some(boolean)
                 }
                 _ => {}
             }
@@ -957,6 +970,9 @@ fn apply_settings(settings: &mut MemorySettings, patch: &PartialMemorySettings) 
     if let Some(value) = patch.recall_prospective_index {
         settings.recall_prospective_index = value;
     }
+    if let Some(value) = patch.recall_type_routing {
+        settings.recall_type_routing = value;
+    }
     if let Some(value) = patch.max_recall_chars {
         settings.max_recall_chars = value;
     }
@@ -1003,6 +1019,10 @@ fn merge_settings_patch(target: &mut JsonMap, patch: &PartialMemorySettings) {
     set(
         "recallProspectiveIndex",
         patch.recall_prospective_index.map(Value::Bool),
+    );
+    set(
+        "recallTypeRouting",
+        patch.recall_type_routing.map(Value::Bool),
     );
     set(
         "recallRerankCandidates",
@@ -1501,6 +1521,74 @@ mod tests {
             "recallProspectiveIndex must be boolean"
         );
         assert!(!default_memory_settings().recall_prospective_index);
+    }
+
+    #[test]
+    fn recall_type_routing_validates_applies_and_round_trips() {
+        // Absent keeps the default, non-boolean is rejected.
+        assert_eq!(
+            validate_settings(&serde_json::json!({})).unwrap().recall_type_routing,
+            None
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallTypeRouting": true}))
+                .unwrap()
+                .recall_type_routing,
+            Some(true)
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallTypeRouting": 1})).unwrap_err(),
+            "recallTypeRouting must be boolean"
+        );
+        assert!(!default_memory_settings().recall_type_routing);
+
+        // Patch application toggles the stored setting.
+        let partial = validate_settings(&serde_json::json!({"recallTypeRouting": true})).unwrap();
+        let mut settings = default_memory_settings();
+        apply_settings(&mut settings, &partial);
+        assert!(settings.recall_type_routing);
+        apply_settings(
+            &mut settings,
+            &validate_settings(&serde_json::json!({"recallTypeRouting": false})).unwrap(),
+        );
+        assert!(!settings.recall_type_routing);
+
+        // The encoded form keeps the camelCase key and deserializes back.
+        let mut enabled = default_memory_settings();
+        enabled.recall_type_routing = true;
+        let encoded = serde_json::to_value(&enabled).unwrap();
+        assert_eq!(encoded["recallTypeRouting"], true);
+        let decoded: MemorySettings = serde_json::from_value(encoded).unwrap();
+        assert!(decoded.recall_type_routing);
+
+        // Merging a patch emits only the provided keys.
+        let mut merged = serde_json::Map::new();
+        merge_settings_patch(
+            &mut merged,
+            &validate_settings(&serde_json::json!({"recallTypeRouting": true})).unwrap(),
+        );
+        assert_eq!(merged.get("recallTypeRouting"), Some(&serde_json::json!(true)));
+        assert_eq!(merged.len(), 1);
+
+        // The settings.json file round-trips through configure().
+        let (store, root) = fixture();
+        let runtime = runtime();
+        let configured = runtime
+            .block_on(store.configure(&serde_json::json!({"recallTypeRouting": true})))
+            .unwrap();
+        assert!(configured.recall_type_routing);
+        assert!(store.settings().recall_type_routing);
+        let local = Path::new(&store.dir).join("settings.json");
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(std::fs::read_to_string(&local).unwrap())
+                .unwrap(),
+            serde_json::json!({"recallTypeRouting": true})
+        );
+        let disabled = runtime
+            .block_on(store.configure(&serde_json::json!({"recallTypeRouting": false})))
+            .unwrap();
+        assert!(!disabled.recall_type_routing);
+        std::fs::remove_dir_all(&root).ok();
     }
 
     #[test]

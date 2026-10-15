@@ -946,8 +946,10 @@ fn create_memory_extension_impl(
                                     }
                                 }
                                 let normal_memory = normal_memory.clone();
+                                let normal_query = normal_query.clone();
                                 let (hits, recalled) = tokio::task::spawn_blocking(move || {
-                                    let recalled = normal_memory.render_recall(&hits);
+                                    let recalled =
+                                        normal_memory.render_recall(&hits, &normal_query);
                                     let mut hits = hits;
                                     hits.retain(|hit| recalled.ids.contains(&hit.id));
                                     (hits, Arc::new(recalled))
@@ -970,7 +972,7 @@ fn create_memory_extension_impl(
                         .insert(session_key(&ctx), (key, baseline.clone()));
                     let recalled = if supplemental_enabled {
                         // Supplemental recall never filters or spends the normal lane's budget.
-                        let normal = memory.render_recall(&baseline.hits);
+                        let normal = memory.render_recall(&baseline.hits, &query);
                         Arc::new(match supplemental {
                             Some(retrieval) => retrieval.append(&memory, normal),
                             None => normal,
@@ -980,7 +982,7 @@ fn create_memory_extension_impl(
                             ctx.clone(), &query, baseline.hits.clone(),
                         ).await;
                         if filtered.len() == baseline.hits.len() { baseline.recalled.clone() }
-                        else { Arc::new(memory.render_recall(&filtered)) }
+                        else { Arc::new(memory.render_recall(&filtered, &query)) }
                     };
                     if !recalled.text.is_empty() {
                         let note: AgentMessage =

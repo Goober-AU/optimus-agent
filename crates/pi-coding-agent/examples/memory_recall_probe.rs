@@ -413,7 +413,7 @@ impl Replay {
                 selected.push(frozen);
             }
         }
-        let recall = recall_memory(&selected, &settings, root);
+        let recall = recall_memory(&selected, &settings, root, Some(&query.query));
         Ok(json!({
             "query":query,
             "base_effective_settings":base,
@@ -827,6 +827,7 @@ mod tests {
             &hits,
             &default_memory_settings(),
             Some(&original.path().to_string_lossy()),
+            Some("needle"),
         );
         assert_eq!(result["recall_text"], native.text);
         assert_eq!(result["injected_ids"], json!(native.ids));

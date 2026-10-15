@@ -212,7 +212,9 @@ impl Retrieval {
             settings.max_recall_entries = settings.max_recall_entries.min(MAX_EXTRA_ENTRIES);
             settings.max_recall_chars = settings.max_recall_chars.min(MAX_EXTRA_CHARS);
             let hits: Vec<_> = selected.iter().map(|(_, hit)| hit.clone()).collect();
-            let extra = recall_memory(&hits, &settings, Some(&memory.store.project.root));
+            // Supplemental recall has no recall query in scope; pass none so
+            // question-type routing stays off for this extra lane.
+            let extra = recall_memory(&hits, &settings, Some(&memory.store.project.root), None);
             if current() && !extra.text.is_empty() {
                 for (decision, hit) in selected {
                     if extra.ids.contains(&hit.id) {

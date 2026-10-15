@@ -3,6 +3,7 @@ pub mod evidence;
 pub mod extraction;
 pub mod jobs;
 pub mod project;
+pub mod routing;
 pub mod search;
 pub mod server;
 pub mod service;

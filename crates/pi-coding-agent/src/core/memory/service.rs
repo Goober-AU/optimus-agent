@@ -239,12 +239,18 @@ impl MemoryService {
     }
 
     pub fn recall(&self, query: &str) -> RecallResult {
-        self.render_recall(&self.search(query, false))
+        self.render_recall(&self.search(query, false), query)
     }
 
     /// Render a request-local candidate selection without changing stored memory.
-    pub fn render_recall(&self, hits: &[MemoryHit]) -> RecallResult {
-        recall_memory(hits, &self.store.settings(), Some(&self.store.project.root))
+    /// The query drives deterministic question-type routing when enabled.
+    pub fn render_recall(&self, hits: &[MemoryHit], query: &str) -> RecallResult {
+        recall_memory(
+            hits,
+            &self.store.settings(),
+            Some(&self.store.project.root),
+            Some(query),
+        )
     }
 
     /// Write-time prospective indexing for one applied import job: give each

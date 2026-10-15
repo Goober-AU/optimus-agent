@@ -590,6 +590,7 @@ fn legacy_inactive_and_stale_notes_remain_inspectable_but_are_not_recalled() {
         &normal,
         &default_memory_settings(),
         Some(&store.project.root),
+        None,
     );
     assert_eq!(
         recall.ids.iter().cloned().collect::<BTreeSet<_>>(),
@@ -625,7 +626,7 @@ fn legacy_inactive_and_stale_notes_remain_inspectable_but_are_not_recalled() {
             ..default_memory_settings()
         },
     ] {
-        let result = recall_memory(&normal, &disabled, Some(&store.project.root));
+        let result = recall_memory(&normal, &disabled, Some(&store.project.root), None);
         assert!(result.ids.is_empty());
         assert!(result.text.is_empty());
         assert_eq!(result.chars, 0);

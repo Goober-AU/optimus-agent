@@ -584,7 +584,7 @@ mod tests {
             memory_hit("project:memory:b"),
         ];
         let settings = crate::core::memory::store::default_memory_settings();
-        let original = crate::core::memory::search::recall_memory(&hits, &settings, None);
+        let original = crate::core::memory::search::recall_memory(&hits, &settings, None), None);
         assert_eq!(original.ids.len(), 2);
         let prepared = prepare_memory(&hits, "fixture");
         assert_eq!(prepared.candidate_indices, vec![0, 1]);
@@ -606,9 +606,9 @@ mod tests {
         let filtered = apply_memory(hits.clone(), &removals);
         assert_eq!(filtered.len(), 1);
         assert_eq!(filtered[0], hits[1]);
-        let rendered = crate::core::memory::search::recall_memory(&filtered, &settings, None);
+        let rendered = crate::core::memory::search::recall_memory(&filtered, &settings, None), None);
         assert_eq!(rendered.ids, vec![hits[1].id.clone()]);
-        let restored = crate::core::memory::search::recall_memory(&hits, &settings, None);
+        let restored = crate::core::memory::search::recall_memory(&hits, &settings, None), None);
         assert_eq!(restored.text, original.text);
         assert!(prepared.removals(&decisions[..1], "r1", 1).is_empty());
         assert!(prepared.removals(&decisions, "other", 1).is_empty());
@@ -659,10 +659,10 @@ mod tests {
         .unwrap();
         let before = serde_json::to_value(service.store.read().unwrap()).unwrap();
         let hits = vec![memory_hit("first"), memory_hit("second")];
-        let original = service.render_recall(&hits);
-        let filtered = service.render_recall(&apply_memory(hits.clone(), &[0]));
+        let original = service.render_recall(&hits, "fixture");
+        let filtered = service.render_recall(&apply_memory(hits.clone(), &[0]), "fixture");
         assert_eq!(filtered.ids, vec!["second"]);
-        assert_eq!(service.render_recall(&hits).text, original.text);
+        assert_eq!(service.render_recall(&hits, "fixture").text, original.text);
         assert_eq!(
             serde_json::to_value(service.store.read().unwrap()).unwrap(),
             before

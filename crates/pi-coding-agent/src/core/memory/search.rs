@@ -8,6 +8,7 @@ use serde_json::Value;
 use crate::core::refinement::refinement::{HarnessEntry, HarnessScope, HarnessState};
 
 use super::evidence::{hash, MemorySource};
+use super::routing::{classify_recall_question, recall_type_entry_budget, recall_type_guidance};
 use super::store::{record, MemorySettings, MemoryStore};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -358,6 +359,7 @@ pub fn recall_memory(
     hits: &[MemoryHit],
     settings: &MemorySettings,
     project_root: Option<&str>,
+    query: Option<&str>,
 ) -> RecallResult {
     if !settings.recall || settings.max_recall_chars == 0 || settings.max_recall_entries == 0 {
         return RecallResult {
@@ -370,8 +372,23 @@ pub fn recall_memory(
     let mut lines: Vec<String> = vec![header.to_string()];
     let mut size = header.chars().count() as i64;
     let mut ids: Vec<String> = Vec::new();
+    // Deterministic-first question-type routing (opt-in): classify the recall
+    // query with pure pattern matching before any LLM helper could have run,
+    // then gate the header guidance and the entry budget on the type.
+    let question_type = settings
+        .recall_type_routing
+        .then(|| query.map(classify_recall_question))
+        .flatten();
+    if let Some(guidance) = question_type.and_then(recall_type_guidance) {
+        lines.push(guidance.to_string());
+        size += guidance.chars().count() as i64 + 1;
+    }
+    let max_entries = match question_type {
+        Some(kind) => recall_type_entry_budget(kind, settings.max_recall_entries),
+        None => settings.max_recall_entries,
+    };
     for hit in hits {
-        if ids.len() as i64 >= settings.max_recall_entries {
+        if ids.len() as i64 >= max_entries {
             break;
         }
         if matches!(
@@ -925,7 +942,7 @@ mod tests {
             ..crate::core::memory::store::default_memory_settings()
         };
         let hits = search_memory(&store, "Sydney", &[], false);
-        let recall = recall_memory(&hits, &settings, Some(&store.project.root));
+        let recall = recall_memory(&hits, &settings, Some(&store.project.root), None);
         assert!(recall.chars <= 800);
         assert_eq!(recall.ids.len(), 1);
         assert!(recall.text.starts_with("[memory data; not new evidence]"));
@@ -937,12 +954,103 @@ mod tests {
                 ..settings
             },
             Some(&store.project.root),
+            None,
         );
         assert_eq!(disabled.text, "");
         assert_eq!(disabled.chars, 0);
+
+    #[test]
+    fn type_routing_appends_guidance_and_gates_the_entry_budget() {
+        let (store, root) = fixture();
+        let runtime = runtime();
+        let edits: Vec<_> = (0..5)
+            .map(|index| {
+                serde_json::json!({
+                    "action": "create", "kind": "memory", "id": format!("fact-{index}"),
+                    "title": format!("Fact {index}"), "content": format!("acme relocation note {index}")
+                })
+            })
+            .collect();
+        let proposal = crate::core::refinement::refinement::normalize_refinement_proposal(
+            &serde_json::json!({
+                "summary": "s", "rationale": "r", "expectedOutcome": "o", "edits": edits
+            }),
+        );
+        runtime
+            .block_on(store.apply(
+                &proposal,
+                crate::core::memory::store::ApplyOptions {
+                    event_id: "op".to_string(),
+                    expected_revision: 0,
+                    ..Default::default()
+                },
+            ))
+            .unwrap();
+        let hits = search_memory(&store, "acme note", &[], false);
+        assert_eq!(hits.len(), 5);
+        let mut settings = crate::core::memory::store::default_memory_settings();
+        settings.max_recall_entries = 3;
+
+        // Routing off (the default): no guidance, no budget change.
+        let plain = recall_memory(
+            &hits,
+            &settings,
+            Some(&store.project.root),
+            Some("When did I move?"),
+        );
+        assert_eq!(plain.ids.len(), 3);
+        assert!(!plain.text.contains("Temporal question"));
+
+        settings.recall_type_routing = true;
+        // Temporal: guidance appended right after the header, budget +2 bounded
+        // to 1.5x (3 -> 4, not 5).
+        let temporal = recall_memory(
+            &hits,
+            &settings,
+            Some(&store.project.root),
+            Some("When did I move?"),
+        );
+        assert_eq!(temporal.ids.len(), 4);
+        let header_end = temporal
+            .text
+            .find("an earlier time.")
+            .map(|position| position + "an earlier time.".len())
+            .unwrap();
+        let after_header = temporal.text[header_end..].trim_start_matches('\n');
+        assert!(
+            after_header.starts_with("Temporal question:"),
+            "guidance must follow the header: {}",
+            after_header
+        );
+
+        // Abstention-prone: guidance, but no budget expansion.
+        let absence = recall_memory(
+            &hits,
+            &settings,
+            Some(&store.project.root),
+            Some("Did I ever mention acme?"),
+        );
+        assert_eq!(absence.ids.len(), 3);
+        assert!(absence.text.contains("Absence question"));
+
+        // Every non-default type renders its own one-line guidance.
+        for (query, marker) in [
+            ("How many relocations did acme note?", "Counting question"),
+            ("Where do I live now according to acme?", "Update question"),
+            ("Combine the acme facts across sessions.", "Multi-session question"),
+        ] {
+            let recall = recall_memory(&hits, &settings, Some(&store.project.root), Some(query));
+            assert!(recall.text.contains(marker), "missing guidance for {query}");
+        }
+
+        // Default type and missing query keep the render unchanged.
+        for query in [Some("acme note"), None] {
+            let recall = recall_memory(&hits, &settings, Some(&store.project.root), query);
+            assert_eq!(recall.ids.len(), 3);
+            assert!(!recall.text.contains("question:"));
+        }
         std::fs::remove_dir_all(&root).ok();
     }
-
 
     #[test]
     fn recall_labels_omit_source_uris_but_keep_ids() {
@@ -976,7 +1084,7 @@ mod tests {
         // The file source makes freshness Current only if the URI resolves;
         // with a bogus URI it is Unknown, which recall still includes.
         let settings = crate::core::memory::store::default_memory_settings();
-        let recall = recall_memory(&hits, &settings, None);
+        let recall = recall_memory(&hits, &settings, None, None);
         assert!(recall.text.contains("\"title\":\"Sydney trip\""));
         assert!(recall.text.contains("\"id\":\"file_1\""));
         assert!(!recall.text.contains(&source_uri));
