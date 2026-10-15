@@ -1,0 +1,252 @@
+{
+ "conv-48_q101": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c48-q101-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "2022",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 12.5
+   }
+  ]
+ },
+ "conv-48_q102": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c48-q102-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.5,
+    "outcome": "pass",
+    "answer": "a robotics project from her engineering professor",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 6.9
+   }
+  ]
+ },
+ "conv-48_q162": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c48-q162-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "Renewable energy like solar, and clean water access.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 11.7
+   }
+  ]
+ },
+ "conv-48_q173": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c48-q173-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.6666666666666666,
+    "outcome": "pass",
+    "answer": "a meditation course",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 8.1
+   }
+  ]
+ },
+ "conv-48_q181": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c48-q181-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "On a beach.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 8.5
+   }
+  ]
+ },
+ "conv-48_q69": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c48-q69-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "yes",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 8.4
+   }
+  ]
+ },
+ "conv-48_q81": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c48-q81-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.3333333333333333,
+    "outcome": "fail",
+    "answer": "17 September 2023",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 13.4
+   }
+  ]
+ },
+ "conv-48_q124": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c48-q124-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.5833333333333334,
+    "outcome": "pass",
+    "answer": "By gathering information, watching videos, getting a beginners' guide to surfing, and finding the right time and place to get a lesson.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 35.0
+   }
+  ]
+ },
+ "conv-48_q14": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c48-q14-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.75,
+    "outcome": "pass",
+    "answer": "reading, cooking, art",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 9.4
+   }
+  ]
+ },
+ "conv-48_q16": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c48-q16-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "Susie and Seraphim",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 6.6
+   }
+  ]
+ },
+ "conv-48_q35": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c48-q35-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "February 24, 2023",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 7.3
+   }
+  ]
+ },
+ "conv-48_q58": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c48-q58-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.7499999999999999,
+    "outcome": "pass",
+    "answer": "Zelda BOTW, Animal Crossing, Overcooked 2",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 10.1
+   }
+  ]
+ },
+ "conv-48_q65": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c48-q65-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "Brazil",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 81.1
+   }
+  ]
+ },
+ "conv-48_q82": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c48-q82-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.2875,
+    "outcome": "fail",
+    "answer": "A park near her house, a yoga class, a local care home, a yoga retreat near her mom's place",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 42.6
+   },
+   {
+    "run_id": "ar5-c48-q82-a2",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "not mentioned",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "029159a993d70060",
+    "latency_s": 84.1
+   }
+  ]
+ }
+}

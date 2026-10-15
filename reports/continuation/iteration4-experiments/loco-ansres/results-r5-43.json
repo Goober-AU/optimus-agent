@@ -1,0 +1,320 @@
+{
+ "conv-43_q116": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q116-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.16666666666666666,
+    "outcome": "fail",
+    "answer": "they were driven and never quit",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 77.7
+   }
+  ]
+ },
+ "conv-43_q138": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q138-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "He was frustrated but overcame it.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 10.3
+   }
+  ]
+ },
+ "conv-43_q142": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q142-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.6875000000000001,
+    "outcome": "pass",
+    "answer": "It made him think again about following dreams and searching for personal legends, motivating him to keep chasing his dreams and trust the process.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 24.5
+   }
+  ]
+ },
+ "conv-43_q16": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q16-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.058823529411764705,
+    "outcome": "fail",
+    "answer": "I need to determine the time gap between Tim's first chat with the California Harry Potter fan (week before 2023-07-16) and their reconnection via Skype (2023-08-09). Let me check the workspace for an",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 22.6
+   }
+  ]
+ },
+ "conv-43_q164": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q164-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "French",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 29.9
+   }
+  ]
+ },
+ "conv-43_q20": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q20-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "not mentioned",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 8.0
+   }
+  ]
+ },
+ "conv-43_q59": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q59-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.34285714285714286,
+    "outcome": "fail",
+    "answer": "40 points in a game, and a career-high in assists.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 8.9
+   }
+  ]
+ },
+ "conv-43_q61": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q61-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.1142857142857143,
+    "outcome": "fail",
+    "answer": "The Hobbit and another popular fantasy series",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 59.5
+   }
+  ]
+ },
+ "conv-43_q87": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q87-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.09523809523809523,
+    "outcome": "fail",
+    "answer": "He said the team bond is awesome, makes all the hard work worth it, and his team is like a family away from home.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 11.1
+   }
+  ]
+ },
+ "conv-43_q9": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q9-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.5844155844155844,
+    "outcome": "pass",
+    "answer": "Nike basketball shoe and gear deal, outdoor gear company deal, beverage company endorsement",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 20.8
+   }
+  ]
+ },
+ "conv-43_q12": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q12-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "2018",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 8.0
+   }
+  ]
+ },
+ "conv-43_q122": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q122-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.5454545454545454,
+    "outcome": "pass",
+    "answer": "Develop and reach their goals \u2014 growth, improvement, and confidence.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 9.3
+   }
+  ]
+ },
+ "conv-43_q38": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q38-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "not mentioned",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 28.4
+   },
+   {
+    "run_id": "ar5-c43-q38-a2",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "not mentioned",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 18.0
+   }
+  ]
+ },
+ "conv-43_q45": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q45-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "the UK",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 11.7
+   }
+  ]
+ },
+ "conv-43_q71": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q71-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "the Minnesota Wolves",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 7.3
+   }
+  ]
+ },
+ "conv-43_q76": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q76-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.5882352941176471,
+    "outcome": "pass",
+    "answer": "A picture from MinaLima, who created all the props for the Harry Potter films.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 14.1
+   }
+  ]
+ },
+ "conv-43_q84": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q84-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "Harry Potter and Game of Thrones",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 8.9
+   }
+  ]
+ },
+ "conv-43_q90": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c43-q90-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.9411764705882353,
+    "outcome": "pass",
+    "answer": "A local organization that helps disadvantaged kids with sports and school.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "cfbee6dc27de137e",
+    "latency_s": 8.5
+   }
+  ]
+ }
+}

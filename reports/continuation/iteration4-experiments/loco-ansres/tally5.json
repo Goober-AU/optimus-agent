@@ -1,0 +1,1707 @@
+{
+ "before": {
+  "loco_FAILED": 158,
+  "by_benchmark": {
+   "lme_v2": {
+    "total": 3,
+    "RESOLVED": 1,
+    "FAILED": 2
+   },
+   "locomo": {
+    "total": 175,
+    "FAILED": 158,
+    "RESOLVED": 17
+   },
+   "locomo_plus": {
+    "total": 5,
+    "RESOLVED": 3,
+    "UNTESTED": 2
+   },
+   "longmemeval_s": {
+    "total": 498,
+    "FAILED": 2,
+    "RESOLVED": 5,
+    "UNTESTED": 491
+   },
+   "longmemeval_m": {
+    "total": 499,
+    "UNTESTED": 499
+   }
+  }
+ },
+ "cells": [
+  {
+   "qid": "conv-26_q1",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c26-q1-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "2022"
+  },
+  {
+   "qid": "conv-26_q126",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c26-q126-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "Horseback riding"
+  },
+  {
+   "qid": "conv-26_q135",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c26-q135-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "She got hurt and had to take a break from pottery."
+  },
+  {
+   "qid": "conv-26_q141",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c26-q141-a1",
+     "score": 0.6666666666666666
+    }
+   ],
+   "best": 0.667,
+   "pass": true,
+   "answer": "Freedom, being real, staying true to herself, and embracing her womanhood."
+  },
+  {
+   "qid": "conv-26_q143",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c26-q143-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "He got into an accident."
+  },
+  {
+   "qid": "conv-26_q144",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c26-q144-a1",
+     "score": 0.6153846153846154
+    }
+   ],
+   "best": 0.615,
+   "pass": true,
+   "answer": "he was scared but okay"
+  },
+  {
+   "qid": "conv-26_q149",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c26-q149-a1",
+     "score": 0.8
+    }
+   ],
+   "best": 0.8,
+   "pass": true,
+   "answer": "Strength, motivation and support."
+  },
+  {
+   "qid": "conv-26_q18",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c26-q18-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "the forest, the beach, and the mountains"
+  },
+  {
+   "qid": "conv-26_q26",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c26-q26-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "2022"
+  },
+  {
+   "qid": "conv-26_q39",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c26-q39-a1",
+     "score": 0.5333333333333333
+    }
+   ],
+   "best": 0.533,
+   "pass": true,
+   "answer": "school talk, pride parade, conference, youth mentorship, activist group, art show, youth c"
+  },
+  {
+   "qid": "conv-26_q54",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c26-q54-a1",
+     "score": 0.0
+    },
+    {
+     "run": "ar5-c26-q54-a2",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "the week before 23 August 2023"
+  },
+  {
+   "qid": "conv-26_q55",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c26-q55-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "sunsets, abstract art"
+  },
+  {
+   "qid": "conv-26_q99",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c26-q99-a1",
+     "score": 0.7058823529411764
+    }
+   ],
+   "best": 0.706,
+   "pass": true,
+   "answer": "Her own journey and the support she received."
+  },
+  {
+   "qid": "conv-41_q110",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q110-a1",
+     "score": 0.6666666666666666
+    }
+   ],
+   "best": 0.667,
+   "pass": true,
+   "answer": "She joined a new gym."
+  },
+  {
+   "qid": "conv-41_q115",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q115-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "a live music event"
+  },
+  {
+   "qid": "conv-41_q125",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q125-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "what we have"
+  },
+  {
+   "qid": "conv-41_q131",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q131-a1",
+     "score": 0.5
+    }
+   ],
+   "best": 0.5,
+   "pass": true,
+   "answer": "Dropping off the baked goods she made at the homeless shelter where she volunteers."
+  },
+  {
+   "qid": "conv-41_q137",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q137-a1",
+     "score": 0.7368421052631579
+    }
+   ],
+   "best": 0.737,
+   "pass": true,
+   "answer": "He lost his job at the mechanical engineering company \u2014 the company tanked."
+  },
+  {
+   "qid": "conv-41_q138",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q138-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "Community work"
+  },
+  {
+   "qid": "conv-41_q18",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q18-a1",
+     "score": 0.5
+    }
+   ],
+   "best": 0.5,
+   "pass": true,
+   "answer": "His colleague Rob."
+  },
+  {
+   "qid": "conv-41_q20",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q20-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "2022"
+  },
+  {
+   "qid": "conv-41_q35",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q35-a1",
+     "score": 0.5
+    }
+   ],
+   "best": 0.5,
+   "pass": true,
+   "answer": "Florida"
+  },
+  {
+   "qid": "conv-41_q47",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q47-a1",
+     "score": 0.375
+    },
+    {
+     "run": "ar5-c41-q47-a2",
+     "score": 0.375
+    }
+   ],
+   "best": 0.375,
+   "pass": false,
+   "answer": "weight training"
+  },
+  {
+   "qid": "conv-41_q54",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q54-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "4 August 2023"
+  },
+  {
+   "qid": "conv-41_q57",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q57-a1",
+     "score": 0.35
+    }
+   ],
+   "best": 0.35,
+   "pass": false,
+   "answer": "veterans, domestic abuse victims, the homeless, kids in need, and unemployed folks."
+  },
+  {
+   "qid": "conv-41_q60",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q60-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "Shadow, Coco"
+  },
+  {
+   "qid": "conv-41_q68",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q68-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "not mentioned"
+  },
+  {
+   "qid": "conv-41_q82",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q82-a1",
+     "score": 0.75
+    }
+   ],
+   "best": 0.75,
+   "pass": true,
+   "answer": "completing his university degree"
+  },
+  {
+   "qid": "conv-41_q91",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c41-q91-a1",
+     "score": 0.6666666666666666
+    }
+   ],
+   "best": 0.667,
+   "pass": true,
+   "answer": "a convention"
+  },
+  {
+   "qid": "conv-42_q11",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q11-a1",
+     "score": 0.75
+    }
+   ],
+   "best": 0.75,
+   "pass": true,
+   "answer": "most reptiles, animals with fur, and cockroaches"
+  },
+  {
+   "qid": "conv-42_q125",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q125-a1",
+     "score": 0.7692307692307693
+    }
+   ],
+   "best": 0.769,
+   "pass": true,
+   "answer": "tournament friends, old friends, teammates from other tournaments"
+  },
+  {
+   "qid": "conv-42_q138",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q138-a1",
+     "score": 0.3333333333333333
+    }
+   ],
+   "best": 0.333,
+   "pass": false,
+   "answer": "A super cool book from the 1900s with stories and sketches"
+  },
+  {
+   "qid": "conv-42_q143",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q143-a1",
+     "score": 0.2857142857142857
+    }
+   ],
+   "best": 0.286,
+   "pass": false,
+   "answer": "she felt touched; it was awesome"
+  },
+  {
+   "qid": "conv-42_q165",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q165-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "not mentioned"
+  },
+  {
+   "qid": "conv-42_q168",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q168-a1",
+     "score": 0.8000000000000002
+    }
+   ],
+   "best": 0.8,
+   "pass": true,
+   "answer": "Tilly, her stuffed animal dog"
+  },
+  {
+   "qid": "conv-42_q170",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q170-a1",
+     "score": 0.35714285714285715
+    }
+   ],
+   "best": 0.357,
+   "pass": false,
+   "answer": "She named her after a real dog she used to have in Michigan, to remember when she could ho"
+  },
+  {
+   "qid": "conv-42_q175",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q175-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "A stuffed animal dog named Tilly"
+  },
+  {
+   "qid": "conv-42_q197",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q197-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "not mentioned"
+  },
+  {
+   "qid": "conv-42_q28",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q28-a1",
+     "score": 0.6666666666666665
+    }
+   ],
+   "best": 0.667,
+   "pass": true,
+   "answer": "the Friday before 24 June 2022"
+  },
+  {
+   "qid": "conv-42_q31",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q31-a1",
+     "score": 0.6666666666666665
+    }
+   ],
+   "best": 0.667,
+   "pass": true,
+   "answer": "the Friday before 10 July 2022"
+  },
+  {
+   "qid": "conv-42_q4",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q4-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "not mentioned"
+  },
+  {
+   "qid": "conv-42_q41",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q41-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "not mentioned"
+  },
+  {
+   "qid": "conv-42_q47",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q47-a1",
+     "score": 0.5
+    }
+   ],
+   "best": 0.5,
+   "pass": true,
+   "answer": "game convention, tournament, on a walk with Max"
+  },
+  {
+   "qid": "conv-42_q63",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q63-a1",
+     "score": 0.4666666666666666
+    }
+   ],
+   "best": 0.467,
+   "pass": false,
+   "answer": "Counter-Strike: Global Offensive, Street Fighter, Xenoblade Chronicles, Cyberpunk 2077"
+  },
+  {
+   "qid": "conv-42_q64",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q64-a1",
+     "score": 0.6666666666666665
+    }
+   ],
+   "best": 0.667,
+   "pass": true,
+   "answer": "the Saturday before 7 November 2022"
+  },
+  {
+   "qid": "conv-42_q71",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q71-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "nature"
+  },
+  {
+   "qid": "conv-42_q75",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q75-a1",
+     "score": 0.3833333333333333
+    },
+    {
+     "run": "ar5-c42-q75-a2",
+     "score": 0.3833333333333333
+    }
+   ],
+   "best": 0.383,
+   "pass": false,
+   "answer": "coconut milk ice cream and dairy-free chocolate mousse"
+  },
+  {
+   "qid": "conv-42_q85",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q85-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "A movie director"
+  },
+  {
+   "qid": "conv-42_q91",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q91-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "adventures, magic, and great characters"
+  },
+  {
+   "qid": "conv-42_q99",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c42-q99-a1",
+     "score": 0.923076923076923
+    }
+   ],
+   "best": 0.923,
+   "pass": true,
+   "answer": "Submit it to some film festivals and hopefully get producers and directors to check it out"
+  },
+  {
+   "qid": "conv-43_q116",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q116-a1",
+     "score": 0.16666666666666666
+    }
+   ],
+   "best": 0.167,
+   "pass": false,
+   "answer": "they were driven and never quit"
+  },
+  {
+   "qid": "conv-43_q12",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q12-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "2018"
+  },
+  {
+   "qid": "conv-43_q122",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q122-a1",
+     "score": 0.5454545454545454
+    }
+   ],
+   "best": 0.545,
+   "pass": true,
+   "answer": "Develop and reach their goals \u2014 growth, improvement, and confidence."
+  },
+  {
+   "qid": "conv-43_q138",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q138-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "He was frustrated but overcame it."
+  },
+  {
+   "qid": "conv-43_q142",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q142-a1",
+     "score": 0.6875000000000001
+    }
+   ],
+   "best": 0.688,
+   "pass": true,
+   "answer": "It made him think again about following dreams and searching for personal legends, motivat"
+  },
+  {
+   "qid": "conv-43_q16",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q16-a1",
+     "score": 0.058823529411764705
+    }
+   ],
+   "best": 0.059,
+   "pass": false,
+   "answer": "I need to determine the time gap between Tim's first chat with the California Harry Potter"
+  },
+  {
+   "qid": "conv-43_q164",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q164-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "French"
+  },
+  {
+   "qid": "conv-43_q20",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q20-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "not mentioned"
+  },
+  {
+   "qid": "conv-43_q38",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q38-a1",
+     "score": 0.0
+    },
+    {
+     "run": "ar5-c43-q38-a2",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "not mentioned"
+  },
+  {
+   "qid": "conv-43_q45",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q45-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "the UK"
+  },
+  {
+   "qid": "conv-43_q59",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q59-a1",
+     "score": 0.34285714285714286
+    }
+   ],
+   "best": 0.343,
+   "pass": false,
+   "answer": "40 points in a game, and a career-high in assists."
+  },
+  {
+   "qid": "conv-43_q61",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q61-a1",
+     "score": 0.1142857142857143
+    }
+   ],
+   "best": 0.114,
+   "pass": false,
+   "answer": "The Hobbit and another popular fantasy series"
+  },
+  {
+   "qid": "conv-43_q71",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q71-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "the Minnesota Wolves"
+  },
+  {
+   "qid": "conv-43_q76",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q76-a1",
+     "score": 0.5882352941176471
+    }
+   ],
+   "best": 0.588,
+   "pass": true,
+   "answer": "A picture from MinaLima, who created all the props for the Harry Potter films."
+  },
+  {
+   "qid": "conv-43_q84",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q84-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "Harry Potter and Game of Thrones"
+  },
+  {
+   "qid": "conv-43_q87",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q87-a1",
+     "score": 0.09523809523809523
+    }
+   ],
+   "best": 0.095,
+   "pass": false,
+   "answer": "He said the team bond is awesome, makes all the hard work worth it, and his team is like a"
+  },
+  {
+   "qid": "conv-43_q9",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q9-a1",
+     "score": 0.5844155844155844
+    }
+   ],
+   "best": 0.584,
+   "pass": true,
+   "answer": "Nike basketball shoe and gear deal, outdoor gear company deal, beverage company endorsemen"
+  },
+  {
+   "qid": "conv-43_q90",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c43-q90-a1",
+     "score": 0.9411764705882353
+    }
+   ],
+   "best": 0.941,
+   "pass": true,
+   "answer": "A local organization that helps disadvantaged kids with sports and school."
+  },
+  {
+   "qid": "conv-44_q121",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c44-q121-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "take them to a nearby park"
+  },
+  {
+   "qid": "conv-44_q14",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c44-q14-a1",
+     "score": 0.4
+    }
+   ],
+   "best": 0.4,
+   "pass": false,
+   "answer": "being outdoors"
+  },
+  {
+   "qid": "conv-44_q22",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c44-q22-a1",
+     "score": 0.7499999999999999
+    }
+   ],
+   "best": 0.75,
+   "pass": true,
+   "answer": "Camping with his girlfriend and Toby."
+  },
+  {
+   "qid": "conv-44_q41",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c44-q41-a1",
+     "score": 0.4210526315789473
+    }
+   ],
+   "best": 0.421,
+   "pass": false,
+   "answer": "Pepper and Panda are Lab mixes, and Precious and Pixie are Chihuahua mixes (all mutts)."
+  },
+  {
+   "qid": "conv-44_q68",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c44-q68-a1",
+     "score": 0.6666666666666666
+    }
+   ],
+   "best": 0.667,
+   "pass": true,
+   "answer": "To learn new stuff and strengthen her bond with her pets."
+  },
+  {
+   "qid": "conv-44_q73",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c44-q73-a1",
+     "score": 0.3076923076923077
+    }
+   ],
+   "best": 0.308,
+   "pass": false,
+   "answer": "Finding a pet-friendly place to live, and finding the right dog."
+  },
+  {
+   "qid": "conv-44_q74",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c44-q74-a1",
+     "score": 0.7499999999999999
+    }
+   ],
+   "best": 0.75,
+   "pass": true,
+   "answer": "he was discouraged but determined"
+  },
+  {
+   "qid": "conv-44_q85",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c44-q85-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "Agility classes."
+  },
+  {
+   "qid": "conv-44_q9",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c44-q9-a1",
+     "score": 0.7066666666666666
+    }
+   ],
+   "best": 0.707,
+   "pass": true,
+   "answer": "Dog owners group, dog training course, agility classes, dog grooming course, positive rein"
+  },
+  {
+   "qid": "conv-44_q92",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c44-q92-a1",
+     "score": 0.33333333333333337
+    }
+   ],
+   "best": 0.333,
+   "pass": false,
+   "answer": "She says they're super cozy and comfy - her dogs curl up and snuggle like they're in a clo"
+  },
+  {
+   "qid": "conv-47_q119",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c47-q119-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "basic games and stories"
+  },
+  {
+   "qid": "conv-47_q139",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c47-q139-a1",
+     "score": 0.7142857142857143
+    }
+   ],
+   "best": 0.714,
+   "pass": true,
+   "answer": "Playing Super Mario and The Legend of Zelda on the Nintendo."
+  },
+  {
+   "qid": "conv-47_q142",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c47-q142-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "to raise money for a children's hospital"
+  },
+  {
+   "qid": "conv-47_q147",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c47-q147-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "FIFA 23 itself, a little."
+  },
+  {
+   "qid": "conv-47_q21",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c47-q21-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "May 7, 2022"
+  },
+  {
+   "qid": "conv-47_q23",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c47-q23-a1",
+     "score": 0.8
+    }
+   ],
+   "best": 0.8,
+   "pass": true,
+   "answer": "July 2022"
+  },
+  {
+   "qid": "conv-47_q27",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c47-q27-a1",
+     "score": 0.28571428571428575
+    },
+    {
+     "run": "ar5-c47-q27-a2",
+     "score": 0.28571428571428575
+    }
+   ],
+   "best": 0.286,
+   "pass": false,
+   "answer": "a course combining gaming and programming"
+  },
+  {
+   "qid": "conv-47_q43",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c47-q43-a1",
+     "score": 0.8
+    }
+   ],
+   "best": 0.8,
+   "pass": true,
+   "answer": "September 2022"
+  },
+  {
+   "qid": "conv-47_q49",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c47-q49-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "Sennheiser headphones, Logitech mouse, gaming desk"
+  },
+  {
+   "qid": "conv-47_q52",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c47-q52-a1",
+     "score": 0.2
+    }
+   ],
+   "best": 0.2,
+   "pass": false,
+   "answer": "a few months before 20 September 2022"
+  },
+  {
+   "qid": "conv-48_q101",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c48-q101-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "2022"
+  },
+  {
+   "qid": "conv-48_q102",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c48-q102-a1",
+     "score": 0.5
+    }
+   ],
+   "best": 0.5,
+   "pass": true,
+   "answer": "a robotics project from her engineering professor"
+  },
+  {
+   "qid": "conv-48_q124",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c48-q124-a1",
+     "score": 0.5833333333333334
+    }
+   ],
+   "best": 0.583,
+   "pass": true,
+   "answer": "By gathering information, watching videos, getting a beginners' guide to surfing, and find"
+  },
+  {
+   "qid": "conv-48_q14",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c48-q14-a1",
+     "score": 0.75
+    }
+   ],
+   "best": 0.75,
+   "pass": true,
+   "answer": "reading, cooking, art"
+  },
+  {
+   "qid": "conv-48_q16",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c48-q16-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "Susie and Seraphim"
+  },
+  {
+   "qid": "conv-48_q162",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c48-q162-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "Renewable energy like solar, and clean water access."
+  },
+  {
+   "qid": "conv-48_q173",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c48-q173-a1",
+     "score": 0.6666666666666666
+    }
+   ],
+   "best": 0.667,
+   "pass": true,
+   "answer": "a meditation course"
+  },
+  {
+   "qid": "conv-48_q181",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c48-q181-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "On a beach."
+  },
+  {
+   "qid": "conv-48_q35",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c48-q35-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "February 24, 2023"
+  },
+  {
+   "qid": "conv-48_q58",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c48-q58-a1",
+     "score": 0.7499999999999999
+    }
+   ],
+   "best": 0.75,
+   "pass": true,
+   "answer": "Zelda BOTW, Animal Crossing, Overcooked 2"
+  },
+  {
+   "qid": "conv-48_q65",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c48-q65-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "Brazil"
+  },
+  {
+   "qid": "conv-48_q69",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c48-q69-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "yes"
+  },
+  {
+   "qid": "conv-48_q81",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c48-q81-a1",
+     "score": 0.3333333333333333
+    }
+   ],
+   "best": 0.333,
+   "pass": false,
+   "answer": "17 September 2023"
+  },
+  {
+   "qid": "conv-48_q82",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c48-q82-a1",
+     "score": 0.2875
+    },
+    {
+     "run": "ar5-c48-q82-a2",
+     "score": 0.0
+    }
+   ],
+   "best": 0.287,
+   "pass": false,
+   "answer": "not mentioned"
+  },
+  {
+   "qid": "conv-50_q135",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q135-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "Paying attention to small details."
+  },
+  {
+   "qid": "conv-50_q137",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q137-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "not mentioned"
+  },
+  {
+   "qid": "conv-50_q143",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q143-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "car mods"
+  },
+  {
+   "qid": "conv-50_q147",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q147-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "his Ferrari, music videos, concerts, artist documentaries"
+  },
+  {
+   "qid": "conv-50_q155",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q155-a1",
+     "score": 0.3076923076923077
+    }
+   ],
+   "best": 0.308,
+   "pass": false,
+   "answer": "their favorite artists, art, and how the power of music connects us all"
+  },
+  {
+   "qid": "conv-50_q16",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q16-a1",
+     "score": 1.0
+    }
+   ],
+   "best": 1.0,
+   "pass": true,
+   "answer": "July 2023"
+  },
+  {
+   "qid": "conv-50_q48",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q48-a1",
+     "score": 0.28571428571428575
+    }
+   ],
+   "best": 0.286,
+   "pass": false,
+   "answer": "He went to the car show and got to mess with car mods."
+  },
+  {
+   "qid": "conv-50_q5",
+   "group": "F",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q5-a1",
+     "score": 0.75
+    }
+   ],
+   "best": 0.75,
+   "pass": true,
+   "answer": "Building a custom car from scratch, working on classic cars, visiting Tokyo."
+  },
+  {
+   "qid": "conv-50_q67",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q67-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "At his Japanese house in Japan, where he threw his new album party."
+  },
+  {
+   "qid": "conv-50_q85",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q85-a1",
+     "score": 0.5
+    }
+   ],
+   "best": 0.5,
+   "pass": true,
+   "answer": "Taking walks and exploring parks on the weekends."
+  },
+  {
+   "qid": "conv-50_q87",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q87-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "cruise around in his fixed red sports car"
+  },
+  {
+   "qid": "conv-50_q88",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q88-a1",
+     "score": 0.0
+    }
+   ],
+   "best": 0,
+   "pass": false,
+   "answer": "not mentioned"
+  },
+  {
+   "qid": "conv-50_q89",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q89-a1",
+     "score": 0.46153846153846156
+    }
+   ],
+   "best": 0.462,
+   "pass": false,
+   "answer": "Different genres with electronic elements added for a fresh vibe."
+  },
+  {
+   "qid": "conv-50_q90",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q90-a1",
+     "score": 0.5333333333333333
+    }
+   ],
+   "best": 0.533,
+   "pass": true,
+   "answer": "It gives them a fresh vibe \u2014 an exciting process of self-discovery and growth."
+  },
+  {
+   "qid": "conv-50_q97",
+   "group": "R",
+   "status": "FAILED",
+   "ar5": [
+    {
+     "run": "ar5-c50-q97-a1",
+     "score": 0.36363636363636365
+    }
+   ],
+   "best": 0.364,
+   "pass": false,
+   "answer": "Small details that make it unique and personalized."
+  }
+ ],
+ "after_ar5": {
+  "pass": 73,
+  "fail_confirmed": 44,
+  "no_attempt": 0
+ },
+ "by_group": {
+  "F/pass": 53,
+  "R/fail": 39,
+  "R/pass": 20,
+  "F/fail": 5
+ }
+}

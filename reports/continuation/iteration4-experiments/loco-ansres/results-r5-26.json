@@ -1,0 +1,235 @@
+{
+ "conv-26_q1": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c26-q1-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "2022",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "d4b542a8e98deca6",
+    "latency_s": 8.7
+   }
+  ]
+ },
+ "conv-26_q126": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c26-q126-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "Horseback riding",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "d4b542a8e98deca6",
+    "latency_s": 6.5
+   }
+  ]
+ },
+ "conv-26_q135": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c26-q135-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "She got hurt and had to take a break from pottery.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "d4b542a8e98deca6",
+    "latency_s": 8.9
+   }
+  ]
+ },
+ "conv-26_q141": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c26-q141-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.6666666666666666,
+    "outcome": "pass",
+    "answer": "Freedom, being real, staying true to herself, and embracing her womanhood.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "d4b542a8e98deca6",
+    "latency_s": 8.7
+   }
+  ]
+ },
+ "conv-26_q143": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c26-q143-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "He got into an accident.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "d4b542a8e98deca6",
+    "latency_s": 20.2
+   }
+  ]
+ },
+ "conv-26_q144": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c26-q144-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.6153846153846154,
+    "outcome": "pass",
+    "answer": "he was scared but okay",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "d4b542a8e98deca6",
+    "latency_s": 9.2
+   }
+  ]
+ },
+ "conv-26_q149": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c26-q149-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.8,
+    "outcome": "pass",
+    "answer": "Strength, motivation and support.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "d4b542a8e98deca6",
+    "latency_s": 16.5
+   }
+  ]
+ },
+ "conv-26_q18": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c26-q18-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "the forest, the beach, and the mountains",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "d4b542a8e98deca6",
+    "latency_s": 8.5
+   }
+  ]
+ },
+ "conv-26_q26": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c26-q26-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "2022",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "d4b542a8e98deca6",
+    "latency_s": 8.0
+   }
+  ]
+ },
+ "conv-26_q39": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c26-q39-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.5333333333333333,
+    "outcome": "pass",
+    "answer": "school talk, pride parade, conference, youth mentorship, activist group, art show, youth center volunteering, art advocacy",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "d4b542a8e98deca6",
+    "latency_s": 12.5
+   }
+  ]
+ },
+ "conv-26_q54": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c26-q54-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "not mentioned",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "d4b542a8e98deca6",
+    "latency_s": 81.2
+   },
+   {
+    "run_id": "ar5-c26-q54-a2",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "the week before 23 August 2023",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "d4b542a8e98deca6",
+    "latency_s": 8.7
+   }
+  ]
+ },
+ "conv-26_q55": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c26-q55-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "sunsets, abstract art",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "d4b542a8e98deca6",
+    "latency_s": 11.1
+   }
+  ]
+ },
+ "conv-26_q99": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c26-q99-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.7058823529411764,
+    "outcome": "pass",
+    "answer": "Her own journey and the support she received.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "d4b542a8e98deca6",
+    "latency_s": 14.8
+   }
+  ]
+ }
+}

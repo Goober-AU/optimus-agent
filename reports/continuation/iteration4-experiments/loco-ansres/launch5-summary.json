@@ -1,0 +1,55 @@
+{
+ "launched": {
+  "26": {
+   "cmd": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/run5-26.cmd",
+   "jobs": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/jobs-r5-26.json",
+   "results": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/results-r5-26.json",
+   "wmi": "ProcessId ReturnValue PSComputerName --------- ----------- --------------     23312           0 "
+  },
+  "41": {
+   "cmd": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/run5-41.cmd",
+   "jobs": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/jobs-r5-41.json",
+   "results": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/results-r5-41.json",
+   "wmi": "ProcessId ReturnValue PSComputerName --------- ----------- --------------      5112           0 "
+  },
+  "42": {
+   "cmd": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/run5-42.cmd",
+   "jobs": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/jobs-r5-42.json",
+   "results": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/results-r5-42.json",
+   "wmi": "ProcessId ReturnValue PSComputerName --------- ----------- --------------       808           0 "
+  },
+  "43": {
+   "cmd": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/run5-43.cmd",
+   "jobs": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/jobs-r5-43.json",
+   "results": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/results-r5-43.json",
+   "wmi": "ProcessId ReturnValue PSComputerName --------- ----------- --------------      3108           0 "
+  },
+  "44": {
+   "cmd": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/run5-44.cmd",
+   "jobs": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/jobs-r5-44.json",
+   "results": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/results-r5-44.json",
+   "wmi": "ProcessId ReturnValue PSComputerName --------- ----------- --------------     17608           0 "
+  },
+  "47": {
+   "cmd": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/run5-47.cmd",
+   "jobs": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/jobs-r5-47.json",
+   "results": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/results-r5-47.json",
+   "wmi": "ProcessId ReturnValue PSComputerName --------- ----------- --------------     26320           0 "
+  },
+  "48": {
+   "cmd": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/run5-48.cmd",
+   "jobs": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/jobs-r5-48.json",
+   "results": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/results-r5-48.json",
+   "wmi": "ProcessId ReturnValue PSComputerName --------- ----------- --------------     17412           0 "
+  },
+  "50": {
+   "cmd": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/run5-50.cmd",
+   "jobs": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/jobs-r5-50.json",
+   "results": "C:/Users/openclawuser/optimus-memory-bench-20261007-040424/imp4b-ansres/reports/continuation/iteration4-experiments/loco-ansres/results-r5-50.json",
+   "wmi": "ProcessId ReturnValue PSComputerName --------- ----------- --------------     12220           0 "
+  }
+ },
+ "pending_at_exit": [],
+ "elapsed_s": 3009.5,
+ "finished": true
+}

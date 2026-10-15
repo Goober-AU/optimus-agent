@@ -1,0 +1,286 @@
+{
+ "conv-41_q125": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q125-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "what we have",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 8.3
+   }
+  ]
+ },
+ "conv-41_q131": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q131-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.5,
+    "outcome": "pass",
+    "answer": "Dropping off the baked goods she made at the homeless shelter where she volunteers.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 7.9
+   }
+  ]
+ },
+ "conv-41_q18": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q18-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.5,
+    "outcome": "pass",
+    "answer": "His colleague Rob.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 9.0
+   }
+  ]
+ },
+ "conv-41_q57": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q57-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.35,
+    "outcome": "fail",
+    "answer": "veterans, domestic abuse victims, the homeless, kids in need, and unemployed folks.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 39.7
+   }
+  ]
+ },
+ "conv-41_q68": {
+  "group": "R",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q68-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.0,
+    "outcome": "fail",
+    "answer": "not mentioned",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 9.0
+   }
+  ]
+ },
+ "conv-41_q110": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q110-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.6666666666666666,
+    "outcome": "pass",
+    "answer": "She joined a new gym.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 27.3
+   }
+  ]
+ },
+ "conv-41_q115": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q115-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "a live music event",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 7.1
+   }
+  ]
+ },
+ "conv-41_q137": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q137-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.7368421052631579,
+    "outcome": "pass",
+    "answer": "He lost his job at the mechanical engineering company \u2014 the company tanked.",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 8.0
+   }
+  ]
+ },
+ "conv-41_q138": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q138-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "Community work",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 7.2
+   }
+  ]
+ },
+ "conv-41_q20": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q20-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "2022",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 17.1
+   }
+  ]
+ },
+ "conv-41_q35": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q35-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.5,
+    "outcome": "pass",
+    "answer": "Florida",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 6.7
+   }
+  ]
+ },
+ "conv-41_q47": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q47-a1",
+    "rc": 3,
+    "err": null,
+    "score": 0.375,
+    "outcome": "fail",
+    "answer": "weight training",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 59.3
+   },
+   {
+    "run_id": "ar5-c41-q47-a2",
+    "rc": 3,
+    "err": null,
+    "score": 0.375,
+    "outcome": "fail",
+    "answer": "weight training",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 13.1
+   }
+  ]
+ },
+ "conv-41_q54": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q54-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "4 August 2023",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 7.6
+   }
+  ]
+ },
+ "conv-41_q60": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q60-a1",
+    "rc": 0,
+    "err": null,
+    "score": 1.0,
+    "outcome": "pass",
+    "answer": "Shadow, Coco",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 9.2
+   }
+  ]
+ },
+ "conv-41_q82": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q82-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.75,
+    "outcome": "pass",
+    "answer": "completing his university degree",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 7.2
+   }
+  ]
+ },
+ "conv-41_q91": {
+  "group": "F",
+  "draws": [
+   {
+    "run_id": "ar5-c41-q91-a1",
+    "rc": 0,
+    "err": null,
+    "score": 0.6666666666666666,
+    "outcome": "pass",
+    "answer": "a convention",
+    "failure_stage": "ingest",
+    "mode_detail": "cache-reuse",
+    "cache_key": "f3e2ba0599fbe1d1",
+    "latency_s": 13.4
+   }
+  ]
+ }
+}
