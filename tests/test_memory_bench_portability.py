@@ -398,7 +398,8 @@ class MemoryBenchPortabilityTests(unittest.TestCase):
         judges.set_client(judges.DGXClient(transport=fixture_transport, cache_dir=cache))
         for family in evaluate.FAMILIES:
             with self.subTest(family=family):
-                qs = evaluate.load_questions(family, common_root / family)
+                fam_dir = common_root / family / "32k" if family == "pmem" else common_root / family
+                qs = evaluate.load_questions(family, fam_dir)
                 runs = []
                 for q in qs:
                     if family == "locomo":
@@ -413,7 +414,7 @@ class MemoryBenchPortabilityTests(unittest.TestCase):
                 run = self.dump(f"{family}-run.jsonl", runs, True)
                 scored = self.root / f"{family}-scores.json"
                 self.cli("bench.eval.evaluate", "--bench", family, "--run", run,
-                         "--qs-dir", common_root / family, "--out", scored,
+                         "--qs-dir", fam_dir, "--out", scored,
                          "--judge-cache", cache, "--workers", 2)
                 result = json.loads(scored.read_text())
                 self.assertEqual(result["overall"]["mean_score"], 1)
