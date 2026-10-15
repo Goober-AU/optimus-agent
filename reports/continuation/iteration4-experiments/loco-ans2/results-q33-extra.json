@@ -1,0 +1,41 @@
+{
+ "r2-reg-q33-r4": {
+  "tag": "r2-reg-q33-r4",
+  "qid": "conv-26_q33",
+  "run_id": "a2r2gq33r4",
+  "rc": 0,
+  "err": null,
+  "score": 0.6666666666666666,
+  "outcome": "pass",
+  "answer": "the week before 3 July 2023, the Friday before 14 August 2023",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 14.7
+ },
+ "r2-reg-q33-r6": {
+  "tag": "r2-reg-q33-r6",
+  "qid": "conv-26_q33",
+  "run_id": "a2r2gq33r6",
+  "rc": 0,
+  "err": null,
+  "score": 0.6666666666666666,
+  "outcome": "pass",
+  "answer": "the week before 3 July 2023, the Friday before 14 August 2023",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 19.0
+ },
+ "r2-reg-q33-r5": {
+  "tag": "r2-reg-q33-r5",
+  "qid": "conv-26_q33",
+  "run_id": "a2r2gq33r5",
+  "rc": 0,
+  "err": null,
+  "score": 1.0,
+  "outcome": "pass",
+  "answer": "the week before 3 July 2023",
+  "recall_n": 24,
+  "mode_detail": "cache-reuse",
+  "latency_s": 22.0
+ }
+}
