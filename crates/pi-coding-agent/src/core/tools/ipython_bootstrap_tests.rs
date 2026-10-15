@@ -11,12 +11,14 @@ fn fixture() -> (tempfile::TempDir, Arc<IpythonKernelProvisioner>) {
     std::fs::write(dir.path().join("rlm/repl.py"), r#"
 import json, os, pathlib, sys, time
 root = pathlib.Path(__file__).parent.parent
-with (root / 'starts').open('a') as f:
+# newline='\n' keeps the log format identical on Windows (no CRLF translation),
+# so the Rust-side byte-level assertions on these files hold on every platform.
+with (root / 'starts').open('a', newline='\n') as f:
     f.write(str(os.getpid()) + '\n')
 print(json.dumps({'event':'ready', 'protocol':3}), flush=True)
 for line in sys.stdin:
     request = json.loads(line)
-    with (root / 'requests').open('a') as f:
+    with (root / 'requests').open('a', newline='\n') as f:
         f.write(request['type'] + '\n')
     if request['type'] == 'execute':
         if not (root / 'enabled').exists():

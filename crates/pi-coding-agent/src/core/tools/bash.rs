@@ -1286,7 +1286,21 @@ exit 7
             .find(|(key, _)| key.to_lowercase() == "path")
             .map(|(_, value)| value.clone())
             .expect("PATH entry");
-        assert!(path_entry.starts_with(&bin_dir));
+        // The shell-env owner must deliver the bin-dir prepend even when the
+        // inherited PATH already lists the bin dir mid-list behind
+        // launcher-exported prefixes: it leads PATH exactly once.
+        let separator = if cfg!(windows) { ';' } else { ':' };
+        let entries: Vec<&str> = path_entry.split(separator).collect();
+        assert_eq!(
+            entries.first(),
+            Some(&bin_dir.as_str()),
+            "PATH must start with the managed bin dir: {path_entry}"
+        );
+        assert_eq!(
+            entries.iter().filter(|entry| **entry == bin_dir).count(),
+            1,
+            "managed bin dir must appear exactly once: {path_entry}"
+        );
         assert_eq!(context.command, "echo hi");
     }
 

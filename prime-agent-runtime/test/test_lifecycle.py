@@ -1,13 +1,26 @@
 from __future__ import annotations
 
+import importlib.util
 import inspect
+import sys
 import unittest
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import rlm
 from rlm import lifecycle
-import agent_message
+
+try:
+    import agent_message
+except ModuleNotFoundError:
+    # Plain test environment: the agent_message skill source lives in this
+    # repo, but its src directory is only on sys.path inside the agent kernel.
+    _SKILL = Path(__file__).parents[2] / "resources/agent/skills/agent-message/src/agent_message/__init__.py"
+    _spec = importlib.util.spec_from_file_location("agent_message", _SKILL)
+    assert _spec and _spec.loader
+    agent_message = importlib.util.module_from_spec(_spec)
+    sys.modules["agent_message"] = agent_message
+    _spec.loader.exec_module(agent_message)
 
 
 def capability(**changes):

@@ -211,14 +211,21 @@ fn shell_env_with_bin_dir(mut env: Vec<(String, String)>, bin_dir: &str, windows
     let path_index = env.iter().position(|(key, _)| is_path(key));
     let current_path = path_index.map(|index| env[index].1.as_str()).unwrap_or_default();
     let separator = if windows { ';' } else { ':' };
-    let updated_path = if current_path.split(separator).any(|entry| entry == bin_dir) {
-        current_path.to_string()
-    } else {
-        std::iter::once(bin_dir)
-            .chain(current_path.split(separator).filter(|entry| !entry.is_empty()))
-            .collect::<Vec<_>>()
-            .join(&separator.to_string())
-    };
+    // The managed bin dir must lead PATH so managed tools win command
+    // resolution, and it must appear exactly once so repeated calls stay
+    // idempotent. An inherited PATH that already lists it mid-list (for
+    // example a launcher that exports its own PATH prefixes ahead of it)
+    // would otherwise leave it shadowed, so existing copies are dropped
+    // instead of skipping the prepend. Empty entries are dropped too: they
+    // resolve to the current directory and only enable binary planting.
+    let updated_path = std::iter::once(bin_dir)
+        .chain(
+            current_path
+                .split(separator)
+                .filter(|entry| !entry.is_empty() && *entry != bin_dir),
+        )
+        .collect::<Vec<_>>()
+        .join(&separator.to_string());
     if let Some(index) = path_index {
         env[index].1 = updated_path;
     } else {
@@ -441,7 +448,21 @@ mod tests {
             .find(|(key, _)| key.to_lowercase() == "path")
             .map(|(_, value)| value.clone())
             .unwrap();
-        assert!(path_entry.starts_with(&bin_dir));
+        // The managed bin dir must lead PATH exactly once, even when the
+        // inherited PATH already lists it mid-list behind launcher-exported
+        // prefixes.
+        let separator = if cfg!(windows) { ';' } else { ':' };
+        let entries: Vec<&str> = path_entry.split(separator).collect();
+        assert_eq!(
+            entries.first(),
+            Some(&bin_dir.as_str()),
+            "PATH must start with the managed bin dir: {path_entry}"
+        );
+        assert_eq!(
+            entries.iter().filter(|entry| **entry == bin_dir).count(),
+            1,
+            "managed bin dir must appear exactly once: {path_entry}"
+        );
 
         let second = get_shell_env();
         let second_path = second
@@ -450,6 +471,31 @@ mod tests {
             .map(|(_, value)| value.clone())
             .unwrap();
         assert_eq!(path_entry, second_path);
+    }
+
+    // Regression (product): an inherited PATH that already contains the
+    // managed bin dir mid-list must get it moved to the front exactly once,
+    // not left in place. Host launchers export their own PATH prefixes ahead
+    // of the agent bin dir, which used to leave the managed tools shadowed
+    // (observed on Windows where the test harness prepends toolchain dirs).
+    #[test]
+    fn shell_env_moves_an_inherited_mid_list_bin_dir_to_the_front() {
+        let posix = shell_env_with_bin_dir(
+            vec![("PATH".into(), "/usr/bin:/managed:/extra".into())],
+            "/managed",
+            false,
+        );
+        assert_eq!(posix, vec![("PATH".into(), "/managed:/usr/bin:/extra".into())]);
+
+        let windows = shell_env_with_bin_dir(
+            vec![("Path".into(), r"C:\Toolchain;C:\Managed;C:\Tools".into())],
+            r"C:\Managed",
+            true,
+        );
+        assert_eq!(
+            windows,
+            vec![("Path".into(), r"C:\Managed;C:\Toolchain;C:\Tools".into())]
+        );
     }
 
     #[test]

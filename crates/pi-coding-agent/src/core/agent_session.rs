@@ -27534,7 +27534,15 @@ mod rlm_session_t10_tests {
             session.has_pending_admission_waiters(),
             "a held commit fence is a pending admission waiter (agent-session.ts:6338-6344)"
         );
+        // `release()` only signals the oneshot; the spawned fence driver clears
+        // the commit owner afterwards and then notifies checkpoint waiters, so
+        // the clear is asynchronous by design. Poll for it with a deadline
+        // instead of asserting a synchronous transition.
         fence.release();
+        let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(5);
+        while session.has_pending_admission_waiters() && tokio::time::Instant::now() < deadline {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
         assert!(
             !session.has_pending_admission_waiters(),
             "releasing the fence clears the waiter"

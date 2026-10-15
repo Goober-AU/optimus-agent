@@ -65,6 +65,40 @@ def run(coro):
     return asyncio.run(coro)
 
 
+def _process_alive(pid: int) -> bool:
+    """Whether ``pid`` names a running process.
+
+    ``os.kill(pid, 0)`` liveness probing is POSIX-only: on Windows signal 0 is
+    CTRL_C_EVENT, which fails with WinError 87 for pids outside the caller's
+    console process group and never raises ProcessLookupError for reaped pids.
+    On Windows probe the native OpenProcess/GetExitCodeProcess handle instead.
+    """
+    if os.name != "nt":
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        return True
+    import ctypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.OpenProcess.restype = ctypes.c_void_p
+    kernel32.OpenProcess.argtypes = (ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32)
+    kernel32.GetExitCodeProcess.argtypes = (ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint32))
+    kernel32.CloseHandle.argtypes = (ctypes.c_void_p,)
+    handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+    if not handle:
+        # ERROR_INVALID_PARAMETER (87) means the pid is gone; ERROR_ACCESS_DENIED (5) means it exists.
+        return ctypes.get_last_error() == 5
+    try:
+        exit_code = ctypes.c_uint32()
+        if not kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+            return True
+        return exit_code.value == 259  # STILL_ACTIVE
+    finally:
+        kernel32.CloseHandle(handle)
+
+
 class FakeStack:
     def __init__(self):
         self.closed = 0
@@ -523,13 +557,12 @@ class McpRegistryTest(unittest.TestCase):
                 with mock.patch.object(mcp, "_config", new=mock.AsyncMock(return_value=config)):
                     await mcp._registry.tools("task-tools")
                     pid = int(pid_file.read_text())
-                    os.kill(pid, 0)
+                    self.assertTrue(_process_alive(pid))
                     await mcp._registry.reload("task-tools")
                     return pid
 
             pid = run(scenario())
-            with self.assertRaises(ProcessLookupError):
-                os.kill(pid, 0)
+            self.assertFalse(_process_alive(pid))
 
     def test_real_stdio_startup_diagnostic_is_safe_bounded_and_reaped(self):
         secret = "stdio-secret-SENTINEL"
@@ -565,8 +598,7 @@ class McpRegistryTest(unittest.TestCase):
         self.assertNotIn("\x00", diagnostic)
         self.assertLessEqual(len(diagnostic.encode()), mcp._STDERR_BYTE_LIMIT + 1200)
         self.assertLessEqual(len(diagnostic.splitlines()), mcp._STDERR_LINE_LIMIT + 1)
-        with self.assertRaises(ProcessLookupError):
-            os.kill(pid, 0)
+        self.assertFalse(_process_alive(pid))
 
     def test_successful_stdio_discards_startup_stderr(self):
         with tempfile.TemporaryDirectory() as tmp:
