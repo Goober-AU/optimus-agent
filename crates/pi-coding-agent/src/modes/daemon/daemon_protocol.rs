@@ -75,8 +75,10 @@ pub const DAEMON_COMMAND_ENVELOPE_MIN_PROTOCOL_VERSION: u32 = 7;
 // newer readers default to catalog limits when it is absent. No command or startup gate.
 // Revision 39 adds optional, capability-gated communicationActivity roster metadata.
 // Existing roster commands/events and startup remain compatible.
-pub const DAEMON_SCHEMA_REVISION: u32 = 39;
-pub const DAEMON_SCHEMA_ID: &str = "protocol-7-schema-39-communication-activity";
+// Revision 40 advertises optional OCC-2 support. Family summaries carry optional
+// occCapability; absent peers use OCC-1. No new commands or startup requirement.
+pub const DAEMON_SCHEMA_REVISION: u32 = 40;
+pub const DAEMON_SCHEMA_ID: &str = "protocol-7-schema-40-occ2-communication";
 
 pub type DaemonProtocolName = String;
 pub type DaemonProtocolVersion = u32;
@@ -167,6 +169,7 @@ pub enum DaemonServerCapability {
     NodeExecutionMode,
     ClangExecutionMode,
     AgentCommunicationActivity,
+    Occ2Communication,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -217,7 +220,7 @@ pub const DAEMON_SUPPORTED_CLIENT_CAPABILITIES: [DaemonClientCapability; 7] = [
 /// `DAEMON_DEFAULT_SERVER_CAPABILITIES`: the supported client list plus the
 /// server-only surfaces. `direct_peer_transport` and `agent_roster` are
 /// deliberately absent, exactly as in the TypeScript.
-pub const DAEMON_DEFAULT_SERVER_CAPABILITIES: [DaemonServerCapability; 30] = [
+pub const DAEMON_DEFAULT_SERVER_CAPABILITIES: [DaemonServerCapability; 31] = [
     DaemonServerCapability::AttachSnapshot,
     DaemonServerCapability::EventSequence,
     DaemonServerCapability::ExtensionUi,
@@ -248,6 +251,7 @@ pub const DAEMON_DEFAULT_SERVER_CAPABILITIES: [DaemonServerCapability; 30] = [
     DaemonServerCapability::NodeExecutionMode,
     DaemonServerCapability::ClangExecutionMode,
     DaemonServerCapability::AgentCommunicationActivity,
+    DaemonServerCapability::Occ2Communication,
 ];
 
 /// `{ dev: number; ino: number }` on the peer transport ticket.
@@ -3092,7 +3096,7 @@ mod tests {
 
     #[test]
     fn keeps_the_advertised_schema_identity() {
-        assert_eq!(DAEMON_SCHEMA_ID, format!("protocol-{DAEMON_PROTOCOL_VERSION}-schema-{DAEMON_SCHEMA_REVISION}-communication-activity"));
+        assert_eq!(DAEMON_SCHEMA_ID, format!("protocol-{DAEMON_PROTOCOL_VERSION}-schema-{DAEMON_SCHEMA_REVISION}-occ2-communication"));
     }
 
     #[test]
@@ -3126,6 +3130,29 @@ mod tests {
         assert!(meets_daemon_command_compatibility(&older, &daemon_outbound_compatibility("roster_update")));
         assert_eq!(daemon_command_compatibility("attach"), DaemonCommandCompatibility::legacy());
         assert_eq!(daemon_outbound_compatibility("response"), DaemonCommandCompatibility::legacy());
+    }
+
+    #[test]
+    fn occ2_metadata_and_controls_leave_old_peers_on_legacy_commands() {
+        assert!(DAEMON_DEFAULT_SERVER_CAPABILITIES.contains(&DaemonServerCapability::Occ2Communication));
+        let older = DaemonCompatibilityHello {
+            protocol: daemon_protocol_info(), schema_revision: Some(39),
+            server_capabilities: Some(vec![DaemonServerCapability::AgentRoster, DaemonServerCapability::AgentCommunicationActivity]),
+        };
+        assert!(!meets_daemon_command_compatibility(&older,
+            &DaemonCommandCompatibility::capability(DaemonServerCapability::Occ2Communication)));
+        let current = DaemonCompatibilityHello {
+            protocol: daemon_protocol_info(), schema_revision: Some(40),
+            server_capabilities: Some(DAEMON_DEFAULT_SERVER_CAPABILITIES.into_iter().chain([DaemonServerCapability::AgentRoster]).collect()),
+        };
+        for peer in [&older, &current] {
+            for command in ["attach", "list_agent_peers", "send_message", "roster_subscribe"] {
+                assert!(meets_daemon_command_compatibility(peer, &daemon_command_compatibility(command)), "command {command} at {:?}", peer.schema_revision);
+            }
+            for event in ["response", "session_event", "roster_update"] {
+                assert!(meets_daemon_command_compatibility(peer, &daemon_outbound_compatibility(event)), "event {event} at {:?}", peer.schema_revision);
+            }
+        }
     }
 
     #[test]

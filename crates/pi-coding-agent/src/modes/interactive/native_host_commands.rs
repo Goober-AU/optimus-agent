@@ -3,6 +3,8 @@ use super::*;
 
 #[path = "session_stats_data.rs"]
 mod stats_data;
+#[path = "occ_control.rs"]
+mod occ_control;
 #[path = "session_stats_panel.rs"]
 mod stats_panel;
 pub(super) use stats_panel::StatsDock;
@@ -553,6 +555,7 @@ pub(super) async fn run(
         "share" => return share(connection, send).await,
         "traces" => return traces(connection, send, args).await,
         "monitor" => return monitor(send, args).await,
+        "occ" => return occ_control::run(connection, send, args).await,
         "update" => {
             let _ = send.send(HostEvent::RunUpdate(
                 crate::core::prompt_templates::parse_command_args(args),

@@ -90,6 +90,22 @@ Kernel helpers: `from rlm.occ1 import Occ1Message` -
 `validate_index_gaps(message)` for the contiguity rule. Malformed OCC-1
 must be rejected, never guessed.
 
+## Optional OCC-2 transport
+
+OCC-1 remains the default. The user can open `/occ`, inspect `/occ status`,
+or use `/occ 2 on` and `/occ 2 off`. OCC-2 is experimental and off by default.
+Continue authoring valid OCC-1 messages: when enabled, the native transport
+negotiates a shared dialect and wraps complete contract messages as OCC-2.
+Plain English, OCC-1 deltas, and messages without a compatible peer stay unchanged.
+The receiving model gets validated symbolic text with its codebook; invalid
+symbolic text uses the validated OCC-1 fallback when available. The durable
+record retains both encodings. This mode does not promise lower total token use.
+
+The subagent bar flashes neon blue for delivered messages: TXT (plain text),
+OCC1 (structured English), or OCC2 (validated symbolic encoding). Pulses last
+1.4 seconds and do not indicate model generation or queued sends. OCC-3 remains
+research-only; there is no latent indicator or runtime toggle.
+
 ## Safety
 
 - Do not delete a child immediately after `send`: delivered follow-ups may still

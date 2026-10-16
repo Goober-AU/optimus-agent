@@ -566,7 +566,7 @@ impl AgentSession {
             expand_prompt_templates: Some(false), source: Some(crate::core::session_action_store::InputSource::Extension),
             custom_message: Some(CustomMessage {
                 role: "custom".into(), custom_type: AGENT_MESSAGE_CUSTOM_TYPE.into(), content: CustomMessageContent::Text(content.clone()), display: true,
-                details: Some(serde_json::json!({ "id": format!("spawn:{}", current.id), "message": dual_prompt, "from": { "sessionId": self.session_id(), "sessionName": self.session_name(), "activeSessionId": self.current_active_session_id().await }, "fromRelationship": "parent" })),
+                details: Some(serde_json::json!({ "id": format!("spawn:{}", current.id), "message": dual_prompt, "target": { "sessionId": child.session_id() }, "from": { "sessionId": self.session_id(), "sessionName": self.session_name(), "activeSessionId": self.current_active_session_id().await }, "fromRelationship": "parent" })),
                 timestamp: now_ms_i64(),
             }), ..Default::default()
         })).await?;

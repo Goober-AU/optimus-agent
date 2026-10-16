@@ -4196,7 +4196,7 @@ async fn run_builtin_command(
             let _ = send.send(HostEvent::MenuTiming(started));
             Ok(CommandOutput::Nothing)
         }
-        "btw" | "side" | "fork" | "logout" | "scoped-models" | "share" | "traces" | "monitor" | "tree" | "update" | "debug" | "mcp" | "jev" | "stats" => native_commands::run(connection, send, if name == "side" { "btw" } else { name }, args).await,
+        "btw" | "side" | "fork" | "logout" | "scoped-models" | "share" | "traces" | "monitor" | "occ" | "tree" | "update" | "debug" | "mcp" | "jev" | "stats" => native_commands::run(connection, send, if name == "side" { "btw" } else { name }, args).await,
         "settings" => {
             let started = Instant::now();
             let _ = send.send(HostEvent::Settings(connection.get_state().await?));

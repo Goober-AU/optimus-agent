@@ -802,7 +802,9 @@ fn communication_activity_reaches_the_supervisor_roster_after_real_delivery() {
     runtime.block_on(async {
         let client = DaemonClient::create(&fixture.socket);
         client.connect(1000).await.unwrap();
-        assert!(client.wait_for_hello(1000).await.unwrap().supports("agent_communication_activity"));
+        let hello = client.wait_for_hello(1000).await.unwrap();
+        assert!(hello.supports("agent_communication_activity"));
+        assert!(hello.supports("occ2_communication"));
         let mut sessions = Vec::new();
         for prompt in ["source baseline", "target baseline"] {
             let created = request(&client, json!({"type":"create", "config":{
@@ -814,7 +816,12 @@ fn communication_activity_reaches_the_supervisor_roster_after_real_delivery() {
             sessions.push(active);
         }
         let mut ids = Vec::new();
-        for (message, kind) in [("plain private message", "text"), ("OCC/1\nTASK=t\nKIND=RESULT\nSTATUS=done", "occ1")] {
+        let contract = pi_coding_agent::core::occ::contract::AgentCommMessage::new("RESULT", "t", "done");
+        let symbolic = pi_coding_agent::core::occ::occ2::encode_dual(&contract,
+            &pi_coding_agent::core::occ::dialect::DialectCard::sym_v1()).unwrap();
+        let fallback = symbolic.replace("D=sym-v1@1", "D=unknown@1");
+        for (message, kind) in [("plain private message", "text"), ("OCC/1\nTASK=t\nKIND=RESULT\nSTATUS=done", "occ1"),
+            (symbolic.as_str(), "symbolic"), (fallback.as_str(), "occ1")] {
             let receipt = request(&client, json!({"type":"send_message", "fromActiveSessionId":sessions[0],
                 "targetActiveSessionId":sessions[1], "message":message})).await;
             let id = receipt["id"].as_str().unwrap().to_string();
@@ -835,6 +842,8 @@ fn communication_activity_reaches_the_supervisor_roster_after_real_delivery() {
                 assert!(Instant::now() < deadline, "delivery missing from roster: {roster}");
                 tokio::time::sleep(Duration::from_millis(50)).await;
             }
+            // Four formats exceed the three-message burst budget; allow one refill.
+            tokio::time::sleep(Duration::from_millis(1100)).await;
         }
         let failed = client.request(json!({"type":"send_message", "fromActiveSessionId":sessions[0],
             "targetActiveSessionId":sessions[1], "message":""}).as_object().unwrap().clone(), Some(1000), Default::default()).await.unwrap();
@@ -846,7 +855,7 @@ fn communication_activity_reaches_the_supervisor_roster_after_real_delivery() {
         let roster = request(&client, json!({"type":"roster_subscribe"})).await;
         let row = roster["roster"].as_array().unwrap().iter().find(|row| row["summary"]["activeSessionId"] == sessions[1]).unwrap();
         let deliveries = row["summary"]["communicationActivity"]["deliveries"].as_array().unwrap();
-        assert_eq!(deliveries.len(), 2);
+        assert_eq!(deliveries.len(), 4);
         assert!(ids.iter().all(|id| deliveries.iter().any(|delivery| delivery["id"] == *id)));
         client.close().await;
     });

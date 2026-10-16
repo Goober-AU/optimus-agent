@@ -1344,6 +1344,7 @@ pub trait AgentConnection: Send + Sync {
     /// Whether the current execution host understands expanded Jev settings.
     /// Local settings writes must check this too, not only daemon RPCs.
     fn supports_jev_dynamic(&self) -> bool { false }
+    fn supports_occ2_communication(&self) -> bool { false }
     fn supports_execution_mode(&self) -> bool { false }
     fn supports_node_execution_mode(&self) -> bool { false }
     fn supports_clang_execution_mode(&self) -> bool { false }

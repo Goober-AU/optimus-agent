@@ -19,7 +19,7 @@
 //!   enabled, delta exclusion (OQ4), and the R1 size guard (plain OCC-1
 //!   instead of truncation).
 //! - `t06` prompt seam: a dual body renders header lines plus the
-//!   symbolic section only; the durable record keeps the dual verbatim;
+//!   codebook and symbolic section only; the durable record keeps the dual verbatim;
 //!   plain and OCC-1 bodies render byte-identically; the prompt-id parser
 //!   still round-trips.
 //! - `t07` negotiation: capability absence keeps OCC-1; `OccCapability`
@@ -684,12 +684,14 @@ fn t06_prompt_sentinel_split_and_record_verbatim() {
         let message = build_message(&entry.payload);
         let occ1 = occ1_wire(&message);
         let dual = dual_wire(&message, &card);
-        assert_eq!(
-            agent_session_message_prompt_body(&dual).to_string() + "\n#FALLBACK-OCC1\n" + &occ1,
-            dual
-        );
+        let rendered = agent_session_message_prompt_body(&dual);
+        let (legend, symbolic) = rendered.split_once("\n\n").expect("codebook precedes symbolic body");
+        assert!(legend.contains("T:task_id") && legend.contains("F:finding.statement"));
+        assert_eq!(symbolic.to_string() + "\n#FALLBACK-OCC1\n" + &occ1, dual);
+        let unknown = dual.replace("D=sym-v1@1", "D=unknown@1");
+        assert_eq!(agent_session_message_prompt_body(&unknown), occ1);
 
-        // Dual body: the prompt shows the symbolic section only.
+        // Dual body: the prompt shows the codebook and symbolic section only.
         let prompt = create_agent_session_message_prompt(&sample_payload(&dual));
         assert!(prompt.contains("OCC/2 D=sym-v1@1 C="), "{}: symbolic header", entry.id);
         assert!(!prompt.contains(occ2::OCC2_FALLBACK_SENTINEL), "{}: no sentinel", entry.id);

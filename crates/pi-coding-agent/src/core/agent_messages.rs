@@ -792,18 +792,27 @@ fn split_occ2_dual_body(body: &str) -> Option<(&str, &str)> {
     None
 }
 
-/// The body a recipient model should see (design section 3): the symbolic
-/// section of a dual payload, or the message verbatim when it is not a
-/// dual payload (OCC-0/OCC-1, or the feature off). Only bodies that start
-/// with the OCC-2 header are ever split, so every other body is
-/// byte-identical to the previous behavior.
-pub fn agent_session_message_prompt_body(message: &str) -> &str {
-    if message.starts_with(OCC2_HEADER) {
-        if let Some((symbolic, _)) = split_occ2_dual_body(message) {
-            return symbolic.trim_end_matches('\n');
+/// Validate before exposing symbolic text; retain the durable dual payload.
+pub fn agent_session_message_prompt_body(message: &str) -> std::borrow::Cow<'_, str> {
+    use std::borrow::Cow;
+    if !message.starts_with(OCC2_HEADER) {
+        return Cow::Borrowed(message);
+    }
+    let registry = DialectRegistry::with_sym_v1();
+    if occ2::decode(message, &registry).is_ok() {
+        let symbolic = split_occ2_dual_body(message).map(|(body, _)| body).unwrap_or(message).trim_end_matches('\n');
+        // The model needs the codebook even when this is its first OCC-2 task.
+        let card = registry.get("sym-v1", 1).expect("builtin dialect");
+        let slots = card.symbol_table.slots.iter().map(|(name, symbol)| format!("{symbol}:{name}")).collect::<Vec<_>>().join(", ");
+        let subfields = card.symbol_table.subfields.iter().map(|(name, symbol)| format!("{name}:{symbol}")).collect::<Vec<_>>().join(", ");
+        return Cow::Owned(format!("OCC-2 sym-v1 codebook: {slots}. Indexed fields use 1-based indices; suffixes: {subfields}. Values follow '='; evidence references are comma-separated. Reply using OCC-1; transport handles encoding.\n\n{symbolic}"));
+    }
+    if occ2::occ1_fallback(message).is_ok() {
+        if let Some((_, fallback)) = split_occ2_dual_body(message) {
+            return Cow::Borrowed(fallback);
         }
     }
-    message
+    Cow::Borrowed(message)
 }
 
 /// Incidents per (sender, listener) pair before OCC-2 is disabled for
@@ -1847,6 +1856,19 @@ mod tests {
             body
         );
         assert_eq!(create_agent_session_message_prompt(&plain), expected);
+    }
+
+    #[test]
+    fn occ2_prompt_uses_valid_fallback_on_bad_dialect_and_teaches_valid_symbols() {
+        let body = occ1_contract_body();
+        let dual = wrap_outgoing_body(&body, &enabled_policy());
+        let rendered = agent_session_message_prompt_body(&dual);
+        assert!(rendered.contains("T:task_id"));
+        assert!(rendered.contains("OCC/2 D=sym-v1@1"));
+        let unknown = dual.replace("D=sym-v1@1", "D=unknown@1");
+        assert_eq!(agent_session_message_prompt_body(&unknown), body);
+        let broken = "OCC/2 invalid\n#FALLBACK-OCC1\ninvalid";
+        assert_eq!(agent_session_message_prompt_body(broken), broken);
     }
 
     #[test]

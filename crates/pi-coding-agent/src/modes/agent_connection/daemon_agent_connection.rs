@@ -2837,6 +2837,9 @@ impl AgentConnection for DaemonAgentConnection {
     fn supports_node_execution_mode(&self) -> bool {
         self.client.supports_server_capability("node_execution_mode")
     }
+    fn supports_occ2_communication(&self) -> bool {
+        self.client.supports_server_capability("occ2_communication")
+    }
     fn supports_execution_mode(&self) -> bool {
         self.client.supports_server_capability("execution_mode")
     }
