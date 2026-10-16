@@ -270,6 +270,7 @@ pub mod dialect;
 pub mod occ1;
 pub mod occ2;
 pub mod prune;
+pub mod session_settings;
 
 #[cfg(test)]
 mod codec_tests;

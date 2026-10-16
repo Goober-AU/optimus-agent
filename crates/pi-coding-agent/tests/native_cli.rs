@@ -815,6 +815,19 @@ fn communication_activity_reaches_the_supervisor_roster_after_real_delivery() {
             request(&client, json!({"type":"prompt_and_wait", "activeSessionId":active, "message":prompt})).await;
             sessions.push(active);
         }
+        let mut session_files = Vec::new();
+        for active in &sessions {
+            let state = request(&client, json!({"type":"get_connection_state", "activeSessionId":active})).await;
+            session_files.push(state["sessionFile"].as_str().unwrap().to_string());
+        }
+        use pi_coding_agent::core::occ::session_settings;
+        assert!(!session_settings::load(&session_files[0]).unwrap());
+        assert!(!session_settings::load(&session_files[1]).unwrap());
+        session_settings::save(&session_files[0], true).unwrap();
+        assert!(session_settings::load(&session_files[0]).unwrap());
+        assert!(!session_settings::load(&session_files[1]).unwrap(), "same daemon and profile must not share the toggle");
+        let global: Value = serde_json::from_slice(&fs::read(fixture.agent_dir.join("settings.json")).unwrap()).unwrap();
+        assert!(global.get("agentCommunication").is_none());
         let mut ids = Vec::new();
         let contract = pi_coding_agent::core::occ::contract::AgentCommMessage::new("RESULT", "t", "done");
         let symbolic = pi_coding_agent::core::occ::occ2::encode_dual(&contract,

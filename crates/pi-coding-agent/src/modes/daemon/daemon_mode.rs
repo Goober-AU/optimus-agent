@@ -13706,21 +13706,10 @@ impl AgentDaemon {
         }
     }
 
-    /// The OCC-2 capability advertisement for one daemon session
-    /// (OCC-2 integration design, section 4): the shipped `sym-v1` card
-    /// only, and only while the session's `agentCommunication.occ2Enabled`
-    /// setting is on. Absent means OCC-1: negotiation yields no dialect and
-    /// sends to this agent stay OCC-1.
+    /// Advertise the dialect only when enabled for this chat or its parent chat.
     fn occ_capability_for(&self, session: &Arc<dyn DaemonSession>) -> Option<OccCapability> {
-        session
-            .settings_manager()
-            .and_then(|settings| {
-                settings
-                    .lock()
-                    .expect("settings manager poisoned")
-                    .get_agent_communication_occ2_enabled()
-                    .then_some(OccCapability::here())
-            })
+        crate::core::occ::session_settings::enabled(session.session_file().as_deref())
+            .then_some(OccCapability::here())
     }
 
     /// `createAgentMessageAgentSummary(state)`.
@@ -13832,15 +13821,9 @@ impl AgentDaemon {
                 .len()
                 .checked_sub(2)
                 .and_then(|index| passive.chain.get(index));
-            // A passive subagent has no live session of its own. A resident
-            // root carries the family's settings (every session in one
-            // daemon shares the codec build), so its flag decides the
-            // sym-v1 advertisement; a fully saved tree has no settings
-            // source and stays conservative (absent = OCC-1).
-            let occ_capability = match &passive.root {
-                PassiveRlmRoot::Resident(state) => self.occ_capability_for(&self.session_of(state)),
-                PassiveRlmRoot::Saved(_) => None,
-            };
+            // Saved children use the same persisted preference and ancestry as live ones.
+            let occ_capability = crate::core::occ::session_settings::enabled(Some(&entry.session_file))
+                .then_some(OccCapability::here());
             local_agents.push(AgentSessionMessageAgentSummary {
                 // Before hydration the persisted session id is its
                 // supervisor-routable id.

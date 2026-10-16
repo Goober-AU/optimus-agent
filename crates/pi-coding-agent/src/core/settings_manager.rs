@@ -1908,19 +1908,7 @@ impl SettingsManager {
     /// (dev), structured OCC-1 bodies are dual-encoded against the
     /// negotiated dialect and recipients see the symbolic section.
     pub fn get_agent_communication_occ2_enabled(&self) -> bool {
-        // Read only this setting live so existing children and daemon workers
-        // observe /occ immediately without reloading unrelated runtime overrides.
-        if let Some(enabled) = nested_bool(&self.runtime_overrides, keys::AGENT_COMMUNICATION, keys::OCC2_ENABLED) {
-            return enabled;
-        }
-        let project = Self::try_load_from_storage(self.storage.as_ref(), SETTINGS_SCOPE_PROJECT);
-        let global = Self::try_load_from_storage(self.storage.as_ref(), SETTINGS_SCOPE_GLOBAL);
-        if project.error.is_some() || global.error.is_some() {
-            return false;
-        }
-        nested_bool(&project.settings, keys::AGENT_COMMUNICATION, keys::OCC2_ENABLED)
-            .or_else(|| nested_bool(&global.settings, keys::AGENT_COMMUNICATION, keys::OCC2_ENABLED))
-            .unwrap_or(false)
+        nested_bool(&self.settings, keys::AGENT_COMMUNICATION, keys::OCC2_ENABLED).unwrap_or(false)
     }
 
     pub fn set_agent_communication_occ2_enabled(&mut self, enabled: bool) {

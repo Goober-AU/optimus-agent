@@ -93,7 +93,11 @@ must be rejected, never guessed.
 ## Optional OCC-2 transport
 
 OCC-1 remains the default. The user can open `/occ`, inspect `/occ status`,
-or use `/occ 2 on` and `/occ 2 off`. OCC-2 is experimental and off by default.
+or use `/occ 2 on` and `/occ 2 off`. OCC-2 is experimental and off by default in each chat. The toggle is saved with
+that chat and restored on resume. Subagents dynamically inherit their nearest
+parent preference unless they have an explicit override. Other chats and
+independent forks keep their own settings; the toggle never edits global or
+project settings.
 Continue authoring valid OCC-1 messages: when enabled, the native transport
 negotiates a shared dialect and wraps complete contract messages as OCC-2.
 Plain English, OCC-1 deltas, and messages without a compatible peer stay unchanged.
