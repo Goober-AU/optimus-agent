@@ -30,7 +30,7 @@ pub struct Resolution {
 
 impl Default for Resolution {
     fn default() -> Self {
-        Resolution { occ2_enabled: false, source_session_id: None }
+        Resolution { occ2_enabled: true, source_session_id: None }
     }
 }
 
@@ -44,7 +44,7 @@ fn session_id_of(session_file: &str) -> String {
     name.strip_suffix(".jsonl").unwrap_or(&name).to_string()
 }
 
-/// Missing preferences are off. A child's nearest explicit preference wins.
+/// Missing preferences are on. A child's nearest explicit preference wins.
 /// Only bounded headers are read, never the chat transcript; no process cache
 /// means existing workers see the next toggle without being restarted.
 pub fn load(session_file: &str) -> Result<bool, String> {
@@ -165,11 +165,17 @@ mod tests {
         let child = session(&sessions, "child", Some(&a), 1);
         let nested = session(&sessions, "nested", Some(&child), 2);
         let fork = session(&sessions, "fork", Some(&a), 0);
-        for file in [&a, &b, &child, &nested, &fork] { assert!(!load(file).unwrap()); }
+        for file in [&a, &b, &child, &nested, &fork] { assert!(load(file).unwrap()); }
+        save(&a, false).unwrap();
+        assert!(!load(&a).unwrap());
+        assert!(!load(&child).unwrap());
+        assert!(!load(&nested).unwrap());
+        assert!(load(&b).unwrap());
+        assert!(load(&fork).unwrap());
         save(&a, true).unwrap();
         assert!(load(&a).unwrap()); // reopening reads the saved preference
-        assert!(!load(&b).unwrap());
-        assert!(!load(&fork).unwrap());
+        assert!(load(&b).unwrap());
+        assert!(load(&fork).unwrap());
         assert!(load(&child).unwrap());
         assert!(load(&nested).unwrap());
         save(&child, false).unwrap();
@@ -181,7 +187,7 @@ mod tests {
         assert!(load(&b).unwrap());
         assert!(!load(&a).unwrap());
         let new_chat = session(&sessions, "new", None, 0);
-        assert!(!load(&new_chat).unwrap());
+        assert!(load(&new_chat).unwrap());
         // Removing a child override re-inherits the parent, dynamically.
         assert!(!load(&child).unwrap());
         fs::remove_file(preference_path(&child)).unwrap();
@@ -198,10 +204,10 @@ mod tests {
         fs::create_dir(&sessions).unwrap();
         let a = session(&sessions, "a", None, 0);
         let child = session(&sessions, "child", Some("a.jsonl"), 1);
-        // Default: off, no source.
+        // Default: on, no source.
         let resolution = resolve(&a).unwrap();
         assert_eq!(resolution, Resolution::default());
-        assert_eq!(preferences(&a).unwrap(), json!({"occ2Enabled": false, "inherited": false, "sourceSessionId": null}));
+        assert_eq!(preferences(&a).unwrap(), json!({"occ2Enabled": true, "inherited": false, "sourceSessionId": null}));
         // The chat that owns the toggle is not inherited.
         save(&a, true).unwrap();
         let resolution = resolve(&a).unwrap();
@@ -259,9 +265,9 @@ mod tests {
         fs::write(preference_path(&b), "x".repeat(4097)).unwrap();
         assert!(load(&b).is_err());
         let empty = sessions.join("new.jsonl").to_str().unwrap().to_string();
-        assert!(!load(&empty).unwrap());
-        save(&empty, true).unwrap();
         assert!(load(&empty).unwrap());
+        save(&empty, false).unwrap();
+        assert!(!load(&empty).unwrap());
         assert!(!enabled(None));
     }
 }

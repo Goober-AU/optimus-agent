@@ -137,10 +137,10 @@ fn preference_resolution_isolates_chats_and_inherits_down_subagent_chains() {
     let nested = write_session(&sessions, "nested", Some("child.jsonl"), 2);
     let fork = write_session(&sessions, "fork", Some("chat-a.jsonl"), 0);
 
-    // Defaults: off with no source.
+    // Defaults: on with no source.
     assert_eq!(
         session_settings::preferences(&a).unwrap(),
-        json!({"occ2Enabled": false, "inherited": false, "sourceSessionId": null})
+        json!({"occ2Enabled": true, "inherited": false, "sourceSessionId": null})
     );
     // The owning chat is not inherited; other chats and forks stay isolated.
     session_settings::set_preferences(&a, true).unwrap();
@@ -148,8 +148,8 @@ fn preference_resolution_isolates_chats_and_inherits_down_subagent_chains() {
         session_settings::preferences(&a).unwrap(),
         json!({"occ2Enabled": true, "inherited": false, "sourceSessionId": "chat-a"})
     );
-    assert_eq!(session_settings::preferences(&b).unwrap()["occ2Enabled"], json!(false));
-    assert_eq!(session_settings::preferences(&fork).unwrap()["occ2Enabled"], json!(false));
+    assert_eq!(session_settings::preferences(&b).unwrap()["occ2Enabled"], json!(true));
+    assert_eq!(session_settings::preferences(&fork).unwrap()["occ2Enabled"], json!(true));
     // Subagents inherit the nearest explicit preference, dynamically.
     assert_eq!(
         session_settings::preferences(&child).unwrap(),
@@ -525,14 +525,14 @@ fn daemon_owns_occ_preferences_across_chats_failures_and_restart() {
     assert!(hello.supports("occ_session_preferences"));
     assert!(!hello.supports("occ2_communication"), "the pre-41 capability must not be advertised");
 
-    // A chat starts on OCC-1 with no preference recorded.
+    // A chat starts with OCC-2 enabled and no preference recorded.
     let first = create_session(&client, &fixture, None).await;
     let first_state = request(&client, json!({"type":"get_connection_state", "activeSessionId":first})).await;
     let first_file = first_state["sessionFile"].as_str().unwrap().to_string();
     assert!(!first_file.is_empty());
     assert_eq!(
         request(&client, json!({"type":"occ_get_preferences", "activeSessionId":first})).await,
-        json!({"occ2Enabled": false, "inherited": false, "sourceSessionId": null})
+        json!({"occ2Enabled": true, "inherited": false, "sourceSessionId": null})
     );
 
     // Setting the toggle is daemon-owned: the write lands in the daemon's own
@@ -556,11 +556,14 @@ fn daemon_owns_occ_preferences_across_chats_failures_and_restart() {
         json!({"occ2Enabled": true, "inherited": false, "sourceSessionId": set["sourceSessionId"].clone()})
     );
 
+    // An explicit off survives the new default; independent chats stay on.
+    request(&client, json!({"type":"occ_set_preferences", "activeSessionId":first, "occ2Enabled":false})).await;
+    assert_eq!(request(&client, json!({"type":"occ_get_preferences", "activeSessionId":first})).await["occ2Enabled"], json!(false));
     // Independent chats on the same daemon and profile stay isolated.
     let second = create_session(&client, &fixture, None).await;
     assert_eq!(
         request(&client, json!({"type":"occ_get_preferences", "activeSessionId":second})).await["occ2Enabled"],
-        json!(false)
+        json!(true)
     );
 
     // Missing or unknown sessions fail loudly instead of returning a default.

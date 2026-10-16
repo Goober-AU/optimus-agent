@@ -20,13 +20,13 @@ fn parse(args: &str) -> Result<Choice, String> {
         ["status"] => Ok(Choice::Status),
         ["1"] | ["occ1"] | ["off"] | ["2", "off"] | ["occ2", "off"] => Ok(Choice::Set(false)),
         ["2"] | ["occ2"] | ["on"] | ["2", "on"] | ["occ2", "on"] => Ok(Choice::Set(true)),
-        _ => Err("Usage: /occ [status|1|2 on|2 off]. OCC-1 remains enabled as the default and fallback.".into()),
+        _ => Err("Usage: /occ [status|1|2 on|2 off]. OCC-1 remains enabled as the fallback; OCC-2 is enabled by default.".into()),
     }
 }
 
 fn status(enabled: bool) -> String {
     format!(
-        "Agent communication (this chat)\n\nOCC-1: ON (default and fallback)\nOCC-2: {} (experimental symbolic encoding)\n\n/occ 2 on enables OCC-2; /occ 2 off returns to OCC-1.\nSaved for this chat and inherited by its subagents unless they have an override. Other chats are unchanged. Applies to subsequent structured messages. Plain-text messages remain TXT.\nNeon-blue TXT / OCC1 / OCC2 indicators flash on delivered messages. OCC-3 is not active.",
+        "Agent communication (this chat)\n\nOCC-1: ON (fallback)\nOCC-2: {} (adaptive symbolic encoding; default ON)\n\n/occ 2 on enables OCC-2; /occ 2 off returns to OCC-1.\nSaved for this chat and inherited by its subagents unless they have an override. Other chats are unchanged. Applies to subsequent structured messages. Plain-text messages remain TXT.\nNeon-blue TXT / OCC1 / OCC2 indicators flash on delivered messages. OCC-3 is not active.",
         if enabled { "ON" } else { "OFF" }
     )
 }
@@ -68,11 +68,17 @@ async fn read_preference(
         Route::LegacyLocal => {
             let state = connection.get_state().await?;
             let session_file = state.session_file.as_deref().ok_or("This chat has no saved session identity")?;
-            let occ2_enabled = crate::core::occ::session_settings::load(session_file)?;
+            let resolution = crate::core::occ::session_settings::resolve(session_file)?;
+            let occ2_enabled = legacy_enabled(&resolution);
             Ok(serde_json::json!({ "occ2Enabled": occ2_enabled }))
         }
         Route::Unsupported => Err(UNSUPPORTED.to_string()),
     }
+}
+
+// A v0.1.33 daemon still defaults off until a preference is explicitly saved.
+fn legacy_enabled(resolution: &crate::core::occ::session_settings::Resolution) -> bool {
+    resolution.source_session_id.is_some() && resolution.occ2_enabled
 }
 
 /// The effective toggle from a host preference payload.
@@ -146,8 +152,8 @@ pub(super) async fn run(
         Choice::Set(value) => value,
         Choice::Menu => {
             let title = format!("OCC-1 ON · OCC-2 {}", if enabled { "ON" } else { "OFF" });
-            match select(send, &title, &["OCC-1 only (default)", "Enable OCC-2 (experimental)"]).await {
-                Some(choice) => choice == "Enable OCC-2 (experimental)",
+            match select(send, &title, &["OCC-1 only", "Enable OCC-2 (default)"]).await {
+                Some(choice) => choice == "Enable OCC-2 (default)",
                 None => return Ok(CommandOutput::Nothing),
             }
         }
@@ -171,6 +177,18 @@ mod tests {
         }
         for args in ["3 on", "1 off", "2 maybe", "2 on off"] {
             assert!(parse(args).is_err());
+        }
+    }
+
+    #[test]
+    fn legacy_daemon_keeps_its_default_until_an_explicit_preference() {
+        use crate::core::occ::session_settings::Resolution;
+        assert!(!legacy_enabled(&Resolution::default()));
+        for enabled in [false, true] {
+            assert_eq!(legacy_enabled(&Resolution {
+                occ2_enabled: enabled,
+                source_session_id: Some("chat".into()),
+            }), enabled);
         }
     }
 

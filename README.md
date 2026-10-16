@@ -10,7 +10,7 @@
 
 Maintained by [Telemus AI](https://github.com/telemusai).
 
-[Install](#install-and-update) · [Get started](#get-started) · [Memory and learning](#memory-that-you-can-inspect-and-correct) · [Jev](#jev-integration) · [Implementation](#implementation) · [Documentation](#documentation)
+[Install](#install-and-update) · [Get started](#get-started) · [Memory and learning](#memory-that-you-can-inspect-and-correct) · [Agent communication](#occ-agent-communication) · [Jev](#jev-integration) · [Implementation](#implementation) · [Documentation](#documentation)
 
 Optimus is the layer between an AI model and real work: the tools it can use, the context it retains, the agents it coordinates, and the state it recovers when a session ends or a connection drops.
 
@@ -255,6 +255,33 @@ node scripts/summarize-performance-metrics.mjs --dir /path/to/performance-metric
 The recorder does not store prompt bodies, tool arguments, credentials, or reasoning text. Unavailable measurements remain unavailable rather than being reported as zero. Ordinary `/usage` totals are useful, but are not a substitute for this diagnostic breakdown.
 
 Experimental model-facing output reduction, iterative-summary consolidation, and per-variable snapshot storage remain opt-in. Their presence in the code is not a claim of measured speed, quality, or token savings. See [Performance changes](https://github.com/telemusai/optimus-agent/blob/main/docs/performance-update.md) and [Metrics](https://github.com/telemusai/optimus-agent/blob/main/docs/performance-metrics.md).
+
+## OCC agent communication
+
+OCC (Optimus Compact Communication) lets cooperating agents exchange structured tasks, progress, evidence, and results with less repeated prose. The three levels describe different ways to represent that information; ordinary conversational messages can still use plain text.
+
+| Level | What it does | Status in v0.1.34 |
+| --- | --- | --- |
+| **OCC-1 — structured English** | Uses a deterministic `KEY=VALUE` grammar for task identity, status, findings, evidence references, and next actions. Agents can validate and reconstruct the message without guessing. | Available throughout; the authoring format and fallback. |
+| **OCC-2 — symbolic dialects** | Encodes eligible OCC-1 messages using a shared, versioned symbol codebook. The receiver reuses a codebook already present in its context instead of receiving the full legend with every message. | Enabled by default for chats without a saved preference; selected adaptively per message. |
+| **OCC-3 — latent communication** | Research into passing model-internal state, such as a compatible local model's attention cache, alongside a text handoff so the receiver may reuse prior computation. | Upcoming research direction; no production transport, toggle, or latent indicator is active. Requires compatible model/runtime access, which ordinary hosted APIs do not expose. |
+
+OCC-2 negotiates a shared dialect and considers message size, codebook cost, available evaluation evidence, and recent decode failures. Enabling it does not force every message into symbols: small messages, incompatible peers, and messages rejected by the selection guards stay on OCC-1. Plain text and OCC-1 deltas keep their existing form. The enabled experimental path can use unevaluated dialects under reference cost assumptions, so enablement is not proof of savings for your model pair. Each symbolic message retains an OCC-1 fallback; invalid symbolic data uses the validated fallback and records a failure for future selection.
+
+In the repository's DGX GLM 5.3 evaluation, OCC-2 reduced average **wire tokens per item** by 38.6% on the 60-item development split and 39.4% on the 54-item holdout, with the reported fidelity and comprehension checks passing. These results apply to that model pair and workload; they do not establish equivalent savings across other models or total session costs. Codebook setup has an upfront cost that must be amortized over repeated messages. See the [evaluation report](reports/occ2opt/FINAL-REPORT.md) and [holdout results](reports/occ2opt/LIVE-EVAL-HOLDOUT.md).
+
+### Control OCC for the current chat
+
+```text
+/occ             # open communication controls
+/occ status      # show the effective setting
+/occ 2 on        # enable adaptive OCC-2
+/occ 2 off       # use OCC-1 only for structured messages
+```
+
+Settings remain **per chat** and survive resume and daemon restart. Subagents dynamically inherit their nearest parent's saved preference unless they have their own override; unrelated chats and independent forks keep their own settings. Upgrading to v0.1.34 enables OCC-2 in chats with no saved preference, including resumed chats. A previously saved off preference stays off. OCC-1 remains available as the fallback in either mode.
+
+The subagent bar flashes neon blue for delivered **TXT**, **OCC1**, or **OCC2** messages. These indicators show the encoding actually delivered, not the enabled setting, queued sends, or model generation. See the [agent-message guide](resources/agent/skills/agent-message/SKILL.md) for message syntax and the [OCC-3 integration research](research/integration/OCC3-INTEGRATION-DESIGN.md) for the proposed latent path.
 
 ## Jev integration
 
@@ -554,6 +581,7 @@ Use **Ctrl+S** to stash an unfinished prompt. After an ordinary prompt is accept
 | `/heartbeat` | Configure recurring session prompts |
 | `/tree`, `/fork`, `/clone` | Navigate or branch session history |
 | `/telegram` | Manage the Telegram connection |
+| `/occ` | Inspect or change this chat's OCC-2 setting; OCC-1 remains the fallback |
 | `/jev` | Configure Jev credentials, models, full-Jev, Dynamic questions, individual feature gates, and compaction |
 | `/settings`, `/mcp`, `/reload` | Configure and reload integrations and resources |
 

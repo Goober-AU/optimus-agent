@@ -822,11 +822,11 @@ fn communication_activity_reaches_the_supervisor_roster_after_real_delivery() {
             session_files.push(state["sessionFile"].as_str().unwrap().to_string());
         }
         use pi_coding_agent::core::occ::session_settings;
-        assert!(!session_settings::load(&session_files[0]).unwrap());
-        assert!(!session_settings::load(&session_files[1]).unwrap());
-        session_settings::save(&session_files[0], true).unwrap();
         assert!(session_settings::load(&session_files[0]).unwrap());
-        assert!(!session_settings::load(&session_files[1]).unwrap(), "same daemon and profile must not share the toggle");
+        assert!(session_settings::load(&session_files[1]).unwrap());
+        session_settings::save(&session_files[0], false).unwrap();
+        assert!(!session_settings::load(&session_files[0]).unwrap());
+        assert!(session_settings::load(&session_files[1]).unwrap(), "same daemon and profile must not share the toggle");
         let global: Value = serde_json::from_slice(&fs::read(fixture.agent_dir.join("settings.json")).unwrap()).unwrap();
         assert!(global.get("agentCommunication").is_none());
         let mut ids = Vec::new();
