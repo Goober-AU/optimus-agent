@@ -842,6 +842,8 @@ fn communication_activity_reaches_the_supervisor_roster_after_real_delivery() {
                 assert!(Instant::now() < deadline, "delivery missing from roster: {roster}");
                 tokio::time::sleep(Duration::from_millis(50)).await;
             }
+            // Four formats exceed the three-message burst budget; allow one refill.
+            tokio::time::sleep(Duration::from_millis(1100)).await;
         }
         let failed = client.request(json!({"type":"send_message", "fromActiveSessionId":sessions[0],
             "targetActiveSessionId":sessions[1], "message":""}).as_object().unwrap().clone(), Some(1000), Default::default()).await.unwrap();
