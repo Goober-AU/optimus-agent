@@ -103,6 +103,31 @@ fn is_word_character(character: char) -> bool {
     character.is_alphanumeric() || character == '_' || character == '-'
 }
 
+/// Tokenize `value` keeping duplicates: the frequency counterpart of [`words`]
+/// (same character rules, same >=2-char floor, same lowercasing) used by the
+/// BM25 leg's term-frequency counting. [`words`] stays the deduplicating
+/// tokenizer the lexical leg's set membership is built on.
+fn words_all(value: &str) -> Vec<String> {
+    let lower = value.to_lowercase();
+    let mut result: Vec<String> = Vec::new();
+    let characters: Vec<char> = lower.chars().collect();
+    let mut index = 0usize;
+    while index < characters.len() {
+        if is_word_character(characters[index]) {
+            let start = index;
+            while index < characters.len() && is_word_character(characters[index]) {
+                index += 1;
+            }
+            let word: String = characters[start..index].iter().collect();
+            if word.chars().count() >= 2 {
+                result.push(word);
+            }
+        } else {
+            index += 1;
+        }
+    }
+    result
+}
 /// Morphological stem used when `memory.recallQueryStemming` is enabled:
 /// query terms and entry words both reduce to a shared stem so inflected
 /// forms match ("camped" == "camping" == "camps" -> "camp"). Deliberately
@@ -335,6 +360,19 @@ fn source_span_words_stemmed(entry: &HarnessEntry) -> HashSet<String> {
 /// Interned term id, unique inside one corpus index.
 type TermId = u32;
 
+/// Okapi BM25 saturation constant for the `recallBm25` leg. Fixed at the
+/// standard value: fusion modes are what this surface experiments with,
+/// never tuned retrieval parameters.
+pub(crate) const BM25_K1: f64 = 1.2;
+/// Okapi BM25 length-normalization constant for the `recallBm25` leg (G2).
+pub(crate) const BM25_B: f64 = 0.75;
+/// Field weights shared by the lexical leg's score and the BM25 leg's tf
+/// counting (title incl. path+id 3 / body incl. cues 1 / source span 0.5),
+/// so both legs read the same token stream with the same field emphasis.
+const FIELD_WEIGHT_TITLE: f64 = 3.0;
+const FIELD_WEIGHT_BODY: f64 = 1.0;
+const FIELD_WEIGHT_SPAN: f64 = 0.5;
+
 /// One searchable entry reduced to its precomputed form. The three term sets
 /// are interned into sorted `TermId` vectors: binary search over them answers
 /// the same membership questions as the original `HashSet::contains`, without
@@ -351,6 +389,19 @@ struct IndexedEntry {
     body: Vec<TermId>,
     span: Vec<TermId>,
     sources: Vec<MemorySource>,
+    /// BM25 leg (G2): field-weighted term frequencies and the derived weighted
+    /// document length over the same token stream as the three term sets.
+    /// `None` in the default index shape (bit-identical to pre-G2 builds);
+    /// populated only when the index is built in BM25 mode.
+    bm25: Option<Bm25Entry>,
+}
+
+/// Per-entry BM25 data: `tf` maps each interned term to its field-weighted
+/// occurrence count (title 3 / body incl. cues 1 / span 0.5), `len` is the
+/// sum of those weights (the BM25 document length).
+struct Bm25Entry {
+    tf: HashMap<TermId, f64>,
+    len: f64,
 }
 
 /// A whole corpus (project store document or additional harness state)
@@ -369,6 +420,28 @@ pub(crate) struct CorpusIndex {
     df_all: HashMap<TermId, u32>,
     /// Number of active entries; `entries.len()` is the total.
     active_count: usize,
+    /// Sum of BM25 weighted lengths over active entries (0.0 in the default
+    /// index shape); the BM25 leg's average document length numerator.
+    bm25_len_active: f64,
+    /// Sum of BM25 weighted lengths over every retained entry (0.0 in the
+    /// default index shape).
+    bm25_len_all: f64,
+}
+
+/// Count `text` tokens into the BM25 tf map at `weight` (title 3 / body 1 /
+/// span 0.5), interning each (optionally stemmed) token into the lexicon the
+/// same way the term-set build does, so both legs address identical term ids.
+fn bm25_count_field(
+    tf: &mut HashMap<TermId, f64>,
+    lexicon: &mut HashMap<String, TermId>,
+    text: &str,
+    stemming: bool,
+    weight: f64,
+) {
+    for word in words_all(text) {
+        let term = if stemming { stem(&word) } else { word };
+        *tf.entry(intern_term(lexicon, &term)).or_insert(0.0) += weight;
+    }
 }
 
 fn intern_term(lexicon: &mut HashMap<String, TermId>, word: &str) -> TermId {
@@ -394,6 +467,7 @@ impl CorpusIndex {
         project_id: &str,
         host_id: &str,
         stemming: bool,
+        bm25: bool,
     ) -> CorpusIndex {
         let mut lexicon: HashMap<String, TermId> = HashMap::new();
         let mut entries: Vec<IndexedEntry> = Vec::new();
@@ -461,6 +535,34 @@ impl CorpusIndex {
                     .map(|word| intern_term(&mut lexicon, word))
                     .collect();
                 span.sort_unstable();
+                // BM25 leg (G2): count the same token stream with field
+                // weights instead of deduplicating into set membership, so
+                // tf saturation and length normalization can break the score
+                // ties binary matching produces. Only computed in BM25 mode;
+                // the default index keeps the exact pre-G2 shape.
+                let bm25_entry = if bm25 {
+                    let mut tf: HashMap<TermId, f64> = HashMap::new();
+                    bm25_count_field(
+                        &mut tf,
+                        &mut lexicon,
+                        &format!("{} {} {}", entry.title, entry.path, entry.id),
+                        stemming,
+                        FIELD_WEIGHT_TITLE,
+                    );
+                    bm25_count_field(&mut tf, &mut lexicon, &entry.content, stemming, FIELD_WEIGHT_BODY);
+                    for word in prospective_cue_words(entry) {
+                        let term = if stemming { stem(&word) } else { word };
+                        *tf.entry(intern_term(&mut lexicon, &term)).or_insert(0.0) +=
+                            FIELD_WEIGHT_BODY;
+                    }
+                    if let Some(Value::String(span_text)) = entry.metadata.get("sourceSpan") {
+                        bm25_count_field(&mut tf, &mut lexicon, span_text, stemming, FIELD_WEIGHT_SPAN);
+                    }
+                    let len: f64 = tf.values().sum();
+                    Some(Bm25Entry { tf, len })
+                } else {
+                    None
+                };
                 entries.push(IndexedEntry {
                     id: format!("{}:{}:{}", scope.as_str(), entry.kind.as_str(), entry.id),
                     sources: sources(entry),
@@ -470,15 +572,24 @@ impl CorpusIndex {
                     title,
                     body,
                     span,
+                    bm25: bm25_entry,
                 });
             }
         }
         let mut df_active: HashMap<TermId, u32> = HashMap::new();
         let mut df_all: HashMap<TermId, u32> = HashMap::new();
         let mut active_count = 0usize;
+        let mut bm25_len_active = 0.0f64;
+        let mut bm25_len_all = 0.0f64;
         for entry in &entries {
             if entry.active {
                 active_count += 1;
+            }
+            if let Some(bm25) = &entry.bm25 {
+                bm25_len_all += bm25.len;
+                if entry.active {
+                    bm25_len_active += bm25.len;
+                }
             }
             // title ∪ body, each term once, then every span term again.
             let mut title_at = 0usize;
@@ -527,6 +638,8 @@ impl CorpusIndex {
             df_active,
             df_all,
             active_count,
+            bm25_len_active,
+            bm25_len_all,
         }
     }
 }
@@ -548,6 +661,10 @@ struct CorpusCacheKey {
     project_id: String,
     host_id: String,
     stemming: bool,
+    /// BM25 mode (G2 `recallBm25`): selects the index variant that also
+    /// carries per-entry tf maps. Default `false` keys stay byte-identical to
+    /// pre-G2 entries, so enabling the leg never disturbs lexical caches.
+    bm25: bool,
 }
 
 struct CorpusCacheEntry {
@@ -597,6 +714,7 @@ pub(crate) fn cached_file_corpus_index(
     project_id: &str,
     host_id: &str,
     stemming: bool,
+    bm25: bool,
     load: impl FnOnce() -> Option<HarnessState>,
 ) -> Arc<CorpusIndex> {
     let Some((mtime_ns, len)) = file_identity(path) else {
@@ -606,6 +724,7 @@ pub(crate) fn cached_file_corpus_index(
             project_id,
             host_id,
             stemming,
+            bm25,
         ));
     };
     let key = CorpusCacheKey {
@@ -616,6 +735,7 @@ pub(crate) fn cached_file_corpus_index(
         project_id: project_id.to_string(),
         host_id: host_id.to_string(),
         stemming,
+        bm25,
     };
     let registry = CORPUS_INDEX_CACHE.get_or_init(|| Mutex::new(HashMap::new()));
     if let Some(cached) = registry
@@ -633,9 +753,12 @@ pub(crate) fn cached_file_corpus_index(
             project_id,
             host_id,
             stemming,
+            bm25,
         ));
     };
-    let index = Arc::new(CorpusIndex::build(&state, base_scope, project_id, host_id, stemming));
+    let index = Arc::new(CorpusIndex::build(
+        &state, base_scope, project_id, host_id, stemming, bm25,
+    ));
     let mut caches = registry
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -667,21 +790,23 @@ pub(crate) fn adhoc_corpus_index(
     project_id: &str,
     host_id: &str,
     stemming: bool,
+    bm25: bool,
 ) -> Arc<CorpusIndex> {
-    Arc::new(CorpusIndex::build(state, base_scope, project_id, host_id, stemming))
+    Arc::new(CorpusIndex::build(state, base_scope, project_id, host_id, stemming, bm25))
 }
 
 /// The searching store's own corpus, cached by its `harness_state.json`
 /// identity. On a read failure the original search searched an empty corpus
 /// for that query; `None` from the loader keeps that behavior without
 /// caching it.
-fn cached_store_corpus_index(store: &MemoryStore, stemming: bool) -> Arc<CorpusIndex> {
+fn cached_store_corpus_index(store: &MemoryStore, stemming: bool, bm25: bool) -> Arc<CorpusIndex> {
     cached_file_corpus_index(
         &store.path,
         MemoryScope::Project,
         &store.project.id,
         &store.host_id,
         stemming,
+        bm25,
         || store.read().ok().map(|document| document.harness()),
     )
 }
@@ -700,7 +825,7 @@ pub(crate) fn search_corpora(
     // corpus index, the prebuilt additional indexes and the query terms all
     // use the same mode, so stemmed terms can never hit a plain-word
     // lexicon (and vice versa).
-    let store_index = cached_store_corpus_index(store, stemming);
+    let store_index = cached_store_corpus_index(store, stemming, false);
     let corpora: Vec<&CorpusIndex> = std::iter::once(store_index.as_ref())
         .chain(additional.iter().map(|index| index.as_ref()))
         .collect();
@@ -818,10 +943,140 @@ pub fn search_memory(
                 &store.project.id,
                 &store.host_id,
                 stemming,
+                false,
             )
         })
         .collect();
     search_corpora(store, query, &additional, include_inactive, stemming)
+}
+
+/// The BM25 retrieval leg (G2, `recallBm25`): rank the same corpora with
+/// Okapi BM25 over the same token stream the lexical leg scores by set
+/// membership. Field-weighted tf (title 3 / body incl. cues 1 / span 0.5)
+/// saturates with k1=1.2 and normalizes by document length with b=0.75; the
+/// IDF formula and the DF/N population are the lexical leg's own
+/// (`ln((N+1)/(df+1))+1`), so the two legs read identical corpus statistics
+/// and differ only in the scoring function. The caller fuses the returned
+/// ranked list with the lexical lists via RRF; BM25 scores are never
+/// max-merged with lexical scores (different scales).
+pub(crate) fn bm25_search_corpora(
+    store: &MemoryStore,
+    query: &str,
+    additional: &[Arc<CorpusIndex>],
+    include_inactive: bool,
+    stemming: bool,
+) -> Vec<MemoryHit> {
+    let store_index = cached_store_corpus_index(store, stemming, true);
+    let corpora: Vec<&CorpusIndex> = std::iter::once(store_index.as_ref())
+        .chain(additional.iter().map(|index| index.as_ref()))
+        .collect();
+    let terms = if stemming {
+        words_stemmed(query)
+    } else {
+        words(query)
+    };
+    // Document frequency over every eligible entry, including nonmatches, once
+    // per term - the same population and the same arithmetic the lexical leg
+    // uses, so both legs' IDF values agree.
+    let mut term_df = vec![0usize; terms.len()];
+    let mut total_documents = 0usize;
+    for corpus in &corpora {
+        let df = if include_inactive {
+            &corpus.df_all
+        } else {
+            &corpus.df_active
+        };
+        total_documents += if include_inactive {
+            corpus.entries.len()
+        } else {
+            corpus.active_count
+        };
+        for (index, term) in terms.iter().enumerate() {
+            if let Some(&id) = corpus.lexicon.get(term) {
+                term_df[index] += df.get(&id).copied().unwrap_or(0) as usize;
+            }
+        }
+    }
+    let total_documents = total_documents as f64;
+    let term_idf: Vec<f64> = term_df
+        .iter()
+        .map(|&df| ((total_documents + 1.0) / (df as f64 + 1.0)).ln() + 1.0)
+        .collect();
+    // Average weighted document length over the same population the lexical
+    // leg counts (active entries by default, all entries for
+    // `include_inactive`). Guarded: scoring only touches entries with tf > 0,
+    // which necessarily have len > 0, so the fallback only covers degenerate
+    // empty-corpus cases that cannot produce hits anyway.
+    let mut total_len = 0.0f64;
+    let mut total_docs = 0usize;
+    for corpus in &corpora {
+        if include_inactive {
+            total_len += corpus.bm25_len_all;
+            total_docs += corpus.entries.len();
+        } else {
+            total_len += corpus.bm25_len_active;
+            total_docs += corpus.active_count;
+        }
+    }
+    let avgdl = if total_docs > 0 && total_len > 0.0 {
+        total_len / total_docs as f64
+    } else {
+        1.0
+    };
+    let mut hits: Vec<MemoryHit> = Vec::new();
+    for corpus in &corpora {
+        // Resolve each query term against this corpus once, not per entry.
+        let resolved: Vec<Option<TermId>> = terms
+            .iter()
+            .map(|term| corpus.lexicon.get(term).copied())
+            .collect();
+        for entry in &corpus.entries {
+            if !include_inactive && !entry.active {
+                continue;
+            }
+            let Some(bm25) = entry.bm25.as_ref() else {
+                // A default-shaped index reached the BM25 leg: no tf data.
+                continue;
+            };
+            let mut matched: Vec<usize> = Vec::new();
+            let mut score = 0.0f64;
+            // Okapi saturation denominator, per entry via its own length.
+            let norm = BM25_K1 * (1.0 - BM25_B + BM25_B * (bm25.len / avgdl));
+            for (index, id) in resolved.iter().enumerate() {
+                let Some(id) = id else { continue };
+                let Some(&tf) = bm25.tf.get(id) else { continue };
+                matched.push(index);
+                score += term_idf[index] * (tf * (BM25_K1 + 1.0)) / (tf + norm);
+            }
+            if !terms.is_empty() && matched.is_empty() {
+                continue;
+            }
+            hits.push(MemoryHit {
+                id: entry.id.clone(),
+                scope: entry.scope,
+                entry: entry.entry.clone(),
+                score,
+                matched: matched
+                    .iter()
+                    .map(|&index| terms[index].clone())
+                    .collect(),
+                freshness: MemoryFreshness::Unknown,
+                sources: entry.sources.clone(),
+            });
+        }
+    }
+    hits.sort_by(|left, right| {
+        right
+            .score
+            .partial_cmp(&left.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            // Latest-wins tie-break, identical to the lexical leg's ordering
+            // discipline: for equal scores, newer entries rank first.
+            .then_with(|| right.entry.created_at.cmp(&left.entry.created_at))
+            .then_with(|| right.scope.order().cmp(&left.scope.order()))
+            .then_with(|| left.id.cmp(&right.id))
+    });
+    hits
 }
 
 pub struct RecallResult {
@@ -2339,6 +2594,150 @@ mod tests {
         for own in &results {
             assert_eq!(*own.lock().unwrap(), expected);
         }
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    // ------------------------------------------------------------------
+    // BM25 leg (G2, `recallBm25`): same token stream as the lexical leg,
+    // tf-saturated and length-normalized scores instead of set membership.
+    // ------------------------------------------------------------------
+
+    fn applied_entries(store: &MemoryStore, edits: serde_json::Value) {
+        let runtime = runtime();
+        let proposal = crate::core::refinement::refinement::normalize_refinement_proposal(&edits);
+        let revision = store.read().unwrap().memory.revision;
+        runtime
+            .block_on(store.apply(
+                &proposal,
+                crate::core::memory::store::ApplyOptions {
+                    event_id: format!("bm25_fixture_{revision}"),
+                    expected_revision: revision,
+                    ..Default::default()
+                },
+            ))
+            .unwrap();
+    }
+
+    #[test]
+    fn bm25_leg_matches_the_lexical_entry_set_over_the_same_tokens() {
+        let (store, root) = fixture();
+        applied_entries(
+            &store,
+            serde_json::json!({
+                "summary": "bm25 set parity", "rationale": "r", "expectedOutcome": "o",
+                "edits": [
+                    {"action": "create", "kind": "memory", "id": "alpha", "title": "Amber", "content": "cache design"},
+                    {"action": "create", "kind": "memory", "id": "beta", "title": "Cobalt", "content": "backup design"},
+                    {"action": "create", "kind": "memory", "id": "nebula", "title": "Nebula", "content": "isolated design"}
+                ]
+            }),
+        );
+        for query in ["design", "amber cobalt", "nebula design", "quasar"] {
+            let lexical = search_memory(&store, query, &[], false);
+            let bm25 = bm25_search_corpora(&store, query, &[], false, false);
+            let mut lexical_ids: Vec<String> =
+                lexical.iter().map(|hit| hit.id.clone()).collect();
+            let mut bm25_ids: Vec<String> = bm25.iter().map(|hit| hit.id.clone()).collect();
+            lexical_ids.sort();
+            bm25_ids.sort();
+            assert_eq!(
+                lexical_ids, bm25_ids,
+                "query {query:?}: both legs match the same entries over the same tokens"
+            );
+        }
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn bm25_saturation_rewards_repetition_sublinearly() {
+        let (store, root) = fixture();
+        applied_entries(
+            &store,
+            serde_json::json!({
+                "summary": "bm25 saturation", "rationale": "r", "expectedOutcome": "o",
+                "edits": [
+                    {"action": "create", "kind": "memory", "id": "once", "title": "Alpha", "content": "quasar event"},
+                    {"action": "create", "kind": "memory", "id": "often", "title": "Beta", "content": "quasar quasar quasar quasar quasar event"}
+                ]
+            }),
+        );
+        let hits = bm25_search_corpora(&store, "quasar", &[], false, false);
+        assert_eq!(hits.len(), 2);
+        let once = hits.iter().find(|hit| hit.entry.id == "once").unwrap();
+        let often = hits.iter().find(|hit| hit.entry.id == "often").unwrap();
+        // More occurrences of the query term rank higher ...
+        assert!(often.score > once.score);
+        // ... but sublinearly: five occurrences are worth less than five
+        // single occurrences (k1 saturation, not linear tf).
+        assert!(often.score < 5.0 * once.score);
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn bm25_length_normalization_penalizes_padded_documents() {
+        let (store, root) = fixture();
+        applied_entries(
+            &store,
+            serde_json::json!({
+                "summary": "bm25 length norm", "rationale": "r", "expectedOutcome": "o",
+                "edits": [
+                    {"action": "create", "kind": "memory", "id": "short", "title": "Alpha", "content": "quasar event"},
+                    {"action": "create", "kind": "memory", "id": "padded",
+                     "title": "Beta",
+                     "content": "quasar event filler filler filler filler filler filler filler filler filler filler filler filler filler filler filler filler"}
+                ]
+            }),
+        );
+        let hits = bm25_search_corpora(&store, "quasar", &[], false, false);
+        assert_eq!(hits.len(), 2);
+        let short = hits.iter().find(|hit| hit.entry.id == "short").unwrap();
+        let padded = hits.iter().find(|hit| hit.entry.id == "padded").unwrap();
+        // Same tf for the query term, but the padded document's length
+        // normalization (b=0.75) discounts its score. The lexical leg would
+        // score these two identically (binary term membership).
+        assert!(short.score > padded.score);
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn bm25_title_occurrence_outranks_body_occurrence() {
+        let (store, root) = fixture();
+        applied_entries(
+            &store,
+            serde_json::json!({
+                "summary": "bm25 field weights", "rationale": "r", "expectedOutcome": "o",
+                "edits": [
+                    {"action": "create", "kind": "memory", "id": "titled", "title": "quasar header", "content": "event"},
+                    {"action": "create", "kind": "memory", "id": "bodied", "title": "Beta", "content": "quasar event"}
+                ]
+            }),
+        );
+        let hits = bm25_search_corpora(&store, "quasar", &[], false, false);
+        assert_eq!(hits.len(), 2);
+        let titled = hits.iter().find(|hit| hit.entry.id == "titled").unwrap();
+        let bodied = hits.iter().find(|hit| hit.entry.id == "bodied").unwrap();
+        // The title field carries weight 3 vs the body's 1, mirroring the
+        // lexical leg's field weighting over the same token stream.
+        assert!(titled.score > bodied.score);
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn bm25_leg_reports_the_matched_query_terms() {
+        let (store, root) = fixture();
+        applied_entries(
+            &store,
+            serde_json::json!({
+                "summary": "bm25 matched", "rationale": "r", "expectedOutcome": "o",
+                "edits": [
+                    {"action": "create", "kind": "memory", "id": "alpha", "title": "Amber", "content": "cache design"}
+                ]
+            }),
+        );
+        let hits = bm25_search_corpora(&store, "amber design quasar", &[], false, false);
+        assert_eq!(hits.len(), 1);
+        assert_eq!(hits[0].matched, vec!["amber".to_string(), "design".to_string()]);
+        assert!(hits[0].score > 0.0);
         std::fs::remove_dir_all(&root).ok();
     }
 }

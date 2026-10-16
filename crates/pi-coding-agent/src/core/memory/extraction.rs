@@ -239,6 +239,13 @@ pub(crate) type ImportEditSelection = (Vec<RefinementEdit>, usize, usize);
 /// carries the same title/content/metadata under a fresh derived id, with the
 /// original target recorded in `metadata.updateTargetId` for traceability.
 /// The fact is durable, so a new entry is preferable to silent loss.
+///
+/// Kept edits additionally pass through persona-claim typing sanitization:
+/// optional `personaKey`, `claimType` and `evidenceIds` metadata fields that
+/// the post-apply supersession verifier groups on (see
+/// `MemoryService::verify_persona_supersession`). Malformed fields are
+/// dropped from the metadata, never the edit — fail-open like the rest of the
+/// import policy.
 pub(crate) fn select_import_edits(edits: Vec<RefinementEdit>) -> ImportEditSelection {
     let mut selected: Vec<RefinementEdit> = Vec::new();
     let mut converted_updates = 0usize;
@@ -282,7 +289,86 @@ pub(crate) fn select_import_edits(edits: Vec<RefinementEdit>) -> ImportEditSelec
             _ => dropped_edits += 1,
         }
     }
+    for edit in &mut selected {
+        sanitize_persona_typing(edit);
+    }
     (selected, converted_updates, dropped_edits)
+}
+
+/// Sanitize optional persona-claim typing on one import edit's metadata.
+///
+/// The extraction prompt may attach three additive fields so the post-apply
+/// supersession verifier can group competing claims for one preference
+/// dimension:
+/// - `personaKey` — normalized topic+attribute key, e.g. `pref:hot-drink`.
+///   Trimmed; non-empty; at most 120 chars; no control characters.
+/// - `claimType` — exactly `stated` (user-asserted), `inferred`
+///   (evidence-derived tendency) or the reserved `summarized` (persona
+///   snapshot overflow path; the composer treats it stated-like).
+/// - `evidenceIds` — the claim's own evidence record ids (deduplicated,
+///   at most 200, matching the store's source-array cap). When absent the
+///   verifier falls back to the cited `sourceIds`/`sources` metadata.
+///
+/// All three are optional; anything malformed is dropped from the metadata
+/// rather than failing the edit, so untyped memories keep flowing and a
+/// cited durable fact is never rejected over a bad label (fail-open,
+/// matching the import evidence policy and the update conversion above).
+pub(crate) fn sanitize_persona_typing(edit: &mut RefinementEdit) {
+    let Some(metadata) = edit.metadata.as_mut() else {
+        return;
+    };
+    if let Some(raw) = metadata.get("personaKey").cloned() {
+        let valid = raw.as_str().and_then(|key| {
+            let trimmed = key.trim();
+            (!trimmed.is_empty()
+                && trimmed.chars().count() <= 120
+                && trimmed.chars().all(|c| !c.is_control()))
+            .then_some(trimmed.to_string())
+        });
+        match valid {
+            Some(key) => {
+                metadata.insert("personaKey".to_string(), Value::String(key));
+            }
+            None => {
+                metadata.shift_remove("personaKey");
+            }
+        }
+    }
+    if let Some(raw) = metadata.get("claimType").cloned() {
+        if !matches!(
+            raw.as_str(),
+            Some("stated") | Some("inferred") | Some("summarized")
+        ) {
+            metadata.shift_remove("claimType");
+        }
+    }
+    if let Some(raw) = metadata.get("evidenceIds").cloned() {
+        let mut ids: Vec<String> = Vec::new();
+        let mut valid = matches!(raw, Value::Array(_));
+        if let Value::Array(values) = &raw {
+            for value in values {
+                match value.as_str().map(str::trim) {
+                    Some(id) if !id.is_empty() => {
+                        if !ids.iter().any(|seen| seen == id) {
+                            ids.push(id.to_string());
+                        }
+                    }
+                    _ => {
+                        valid = false;
+                        break;
+                    }
+                }
+            }
+        }
+        if valid && !ids.is_empty() && ids.len() <= 200 {
+            metadata.insert(
+                "evidenceIds".to_string(),
+                Value::Array(ids.into_iter().map(Value::String).collect()),
+            );
+        } else {
+            metadata.shift_remove("evidenceIds");
+        }
+    }
 }
 
 #[cfg(test)]
@@ -438,5 +524,131 @@ mod tests {
         assert_eq!(edits[0].id.as_deref(), Some("new_fact"));
         assert_eq!(edits[1].action, "create");
         assert!(edits[1].id.as_deref().unwrap().starts_with("imported_"));
+    }
+
+    #[test]
+    fn valid_persona_typing_is_preserved_through_normalization() {
+        let proposal = normalize_refinement_proposal(&json!({
+            "summary": "s", "rationale": "r", "expectedOutcome": "o",
+            "edits": [{
+                "action": "create", "kind": "memory", "id": "pref_claim",
+                "title": "Hot drink preference",
+                "content": "User switched from coffee to tea.",
+                "metadata": {
+                    "sourceIds": ["m_0002:0"], "evidenceStatus": "cited",
+                    "personaKey": "  pref:hot-drink  ",
+                    "claimType": "stated",
+                    "evidenceIds": ["m_0002:0", "m_0002:0", "m_0003:1"]
+                }
+            }]
+        }));
+        let (edits, _, _) = select_import_edits(proposal.edits);
+        assert_eq!(edits.len(), 1);
+        let metadata = edits[0].metadata.as_ref().unwrap();
+        // The key is trimmed; the citation list is deduplicated.
+        assert_eq!(
+            metadata.get("personaKey").and_then(Value::as_str),
+            Some("pref:hot-drink")
+        );
+        assert_eq!(
+            metadata.get("claimType").and_then(Value::as_str),
+            Some("stated")
+        );
+        assert_eq!(
+            metadata.get("evidenceIds"),
+            Some(&json!(["m_0002:0", "m_0003:1"]))
+        );
+        // Untyped edits keep flowing with no persona fields injected.
+        let untyped = normalize_refinement_proposal(&json!({
+            "summary": "s", "rationale": "r", "expectedOutcome": "o",
+            "edits": [{
+                "action": "create", "kind": "memory", "id": "plain_fact",
+                "title": "Plain", "content": "A durable fact.",
+                "metadata": {"sourceIds": ["m_0009:0"], "evidenceStatus": "cited"}
+            }]
+        }));
+        let (edits, _, _) = select_import_edits(untyped.edits);
+        let metadata = edits[0].metadata.as_ref().unwrap();
+        assert!(metadata.get("personaKey").is_none());
+        assert!(metadata.get("claimType").is_none());
+        assert!(metadata.get("evidenceIds").is_none());
+    }
+
+    #[test]
+    fn malformed_persona_typing_fields_are_dropped_not_edits() {
+        let proposal = normalize_refinement_proposal(&json!({
+            "summary": "s", "rationale": "r", "expectedOutcome": "o",
+            "edits": [{
+                "action": "create", "kind": "memory", "id": "bad_typing",
+                "title": "Bad typing", "content": "A durable fact with bad labels.",
+                "metadata": {
+                    "sourceIds": ["m_0004:0"], "evidenceStatus": "cited",
+                    "personaKey": "   ",
+                    "claimType": "guessed",
+                    "evidenceIds": ["m_0004:0", ""]
+                }
+            }]
+        }));
+        let (edits, converted, dropped) = select_import_edits(proposal.edits);
+        // Fail-open: the cited durable fact survives; only the labels drop.
+        assert_eq!(edits.len(), 1);
+        assert_eq!(converted, 0);
+        assert_eq!(dropped, 0);
+        let metadata = edits[0].metadata.as_ref().unwrap();
+        assert!(metadata.get("personaKey").is_none(), "blank key dropped");
+        assert!(metadata.get("claimType").is_none(), "unknown claimType dropped");
+        assert!(metadata.get("evidenceIds").is_none(), "citations with blanks dropped");
+        assert_eq!(
+            metadata.get("sourceIds"),
+            Some(&json!(["m_0004:0"])),
+            "the evidence citation itself is untouched"
+        );
+        // Non-string shapes and oversized keys drop the same way.
+        let mut edit = edits.into_iter().next().unwrap();
+        let metadata = edit.metadata.get_or_insert_with(JsonMap::new);
+        metadata.insert("personaKey".to_string(), json!(42));
+        metadata.insert("claimType".to_string(), json!("stated"));
+        metadata.insert("evidenceIds".to_string(), json!("m_0004:0"));
+        sanitize_persona_typing(&mut edit);
+        let metadata = edit.metadata.as_ref().unwrap();
+        assert!(metadata.get("personaKey").is_none(), "non-string key dropped");
+        assert_eq!(
+            metadata.get("claimType").and_then(Value::as_str),
+            Some("stated"),
+            "valid claimType beside invalid fields is kept"
+        );
+        assert!(metadata.get("evidenceIds").is_none(), "non-array citations dropped");
+    }
+
+    #[test]
+    fn persona_typing_survives_update_conversion() {
+        // An update edit converted to a create keeps its persona typing, so
+        // converted updates participate in supersession grouping like fresh
+        // creates (PR #144 updateTargetId + persona typing compose).
+        let mut proposal = update_proposal();
+        proposal.edits[0].metadata.as_mut().unwrap().insert(
+            "personaKey".to_string(),
+            json!("pref:health"),
+        );
+        proposal.edits[0]
+            .metadata
+            .as_mut()
+            .unwrap()
+            .insert("claimType".to_string(), json!("stated"));
+        let (edits, converted, _) = select_import_edits(proposal.edits);
+        assert_eq!(converted, 1);
+        let metadata = edits[0].metadata.as_ref().unwrap();
+        assert_eq!(
+            metadata.get("personaKey").and_then(Value::as_str),
+            Some("pref:health")
+        );
+        assert_eq!(
+            metadata.get("claimType").and_then(Value::as_str),
+            Some("stated")
+        );
+        assert_eq!(
+            metadata.get("updateTargetId").and_then(Value::as_str),
+            Some("memory_lingering_cough_guaifenesin")
+        );
     }
 }

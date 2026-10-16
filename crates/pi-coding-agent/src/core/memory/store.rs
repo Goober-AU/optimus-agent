@@ -23,6 +23,41 @@ pub struct SharedConfig {
     pub token_file: String,
 }
 
+/// How the per-query recall hit lists (original query, angle queries, and the
+/// optional BM25 leg) merge into one ranking. `Off` keeps the historical
+/// per-entry maximum-score merge; `Rrf` fuses the lists with unweighted
+/// Reciprocal Rank Fusion (k=60, 0-based ranks, contributions summed across
+/// lists), rewarding entries several independent queries agree on instead of
+/// the single loudest list position.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RecallFusion {
+    /// Per-entry maximum-score merge (historical behavior).
+    #[default]
+    Off,
+    /// Reciprocal Rank Fusion, k=60, unweighted, 0-based ranks.
+    Rrf,
+}
+
+impl RecallFusion {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            RecallFusion::Off => "off",
+            RecallFusion::Rrf => "rrf",
+        }
+    }
+}
+
+/// Whether the BM25 leg (G2) participates in recall. The leg's ranked list is
+/// fused via RRF only: BM25 scores live on a different scale than lexical
+/// scores, so `recallBm25` without `recallFusion: "rrf"` is inert - the
+/// combination documents intent and the recall diagnostic surfaces both
+/// flags, so a misconfigured arm is visible instead of silently
+/// scale-mixed under the maximum-score merge.
+pub fn recall_bm25_leg_active(fusion: RecallFusion, bm25: bool) -> bool {
+    bm25 && matches!(fusion, RecallFusion::Rrf)
+}
+
 /// `shared?: { url, tokenFile } | null` - `None` is an absent key, `Some(None)` is `null`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MemorySettings {
@@ -105,6 +140,41 @@ pub struct MemorySettings {
     /// false.
     #[serde(default, rename = "recallSourceSpans")]
     pub recall_source_spans: bool,
+    /// Fuse the recall hit lists (original + angle queries, plus the optional
+    /// BM25 leg) with unweighted Reciprocal Rank Fusion instead of the
+    /// per-entry maximum-score merge. RRF rewards entries that several
+    /// independent query angles agree on. Default "off" preserves the
+    /// historical merge byte-identically.
+    #[serde(default = "default_recall_fusion", rename = "recallFusion")]
+    pub recall_fusion: RecallFusion,
+    /// Add an Okapi BM25 second retrieval leg (k1=1.2, b=0.75, field weights
+    /// title 3 / body 1 / span 0.5 over the same token stream) whose ranked
+    /// list is RRF-fused with the lexical lists. Binary term matching produces
+    /// large score ties; tf saturation and length normalization break them.
+    /// Inert unless `recallFusion` is "rrf": BM25 scores live on a different
+    /// scale and are never max-merged with lexical scores. Default false.
+    #[serde(default, rename = "recallBm25")]
+    pub recall_bm25: bool,
+    /// Enforce the persona supersession invariant after each import apply:
+    /// for every `metadata.personaKey`, exactly one claim stays current and
+    /// every other current claim of that key is marked
+    /// `metadata.supersededBy = <newest claim id>`, ordered by evidence
+    /// timestamp (the import's cited `message_evidence` records) with
+    /// `created_at` as the fallback anchor. Superseded claims are retained
+    /// and stay queryable through `includeInactive` search. Default false
+    /// preserves the historical store behavior exactly.
+    #[serde(default, rename = "personaSupersession")]
+    pub persona_supersession: bool,
+    /// Compose a deterministic persona snapshot from typed persona claims
+    /// (metadata.personaKey + claimType) and inject it as a stable header of
+    /// the recall message. Default false keeps recall output byte-identical
+    /// to the pre-feature behavior.
+    #[serde(default, rename = "personaLayer")]
+    pub persona_layer: bool,
+    /// Character budget for the composed persona snapshot. Default 2400;
+    /// 512-4000 allowed.
+    #[serde(default = "default_persona_snapshot_chars", rename = "personaSnapshotChars")]
+    pub persona_snapshot_chars: i64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shared: Option<Option<SharedConfig>>,
 }
@@ -125,6 +195,14 @@ pub fn default_recall_rerank_content_chars() -> i64 {
 
 pub fn default_recall_query_expansion_draws() -> i64 {
     2
+}
+
+pub fn default_recall_fusion() -> RecallFusion {
+    RecallFusion::Off
+}
+
+pub fn default_persona_snapshot_chars() -> i64 {
+    2400
 }
 
 pub fn default_memory_settings() -> MemorySettings {
@@ -149,6 +227,11 @@ pub fn default_memory_settings() -> MemorySettings {
         recall_query_expansion_draws: default_recall_query_expansion_draws(),
         recall_prospective_index: false,
         recall_source_spans: false,
+        recall_fusion: default_recall_fusion(),
+        recall_bm25: false,
+        persona_supersession: false,
+        persona_layer: false,
+        persona_snapshot_chars: default_persona_snapshot_chars(),
         shared: None,
     }
 }
@@ -314,9 +397,14 @@ pub struct PartialMemorySettings {
     pub shared: Option<Option<SharedConfig>>,
     pub recall_prospective_index: Option<bool>,
     pub recall_source_spans: Option<bool>,
+    pub recall_fusion: Option<RecallFusion>,
+    pub recall_bm25: Option<bool>,
+    pub persona_supersession: Option<bool>,
+    pub persona_layer: Option<bool>,
+    pub persona_snapshot_chars: Option<i64>,
 }
 
-const LIMITS: [(&str, i64, i64); 9] = [
+const LIMITS: [(&str, i64, i64); 10] = [
     ("maxRecallChars", 0, 32000),
     ("maxRecallEntries", 0, 50),
     ("maxExtractionTokens", 256, 32000),
@@ -326,6 +414,7 @@ const LIMITS: [(&str, i64, i64); 9] = [
     ("recallRerankCandidates", 1, 500),
     ("recallRerankContentChars", 16, 2000),
     ("recallQueryExpansionDraws", 1, 3),
+    ("personaSnapshotChars", 512, 4000),
 ];
 
 pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String> {
@@ -342,6 +431,9 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
         "recallQueryExpansion",
         "recallProspectiveIndex",
         "recallSourceSpans",
+        "recallBm25",
+        "personaSupersession",
+        "personaLayer",
     ] {
         if let Some(raw) = source.get(key) {
             let boolean = raw
@@ -364,9 +456,24 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
                     result.recall_prospective_index = Some(boolean)
                 }
                 "recallSourceSpans" => result.recall_source_spans = Some(boolean),
+                "recallBm25" => result.recall_bm25 = Some(boolean),
+                "personaSupersession" => result.persona_supersession = Some(boolean),
+                "personaLayer" => result.persona_layer = Some(boolean),
                 _ => {}
             }
         }
+    }
+    if let Some(raw) = source.get("recallFusion") {
+        let value = raw.as_str().ok_or_else(|| {
+            "recallFusion must be \"off\" or \"rrf\"".to_string()
+        })?;
+        result.recall_fusion = Some(match value {
+            "off" => RecallFusion::Off,
+            "rrf" => RecallFusion::Rrf,
+            _ => {
+                return Err("recallFusion must be \"off\" or \"rrf\"".to_string());
+            }
+        });
     }
     for (key, low, high) in LIMITS {
         if let Some(raw) = source.get(key) {
@@ -383,6 +490,7 @@ pub fn validate_settings(value: &Value) -> Result<PartialMemorySettings, String>
                     result.recall_rerank_content_chars = Some(number)
                 }
                 "recallQueryExpansionDraws" => result.recall_query_expansion_draws = Some(number),
+                "personaSnapshotChars" => result.persona_snapshot_chars = Some(number),
                 _ => result.max_import_chunks_per_run = Some(number),
             }
         }
@@ -1020,6 +1128,21 @@ fn apply_settings(settings: &mut MemorySettings, patch: &PartialMemorySettings) 
     if let Some(value) = patch.recall_source_spans {
         settings.recall_source_spans = value;
     }
+    if let Some(value) = patch.recall_fusion {
+        settings.recall_fusion = value;
+    }
+    if let Some(value) = patch.recall_bm25 {
+        settings.recall_bm25 = value;
+    }
+    if let Some(value) = patch.persona_supersession {
+        settings.persona_supersession = value;
+    }
+    if let Some(value) = patch.persona_layer {
+        settings.persona_layer = value;
+    }
+    if let Some(value) = patch.persona_snapshot_chars {
+        settings.persona_snapshot_chars = value.clamp(512, 4000);
+    }
     if let Some(value) = patch.max_recall_chars {
         settings.max_recall_chars = value;
     }
@@ -1074,6 +1197,20 @@ fn merge_settings_patch(target: &mut JsonMap, patch: &PartialMemorySettings) {
     set(
         "recallSourceSpans",
         patch.recall_source_spans.map(Value::Bool),
+    );
+    set(
+        "recallFusion",
+        patch.recall_fusion.map(|value| serde_json::to_value(value).unwrap_or(Value::Null)),
+    );
+    set("recallBm25", patch.recall_bm25.map(Value::Bool));
+    set(
+        "personaSupersession",
+        patch.persona_supersession.map(Value::Bool),
+    );
+    set("personaLayer", patch.persona_layer.map(Value::Bool));
+    set(
+        "personaSnapshotChars",
+        patch.persona_snapshot_chars.map(|value| Value::from(value)),
     );
     set(
         "recallRerankCandidates",
@@ -1652,6 +1789,164 @@ mod tests {
             &validate_settings(&serde_json::json!({"recallSourceSpans": true})).unwrap(),
         );
         assert_eq!(merged.get("recallSourceSpans"), Some(&serde_json::json!(true)));
+    }
+
+    #[test]
+    fn recall_fusion_and_bm25_settings_validate_and_round_trip() {
+        // Absent keeps the defaults: fusion "off", BM25 leg off.
+        let partial = validate_settings(&serde_json::json!({})).unwrap();
+        assert_eq!(partial.recall_fusion, None);
+        assert_eq!(partial.recall_bm25, None);
+        assert_eq!(default_memory_settings().recall_fusion, RecallFusion::Off);
+        assert!(!default_memory_settings().recall_bm25);
+        // Both values parse from the settings surface.
+        let partial = validate_settings(
+            &serde_json::json!({"recallFusion": "rrf", "recallBm25": true}),
+        )
+        .unwrap();
+        assert_eq!(partial.recall_fusion, Some(RecallFusion::Rrf));
+        assert_eq!(partial.recall_bm25, Some(true));
+        // Unknown fusion values and non-boolean bm25 are rejected.
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallFusion": "weighted"})).unwrap_err(),
+            "recallFusion must be \"off\" or \"rrf\""
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallFusion": 1})).unwrap_err(),
+            "recallFusion must be \"off\" or \"rrf\""
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"recallBm25": 1})).unwrap_err(),
+            "recallBm25 must be boolean"
+        );
+        // apply_settings round-trips both values, including back to off.
+        let mut settings = default_memory_settings();
+        apply_settings(&mut settings, &partial);
+        assert_eq!(settings.recall_fusion, RecallFusion::Rrf);
+        assert!(settings.recall_bm25);
+        apply_settings(
+            &mut settings,
+            &validate_settings(
+                &serde_json::json!({"recallFusion": "off", "recallBm25": false}),
+            )
+            .unwrap(),
+        );
+        assert_eq!(settings.recall_fusion, RecallFusion::Off);
+        assert!(!settings.recall_bm25);
+        // The encoded form keeps the camelCase keys and deserializes back.
+        let mut enabled = default_memory_settings();
+        enabled.recall_fusion = RecallFusion::Rrf;
+        enabled.recall_bm25 = true;
+        let encoded = serde_json::to_value(&enabled).unwrap();
+        assert_eq!(encoded["recallFusion"], "rrf");
+        assert_eq!(encoded["recallBm25"], true);
+        let decoded: MemorySettings = serde_json::from_value(encoded).unwrap();
+        assert_eq!(decoded.recall_fusion, RecallFusion::Rrf);
+        assert!(decoded.recall_bm25);
+        // merge_settings_patch carries both keys into the settings file.
+        let mut merged = serde_json::Map::new();
+        merge_settings_patch(
+            &mut merged,
+            &validate_settings(&serde_json::json!({"recallFusion": "rrf"})).unwrap(),
+        );
+        assert_eq!(merged.get("recallFusion"), Some(&serde_json::json!("rrf")));
+        let mut merged = serde_json::Map::new();
+        merge_settings_patch(
+            &mut merged,
+            &validate_settings(&serde_json::json!({"recallBm25": true})).unwrap(),
+        );
+        assert_eq!(merged.get("recallBm25"), Some(&serde_json::json!(true)));
+        // The gate: the BM25 leg only participates under RRF fusion.
+        assert!(!recall_bm25_leg_active(RecallFusion::Off, false));
+        assert!(!recall_bm25_leg_active(RecallFusion::Off, true));
+        assert!(!recall_bm25_leg_active(RecallFusion::Rrf, false));
+        assert!(recall_bm25_leg_active(RecallFusion::Rrf, true));
+    }
+
+    #[test]
+    fn persona_supersession_validates_and_round_trips() {
+        // Absent keeps the default, non-boolean is rejected.
+        assert_eq!(
+            validate_settings(&serde_json::json!({})).unwrap().persona_supersession,
+            None
+        );
+        let partial = validate_settings(&serde_json::json!({"personaSupersession": true})).unwrap();
+        assert_eq!(partial.persona_supersession, Some(true));
+        assert_eq!(
+            validate_settings(&serde_json::json!({"personaSupersession": 1})).unwrap_err(),
+            "personaSupersession must be boolean"
+        );
+        assert!(!default_memory_settings().persona_supersession);
+        let mut settings = default_memory_settings();
+        apply_settings(&mut settings, &partial);
+        assert!(settings.persona_supersession);
+        apply_settings(
+            &mut settings,
+            &validate_settings(&serde_json::json!({"personaSupersession": false})).unwrap(),
+        );
+        assert!(!settings.persona_supersession);
+        // The encoded form keeps the camelCase key and deserializes back.
+        let mut enabled = default_memory_settings();
+        enabled.persona_supersession = true;
+        let encoded = serde_json::to_value(&enabled).unwrap();
+        assert_eq!(encoded["personaSupersession"], true);
+        let decoded: MemorySettings = serde_json::from_value(encoded).unwrap();
+        assert!(decoded.persona_supersession);
+        let mut merged = serde_json::Map::new();
+        merge_settings_patch(
+            &mut merged,
+            &validate_settings(&serde_json::json!({"personaSupersession": true})).unwrap(),
+        );
+        assert_eq!(merged.get("personaSupersession"), Some(&serde_json::json!(true)));
+    }
+
+    #[test]
+    fn persona_layer_settings_validate_and_round_trip() {
+        // Absent keeps the defaults; non-boolean / out-of-range rejected.
+        assert_eq!(
+            validate_settings(&serde_json::json!({})).unwrap().persona_layer,
+            None
+        );
+        let partial = validate_settings(&serde_json::json!({"personaLayer": true})).unwrap();
+        assert_eq!(partial.persona_layer, Some(true));
+        assert_eq!(
+            validate_settings(&serde_json::json!({"personaLayer": 1})).unwrap_err(),
+            "personaLayer must be boolean"
+        );
+        assert!(!default_memory_settings().persona_layer);
+        assert_eq!(default_memory_settings().persona_snapshot_chars, 2400);
+        assert_eq!(
+            validate_settings(&serde_json::json!({"personaSnapshotChars": 100})).unwrap_err(),
+            "Invalid personaSnapshotChars"
+        );
+        assert_eq!(
+            validate_settings(&serde_json::json!({"personaSnapshotChars": 9000})).unwrap_err(),
+            "Invalid personaSnapshotChars"
+        );
+        let partial = validate_settings(
+            &serde_json::json!({"personaLayer": true, "personaSnapshotChars": 1200}),
+        )
+        .unwrap();
+        assert_eq!(partial.persona_snapshot_chars, Some(1200));
+        let mut settings = default_memory_settings();
+        apply_settings(&mut settings, &partial);
+        assert!(settings.persona_layer);
+        assert_eq!(settings.persona_snapshot_chars, 1200);
+        // The encoded form keeps the camelCase keys and round-trips.
+        let mut enabled = default_memory_settings();
+        enabled.persona_layer = true;
+        let encoded = serde_json::to_value(&enabled).unwrap();
+        assert_eq!(encoded["personaLayer"], true);
+        assert_eq!(encoded["personaSnapshotChars"], 2400);
+        let decoded: MemorySettings = serde_json::from_value(encoded).unwrap();
+        assert!(decoded.persona_layer);
+        assert_eq!(decoded.persona_snapshot_chars, 2400);
+        let mut merged = serde_json::Map::new();
+        merge_settings_patch(
+            &mut merged,
+            &validate_settings(&serde_json::json!({"personaLayer": true})).unwrap(),
+        );
+        assert_eq!(merged.get("personaLayer"), Some(&serde_json::json!(true)));
     }
 
     #[test]

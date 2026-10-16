@@ -19,8 +19,8 @@ use super::evidence::{hash, MemoryOrigin, MemorySource};
 use super::jobs::{import_overview, ImportJob, MemoryExtractor, MemoryJobs};
 use super::project::{project_identity, ProjectIdentity};
 use super::search::{
-    adhoc_corpus_index, cached_file_corpus_index, freshness, recall_memory, search_corpora,
-    CorpusIndex, MemoryHit, MemoryScope, RecallResult,
+    adhoc_corpus_index, bm25_search_corpora, cached_file_corpus_index, freshness, recall_memory,
+    search_corpora, CorpusIndex, MemoryHit, MemoryScope, RecallResult,
 };
 use super::sharing::MemorySharing;
 use super::store::{record, MemoryStore};
@@ -137,6 +137,81 @@ fn base_source_id(id: &str) -> &str {
         Some((head, tail)) if !tail.is_empty() && tail.chars().all(|c| c.is_ascii_digit()) => head,
         _ => id,
     }
+}
+
+/// The strongest temporal anchor for one claim's supersession ordering: the
+/// latest timestamp among the evidence records it cites that `job` actually
+/// loaded — the claim's own `evidenceIds` first, else the generic citation
+/// metadata (`sourceIds`/`sources`). `None` when nothing matches, e.g. a
+/// claim imported by an earlier job: its records are not in this job, so the
+/// ordering falls back to the entry's `created_at`. No new time source is
+/// introduced; `Evidence.timestamp` stays the only authority.
+fn claim_evidence_ts(
+    entry: &crate::core::refinement::refinement::HarnessEntry,
+    job: &ImportJob,
+) -> Option<f64> {
+    let mut cited: Vec<String> = Vec::new();
+    if let Some(Value::Array(values)) = entry.metadata.get("evidenceIds") {
+        for value in values {
+            if let Some(id) = value.as_str() {
+                cited.push(id.to_string());
+            }
+        }
+    }
+    if cited.is_empty() {
+        cited = cited_source_ids(&entry.metadata).unwrap_or_default();
+    }
+    if cited.is_empty() {
+        return None;
+    }
+    let mut latest: Option<f64> = None;
+    for chunk in &job.chunks {
+        for record in &chunk.records {
+            // A cited id either matches a record exactly or carries a split
+            // offset (`row_1:12` cites record `row_1`), like the span matcher.
+            let cited_here = cited
+                .iter()
+                .any(|id| id == &record.id || base_source_id(id) == record.id);
+            if !cited_here {
+                continue;
+            }
+            if let Some(timestamp) = record.timestamp {
+                latest = Some(latest.map_or(timestamp, |current: f64| current.max(timestamp)));
+            }
+        }
+    }
+    latest
+}
+
+/// The claim ordering key: evidence timestamp (absent sorts oldest), then
+/// the entry's `created_at` ISO string (fixed-width UTC, so lexicographic
+/// order is chronological), then `version`, then id for a total,
+/// deterministic order.
+fn claim_order_key(
+    entry: &crate::core::refinement::refinement::HarnessEntry,
+    job: &ImportJob,
+) -> (Option<f64>, String, i64, String) {
+    (
+        claim_evidence_ts(entry, job),
+        entry.created_at.clone(),
+        entry.version,
+        entry.id.clone(),
+    )
+}
+
+/// Element-wise maximum: which of two claims is the later one. `None`
+/// evidence sorts oldest, so a claim anchored on this job's evidence beats
+/// a cross-job claim that only has its `created_at`.
+fn compare_claim_order(
+    a: &(Option<f64>, String, i64, String),
+    b: &(Option<f64>, String, i64, String),
+) -> std::cmp::Ordering {
+    use std::cmp::Ordering;
+    a.0.partial_cmp(&b.0)
+        .unwrap_or(Ordering::Equal)
+        .then_with(|| a.1.cmp(&b.1))
+        .then_with(|| a.2.cmp(&b.2))
+        .then_with(|| a.3.cmp(&b.3))
 }
 
 /// The verbatim turn text for the first cited source id that matches an
@@ -285,6 +360,31 @@ impl MemoryService {
         // query never re-reads and re-tokenizes them. Only clean loads are
         // cached; missing/corrupt/unreadable states keep the original
         // per-query empty-corpus fallback.
+        let corpora = self.recall_corpora(false);
+        let stemming = self.store.settings().recall_query_stemming;
+        // A selected shared copy of a local memory should not consume recall twice.
+        let found = search_corpora(&self.store, query, &corpora, include_inactive, stemming);
+        dedupe_shared_copies(found)
+    }
+
+    /// The BM25 retrieval leg (G2, `recallBm25`): the same corpus assembly and
+    /// the same shared-copy dedup as [`MemoryService::search`], scored with
+    /// Okapi BM25 over the same token stream (see
+    /// [`crate::core::memory::search::bm25_search_corpora`]). The recall
+    /// orchestrator fuses this ranked list with the lexical lists via RRF;
+    /// callers never max-merge BM25 scores with lexical scores.
+    pub fn search_bm25(&self, query: &str, include_inactive: bool) -> Vec<MemoryHit> {
+        let corpora = self.recall_corpora(true);
+        let stemming = self.store.settings().recall_query_stemming;
+        let found = bm25_search_corpora(&self.store, query, &corpora, include_inactive, stemming);
+        dedupe_shared_copies(found)
+    }
+
+    /// Assemble the recall corpora (global, shared, session) in the index
+    /// variant selected by `bm25`: the default shape for the lexical leg, the
+    /// tf-carrying shape for the BM25 leg. The store's own corpus is added by
+    /// the search functions themselves (it is cached separately per store).
+    fn recall_corpora(&self, bm25: bool) -> Vec<Arc<CorpusIndex>> {
         let project_id = self.store.project.id.clone();
         let host_id = self.store.host_id.clone();
         // PR #144: one stemming flag per query, applied to every corpus
@@ -299,6 +399,7 @@ impl MemoryService {
                 &project_id,
                 &host_id,
                 stemming,
+                bm25,
                 || {
                     let details = load_harness_state_details(&global_dir, HarnessScope::Global);
                     (details.status == HarnessStateLoadStatus::Loaded).then_some(details.state)
@@ -312,6 +413,7 @@ impl MemoryService {
                 &project_id,
                 &host_id,
                 stemming,
+                bm25,
             ),
         ];
         if let Some(session_artifact_dir) = &self.session_artifact_dir {
@@ -323,6 +425,7 @@ impl MemoryService {
                     &project_id,
                     &host_id,
                     stemming,
+                    bm25,
                     || {
                         let details = load_harness_state_details(&dir, HarnessScope::Local);
                         (details.status == HarnessStateLoadStatus::Loaded).then_some(details.state)
@@ -330,20 +433,7 @@ impl MemoryService {
                 ));
             }
         }
-        // A selected shared copy of a local memory should not consume recall twice.
-        let found = search_corpora(&self.store, query, &corpora, include_inactive, stemming);
-        let local_ids: Vec<String> = found
-            .iter()
-            .filter(|hit| hit.scope == MemoryScope::Project)
-            .map(|hit| format!("{}:{}", hit.entry.kind.as_str(), hit.entry.id))
-            .collect();
-        found
-            .into_iter()
-            .filter(|hit| {
-                hit.scope != MemoryScope::Shared
-                    || !local_ids.contains(&format!("{}:{}", hit.entry.kind.as_str(), hit.entry.id))
-            })
-            .collect()
+        corpora
     }
 
     pub fn recall(&self, query: &str) -> RecallResult {
@@ -354,7 +444,27 @@ impl MemoryService {
     pub fn render_recall(&self, hits: &[MemoryHit]) -> RecallResult {
         recall_memory(hits, &self.store.settings(), Some(&self.store.project.root))
     }
+}
 
+/// Drop shared-scope hits whose project-scope twin also matched: a selected
+/// shared copy of a local memory should not consume recall twice. Shared
+/// between the lexical and BM25 legs so both legs rank the same candidate set.
+fn dedupe_shared_copies(found: Vec<MemoryHit>) -> Vec<MemoryHit> {
+    let local_ids: Vec<String> = found
+        .iter()
+        .filter(|hit| hit.scope == MemoryScope::Project)
+        .map(|hit| format!("{}:{}", hit.entry.kind.as_str(), hit.entry.id))
+        .collect();
+    found
+        .into_iter()
+        .filter(|hit| {
+            hit.scope != MemoryScope::Shared
+                || !local_ids.contains(&format!("{}:{}", hit.entry.kind.as_str(), hit.entry.id))
+        })
+        .collect()
+}
+
+impl MemoryService {
     /// Write-time prospective indexing for one applied import job: give each
     /// newly created memory entry 3-5 retrieval cues via one bounded LLM call
     /// per entry (`generate`), stored as searchable `metadata.prospectiveCues`.
@@ -661,6 +771,168 @@ impl MemoryService {
         )
     }
 
+    /// Post-apply persona supersession verifier (`personaSupersession`): for
+    /// every `metadata.personaKey` the store currently holds, exactly one
+    /// claim stays current. Competing current claims of one key are ordered
+    /// by their temporal authority — the latest timestamp among this job's
+    /// cited evidence records (`evidenceIds` when the claim typed its own
+    /// citations, else the generic citation metadata), falling back to
+    /// `created_at`, then `version`, then id — and every loser is marked
+    /// `metadata.supersededBy = <winner id>`. The store's update machinery
+    /// flips the entry status to `superseded` on that key (the PR #144
+    /// `supersededBy` status rule) while the entry itself stays retained and
+    /// queryable through `includeInactive` search; nothing is deleted.
+    /// Already-superseded claims keep their links, so chains A→B→C stay
+    /// intact and verifier retries are no-ops.
+    async fn verify_persona_supersession(&self, job: &ImportJob) -> Value {
+        let started = std::time::Instant::now();
+        let report = |status: &str,
+                      groups: usize,
+                      considered: usize,
+                      superseded: usize,
+                      applied: bool|
+         -> Value {
+            serde_json::json!({
+                "operation": "personaSupersession",
+                "jobId": job.id,
+                "status": status,
+                "groups": groups,
+                "considered": considered,
+                "superseded": superseded,
+                "applied": applied,
+                "latencyMs": started.elapsed().as_millis() as u64,
+            })
+        };
+        let Some(_proposal) = &job.accepted_proposal else {
+            return report("no_proposal", 0, 0, 0, false);
+        };
+        let Ok(document) = self.store.read() else {
+            return report("unreadable", 0, 0, 0, false);
+        };
+        // Every current persona-typed claim, grouped by persona key in
+        // first-seen document order. A group may mix this import's fresh
+        // claims with claims an earlier import typed; both compete on the
+        // same ordering, so switching the setting on heals prior duplicate
+        // claims of a key instead of only guarding new writes.
+        let mut groups: Vec<(String, Vec<crate::core::refinement::refinement::HarnessEntry>)> =
+            Vec::new();
+        for entry in document
+            .entries
+            .get("memory")
+            .into_iter()
+            .flat_map(|bucket| bucket.values())
+        {
+            // Losers keep their supersededBy links and never re-compete; a
+            // marked claim cannot be resurrected by a later verifier run.
+            if entry.metadata.contains_key("supersededBy")
+                || entry.metadata.get("status").and_then(Value::as_str) == Some("superseded")
+            {
+                continue;
+            }
+            let Some(key) = entry
+                .metadata
+                .get("personaKey")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+            else {
+                continue;
+            };
+            let entry = entry.clone();
+            match groups.iter_mut().find(|(group, _)| group == &key) {
+                Some((_, members)) => members.push(entry),
+                None => groups.push((key, vec![entry])),
+            }
+        }
+        if groups.is_empty() {
+            return report("no_persona_keys", 0, 0, 0, false);
+        }
+        let mut edits: Vec<RefinementEdit> = Vec::new();
+        let mut considered = 0usize;
+        let mut contested = 0usize;
+        for (key, members) in &groups {
+            if members.len() < 2 {
+                continue;
+            }
+            contested += 1;
+            considered += members.len();
+            let winner = members
+                .iter()
+                .max_by(|a, b| {
+                    compare_claim_order(&claim_order_key(a, job), &claim_order_key(b, job))
+                })
+                .expect("contested groups are non-empty");
+            for entry in members {
+                if entry.id == winner.id {
+                    continue;
+                }
+                let mut metadata = JsonMap::new();
+                metadata.insert("supersededBy".to_string(), Value::String(winner.id.clone()));
+                edits.push(RefinementEdit {
+                    action: "update".to_string(),
+                    kind: "memory".to_string(),
+                    id: Some(entry.id.clone()),
+                    title: Some(entry.title.clone()),
+                    content: Some(entry.content.clone()),
+                    path: Some(entry.path.clone()),
+                    reference: None,
+                    arguments: None,
+                    metadata: Some(metadata),
+                    reason: Some(format!("Persona supersession for {key}")),
+                });
+            }
+        }
+        let superseded_count = edits.len();
+        if edits.is_empty() {
+            return report("unchanged", contested, considered, 0, false);
+        }
+        // The event id is derived from the supersession batch: retrying the
+        // same batch is idempotent, a changed batch gets a fresh id.
+        let fingerprint = hash(
+            &serde_json::to_string(
+                &edits
+                    .iter()
+                    .map(|edit| (&edit.id, &edit.metadata))
+                    .collect::<Vec<_>>(),
+            )
+            .unwrap_or_default(),
+        );
+        let proposal = RefinementProposal {
+            summary: "Persona supersession for imported memories".to_string(),
+            rationale: "Write-time same-key supersession (personaSupersession)".to_string(),
+            expected_outcome:
+                "Exactly one current claim per persona key; superseded claims stay retained and queryable"
+                    .to_string(),
+            edits,
+        };
+        let revision = self
+            .store
+            .read()
+            .map(|current| current.memory.revision)
+            .unwrap_or_default();
+        let applied = self
+            .store
+            .apply(
+                &proposal,
+                super::store::ApplyOptions {
+                    event_id: format!("psup_{:.24}", fingerprint),
+                    expected_revision: revision,
+                    // Supersession links are ordering metadata, not learned
+                    // facts, so they are not gated on the learning toggle.
+                    automatic: false,
+                    ..Default::default()
+                },
+            )
+            .await
+            .is_ok();
+        report(
+            if applied { "superseded" } else { "apply_failed" },
+            contested,
+            considered,
+            superseded_count,
+            applied,
+        )
+    }
+
     pub async fn request(
         &self,
         action: &str,
@@ -961,6 +1233,31 @@ impl MemoryService {
                     let report = self.attach_source_spans(&job).await;
                     if let Value::Object(map) = &mut overview {
                         map.insert("sourceSpans".to_string(), report);
+                    }
+                }
+                // Write-time same-key supersession: a deterministic ordering
+                // over the applied entries, no generator needed and every
+                // skip is reported. Runs before the cue pass so superseded
+                // losers do not consume per-entry LLM calls.
+                if self.store.settings().persona_supersession {
+                    let report = self.verify_persona_supersession(&job).await;
+                    if let Value::Object(map) = &mut overview {
+                        map.insert("personaSupersession".to_string(), report);
+                    }
+                }
+                // Write-time persona snapshot regeneration (techniques C +
+                // D): after the supersession pass, so the composed floor
+                // reflects the verifier's marks. The import is already
+                // applied, so a regeneration failure is non-fatal and
+                // reported; the sidecar only advances on success.
+                if self.store.settings().persona_layer {
+                    let report = super::persona::regenerate_after_import(
+                        &self.store,
+                        &job,
+                        self.store.settings().persona_snapshot_chars,
+                    );
+                    if let Value::Object(map) = &mut overview {
+                        map.insert("personaSnapshot".to_string(), report);
                     }
                 }
                 // Write-time prospective indexing: the import is already
@@ -1780,5 +2077,451 @@ mod temporal_tests {
         let rendered = super::super::evidence::serialize_evidence(&before.chunks[0].records, 4096);
         assert!(rendered.contains(r#""timestamp":"2024-03-01T12:00:00.000Z""#));
         assert!(!agent.join("models.json").exists());
+    }
+
+    /// One import whose extractor types two same-key claims plus a
+    /// different-key claim: the personaSupersession pass must keep exactly
+    /// one current claim per key, ordered by cited evidence timestamp.
+    async fn run_typed_import(
+        service: &MemoryService,
+        source: &std::path::Path,
+        edits: serde_json::Value,
+    ) -> serde_json::Value {
+        let job = service
+            .jobs
+            .prepare(&source.to_string_lossy())
+            .await
+            .unwrap();
+        let extract: super::MemoryExtractor = Arc::new(move |_records| {
+            let edits = edits.clone();
+            Box::pin(async move {
+                Ok(super::super::jobs::ExtractionResult {
+                    proposal: normalize_refinement_proposal(&edits),
+                    input: 10.0,
+                    output: 5.0,
+                })
+            })
+        });
+        service
+            .request(
+                "import_run",
+                serde_json::json!({"id": job.id}).as_object().unwrap(),
+                Some(extract),
+                None,
+            )
+            .await
+            .unwrap();
+        let revision = service.store.read().unwrap().memory.revision;
+        service
+            .request(
+                "import_apply",
+                serde_json::json!({"id": job.id, "revision": revision})
+                    .as_object()
+                    .unwrap(),
+                None,
+                None,
+            )
+            .await
+            .unwrap()
+    }
+
+    fn write_session(path: &std::path::Path, rows: &[(String, String, i64)]) {
+        let body = rows
+            .iter()
+            .map(|(id, content, timestamp)| {
+                serde_json::json!({
+                    "type": "message", "id": id,
+                    "message": {"role": "user", "content": content, "timestamp": timestamp}
+                })
+                .to_string()
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        std::fs::write(path, body).unwrap();
+    }
+
+    fn enable_persona_supersession(service: &MemoryService) {
+        // The store directory only materializes on the first write, so an
+        // enabled-from-the-start test must create it before settings.json.
+        std::fs::create_dir_all(&service.store.dir).unwrap();
+        std::fs::write(
+            std::path::Path::new(&service.store.dir).join("settings.json"),
+            serde_json::json!({"personaSupersession": true}).to_string(),
+        )
+        .unwrap();
+    }
+
+    #[tokio::test]
+    async fn import_apply_persona_supersession_marks_older_same_key_claim() {
+        let temp = tempfile::tempdir().unwrap();
+        let cwd = temp.path().join("repo");
+        let agent = temp.path().join("agent");
+        std::fs::create_dir_all(&cwd).unwrap();
+        std::fs::create_dir_all(&agent).unwrap();
+        let service =
+            MemoryService::new(&cwd.to_string_lossy(), &agent.to_string_lossy(), None).unwrap();
+        enable_persona_supersession(&service);
+        // Two turns: the coffee claim is cited at t=1000, the tea claim (a
+        // later report of the same preference dimension) at t=5000.
+        write_session(
+            &temp.path().join("session.jsonl"),
+            &[
+                (
+                    "row_1".to_string(),
+                    "I drink coffee every morning.".to_string(),
+                    1000,
+                ),
+                (
+                    "row_2".to_string(),
+                    "I switched to green tea, that is what I drink now.".to_string(),
+                    5000,
+                ),
+            ],
+        );
+        let overview = run_typed_import(
+            &service,
+            &temp.path().join("session.jsonl"),
+            serde_json::json!({
+                "summary": "import", "rationale": "test", "expectedOutcome": "test",
+                "edits": [
+                    {"action": "create", "kind": "memory", "id": "coffee_claim",
+                     "title": "Morning coffee",
+                     "content": "The user drinks coffee every morning.",
+                     "metadata": {"sourceIds": ["row_1"], "evidenceStatus": "cited",
+                                  "personaKey": "pref:morning-drink", "claimType": "stated"}},
+                    {"action": "create", "kind": "memory", "id": "tea_claim",
+                     "title": "Morning green tea",
+                     "content": "The user switched to green tea for their morning drink.",
+                     "metadata": {"sourceIds": ["row_2"], "evidenceStatus": "cited",
+                                  "personaKey": "pref:morning-drink", "claimType": "stated"}},
+                    {"action": "create", "kind": "memory", "id": "city_home",
+                     "title": "Home city",
+                     "content": "The user lives in Portland.",
+                     "metadata": {"sourceIds": ["row_1"], "evidenceStatus": "cited",
+                                  "personaKey": "fact:home-city", "claimType": "stated"}}
+                ]
+            }),
+        )
+        .await;
+        let report = &overview["personaSupersession"];
+        assert_eq!(report["status"], "superseded");
+        assert_eq!(report["groups"], 1);
+        assert_eq!(report["considered"], 2);
+        assert_eq!(report["superseded"], 1);
+        assert_eq!(report["applied"], true);
+        let document = service.store.read().unwrap();
+        // The later-reported tea claim stays current; the coffee claim is
+        // marked superseded by evidence-timestamp ordering.
+        let coffee = document.entries["memory"]["coffee_claim"].clone();
+        let tea = document.entries["memory"]["tea_claim"].clone();
+        assert_eq!(
+            coffee.metadata.get("supersededBy").and_then(Value::as_str),
+            Some("tea_claim")
+        );
+        assert_eq!(
+            coffee.metadata.get("status").and_then(Value::as_str),
+            Some("superseded")
+        );
+        assert!(tea.metadata.get("supersededBy").is_none());
+        assert_eq!(
+            tea.metadata.get("status").and_then(Value::as_str),
+            Some("current")
+        );
+        // A different key is untouched by the same-key grouping.
+        let city = document.entries["memory"]["city_home"].clone();
+        assert!(city.metadata.get("supersededBy").is_none());
+        assert_eq!(
+            city.metadata.get("status").and_then(Value::as_str),
+            Some("current")
+        );
+        // Supersession batch recorded as one deterministic psup_ event.
+        let psup_events = document
+            .memory
+            .events
+            .keys()
+            .filter(|id| id.starts_with("psup_"))
+            .count();
+        assert_eq!(psup_events, 1);
+        // Active search only returns the current claim.
+        let found = service.search("morning drink", false);
+        let active: Vec<&str> = found.iter().map(|hit| hit.entry.id.as_str()).collect();
+        assert!(active.contains(&"tea_claim"));
+        assert!(!active.contains(&"coffee_claim"));
+    }
+
+    #[tokio::test]
+    async fn import_apply_persona_supersession_flag_off_changes_nothing() {
+        let temp = tempfile::tempdir().unwrap();
+        let cwd = temp.path().join("repo");
+        let agent = temp.path().join("agent");
+        std::fs::create_dir_all(&cwd).unwrap();
+        std::fs::create_dir_all(&agent).unwrap();
+        let service =
+            MemoryService::new(&cwd.to_string_lossy(), &agent.to_string_lossy(), None).unwrap();
+        assert!(!service.store.settings().persona_supersession);
+        write_session(
+            &temp.path().join("session.jsonl"),
+            &[
+                (
+                    "row_1".to_string(),
+                    "I drink coffee every morning.".to_string(),
+                    1000,
+                ),
+                (
+                    "row_2".to_string(),
+                    "I switched to green tea, that is what I drink now.".to_string(),
+                    5000,
+                ),
+            ],
+        );
+        let overview = run_typed_import(
+            &service,
+            &temp.path().join("session.jsonl"),
+            serde_json::json!({
+                "summary": "import", "rationale": "test", "expectedOutcome": "test",
+                "edits": [
+                    {"action": "create", "kind": "memory", "id": "coffee_claim",
+                     "title": "Morning coffee",
+                     "content": "The user drinks coffee every morning.",
+                     "metadata": {"sourceIds": ["row_1"], "evidenceStatus": "cited",
+                                  "personaKey": "pref:morning-drink", "claimType": "stated"}},
+                    {"action": "create", "kind": "memory", "id": "tea_claim",
+                     "title": "Morning green tea",
+                     "content": "The user switched to green tea for their morning drink.",
+                     "metadata": {"sourceIds": ["row_2"], "evidenceStatus": "cited",
+                                  "personaKey": "pref:morning-drink", "claimType": "stated"}}
+                ]
+            }),
+        )
+        .await;
+        // No pass ran: no report section, no supersededBy, no psup_ event,
+        // and both same-key claims stay current.
+        assert!(overview.get("personaSupersession").is_none());
+        let document = service.store.read().unwrap();
+        for id in ["coffee_claim", "tea_claim"] {
+            let entry = document.entries["memory"][id].clone();
+            assert!(entry.metadata.get("supersededBy").is_none());
+            assert_eq!(
+                entry.metadata.get("status").and_then(Value::as_str),
+                Some("current")
+            );
+        }
+        assert!(document.memory.events.keys().all(|id| !id.starts_with("psup_")));
+        let found = service.search("morning drink", false);
+        let both: Vec<&str> = found.iter().map(|hit| hit.entry.id.as_str()).collect();
+        assert!(both.contains(&"coffee_claim"));
+        assert!(both.contains(&"tea_claim"));
+    }
+
+    #[tokio::test]
+    async fn import_apply_persona_supersession_keeps_losers_retained_and_queryable() {
+        let temp = tempfile::tempdir().unwrap();
+        let cwd = temp.path().join("repo");
+        let agent = temp.path().join("agent");
+        std::fs::create_dir_all(&cwd).unwrap();
+        std::fs::create_dir_all(&agent).unwrap();
+        let service =
+            MemoryService::new(&cwd.to_string_lossy(), &agent.to_string_lossy(), None).unwrap();
+        enable_persona_supersession(&service);
+        write_session(
+            &temp.path().join("session.jsonl"),
+            &[
+                (
+                    "row_1".to_string(),
+                    "I used to run in the park every weekend.".to_string(),
+                    1000,
+                ),
+                (
+                    "row_2".to_string(),
+                    "These days I swim at the pool instead of running.".to_string(),
+                    5000,
+                ),
+            ],
+        );
+        run_typed_import(
+            &service,
+            &temp.path().join("session.jsonl"),
+            serde_json::json!({
+                "summary": "import", "rationale": "test", "expectedOutcome": "test",
+                "edits": [
+                    {"action": "create", "kind": "memory", "id": "running_claim",
+                     "title": "Weekend running",
+                     "content": "The user ran in the park every weekend.",
+                     "metadata": {"sourceIds": ["row_1"], "evidenceStatus": "cited",
+                                  "personaKey": "pref:weekend-exercise", "claimType": "stated"}},
+                    {"action": "create", "kind": "memory", "id": "swimming_claim",
+                     "title": "Weekend swimming",
+                     "content": "The user now swims at the pool on weekends.",
+                     "metadata": {"sourceIds": ["row_2"], "evidenceStatus": "cited",
+                                  "personaKey": "pref:weekend-exercise", "claimType": "stated"}}
+                ]
+            }),
+        )
+        .await;
+        // The loser is retained in the store (never deleted)...
+        let document = service.store.read().unwrap();
+        let loser = document.entries["memory"]["running_claim"].clone();
+        assert_eq!(loser.content, "The user ran in the park every weekend.");
+        assert_eq!(
+            loser.metadata.get("supersededBy").and_then(Value::as_str),
+            Some("swimming_claim")
+        );
+        // ...excluded from active recall for the shared topic words...
+        let found = service.search("weekend exercise habit", false);
+        let active: Vec<&str> = found.iter().map(|hit| hit.entry.id.as_str()).collect();
+        assert!(active.contains(&"swimming_claim"));
+        assert!(!active.contains(&"running_claim"));
+        // ...and still queryable through includeInactive search, including
+        // by its own distinctive vocabulary (the 238/589 PersonaMem
+        // retained-history questions need the old claim reachable).
+        let found_inactive = service.search("weekend exercise habit", true);
+        let inactive: Vec<&str> = found_inactive
+            .iter()
+            .map(|hit| hit.entry.id.as_str())
+            .collect();
+        assert!(inactive.contains(&"swimming_claim"));
+        assert!(inactive.contains(&"running_claim"));
+        let found_old = service.search("ran in the park", true);
+        let old_words: Vec<&str> = found_old.iter().map(|hit| hit.entry.id.as_str()).collect();
+        assert!(old_words.contains(&"running_claim"));
+    }
+
+    #[tokio::test]
+    async fn import_apply_persona_supersession_canary_new_report_supersedes_old_across_jobs() {
+        // LME-M e61a7584 knowledge-update semantics: a later session's
+        // ownership report supersedes the claim an earlier import stored,
+        // and the chain A→B→C stays intact through the third import.
+        let temp = tempfile::tempdir().unwrap();
+        let cwd = temp.path().join("repo");
+        let agent = temp.path().join("agent");
+        std::fs::create_dir_all(&cwd).unwrap();
+        std::fs::create_dir_all(&agent).unwrap();
+        let service =
+            MemoryService::new(&cwd.to_string_lossy(), &agent.to_string_lossy(), None).unwrap();
+        enable_persona_supersession(&service);
+        write_session(
+            &temp.path().join("s1.jsonl"),
+            &[(
+                "row_1".to_string(),
+                "I own half of TechNova, my partner Alex owns the rest.".to_string(),
+                1000,
+            )],
+        );
+        run_typed_import(
+            &service,
+            &temp.path().join("s1.jsonl"),
+            serde_json::json!({
+                "summary": "import", "rationale": "test", "expectedOutcome": "test",
+                "edits": [{
+                    "action": "create", "kind": "memory", "id": "tech_nova_5050",
+                    "title": "TechNova ownership split",
+                    "content": "The user owns half of TechNova; Alex owns the rest.",
+                    "metadata": {"sourceIds": ["row_1"], "evidenceStatus": "cited",
+                                 "personaKey": "fact:technova-ownership", "claimType": "stated"}}
+                ]
+            }),
+        )
+        .await;
+        let first = service.store.read().unwrap().entries["memory"]["tech_nova_5050"].clone();
+        assert!(first.metadata.get("supersededBy").is_none());
+
+        // A later session reports the transfer. The new claim cites this
+        // job's own evidence, so it beats the old claim whose records this
+        // job never loaded (created_at fallback).
+        write_session(
+            &temp.path().join("s2.jsonl"),
+            &[(
+                "row_2".to_string(),
+                "I sold my TechNova stake; Dana owns it all now.".to_string(),
+                9000,
+            )],
+        );
+        let second = run_typed_import(
+            &service,
+            &temp.path().join("s2.jsonl"),
+            serde_json::json!({
+                "summary": "import", "rationale": "test", "expectedOutcome": "test",
+                "edits": [{
+                    "action": "create", "kind": "memory", "id": "tech_nova_dana",
+                    "title": "TechNova sold to Dana",
+                    "content": "The user sold the TechNova stake; Dana owns it all now.",
+                    "metadata": {"sourceIds": ["row_2"], "evidenceStatus": "cited",
+                                 "personaKey": "fact:technova-ownership", "claimType": "stated",
+                                 "reason": "sold the stake"}
+                }]
+            }),
+        )
+        .await;
+        assert_eq!(second["personaSupersession"]["status"], "superseded");
+        let document = service.store.read().unwrap();
+        let old = document.entries["memory"]["tech_nova_5050"].clone();
+        let new = document.entries["memory"]["tech_nova_dana"].clone();
+        assert_eq!(
+            old.metadata.get("supersededBy").and_then(Value::as_str),
+            Some("tech_nova_dana")
+        );
+        assert!(new.metadata.get("supersededBy").is_none());
+        // Chain continuation: a third report supersedes the second claim and
+        // leaves the first link untouched (A→B stays while B→C is added).
+        write_session(
+            &temp.path().join("s3.jsonl"),
+            &[(
+                "row_3".to_string(),
+                "TechNova was dissolved last month, nobody owns it anymore.".to_string(),
+                20000,
+            )],
+        );
+        let third = run_typed_import(
+            &service,
+            &temp.path().join("s3.jsonl"),
+            serde_json::json!({
+                "summary": "import", "rationale": "test", "expectedOutcome": "test",
+                "edits": [{
+                    "action": "create", "kind": "memory", "id": "tech_nova_dissolved",
+                    "title": "TechNova dissolved",
+                    "content": "TechNova was dissolved; nobody owns it anymore.",
+                    "metadata": {"sourceIds": ["row_3"], "evidenceStatus": "cited",
+                                 "personaKey": "fact:technova-ownership", "claimType": "stated"}
+                }]
+            }),
+        )
+        .await;
+        assert_eq!(third["personaSupersession"]["status"], "superseded");
+        let document = service.store.read().unwrap();
+        let a = document.entries["memory"]["tech_nova_5050"].clone();
+        let b = document.entries["memory"]["tech_nova_dana"].clone();
+        let c = document.entries["memory"]["tech_nova_dissolved"].clone();
+        assert_eq!(
+            a.metadata.get("supersededBy").and_then(Value::as_str),
+            Some("tech_nova_dana"),
+            "the oldest link is preserved"
+        );
+        assert_eq!(
+            b.metadata.get("supersededBy").and_then(Value::as_str),
+            Some("tech_nova_dissolved")
+        );
+        assert!(c.metadata.get("supersededBy").is_none());
+        // Exactly one current claim for the key after three reports.
+        let current = service.search("who owns technova", false);
+        assert!(!current.is_empty());
+        assert!(current.iter().all(|hit| hit.entry.id != "tech_nova_5050"));
+        assert!(current.iter().all(|hit| hit.entry.id != "tech_nova_dana"));
+        // Retrying the last import is a no-op: the job is already applied and
+        // the group already has exactly one current claim.
+        let revision = service.store.read().unwrap().memory.revision;
+        let retry = service
+            .request(
+                "import_apply",
+                serde_json::json!({"id": third["id"].as_str().unwrap(), "revision": revision})
+                    .as_object()
+                    .unwrap(),
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+        assert_eq!(retry["status"], "applied");
+        assert_eq!(retry["personaSupersession"]["status"], "unchanged");
+        assert_eq!(retry["personaSupersession"]["superseded"], 0);
     }
 }
