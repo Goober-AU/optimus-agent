@@ -607,6 +607,11 @@ pub const RLM_CHILD_AGENT_STATUS_DONE: &str = "done";
 pub const RLM_CHILD_AGENT_STATUS_ERROR: &str = "error";
 pub const RLM_CHILD_AGENT_STATUS_CANCELLED: &str = "cancelled";
 
+/// A child tool call running longer than this is surfaced as stalled in
+/// roster/collect summaries, with one notice event per stalled call. Detection
+/// piggybacks on existing event and read traffic; no timer is spawned.
+pub const DEFAULT_RLM_CHILD_TOOL_STALL_NOTICE_MS: u64 = 10 * 60_000;
+
 /// `RlmChildAgentActivity`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -614,6 +619,12 @@ pub struct RlmChildAgentActivity {
     pub kind: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tool_name: Option<String>,
+    /// Wall-clock start of this activity in Unix milliseconds, captured from
+    /// the child event when it carries a timestamp. Read paths compute a live
+    /// elapsed value from it so a silent long-running tool still shows a
+    /// growing duration.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub since_ms: Option<f64>,
 }
 
 /// `RlmChildAgentSnapshot`.
@@ -644,6 +655,19 @@ pub struct RlmChildAgentSnapshot {
     pub session_dir: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub activity: Option<RlmChildAgentActivity>,
+    /// Live age of the current activity (`now - activity.sinceMs`),
+    /// recomputed at read time so a running tool keeps showing a growing
+    /// duration even when the child emits no events.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub activity_elapsed_ms: Option<f64>,
+    /// Present when the executing tool call exceeds
+    /// `DEFAULT_RLM_CHILD_TOOL_STALL_NOTICE_MS`; the activity stays attached.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stalled_ms: Option<f64>,
+    /// Wording of the one-per-stalled-call notice, set only on the emitted
+    /// stall `RlmChildUpdate` event, not on ordinary roster reads.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stall_notice: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub replied_since_task: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2354,6 +2378,26 @@ pub fn rlm_child_label(prompt: &str) -> String {
     }
 }
 
+/// Live age of a child's current activity: `(elapsedMs, stalledMs)` where
+/// `elapsedMs` is `now - activity.sinceMs` recomputed at read time, and
+/// `stalledMs` is set once a tool execution exceeds
+/// `DEFAULT_RLM_CHILD_TOOL_STALL_NOTICE_MS` (the activity stays attached).
+pub fn rlm_child_activity_age(
+    activity: &Option<RlmChildAgentActivity>,
+) -> (Option<f64>, Option<f64>) {
+    let Some(activity) = activity else {
+        return (None, None);
+    };
+    let Some(since_ms) = activity.since_ms else {
+        return (None, None);
+    };
+    let elapsed_ms = (now_ms() - since_ms).max(0.0);
+    let stalled_ms = (activity.kind == "executing"
+        && elapsed_ms > DEFAULT_RLM_CHILD_TOOL_STALL_NOTICE_MS as f64)
+        .then_some(elapsed_ms);
+    (Some(elapsed_ms), stalled_ms)
+}
+
 /// `readAssistantText`.
 pub fn read_assistant_text(message: &AssistantMessage) -> String {
     message
@@ -2491,6 +2535,9 @@ pub struct RlmChildRun {
     pub emit_update: Option<Arc<dyn Fn() + Send + Sync>>,
     pub last_emitted_update: Option<String>,
     pub unsubscribe: Option<Arc<dyn Fn() + Send + Sync>>,
+    /// `sinceMs` of the tool call whose stall notice was already emitted.
+    /// Reset when the tool call ends; one notice is emitted per stalled call.
+    pub stall_notice_since_ms: Option<f64>,
 }
 
 /// `RetainedRlmChild`.
@@ -17541,6 +17588,7 @@ fn empty_rlm_child_run(child_id: &str) -> RlmChildRun {
         emit_update: None,
         last_emitted_update: None,
         unsubscribe: None,
+        stall_notice_since_ms: None,
     }
 }
 

@@ -2603,6 +2603,9 @@ impl AgentSession {
                 recap: None,
                 session_dir: subagent.session_dir.clone(),
                 activity: None,
+                activity_elapsed_ms: None,
+                stalled_ms: None,
+                stall_notice: None,
                 replied_since_task: None,
                 error: Some("Deleted by parent orchestrator".to_string()),
             },
@@ -2903,6 +2906,11 @@ impl AgentSession {
                 _ = self.session_action_commit_dispose_abort.cancelled() => {}
             }
         }
+        // Stall visibility piggybacks on collect reads: a silent child whose
+        // tool call outlived the threshold gets one notice per stalled call.
+        for run in runs.values() {
+            self.maybe_emit_rlm_child_stall_notice(run);
+        }
         let mut results: Vec<_> = runs
             .into_values()
             .map(|run| {
@@ -2911,6 +2919,7 @@ impl AgentSession {
                     .session
                     .as_ref()
                     .or_else(|| retained.get(&run.id).map(|entry| &entry.session));
+                let (activity_elapsed_ms, stalled_ms) = rlm_child_activity_age(&run.activity);
                 RlmCollectResultEntry {
                     rlm_child_id: run.id,
                     session_name: child
@@ -2925,6 +2934,8 @@ impl AgentSession {
                     tool_use_count: Some(run.tool_use_count),
                     replied_since_task: child
                         .and_then(|child| child.replied_to_parent_since_task()),
+                    activity_elapsed_ms,
+                    stalled_ms,
                 }
             })
             .collect();
@@ -2949,6 +2960,9 @@ impl AgentSession {
             .as_ref()
             .and_then(|child| child.model())
             .or_else(|| run.model.clone());
+        // Read-time duration: a running tool keeps showing a growing age even
+        // while the child emits no events.
+        let (activity_elapsed_ms, stalled_ms) = rlm_child_activity_age(&run.activity);
         RlmChildAgentSnapshot {
             id: run.id.clone(),
             parent_id: self.rlm_parent_node_id.clone(),
@@ -2973,6 +2987,9 @@ impl AgentSession {
             recap: child.as_ref().and_then(|child| child.get_current_recap()),
             session_dir: run.session_dir.clone(),
             activity: run.activity.clone(),
+            activity_elapsed_ms,
+            stalled_ms,
+            stall_notice: None,
             replied_since_task: child
                 .as_ref()
                 .and_then(|child| child.replied_to_parent_since_task()),
@@ -3043,10 +3060,14 @@ impl AgentSession {
                         "waiting".to_string()
                     },
                     tool_name: None,
+                    since_ms: None,
                 })
             } else {
                 None
             },
+            activity_elapsed_ms: None,
+            stalled_ms: None,
+            stall_notice: None,
             replied_since_task: child.replied_to_parent_since_task(),
             error: None,
         }

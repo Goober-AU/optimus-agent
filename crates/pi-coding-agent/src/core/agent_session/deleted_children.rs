@@ -54,6 +54,8 @@ impl AgentSession {
             replied_since_task: run
                 .and_then(|run| run.session.as_ref())
                 .and_then(|child| child.replied_to_parent_since_task()),
+            activity_elapsed_ms: None,
+            stalled_ms: None,
         };
         self.deleted_rlm_children.lock().unwrap().insert(
             subagent.rlm_child_id.clone(),
