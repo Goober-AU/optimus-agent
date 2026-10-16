@@ -3,9 +3,12 @@
 
 use super::*;
 use crate::core::agent_messages::{
+    agent_session_message_prompt_body, select_occ2_dialect, wrap_outgoing_body,
     AgentFamilyRosterResult, AgentSessionMessageReceipt, AgentSessionMessageSendInput,
+    Occ2SendPolicy, DEFAULT_AGENT_MESSAGE_MAX_CHARS,
 };
 use crate::core::messages::RlmChildFailureDetails;
+use crate::core::occ::dialect::{DialectRegistry, OccCapability};
 
 pub(super) struct SessionMessageController(pub std::sync::Weak<AgentSession>);
 
@@ -45,6 +48,82 @@ impl AgentSessionMessageController for SessionMessageController {
                 .send_agent_message(input.target, input.message, input.receiver_role)
                 .await
         })
+    }
+
+    /// OCC-2 S1 negotiation source (OCC-2 integration design, section 4):
+    /// the feature flag plus the target's advertised capability decide the
+    /// dialect; anything missing keeps the send OCC-1.
+    fn occ2_send_policy(&self, target: &str) -> BoxFuture<Occ2SendPolicy> {
+        let weak = self.0.clone();
+        let target = target.to_string();
+        Box::pin(async move {
+            match weak.upgrade() {
+                Some(session) => session.occ2_target_send_policy(&target).await,
+                None => Occ2SendPolicy::disabled(),
+            }
+        })
+    }
+}
+
+impl AgentSession {
+    /// The OCC-2 feature flag (settings `agentCommunication.occ2Enabled`),
+    /// default OFF: sends stay byte-identical OCC-0/OCC-1.
+    fn occ2_enabled(&self) -> bool {
+        self.settings_manager
+            .lock()
+            .unwrap()
+            .get_agent_communication_occ2_enabled()
+    }
+
+    /// OCC-2 send policy for one target session. The peer capability comes
+    /// from the family listing's optional `occ_capability` field; a target
+    /// that reports nothing, or a dialect this build does not register,
+    /// keeps the send OCC-1. The dev flag allows the unevaluated built-in
+    /// dialect; production requires an evaluated card (design section 3,
+    /// tier 2).
+    pub(super) async fn occ2_target_send_policy(
+        self: &Arc<Self>,
+        target: &str,
+    ) -> Occ2SendPolicy {
+        if !self.occ2_enabled() {
+            return Occ2SendPolicy::disabled();
+        }
+        let Some(controller) = self.agent_message_controller.clone() else {
+            return Occ2SendPolicy::disabled();
+        };
+        let listed = match controller.list_agents().await {
+            Ok(Some(listed)) => listed,
+            _ => return Occ2SendPolicy::disabled(),
+        };
+        let peer = listed
+            .agents
+            .iter()
+            .find(|agent| agent.active_session_id == target || agent.session_id == target)
+            .and_then(|agent| agent.occ_capability.clone());
+        let registry = DialectRegistry::with_sym_v1();
+        match select_occ2_dialect(&OccCapability::here(), peer.as_ref(), &registry, true) {
+            Some(dialect) => {
+                Occ2SendPolicy::for_dialect(registry, dialect, DEFAULT_AGENT_MESSAGE_MAX_CHARS)
+            }
+            None => Occ2SendPolicy::disabled(),
+        }
+    }
+
+    /// OCC-2 send policy for the S2 spawn seam: a freshly spawned child
+    /// shares this daemon's codec build, so v1 negotiates
+    /// `OccCapability::here()` against itself (design sections 4 and 7).
+    async fn occ2_spawn_send_policy(self: &Arc<Self>) -> Occ2SendPolicy {
+        if !self.occ2_enabled() {
+            return Occ2SendPolicy::disabled();
+        }
+        let registry = DialectRegistry::with_sym_v1();
+        let local = OccCapability::here();
+        match select_occ2_dialect(&local, Some(&local), &registry, true) {
+            Some(dialect) => {
+                Occ2SendPolicy::for_dialect(registry, dialect, DEFAULT_AGENT_MESSAGE_MAX_CHARS)
+            }
+            None => Occ2SendPolicy::disabled(),
+        }
     }
 }
 
@@ -473,13 +552,21 @@ impl AgentSession {
         }));
         run.lock().unwrap().unsubscribe = Some(unsubscribe);
         let current = run.lock().unwrap().clone();
-        let content = format!("[task from parent]\n\n{}", current.prompt);
+        // OCC-2 S2 seam (OCC-2 integration design, section 2): wrap the
+        // spawn prompt when the feature is enabled and a dialect is
+        // negotiated for the child. The model-visible prompt carries the
+        // symbolic section of a dual payload; the durable `message` detail
+        // keeps the full dual body.
+        let spawn_policy = self.occ2_spawn_send_policy().await;
+        let dual_prompt = wrap_outgoing_body(&current.prompt, &spawn_policy);
+        let visible_prompt = agent_session_message_prompt_body(&dual_prompt).to_string();
+        let content = format!("[task from parent]\n\n{}", visible_prompt);
         let before_reply = child.parent_reply_count.load(Ordering::SeqCst);
         child.prompt_and_wait(&content, Some(PromptOptions {
             expand_prompt_templates: Some(false), source: Some(crate::core::session_action_store::InputSource::Extension),
             custom_message: Some(CustomMessage {
                 role: "custom".into(), custom_type: AGENT_MESSAGE_CUSTOM_TYPE.into(), content: CustomMessageContent::Text(content.clone()), display: true,
-                details: Some(serde_json::json!({ "id": format!("spawn:{}", current.id), "message": current.prompt, "from": { "sessionId": self.session_id(), "sessionName": self.session_name(), "activeSessionId": self.current_active_session_id().await }, "fromRelationship": "parent" })),
+                details: Some(serde_json::json!({ "id": format!("spawn:{}", current.id), "message": dual_prompt, "from": { "sessionId": self.session_id(), "sessionName": self.session_name(), "activeSessionId": self.current_active_session_id().await }, "fromRelationship": "parent" })),
                 timestamp: now_ms_i64(),
             }), ..Default::default()
         })).await?;

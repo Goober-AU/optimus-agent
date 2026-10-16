@@ -1,0 +1,2042 @@
+{
+  "meta": {
+    "generator": "research/tasks/gen_tasks.py",
+    "seed_base": "occ23-bench-tasks-v1",
+    "split": "dev",
+    "families": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "family_names": {
+      "A": "fact handoff",
+      "B": "state update",
+      "C": "procedural transfer",
+      "D": "multi-fact reasoning",
+      "E": "dependent calculation"
+    },
+    "count": 150,
+    "difficulty_counts": {
+      "easy": 71,
+      "hard": 27,
+      "medium": 52
+    },
+    "tasks_sha256": "9514627bfcfea0d7c63c10ec98e9dabe3e74c67862f58653570862bfc9745474"
+  },
+  "tasks": [
+    {
+      "task_id": "A-dev-001",
+      "family": "A",
+      "sender_input": "Configuration briefing for nodepool pool-notify (fact ids in brackets):\n  [F1] node count: 17\n  [F2] container runtime: containerd\n  [F3] kubernetes version: v1.31.6\n  [F4] autoscale maximum: 21\n  [F5] region: sa-east\n  [F6] owner team: cinder",
+      "receiver_task": "Using only the facts the sender communicates, what is the region for nodepool pool-notify? Answer with the value only.",
+      "gold_answer": "sa-east",
+      "required_facts": [
+        "F5"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-dev-002",
+      "family": "A",
+      "sender_input": "Configuration briefing for subscription sub-27327 (fact ids in brackets):\n  [F1] quota expiry: 2027-02-19\n  [F2] vCPU used: 42\n  [F3] VM family: standard-d3s\n  [F4] vCPU limit: 512",
+      "receiver_task": "Using only the facts the sender communicates, what is the quota expiry for subscription sub-27327? Answer with the value only.",
+      "gold_answer": "2027-02-19",
+      "required_facts": [
+        "F1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-003",
+      "family": "A",
+      "sender_input": "Configuration briefing for auth-service (fact ids in brackets):\n  [F1] host address: 10.249.223.224\n  [F2] listen port: 29763\n  [F3] app user: svc_notify\n  [F4] backup window: 04:00-08:00 UTC\n  [F5] max connections: 186\n  [F6] database engine: mongodb\n  [F7] database name: db_model",
+      "receiver_task": "Using only the facts the sender communicates, what is the app user for auth-service? Answer with the value only.",
+      "gold_answer": "svc_notify",
+      "required_facts": [
+        "F3"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-dev-004",
+      "family": "A",
+      "sender_input": "Configuration briefing for audit-scheduler (fact ids in brackets):\n  [F1] deployed version: v0.3.26\n  [F2] service name: audit-scheduler\n  [F3] listen port: 56921\n  [F4] host address: 10.88.102.202",
+      "receiver_task": "Using only the facts the sender communicates, on which host and port does audit-scheduler listen? Answer as host:port.",
+      "gold_answer": "10.88.102.202:56921",
+      "required_facts": [
+        "F3",
+        "F4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-dev-005",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v5.13.3 (fact ids in brackets):\n  [F1] source commit: 569e4b673\n  [F2] release channel: nightly\n  [F3] release version: v0.1.26\n  [F4] signatory: release engineer tanaka",
+      "receiver_task": "Using only the facts the sender communicates, what is the signatory for release v5.13.3? Answer with the value only.",
+      "gold_answer": "release engineer tanaka",
+      "required_facts": [
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-006",
+      "family": "A",
+      "sender_input": "Configuration briefing for policy-hub (fact ids in brackets):\n  [F1] listen port: 3646\n  [F2] region: us-west\n  [F3] service name: policy-hub\n  [F4] host address: 10.42.144.90\n  [F5] environment: staging\n  [F6] replica count: 10\n  [F7] deployed version: v6.11.14\n  [F8] owner team: borealis",
+      "receiver_task": "Using only the facts the sender communicates, what is the owner team for policy-hub? Answer with the value only.",
+      "gold_answer": "borealis",
+      "required_facts": [
+        "F8"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "A-dev-007",
+      "family": "A",
+      "sender_input": "Configuration briefing for vector-hub (fact ids in brackets):\n  [F1] max connections: 376\n  [F2] database engine: mysql\n  [F3] host address: 10.230.88.161\n  [F4] backup window: 00:00-06:00 UTC\n  [F5] app user: svc_gateway",
+      "receiver_task": "Using only the facts the sender communicates, what is the backup window for vector-hub? Answer with the value only.",
+      "gold_answer": "00:00-06:00 UTC",
+      "required_facts": [
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-008",
+      "family": "A",
+      "sender_input": "Configuration briefing for search-edge (fact ids in brackets):\n  [F1] app user: svc_billing\n  [F2] max connections: 261\n  [F3] host address: 10.177.15.169\n  [F4] database name: db_vector\n  [F5] backup window: 04:00-06:00 UTC\n  [F6] database engine: mysql\n  [F7] listen port: 64383",
+      "receiver_task": "Using only the facts the sender communicates, what is the app user for search-edge? Answer with the value only.",
+      "gold_answer": "svc_billing",
+      "required_facts": [
+        "F1"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-dev-009",
+      "family": "A",
+      "sender_input": "Configuration briefing for subscription sub-11644 (fact ids in brackets):\n  [F1] owner team: grit\n  [F2] vCPU limit: 128\n  [F3] quota expiry: 2027-02-02\n  [F4] region: ap-south\n  [F5] VM family: standard-d2s\n  [F6] vCPU used: 4",
+      "receiver_task": "Using only the facts the sender communicates, what is the region for subscription sub-11644? Answer with the value only.",
+      "gold_answer": "ap-south",
+      "required_facts": [
+        "F4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-dev-010",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v1.12.3 (fact ids in brackets):\n  [F1] source commit: 20d66e772\n  [F2] release channel: stable\n  [F3] artifact digest: 8e8bcdf216aa\n  [F4] signatory: release engineer okafor\n  [F5] release date: 2026-11-03\n  [F6] release version: v3.0.30",
+      "receiver_task": "Using only the facts the sender communicates, what is the signatory for release v1.12.3? Answer with the value only.",
+      "gold_answer": "release engineer okafor",
+      "required_facts": [
+        "F4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-dev-011",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v1.7.25 (fact ids in brackets):\n  [F1] release channel: nightly\n  [F2] artifact digest: 064a7fa3b7c0\n  [F3] signatory: release engineer moreau\n  [F4] source commit: f6e675824\n  [F5] release date: 2026-11-26",
+      "receiver_task": "Using only the facts the sender communicates, what is the artifact digest for release v1.7.25? Answer with the value only.",
+      "gold_answer": "064a7fa3b7c0",
+      "required_facts": [
+        "F2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-012",
+      "family": "A",
+      "sender_input": "Configuration briefing for subscription sub-92849 (fact ids in brackets):\n  [F1] owner team: atlas\n  [F2] VM family: standard-d2s\n  [F3] quota expiry: 2027-02-24\n  [F4] region: us-east",
+      "receiver_task": "Using only the facts the sender communicates, what is the region for subscription sub-92849? Answer with the value only.",
+      "gold_answer": "us-east",
+      "required_facts": [
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-013",
+      "family": "A",
+      "sender_input": "Configuration briefing for render-scheduler (fact ids in brackets):\n  [F1] host address: 10.228.195.155\n  [F2] backup window: 03:00-09:00 UTC\n  [F3] listen port: 30488\n  [F4] database engine: postgres\n  [F5] app user: svc_cache",
+      "receiver_task": "Using only the facts the sender communicates, what is the host address for render-scheduler? Answer with the value only.",
+      "gold_answer": "10.228.195.155",
+      "required_facts": [
+        "F1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-014",
+      "family": "A",
+      "sender_input": "Configuration briefing for nodepool pool-ingest (fact ids in brackets):\n  [F1] kubernetes version: v1.30.0\n  [F2] node count: 20\n  [F3] autoscale maximum: 57\n  [F4] container runtime: containerd\n  [F5] owner team: halcyon\n  [F6] region: us-west",
+      "receiver_task": "Using only the facts the sender communicates, what is the kubernetes version for nodepool pool-ingest? Answer with the value only.",
+      "gold_answer": "v1.30.0",
+      "required_facts": [
+        "F1"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-dev-015",
+      "family": "A",
+      "sender_input": "Configuration briefing for ingest-edge (fact ids in brackets):\n  [F1] max connections: 125\n  [F2] listen port: 40178\n  [F3] host address: 10.3.109.235\n  [F4] database engine: postgres",
+      "receiver_task": "Using only the facts the sender communicates, what is the host address for ingest-edge? Answer with the value only.",
+      "gold_answer": "10.3.109.235",
+      "required_facts": [
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-016",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v4.11.19 (fact ids in brackets):\n  [F1] release date: 2026-11-17\n  [F2] signatory: release engineer lindqvist\n  [F3] release version: v8.20.25\n  [F4] release channel: stable\n  [F5] artifact digest: a6df7db4cd47",
+      "receiver_task": "Using only the facts the sender communicates, what is the artifact digest for release v4.11.19? Answer with the value only.",
+      "gold_answer": "a6df7db4cd47",
+      "required_facts": [
+        "F5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-017",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v8.17.29 (fact ids in brackets):\n  [F1] source commit: c754a9ef1\n  [F2] release date: 2026-11-07\n  [F3] signatory: release engineer moreau\n  [F4] artifact digest: e8caef527964\n  [F5] release channel: beta\n  [F6] release version: v6.7.29",
+      "receiver_task": "Using only the facts the sender communicates, what is the signatory for release v8.17.29? Answer with the value only.",
+      "gold_answer": "release engineer moreau",
+      "required_facts": [
+        "F3"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-dev-018",
+      "family": "A",
+      "sender_input": "Configuration briefing for subscription sub-51061 (fact ids in brackets):\n  [F1] vCPU limit: 64\n  [F2] VM family: standard-d7s\n  [F3] owner team: atlas\n  [F4] region: us-east\n  [F5] vCPU used: 70",
+      "receiver_task": "Using only the facts the sender communicates, what is the owner team for subscription sub-51061? Answer with the value only.",
+      "gold_answer": "atlas",
+      "required_facts": [
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-019",
+      "family": "A",
+      "sender_input": "Configuration briefing for nodepool pool-policy (fact ids in brackets):\n  [F1] region: eu-west\n  [F2] autoscale maximum: 50\n  [F3] node count: 29\n  [F4] owner team: ember\n  [F5] kubernetes version: v1.32.6\n  [F6] container runtime: containerd",
+      "receiver_task": "Using only the facts the sender communicates, what is the node count for nodepool pool-policy? Answer with the value only.",
+      "gold_answer": "29",
+      "required_facts": [
+        "F3"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-dev-020",
+      "family": "A",
+      "sender_input": "Configuration briefing for subscription sub-94187 (fact ids in brackets):\n  [F1] owner team: borealis\n  [F2] VM family: standard-d6s\n  [F3] quota expiry: 2027-02-21\n  [F4] region: ap-south\n  [F5] vCPU used: 31\n  [F6] vCPU limit: 64",
+      "receiver_task": "Using only the facts the sender communicates, what is the VM family for subscription sub-94187? Answer with the value only.",
+      "gold_answer": "standard-d6s",
+      "required_facts": [
+        "F2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-dev-021",
+      "family": "A",
+      "sender_input": "Configuration briefing for gateway-relay (fact ids in brackets):\n  [F1] app user: svc_search\n  [F2] host address: 10.12.57.165\n  [F3] database engine: mysql\n  [F4] listen port: 13645\n  [F5] database name: db_search",
+      "receiver_task": "Using only the facts the sender communicates, on which host and port does gateway-relay listen? Answer as host:port.",
+      "gold_answer": "10.12.57.165:13645",
+      "required_facts": [
+        "F2",
+        "F4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-dev-022",
+      "family": "A",
+      "sender_input": "Configuration briefing for subscription sub-74399 (fact ids in brackets):\n  [F1] VM family: standard-d2s\n  [F2] quota expiry: 2027-02-12\n  [F3] vCPU limit: 256\n  [F4] owner team: delta",
+      "receiver_task": "Using only the facts the sender communicates, what is the vCPU limit for subscription sub-74399? Answer with the value only.",
+      "gold_answer": "256",
+      "required_facts": [
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-023",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v3.1.2 (fact ids in brackets):\n  [F1] release version: v9.14.26\n  [F2] artifact digest: 07c9a1699b5f\n  [F3] release channel: nightly\n  [F4] release date: 2026-11-01\n  [F5] source commit: 0d88c3393",
+      "receiver_task": "Using only the facts the sender communicates, what is the release version for release v3.1.2? Answer with the value only.",
+      "gold_answer": "v9.14.26",
+      "required_facts": [
+        "F1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-024",
+      "family": "A",
+      "sender_input": "Configuration briefing for auth-hub (fact ids in brackets):\n  [F1] region: sa-east\n  [F2] host address: 10.96.126.235\n  [F3] deployed version: v2.19.29\n  [F4] environment: production",
+      "receiver_task": "Using only the facts the sender communicates, what is the deployed version for auth-hub? Answer with the value only.",
+      "gold_answer": "v2.19.29",
+      "required_facts": [
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-025",
+      "family": "A",
+      "sender_input": "Configuration briefing for subscription sub-24968 (fact ids in brackets):\n  [F1] owner team: fjord\n  [F2] region: us-east\n  [F3] quota expiry: 2027-02-20\n  [F4] vCPU limit: 64\n  [F5] VM family: standard-d8s",
+      "receiver_task": "Using only the facts the sender communicates, what is the quota expiry for subscription sub-24968? Answer with the value only.",
+      "gold_answer": "2027-02-20",
+      "required_facts": [
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-026",
+      "family": "A",
+      "sender_input": "Configuration briefing for gateway-relay (fact ids in brackets):\n  [F1] listen port: 18435\n  [F2] host address: 10.161.245.58\n  [F3] backup window: 02:00-09:00 UTC\n  [F4] database name: db_billing\n  [F5] app user: svc_notify\n  [F6] max connections: 345\n  [F7] database engine: postgres",
+      "receiver_task": "Using only the facts the sender communicates, what is the listen port for gateway-relay? Answer with the value only.",
+      "gold_answer": "18435",
+      "required_facts": [
+        "F1"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-dev-027",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v8.15.18 (fact ids in brackets):\n  [F1] release date: 2026-11-21\n  [F2] artifact digest: 3358c523a63e\n  [F3] release channel: beta\n  [F4] release version: v1.18.8\n  [F5] source commit: 17a39a1d3",
+      "receiver_task": "Using only the facts the sender communicates, what is the release date for release v8.15.18? Answer with the value only.",
+      "gold_answer": "2026-11-21",
+      "required_facts": [
+        "F1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-028",
+      "family": "A",
+      "sender_input": "Configuration briefing for subscription sub-31424 (fact ids in brackets):\n  [F1] quota expiry: 2027-02-27\n  [F2] vCPU limit: 64\n  [F3] region: ap-south\n  [F4] owner team: delta",
+      "receiver_task": "Using only the facts the sender communicates, what is the region for subscription sub-31424? Answer with the value only.",
+      "gold_answer": "ap-south",
+      "required_facts": [
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-dev-029",
+      "family": "A",
+      "sender_input": "Configuration briefing for nodepool pool-gateway (fact ids in brackets):\n  [F1] kubernetes version: v1.27.2\n  [F2] node count: 40\n  [F3] container runtime: cri-o\n  [F4] region: eu-north\n  [F5] autoscale maximum: 48\n  [F6] owner team: borealis",
+      "receiver_task": "Using only the facts the sender communicates, what is the region for nodepool pool-gateway? Answer with the value only.",
+      "gold_answer": "eu-north",
+      "required_facts": [
+        "F4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-dev-030",
+      "family": "A",
+      "sender_input": "Configuration briefing for subscription sub-36806 (fact ids in brackets):\n  [F1] vCPU used: 40\n  [F2] region: eu-north\n  [F3] owner team: atlas\n  [F4] quota expiry: 2027-02-27\n  [F5] VM family: standard-d7s\n  [F6] vCPU limit: 512",
+      "receiver_task": "Using only the facts the sender communicates, what is the VM family for subscription sub-36806? Answer with the value only.",
+      "gold_answer": "standard-d7s",
+      "required_facts": [
+        "F5"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-dev-001",
+      "family": "B",
+      "sender_input": "Entity under observation: order ord-d2428 (a customer order).\nInitial state: placed.\nLegal transitions accepted by the controller:\n  placed -> confirmed\n  confirmed -> packed\n  packed -> shipped\n  shipped -> delivered\n  placed -> cancelled\n  confirmed -> cancelled\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: placed -> confirmed (accepted)\n  E2: confirmed -> cancelled (accepted)\n  E3: cancelled -> delivered (rejected: transition not legal)\n  E4: delivered -> shipped (rejected: transition not legal)\n  E5: cancelled -> placed (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of order ord-d2428? Answer with the exact state name.",
+      "gold_answer": "cancelled",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-dev-002",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-d9238 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: pending -> building (accepted)\n  E2: building -> built (accepted)\n  E3: built -> testing (accepted)\n  E4: testing -> tested (accepted)\n  E5: tested -> deployed (accepted)\n  E6: deployed -> rolled_back (accepted)\n  E7: pending -> building (rejected: stale from-state)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-d9238? Answer with the exact state name.",
+      "gold_answer": "rolled_back",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-dev-003",
+      "family": "B",
+      "sender_input": "Entity under observation: order ord-d8922 (a customer order).\nInitial state: placed.\nLegal transitions accepted by the controller:\n  placed -> confirmed\n  confirmed -> packed\n  packed -> shipped\n  shipped -> delivered\n  placed -> cancelled\n  confirmed -> cancelled\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: placed -> cancelled\n  E2: delivered -> shipped\n  E3: cancelled -> packed",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of order ord-d8922? Answer with the exact state name.",
+      "gold_answer": "cancelled",
+      "required_facts": [
+        "INIT",
+        "E1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-dev-004",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-d6500 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: provisioning -> running\n  E2: running -> terminated\n  E3: running -> terminated\n  E4: running -> terminated\n  E5: running -> stopping\n  E6: terminated -> provisioning\n  E7: running -> provisioning",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-d6500? Answer with the exact state name.",
+      "gold_answer": "terminated",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-dev-005",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-d9251 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: pending -> building\n  E2: building -> testing\n  E3: building -> built\n  E4: built -> testing\n  E5: testing -> tested",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-d9251? Answer with the exact state name.",
+      "gold_answer": "tested",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E3",
+        "E4",
+        "E5"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-dev-006",
+      "family": "B",
+      "sender_input": "Entity under observation: pull request pr-d2869 (a code change).\nInitial state: draft.\nLegal transitions accepted by the controller:\n  draft -> open\n  open -> in_review\n  in_review -> approved\n  approved -> merged\n  open -> closed\n  in_review -> closed\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: draft -> open (accepted)\n  E2: open -> in_review (accepted)\n  E3: approved -> merged (rejected: stale from-state)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of pull request pr-d2869? Answer with the exact state name.",
+      "gold_answer": "in_review",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-dev-007",
+      "family": "B",
+      "sender_input": "Entity under observation: order ord-d3475 (a customer order).\nInitial state: placed.\nLegal transitions accepted by the controller:\n  placed -> confirmed\n  confirmed -> packed\n  packed -> shipped\n  shipped -> delivered\n  placed -> cancelled\n  confirmed -> cancelled\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: placed -> confirmed (accepted)\n  E2: confirmed -> packed (accepted)\n  E3: packed -> placed (rejected: transition not legal)\n  E4: packed -> shipped (accepted)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of order ord-d3475? Answer with the exact state name.",
+      "gold_answer": "shipped",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-dev-008",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-d2423 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: pending -> building\n  E2: building -> rolled_back\n  E3: building -> built\n  E4: built -> testing\n  E5: testing -> tested",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-d2423? Answer with the exact state name.",
+      "gold_answer": "tested",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E3",
+        "E4",
+        "E5"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-dev-009",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-d7413 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: pending -> building (accepted)\n  E2: building -> built (accepted)\n  E3: built -> pending (rejected: transition not legal)\n  E4: built -> deployed (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-d7413? Answer with the exact state name.",
+      "gold_answer": "built",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-dev-010",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-d2760 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: provisioning -> running (accepted)\n  E2: stopping -> terminated (rejected: transition not legal)\n  E3: running -> terminated (accepted)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-d2760? Answer with the exact state name.",
+      "gold_answer": "terminated",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-dev-011",
+      "family": "B",
+      "sender_input": "Entity under observation: pull request pr-d2421 (a code change).\nInitial state: draft.\nLegal transitions accepted by the controller:\n  draft -> open\n  open -> in_review\n  in_review -> approved\n  approved -> merged\n  open -> closed\n  in_review -> closed\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: draft -> open\n  E2: open -> closed\n  E3: draft -> open\n  E4: open -> merged\n  E5: closed -> draft\n  E6: merged -> closed",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of pull request pr-d2421? Answer with the exact state name.",
+      "gold_answer": "closed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-dev-012",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-d9866 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: provisioning -> running (accepted)\n  E2: running -> terminated (accepted)\n  E3: terminated -> provisioning (rejected: transition not legal)\n  E4: stopped -> stopping (rejected: transition not legal)\n  E5: terminated -> stopping (rejected: transition not legal)\n  E6: terminated -> stopped (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-d9866? Answer with the exact state name.",
+      "gold_answer": "terminated",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-dev-013",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-d7112 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: provisioning -> running\n  E2: running -> stopping\n  E3: stopping -> stopped\n  E4: stopped -> terminated\n  E5: running -> stopping\n  E6: stopped -> running\n  E7: terminated -> stopped",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-d7112? Answer with the exact state name.",
+      "gold_answer": "terminated",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E3",
+        "E4"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-dev-014",
+      "family": "B",
+      "sender_input": "Entity under observation: order ord-d5402 (a customer order).\nInitial state: placed.\nLegal transitions accepted by the controller:\n  placed -> confirmed\n  confirmed -> packed\n  packed -> shipped\n  shipped -> delivered\n  placed -> cancelled\n  confirmed -> cancelled\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: placed -> confirmed (accepted)\n  E2: confirmed -> cancelled (accepted)\n  E3: cancelled -> delivered (rejected: transition not legal)\n  E4: packed -> placed (rejected: transition not legal)\n  E5: cancelled -> packed (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of order ord-d5402? Answer with the exact state name.",
+      "gold_answer": "cancelled",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-dev-015",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-d9761 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: provisioning -> running\n  E2: running -> stopping\n  E3: stopping -> stopped",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-d9761? Answer with the exact state name.",
+      "gold_answer": "stopped",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-dev-016",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-d6983 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: provisioning -> running\n  E2: running -> terminated\n  E3: terminated -> running\n  E4: terminated -> stopping\n  E5: running -> terminated\n  E6: stopped -> running\n  E7: terminated -> stopping",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-d6983? Answer with the exact state name.",
+      "gold_answer": "terminated",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-dev-017",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-d9833 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: provisioning -> running (accepted)\n  E2: running -> stopped (rejected: transition not legal)\n  E3: running -> stopping (accepted)\n  E4: stopping -> stopped (accepted)\n  E5: stopped -> terminated (accepted)\n  E6: terminated -> running (rejected: transition not legal)\n  E7: terminated -> stopped (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-d9833? Answer with the exact state name.",
+      "gold_answer": "terminated",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E3",
+        "E4",
+        "E5"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-dev-018",
+      "family": "B",
+      "sender_input": "Entity under observation: pull request pr-d6127 (a code change).\nInitial state: draft.\nLegal transitions accepted by the controller:\n  draft -> open\n  open -> in_review\n  in_review -> approved\n  approved -> merged\n  open -> closed\n  in_review -> closed\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: draft -> open\n  E2: open -> closed\n  E3: closed -> approved\n  E4: in_review -> approved\n  E5: approved -> draft\n  E6: closed -> approved",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of pull request pr-d6127? Answer with the exact state name.",
+      "gold_answer": "closed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-dev-019",
+      "family": "B",
+      "sender_input": "Entity under observation: pull request pr-d9885 (a code change).\nInitial state: draft.\nLegal transitions accepted by the controller:\n  draft -> open\n  open -> in_review\n  in_review -> approved\n  approved -> merged\n  open -> closed\n  in_review -> closed\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: draft -> open (accepted)\n  E2: open -> closed (accepted)\n  E3: closed -> draft (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of pull request pr-d9885? Answer with the exact state name.",
+      "gold_answer": "closed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-dev-020",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-d6060 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: pending -> building (accepted)\n  E2: building -> pending (rejected: transition not legal)\n  E3: rolled_back -> pending (rejected: transition not legal)\n  E4: building -> built (accepted)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-d6060? Answer with the exact state name.",
+      "gold_answer": "built",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-dev-021",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-d3455 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: provisioning -> running\n  E2: running -> stopping\n  E3: stopping -> stopped\n  E4: stopped -> running\n  E5: running -> stopping\n  E6: stopping -> provisioning",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-d3455? Answer with the exact state name.",
+      "gold_answer": "stopping",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-dev-022",
+      "family": "B",
+      "sender_input": "Entity under observation: pull request pr-d7163 (a code change).\nInitial state: draft.\nLegal transitions accepted by the controller:\n  draft -> open\n  open -> in_review\n  in_review -> approved\n  approved -> merged\n  open -> closed\n  in_review -> closed\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: draft -> open (accepted)\n  E2: draft -> closed (rejected: transition not legal)\n  E3: open -> in_review (accepted)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of pull request pr-d7163? Answer with the exact state name.",
+      "gold_answer": "in_review",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-dev-023",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-d1790 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: pending -> building\n  E2: building -> built\n  E3: pending -> testing\n  E4: built -> testing\n  E5: testing -> tested\n  E6: tested -> rolled_back",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-d1790? Answer with the exact state name.",
+      "gold_answer": "tested",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E4",
+        "E5"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-dev-024",
+      "family": "B",
+      "sender_input": "Entity under observation: session ses-d3108 (an agent session).\nInitial state: created.\nLegal transitions accepted by the controller:\n  created -> active\n  active -> idle\n  idle -> active\n  active -> closed\n  idle -> closed\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: created -> active\n  E2: active -> idle\n  E3: closed -> idle\n  E4: idle -> closed\n  E5: active -> idle",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of session ses-d3108? Answer with the exact state name.",
+      "gold_answer": "closed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-dev-025",
+      "family": "B",
+      "sender_input": "Entity under observation: pull request pr-d4864 (a code change).\nInitial state: draft.\nLegal transitions accepted by the controller:\n  draft -> open\n  open -> in_review\n  in_review -> approved\n  approved -> merged\n  open -> closed\n  in_review -> closed\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: draft -> open (accepted)\n  E2: open -> in_review (accepted)\n  E3: in_review -> closed (accepted)\n  E4: approved -> merged (rejected: stale from-state)\n  E5: closed -> in_review (rejected: transition not legal)\n  E6: closed -> merged (rejected: transition not legal)\n  E7: in_review -> merged (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of pull request pr-d4864? Answer with the exact state name.",
+      "gold_answer": "closed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E3"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-dev-026",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-d5380 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: pending -> building\n  E2: building -> built\n  E3: built -> testing\n  E4: testing -> tested\n  E5: tested -> deployed\n  E6: deployed -> built",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-d5380? Answer with the exact state name.",
+      "gold_answer": "deployed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-dev-027",
+      "family": "B",
+      "sender_input": "Entity under observation: pull request pr-d7374 (a code change).\nInitial state: draft.\nLegal transitions accepted by the controller:\n  draft -> open\n  open -> in_review\n  in_review -> approved\n  approved -> merged\n  open -> closed\n  in_review -> closed\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: draft -> open\n  E2: open -> closed\n  E3: closed -> approved\n  E4: in_review -> closed\n  E5: closed -> in_review\n  E6: in_review -> closed",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of pull request pr-d7374? Answer with the exact state name.",
+      "gold_answer": "closed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-dev-028",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-d4293 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: provisioning -> running\n  E2: running -> terminated\n  E3: stopping -> stopped\n  E4: running -> stopped\n  E5: provisioning -> running\n  E6: stopping -> provisioning\n  E7: provisioning -> stopped",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-d4293? Answer with the exact state name.",
+      "gold_answer": "terminated",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-dev-029",
+      "family": "B",
+      "sender_input": "Entity under observation: session ses-d2100 (an agent session).\nInitial state: created.\nLegal transitions accepted by the controller:\n  created -> active\n  active -> idle\n  idle -> active\n  active -> closed\n  idle -> closed\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: created -> active (accepted)\n  E2: active -> closed (accepted)\n  E3: closed -> created (rejected: transition not legal)\n  E4: closed -> idle (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of session ses-d2100? Answer with the exact state name.",
+      "gold_answer": "closed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-dev-030",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-d5820 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: provisioning -> running\n  E2: running -> stopping\n  E3: stopping -> stopped\n  E4: stopped -> running\n  E5: running -> stopped",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-d5820? Answer with the exact state name.",
+      "gold_answer": "running",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E3",
+        "E4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-dev-001",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'release cut' runbook (step ids in brackets).\n  [S1] freeze the main branch\n  [S2] update the version constant\n  [S3] update the changelog\n  [S4] build the release binaries\n  [S5] upload the artifacts to the registry\n  [S6] run the installer smoke test\n  [S7] tag the release commit\nProgress marker: the operator has completed step S1.",
+      "receiver_task": "Using only the procedure the sender communicates, which runbook step must be performed next? Answer with the step text exactly as written.",
+      "gold_answer": "update the version constant",
+      "required_facts": [
+        "MARK",
+        "S2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-dev-002",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'incident triage' runbook (step ids in brackets).\n  [S1] open the incident channel\n  [S2] collect the failing request ids\n  [S3] check the rolling error rate\n  [S4] bisect the last five deploys\n  [S5] write the mitigation note\n  [S6] page the on-call engineer\n  [S7] schedule the postmortem",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'collect the failing request ids'? Answer with the number only.",
+      "gold_answer": "2",
+      "required_facts": [
+        "S2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-dev-003",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'service deploy' runbook (step ids in brackets).\n  [S1] announce the maintenance window\n  [S2] drain the load balancer\n  [S3] stop the service\n  [S4] apply the database migration\n  [S5] run the smoke tests",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'apply the database migration'? Answer with that step's text exactly as written.",
+      "gold_answer": "stop the service",
+      "required_facts": [
+        "S4",
+        "S3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-004",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'key rotation' runbook (step ids in brackets).\n  [S1] generate the new key pair\n  [S2] stage the new public key\n  [S3] flip the serving key\n  [S4] watch the error rate for one hour\n  [S5] revoke the old key\n  [S6] update the key inventory\n  [S7] archive the rotation receipt\n  [S8] notify the security channel",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'archive the rotation receipt'? Answer with the number only.",
+      "gold_answer": "7",
+      "required_facts": [
+        "S7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-dev-005",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'key rotation' runbook (step ids in brackets).\n  [S1] generate the new key pair\n  [S2] stage the new public key\n  [S3] flip the serving key\n  [S4] watch the error rate for one hour\n  [S5] revoke the old key",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'generate the new key pair'? Answer with the number only.",
+      "gold_answer": "1",
+      "required_facts": [
+        "S1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-006",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'release cut' runbook (step ids in brackets).\n  [S1] freeze the main branch\n  [S2] update the version constant\n  [S3] update the changelog\n  [S4] build the release binaries\n  [S5] upload the artifacts to the registry\n  [S6] run the installer smoke test",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'build the release binaries'? Answer with the number only.",
+      "gold_answer": "4",
+      "required_facts": [
+        "S4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-007",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'key rotation' runbook (step ids in brackets).\n  [S1] generate the new key pair\n  [S2] stage the new public key\n  [S3] flip the serving key\n  [S4] watch the error rate for one hour\n  [S5] revoke the old key\n  [S6] update the key inventory\n  [S7] archive the rotation receipt\n  [S8] notify the security channel",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'flip the serving key'? Answer with the number only.",
+      "gold_answer": "3",
+      "required_facts": [
+        "S3"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-dev-008",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'service deploy' runbook (step ids in brackets).\n  [S1] announce the maintenance window\n  [S2] drain the load balancer\n  [S3] stop the service\n  [S4] apply the database migration\n  [S5] run the smoke tests\n  [S6] restore traffic to the service",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'drain the load balancer'? Answer with the number only.",
+      "gold_answer": "2",
+      "required_facts": [
+        "S2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-009",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'service deploy' runbook (step ids in brackets).\n  [S1] announce the maintenance window\n  [S2] drain the load balancer\n  [S3] stop the service\n  [S4] apply the database migration\n  [S5] run the smoke tests\n  [S6] restore traffic to the service\n  [S7] verify the error budget\n  [S8] close the incident channel",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'close the incident channel'? Answer with that step's text exactly as written.",
+      "gold_answer": "verify the error budget",
+      "required_facts": [
+        "S8",
+        "S7"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "C-dev-010",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'key rotation' runbook (step ids in brackets).\n  [S1] generate the new key pair\n  [S2] stage the new public key\n  [S3] flip the serving key\n  [S4] watch the error rate for one hour\n  [S5] revoke the old key\n  [S6] update the key inventory\n  [S7] archive the rotation receipt\n  [S8] notify the security channel",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'flip the serving key'? Answer with that step's text exactly as written.",
+      "gold_answer": "stage the new public key",
+      "required_facts": [
+        "S3",
+        "S2"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "C-dev-011",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'key rotation' runbook (step ids in brackets).\n  [S1] generate the new key pair\n  [S2] stage the new public key\n  [S3] flip the serving key\n  [S4] watch the error rate for one hour\n  [S5] revoke the old key\n  [S6] update the key inventory\n  [S7] archive the rotation receipt\n  [S8] notify the security channel",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'watch the error rate for one hour'? Answer with that step's text exactly as written.",
+      "gold_answer": "flip the serving key",
+      "required_facts": [
+        "S4",
+        "S3"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "C-dev-012",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'incident triage' runbook (step ids in brackets).\n  [S1] open the incident channel\n  [S2] collect the failing request ids\n  [S3] check the rolling error rate\n  [S4] bisect the last five deploys\n  [S5] write the mitigation note",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'write the mitigation note'? Answer with that step's text exactly as written.",
+      "gold_answer": "bisect the last five deploys",
+      "required_facts": [
+        "S5",
+        "S4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-013",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'release cut' runbook (step ids in brackets).\n  [S1] freeze the main branch\n  [S2] update the version constant\n  [S3] update the changelog\n  [S4] build the release binaries\n  [S5] upload the artifacts to the registry",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'update the version constant'? Answer with the number only.",
+      "gold_answer": "2",
+      "required_facts": [
+        "S2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-014",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'release cut' runbook (step ids in brackets).\n  [S1] freeze the main branch\n  [S2] update the version constant\n  [S3] update the changelog\n  [S4] build the release binaries\n  [S5] upload the artifacts to the registry",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'upload the artifacts to the registry'? Answer with the number only.",
+      "gold_answer": "5",
+      "required_facts": [
+        "S5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-015",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'incident triage' runbook (step ids in brackets).\n  [S1] open the incident channel\n  [S2] collect the failing request ids\n  [S3] check the rolling error rate\n  [S4] bisect the last five deploys\n  [S5] write the mitigation note\n  [S6] page the on-call engineer\n  [S7] schedule the postmortem",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'check the rolling error rate'? Answer with that step's text exactly as written.",
+      "gold_answer": "collect the failing request ids",
+      "required_facts": [
+        "S3",
+        "S2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-dev-016",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'key rotation' runbook (step ids in brackets).\n  [S1] generate the new key pair\n  [S2] stage the new public key\n  [S3] flip the serving key\n  [S4] watch the error rate for one hour\n  [S5] revoke the old key",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'revoke the old key'? Answer with that step's text exactly as written.",
+      "gold_answer": "watch the error rate for one hour",
+      "required_facts": [
+        "S5",
+        "S4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-017",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'service deploy' runbook (step ids in brackets).\n  [S1] announce the maintenance window\n  [S2] drain the load balancer\n  [S3] stop the service\n  [S4] apply the database migration\n  [S5] run the smoke tests",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'stop the service'? Answer with that step's text exactly as written.",
+      "gold_answer": "drain the load balancer",
+      "required_facts": [
+        "S3",
+        "S2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-018",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'data migration' runbook (step ids in brackets).\n  [S1] snapshot the source database\n  [S2] record the source row counts\n  [S3] start the bulk copy\n  [S4] verify the checksums on the target\n  [S5] update the application config\n  [S6] resume the write traffic\n  [S7] watch the replication lag for one hour",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'resume the write traffic'? Answer with the number only.",
+      "gold_answer": "6",
+      "required_facts": [
+        "S6"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-dev-019",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'data migration' runbook (step ids in brackets).\n  [S1] snapshot the source database\n  [S2] record the source row counts\n  [S3] start the bulk copy\n  [S4] verify the checksums on the target",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'start the bulk copy'? Answer with that step's text exactly as written.",
+      "gold_answer": "record the source row counts",
+      "required_facts": [
+        "S3",
+        "S2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-020",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'service deploy' runbook (step ids in brackets).\n  [S1] announce the maintenance window\n  [S2] drain the load balancer\n  [S3] stop the service\n  [S4] apply the database migration\n  [S5] run the smoke tests\n  [S6] restore traffic to the service\n  [S7] verify the error budget",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'run the smoke tests'? Answer with the number only.",
+      "gold_answer": "5",
+      "required_facts": [
+        "S5"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-dev-021",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'data migration' runbook (step ids in brackets).\n  [S1] snapshot the source database\n  [S2] record the source row counts\n  [S3] start the bulk copy\n  [S4] verify the checksums on the target\n  [S5] update the application config\n  [S6] resume the write traffic",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'verify the checksums on the target'? Answer with that step's text exactly as written.",
+      "gold_answer": "start the bulk copy",
+      "required_facts": [
+        "S4",
+        "S3"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-dev-022",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'service deploy' runbook (step ids in brackets).\n  [S1] announce the maintenance window\n  [S2] drain the load balancer\n  [S3] stop the service\n  [S4] apply the database migration\n  [S5] run the smoke tests\n  [S6] restore traffic to the service\n  [S7] verify the error budget\n  [S8] close the incident channel",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'apply the database migration'? Answer with the number only.",
+      "gold_answer": "4",
+      "required_facts": [
+        "S4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-dev-023",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'release cut' runbook (step ids in brackets).\n  [S1] freeze the main branch\n  [S2] update the version constant\n  [S3] update the changelog\n  [S4] build the release binaries\n  [S5] upload the artifacts to the registry\n  [S6] run the installer smoke test\n  [S7] tag the release commit\n  [S8] announce the release",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'run the installer smoke test'? Answer with that step's text exactly as written.",
+      "gold_answer": "upload the artifacts to the registry",
+      "required_facts": [
+        "S6",
+        "S5"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "C-dev-024",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'data migration' runbook (step ids in brackets).\n  [S1] snapshot the source database\n  [S2] record the source row counts\n  [S3] start the bulk copy\n  [S4] verify the checksums on the target\n  [S5] update the application config\n  [S6] resume the write traffic",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'snapshot the source database'? Answer with the number only.",
+      "gold_answer": "1",
+      "required_facts": [
+        "S1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-025",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'incident triage' runbook (step ids in brackets).\n  [S1] open the incident channel\n  [S2] collect the failing request ids\n  [S3] check the rolling error rate\n  [S4] bisect the last five deploys",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'collect the failing request ids'? Answer with that step's text exactly as written.",
+      "gold_answer": "open the incident channel",
+      "required_facts": [
+        "S2",
+        "S1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-026",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'incident triage' runbook (step ids in brackets).\n  [S1] open the incident channel\n  [S2] collect the failing request ids\n  [S3] check the rolling error rate\n  [S4] bisect the last five deploys",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'bisect the last five deploys'? Answer with that step's text exactly as written.",
+      "gold_answer": "check the rolling error rate",
+      "required_facts": [
+        "S4",
+        "S3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-027",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'key rotation' runbook (step ids in brackets).\n  [S1] generate the new key pair\n  [S2] stage the new public key\n  [S3] flip the serving key\n  [S4] watch the error rate for one hour\n  [S5] revoke the old key\n  [S6] update the key inventory\n  [S7] archive the rotation receipt",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'stage the new public key'? Answer with the number only.",
+      "gold_answer": "2",
+      "required_facts": [
+        "S2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-dev-028",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'service deploy' runbook (step ids in brackets).\n  [S1] announce the maintenance window\n  [S2] drain the load balancer\n  [S3] stop the service\n  [S4] apply the database migration\n  [S5] run the smoke tests",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'drain the load balancer'? Answer with that step's text exactly as written.",
+      "gold_answer": "announce the maintenance window",
+      "required_facts": [
+        "S2",
+        "S1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-029",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'incident triage' runbook (step ids in brackets).\n  [S1] open the incident channel\n  [S2] collect the failing request ids\n  [S3] check the rolling error rate\n  [S4] bisect the last five deploys",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'bisect the last five deploys'? Answer with the number only.",
+      "gold_answer": "4",
+      "required_facts": [
+        "S4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-dev-030",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'key rotation' runbook (step ids in brackets).\n  [S1] generate the new key pair\n  [S2] stage the new public key\n  [S3] flip the serving key\n  [S4] watch the error rate for one hour\n  [S5] revoke the old key",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'revoke the old key'? Answer with the number only.",
+      "gold_answer": "5",
+      "required_facts": [
+        "S5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-001",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service audit-api, team delta, status degraded, region us-east, tier free, replicas 8\n  [F2] service cache-api, team halcyon, status failing, region us-east, tier standard, replicas 9\n  [F3] service notify-daemon, team halcyon, status healthy, region us-east, tier premium, replicas 3\n  [F4] service vector-api, team ember, status failing, region us-west, tier premium, replicas 2\n  [F5] service render-gateway, team halcyon, status paused, region eu-north, tier standard, replicas 4\n  [F6] service billing-service, team halcyon, status healthy, region sa-east, tier standard, replicas 7\n  [F7] service render-api, team halcyon, status degraded, region us-east, tier free, replicas 9\n  [F8] service search-api, team delta, status failing, region ap-south, tier free, replicas 4",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team halcyon and located in region us-east? List the service names, comma-separated.",
+      "gold_answer": "cache-api, notify-daemon, render-api",
+      "required_facts": [
+        "F7",
+        "F2",
+        "F3",
+        "F1",
+        "F5",
+        "F6"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-dev-002",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service cache-api, team cinder, status degraded, region us-east, tier free, replicas 9\n  [F2] service ingest-edge, team halcyon, status degraded, region eu-north, tier standard, replicas 2\n  [F3] service model-edge, team delta, status degraded, region us-west, tier standard, replicas 5\n  [F4] service cache-daemon, team delta, status degraded, region eu-north, tier standard, replicas 6\n  [F5] service search-daemon, team borealis, status failing, region sa-east, tier free, replicas 1\n  [F6] service render-daemon, team delta, status degraded, region eu-north, tier standard, replicas 6\n  [F7] service audit-hub, team cinder, status degraded, region eu-west, tier premium, replicas 5",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status degraded and located in region eu-north? List the service names, comma-separated.",
+      "gold_answer": "cache-daemon, ingest-edge, render-daemon",
+      "required_facts": [
+        "F4",
+        "F6",
+        "F2",
+        "F7",
+        "F3",
+        "F1"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-dev-003",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service audit-service, team delta, status failing, region ap-south, tier standard, replicas 4\n  [F2] service search-relay, team cinder, status failing, region us-east, tier premium, replicas 2\n  [F3] service model-daemon, team borealis, status paused, region ap-south, tier free, replicas 2\n  [F4] service render-api, team cinder, status healthy, region sa-east, tier standard, replicas 5\n  [F5] service search-edge, team borealis, status failing, region eu-north, tier standard, replicas 6\n  [F6] service policy-gateway, team ember, status failing, region us-west, tier standard, replicas 3\n  [F7] service cache-edge, team fjord, status degraded, region eu-north, tier premium, replicas 9\n  [F8] service billing-api, team ember, status failing, region us-west, tier standard, replicas 4",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team ember and currently in status failing? List the service names, comma-separated.",
+      "gold_answer": "billing-api, policy-gateway",
+      "required_facts": [
+        "F6",
+        "F8",
+        "F5",
+        "F1",
+        "F2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-dev-004",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service ingest-daemon, team delta, status healthy, region ap-south, tier premium, replicas 5\n  [F2] service notify-api, team delta, status failing, region ap-south, tier premium, replicas 1\n  [F3] service render-hub, team delta, status healthy, region us-west, tier premium, replicas 4\n  [F4] service gateway-relay, team fjord, status failing, region us-east, tier free, replicas 5\n  [F5] service model-edge, team atlas, status failing, region us-east, tier premium, replicas 3\n  [F6] service render-daemon, team delta, status healthy, region eu-north, tier standard, replicas 2",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team delta and located in region ap-south? List the service names, comma-separated.",
+      "gold_answer": "ingest-daemon, notify-api",
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F6"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-005",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service auth-relay, team delta, status failing, region ap-south, tier standard, replicas 5\n  [F2] service notify-service, team delta, status degraded, region eu-west, tier standard, replicas 4\n  [F3] service notify-scheduler, team fjord, status healthy, region sa-east, tier standard, replicas 8\n  [F4] service model-service, team cinder, status paused, region eu-west, tier free, replicas 1",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team delta and located in region eu-west? List the service names, comma-separated.",
+      "gold_answer": "notify-service",
+      "required_facts": [
+        "F2",
+        "F4",
+        "F1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-006",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service policy-edge, team fjord, status healthy, region eu-north, tier standard, replicas 6\n  [F2] service vector-api, team fjord, status failing, region eu-north, tier standard, replicas 6\n  [F3] service search-daemon, team cinder, status healthy, region ap-south, tier premium, replicas 8\n  [F4] service gateway-api, team fjord, status healthy, region ap-south, tier premium, replicas 5",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team fjord and currently in status degraded? List the service names, comma-separated.",
+      "gold_answer": "none",
+      "required_facts": [
+        "F1",
+        "F4",
+        "F2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-007",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service cache-edge, team grit, status failing, region ap-south, tier premium, replicas 1\n  [F2] service billing-hub, team grit, status paused, region sa-east, tier premium, replicas 9\n  [F3] service billing-edge, team atlas, status degraded, region sa-east, tier free, replicas 8\n  [F4] service render-service, team fjord, status paused, region us-east, tier premium, replicas 6\n  [F5] service model-daemon, team borealis, status degraded, region us-east, tier free, replicas 1\n  [F6] service policy-api, team halcyon, status degraded, region eu-west, tier free, replicas 3\n  [F7] service search-relay, team grit, status failing, region us-west, tier standard, replicas 2",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status degraded and located in region sa-east? List the service names, comma-separated.",
+      "gold_answer": "billing-edge",
+      "required_facts": [
+        "F3",
+        "F6",
+        "F5",
+        "F2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-dev-008",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service search-scheduler, team cinder, status failing, region eu-north, tier premium, replicas 2\n  [F2] service cache-edge, team atlas, status healthy, region sa-east, tier standard, replicas 4\n  [F3] service model-edge, team grit, status healthy, region eu-west, tier standard, replicas 9\n  [F4] service gateway-service, team cinder, status failing, region eu-west, tier standard, replicas 6\n  [F5] service gateway-api, team halcyon, status paused, region us-east, tier standard, replicas 7\n  [F6] service auth-gateway, team atlas, status degraded, region us-east, tier premium, replicas 9",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team atlas and located in region eu-north? List the service names, comma-separated.",
+      "gold_answer": "none",
+      "required_facts": [
+        "F1",
+        "F2",
+        "F6"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-009",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service billing-hub, team halcyon, status healthy, region us-west, tier standard, replicas 7\n  [F2] service cache-hub, team delta, status degraded, region ap-south, tier free, replicas 4\n  [F3] service auth-api, team borealis, status degraded, region ap-south, tier standard, replicas 7\n  [F4] service search-edge, team delta, status degraded, region us-west, tier premium, replicas 6\n  [F5] service search-api, team delta, status failing, region ap-south, tier standard, replicas 2\n  [F6] service gateway-relay, team delta, status degraded, region eu-west, tier free, replicas 3\n  [F7] service notify-edge, team grit, status degraded, region eu-west, tier premium, replicas 6",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team delta and currently in status degraded? List the service names, comma-separated.",
+      "gold_answer": "cache-hub, gateway-relay, search-edge",
+      "required_facts": [
+        "F4",
+        "F2",
+        "F6",
+        "F3",
+        "F7",
+        "F5"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-dev-010",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service model-gateway, team grit, status healthy, region eu-north, tier standard, replicas 6\n  [F2] service notify-hub, team grit, status failing, region us-west, tier premium, replicas 9\n  [F3] service vector-daemon, team delta, status healthy, region eu-west, tier premium, replicas 5\n  [F4] service policy-api, team grit, status healthy, region eu-north, tier standard, replicas 3\n  [F5] service billing-relay, team grit, status paused, region sa-east, tier premium, replicas 8\n  [F6] service audit-scheduler, team grit, status healthy, region us-west, tier free, replicas 9\n  [F7] service ingest-hub, team ember, status failing, region eu-west, tier standard, replicas 3",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team grit and currently in status healthy? List the service names, comma-separated.",
+      "gold_answer": "audit-scheduler, model-gateway, policy-api",
+      "required_facts": [
+        "F6",
+        "F1",
+        "F4",
+        "F5",
+        "F3",
+        "F2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-dev-011",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service audit-service, team grit, status paused, region ap-south, tier standard, replicas 4\n  [F2] service gateway-scheduler, team borealis, status failing, region eu-west, tier free, replicas 8\n  [F3] service billing-gateway, team halcyon, status failing, region eu-west, tier free, replicas 6\n  [F4] service vector-hub, team cinder, status healthy, region sa-east, tier free, replicas 7\n  [F5] service search-edge, team fjord, status paused, region eu-west, tier premium, replicas 7\n  [F6] service auth-api, team grit, status failing, region us-east, tier standard, replicas 8\n  [F7] service gateway-service, team atlas, status failing, region eu-west, tier free, replicas 8",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status failing and located in region eu-west? List the service names, comma-separated.",
+      "gold_answer": "billing-gateway, gateway-scheduler, gateway-service",
+      "required_facts": [
+        "F7",
+        "F2",
+        "F3",
+        "F6",
+        "F5"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-dev-012",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service policy-gateway, team atlas, status healthy, region eu-north, tier premium, replicas 8\n  [F2] service search-relay, team grit, status degraded, region us-west, tier premium, replicas 4\n  [F3] service auth-hub, team ember, status failing, region ap-south, tier standard, replicas 9\n  [F4] service render-relay, team grit, status degraded, region us-west, tier standard, replicas 5\n  [F5] service ingest-hub, team grit, status failing, region eu-north, tier free, replicas 2\n  [F6] service search-edge, team ember, status degraded, region sa-east, tier free, replicas 6",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team grit and currently in status degraded? List the service names, comma-separated.",
+      "gold_answer": "render-relay, search-relay",
+      "required_facts": [
+        "F2",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-013",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service notify-relay, team delta, status degraded, region us-west, tier standard, replicas 5\n  [F2] service gateway-api, team grit, status healthy, region eu-north, tier free, replicas 7\n  [F3] service gateway-scheduler, team borealis, status healthy, region eu-west, tier standard, replicas 9\n  [F4] service model-edge, team ember, status degraded, region us-west, tier free, replicas 1\n  [F5] service audit-edge, team delta, status healthy, region ap-south, tier free, replicas 1",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status healthy and located in region ap-south? List the service names, comma-separated.",
+      "gold_answer": "audit-edge",
+      "required_facts": [
+        "F5",
+        "F3",
+        "F2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-014",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service search-api, team ember, status failing, region ap-south, tier standard, replicas 4\n  [F2] service auth-daemon, team fjord, status degraded, region ap-south, tier standard, replicas 2\n  [F3] service gateway-hub, team ember, status paused, region ap-south, tier free, replicas 7\n  [F4] service model-daemon, team ember, status healthy, region sa-east, tier standard, replicas 2\n  [F5] service notify-api, team ember, status paused, region ap-south, tier premium, replicas 4\n  [F6] service gateway-api, team atlas, status paused, region eu-north, tier free, replicas 7",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team ember and located in region ap-south? List the service names, comma-separated.",
+      "gold_answer": "gateway-hub, notify-api, search-api",
+      "required_facts": [
+        "F1",
+        "F3",
+        "F5",
+        "F2",
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-015",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service auth-daemon, team ember, status healthy, region eu-north, tier standard, replicas 5\n  [F2] service gateway-edge, team grit, status healthy, region eu-north, tier free, replicas 9\n  [F3] service vector-daemon, team grit, status healthy, region eu-north, tier premium, replicas 4\n  [F4] service audit-daemon, team grit, status failing, region us-east, tier premium, replicas 7\n  [F5] service search-service, team borealis, status healthy, region us-east, tier free, replicas 6\n  [F6] service model-edge, team borealis, status failing, region us-west, tier premium, replicas 4\n  [F7] service notify-relay, team delta, status healthy, region eu-north, tier free, replicas 5\n  [F8] service audit-service, team grit, status healthy, region eu-north, tier standard, replicas 2",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team grit and located in region eu-north? List the service names, comma-separated.",
+      "gold_answer": "audit-service, gateway-edge, vector-daemon",
+      "required_facts": [
+        "F2",
+        "F8",
+        "F3",
+        "F7",
+        "F4",
+        "F1"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-dev-016",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service audit-hub, team fjord, status healthy, region eu-west, tier free, replicas 1\n  [F2] service ingest-hub, team atlas, status degraded, region eu-west, tier free, replicas 4\n  [F3] service model-hub, team cinder, status failing, region ap-south, tier free, replicas 8\n  [F4] service notify-scheduler, team delta, status degraded, region us-west, tier standard, replicas 1\n  [F5] service render-hub, team borealis, status failing, region eu-west, tier free, replicas 7\n  [F6] service auth-scheduler, team halcyon, status paused, region eu-north, tier premium, replicas 7",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team atlas and located in region eu-west? List the service names, comma-separated.",
+      "gold_answer": "ingest-hub",
+      "required_facts": [
+        "F2",
+        "F5",
+        "F1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-017",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service policy-gateway, team borealis, status healthy, region sa-east, tier free, replicas 1\n  [F2] service render-edge, team borealis, status paused, region ap-south, tier premium, replicas 2\n  [F3] service billing-hub, team cinder, status failing, region ap-south, tier premium, replicas 2\n  [F4] service gateway-service, team grit, status paused, region ap-south, tier standard, replicas 6\n  [F5] service search-daemon, team cinder, status paused, region ap-south, tier free, replicas 7\n  [F6] service audit-edge, team cinder, status degraded, region ap-south, tier standard, replicas 7\n  [F7] service vector-gateway, team grit, status degraded, region us-west, tier premium, replicas 8\n  [F8] service search-gateway, team ember, status degraded, region eu-west, tier free, replicas 8",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status paused and located in region ap-south? List the service names, comma-separated.",
+      "gold_answer": "gateway-service, render-edge, search-daemon",
+      "required_facts": [
+        "F5",
+        "F4",
+        "F2",
+        "F6",
+        "F3"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-dev-018",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service notify-api, team grit, status healthy, region us-east, tier premium, replicas 6\n  [F2] service search-service, team cinder, status paused, region us-east, tier standard, replicas 7\n  [F3] service model-edge, team borealis, status paused, region eu-west, tier standard, replicas 3\n  [F4] service render-service, team cinder, status healthy, region sa-east, tier free, replicas 3\n  [F5] service ingest-api, team delta, status healthy, region us-east, tier standard, replicas 7\n  [F6] service gateway-service, team borealis, status paused, region us-east, tier standard, replicas 7",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status paused and located in region us-east? List the service names, comma-separated.",
+      "gold_answer": "gateway-service, search-service",
+      "required_facts": [
+        "F2",
+        "F6",
+        "F5",
+        "F1",
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-019",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service billing-daemon, team fjord, status healthy, region us-west, tier premium, replicas 7\n  [F2] service billing-hub, team borealis, status failing, region us-east, tier free, replicas 4\n  [F3] service vector-service, team borealis, status healthy, region eu-west, tier free, replicas 9\n  [F4] service ingest-edge, team ember, status failing, region eu-north, tier premium, replicas 2\n  [F5] service search-hub, team borealis, status failing, region sa-east, tier standard, replicas 1\n  [F6] service audit-edge, team grit, status paused, region eu-west, tier free, replicas 8\n  [F7] service model-service, team borealis, status healthy, region us-west, tier premium, replicas 6\n  [F8] service cache-relay, team halcyon, status degraded, region sa-east, tier standard, replicas 1",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team borealis and currently in status healthy? List the service names, comma-separated.",
+      "gold_answer": "model-service, vector-service",
+      "required_facts": [
+        "F7",
+        "F3",
+        "F1",
+        "F5",
+        "F2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-dev-020",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service gateway-scheduler, team cinder, status healthy, region eu-west, tier free, replicas 9\n  [F2] service render-relay, team halcyon, status paused, region sa-east, tier standard, replicas 8\n  [F3] service cache-daemon, team grit, status degraded, region sa-east, tier standard, replicas 8\n  [F4] service model-edge, team ember, status healthy, region us-west, tier free, replicas 5\n  [F5] service policy-api, team borealis, status healthy, region eu-west, tier premium, replicas 9\n  [F6] service ingest-service, team delta, status paused, region sa-east, tier standard, replicas 9",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status failing and located in region sa-east? List the service names, comma-separated.",
+      "gold_answer": "none",
+      "required_facts": [
+        "F2",
+        "F6",
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-021",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service gateway-edge, team grit, status healthy, region eu-north, tier premium, replicas 3\n  [F2] service policy-scheduler, team atlas, status failing, region eu-north, tier premium, replicas 2\n  [F3] service billing-daemon, team borealis, status healthy, region us-west, tier free, replicas 9\n  [F4] service audit-relay, team delta, status degraded, region us-east, tier free, replicas 4\n  [F5] service render-daemon, team cinder, status healthy, region eu-north, tier free, replicas 6",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status healthy and located in region eu-north? List the service names, comma-separated.",
+      "gold_answer": "gateway-edge, render-daemon",
+      "required_facts": [
+        "F1",
+        "F5",
+        "F3",
+        "F2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-022",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service policy-scheduler, team atlas, status degraded, region ap-south, tier standard, replicas 6\n  [F2] service render-hub, team cinder, status healthy, region sa-east, tier free, replicas 4\n  [F3] service vector-api, team atlas, status paused, region eu-west, tier free, replicas 8\n  [F4] service model-gateway, team grit, status failing, region eu-west, tier premium, replicas 7\n  [F5] service gateway-relay, team atlas, status paused, region us-east, tier free, replicas 5\n  [F6] service search-hub, team atlas, status paused, region sa-east, tier free, replicas 7\n  [F7] service cache-hub, team atlas, status healthy, region us-west, tier premium, replicas 5",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team atlas and currently in status paused? List the service names, comma-separated.",
+      "gold_answer": "gateway-relay, search-hub, vector-api",
+      "required_facts": [
+        "F3",
+        "F6",
+        "F5",
+        "F7",
+        "F1"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-dev-023",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service vector-api, team delta, status paused, region us-east, tier premium, replicas 2\n  [F2] service cache-edge, team cinder, status paused, region us-west, tier standard, replicas 3\n  [F3] service ingest-relay, team cinder, status degraded, region ap-south, tier premium, replicas 5\n  [F4] service audit-service, team halcyon, status paused, region us-west, tier premium, replicas 2",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status degraded and located in region us-west? List the service names, comma-separated.",
+      "gold_answer": "none",
+      "required_facts": [
+        "F4",
+        "F3",
+        "F2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-024",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service audit-relay, team ember, status paused, region eu-west, tier standard, replicas 3\n  [F2] service cache-scheduler, team delta, status healthy, region eu-west, tier free, replicas 8\n  [F3] service auth-hub, team ember, status paused, region eu-north, tier premium, replicas 6\n  [F4] service audit-daemon, team ember, status degraded, region us-east, tier premium, replicas 2\n  [F5] service vector-relay, team ember, status degraded, region us-east, tier standard, replicas 2\n  [F6] service notify-api, team ember, status paused, region us-east, tier standard, replicas 2",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team ember and located in region us-east? List the service names, comma-separated.",
+      "gold_answer": "audit-daemon, notify-api, vector-relay",
+      "required_facts": [
+        "F4",
+        "F5",
+        "F6",
+        "F1",
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-025",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service vector-relay, team halcyon, status failing, region us-west, tier standard, replicas 5\n  [F2] service render-gateway, team delta, status paused, region us-east, tier premium, replicas 4\n  [F3] service auth-relay, team cinder, status paused, region us-east, tier premium, replicas 2\n  [F4] service gateway-gateway, team halcyon, status failing, region ap-south, tier premium, replicas 5\n  [F5] service vector-service, team grit, status paused, region ap-south, tier standard, replicas 4",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team delta and currently in status failing? List the service names, comma-separated.",
+      "gold_answer": "none",
+      "required_facts": [
+        "F4",
+        "F2",
+        "F1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-026",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service auth-scheduler, team borealis, status degraded, region us-west, tier free, replicas 6\n  [F2] service cache-hub, team fjord, status paused, region ap-south, tier standard, replicas 1\n  [F3] service render-edge, team borealis, status degraded, region eu-north, tier standard, replicas 5\n  [F4] service auth-service, team delta, status paused, region ap-south, tier premium, replicas 1\n  [F5] service search-gateway, team cinder, status paused, region us-east, tier standard, replicas 3",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team cinder and currently in status degraded? List the service names, comma-separated.",
+      "gold_answer": "none",
+      "required_facts": [
+        "F1",
+        "F3",
+        "F5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-dev-027",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service auth-edge, team ember, status degraded, region eu-north, tier free, replicas 3\n  [F2] service render-gateway, team grit, status failing, region eu-west, tier premium, replicas 4\n  [F3] service search-daemon, team delta, status failing, region eu-west, tier premium, replicas 7\n  [F4] service vector-relay, team grit, status paused, region us-west, tier free, replicas 2\n  [F5] service cache-hub, team grit, status degraded, region ap-south, tier premium, replicas 8\n  [F6] service notify-hub, team fjord, status failing, region eu-west, tier standard, replicas 5\n  [F7] service audit-edge, team halcyon, status paused, region sa-east, tier free, replicas 8",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team grit and currently in status paused? List the service names, comma-separated.",
+      "gold_answer": "vector-relay",
+      "required_facts": [
+        "F4",
+        "F5",
+        "F2",
+        "F7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-dev-028",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service search-gateway, team delta, status paused, region eu-west, tier free, replicas 1\n  [F2] service cache-edge, team borealis, status paused, region eu-north, tier free, replicas 5\n  [F3] service policy-relay, team atlas, status healthy, region us-east, tier standard, replicas 5\n  [F4] service render-scheduler, team borealis, status paused, region eu-north, tier premium, replicas 6\n  [F5] service notify-scheduler, team delta, status paused, region eu-west, tier free, replicas 3\n  [F6] service search-hub, team delta, status failing, region eu-west, tier free, replicas 9\n  [F7] service vector-edge, team ember, status failing, region us-west, tier premium, replicas 7",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status paused and located in region eu-north? List the service names, comma-separated.",
+      "gold_answer": "cache-edge, render-scheduler",
+      "required_facts": [
+        "F2",
+        "F4",
+        "F1",
+        "F5"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-dev-029",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service ingest-hub, team ember, status paused, region us-east, tier standard, replicas 4\n  [F2] service auth-hub, team grit, status healthy, region us-east, tier premium, replicas 9\n  [F3] service audit-gateway, team borealis, status degraded, region eu-west, tier standard, replicas 2\n  [F4] service notify-daemon, team ember, status degraded, region us-east, tier free, replicas 7\n  [F5] service render-service, team ember, status degraded, region us-west, tier premium, replicas 3\n  [F6] service render-edge, team ember, status paused, region eu-west, tier standard, replicas 4\n  [F7] service render-api, team ember, status healthy, region us-east, tier free, replicas 4\n  [F8] service render-gateway, team fjord, status degraded, region eu-north, tier premium, replicas 4",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team ember and currently in status paused? List the service names, comma-separated.",
+      "gold_answer": "ingest-hub, render-edge",
+      "required_facts": [
+        "F6",
+        "F1",
+        "F4",
+        "F5",
+        "F7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-dev-030",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service policy-service, team borealis, status failing, region us-west, tier free, replicas 6\n  [F2] service render-gateway, team ember, status degraded, region us-west, tier standard, replicas 6\n  [F3] service policy-api, team cinder, status failing, region ap-south, tier free, replicas 1\n  [F4] service policy-hub, team ember, status paused, region us-west, tier free, replicas 7\n  [F5] service policy-gateway, team atlas, status failing, region us-west, tier free, replicas 1\n  [F6] service model-edge, team fjord, status failing, region eu-west, tier premium, replicas 4\n  [F7] service search-relay, team atlas, status degraded, region sa-east, tier standard, replicas 5",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status failing and located in region ap-south? List the service names, comma-separated.",
+      "gold_answer": "policy-api",
+      "required_facts": [
+        "F3",
+        "F6",
+        "F5",
+        "F1"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "E-dev-001",
+      "family": "E",
+      "sender_input": "Measurement handoff: budget bookkeeping for the occ-2 prototype (fact ids in brackets):\n  [F1] total budget (USD): 1390\n  [F2] recorded spend 1 (USD): 110\n  [F3] recorded spend 2 (USD): 160\n  [F4] recorded spend 3 (USD): 250\n  [F5] recorded spend 4 (USD): 330\n  [F6] recorded spend 5 (USD): 340",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total amount spent so far on the occ-2 prototype (USD)?",
+      "gold_answer": 1190,
+      "required_facts": [
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-dev-002",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service audit-scheduler (fact ids in brackets):\n  [F1] sample 1 latency (ms): 321\n  [F2] sample 2 latency (ms): 347\n  [F3] sample 3 latency (ms): 772\n  [F4] sample 4 latency (ms): 853\n  [F5] sample 5 latency (ms): 582\n  [F6] sample 6 latency (ms): 296\n  [F7] sample 7 latency (ms): 198\n  [F8] sample 8 latency (ms): 371\n  [F9] sample 9 latency (ms): 62\n  [F10] sample 10 latency (ms): 436\n  [F11] alert threshold (ms): 820",
+      "receiver_task": "Using only the numbers the sender communicates, what is the difference between the highest and the lowest latency sample (ms) for audit-scheduler?",
+      "gold_answer": 791,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-dev-003",
+      "family": "E",
+      "sender_input": "Measurement handoff: queue counters for result-reports (fact ids in brackets):\n  [F1] interval 1 arrivals: 252\n  [F2] interval 1 served: 248\n  [F3] interval 2 arrivals: 140\n  [F4] interval 2 served: 132\n  [F5] interval 3 arrivals: 106\n  [F6] interval 3 served: 105\n  [F7] interval 4 arrivals: 279\n  [F8] interval 4 served: 262",
+      "receiver_task": "Using only the numbers the sender communicates, what is the accumulated backlog (arrivals minus served) on the result-reports queue?",
+      "gold_answer": 30,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-dev-004",
+      "family": "E",
+      "sender_input": "Measurement handoff: test durations for the regression suite (fact ids in brackets):\n  [F1] test 1 duration (s): 154\n  [F2] test 2 duration (s): 21\n  [F3] test 3 duration (s): 128\n  [F4] test 4 duration (s): 109\n  [F5] test 5 duration (s): 156\n  [F6] test 6 duration (s): 206\n  [F7] test 7 duration (s): 73\n  [F8] timeout budget (s): 273",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total wall time (s) of the regression test run?",
+      "gold_answer": 847,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "E-dev-005",
+      "family": "E",
+      "sender_input": "Measurement handoff: cluster capacity for pool ingest (fact ids in brackets):\n  [F1] node count: 4\n  [F2] cores per node: 4\n  [F3] pods per node: 37",
+      "receiver_task": "Using only the numbers the sender communicates, how many CPU cores does the cluster have in total?",
+      "gold_answer": 16,
+      "required_facts": [
+        "F1",
+        "F2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-dev-006",
+      "family": "E",
+      "sender_input": "Measurement handoff: budget bookkeeping for the occ-2 prototype (fact ids in brackets):\n  [F1] total budget (USD): 2780\n  [F2] recorded spend 1 (USD): 50\n  [F3] recorded spend 2 (USD): 260\n  [F4] recorded spend 3 (USD): 610",
+      "receiver_task": "Using only the numbers the sender communicates, what is the largest single spend on the occ-2 prototype (USD)?",
+      "gold_answer": 610,
+      "required_facts": [
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-dev-007",
+      "family": "E",
+      "sender_input": "Measurement handoff: test durations for the adversarial suite (fact ids in brackets):\n  [F1] test 1 duration (s): 8\n  [F2] test 2 duration (s): 27\n  [F3] test 3 duration (s): 168\n  [F4] test 4 duration (s): 248\n  [F5] test 5 duration (s): 243\n  [F6] test 6 duration (s): 87\n  [F7] test 7 duration (s): 258\n  [F8] test 8 duration (s): 275\n  [F9] timeout budget (s): 113",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total wall time (s) of the adversarial test run?",
+      "gold_answer": 1314,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-dev-008",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service policy-daemon (fact ids in brackets):\n  [F1] sample 1 latency (ms): 841\n  [F2] sample 2 latency (ms): 177\n  [F3] sample 3 latency (ms): 912\n  [F4] sample 4 latency (ms): 116\n  [F5] sample 5 latency (ms): 778\n  [F6] alert threshold (ms): 455",
+      "receiver_task": "Using only the numbers the sender communicates, how many latency samples for policy-daemon exceed the alert threshold?",
+      "gold_answer": 3,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "E-dev-009",
+      "family": "E",
+      "sender_input": "Measurement handoff: queue counters for task-ingest (fact ids in brackets):\n  [F1] interval 1 arrivals: 194\n  [F2] interval 1 served: 192\n  [F3] interval 2 arrivals: 30\n  [F4] interval 2 served: 12\n  [F5] interval 3 arrivals: 81\n  [F6] interval 3 served: 74\n  [F7] interval 4 arrivals: 329\n  [F8] interval 4 served: 311\n  [F9] interval 5 arrivals: 264\n  [F10] interval 5 served: 244\n  [F11] interval 6 arrivals: 214\n  [F12] interval 6 served: 200",
+      "receiver_task": "Using only the numbers the sender communicates, what is the accumulated backlog (arrivals minus served) on the task-ingest queue?",
+      "gold_answer": 79,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10",
+        "F11",
+        "F12"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-dev-010",
+      "family": "E",
+      "sender_input": "Measurement handoff: queue counters for task-ingest (fact ids in brackets):\n  [F1] interval 1 arrivals: 172\n  [F2] interval 1 served: 151\n  [F3] interval 2 arrivals: 232\n  [F4] interval 2 served: 217\n  [F5] interval 3 arrivals: 364\n  [F6] interval 3 served: 364\n  [F7] interval 4 arrivals: 45\n  [F8] interval 4 served: 39\n  [F9] interval 5 arrivals: 234\n  [F10] interval 5 served: 215\n  [F11] interval 6 arrivals: 238\n  [F12] interval 6 served: 225",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total number of served requests on the task-ingest queue across the intervals?",
+      "gold_answer": 1211,
+      "required_facts": [
+        "F2",
+        "F4",
+        "F6",
+        "F8",
+        "F10",
+        "F12"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-dev-011",
+      "family": "E",
+      "sender_input": "Measurement handoff: budget bookkeeping for the gate migration (fact ids in brackets):\n  [F1] total budget (USD): 3230\n  [F2] recorded spend 1 (USD): 340\n  [F3] recorded spend 2 (USD): 410\n  [F4] recorded spend 3 (USD): 440\n  [F5] recorded spend 4 (USD): 590\n  [F6] recorded spend 5 (USD): 720\n  [F7] recorded spend 6 (USD): 800",
+      "receiver_task": "Using only the numbers the sender communicates, what is the largest single spend on the gate migration (USD)?",
+      "gold_answer": 800,
+      "required_facts": [
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "E-dev-012",
+      "family": "E",
+      "sender_input": "Measurement handoff: queue counters for evidence-batch (fact ids in brackets):\n  [F1] interval 1 arrivals: 272\n  [F2] interval 1 served: 252\n  [F3] interval 2 arrivals: 335\n  [F4] interval 2 served: 320\n  [F5] interval 3 arrivals: 167\n  [F6] interval 3 served: 167\n  [F7] interval 4 arrivals: 342\n  [F8] interval 4 served: 317\n  [F9] interval 5 arrivals: 304\n  [F10] interval 5 served: 291\n  [F11] interval 6 arrivals: 325\n  [F12] interval 6 served: 317\n  [F13] interval 7 arrivals: 336\n  [F14] interval 7 served: 325\n  [F15] interval 8 arrivals: 356\n  [F16] interval 8 served: 354",
+      "receiver_task": "Using only the numbers the sender communicates, what is the accumulated backlog (arrivals minus served) on the evidence-batch queue?",
+      "gold_answer": 94,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10",
+        "F11",
+        "F12",
+        "F13",
+        "F14",
+        "F15",
+        "F16"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-dev-013",
+      "family": "E",
+      "sender_input": "Measurement handoff: test durations for the adversarial suite (fact ids in brackets):\n  [F1] test 1 duration (s): 58\n  [F2] test 2 duration (s): 156\n  [F3] test 3 duration (s): 82\n  [F4] test 4 duration (s): 289\n  [F5] test 5 duration (s): 212\n  [F6] timeout budget (s): 245",
+      "receiver_task": "Using only the numbers the sender communicates, how many tests in the adversarial run exceed the timeout budget?",
+      "gold_answer": 1,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "E-dev-014",
+      "family": "E",
+      "sender_input": "Measurement handoff: cluster capacity for pool ingest (fact ids in brackets):\n  [F1] node count: 5\n  [F2] cores per node: 64\n  [F3] pods per node: 27",
+      "receiver_task": "Using only the numbers the sender communicates, how many pods can the cluster run in total?",
+      "gold_answer": 135,
+      "required_facts": [
+        "F1",
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-dev-015",
+      "family": "E",
+      "sender_input": "Measurement handoff: budget bookkeeping for the occ-2 prototype (fact ids in brackets):\n  [F1] total budget (USD): 690\n  [F2] recorded spend 1 (USD): 10\n  [F3] recorded spend 2 (USD): 20\n  [F4] recorded spend 3 (USD): 100",
+      "receiver_task": "Using only the numbers the sender communicates, how much of the budget for the occ-2 prototype remains after the recorded spends (USD)?",
+      "gold_answer": 560,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-dev-016",
+      "family": "E",
+      "sender_input": "Measurement handoff: test durations for the fidelity suite (fact ids in brackets):\n  [F1] test 1 duration (s): 137\n  [F2] test 2 duration (s): 133\n  [F3] test 3 duration (s): 76\n  [F4] test 4 duration (s): 254\n  [F5] test 5 duration (s): 8\n  [F6] timeout budget (s): 157",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total wall time (s) of the fidelity test run?",
+      "gold_answer": 608,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-dev-017",
+      "family": "E",
+      "sender_input": "Measurement handoff: test durations for the fidelity suite (fact ids in brackets):\n  [F1] test 1 duration (s): 269\n  [F2] test 2 duration (s): 216\n  [F3] test 3 duration (s): 198\n  [F4] test 4 duration (s): 163\n  [F5] test 5 duration (s): 223\n  [F6] test 6 duration (s): 33\n  [F7] test 7 duration (s): 8\n  [F8] timeout budget (s): 274",
+      "receiver_task": "Using only the numbers the sender communicates, how many tests in the fidelity run exceed the timeout budget?",
+      "gold_answer": 0,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-dev-018",
+      "family": "E",
+      "sender_input": "Measurement handoff: queue counters for result-reports (fact ids in brackets):\n  [F1] interval 1 arrivals: 350\n  [F2] interval 1 served: 343\n  [F3] interval 2 arrivals: 68\n  [F4] interval 2 served: 68\n  [F5] interval 3 arrivals: 269\n  [F6] interval 3 served: 255\n  [F7] interval 4 arrivals: 249\n  [F8] interval 4 served: 228\n  [F9] interval 5 arrivals: 234\n  [F10] interval 5 served: 220\n  [F11] interval 6 arrivals: 301\n  [F12] interval 6 served: 272",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total number of arrivals on the result-reports queue across the intervals?",
+      "gold_answer": 1471,
+      "required_facts": [
+        "F1",
+        "F3",
+        "F5",
+        "F7",
+        "F9",
+        "F11"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-dev-019",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service search-hub (fact ids in brackets):\n  [F1] sample 1 latency (ms): 127\n  [F2] sample 2 latency (ms): 296\n  [F3] sample 3 latency (ms): 812\n  [F4] sample 4 latency (ms): 65\n  [F5] sample 5 latency (ms): 578\n  [F6] alert threshold (ms): 805",
+      "receiver_task": "Using only the numbers the sender communicates, what is the lowest latency sample (ms) for search-hub?",
+      "gold_answer": 65,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-dev-020",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service billing-hub (fact ids in brackets):\n  [F1] sample 1 latency (ms): 557\n  [F2] sample 2 latency (ms): 584\n  [F3] sample 3 latency (ms): 772\n  [F4] sample 4 latency (ms): 260\n  [F5] sample 5 latency (ms): 504\n  [F6] sample 6 latency (ms): 934\n  [F7] sample 7 latency (ms): 859\n  [F8] sample 8 latency (ms): 738\n  [F9] alert threshold (ms): 566",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total of the latency samples (ms) for billing-hub?",
+      "gold_answer": 5208,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-dev-021",
+      "family": "E",
+      "sender_input": "Measurement handoff: budget bookkeeping for the gate migration (fact ids in brackets):\n  [F1] total budget (USD): 3990\n  [F2] recorded spend 1 (USD): 160\n  [F3] recorded spend 2 (USD): 520\n  [F4] recorded spend 3 (USD): 560\n  [F5] recorded spend 4 (USD): 860",
+      "receiver_task": "Using only the numbers the sender communicates, how much of the budget for the gate migration remains after the recorded spends (USD)?",
+      "gold_answer": 1890,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-dev-022",
+      "family": "E",
+      "sender_input": "Measurement handoff: queue counters for receipts (fact ids in brackets):\n  [F1] interval 1 arrivals: 356\n  [F2] interval 1 served: 346\n  [F3] interval 2 arrivals: 303\n  [F4] interval 2 served: 296\n  [F5] interval 3 arrivals: 270\n  [F6] interval 3 served: 265\n  [F7] interval 4 arrivals: 74\n  [F8] interval 4 served: 48\n  [F9] interval 5 arrivals: 345\n  [F10] interval 5 served: 333\n  [F11] interval 6 arrivals: 237\n  [F12] interval 6 served: 213\n  [F13] interval 7 arrivals: 394\n  [F14] interval 7 served: 377",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total number of served requests on the receipts queue across the intervals?",
+      "gold_answer": 1878,
+      "required_facts": [
+        "F2",
+        "F4",
+        "F6",
+        "F8",
+        "F10",
+        "F12",
+        "F14"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-dev-023",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service model-service (fact ids in brackets):\n  [F1] sample 1 latency (ms): 876\n  [F2] sample 2 latency (ms): 552\n  [F3] sample 3 latency (ms): 753\n  [F4] sample 4 latency (ms): 293\n  [F5] sample 5 latency (ms): 245\n  [F6] sample 6 latency (ms): 947\n  [F7] sample 7 latency (ms): 810\n  [F8] sample 8 latency (ms): 849\n  [F9] sample 9 latency (ms): 516\n  [F10] sample 10 latency (ms): 675\n  [F11] alert threshold (ms): 750",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total of the latency samples (ms) for model-service?",
+      "gold_answer": 6516,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-dev-024",
+      "family": "E",
+      "sender_input": "Measurement handoff: test durations for the regression suite (fact ids in brackets):\n  [F1] test 1 duration (s): 271\n  [F2] test 2 duration (s): 202\n  [F3] test 3 duration (s): 242\n  [F4] test 4 duration (s): 247\n  [F5] test 5 duration (s): 204\n  [F6] test 6 duration (s): 261\n  [F7] timeout budget (s): 71",
+      "receiver_task": "Using only the numbers the sender communicates, what is the duration (s) of the longest test in the regression run?",
+      "gold_answer": 271,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "E-dev-025",
+      "family": "E",
+      "sender_input": "Measurement handoff: budget bookkeeping for the gate migration (fact ids in brackets):\n  [F1] total budget (USD): 710\n  [F2] recorded spend 1 (USD): 10\n  [F3] recorded spend 2 (USD): 20\n  [F4] recorded spend 3 (USD): 30\n  [F5] recorded spend 4 (USD): 40",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total amount spent so far on the gate migration (USD)?",
+      "gold_answer": 100,
+      "required_facts": [
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-dev-026",
+      "family": "E",
+      "sender_input": "Measurement handoff: budget bookkeeping for the dialect trial (fact ids in brackets):\n  [F1] total budget (USD): 3950\n  [F2] recorded spend 1 (USD): 360\n  [F3] recorded spend 2 (USD): 590\n  [F4] recorded spend 3 (USD): 750\n  [F5] recorded spend 4 (USD): 770",
+      "receiver_task": "Using only the numbers the sender communicates, what is the largest single spend on the dialect trial (USD)?",
+      "gold_answer": 770,
+      "required_facts": [
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-dev-027",
+      "family": "E",
+      "sender_input": "Measurement handoff: budget bookkeeping for the fidelity extension (fact ids in brackets):\n  [F1] total budget (USD): 1170\n  [F2] recorded spend 1 (USD): 10\n  [F3] recorded spend 2 (USD): 180\n  [F4] recorded spend 3 (USD): 210",
+      "receiver_task": "Using only the numbers the sender communicates, how much of the budget for the fidelity extension remains after the recorded spends (USD)?",
+      "gold_answer": 770,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-dev-028",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service billing-relay (fact ids in brackets):\n  [F1] sample 1 latency (ms): 586\n  [F2] sample 2 latency (ms): 739\n  [F3] sample 3 latency (ms): 784\n  [F4] sample 4 latency (ms): 327\n  [F5] alert threshold (ms): 468",
+      "receiver_task": "Using only the numbers the sender communicates, how many latency samples for billing-relay exceed the alert threshold?",
+      "gold_answer": 3,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-dev-029",
+      "family": "E",
+      "sender_input": "Measurement handoff: queue counters for receipts (fact ids in brackets):\n  [F1] interval 1 arrivals: 34\n  [F2] interval 1 served: 10\n  [F3] interval 2 arrivals: 219\n  [F4] interval 2 served: 204\n  [F5] interval 3 arrivals: 247\n  [F6] interval 3 served: 221\n  [F7] interval 4 arrivals: 74\n  [F8] interval 4 served: 46\n  [F9] interval 5 arrivals: 311\n  [F10] interval 5 served: 300",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total number of arrivals on the receipts queue across the intervals?",
+      "gold_answer": 885,
+      "required_facts": [
+        "F1",
+        "F3",
+        "F5",
+        "F7",
+        "F9"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-dev-030",
+      "family": "E",
+      "sender_input": "Measurement handoff: test durations for the codec suite (fact ids in brackets):\n  [F1] test 1 duration (s): 168\n  [F2] test 2 duration (s): 92\n  [F3] test 3 duration (s): 171\n  [F4] test 4 duration (s): 194\n  [F5] test 5 duration (s): 169\n  [F6] test 6 duration (s): 177\n  [F7] test 7 duration (s): 189\n  [F8] timeout budget (s): 225",
+      "receiver_task": "Using only the numbers the sender communicates, what is the duration (s) of the longest test in the codec run?",
+      "gold_answer": 194,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7"
+      ],
+      "difficulty": "medium"
+    }
+  ]
+}

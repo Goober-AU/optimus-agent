@@ -1,0 +1,246 @@
+{
+  "id": "sym-v1-pt-pt",
+  "generation": 4,
+  "lineage": [
+    "packing_toggle:DEP=off",
+    "packing_toggle:ART=off"
+  ],
+  "checksum": "17836322dced3bb56e10bb0466abb5cb8d463ac6e4aba471f906ad5f24a4d49b",
+  "format": "DIALECT/1",
+  "key_aliases": {
+    "MSGID": "m",
+    "TASK": "t",
+    "PARENT": "p",
+    "TRACE": "x",
+    "SENDER": "f",
+    "RECIPIENT": "r",
+    "KIND": "k",
+    "STATUS": "s",
+    "SEQ": "q",
+    "V": "vc",
+    "VS": "vs",
+    "VM": "vm",
+    "VR": "vr",
+    "NEXT": "n",
+    "TS": "w",
+    "EXP": "xp"
+  },
+  "family_aliases": {
+    "F": "i",
+    "FC": "c",
+    "FE": "v",
+    "E": "e",
+    "EL": "l",
+    "ED": "d",
+    "ER": "g",
+    "EV": "y",
+    "ART": "h",
+    "DEP": "u"
+  },
+  "value_symbols": {
+    "STATUS": {
+      "pending": "0",
+      "in_progress": "1",
+      "done": "2",
+      "partial": "3",
+      "blocked": "4",
+      "failed": "5",
+      "cancelled": "6"
+    },
+    "KIND": {
+      "TASK": "T",
+      "PROGRESS": "P",
+      "RESULT": "R",
+      "EVIDENCE": "E",
+      "REQUEST_DETAIL": "Q",
+      "ACK": "A",
+      "CORRECTION": "C",
+      "BLOCKED": "B",
+      "CANCELLED": "X"
+    },
+    "VERIFY": {
+      "pass": "+",
+      "fail": "-",
+      "unknown": "?"
+    },
+    "EVIDENCE_VERIFIED": {
+      "pass": "1",
+      "fail": "0"
+    },
+    "EVIDENCE_KIND": {
+      "src": "s",
+      "commit": "c",
+      "log": "l",
+      "tool": "t",
+      "build": "b",
+      "artifact": "a",
+      "lines": "n",
+      "finding": "f"
+    }
+  },
+  "microtemplates": [
+    {
+      "id": "MT1",
+      "field": "TRACE",
+      "type": "prefix",
+      "match": "trace-",
+      "emit": "%"
+    },
+    {
+      "id": "MT2",
+      "field": "SENDER",
+      "type": "prefix",
+      "match": "agent://",
+      "emit": "a:"
+    },
+    {
+      "id": "MT3",
+      "field": "SENDER",
+      "type": "prefix",
+      "match": "daemon://",
+      "emit": "d:"
+    },
+    {
+      "id": "MT4",
+      "field": "RECIPIENT",
+      "type": "prefix",
+      "match": "agent://",
+      "emit": "a:"
+    },
+    {
+      "id": "MT5",
+      "field": "RECIPIENT",
+      "type": "prefix",
+      "match": "daemon://",
+      "emit": "d:"
+    },
+    {
+      "id": "MT6",
+      "field": "TS",
+      "type": "regex",
+      "match": "(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})Z",
+      "emit": "\\1\\2\\3\\4\\5\\6",
+      "decode_match": "(\\d{4})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})",
+      "decode_emit": "\\1-\\2-\\3T\\4:\\5:\\6Z"
+    },
+    {
+      "id": "MT7",
+      "field": "EXP",
+      "type": "regex",
+      "match": "(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})Z",
+      "emit": "\\1\\2\\3\\4\\5\\6",
+      "decode_match": "(\\d{4})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})",
+      "decode_emit": "\\1-\\2-\\3T\\4:\\5:\\6Z"
+    },
+    {
+      "id": "MT8",
+      "field": "E",
+      "type": "prefix",
+      "match": "crates/pi-coding-agent/",
+      "emit": "^"
+    },
+    {
+      "id": "MT9",
+      "field": "E",
+      "type": "prefix",
+      "match": "logs/",
+      "emit": "g:"
+    },
+    {
+      "id": "MT10",
+      "field": "E",
+      "type": "prefix",
+      "match": "receipts/",
+      "emit": "j:"
+    },
+    {
+      "id": "MT11",
+      "field": "E",
+      "type": "prefix",
+      "match": "reports/",
+      "emit": "q:"
+    },
+    {
+      "id": "MT12",
+      "field": "E",
+      "type": "prefix",
+      "match": "target/",
+      "emit": "y:"
+    },
+    {
+      "id": "MT13",
+      "field": "E",
+      "type": "prefix",
+      "match": "research/",
+      "emit": "z:"
+    },
+    {
+      "id": "MT14",
+      "field": "E",
+      "type": "prefix",
+      "match": "docs/",
+      "emit": "o:"
+    },
+    {
+      "id": "MT15",
+      "field": "ART",
+      "type": "prefix",
+      "match": "crates/pi-coding-agent/",
+      "emit": "^"
+    },
+    {
+      "id": "MT16",
+      "field": "ART",
+      "type": "prefix",
+      "match": "logs/",
+      "emit": "g:"
+    },
+    {
+      "id": "MT17",
+      "field": "ART",
+      "type": "prefix",
+      "match": "receipts/",
+      "emit": "j:"
+    },
+    {
+      "id": "MT18",
+      "field": "ART",
+      "type": "prefix",
+      "match": "reports/",
+      "emit": "q:"
+    },
+    {
+      "id": "MT19",
+      "field": "ART",
+      "type": "prefix",
+      "match": "target/",
+      "emit": "y:"
+    },
+    {
+      "id": "MT20",
+      "field": "ART",
+      "type": "prefix",
+      "match": "research/",
+      "emit": "z:"
+    }
+  ],
+  "field_defaults": {
+    "RECIPIENT": "daemon://coordinator",
+    "SENDER": "daemon://coordinator",
+    "SEQ": "1"
+  },
+  "packings": [
+    "E",
+    "FE",
+    "NEXT",
+    "FC"
+  ],
+  "never_compress_kinds": [
+    "BLOCKED",
+    "CANCELLED",
+    "CORRECTION",
+    "ACK"
+  ],
+  "never_compress_verification_fail": true,
+  "usage_rules": "Findings and evidence stay positional (i1..in, e1..en). Elided fields equal their defaults. Contradictions and blocked payloads travel verbatim."
+}

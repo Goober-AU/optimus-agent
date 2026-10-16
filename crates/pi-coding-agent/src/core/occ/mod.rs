@@ -11,13 +11,20 @@
 //!   conversational prose).
 //! - OCC-1: compact structured English ([`occ1`]) encoding the typed contract
 //!   ([`contract`]); the default for structured task and result bodies.
-//! - OCC-2: learned symbolic dialects (offline discovery; not implemented
-//!   yet).
+//! - OCC-2: symbolic dialects ([`occ2`] + [`dialect`]): a table-driven
+//!   symbolic codec for the same typed contract, with strict decode and a
+//!   conservative OCC-1 fallback. The codec, registry and the
+//!   hand-designed `sym-v1` dialect are implemented; the offline
+//!   discovery harness that evolves dialects is future work.
 //! - OCC-3: true latent communication between compatible local models (not
 //!   implemented; hosted black-box APIs cannot support it).
 //!
 //! Modules:
 //! - [`occ1`]: the OCC-1 line grammar codec (implemented here; frozen API).
+//! - [`occ2`]: the OCC-2 symbolic codec for the same typed contract
+//!   (implemented here; foundation for learned dialects).
+//! - [`dialect`]: the OCC-2 dialect registry: dialects as data, codebook
+//!   hashing and capability negotiation (implemented here; foundation).
 //! - [`contract`]: the `optimus.agent-comm.v1` typed task/result contract
 //!   (implemented here; frozen API).
 //! - `delta`: change-only updates on top of the contract (WORKER B owns this
@@ -259,7 +266,9 @@ pub mod activity;
 pub mod consolidation;
 pub mod contract;
 pub mod delta;
+pub mod dialect;
 pub mod occ1;
+pub mod occ2;
 pub mod prune;
 
 #[cfg(test)]

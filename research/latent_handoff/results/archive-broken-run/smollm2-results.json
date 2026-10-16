@@ -1,0 +1,2865 @@
+{
+  "model": {
+    "model_id": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+    "dtype": "torch.float32",
+    "device": "cpu",
+    "n_layers": 30,
+    "hidden_size": 576,
+    "vocab_size": 49152,
+    "n_params": 134515008,
+    "attn_implementation": "eager",
+    "torch_num_threads": 6
+  },
+  "load_s": 5.73,
+  "rss_after_load_mb": 867.4,
+  "rss_before_load_mb": 219.5,
+  "warmup_s": 0.12,
+  "seed": 1234,
+  "trials": 10,
+  "exp_a": {
+    "summary": {
+      "n_trials": 10,
+      "with_cache_correct": 0,
+      "without_cache_correct": 0,
+      "proven_trials": 0,
+      "mean_sender_forward_s": 0.1963,
+      "mean_transfer_s": 0.0094,
+      "mean_receiver_gen_s": 0.7175,
+      "mean_fresh_gen_s": 0.2335,
+      "mean_cache_bytes": 1930752,
+      "proven": false
+    },
+    "trials": [
+      {
+        "trial": 0,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "sender_forward_s": 0.1201,
+        "cache_validation": {
+          "n_layers": 30,
+          "seq_len": 41,
+          "batch": 1,
+          "kv_heads": 3,
+          "head_dim": 64,
+          "per_layer_first3": [
+            {
+              "layer": 0,
+              "k_shape": [
+                1,
+                3,
+                41,
+                64
+              ],
+              "v_shape": [
+                1,
+                3,
+                41,
+                64
+              ]
+            },
+            {
+              "layer": 1,
+              "k_shape": [
+                1,
+                3,
+                41,
+                64
+              ],
+              "v_shape": [
+                1,
+                3,
+                41,
+                64
+              ]
+            },
+            {
+              "layer": 2,
+              "k_shape": [
+                1,
+                3,
+                41,
+                64
+              ],
+              "v_shape": [
+                1,
+                3,
+                41,
+                64
+              ]
+            }
+          ]
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00486,
+        "with_cache_answer": "",
+        "with_cache_correct": false,
+        "receiver_gen_s": 0.0943,
+        "gen_tokens_with": 1,
+        "ownership_ok": true,
+        "without_cache_answer": "The number is 12.\n\nWhat is the",
+        "without_cache_correct": false,
+        "fresh_gen_s": 0.8488,
+        "gen_tokens_without": 12,
+        "target_word": "lantern",
+        "target_number": 98,
+        "proven_trial": false,
+        "rss_mb": 908.2
+      },
+      {
+        "trial": 1,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "sender_forward_s": 0.1472,
+        "cache_bytes": 1889280,
+        "transfer_s": 0.0051,
+        "with_cache_answer": "",
+        "with_cache_correct": false,
+        "receiver_gen_s": 0.2828,
+        "gen_tokens_with": 1,
+        "ownership_ok": true,
+        "without_cache_answer": "",
+        "without_cache_correct": false,
+        "fresh_gen_s": 0.1299,
+        "gen_tokens_without": 1,
+        "target_word": "marble",
+        "target_number": 29,
+        "proven_trial": false,
+        "rss_mb": 907.8
+      },
+      {
+        "trial": 2,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "sender_forward_s": 0.3371,
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00498,
+        "with_cache_answer": "",
+        "with_cache_correct": false,
+        "receiver_gen_s": 0.1654,
+        "gen_tokens_with": 1,
+        "ownership_ok": true,
+        "without_cache_answer": "",
+        "without_cache_correct": false,
+        "fresh_gen_s": 0.1381,
+        "gen_tokens_without": 1,
+        "target_word": "saffron",
+        "target_number": 61,
+        "proven_trial": false,
+        "rss_mb": 908.5
+      },
+      {
+        "trial": 3,
+        "sender_tokens": 43,
+        "receiver_tokens": 22,
+        "sender_forward_s": 0.1285,
+        "cache_bytes": 1981440,
+        "transfer_s": 0.0061,
+        "with_cache_answer": "Obsidian\n\nWhat is the number of the number of",
+        "with_cache_correct": false,
+        "receiver_gen_s": 0.8137,
+        "gen_tokens_with": 12,
+        "ownership_ok": true,
+        "without_cache_answer": "",
+        "without_cache_correct": false,
+        "fresh_gen_s": 0.1031,
+        "gen_tokens_without": 1,
+        "target_word": "obsidian",
+        "target_number": 55,
+        "proven_trial": false,
+        "rss_mb": 933.9
+      },
+      {
+        "trial": 4,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "sender_forward_s": 0.1172,
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00604,
+        "with_cache_answer": "fern\n\nWhat is the number of notes that Agent B",
+        "with_cache_correct": false,
+        "receiver_gen_s": 0.7606,
+        "gen_tokens_with": 12,
+        "ownership_ok": true,
+        "without_cache_answer": "",
+        "without_cache_correct": false,
+        "fresh_gen_s": 0.0903,
+        "gen_tokens_without": 1,
+        "target_word": "fern",
+        "target_number": 48,
+        "proven_trial": false,
+        "rss_mb": 934.0
+      },
+      {
+        "trial": 5,
+        "sender_tokens": 41,
+        "receiver_tokens": 22,
+        "sender_forward_s": 0.1324,
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00566,
+        "with_cache_answer": "The number paired with opal is 92.",
+        "with_cache_correct": false,
+        "receiver_gen_s": 0.9192,
+        "gen_tokens_with": 12,
+        "ownership_ok": true,
+        "without_cache_answer": "",
+        "without_cache_correct": false,
+        "fresh_gen_s": 0.15,
+        "gen_tokens_without": 1,
+        "target_word": "opal",
+        "target_number": 97,
+        "proven_trial": false,
+        "rss_mb": 923.1
+      },
+      {
+        "trial": 6,
+        "sender_tokens": 43,
+        "receiver_tokens": 21,
+        "sender_forward_s": 0.33,
+        "cache_bytes": 1981440,
+        "transfer_s": 0.0459,
+        "with_cache_answer": "walnut\n\nWhat is the number of the number of the",
+        "with_cache_correct": false,
+        "receiver_gen_s": 1.6043,
+        "gen_tokens_with": 12,
+        "ownership_ok": true,
+        "without_cache_answer": "",
+        "without_cache_correct": false,
+        "fresh_gen_s": 0.3737,
+        "gen_tokens_without": 1,
+        "target_word": "walnut",
+        "target_number": 62,
+        "proven_trial": false,
+        "rss_mb": 923.1
+      },
+      {
+        "trial": 7,
+        "sender_tokens": 44,
+        "receiver_tokens": 22,
+        "sender_forward_s": 0.3539,
+        "cache_bytes": 2027520,
+        "transfer_s": 0.00613,
+        "with_cache_answer": "72\n\nWhat is the total number of notes",
+        "with_cache_correct": false,
+        "receiver_gen_s": 1.4677,
+        "gen_tokens_with": 12,
+        "ownership_ok": true,
+        "without_cache_answer": "",
+        "without_cache_correct": false,
+        "fresh_gen_s": 0.2933,
+        "gen_tokens_without": 1,
+        "target_word": "juniper",
+        "target_number": 80,
+        "proven_trial": false,
+        "rss_mb": 938.3
+      },
+      {
+        "trial": 8,
+        "sender_tokens": 43,
+        "receiver_tokens": 22,
+        "sender_forward_s": 0.154,
+        "cache_bytes": 1981440,
+        "transfer_s": 0.0048,
+        "with_cache_answer": "jasper\n\nWhat is the number of the number of",
+        "with_cache_correct": false,
+        "receiver_gen_s": 0.9724,
+        "gen_tokens_with": 12,
+        "ownership_ok": true,
+        "without_cache_answer": "",
+        "without_cache_correct": false,
+        "fresh_gen_s": 0.1123,
+        "gen_tokens_without": 1,
+        "target_word": "jasper",
+        "target_number": 91,
+        "proven_trial": false,
+        "rss_mb": 939.4
+      },
+      {
+        "trial": 9,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "sender_forward_s": 0.1429,
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00445,
+        "with_cache_answer": "",
+        "with_cache_correct": false,
+        "receiver_gen_s": 0.0947,
+        "gen_tokens_with": 1,
+        "ownership_ok": true,
+        "without_cache_answer": "",
+        "without_cache_correct": false,
+        "fresh_gen_s": 0.0957,
+        "gen_tokens_without": 1,
+        "target_word": "saffron",
+        "target_number": 82,
+        "proven_trial": false,
+        "rss_mb": 948.2
+      }
+    ]
+  },
+  "interventions": {
+    "summary": {
+      "A_correct_cache": {
+        "correct": 0,
+        "mean_kl_vs_A": 1.994179,
+        "mean_l1_vs_A": 1.485524,
+        "mean_gen_s": 0.8333
+      },
+      "B_no_cache": {
+        "correct": 0,
+        "mean_kl_vs_A": 0.485225,
+        "mean_l1_vs_A": 0.715972,
+        "mean_gen_s": 0.1822
+      },
+      "C_zeroed_cache": {
+        "correct": 0,
+        "mean_kl_vs_A": 1.621662,
+        "mean_l1_vs_A": 1.293736,
+        "mean_gen_s": 0.7728
+      },
+      "D_random_cache": {
+        "correct": 0,
+        "mean_kl_vs_A": 8.435233,
+        "mean_l1_vs_A": 1.821473,
+        "mean_gen_s": 0.9246
+      },
+      "E_unrelated_cache": {
+        "correct": 0,
+        "mean_kl_vs_A": 0.774969,
+        "mean_l1_vs_A": 0.796742,
+        "mean_gen_s": 0.8011
+      },
+      "F_full_text": {
+        "correct": 0,
+        "mean_kl_vs_A": 0.0,
+        "mean_l1_vs_A": 0.0,
+        "mean_gen_s": 0.5468
+      },
+      "G_compact_text": {
+        "correct": 0,
+        "mean_kl_vs_A": 0.422516,
+        "mean_l1_vs_A": 0.582224,
+        "mean_gen_s": 0.9074
+      }
+    },
+    "trials": [
+      {
+        "trial": 0,
+        "target_word": "lantern",
+        "target_number": 98,
+        "full_text_tokens": 62,
+        "compact_text_tokens": 50,
+        "sender_tokens": 41,
+        "A_correct_cache": {
+          "divergence_vs_A": {
+            "kl": 2.382262,
+            "l1": 1.583068
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.8406,
+          "argmax_token": "Agent"
+        },
+        "B_no_cache": {
+          "divergence_vs_A": {
+            "kl": 0.264763,
+            "l1": 0.547054
+          },
+          "answer": "The number is 12.\n\nWhat is the",
+          "correct": false,
+          "gen_s": 0.7506,
+          "argmax_token": " The"
+        },
+        "C_zeroed_cache": {
+          "divergence_vs_A": {
+            "kl": 1.908117,
+            "l1": 1.371575
+          },
+          "answer": "Agent B received B received B's received B's received B",
+          "correct": false,
+          "gen_s": 0.7681,
+          "argmax_token": " What"
+        },
+        "D_random_cache": {
+          "divergence_vs_A": {
+            "kl": 7.698696,
+            "l1": 1.534332
+          },
+          "answer": "dollyaignie.rumedi communicates breomes ofhard",
+          "correct": false,
+          "gen_s": 0.8821,
+          "argmax_token": " "
+        },
+        "E_unrelated_cache": {
+          "divergence_vs_A": {
+            "kl": 0.932505,
+            "l1": 0.859741
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.8104,
+          "argmax_token": " "
+        },
+        "F_full_text": {
+          "divergence_vs_A": {
+            "kl": 0.0,
+            "l1": 0.0
+          },
+          "answer": "",
+          "correct": false,
+          "gen_s": 0.1417,
+          "argmax_token": "<|im_end|>"
+        },
+        "G_compact_text": {
+          "divergence_vs_A": {
+            "kl": 0.697591,
+            "l1": 0.736212
+          },
+          "answer": "22\n\nWhat is the name of the person",
+          "correct": false,
+          "gen_s": 0.8595,
+          "argmax_token": " "
+        },
+        "rss_mb": 990.6
+      },
+      {
+        "trial": 1,
+        "target_word": "marble",
+        "target_number": 29,
+        "full_text_tokens": 62,
+        "compact_text_tokens": 50,
+        "sender_tokens": 41,
+        "A_correct_cache": {
+          "divergence_vs_A": {
+            "kl": 1.878307,
+            "l1": 1.501379
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.8373,
+          "argmax_token": "Agent"
+        },
+        "B_no_cache": {
+          "divergence_vs_A": {
+            "kl": 0.36103,
+            "l1": 0.591254
+          },
+          "answer": "",
+          "correct": false,
+          "gen_s": 0.3166,
+          "argmax_token": "<|im_end|>"
+        },
+        "C_zeroed_cache": {
+          "divergence_vs_A": {
+            "kl": 1.52919,
+            "l1": 1.362051
+          },
+          "answer": "Agent B received B received B's received B's received B",
+          "correct": false,
+          "gen_s": 0.8518,
+          "argmax_token": " What"
+        },
+        "D_random_cache": {
+          "divergence_vs_A": {
+            "kl": 9.099388,
+            "l1": 1.863102
+          },
+          "answer": "WhoRilot\npresent of Rel.instead {'\ufffdicates",
+          "correct": false,
+          "gen_s": 0.7409,
+          "argmax_token": " Administration"
+        },
+        "E_unrelated_cache": {
+          "divergence_vs_A": {
+            "kl": 1.557246,
+            "l1": 1.030978
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.7657,
+          "argmax_token": " "
+        },
+        "F_full_text": {
+          "divergence_vs_A": {
+            "kl": 0.0,
+            "l1": 0.0
+          },
+          "answer": "",
+          "correct": false,
+          "gen_s": 0.1539,
+          "argmax_token": "<|im_end|>"
+        },
+        "G_compact_text": {
+          "divergence_vs_A": {
+            "kl": 0.700389,
+            "l1": 0.792854
+          },
+          "answer": "6\n\nWhat is the name of the person who",
+          "correct": false,
+          "gen_s": 1.3716,
+          "argmax_token": " "
+        },
+        "rss_mb": 999.7
+      },
+      {
+        "trial": 2,
+        "target_word": "saffron",
+        "target_number": 61,
+        "full_text_tokens": 62,
+        "compact_text_tokens": 50,
+        "sender_tokens": 41,
+        "A_correct_cache": {
+          "divergence_vs_A": {
+            "kl": 1.561488,
+            "l1": 1.399798
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.8849,
+          "argmax_token": "Agent"
+        },
+        "B_no_cache": {
+          "divergence_vs_A": {
+            "kl": 0.239845,
+            "l1": 0.422867
+          },
+          "answer": "",
+          "correct": false,
+          "gen_s": 0.0721,
+          "argmax_token": "<|im_end|>"
+        },
+        "C_zeroed_cache": {
+          "divergence_vs_A": {
+            "kl": 1.434764,
+            "l1": 1.247231
+          },
+          "answer": "Agent B received Agent B's notes.",
+          "correct": false,
+          "gen_s": 0.5137,
+          "argmax_token": "<|im_end|>"
+        },
+        "D_random_cache": {
+          "divergence_vs_A": {
+            "kl": 6.393847,
+            "l1": 1.473754
+          },
+          "answer": "Minister Wtes-ship \ufffd#dingster- TermEss",
+          "correct": false,
+          "gen_s": 0.7406,
+          "argmax_token": "\n"
+        },
+        "E_unrelated_cache": {
+          "divergence_vs_A": {
+            "kl": 1.216604,
+            "l1": 0.946185
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.8233,
+          "argmax_token": " "
+        },
+        "F_full_text": {
+          "divergence_vs_A": {
+            "kl": 0.0,
+            "l1": 0.0
+          },
+          "answer": "",
+          "correct": false,
+          "gen_s": 0.132,
+          "argmax_token": "<|im_end|>"
+        },
+        "G_compact_text": {
+          "divergence_vs_A": {
+            "kl": 0.605522,
+            "l1": 0.783236
+          },
+          "answer": "79\n\nWhat is the name of the person",
+          "correct": false,
+          "gen_s": 1.0321,
+          "argmax_token": " "
+        },
+        "rss_mb": 999.5
+      },
+      {
+        "trial": 3,
+        "target_word": "obsidian",
+        "target_number": 55,
+        "full_text_tokens": 65,
+        "compact_text_tokens": 53,
+        "sender_tokens": 43,
+        "A_correct_cache": {
+          "divergence_vs_A": {
+            "kl": 1.802256,
+            "l1": 1.484796
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.885,
+          "argmax_token": "<|im_end|>"
+        },
+        "B_no_cache": {
+          "divergence_vs_A": {
+            "kl": 0.772908,
+            "l1": 0.974825
+          },
+          "answer": "",
+          "correct": false,
+          "gen_s": 0.1524,
+          "argmax_token": "<|im_end|>"
+        },
+        "C_zeroed_cache": {
+          "divergence_vs_A": {
+            "kl": 1.270825,
+            "l1": 1.177975
+          },
+          "answer": "Obsidian\n\nNote: Obsidian",
+          "correct": false,
+          "gen_s": 0.794,
+          "argmax_token": "<|im_end|>"
+        },
+        "D_random_cache": {
+          "divergence_vs_A": {
+            "kl": 9.068536,
+            "l1": 1.936632
+          },
+          "answer": "-front-in-oarderCap : h/",
+          "correct": false,
+          "gen_s": 0.8253,
+          "argmax_token": " unl"
+        },
+        "E_unrelated_cache": {
+          "divergence_vs_A": {
+            "kl": 0.340039,
+            "l1": 0.514745
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.8626,
+          "argmax_token": " Obs"
+        },
+        "F_full_text": {
+          "divergence_vs_A": {
+            "kl": 0.0,
+            "l1": 0.0
+          },
+          "answer": "Obsidian\n\nWhat is the number of the number of",
+          "correct": false,
+          "gen_s": 0.9915,
+          "argmax_token": " Obs"
+        },
+        "G_compact_text": {
+          "divergence_vs_A": {
+            "kl": 0.285522,
+            "l1": 0.553718
+          },
+          "answer": "obsidian\n\nWhat is the name of the person who",
+          "correct": false,
+          "gen_s": 0.7465,
+          "argmax_token": " obs"
+        },
+        "rss_mb": 1020.9
+      },
+      {
+        "trial": 4,
+        "target_word": "fern",
+        "target_number": 48,
+        "full_text_tokens": 62,
+        "compact_text_tokens": 50,
+        "sender_tokens": 41,
+        "A_correct_cache": {
+          "divergence_vs_A": {
+            "kl": 1.767704,
+            "l1": 1.445704
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.9554,
+          "argmax_token": "Agent"
+        },
+        "B_no_cache": {
+          "divergence_vs_A": {
+            "kl": 0.639883,
+            "l1": 0.73122
+          },
+          "answer": "",
+          "correct": false,
+          "gen_s": 0.0892,
+          "argmax_token": "<|im_end|>"
+        },
+        "C_zeroed_cache": {
+          "divergence_vs_A": {
+            "kl": 1.220587,
+            "l1": 1.21873
+          },
+          "answer": "Agent B received B received B's received B's received B",
+          "correct": false,
+          "gen_s": 1.6143,
+          "argmax_token": " What"
+        },
+        "D_random_cache": {
+          "divergence_vs_A": {
+            "kl": 7.301355,
+            "l1": 1.850956
+          },
+          "answer": "uxn-by the Hisingerisi'ting''",
+          "correct": false,
+          "gen_s": 2.0222,
+          "argmax_token": "_"
+        },
+        "E_unrelated_cache": {
+          "divergence_vs_A": {
+            "kl": 0.465998,
+            "l1": 0.783039
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.7767,
+          "argmax_token": " "
+        },
+        "F_full_text": {
+          "divergence_vs_A": {
+            "kl": 0.0,
+            "l1": 0.0
+          },
+          "answer": "fern\n\nWhat is the number of notes that Agent B",
+          "correct": false,
+          "gen_s": 0.7066,
+          "argmax_token": " fern"
+        },
+        "G_compact_text": {
+          "divergence_vs_A": {
+            "kl": 0.177916,
+            "l1": 0.439929
+          },
+          "answer": "fern\n\nWhat is the name of the person who received",
+          "correct": false,
+          "gen_s": 0.7946,
+          "argmax_token": " fern"
+        },
+        "rss_mb": 1014.8
+      },
+      {
+        "trial": 5,
+        "target_word": "opal",
+        "target_number": 97,
+        "full_text_tokens": 63,
+        "compact_text_tokens": 51,
+        "sender_tokens": 41,
+        "A_correct_cache": {
+          "divergence_vs_A": {
+            "kl": 2.152273,
+            "l1": 1.497615
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.7835,
+          "argmax_token": "Agent"
+        },
+        "B_no_cache": {
+          "divergence_vs_A": {
+            "kl": 0.47392,
+            "l1": 0.732474
+          },
+          "answer": "",
+          "correct": false,
+          "gen_s": 0.0945,
+          "argmax_token": "<|im_end|>"
+        },
+        "C_zeroed_cache": {
+          "divergence_vs_A": {
+            "kl": 1.617686,
+            "l1": 1.202361
+          },
+          "answer": "Agent B received BADgeepereperepereperepereper",
+          "correct": false,
+          "gen_s": 0.8042,
+          "argmax_token": "<|im_end|>"
+        },
+        "D_random_cache": {
+          "divergence_vs_A": {
+            "kl": 7.70951,
+            "l1": 1.8902
+          },
+          "answer": "alsICALsantest among those examined and !Leveliz",
+          "correct": false,
+          "gen_s": 0.7361,
+          "argmax_token": " IR"
+        },
+        "E_unrelated_cache": {
+          "divergence_vs_A": {
+            "kl": 0.704478,
+            "l1": 0.777579
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.7348,
+          "argmax_token": " "
+        },
+        "F_full_text": {
+          "divergence_vs_A": {
+            "kl": 0.0,
+            "l1": 0.0
+          },
+          "answer": "The number paired with opal is 92.",
+          "correct": false,
+          "gen_s": 0.8222,
+          "argmax_token": " The"
+        },
+        "G_compact_text": {
+          "divergence_vs_A": {
+            "kl": 0.506868,
+            "l1": 0.669115
+          },
+          "answer": "92\n\nWhat is the name of the person",
+          "correct": false,
+          "gen_s": 1.0804,
+          "argmax_token": " "
+        },
+        "rss_mb": 1002.1
+      },
+      {
+        "trial": 6,
+        "target_word": "walnut",
+        "target_number": 62,
+        "full_text_tokens": 64,
+        "compact_text_tokens": 52,
+        "sender_tokens": 43,
+        "A_correct_cache": {
+          "divergence_vs_A": {
+            "kl": 2.600039,
+            "l1": 1.606859
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.7576,
+          "argmax_token": "Agent"
+        },
+        "B_no_cache": {
+          "divergence_vs_A": {
+            "kl": 0.765888,
+            "l1": 0.922202
+          },
+          "answer": "",
+          "correct": false,
+          "gen_s": 0.0988,
+          "argmax_token": "<|im_end|>"
+        },
+        "C_zeroed_cache": {
+          "divergence_vs_A": {
+            "kl": 1.989203,
+            "l1": 1.331419
+          },
+          "answer": "B received B's notes.",
+          "correct": false,
+          "gen_s": 0.4814,
+          "argmax_token": "<|im_end|>"
+        },
+        "D_random_cache": {
+          "divergence_vs_A": {
+            "kl": 10.858397,
+            "l1": 1.928966
+          },
+          "answer": "es\nemail Of a note by a pret or on",
+          "correct": false,
+          "gen_s": 0.7342,
+          "argmax_token": "ere"
+        },
+        "E_unrelated_cache": {
+          "divergence_vs_A": {
+            "kl": 0.685871,
+            "l1": 0.907462
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.8251,
+          "argmax_token": " "
+        },
+        "F_full_text": {
+          "divergence_vs_A": {
+            "kl": 0.0,
+            "l1": 0.0
+          },
+          "answer": "walnut\n\nWhat is the number of the number of the",
+          "correct": false,
+          "gen_s": 0.8214,
+          "argmax_token": " walnut"
+        },
+        "G_compact_text": {
+          "divergence_vs_A": {
+            "kl": 0.147706,
+            "l1": 0.359268
+          },
+          "answer": "walnut\n\nWhat is the name of the person who received",
+          "correct": false,
+          "gen_s": 0.785,
+          "argmax_token": " walnut"
+        },
+        "rss_mb": 1004.3
+      },
+      {
+        "trial": 7,
+        "target_word": "juniper",
+        "target_number": 80,
+        "full_text_tokens": 66,
+        "compact_text_tokens": 54,
+        "sender_tokens": 44,
+        "A_correct_cache": {
+          "divergence_vs_A": {
+            "kl": 2.016517,
+            "l1": 1.47512
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.6981,
+          "argmax_token": "Agent"
+        },
+        "B_no_cache": {
+          "divergence_vs_A": {
+            "kl": 0.40526,
+            "l1": 0.718608
+          },
+          "answer": "",
+          "correct": false,
+          "gen_s": 0.0764,
+          "argmax_token": "<|im_end|>"
+        },
+        "C_zeroed_cache": {
+          "divergence_vs_A": {
+            "kl": 1.789858,
+            "l1": 1.405247
+          },
+          "answer": "Agent B received Agent B's notes.\n\nQ:",
+          "correct": false,
+          "gen_s": 0.757,
+          "argmax_token": "<|im_end|>"
+        },
+        "D_random_cache": {
+          "divergence_vs_A": {
+            "kl": 5.604496,
+            "l1": 1.789263
+          },
+          "answer": "-====\ufffd Integ\ufffd OFF Arranza[\"\ufffds",
+          "correct": false,
+          "gen_s": 0.8853,
+          "argmax_token": " Is"
+        },
+        "E_unrelated_cache": {
+          "divergence_vs_A": {
+            "kl": 0.389754,
+            "l1": 0.512351
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.7527,
+          "argmax_token": " "
+        },
+        "F_full_text": {
+          "divergence_vs_A": {
+            "kl": 0.0,
+            "l1": 0.0
+          },
+          "answer": "72\n\nWhat is the total number of notes",
+          "correct": false,
+          "gen_s": 0.7844,
+          "argmax_token": " "
+        },
+        "G_compact_text": {
+          "divergence_vs_A": {
+            "kl": 0.12535,
+            "l1": 0.320539
+          },
+          "answer": "37\n\nWhat is the name of the person",
+          "correct": false,
+          "gen_s": 0.756,
+          "argmax_token": " "
+        },
+        "rss_mb": 1019.2
+      },
+      {
+        "trial": 8,
+        "target_word": "jasper",
+        "target_number": 91,
+        "full_text_tokens": 65,
+        "compact_text_tokens": 53,
+        "sender_tokens": 43,
+        "A_correct_cache": {
+          "divergence_vs_A": {
+            "kl": 1.381647,
+            "l1": 1.277534
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.7886,
+          "argmax_token": "Agent"
+        },
+        "B_no_cache": {
+          "divergence_vs_A": {
+            "kl": 0.526715,
+            "l1": 0.850405
+          },
+          "answer": "",
+          "correct": false,
+          "gen_s": 0.0893,
+          "argmax_token": "<|im_end|>"
+        },
+        "C_zeroed_cache": {
+          "divergence_vs_A": {
+            "kl": 1.887238,
+            "l1": 1.395927
+          },
+          "answer": "Agent B received B's notes.",
+          "correct": false,
+          "gen_s": 0.5935,
+          "argmax_token": "<|im_end|>"
+        },
+        "D_random_cache": {
+          "divergence_vs_A": {
+            "kl": 9.957228,
+            "l1": 1.973623
+          },
+          "answer": "Doos Xamp\u00e9acheoslavica)asyFake",
+          "correct": false,
+          "gen_s": 0.982,
+          "argmax_token": " &"
+        },
+        "E_unrelated_cache": {
+          "divergence_vs_A": {
+            "kl": 0.629593,
+            "l1": 0.810908
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.8665,
+          "argmax_token": " "
+        },
+        "F_full_text": {
+          "divergence_vs_A": {
+            "kl": 0.0,
+            "l1": 0.0
+          },
+          "answer": "jasper\n\nWhat is the number of the number of",
+          "correct": false,
+          "gen_s": 0.7814,
+          "argmax_token": " j"
+        },
+        "G_compact_text": {
+          "divergence_vs_A": {
+            "kl": 0.369088,
+            "l1": 0.471092
+          },
+          "answer": "jasper\n\nWhat is the number of the number of",
+          "correct": false,
+          "gen_s": 0.7498,
+          "argmax_token": " j"
+        },
+        "rss_mb": 958.0
+      },
+      {
+        "trial": 9,
+        "target_word": "saffron",
+        "target_number": 82,
+        "full_text_tokens": 62,
+        "compact_text_tokens": 50,
+        "sender_tokens": 41,
+        "A_correct_cache": {
+          "divergence_vs_A": {
+            "kl": 2.399297,
+            "l1": 1.583364
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.9019,
+          "argmax_token": "Agent"
+        },
+        "B_no_cache": {
+          "divergence_vs_A": {
+            "kl": 0.402036,
+            "l1": 0.668813
+          },
+          "answer": "",
+          "correct": false,
+          "gen_s": 0.0824,
+          "argmax_token": "<|im_end|>"
+        },
+        "C_zeroed_cache": {
+          "divergence_vs_A": {
+            "kl": 1.569149,
+            "l1": 1.224843
+          },
+          "answer": "Agent B received Agent B's notes.",
+          "correct": false,
+          "gen_s": 0.5502,
+          "argmax_token": "<|im_end|>"
+        },
+        "D_random_cache": {
+          "divergence_vs_A": {
+            "kl": 10.660876,
+            "l1": 1.973903
+          },
+          "answer": "inaff!\n     ingale\\ solution theemeteries . Grand Ages",
+          "correct": false,
+          "gen_s": 0.6974,
+          "argmax_token": "another"
+        },
+        "E_unrelated_cache": {
+          "divergence_vs_A": {
+            "kl": 0.827601,
+            "l1": 0.824437
+          },
+          "answer": "Agent B received Agent A's notes.\nQuestion: What",
+          "correct": false,
+          "gen_s": 0.7931,
+          "argmax_token": " "
+        },
+        "F_full_text": {
+          "divergence_vs_A": {
+            "kl": 0.0,
+            "l1": 0.0
+          },
+          "answer": "",
+          "correct": false,
+          "gen_s": 0.1332,
+          "argmax_token": "<|im_end|>"
+        },
+        "G_compact_text": {
+          "divergence_vs_A": {
+            "kl": 0.609205,
+            "l1": 0.696273
+          },
+          "answer": "64\n\nWhat is the name of the person",
+          "correct": false,
+          "gen_s": 0.898,
+          "argmax_token": " "
+        },
+        "rss_mb": 910.3
+      }
+    ]
+  },
+  "exp_b": {
+    "projection_check": {
+      "hidden_size": 576,
+      "vocab_size": 49152,
+      "embedding_dim": 576,
+      "dims_match": true,
+      "needs_projection": false,
+      "token_embedding_stats": {
+        "mean": -0.00041,
+        "std": 0.11558,
+        "min": -0.84766,
+        "max": 0.98438,
+        "fro_norm": 17.7611
+      },
+      "last_hidden_stats": {
+        "mean": 0.07731,
+        "std": 2.41449,
+        "min": -12.38148,
+        "max": 46.96658,
+        "fro_norm": 57.9272
+      },
+      "note": "hidden_states[-1] is post final-norm (the LM-head input). It is fed back via inputs_embeds unmodified."
+    },
+    "grid": {
+      "0": {
+        "n_trials": 10,
+        "correct": 0,
+        "mean_receiver_gen_s": 0.4302,
+        "mean_transfer_s": 0.00349
+      },
+      "1": {
+        "n_trials": 10,
+        "correct": 0,
+        "mean_receiver_gen_s": 0.5132,
+        "mean_transfer_s": 0.00401,
+        "mean_latent_step_s": 0.0538,
+        "mean_total_drift": 49.40022
+      },
+      "2": {
+        "n_trials": 10,
+        "correct": 0,
+        "mean_receiver_gen_s": 0.5962,
+        "mean_transfer_s": 0.00408,
+        "mean_latent_step_s": 0.1119,
+        "mean_total_drift": 74.20689
+      },
+      "4": {
+        "n_trials": 10,
+        "correct": 1,
+        "mean_receiver_gen_s": 0.5922,
+        "mean_transfer_s": 0.00423,
+        "mean_latent_step_s": 0.2102,
+        "mean_total_drift": 84.82164
+      }
+    },
+    "trials": [
+      {
+        "trial": 0,
+        "latent_steps": 0,
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00297,
+        "answer": "",
+        "correct": false,
+        "receiver_gen_s": 0.0864,
+        "gen_tokens": 1,
+        "target_word": "lantern",
+        "target_number": 98,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 901.7
+      },
+      {
+        "trial": 0,
+        "latent_steps": 1,
+        "latent_trace": [
+          {
+            "mean": 0.05046,
+            "std": 2.39454,
+            "min": -15.00999,
+            "max": 43.84244,
+            "fro_norm": 57.4318
+          }
+        ],
+        "latent_step_s": [
+          0.0695
+        ],
+        "latent_drift": [
+          48.49777
+        ],
+        "cache_bytes_after_latent": 1935360,
+        "latent_final_hidden_stats": {
+          "mean": 0.05046,
+          "std": 2.39454,
+          "min": -15.00999,
+          "max": 43.84244,
+          "fro_norm": 57.4318
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00429,
+        "answer": "22\n\nWhat is the total number of notes",
+        "correct": false,
+        "receiver_gen_s": 0.7727,
+        "gen_tokens": 12,
+        "target_word": "lantern",
+        "target_number": 98,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 894.6
+      },
+      {
+        "trial": 0,
+        "latent_steps": 2,
+        "latent_trace": [
+          {
+            "mean": 0.05046,
+            "std": 2.39454,
+            "min": -15.00999,
+            "max": 43.84244,
+            "fro_norm": 57.4318
+          },
+          {
+            "mean": 0.08565,
+            "std": 2.36424,
+            "min": -19.74284,
+            "max": 40.47063,
+            "fro_norm": 56.7297
+          }
+        ],
+        "latent_step_s": [
+          0.0602,
+          0.1157
+        ],
+        "latent_drift": [
+          48.49777,
+          25.24844
+        ],
+        "cache_bytes_after_latent": 1981440,
+        "latent_final_hidden_stats": {
+          "mean": 0.08565,
+          "std": 2.36424,
+          "min": -19.74284,
+          "max": 40.47063,
+          "fro_norm": 56.7297
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00685,
+        "answer": "22\n\nWhat is the number of the bat",
+        "correct": false,
+        "receiver_gen_s": 1.0461,
+        "gen_tokens": 12,
+        "target_word": "lantern",
+        "target_number": 98,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 885.3
+      },
+      {
+        "trial": 0,
+        "latent_steps": 4,
+        "latent_trace": [
+          {
+            "mean": 0.05046,
+            "std": 2.39454,
+            "min": -15.00999,
+            "max": 43.84244,
+            "fro_norm": 57.4318
+          },
+          {
+            "mean": 0.08565,
+            "std": 2.36424,
+            "min": -19.74284,
+            "max": 40.47063,
+            "fro_norm": 56.7297
+          },
+          {
+            "mean": 0.06264,
+            "std": 2.2975,
+            "min": -19.60049,
+            "max": 36.82888,
+            "fro_norm": 55.1126
+          },
+          {
+            "mean": 0.06263,
+            "std": 2.30846,
+            "min": -20.28684,
+            "max": 36.88982,
+            "fro_norm": 55.3753
+          }
+        ],
+        "latent_step_s": [
+          0.0586,
+          0.0545,
+          0.0553,
+          0.0543
+        ],
+        "latent_drift": [
+          48.49777,
+          25.24844,
+          8.28932,
+          2.66142
+        ],
+        "cache_bytes_after_latent": 2073600,
+        "latent_final_hidden_stats": {
+          "mean": 0.06263,
+          "std": 2.30846,
+          "min": -20.28684,
+          "max": 36.88982,
+          "fro_norm": 55.3753
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00492,
+        "answer": "98\n\nWhat is the number of the bat",
+        "correct": true,
+        "receiver_gen_s": 0.7055,
+        "gen_tokens": 12,
+        "target_word": "lantern",
+        "target_number": 98,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 877.0
+      },
+      {
+        "trial": 1,
+        "latent_steps": 0,
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00374,
+        "answer": "",
+        "correct": false,
+        "receiver_gen_s": 0.0923,
+        "gen_tokens": 1,
+        "target_word": "marble",
+        "target_number": 29,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 878.6
+      },
+      {
+        "trial": 1,
+        "latent_steps": 1,
+        "latent_trace": [
+          {
+            "mean": 0.0483,
+            "std": 2.3856,
+            "min": -15.59768,
+            "max": 43.29604,
+            "fro_norm": 57.2164
+          }
+        ],
+        "latent_step_s": [
+          0.0548
+        ],
+        "latent_drift": [
+          48.22094
+        ],
+        "cache_bytes_after_latent": 1935360,
+        "latent_final_hidden_stats": {
+          "mean": 0.0483,
+          "std": 2.3856,
+          "min": -15.59768,
+          "max": 43.29604,
+          "fro_norm": 57.2164
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00463,
+        "answer": "",
+        "correct": false,
+        "receiver_gen_s": 0.0851,
+        "gen_tokens": 1,
+        "target_word": "marble",
+        "target_number": 29,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 870.0
+      },
+      {
+        "trial": 1,
+        "latent_steps": 2,
+        "latent_trace": [
+          {
+            "mean": 0.0483,
+            "std": 2.3856,
+            "min": -15.59768,
+            "max": 43.29604,
+            "fro_norm": 57.2164
+          },
+          {
+            "mean": 0.08172,
+            "std": 2.35863,
+            "min": -19.84037,
+            "max": 40.16894,
+            "fro_norm": 56.5919
+          }
+        ],
+        "latent_step_s": [
+          0.0537,
+          0.0528
+        ],
+        "latent_drift": [
+          48.22094,
+          24.70234
+        ],
+        "cache_bytes_after_latent": 1981440,
+        "latent_final_hidden_stats": {
+          "mean": 0.08172,
+          "std": 2.35863,
+          "min": -19.84037,
+          "max": 40.16894,
+          "fro_norm": 56.5919
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00487,
+        "answer": "",
+        "correct": false,
+        "receiver_gen_s": 0.0806,
+        "gen_tokens": 1,
+        "target_word": "marble",
+        "target_number": 29,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 870.2
+      },
+      {
+        "trial": 1,
+        "latent_steps": 4,
+        "latent_trace": [
+          {
+            "mean": 0.0483,
+            "std": 2.3856,
+            "min": -15.59768,
+            "max": 43.29604,
+            "fro_norm": 57.2164
+          },
+          {
+            "mean": 0.08172,
+            "std": 2.35863,
+            "min": -19.84037,
+            "max": 40.16894,
+            "fro_norm": 56.5919
+          },
+          {
+            "mean": 0.0597,
+            "std": 2.29181,
+            "min": -19.62686,
+            "max": 36.51659,
+            "fro_norm": 54.9743
+          },
+          {
+            "mean": 0.05951,
+            "std": 2.30328,
+            "min": -20.27195,
+            "max": 36.63247,
+            "fro_norm": 55.2492
+          }
+        ],
+        "latent_step_s": [
+          0.0513,
+          0.0564,
+          0.0544,
+          0.053
+        ],
+        "latent_drift": [
+          48.22094,
+          24.70234,
+          8.02608,
+          2.68655
+        ],
+        "cache_bytes_after_latent": 2073600,
+        "latent_final_hidden_stats": {
+          "mean": 0.05951,
+          "std": 2.30328,
+          "min": -20.27195,
+          "max": 36.63247,
+          "fro_norm": 55.2492
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00359,
+        "answer": "",
+        "correct": false,
+        "receiver_gen_s": 0.0815,
+        "gen_tokens": 1,
+        "target_word": "marble",
+        "target_number": 29,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 870.3
+      },
+      {
+        "trial": 2,
+        "latent_steps": 0,
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00336,
+        "answer": "",
+        "correct": false,
+        "receiver_gen_s": 0.0751,
+        "gen_tokens": 1,
+        "target_word": "saffron",
+        "target_number": 61,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 871.4
+      },
+      {
+        "trial": 2,
+        "latent_steps": 1,
+        "latent_trace": [
+          {
+            "mean": 0.04478,
+            "std": 2.385,
+            "min": -16.46795,
+            "max": 43.23337,
+            "fro_norm": 57.2004
+          }
+        ],
+        "latent_step_s": [
+          0.0597
+        ],
+        "latent_drift": [
+          49.38793
+        ],
+        "cache_bytes_after_latent": 1935360,
+        "latent_final_hidden_stats": {
+          "mean": 0.04478,
+          "std": 2.385,
+          "min": -16.46795,
+          "max": 43.23337,
+          "fro_norm": 57.2004
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00346,
+        "answer": "",
+        "correct": false,
+        "receiver_gen_s": 0.0771,
+        "gen_tokens": 1,
+        "target_word": "saffron",
+        "target_number": 61,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 870.5
+      },
+      {
+        "trial": 2,
+        "latent_steps": 2,
+        "latent_trace": [
+          {
+            "mean": 0.04478,
+            "std": 2.385,
+            "min": -16.46795,
+            "max": 43.23337,
+            "fro_norm": 57.2004
+          },
+          {
+            "mean": 0.07286,
+            "std": 2.35186,
+            "min": -20.00425,
+            "max": 39.86417,
+            "fro_norm": 56.4226
+          }
+        ],
+        "latent_step_s": [
+          0.0559,
+          0.0624
+        ],
+        "latent_drift": [
+          49.38793,
+          24.24064
+        ],
+        "cache_bytes_after_latent": 1981440,
+        "latent_final_hidden_stats": {
+          "mean": 0.07286,
+          "std": 2.35186,
+          "min": -20.00425,
+          "max": 39.86417,
+          "fro_norm": 56.4226
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00454,
+        "answer": "",
+        "correct": false,
+        "receiver_gen_s": 0.0794,
+        "gen_tokens": 1,
+        "target_word": "saffron",
+        "target_number": 61,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 864.5
+      },
+      {
+        "trial": 2,
+        "latent_steps": 4,
+        "latent_trace": [
+          {
+            "mean": 0.04478,
+            "std": 2.385,
+            "min": -16.46795,
+            "max": 43.23337,
+            "fro_norm": 57.2004
+          },
+          {
+            "mean": 0.07286,
+            "std": 2.35186,
+            "min": -20.00425,
+            "max": 39.86417,
+            "fro_norm": 56.4226
+          },
+          {
+            "mean": 0.05527,
+            "std": 2.29484,
+            "min": -19.74685,
+            "max": 36.72146,
+            "fro_norm": 55.0443
+          },
+          {
+            "mean": 0.05578,
+            "std": 2.30654,
+            "min": -20.33302,
+            "max": 36.88846,
+            "fro_norm": 55.325
+          }
+        ],
+        "latent_step_s": [
+          0.0547,
+          0.0582,
+          0.0497,
+          0.0488
+        ],
+        "latent_drift": [
+          49.38793,
+          24.24064,
+          6.99693,
+          2.65286
+        ],
+        "cache_bytes_after_latent": 2073600,
+        "latent_final_hidden_stats": {
+          "mean": 0.05578,
+          "std": 2.30654,
+          "min": -20.33302,
+          "max": 36.88846,
+          "fro_norm": 55.325
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00311,
+        "answer": "79\n\nWhat is the number of the number",
+        "correct": false,
+        "receiver_gen_s": 0.6381,
+        "gen_tokens": 12,
+        "target_word": "saffron",
+        "target_number": 61,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 863.6
+      },
+      {
+        "trial": 3,
+        "latent_steps": 0,
+        "cache_bytes": 1981440,
+        "transfer_s": 0.00443,
+        "answer": "Obsidian\n\nWhat is the number of the number of",
+        "correct": false,
+        "receiver_gen_s": 0.6644,
+        "gen_tokens": 12,
+        "target_word": "obsidian",
+        "target_number": 55,
+        "sender_tokens": 43,
+        "receiver_tokens": 22,
+        "rss_mb": 860.9
+      },
+      {
+        "trial": 3,
+        "latent_steps": 1,
+        "latent_trace": [
+          {
+            "mean": 0.0506,
+            "std": 2.37812,
+            "min": -15.83306,
+            "max": 42.8415,
+            "fro_norm": 57.0381
+          }
+        ],
+        "latent_step_s": [
+          0.0513
+        ],
+        "latent_drift": [
+          49.61708
+        ],
+        "cache_bytes_after_latent": 2027520,
+        "latent_final_hidden_stats": {
+          "mean": 0.0506,
+          "std": 2.37812,
+          "min": -15.83306,
+          "max": 42.8415,
+          "fro_norm": 57.0381
+        },
+        "cache_bytes": 1981440,
+        "transfer_s": 0.00471,
+        "answer": "Obsidian\n\nWhat is the number of the number of",
+        "correct": false,
+        "receiver_gen_s": 0.7275,
+        "gen_tokens": 12,
+        "target_word": "obsidian",
+        "target_number": 55,
+        "sender_tokens": 43,
+        "receiver_tokens": 22,
+        "rss_mb": 852.9
+      },
+      {
+        "trial": 3,
+        "latent_steps": 2,
+        "latent_trace": [
+          {
+            "mean": 0.0506,
+            "std": 2.37812,
+            "min": -15.83306,
+            "max": 42.8415,
+            "fro_norm": 57.0381
+          },
+          {
+            "mean": 0.08281,
+            "std": 2.35688,
+            "min": -19.94296,
+            "max": 40.00029,
+            "fro_norm": 56.5511
+          }
+        ],
+        "latent_step_s": [
+          0.0552,
+          0.0561
+        ],
+        "latent_drift": [
+          49.61708,
+          24.93684
+        ],
+        "cache_bytes_after_latent": 2073600,
+        "latent_final_hidden_stats": {
+          "mean": 0.08281,
+          "std": 2.35688,
+          "min": -19.94296,
+          "max": 40.00029,
+          "fro_norm": 56.5511
+        },
+        "cache_bytes": 1981440,
+        "transfer_s": 0.00426,
+        "answer": "Obsidian\n\nWhat is the number of the number of",
+        "correct": false,
+        "receiver_gen_s": 0.7662,
+        "gen_tokens": 12,
+        "target_word": "obsidian",
+        "target_number": 55,
+        "sender_tokens": 43,
+        "receiver_tokens": 22,
+        "rss_mb": 839.5
+      },
+      {
+        "trial": 3,
+        "latent_steps": 4,
+        "latent_trace": [
+          {
+            "mean": 0.0506,
+            "std": 2.37812,
+            "min": -15.83306,
+            "max": 42.8415,
+            "fro_norm": 57.0381
+          },
+          {
+            "mean": 0.08281,
+            "std": 2.35688,
+            "min": -19.94296,
+            "max": 40.00029,
+            "fro_norm": 56.5511
+          },
+          {
+            "mean": 0.06152,
+            "std": 2.29214,
+            "min": -19.60261,
+            "max": 36.54568,
+            "fro_norm": 54.9833
+          },
+          {
+            "mean": 0.061,
+            "std": 2.30241,
+            "min": -20.20529,
+            "max": 36.60272,
+            "fro_norm": 55.2294
+          }
+        ],
+        "latent_step_s": [
+          0.0509,
+          0.0567,
+          0.0455,
+          0.0476
+        ],
+        "latent_drift": [
+          49.61708,
+          24.93684,
+          7.90428,
+          2.57248
+        ],
+        "cache_bytes_after_latent": 2165760,
+        "latent_final_hidden_stats": {
+          "mean": 0.061,
+          "std": 2.30241,
+          "min": -20.20529,
+          "max": 36.60272,
+          "fro_norm": 55.2294
+        },
+        "cache_bytes": 1981440,
+        "transfer_s": 0.0044,
+        "answer": "Obsidian\n\nWhat is the number of the number of",
+        "correct": false,
+        "receiver_gen_s": 0.6643,
+        "gen_tokens": 12,
+        "target_word": "obsidian",
+        "target_number": 55,
+        "sender_tokens": 43,
+        "receiver_tokens": 22,
+        "rss_mb": 832.5
+      },
+      {
+        "trial": 4,
+        "latent_steps": 0,
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00409,
+        "answer": "fern\n\nWhat is the number of notes that Agent B",
+        "correct": false,
+        "receiver_gen_s": 0.6572,
+        "gen_tokens": 12,
+        "target_word": "fern",
+        "target_number": 48,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 825.6
+      },
+      {
+        "trial": 4,
+        "latent_steps": 1,
+        "latent_trace": [
+          {
+            "mean": 0.05471,
+            "std": 2.38635,
+            "min": -15.78364,
+            "max": 43.09192,
+            "fro_norm": 57.2378
+          }
+        ],
+        "latent_step_s": [
+          0.0526
+        ],
+        "latent_drift": [
+          49.84681
+        ],
+        "cache_bytes_after_latent": 1935360,
+        "latent_final_hidden_stats": {
+          "mean": 0.05471,
+          "std": 2.38635,
+          "min": -15.78364,
+          "max": 43.09192,
+          "fro_norm": 57.2378
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00344,
+        "answer": "fern\n\nWhat is the number of notes that Agent B",
+        "correct": false,
+        "receiver_gen_s": 0.6498,
+        "gen_tokens": 12,
+        "target_word": "fern",
+        "target_number": 48,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 825.6
+      },
+      {
+        "trial": 4,
+        "latent_steps": 2,
+        "latent_trace": [
+          {
+            "mean": 0.05471,
+            "std": 2.38635,
+            "min": -15.78364,
+            "max": 43.09192,
+            "fro_norm": 57.2378
+          },
+          {
+            "mean": 0.08577,
+            "std": 2.36492,
+            "min": -20.04385,
+            "max": 40.35413,
+            "fro_norm": 56.7462
+          }
+        ],
+        "latent_step_s": [
+          0.0529,
+          0.0555
+        ],
+        "latent_drift": [
+          49.84681,
+          25.0874
+        ],
+        "cache_bytes_after_latent": 1981440,
+        "latent_final_hidden_stats": {
+          "mean": 0.08577,
+          "std": 2.36492,
+          "min": -20.04385,
+          "max": 40.35413,
+          "fro_norm": 56.7462
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00306,
+        "answer": "fern\n\nWhat is the name of the person who received",
+        "correct": false,
+        "receiver_gen_s": 0.6515,
+        "gen_tokens": 12,
+        "target_word": "fern",
+        "target_number": 48,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 822.9
+      },
+      {
+        "trial": 4,
+        "latent_steps": 4,
+        "latent_trace": [
+          {
+            "mean": 0.05471,
+            "std": 2.38635,
+            "min": -15.78364,
+            "max": 43.09192,
+            "fro_norm": 57.2378
+          },
+          {
+            "mean": 0.08577,
+            "std": 2.36492,
+            "min": -20.04385,
+            "max": 40.35413,
+            "fro_norm": 56.7462
+          },
+          {
+            "mean": 0.06203,
+            "std": 2.2944,
+            "min": -19.80869,
+            "max": 36.53065,
+            "fro_norm": 55.0379
+          },
+          {
+            "mean": 0.06106,
+            "std": 2.307,
+            "min": -20.4977,
+            "max": 36.65329,
+            "fro_norm": 55.3394
+          }
+        ],
+        "latent_step_s": [
+          0.0519,
+          0.053,
+          0.0549,
+          0.0459
+        ],
+        "latent_drift": [
+          49.84681,
+          25.0874,
+          8.50141,
+          2.74531
+        ],
+        "cache_bytes_after_latent": 2073600,
+        "latent_final_hidden_stats": {
+          "mean": 0.06106,
+          "std": 2.307,
+          "min": -20.4977,
+          "max": 36.65329,
+          "fro_norm": 55.3394
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00553,
+        "answer": "fern\n\nWhat is the number of notes that Agent B",
+        "correct": false,
+        "receiver_gen_s": 0.6721,
+        "gen_tokens": 12,
+        "target_word": "fern",
+        "target_number": 48,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 823.8
+      },
+      {
+        "trial": 5,
+        "latent_steps": 0,
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00416,
+        "answer": "The number paired with opal is 92.",
+        "correct": false,
+        "receiver_gen_s": 0.6937,
+        "gen_tokens": 12,
+        "target_word": "opal",
+        "target_number": 97,
+        "sender_tokens": 41,
+        "receiver_tokens": 22,
+        "rss_mb": 824.4
+      },
+      {
+        "trial": 5,
+        "latent_steps": 1,
+        "latent_trace": [
+          {
+            "mean": 0.04974,
+            "std": 2.38094,
+            "min": -15.61893,
+            "max": 42.93088,
+            "fro_norm": 57.1055
+          }
+        ],
+        "latent_step_s": [
+          0.0587
+        ],
+        "latent_drift": [
+          48.7247
+        ],
+        "cache_bytes_after_latent": 1935360,
+        "latent_final_hidden_stats": {
+          "mean": 0.04974,
+          "std": 2.38094,
+          "min": -15.61893,
+          "max": 42.93088,
+          "fro_norm": 57.1055
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00336,
+        "answer": "The number paired with opal is 92.",
+        "correct": false,
+        "receiver_gen_s": 0.7462,
+        "gen_tokens": 12,
+        "target_word": "opal",
+        "target_number": 97,
+        "sender_tokens": 41,
+        "receiver_tokens": 22,
+        "rss_mb": 824.3
+      },
+      {
+        "trial": 5,
+        "latent_steps": 2,
+        "latent_trace": [
+          {
+            "mean": 0.04974,
+            "std": 2.38094,
+            "min": -15.61893,
+            "max": 42.93088,
+            "fro_norm": 57.1055
+          },
+          {
+            "mean": 0.08432,
+            "std": 2.35487,
+            "min": -19.7209,
+            "max": 39.92092,
+            "fro_norm": 56.5041
+          }
+        ],
+        "latent_step_s": [
+          0.0448,
+          0.0498
+        ],
+        "latent_drift": [
+          48.7247,
+          24.95558
+        ],
+        "cache_bytes_after_latent": 1981440,
+        "latent_final_hidden_stats": {
+          "mean": 0.08432,
+          "std": 2.35487,
+          "min": -19.7209,
+          "max": 39.92092,
+          "fro_norm": 56.5041
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00307,
+        "answer": "The number paired with opal is 92.",
+        "correct": false,
+        "receiver_gen_s": 0.6461,
+        "gen_tokens": 12,
+        "target_word": "opal",
+        "target_number": 97,
+        "sender_tokens": 41,
+        "receiver_tokens": 22,
+        "rss_mb": 824.3
+      },
+      {
+        "trial": 5,
+        "latent_steps": 4,
+        "latent_trace": [
+          {
+            "mean": 0.04974,
+            "std": 2.38094,
+            "min": -15.61893,
+            "max": 42.93088,
+            "fro_norm": 57.1055
+          },
+          {
+            "mean": 0.08432,
+            "std": 2.35487,
+            "min": -19.7209,
+            "max": 39.92092,
+            "fro_norm": 56.5041
+          },
+          {
+            "mean": 0.06087,
+            "std": 2.28795,
+            "min": -19.56763,
+            "max": 36.23576,
+            "fro_norm": 54.8826
+          },
+          {
+            "mean": 0.06015,
+            "std": 2.29871,
+            "min": -20.20751,
+            "max": 36.32611,
+            "fro_norm": 55.14
+          }
+        ],
+        "latent_step_s": [
+          0.0524,
+          0.0491,
+          0.0547,
+          0.0478
+        ],
+        "latent_drift": [
+          48.7247,
+          24.95558,
+          8.13431,
+          2.65469
+        ],
+        "cache_bytes_after_latent": 2073600,
+        "latent_final_hidden_stats": {
+          "mean": 0.06015,
+          "std": 2.29871,
+          "min": -20.20751,
+          "max": 36.32611,
+          "fro_norm": 55.14
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.0051,
+        "answer": "The number paired with opal is 92.",
+        "correct": false,
+        "receiver_gen_s": 0.6169,
+        "gen_tokens": 12,
+        "target_word": "opal",
+        "target_number": 97,
+        "sender_tokens": 41,
+        "receiver_tokens": 22,
+        "rss_mb": 824.2
+      },
+      {
+        "trial": 6,
+        "latent_steps": 0,
+        "cache_bytes": 1981440,
+        "transfer_s": 0.00425,
+        "answer": "walnut\n\nWhat is the number of the number of the",
+        "correct": false,
+        "receiver_gen_s": 0.6602,
+        "gen_tokens": 12,
+        "target_word": "walnut",
+        "target_number": 62,
+        "sender_tokens": 43,
+        "receiver_tokens": 21,
+        "rss_mb": 821.8
+      },
+      {
+        "trial": 6,
+        "latent_steps": 1,
+        "latent_trace": [
+          {
+            "mean": 0.05472,
+            "std": 2.37928,
+            "min": -16.45934,
+            "max": 42.82746,
+            "fro_norm": 57.0681
+          }
+        ],
+        "latent_step_s": [
+          0.0494
+        ],
+        "latent_drift": [
+          50.56092
+        ],
+        "cache_bytes_after_latent": 2027520,
+        "latent_final_hidden_stats": {
+          "mean": 0.05472,
+          "std": 2.37928,
+          "min": -16.45934,
+          "max": 42.82746,
+          "fro_norm": 57.0681
+        },
+        "cache_bytes": 1981440,
+        "transfer_s": 0.00452,
+        "answer": "walnut\n\nWhat is the number of the number of the",
+        "correct": false,
+        "receiver_gen_s": 0.6492,
+        "gen_tokens": 12,
+        "target_word": "walnut",
+        "target_number": 62,
+        "sender_tokens": 43,
+        "receiver_tokens": 21,
+        "rss_mb": 813.6
+      },
+      {
+        "trial": 6,
+        "latent_steps": 2,
+        "latent_trace": [
+          {
+            "mean": 0.05472,
+            "std": 2.37928,
+            "min": -16.45934,
+            "max": 42.82746,
+            "fro_norm": 57.0681
+          },
+          {
+            "mean": 0.08661,
+            "std": 2.36332,
+            "min": -20.14537,
+            "max": 40.41828,
+            "fro_norm": 56.7084
+          }
+        ],
+        "latent_step_s": [
+          0.0525,
+          0.0444
+        ],
+        "latent_drift": [
+          50.56092,
+          24.73753
+        ],
+        "cache_bytes_after_latent": 2073600,
+        "latent_final_hidden_stats": {
+          "mean": 0.08661,
+          "std": 2.36332,
+          "min": -20.14537,
+          "max": 40.41828,
+          "fro_norm": 56.7084
+        },
+        "cache_bytes": 1981440,
+        "transfer_s": 0.003,
+        "answer": "walnut\n\nWhat is the number of the number of the",
+        "correct": false,
+        "receiver_gen_s": 0.6506,
+        "gen_tokens": 12,
+        "target_word": "walnut",
+        "target_number": 62,
+        "sender_tokens": 43,
+        "receiver_tokens": 21,
+        "rss_mb": 813.6
+      },
+      {
+        "trial": 6,
+        "latent_steps": 4,
+        "latent_trace": [
+          {
+            "mean": 0.05472,
+            "std": 2.37928,
+            "min": -16.45934,
+            "max": 42.82746,
+            "fro_norm": 57.0681
+          },
+          {
+            "mean": 0.08661,
+            "std": 2.36332,
+            "min": -20.14537,
+            "max": 40.41828,
+            "fro_norm": 56.7084
+          },
+          {
+            "mean": 0.06565,
+            "std": 2.29859,
+            "min": -19.82373,
+            "max": 36.88527,
+            "fro_norm": 55.1408
+          },
+          {
+            "mean": 0.06546,
+            "std": 2.31008,
+            "min": -20.41529,
+            "max": 37.02026,
+            "fro_norm": 55.416
+          }
+        ],
+        "latent_step_s": [
+          0.0526,
+          0.0559,
+          0.0618,
+          0.0557
+        ],
+        "latent_drift": [
+          50.56092,
+          24.73753,
+          7.84032,
+          2.65092
+        ],
+        "cache_bytes_after_latent": 2165760,
+        "latent_final_hidden_stats": {
+          "mean": 0.06546,
+          "std": 2.31008,
+          "min": -20.41529,
+          "max": 37.02026,
+          "fro_norm": 55.416
+        },
+        "cache_bytes": 1981440,
+        "transfer_s": 0.00441,
+        "answer": "walnut\n\nWhat is the number of the number of the",
+        "correct": false,
+        "receiver_gen_s": 0.6181,
+        "gen_tokens": 12,
+        "target_word": "walnut",
+        "target_number": 62,
+        "sender_tokens": 43,
+        "receiver_tokens": 21,
+        "rss_mb": 805.4
+      },
+      {
+        "trial": 7,
+        "latent_steps": 0,
+        "cache_bytes": 2027520,
+        "transfer_s": 0.00272,
+        "answer": "72\n\nWhat is the total number of notes",
+        "correct": false,
+        "receiver_gen_s": 0.6352,
+        "gen_tokens": 12,
+        "target_word": "juniper",
+        "target_number": 80,
+        "sender_tokens": 44,
+        "receiver_tokens": 22,
+        "rss_mb": 811.8
+      },
+      {
+        "trial": 7,
+        "latent_steps": 1,
+        "latent_trace": [
+          {
+            "mean": 0.05593,
+            "std": 2.3888,
+            "min": -16.88416,
+            "max": 43.01691,
+            "fro_norm": 57.2973
+          }
+        ],
+        "latent_step_s": [
+          0.0548
+        ],
+        "latent_drift": [
+          50.21983
+        ],
+        "cache_bytes_after_latent": 2073600,
+        "latent_final_hidden_stats": {
+          "mean": 0.05593,
+          "std": 2.3888,
+          "min": -16.88416,
+          "max": 43.01691,
+          "fro_norm": 57.2973
+        },
+        "cache_bytes": 2027520,
+        "transfer_s": 0.00516,
+        "answer": "72\n\nWhat is the total number of notes",
+        "correct": false,
+        "receiver_gen_s": 0.6827,
+        "gen_tokens": 12,
+        "target_word": "juniper",
+        "target_number": 80,
+        "sender_tokens": 44,
+        "receiver_tokens": 22,
+        "rss_mb": 803.5
+      },
+      {
+        "trial": 7,
+        "latent_steps": 2,
+        "latent_trace": [
+          {
+            "mean": 0.05593,
+            "std": 2.3888,
+            "min": -16.88416,
+            "max": 43.01691,
+            "fro_norm": 57.2973
+          },
+          {
+            "mean": 0.08388,
+            "std": 2.35791,
+            "min": -19.98486,
+            "max": 40.12148,
+            "fro_norm": 56.5766
+          }
+        ],
+        "latent_step_s": [
+          0.0479,
+          0.0457
+        ],
+        "latent_drift": [
+          50.21983,
+          24.14286
+        ],
+        "cache_bytes_after_latent": 2119680,
+        "latent_final_hidden_stats": {
+          "mean": 0.08388,
+          "std": 2.35791,
+          "min": -19.98486,
+          "max": 40.12148,
+          "fro_norm": 56.5766
+        },
+        "cache_bytes": 2027520,
+        "transfer_s": 0.00303,
+        "answer": "72\n\nWhat is the total number of notes",
+        "correct": false,
+        "receiver_gen_s": 0.632,
+        "gen_tokens": 12,
+        "target_word": "juniper",
+        "target_number": 80,
+        "sender_tokens": 44,
+        "receiver_tokens": 22,
+        "rss_mb": 803.7
+      },
+      {
+        "trial": 7,
+        "latent_steps": 4,
+        "latent_trace": [
+          {
+            "mean": 0.05593,
+            "std": 2.3888,
+            "min": -16.88416,
+            "max": 43.01691,
+            "fro_norm": 57.2973
+          },
+          {
+            "mean": 0.08388,
+            "std": 2.35791,
+            "min": -19.98486,
+            "max": 40.12148,
+            "fro_norm": 56.5766
+          },
+          {
+            "mean": 0.06405,
+            "std": 2.29686,
+            "min": -19.65968,
+            "max": 36.81137,
+            "fro_norm": 55.0982
+          },
+          {
+            "mean": 0.06423,
+            "std": 2.30926,
+            "min": -20.25512,
+            "max": 37.02779,
+            "fro_norm": 55.3956
+          }
+        ],
+        "latent_step_s": [
+          0.0476,
+          0.0615,
+          0.0489,
+          0.0483
+        ],
+        "latent_drift": [
+          50.21983,
+          24.14286,
+          7.34082,
+          2.59858
+        ],
+        "cache_bytes_after_latent": 2211840,
+        "latent_final_hidden_stats": {
+          "mean": 0.06423,
+          "std": 2.30926,
+          "min": -20.25512,
+          "max": 37.02779,
+          "fro_norm": 55.3956
+        },
+        "cache_bytes": 2027520,
+        "transfer_s": 0.00305,
+        "answer": "72\n\nWhat is the total number of notes",
+        "correct": false,
+        "receiver_gen_s": 0.595,
+        "gen_tokens": 12,
+        "target_word": "juniper",
+        "target_number": 80,
+        "sender_tokens": 44,
+        "receiver_tokens": 22,
+        "rss_mb": 795.7
+      },
+      {
+        "trial": 8,
+        "latent_steps": 0,
+        "cache_bytes": 1981440,
+        "transfer_s": 0.00275,
+        "answer": "jasper\n\nWhat is the number of the number of",
+        "correct": false,
+        "receiver_gen_s": 0.6691,
+        "gen_tokens": 12,
+        "target_word": "jasper",
+        "target_number": 91,
+        "sender_tokens": 43,
+        "receiver_tokens": 22,
+        "rss_mb": 792.9
+      },
+      {
+        "trial": 8,
+        "latent_steps": 1,
+        "latent_trace": [
+          {
+            "mean": 0.05176,
+            "std": 2.38016,
+            "min": -15.7659,
+            "max": 42.95087,
+            "fro_norm": 57.0878
+          }
+        ],
+        "latent_step_s": [
+          0.0429
+        ],
+        "latent_drift": [
+          49.35226
+        ],
+        "cache_bytes_after_latent": 2027520,
+        "latent_final_hidden_stats": {
+          "mean": 0.05176,
+          "std": 2.38016,
+          "min": -15.7659,
+          "max": 42.95087,
+          "fro_norm": 57.0878
+        },
+        "cache_bytes": 1981440,
+        "transfer_s": 0.00393,
+        "answer": "jasper\n\nWhat is the number of the number of",
+        "correct": false,
+        "receiver_gen_s": 0.6739,
+        "gen_tokens": 12,
+        "target_word": "jasper",
+        "target_number": 91,
+        "sender_tokens": 43,
+        "receiver_tokens": 22,
+        "rss_mb": 787.6
+      },
+      {
+        "trial": 8,
+        "latent_steps": 2,
+        "latent_trace": [
+          {
+            "mean": 0.05176,
+            "std": 2.38016,
+            "min": -15.7659,
+            "max": 42.95087,
+            "fro_norm": 57.0878
+          },
+          {
+            "mean": 0.08512,
+            "std": 2.35453,
+            "min": -19.92459,
+            "max": 39.89158,
+            "fro_norm": 56.4966
+          }
+        ],
+        "latent_step_s": [
+          0.0597,
+          0.0603
+        ],
+        "latent_drift": [
+          49.35226,
+          25.08268
+        ],
+        "cache_bytes_after_latent": 2073600,
+        "latent_final_hidden_stats": {
+          "mean": 0.08512,
+          "std": 2.35453,
+          "min": -19.92459,
+          "max": 39.89158,
+          "fro_norm": 56.4966
+        },
+        "cache_bytes": 1981440,
+        "transfer_s": 0.00504,
+        "answer": "jasper\n\nWhat is the number of the number of",
+        "correct": false,
+        "receiver_gen_s": 0.8003,
+        "gen_tokens": 12,
+        "target_word": "jasper",
+        "target_number": 91,
+        "sender_tokens": 43,
+        "receiver_tokens": 22,
+        "rss_mb": 786.6
+      },
+      {
+        "trial": 8,
+        "latent_steps": 4,
+        "latent_trace": [
+          {
+            "mean": 0.05176,
+            "std": 2.38016,
+            "min": -15.7659,
+            "max": 42.95087,
+            "fro_norm": 57.0878
+          },
+          {
+            "mean": 0.08512,
+            "std": 2.35453,
+            "min": -19.92459,
+            "max": 39.89158,
+            "fro_norm": 56.4966
+          },
+          {
+            "mean": 0.0618,
+            "std": 2.28763,
+            "min": -19.66009,
+            "max": 36.21572,
+            "fro_norm": 54.8755
+          },
+          {
+            "mean": 0.06175,
+            "std": 2.30025,
+            "min": -20.28865,
+            "max": 36.43234,
+            "fro_norm": 55.178
+          }
+        ],
+        "latent_step_s": [
+          0.0571,
+          0.0594,
+          0.0603,
+          0.0487
+        ],
+        "latent_drift": [
+          49.35226,
+          25.08268,
+          8.27106,
+          2.74024
+        ],
+        "cache_bytes_after_latent": 2165760,
+        "latent_final_hidden_stats": {
+          "mean": 0.06175,
+          "std": 2.30025,
+          "min": -20.28865,
+          "max": 36.43234,
+          "fro_norm": 55.178
+        },
+        "cache_bytes": 1981440,
+        "transfer_s": 0.00522,
+        "answer": "jasper\n\nWhat is the number of the number of",
+        "correct": false,
+        "receiver_gen_s": 0.6722,
+        "gen_tokens": 12,
+        "target_word": "jasper",
+        "target_number": 91,
+        "sender_tokens": 43,
+        "receiver_tokens": 22,
+        "rss_mb": 783.7
+      },
+      {
+        "trial": 9,
+        "latent_steps": 0,
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00242,
+        "answer": "",
+        "correct": false,
+        "receiver_gen_s": 0.0686,
+        "gen_tokens": 1,
+        "target_word": "saffron",
+        "target_number": 82,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 784.9
+      },
+      {
+        "trial": 9,
+        "latent_steps": 1,
+        "latent_trace": [
+          {
+            "mean": 0.04975,
+            "std": 2.37677,
+            "min": -15.94497,
+            "max": 42.82085,
+            "fro_norm": 57.0053
+          }
+        ],
+        "latent_step_s": [
+          0.0448
+        ],
+        "latent_drift": [
+          49.57392
+        ],
+        "cache_bytes_after_latent": 1935360,
+        "latent_final_hidden_stats": {
+          "mean": 0.04975,
+          "std": 2.37677,
+          "min": -15.94497,
+          "max": 42.82085,
+          "fro_norm": 57.0053
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.0026,
+        "answer": "",
+        "correct": false,
+        "receiver_gen_s": 0.0678,
+        "gen_tokens": 1,
+        "target_word": "saffron",
+        "target_number": 82,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 785.0
+      },
+      {
+        "trial": 9,
+        "latent_steps": 2,
+        "latent_trace": [
+          {
+            "mean": 0.04975,
+            "std": 2.37677,
+            "min": -15.94497,
+            "max": 42.82085,
+            "fro_norm": 57.0053
+          },
+          {
+            "mean": 0.08291,
+            "std": 2.36619,
+            "min": -20.07537,
+            "max": 40.64769,
+            "fro_norm": 56.7742
+          }
+        ],
+        "latent_step_s": [
+          0.0489,
+          0.0445
+        ],
+        "latent_drift": [
+          49.57392,
+          24.93245
+        ],
+        "cache_bytes_after_latent": 1981440,
+        "latent_final_hidden_stats": {
+          "mean": 0.08291,
+          "std": 2.36619,
+          "min": -20.07537,
+          "max": 40.64769,
+          "fro_norm": 56.7742
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.00305,
+        "answer": "The number paired with saffron is 75.",
+        "correct": false,
+        "receiver_gen_s": 0.6091,
+        "gen_tokens": 12,
+        "target_word": "saffron",
+        "target_number": 82,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 778.8
+      },
+      {
+        "trial": 9,
+        "latent_steps": 4,
+        "latent_trace": [
+          {
+            "mean": 0.04975,
+            "std": 2.37677,
+            "min": -15.94497,
+            "max": 42.82085,
+            "fro_norm": 57.0053
+          },
+          {
+            "mean": 0.08291,
+            "std": 2.36619,
+            "min": -20.07537,
+            "max": 40.64769,
+            "fro_norm": 56.7742
+          },
+          {
+            "mean": 0.06141,
+            "std": 2.29851,
+            "min": -19.86768,
+            "max": 36.94042,
+            "fro_norm": 55.1359
+          },
+          {
+            "mean": 0.06138,
+            "std": 2.3097,
+            "min": -20.52174,
+            "max": 37.04569,
+            "fro_norm": 55.4043
+          }
+        ],
+        "latent_step_s": [
+          0.0539,
+          0.0431,
+          0.0447,
+          0.0433
+        ],
+        "latent_drift": [
+          49.57392,
+          24.93245,
+          8.21715,
+          2.66274
+        ],
+        "cache_bytes_after_latent": 2073600,
+        "latent_final_hidden_stats": {
+          "mean": 0.06138,
+          "std": 2.3097,
+          "min": -20.52174,
+          "max": 37.04569,
+          "fro_norm": 55.4043
+        },
+        "cache_bytes": 1889280,
+        "transfer_s": 0.003,
+        "answer": "The number paired with saffron is 75.",
+        "correct": false,
+        "receiver_gen_s": 0.6585,
+        "gen_tokens": 12,
+        "target_word": "saffron",
+        "target_number": 82,
+        "sender_tokens": 41,
+        "receiver_tokens": 21,
+        "rss_mb": 772.6
+      }
+    ]
+  },
+  "rss_peak_mb": 1020.9,
+  "rss_end_mb": 764.6,
+  "env": {
+    "python": "3.11.15",
+    "torch": "2.14.1+cpu",
+    "transformers": "5.20.0",
+    "tokenizers": "0.23.3",
+    "safetensors": "0.8.0",
+    "numpy": "2.4.6",
+    "psutil": "7.2.2",
+    "os": "Windows 10",
+    "cpu": "AMD EPYC 74F3 24-Core Processor",
+    "cpu_count_physical": 6,
+    "cpu_count_logical": 12,
+    "cpu_freq_mhz": 3194.0,
+    "torch_num_threads": 6,
+    "ram_total_gb": 109.95
+  },
+  "finished": "2026-10-16T03:49:25"
+}

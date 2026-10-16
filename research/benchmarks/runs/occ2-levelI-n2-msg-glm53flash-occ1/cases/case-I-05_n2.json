@@ -1,0 +1,82 @@
+{
+  "task_file": "I-05_n2.json",
+  "protocol": "msg",
+  "model": "glm-5.3-flash",
+  "comm_mode": "occ1_structured",
+  "case_dir": "C:\\Users\\openclawuser\\optimus-occ23-20261016\\research\\benchmarks\\runs\\occ2-levelI-n2-msg-glm53flash-occ1\\workspace\\I-05_p2p_glm-5.3-flash_20261016054530",
+  "status": "completed",
+  "elapsed_s": 35.86,
+  "error": null,
+  "llm_transport": "gateway+content-reconstruction-proxy",
+  "official": {
+    "case_id": "I-05",
+    "case_name": "Range Count",
+    "paradigm": "Paradigm I",
+    "num_agents": 2,
+    "max_rounds": 20,
+    "rounds_executed": 7,
+    "execution_status": "completed",
+    "total_input_tokens": 21741,
+    "total_output_tokens": 3489,
+    "all_submitted": true,
+    "metrics": {
+      "S_success_rate": 1.0,
+      "P_partial_correctness": 1.0,
+      "C_token_consumption": 3604.2857142857,
+      "D_communication_density": 2.0,
+      "success_rate": 1.0,
+      "partial_correctness": 1.0,
+      "token_consumption": 3604.2857142857,
+      "communication_density": 2.0
+    },
+    "ground_truth": [
+      22,
+      22
+    ],
+    "submissions": [
+      {
+        "agent_id": 0,
+        "answer": 22,
+        "correct": true,
+        "round": 4
+      },
+      {
+        "agent_id": 1,
+        "answer": 22,
+        "correct": true,
+        "round": 7
+      }
+    ],
+    "success": true
+  },
+  "adapter": {
+    "llm_calls": 11,
+    "prompt_tokens_sum": 21741,
+    "output_tokens_sum": 3489,
+    "output_tokens_caveat": "gateway usage.completion_tokens includes hidden reasoning tokens; prompt_tokens are the real server-side count of what was sent",
+    "llm_latency_s": {
+      "mean": 3.201,
+      "p50": 2.194,
+      "p95": 7.385,
+      "max": 9.088
+    },
+    "inter_agent_messages": 4,
+    "inter_agent_message_payload_bytes": 1007,
+    "inter_agent_message_file_bytes": 1420
+  },
+  "encoding_hook": {
+    "guidance_chars": 1714,
+    "agents": [
+      {
+        "agent": "agent-000",
+        "system_chars_before": 2988,
+        "system_chars_after": 4704
+      },
+      {
+        "agent": "agent-001",
+        "system_chars_before": 2988,
+        "system_chars_after": 4704
+      }
+    ]
+  }
+}
