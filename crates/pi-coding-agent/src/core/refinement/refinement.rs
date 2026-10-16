@@ -409,6 +409,15 @@ pub struct RefinementCompletionRequest {
     pub messages: Vec<AgentMessage>,
     #[serde(rename = "maxTokens")]
     pub max_tokens: f64,
+    /// Thinking level for the planner completion. `Some("minimal")` keeps
+    /// reasoning-capable models from spending the output budget on hidden
+    /// reasoning before the JSON object; `None` preserves the provider default.
+    #[serde(
+        rename = "thinkingLevel",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub thinking_level: Option<String>,
 }
 
 /// Port of the `completeWithProviderRetry(() => completeSimple(...))` call site.
@@ -550,13 +559,32 @@ Return JSON only:
 /// the trajectory slice), so a constant output cap silently truncates exactly the
 /// large multi-edit proposals that matter most. Math.min keeps small models honest.
 const REFINEMENT_MAX_OUTPUT_TOKENS: f64 = 32_000.0;
+/// Upper bound for the one-shot retry budget after a first attempt stops at
+/// `Length`: the retry doubles the first budget and never exceeds this cap.
+const REFINEMENT_RETRY_MAX_OUTPUT_TOKENS: f64 = 64_000.0;
 const AUTO_REFINE_REVIEW_MAX_OUTPUT_TOKENS: f64 = 4_096.0;
+
+/// Thinking level requested for the planner's own completions. The planner must
+/// return one JSON object, so reasoning-capable models get the least thinking
+/// level instead of the provider default, which can spend the whole output
+/// budget on hidden reasoning before any JSON is emitted.
+const REFINEMENT_PLANNER_THINKING_LEVEL: &str = "minimal";
 
 const TRUNCATED_JSON_ERROR: &str =
     "the model stopped before completing its JSON object. This usually means the output budget was exhausted; retry with a smaller request.";
 
 fn refinement_max_output_tokens(model: RefineModel) -> f64 {
     model.max_tokens.min(REFINEMENT_MAX_OUTPUT_TOKENS)
+}
+
+/// Doubled output budget for the retry after a `Length`-stopped first attempt.
+/// Clamped by the retry cap and by the model's own limit; callers must only
+/// retry when this exceeds the first attempt's budget (otherwise the retry
+/// cannot buy more output and the typed truncation error stands).
+fn refinement_retry_output_tokens(first_attempt_tokens: f64, model: RefineModel) -> f64 {
+    (2.0 * first_attempt_tokens)
+        .min(REFINEMENT_RETRY_MAX_OUTPUT_TOKENS)
+        .min(model.max_tokens)
 }
 
 fn auto_refine_review_max_output_tokens(model: RefineModel) -> f64 {
@@ -2440,6 +2468,11 @@ fn call_completion(
             timestamp: chrono::Utc::now().timestamp_millis() as f64,
         }],
         max_tokens,
+        // Make the documented non-reasoning intent real: the planner needs one
+        // JSON object, so request the least thinking level instead of letting
+        // reasoning-capable models default to thinking-enabled and burning the
+        // output budget on hidden reasoning.
+        thinking_level: Some(REFINEMENT_PLANNER_THINKING_LEVEL.to_string()),
     })
 }
 
@@ -2448,6 +2481,11 @@ fn call_completion(
 /// callers can re-read the harness file immediately before applying — the LLM call
 /// here can take many seconds, during which the kernel or another session may write
 /// the shared `harness_state.json`.
+///
+/// The planner retries once per run: a `Length`-stopped first attempt resends the
+/// same prompt with a doubled output budget, and malformed JSON gets one repair
+/// prompt. Every other failure keeps its typed error after the attempt that
+/// produced it.
 pub async fn plan_refinement(
     request: PlanRefinementRequest<'_>,
 ) -> Result<RefinementPlan, RefinementFailureError> {
@@ -2509,9 +2547,9 @@ pub async fn plan_refinement(
     // /refine requires a parseable JSON object in the final text. Some reasoning-capable
     // OpenAI-compatible models can spend the response on visible thinking and return no
     // final text, which makes otherwise successful daemon /refine calls fail parsing.
-    // Keep the refinement request non-reasoning regardless of the interactive session
-    // thinking level so the model uses its output budget for the JSON object.
-    let _ = request.thinking_level;
+    // `call_completion` requests the least thinking level regardless of the
+    // interactive session thinking level so the model uses its output budget for
+    // the JSON object instead of hidden reasoning.
     if let Some(max_output_tokens) = request.options.max_output_tokens {
         if max_output_tokens < 1.0 || max_output_tokens.fract() != 0.0 {
             return Err(RefinementFailureError::new(
@@ -2533,13 +2571,19 @@ pub async fn plan_refinement(
     // dropped first attempt is no longer invisible (RF-001). Durations only.
     let mut attempt_durations_ms: Vec<u64> = Vec::new();
     let mut prompt = user_prompt.clone();
+    // A first attempt that stops at `Length` retries once with a doubled output
+    // budget (clamped by `REFINEMENT_RETRY_MAX_OUTPUT_TOKENS` and the model's own
+    // limit) instead of failing immediately: the JSON object is usually intact
+    // and only cut off by the exhausted budget. The retry resends the same
+    // planner prompt; a second `Length` keeps the typed truncation error.
+    let mut attempt_max_tokens = max_tokens;
     for attempt in [1u8, 2u8] {
         let attempt_started = std::time::Instant::now();
         let response = call_completion(
             &request.complete,
             REFINEMENT_SYSTEM_PROMPT,
             &prompt,
-            max_tokens,
+            attempt_max_tokens,
         )
         .await;
         attempt_durations_ms.push(attempt_started.elapsed().as_millis() as u64);
@@ -2569,6 +2613,13 @@ pub async fn plan_refinement(
         let text = refinement_response_text(&response);
         fingerprints.push(refinement_output_fingerprint(&text));
         if response.stop_reason == StopReason::Length {
+            if attempt == 1 {
+                let retry_budget = refinement_retry_output_tokens(max_tokens, request.model);
+                if retry_budget > max_tokens {
+                    attempt_max_tokens = retry_budget;
+                    continue;
+                }
+            }
             return Err(RefinementFailureError::new(
                 &format!("Refinement failed: {TRUNCATED_JSON_ERROR}"),
                 if attempt == 1 {
@@ -2715,9 +2766,9 @@ pub async fn review_auto_refine(
         "Return shouldRefine=true when the trajectory contains evidence useful to this session's future turns. Prefer local harness edits for current task progress, temporary blockers, and current-run coordination. Ask for global refinement only for durable cross-session lessons or explicitly project-qualified facts likely to be reused in future sessions.".to_string(),
     ]
     .join("\n\n");
-    // Auto-refine review requires parseable JSON. Keep it non-reasoning so
-    // reasoning-capable models use final text budget for the JSON object.
-    let _ = request.thinking_level;
+    // Auto-refine review requires parseable JSON. `call_completion` requests
+    // the least thinking level so reasoning-capable models use the final text
+    // budget for the JSON object.
     let response = call_completion(
         &request.complete,
         AUTO_REFINE_REVIEW_SYSTEM_PROMPT,
@@ -4022,6 +4073,9 @@ mod tests {
 
     #[test]
     fn reports_an_exhausted_output_budget_instead_of_a_json_parse_error() {
+        // The model limit (1000) already binds the first-attempt budget, so the
+        // doubled retry cannot buy more output and the typed truncation error
+        // stands after a single call.
         let state = empty_harness_state();
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -4065,6 +4119,222 @@ mod tests {
             .sha256
             .chars()
             .all(|character| character.is_ascii_uppercase() || character.is_ascii_digit()));
+    }
+
+    #[test]
+    fn retries_a_length_stopped_first_attempt_with_a_doubled_budget() {
+        let state = empty_harness_state();
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let calls_handle = calls.clone();
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let plan = runtime
+            .block_on(plan_refinement(PlanRefinementRequest {
+                messages: &[],
+                state: &state,
+                history: &[],
+                model: RefineModel { max_tokens: 200_000.0 },
+                api_key: "test".to_string(),
+                options: RefineOptions::default(),
+                headers: None,
+                // The session level must not leak into the planner request.
+                thinking_level: Some("high".to_string()),
+                complete: Arc::new(move |request| {
+                    let calls = calls_handle.clone();
+                    Box::pin(async move {
+                        let call = calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        // FIX B: the planner asks for the least thinking level
+                        // regardless of the interactive session thinking level.
+                        assert_eq!(request.thinking_level.as_deref(), Some("minimal"));
+                        if call == 0 {
+                            assert_eq!(request.max_tokens, 32_000.0);
+                            AssistantMessage {
+                                content: vec![AssistantContent::Text {
+                                    text: "{\"summary\": \"cut\", \"rationale\": \"r\", \"expectedOutcome\": \"o\", \"edits\": [{\"action\": \"create\""
+                                        .to_string(),
+                                }],
+                                usage: AssistantUsage::default(),
+                                stop_reason: StopReason::Length,
+                                error_message: None,
+                            }
+                        } else {
+                            // FIX A: the retry doubles the budget, capped by
+                            // REFINEMENT_RETRY_MAX_OUTPUT_TOKENS.
+                            assert_eq!(request.max_tokens, 64_000.0);
+                            AssistantMessage {
+                                content: vec![AssistantContent::Text {
+                                    text: "{\"summary\": \"recovered\", \"rationale\": \"r\", \"expectedOutcome\": \"o\", \"edits\": []}"
+                                        .to_string(),
+                                }],
+                                usage: AssistantUsage::default(),
+                                stop_reason: StopReason::Stop,
+                                error_message: None,
+                            }
+                        }
+                    })
+                }),
+            }))
+            .expect("plan");
+        assert_eq!(plan.proposal.summary, "recovered");
+        assert_eq!(
+            calls.load(std::sync::atomic::Ordering::SeqCst),
+            2,
+            "the Length-stopped first attempt retried exactly once"
+        );
+    }
+
+    #[test]
+    fn keeps_the_typed_truncation_error_when_the_doubled_retry_also_stops_at_length() {
+        let state = empty_harness_state();
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let calls_handle = calls.clone();
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let error = runtime
+            .block_on(plan_refinement(PlanRefinementRequest {
+                messages: &[],
+                state: &state,
+                history: &[],
+                model: RefineModel { max_tokens: 200_000.0 },
+                api_key: "test".to_string(),
+                options: RefineOptions::default(),
+                headers: None,
+                thinking_level: None,
+                complete: Arc::new(move |request| {
+                    let calls = calls_handle.clone();
+                    Box::pin(async move {
+                        let call = calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        assert_eq!(
+                            request.max_tokens,
+                            if call == 0 { 32_000.0 } else { 64_000.0 }
+                        );
+                        AssistantMessage {
+                            content: vec![AssistantContent::Text {
+                                text: "{\"summary\": \"cut\"".to_string(),
+                            }],
+                            usage: AssistantUsage::default(),
+                            stop_reason: StopReason::Length,
+                            error_message: None,
+                        }
+                    })
+                }),
+            }))
+            .expect_err("still truncated");
+        assert_eq!(
+            error.refinement_failure.category,
+            RefinementFailureCategory::RepairTruncated
+        );
+        assert_eq!(error.refinement_failure.attempts, 2);
+        assert_eq!(error.refinement_failure.output_fingerprints.len(), 2);
+        assert_eq!(error.refinement_failure.attempt_durations_ms.len(), 2);
+        assert_eq!(
+            calls.load(std::sync::atomic::Ordering::SeqCst),
+            2,
+            "the retry ran and its own Length stop is the terminal failure"
+        );
+    }
+
+    #[test]
+    fn caps_the_doubled_retry_budget_at_the_model_limit_and_skips_pointless_retries() {
+        let state = empty_harness_state();
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        // A model limit below the retry cap clamps the doubled budget to the
+        // model limit instead of exceeding it.
+        let budgets: Arc<std::sync::Mutex<Vec<f64>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let budgets_handle = budgets.clone();
+        let plan = runtime
+            .block_on(plan_refinement(PlanRefinementRequest {
+                messages: &[],
+                state: &state,
+                history: &[],
+                model: RefineModel { max_tokens: 40_000.0 },
+                api_key: "test".to_string(),
+                options: RefineOptions::default(),
+                headers: None,
+                thinking_level: None,
+                complete: Arc::new(move |request| {
+                    let budgets = budgets_handle.clone();
+                    Box::pin(async move {
+                        let truncated = {
+                            let mut budgets = budgets.lock().unwrap();
+                            budgets.push(request.max_tokens);
+                            budgets.len() == 1
+                        };
+                        AssistantMessage {
+                            content: vec![AssistantContent::Text {
+                                text: if truncated {
+                                    "{\"summary\": \"cut\"".to_string()
+                                } else {
+                                    "{\"summary\": \"recovered\", \"rationale\": \"r\", \"expectedOutcome\": \"o\", \"edits\": []}"
+                                        .to_string()
+                                },
+                            }],
+                            usage: AssistantUsage::default(),
+                            stop_reason: if truncated {
+                                StopReason::Length
+                            } else {
+                                StopReason::Stop
+                            },
+                            error_message: None,
+                        }
+                    })
+                }),
+            }))
+            .expect("plan");
+        assert_eq!(plan.proposal.summary, "recovered");
+        assert_eq!(
+            budgets.lock().unwrap().as_slice(),
+            &[32_000.0, 40_000.0],
+            "the doubled budget stops at the model limit"
+        );
+        // A model already at the first-attempt cap cannot buy more output, so
+        // no retry runs and the typed truncation error stands.
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let calls_handle = calls.clone();
+        let error = runtime
+            .block_on(plan_refinement(PlanRefinementRequest {
+                messages: &[],
+                state: &state,
+                history: &[],
+                model: RefineModel { max_tokens: 32_000.0 },
+                api_key: "test".to_string(),
+                options: RefineOptions::default(),
+                headers: None,
+                thinking_level: None,
+                complete: Arc::new(move |request| {
+                    let calls = calls_handle.clone();
+                    Box::pin(async move {
+                        calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        assert_eq!(request.max_tokens, 32_000.0);
+                        AssistantMessage {
+                            content: vec![AssistantContent::Text {
+                                text: "{\"summary\": \"cut\"".to_string(),
+                            }],
+                            usage: AssistantUsage::default(),
+                            stop_reason: StopReason::Length,
+                            error_message: None,
+                        }
+                    })
+                }),
+            }))
+            .expect_err("truncated");
+        assert_eq!(
+            error.refinement_failure.category,
+            RefinementFailureCategory::Truncated
+        );
+        assert_eq!(error.refinement_failure.attempts, 1);
+        assert_eq!(
+            calls.load(std::sync::atomic::Ordering::SeqCst),
+            1,
+            "a retry that cannot raise the budget never runs"
+        );
     }
 
     #[test]
