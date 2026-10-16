@@ -1,0 +1,451 @@
+{
+  "meta": {
+    "protocol": "occ2-taskbench two-agent baseline",
+    "speaker": "glm-5.3",
+    "listeners": [
+      "glm-5.3",
+      "glm-5.3-flash"
+    ],
+    "temperature": 0.0,
+    "seed": 42,
+    "occ0_word_limit": 120,
+    "a_max_tokens": 2048,
+    "b_max_tokens": 1024,
+    "tasks_file": "research\\tasks\\tasks_dev.json",
+    "gateway": "http://127.0.0.1:43120/ollama/v1/chat/completions",
+    "generated": "2026-10-16T04:17:03",
+    "num_records": 100
+  },
+  "cells": {
+    "occ0|glm-5.3": {
+      "n_tasks": 50,
+      "correct": 48,
+      "accuracy": 0.96,
+      "lenient_correct": 48,
+      "b_prompt_tokens": {
+        "count": 50,
+        "mean": 238.96,
+        "median": 239.0,
+        "p95": 292
+      },
+      "b_completion_tokens": {
+        "count": 50,
+        "mean": 88.84,
+        "median": 71.0,
+        "p95": 245
+      },
+      "b_latency_s": {
+        "count": 50,
+        "mean": 2.08,
+        "median": 1.69,
+        "p95": 5.131
+      },
+      "b_format_retries": 0,
+      "b_transport_retries": 0,
+      "b_errors": 0,
+      "lenient_accuracy": 0.96
+    },
+    "occ0|glm-5.3-flash": {
+      "n_tasks": 50,
+      "correct": 48,
+      "accuracy": 0.96,
+      "lenient_correct": 48,
+      "b_prompt_tokens": {
+        "count": 50,
+        "mean": 238.96,
+        "median": 239.0,
+        "p95": 292
+      },
+      "b_completion_tokens": {
+        "count": 50,
+        "mean": 77.56,
+        "median": 70.0,
+        "p95": 177
+      },
+      "b_latency_s": {
+        "count": 50,
+        "mean": 4.1,
+        "median": 0.81,
+        "p95": 5.099
+      },
+      "b_format_retries": 0,
+      "b_transport_retries": 0,
+      "b_errors": 0,
+      "lenient_accuracy": 0.96
+    },
+    "occ0|speaker": {
+      "n_tasks": 50,
+      "a_prompt_tokens": {
+        "count": 50,
+        "mean": 222.32,
+        "median": 209.5,
+        "p95": 301
+      },
+      "a_completion_tokens": {
+        "count": 50,
+        "mean": 591.36,
+        "median": 565.0,
+        "p95": 1194
+      },
+      "a_latency_s": {
+        "count": 50,
+        "mean": 4.93,
+        "median": 4.44,
+        "p95": 8.757
+      },
+      "a_format_retries": 0,
+      "a_transport_retries": 0,
+      "a_errors": 0,
+      "message_words": {
+        "count": 50,
+        "mean": 61.36,
+        "median": 60.0,
+        "p95": 100
+      },
+      "message_chars": {
+        "count": 50,
+        "mean": 406.22,
+        "median": 376.0,
+        "p95": 695
+      },
+      "message_bytes": {
+        "count": 50,
+        "mean": 407.54,
+        "median": 376.0,
+        "p95": 695
+      },
+      "occ0_constraint_ok": 50,
+      "occ1_parse_ok": 0,
+      "occ1_fields": {
+        "count": 0
+      }
+    },
+    "occ1|glm-5.3": {
+      "n_tasks": 50,
+      "correct": 50,
+      "accuracy": 1.0,
+      "lenient_correct": 50,
+      "b_prompt_tokens": {
+        "count": 50,
+        "mean": 254.3,
+        "median": 228.0,
+        "p95": 440
+      },
+      "b_completion_tokens": {
+        "count": 50,
+        "mean": 80.44,
+        "median": 58.0,
+        "p95": 194
+      },
+      "b_latency_s": {
+        "count": 50,
+        "mean": 1.87,
+        "median": 1.7,
+        "p95": 3.303
+      },
+      "b_format_retries": 0,
+      "b_transport_retries": 0,
+      "b_errors": 0,
+      "lenient_accuracy": 1.0
+    },
+    "occ1|glm-5.3-flash": {
+      "n_tasks": 50,
+      "correct": 50,
+      "accuracy": 1.0,
+      "lenient_correct": 50,
+      "b_prompt_tokens": {
+        "count": 50,
+        "mean": 254.3,
+        "median": 228.0,
+        "p95": 440
+      },
+      "b_completion_tokens": {
+        "count": 50,
+        "mean": 73,
+        "median": 52.5,
+        "p95": 169
+      },
+      "b_latency_s": {
+        "count": 50,
+        "mean": 0.97,
+        "median": 0.81,
+        "p95": 1.583
+      },
+      "b_format_retries": 0,
+      "b_transport_retries": 0,
+      "b_errors": 0,
+      "lenient_accuracy": 1.0
+    },
+    "occ1|speaker": {
+      "n_tasks": 50,
+      "a_prompt_tokens": {
+        "count": 50,
+        "mean": 312.32,
+        "median": 299.5,
+        "p95": 391
+      },
+      "a_completion_tokens": {
+        "count": 50,
+        "mean": 727.3,
+        "median": 694.5,
+        "p95": 1581
+      },
+      "a_latency_s": {
+        "count": 50,
+        "mean": 6.21,
+        "median": 5.38,
+        "p95": 13.477
+      },
+      "a_format_retries": 0,
+      "a_transport_retries": 0,
+      "a_errors": 0,
+      "message_words": {
+        "count": 50,
+        "mean": 36.02,
+        "median": 29.5,
+        "p95": 88
+      },
+      "message_chars": {
+        "count": 50,
+        "mean": 373.38,
+        "median": 281.0,
+        "p95": 848
+      },
+      "message_bytes": {
+        "count": 50,
+        "mean": 373.38,
+        "median": 281.0,
+        "p95": 848
+      },
+      "occ0_constraint_ok": 0,
+      "occ1_parse_ok": 50,
+      "occ1_fields": {
+        "count": 50,
+        "mean": 13.38,
+        "median": 10.0,
+        "p95": 42
+      }
+    }
+  },
+  "per_family": {
+    "occ0|glm-5.3|A": {
+      "n": 10,
+      "correct": 9,
+      "accuracy": 0.9,
+      "lenient_accuracy": 0.9,
+      "b_prompt_tokens_mean": 197.6
+    },
+    "occ0|glm-5.3|B": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 259.3
+    },
+    "occ0|glm-5.3|C": {
+      "n": 10,
+      "correct": 9,
+      "accuracy": 0.9,
+      "lenient_accuracy": 0.9,
+      "b_prompt_tokens_mean": 234.2
+    },
+    "occ0|glm-5.3|D": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 270.6
+    },
+    "occ0|glm-5.3|E": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 233.1
+    },
+    "occ0|glm-5.3-flash|A": {
+      "n": 10,
+      "correct": 9,
+      "accuracy": 0.9,
+      "lenient_accuracy": 0.9,
+      "b_prompt_tokens_mean": 197.6
+    },
+    "occ0|glm-5.3-flash|B": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 259.3
+    },
+    "occ0|glm-5.3-flash|C": {
+      "n": 10,
+      "correct": 9,
+      "accuracy": 0.9,
+      "lenient_accuracy": 0.9,
+      "b_prompt_tokens_mean": 234.2
+    },
+    "occ0|glm-5.3-flash|D": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 270.6
+    },
+    "occ0|glm-5.3-flash|E": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 233.1
+    },
+    "occ1|glm-5.3|A": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 182.5
+    },
+    "occ1|glm-5.3|B": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 291.4
+    },
+    "occ1|glm-5.3|C": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 209.2
+    },
+    "occ1|glm-5.3|D": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 365.3
+    },
+    "occ1|glm-5.3|E": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 223.1
+    },
+    "occ1|glm-5.3-flash|A": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 182.5
+    },
+    "occ1|glm-5.3-flash|B": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 291.4
+    },
+    "occ1|glm-5.3-flash|C": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 209.2
+    },
+    "occ1|glm-5.3-flash|D": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 365.3
+    },
+    "occ1|glm-5.3-flash|E": {
+      "n": 10,
+      "correct": 10,
+      "accuracy": 1.0,
+      "lenient_accuracy": 1.0,
+      "b_prompt_tokens_mean": 223.1
+    }
+  },
+  "notes": [],
+  "call_accounting": {
+    "total_gateway_calls": 300,
+    "format_retries": 0,
+    "transport_retries": 0,
+    "truncated_calls": 0
+  },
+  "failures": [
+    {
+      "mode": "occ0",
+      "task_id": "A-dev-010",
+      "family": "A",
+      "difficulty": "medium",
+      "listener": "glm-5.3",
+      "answer": "Okafor",
+      "lenient_correct": false,
+      "gold_answer": "release engineer okafor",
+      "a_error": null,
+      "b_error": null
+    },
+    {
+      "mode": "occ0",
+      "task_id": "A-dev-010",
+      "family": "A",
+      "difficulty": "medium",
+      "listener": "glm-5.3-flash",
+      "answer": "Okafor",
+      "lenient_correct": false,
+      "gold_answer": "release engineer okafor",
+      "a_error": null,
+      "b_error": null
+    },
+    {
+      "mode": "occ0",
+      "task_id": "C-dev-010",
+      "family": "C",
+      "difficulty": "hard",
+      "listener": "glm-5.3",
+      "answer": "Stage the new public key.",
+      "lenient_correct": false,
+      "gold_answer": "stage the new public key",
+      "a_error": null,
+      "b_error": null
+    },
+    {
+      "mode": "occ0",
+      "task_id": "C-dev-010",
+      "family": "C",
+      "difficulty": "hard",
+      "listener": "glm-5.3-flash",
+      "answer": "Stage the new public key.",
+      "lenient_correct": false,
+      "gold_answer": "stage the new public key",
+      "a_error": null,
+      "b_error": null
+    }
+  ],
+  "wire_cost": {
+    "glm-5.3": {
+      "pairs": 50,
+      "b_prompt_delta_occ1_minus_occ0": {
+        "count": 50,
+        "mean": 15.34,
+        "median": -1.0,
+        "p95": 167
+      },
+      "occ0_minus_occ1_mean": -15.34
+    },
+    "glm-5.3-flash": {
+      "pairs": 50,
+      "b_prompt_delta_occ1_minus_occ0": {
+        "count": 50,
+        "mean": 15.34,
+        "median": -1.0,
+        "p95": 167
+      },
+      "occ0_minus_occ1_mean": -15.34
+    }
+  }
+}

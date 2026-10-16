@@ -1,0 +1,10 @@
+{
+  "task_file": "I-10_n2.json",
+  "protocol": "msg",
+  "model": "glm-5.3-flash",
+  "comm_mode": "sym_v1_handdesigned",
+  "status": "timeout",
+  "timeout": true,
+  "elapsed_s": 1200.064,
+  "error": "exceeded per-case wall-clock budget of 1200s"
+}

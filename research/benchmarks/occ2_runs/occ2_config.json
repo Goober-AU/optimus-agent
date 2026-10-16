@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "extends": "../adapter/config.json (gateway + silo_repo copied unchanged; this file only adds OCC-2 encoded-communication run specs)",
+  "gateway": {
+    "base_url": "http://127.0.0.1:43120/ollama/v1",
+    "token_file": "C:/Users/openclawuser/optimus-rust-test-20260915/cloud-model-gateway/local-token.txt",
+    "note": "Bearer token is read from token_file at runtime; never store or print it.",
+    "content_reconstruction_proxy": {
+      "enabled": true,
+      "listen_port": 43250,
+      "reason": "gateway extracts SILO's fenced XML tool calls into native tool_calls and strips them from message.content; official engine parses content only",
+      "models": "glm-*"
+    }
+  },
+  "silo_repo": "C:/Users/openclawuser/optimus-rlm-references/silo-bench",
+  "silo_repo_pin": "e74127782ed1c42fff474249961f022c063d76f2",
+  "models": {
+    "primary": "glm-5.3",
+    "cheap": "glm-5.3-flash"
+  },
+  "runs": [
+    {
+      "name": "occ2-levelI-n2-msg-glm53flash-occ1",
+      "comm_mode": "occ1_structured",
+      "mode_label": "occ1",
+      "model": "glm-5.3-flash",
+      "protocol": "msg",
+      "max_rounds": 20,
+      "case_timeout_s": 1200,
+      "task_files": [
+        "I-01_n2.json",
+        "I-02_n2.json",
+        "I-03_n2.json",
+        "I-04_n2.json",
+        "I-05_n2.json",
+        "I-06_n2.json",
+        "I-07_n2.json",
+        "I-08_n2.json",
+        "I-09_n2.json",
+        "I-10_n2.json"
+      ]
+    },
+    {
+      "name": "occ2-levelI-n2-msg-glm53flash-sym",
+      "comm_mode": "sym_v1_handdesigned",
+      "mode_label": "sym-v1-hand-designed",
+      "model": "glm-5.3-flash",
+      "protocol": "msg",
+      "max_rounds": 20,
+      "case_timeout_s": 1200,
+      "task_files": [
+        "I-01_n2.json",
+        "I-02_n2.json",
+        "I-03_n2.json",
+        "I-04_n2.json",
+        "I-05_n2.json",
+        "I-06_n2.json",
+        "I-07_n2.json",
+        "I-08_n2.json",
+        "I-09_n2.json",
+        "I-10_n2.json"
+      ]
+    },
+    {
+      "name": "occ2-levelI-n2-msg-glm53-occ1",
+      "comm_mode": "occ1_structured",
+      "mode_label": "occ1",
+      "model": "glm-5.3",
+      "protocol": "msg",
+      "max_rounds": 20,
+      "case_timeout_s": 1200,
+      "task_files": [
+        "I-01_n2.json",
+        "I-02_n2.json",
+        "I-03_n2.json",
+        "I-04_n2.json",
+        "I-05_n2.json",
+        "I-06_n2.json",
+        "I-07_n2.json",
+        "I-08_n2.json",
+        "I-09_n2.json",
+        "I-10_n2.json"
+      ]
+    }
+  ],
+  "output_root": "../runs"
+}

@@ -1,0 +1,126 @@
+{
+  "task_file": "I-09_n2.json",
+  "protocol": "msg",
+  "model": "glm-5.3-flash",
+  "comm_mode": "occ1_structured",
+  "case_dir": "C:\\Users\\openclawuser\\optimus-occ23-20261016\\research\\benchmarks\\runs\\occ2-levelI-n2-msg-glm53flash-occ1\\workspace\\I-09_p2p_glm-5.3-flash_20261016054916",
+  "status": "completed",
+  "elapsed_s": 78.573,
+  "error": null,
+  "llm_transport": "gateway+content-reconstruction-proxy",
+  "official": {
+    "case_id": "I-09",
+    "case_name": "Top-K Select",
+    "paradigm": "Paradigm I",
+    "num_agents": 2,
+    "max_rounds": 20,
+    "rounds_executed": 5,
+    "execution_status": "completed",
+    "total_input_tokens": 13624,
+    "total_output_tokens": 3754,
+    "all_submitted": true,
+    "metrics": {
+      "S_success_rate": 1.0,
+      "P_partial_correctness": 1.0,
+      "C_token_consumption": 3475.6,
+      "D_communication_density": 2.0,
+      "success_rate": 1.0,
+      "partial_correctness": 1.0,
+      "token_consumption": 3475.6,
+      "communication_density": 2.0
+    },
+    "ground_truth": [
+      [
+        996,
+        968,
+        956,
+        930,
+        926,
+        921,
+        921,
+        906,
+        905,
+        896
+      ],
+      [
+        996,
+        968,
+        956,
+        930,
+        926,
+        921,
+        921,
+        906,
+        905,
+        896
+      ]
+    ],
+    "submissions": [
+      {
+        "agent_id": 0,
+        "answer": [
+          996,
+          968,
+          956,
+          930,
+          926,
+          921,
+          921,
+          906,
+          905,
+          896
+        ],
+        "correct": true,
+        "round": 3
+      },
+      {
+        "agent_id": 1,
+        "answer": [
+          996,
+          968,
+          956,
+          930,
+          926,
+          921,
+          921,
+          906,
+          905,
+          896
+        ],
+        "correct": true,
+        "round": 5
+      }
+    ],
+    "success": true
+  },
+  "adapter": {
+    "llm_calls": 8,
+    "prompt_tokens_sum": 13624,
+    "output_tokens_sum": 3754,
+    "output_tokens_caveat": "gateway usage.completion_tokens includes hidden reasoning tokens; prompt_tokens are the real server-side count of what was sent",
+    "llm_latency_s": {
+      "mean": 9.492,
+      "p50": 4.504,
+      "p95": 33.995,
+      "max": 48.228
+    },
+    "inter_agent_messages": 4,
+    "inter_agent_message_payload_bytes": 946,
+    "inter_agent_message_file_bytes": 1350
+  },
+  "encoding_hook": {
+    "guidance_chars": 1714,
+    "agents": [
+      {
+        "agent": "agent-000",
+        "system_chars_before": 2988,
+        "system_chars_after": 4704
+      },
+      {
+        "agent": "agent-001",
+        "system_chars_before": 2988,
+        "system_chars_after": 4704
+      }
+    ]
+  }
+}

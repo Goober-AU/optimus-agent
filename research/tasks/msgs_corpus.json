@@ -1,0 +1,2660 @@
+[
+  {
+    "id": "c01",
+    "holdout": false,
+    "plain_english": "Task occ2-01 is a new assignment and is currently pending. Point 1: implement the OCC-2 dialect discovery prototype behind a feature flag. This work depended on t39 being finished first. Next actions, in priority order: survey the existing OCC-1 call sites; draft the offline discovery loop; keep the feature flag off by default.",
+    "payload": {
+      "task_id": "occ2-01",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-201",
+      "trace_id": "trace-occ2-01",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-b",
+      "findings": [
+        {
+          "statement": "implement the OCC-2 dialect discovery prototype behind a feature flag",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "t39"
+      ],
+      "next_actions": [
+        "survey the existing OCC-1 call sites",
+        "draft the offline discovery loop",
+        "keep the feature flag off by default"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T09:02:00Z"
+    }
+  },
+  {
+    "id": "c02",
+    "holdout": false,
+    "plain_english": "Task occ2-01 is in progress and this is an update. Point 1: the discovery loop now enumerates the top 40 field pairs per trace, and I am about 80 percent sure of this. The relevant lines are in crates/pi-coding-agent/src/core/occ/occ1.rs, lines 88 to 120, read at revision ce8480d59. Point 2: the feature flag defaults to off in every build profile. Next actions, in priority order: rank the pairs by frequency; cap the symbol table at 48 entries.",
+    "payload": {
+      "task_id": "occ2-01",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-202",
+      "trace_id": "trace-occ2-01",
+      "sender_identity": "agent://worker-b",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the discovery loop now enumerates the top 40 field pairs per trace",
+          "confidence": 0.8,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "the feature flag defaults to off in every build profile",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/occ/occ1.rs",
+          "line_range": [
+            88,
+            120
+          ],
+          "revision": "ce8480d59"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "rank the pairs by frequency",
+        "cap the symbol table at 48 entries"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-16T09:34:00Z"
+    }
+  },
+  {
+    "id": "c03",
+    "holdout": false,
+    "plain_english": "Task occ2-01 is finished and I am reporting the result now. Point 1: the prototype discovers a stable symbol table for 27 of 28 fidelity scenarios, and I am about 90 percent sure of this. The tool receipt lives at receipts/occ2-01-discovery-run.txt. The relevant lines are in crates/pi-coding-agent/src/core/occ/dialect.rs, lines 14 to 61, read at revision ce8480d59; the sha256 digest of the file is 22f20801191539b2c888c695878804959d03ee676b58f1d6322f3808862e2632. The artifacts produced are research/occ2/dialect-table.json. To be explicit about verification: the claim that the discovered dialect round-trips all 28 fidelity scenarios is currently marked pass; the method was cargo_test and the receipt lives at reports/occ2-01-verify.txt. Next actions, in priority order: review the symbol table before any wire use.",
+    "payload": {
+      "task_id": "occ2-01",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-203",
+      "trace_id": "trace-occ2-01",
+      "sender_identity": "agent://worker-b",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the prototype discovers a stable symbol table for 27 of 28 fidelity scenarios",
+          "confidence": 0.9,
+          "evidence": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "tool",
+          "locator": "receipts/occ2-01-discovery-run.txt",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/occ/dialect.rs",
+          "line_range": [
+            14,
+            61
+          ],
+          "revision": "ce8480d59",
+          "digest": "22f20801191539b2c888c695878804959d03ee676b58f1d6322f3808862e2632"
+        }
+      ],
+      "artifacts": [
+        "research/occ2/dialect-table.json"
+      ],
+      "verification": {
+        "claim": "the discovered dialect round-trips all 28 fidelity scenarios",
+        "status": "pass",
+        "method": "cargo_test",
+        "receipt": "reports/occ2-01-verify.txt"
+      },
+      "dependencies": [],
+      "next_actions": [
+        "review the symbol table before any wire use"
+      ],
+      "sequence": 3,
+      "timestamp": "2026-10-16T10:38:00Z"
+    }
+  },
+  {
+    "id": "c04",
+    "holdout": false,
+    "plain_english": "Task occ2-01 is reported with evidence only and no new claims. This is backed by commit 4f2a91c37, which I verified. The artifact at research/occ2/dialect-table.json carries sha256 digest ca79e11ec69512dc40b581e38c26cacea8cb2c8b711a50388de7e235d8c026ff. The artifacts produced are research/occ2/dialect-table.json.",
+    "payload": {
+      "task_id": "occ2-01",
+      "kind": "EVIDENCE",
+      "status": "done",
+      "message_id": "m-204",
+      "trace_id": "trace-occ2-01",
+      "sender_identity": "agent://worker-b",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "commit",
+          "locator": "4f2a91c37",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "artifact",
+          "locator": "research/occ2/dialect-table.json",
+          "digest": "ca79e11ec69512dc40b581e38c26cacea8cb2c8b711a50388de7e235d8c026ff"
+        }
+      ],
+      "artifacts": [
+        "research/occ2/dialect-table.json"
+      ],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 4,
+      "timestamp": "2026-10-16T11:09:00Z"
+    }
+  },
+  {
+    "id": "c05",
+    "holdout": false,
+    "plain_english": "Task occ2-01 has a correction to an earlier claim. Point 1: the stable count is 26 of 28, not 27; scenario s19 needs a fallback symbol, and I am about 95 percent sure of this. This follows from the earlier message m-203. Next actions, in priority order: add the fallback symbol for s19; re-run the discovery loop.",
+    "payload": {
+      "task_id": "occ2-01",
+      "kind": "CORRECTION",
+      "status": "in_progress",
+      "message_id": "m-205",
+      "trace_id": "trace-occ2-01",
+      "sender_identity": "agent://worker-b",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the stable count is 26 of 28, not 27; scenario s19 needs a fallback symbol",
+          "confidence": 0.95,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "finding",
+          "locator": "m-203"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "add the fallback symbol for s19",
+        "re-run the discovery loop"
+      ],
+      "sequence": 5,
+      "timestamp": "2026-10-16T12:18:00Z"
+    }
+  },
+  {
+    "id": "c06",
+    "holdout": false,
+    "plain_english": "Task occ2-02 is a new assignment and is currently pending. Point 1: measure real tokenizer counts for OCC-1 versus plain English on the model gateway. Next actions, in priority order: batch the 28 fidelity scenarios; record usage.prompt_tokens per encoding; write the comparison table.",
+    "payload": {
+      "task_id": "occ2-02",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-206",
+      "trace_id": "trace-occ2-02",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-c",
+      "findings": [
+        {
+          "statement": "measure real tokenizer counts for OCC-1 versus plain English on the model gateway",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "batch the 28 fidelity scenarios",
+        "record usage.prompt_tokens per encoding",
+        "write the comparison table"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T08:54:00Z",
+      "parent_task_id": "t77"
+    }
+  },
+  {
+    "id": "c07",
+    "holdout": false,
+    "plain_english": "Task occ2-02 is in progress and this is an update. Point 1: batch one of two is measured; OCC-1 prompt tokens run 40 to 48 percent below plain English, and I am about 70 percent sure of this. The supporting log is at logs/occ2-02-tokens-batch1.log, though it has not been independently re-checked. Next actions, in priority order: run batch two after the gateway restart window.",
+    "payload": {
+      "task_id": "occ2-02",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-207",
+      "trace_id": "trace-occ2-02",
+      "sender_identity": "agent://worker-c",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "batch one of two is measured; OCC-1 prompt tokens run 40 to 48 percent below plain English",
+          "confidence": 0.7,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ2-02-tokens-batch1.log",
+          "verified": false
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "run batch two after the gateway restart window"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-16T10:05:00Z"
+    }
+  },
+  {
+    "id": "c08",
+    "holdout": false,
+    "plain_english": "Task occ2-02 is in progress and this is an update. Point 1: the gateway health check passes between batches, and I am about 100 percent sure of this. The tool receipt lives at receipts/occ2-02-health.txt.",
+    "payload": {
+      "task_id": "occ2-02",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-208",
+      "trace_id": "trace-occ2-02",
+      "sender_identity": "agent://worker-c",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the gateway health check passes between batches",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "tool",
+          "locator": "receipts/occ2-02-health.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 3,
+      "timestamp": "2026-10-16T11:02:00Z"
+    }
+  },
+  {
+    "id": "c09",
+    "holdout": false,
+    "plain_english": "Task occ2-02 is partially complete and scope remains. Point 1: 14 of 28 scenarios are measured; the gateway restart interrupts long batches, and I am about 85 percent sure of this. The supporting log is at logs/occ2-02-tokens-batch2.log, though it has not been independently re-checked. The artifacts produced are reports/occ2-02-tokens-partial.md. To be explicit about verification: the claim that token counts are reproducible across gateway restarts is currently marked unknown; the method was manual_review. Next actions, in priority order: resume batch two; cross-check three scenarios by hand.",
+    "payload": {
+      "task_id": "occ2-02",
+      "kind": "RESULT",
+      "status": "partial",
+      "message_id": "m-209",
+      "trace_id": "trace-occ2-02",
+      "sender_identity": "agent://worker-c",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "14 of 28 scenarios are measured; the gateway restart interrupts long batches",
+          "confidence": 0.85,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ2-02-tokens-batch2.log",
+          "verified": false
+        }
+      ],
+      "artifacts": [
+        "reports/occ2-02-tokens-partial.md"
+      ],
+      "verification": {
+        "claim": "token counts are reproducible across gateway restarts",
+        "status": "unknown",
+        "method": "manual_review"
+      },
+      "dependencies": [],
+      "next_actions": [
+        "resume batch two",
+        "cross-check three scenarios by hand"
+      ],
+      "sequence": 4,
+      "timestamp": "2026-10-16T11:43:00Z"
+    }
+  },
+  {
+    "id": "c10",
+    "holdout": false,
+    "plain_english": "Task occ2-02 is acknowledged: receipt of the earlier message is confirmed. Point 1: receipt of the assignment is confirmed; the first batch has started, and I am about 100 percent sure of this. This follows from the earlier message m-206. Next actions, in priority order: finish the remaining batch within 24 hours.",
+    "payload": {
+      "task_id": "occ2-02",
+      "kind": "ACK",
+      "status": "done",
+      "message_id": "m-210",
+      "trace_id": "trace-occ2-02",
+      "sender_identity": "agent://worker-c",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "receipt of the assignment is confirmed; the first batch has started",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "finding",
+          "locator": "m-206"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "finish the remaining batch within 24 hours"
+      ],
+      "sequence": 5,
+      "timestamp": "2026-10-16T11:57:00Z",
+      "expiry": "2026-10-17T11:57:00Z"
+    }
+  },
+  {
+    "id": "c11",
+    "holdout": false,
+    "plain_english": "Task occ2-03 is a new assignment and is currently pending. Point 1: extend the fidelity fixture corpus with at least 60 new typed messages. This work depended on occ2-01 being finished first. Next actions, in priority order: cover all nine message kinds; cover all seven task statuses; keep the fixture schema unchanged.",
+    "payload": {
+      "task_id": "occ2-03",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-211",
+      "trace_id": "trace-occ2-03",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-e",
+      "findings": [
+        {
+          "statement": "extend the fidelity fixture corpus with at least 60 new typed messages",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "occ2-01"
+      ],
+      "next_actions": [
+        "cover all nine message kinds",
+        "cover all seven task statuses",
+        "keep the fixture schema unchanged"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T09:05:00Z"
+    }
+  },
+  {
+    "id": "c12",
+    "holdout": false,
+    "plain_english": "Task occ2-03 is in progress and this is an update. Point 1: 41 of 60 messages are drafted; kinds TASK and RESULT are fully covered, and I am about 75 percent sure of this. The build result is recorded at target/occ2-03-corpus-build.txt. Next actions, in priority order: draft the remaining REQUEST_DETAIL and CORRECTION messages.",
+    "payload": {
+      "task_id": "occ2-03",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-212",
+      "trace_id": "trace-occ2-03",
+      "sender_identity": "agent://worker-e",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "41 of 60 messages are drafted; kinds TASK and RESULT are fully covered",
+          "confidence": 0.75,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "build",
+          "locator": "target/occ2-03-corpus-build.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "draft the remaining REQUEST_DETAIL and CORRECTION messages"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-16T09:50:00Z"
+    }
+  },
+  {
+    "id": "c13",
+    "holdout": false,
+    "plain_english": "Task occ2-03 is finished and I am reporting the result now. Point 1: 60 new messages cover all nine kinds and all seven statuses with zero schema drift, and I am about 95 percent sure of this. The relevant lines are in crates/pi-coding-agent/tests/fixtures/occ/scenarios.json, lines 1 to 40, read at revision ce8480d59. The supporting log is at logs/occ2-03-schema-check.log and I re-checked it after the run. The artifacts produced are research/occ2/corpus-extension.json. To be explicit about verification: the claim that the extended corpus passes the fidelity round-trip test is currently marked pass; the method was cargo_test and the receipt lives at reports/occ2-03-verify.txt.",
+    "payload": {
+      "task_id": "occ2-03",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-213",
+      "trace_id": "trace-occ2-03",
+      "sender_identity": "agent://worker-e",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "60 new messages cover all nine kinds and all seven statuses with zero schema drift",
+          "confidence": 0.95,
+          "evidence": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/tests/fixtures/occ/scenarios.json",
+          "line_range": [
+            1,
+            40
+          ],
+          "revision": "ce8480d59"
+        },
+        {
+          "id": "E2",
+          "kind": "log",
+          "locator": "logs/occ2-03-schema-check.log",
+          "verified": true
+        }
+      ],
+      "artifacts": [
+        "research/occ2/corpus-extension.json"
+      ],
+      "verification": {
+        "claim": "the extended corpus passes the fidelity round-trip test",
+        "status": "pass",
+        "method": "cargo_test",
+        "receipt": "reports/occ2-03-verify.txt"
+      },
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 3,
+      "timestamp": "2026-10-16T10:18:00Z"
+    }
+  },
+  {
+    "id": "c14",
+    "holdout": false,
+    "plain_english": "Task occ2-03 is reported with evidence only and no new claims. This is backed by commit 9b41d02ef, which I verified. The artifact at research/occ2/corpus-extension.json carries sha256 digest 0550f2d9b3a2b0c24ca451ec6e94f77cba7f762927694e0497df510811040352.",
+    "payload": {
+      "task_id": "occ2-03",
+      "kind": "EVIDENCE",
+      "status": "done",
+      "message_id": "m-214",
+      "trace_id": "trace-occ2-03",
+      "sender_identity": "agent://worker-e",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "commit",
+          "locator": "9b41d02ef",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "artifact",
+          "locator": "research/occ2/corpus-extension.json",
+          "digest": "0550f2d9b3a2b0c24ca451ec6e94f77cba7f762927694e0497df510811040352"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 4,
+      "timestamp": "2026-10-16T10:36:00Z"
+    }
+  },
+  {
+    "id": "c15",
+    "holdout": false,
+    "plain_english": "Task occ2-04 is a new assignment and is currently pending. Point 1: benchmark OCC-1 versus JSON versus plain English on the new corpus. This work depended on occ2-02 being finished first. Next actions, in priority order: reuse the 100-iteration latency harness; report bytes and proxy tokens per encoding.",
+    "payload": {
+      "task_id": "occ2-04",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-215",
+      "trace_id": "trace-occ2-04",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-f",
+      "findings": [
+        {
+          "statement": "benchmark OCC-1 versus JSON versus plain English on the new corpus",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "occ2-02"
+      ],
+      "next_actions": [
+        "reuse the 100-iteration latency harness",
+        "report bytes and proxy tokens per encoding"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T09:32:00Z"
+    }
+  },
+  {
+    "id": "c16",
+    "holdout": false,
+    "plain_english": "Task occ2-04 is in progress and this is an update. Point 1: the harness runs 100 iterations per message with warm caches, and I am about 80 percent sure of this. The tool receipt lives at receipts/occ2-04-harness.txt.",
+    "payload": {
+      "task_id": "occ2-04",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-216",
+      "trace_id": "trace-occ2-04",
+      "sender_identity": "agent://worker-f",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the harness runs 100 iterations per message with warm caches",
+          "confidence": 0.8,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "tool",
+          "locator": "receipts/occ2-04-harness.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 2,
+      "timestamp": "2026-10-16T10:41:00Z"
+    }
+  },
+  {
+    "id": "c17",
+    "holdout": false,
+    "plain_english": "Task occ2-04 needs additional detail from the peer. Point 1: request the exact gateway route and model used for the tokenizer measurement. Next actions, in priority order: reply with the route and the model name.",
+    "payload": {
+      "task_id": "occ2-04",
+      "kind": "REQUEST_DETAIL",
+      "status": "in_progress",
+      "message_id": "m-217",
+      "trace_id": "trace-occ2-04",
+      "sender_identity": "agent://worker-f",
+      "recipient_identity": "agent://worker-c",
+      "findings": [
+        {
+          "statement": "request the exact gateway route and model used for the tokenizer measurement",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "reply with the route and the model name"
+      ],
+      "sequence": 3,
+      "timestamp": "2026-10-16T11:16:00Z"
+    }
+  },
+  {
+    "id": "c18",
+    "holdout": false,
+    "plain_english": "Task occ2-04 is acknowledged: receipt of the earlier message is confirmed. Point 1: receipt of the detail request is confirmed, and I am about 100 percent sure of this. This follows from the earlier message m-217. Next actions, in priority order: send the route and model name today.",
+    "payload": {
+      "task_id": "occ2-04",
+      "kind": "ACK",
+      "status": "done",
+      "message_id": "m-218",
+      "trace_id": "trace-occ2-04",
+      "sender_identity": "agent://worker-c",
+      "recipient_identity": "agent://worker-f",
+      "findings": [
+        {
+          "statement": "receipt of the detail request is confirmed",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "finding",
+          "locator": "m-217"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "send the route and model name today"
+      ],
+      "sequence": 4,
+      "timestamp": "2026-10-16T12:01:00Z"
+    }
+  },
+  {
+    "id": "c19",
+    "holdout": false,
+    "plain_english": "Task occ2-04 is finished and I am reporting the result now. Point 1: OCC-1 saves 38.2 percent bytes against plain English on the new corpus, and I am about 90 percent sure of this. The supporting log is at logs/occ2-04-compression.log and I re-checked it after the run. The artifacts produced are reports/occ2-04-compression.md. To be explicit about verification: the claim that the byte and token savings reproduce within one percent is currently marked pass; the method was bench_harness and the receipt lives at receipts/occ2-04-bench.txt.",
+    "payload": {
+      "task_id": "occ2-04",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-219",
+      "trace_id": "trace-occ2-04",
+      "sender_identity": "agent://worker-f",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "OCC-1 saves 38.2 percent bytes against plain English on the new corpus",
+          "confidence": 0.9,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ2-04-compression.log",
+          "verified": true
+        }
+      ],
+      "artifacts": [
+        "reports/occ2-04-compression.md"
+      ],
+      "verification": {
+        "claim": "the byte and token savings reproduce within one percent",
+        "status": "pass",
+        "method": "bench_harness",
+        "receipt": "receipts/occ2-04-bench.txt"
+      },
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 5,
+      "timestamp": "2026-10-16T13:07:00Z"
+    }
+  },
+  {
+    "id": "c20",
+    "holdout": false,
+    "plain_english": "Task occ2-05 is a new assignment and is currently pending. Point 1: port the periodic fractional pruning skeleton behind measured utility. This work depended on t41 being finished first. Next actions, in priority order: wire the never-prune exemption list; gate every prune on a measured utility signal.",
+    "payload": {
+      "task_id": "occ2-05",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-220",
+      "trace_id": "trace-occ2-05",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-a",
+      "findings": [
+        {
+          "statement": "port the periodic fractional pruning skeleton behind measured utility",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "t41"
+      ],
+      "next_actions": [
+        "wire the never-prune exemption list",
+        "gate every prune on a measured utility signal"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T09:27:00Z"
+    }
+  },
+  {
+    "id": "c21",
+    "holdout": false,
+    "plain_english": "Task occ2-05 is in progress and this is an update. Point 1: the never-prune exemption list is wired and covered by tests, and I am about 85 percent sure of this. The relevant lines are in crates/pi-coding-agent/src/core/occ/prune.rs, lines 20 to 74, read at revision ce8480d59; the sha256 digest of the file is 8f23df8f1331265a1ce4f8e4e809676457117b2c0b3709144e5693acc359cfef.",
+    "payload": {
+      "task_id": "occ2-05",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-221",
+      "trace_id": "trace-occ2-05",
+      "sender_identity": "agent://worker-a",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the never-prune exemption list is wired and covered by tests",
+          "confidence": 0.85,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/occ/prune.rs",
+          "line_range": [
+            20,
+            74
+          ],
+          "revision": "ce8480d59",
+          "digest": "8f23df8f1331265a1ce4f8e4e809676457117b2c0b3709144e5693acc359cfef"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 2,
+      "timestamp": "2026-10-16T10:13:00Z"
+    }
+  },
+  {
+    "id": "c22",
+    "holdout": false,
+    "plain_english": "Task occ2-05 finished unsuccessfully and I am reporting that now. Point 1: the utility signal is too noisy to gate pruning safely, and I am about 80 percent sure of this. The supporting log is at logs/occ2-05-utility-noise.log, though it has not been independently re-checked. To be explicit about verification: the claim that pruning with the measured utility never drops a needed message is currently marked fail; the method was cargo_test and the receipt lives at reports/occ2-05-verify.txt. Next actions, in priority order: collect a longer utility trace; keep pruning disabled.",
+    "payload": {
+      "task_id": "occ2-05",
+      "kind": "RESULT",
+      "status": "failed",
+      "message_id": "m-222",
+      "trace_id": "trace-occ2-05",
+      "sender_identity": "agent://worker-a",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the utility signal is too noisy to gate pruning safely",
+          "confidence": 0.8,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ2-05-utility-noise.log",
+          "verified": false
+        }
+      ],
+      "artifacts": [],
+      "verification": {
+        "claim": "pruning with the measured utility never drops a needed message",
+        "status": "fail",
+        "method": "cargo_test",
+        "receipt": "reports/occ2-05-verify.txt"
+      },
+      "dependencies": [],
+      "next_actions": [
+        "collect a longer utility trace",
+        "keep pruning disabled"
+      ],
+      "sequence": 3,
+      "timestamp": "2026-10-16T10:51:00Z"
+    }
+  },
+  {
+    "id": "c23",
+    "holdout": true,
+    "plain_english": "Task occ2-06 is a new assignment and is currently pending. Point 1: probe whether the local models can share hidden states through the daemon transport. Next actions, in priority order: check transport capabilities; document the hard limits.",
+    "payload": {
+      "task_id": "occ2-06",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-223",
+      "trace_id": "trace-occ2-06",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-b",
+      "findings": [
+        {
+          "statement": "probe whether the local models can share hidden states through the daemon transport",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "check transport capabilities",
+        "document the hard limits"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T10:14:00Z"
+    }
+  },
+  {
+    "id": "c24",
+    "holdout": true,
+    "plain_english": "Task occ2-06 is blocked and cannot proceed right now. Point 1: the daemon transport carries text only; tensor access is unavailable at this layer, and I am about 100 percent sure of this. The tool receipt lives at receipts/occ2-06-transport-check.txt. Point 2: no latent handoff can run without a same-process runtime. Next actions, in priority order: request a design review of the transport boundary.",
+    "payload": {
+      "task_id": "occ2-06",
+      "kind": "BLOCKED",
+      "status": "blocked",
+      "message_id": "m-224",
+      "trace_id": "trace-occ2-06",
+      "sender_identity": "agent://worker-b",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the daemon transport carries text only; tensor access is unavailable at this layer",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "no latent handoff can run without a same-process runtime",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "tool",
+          "locator": "receipts/occ2-06-transport-check.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "request a design review of the transport boundary"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-16T10:39:00Z"
+    }
+  },
+  {
+    "id": "c25",
+    "holdout": true,
+    "plain_english": "Task occ2-06 is partially complete and scope remains. Point 1: a text-only proxy probe ran; latent transfer remains unsupported on this transport, and I am about 60 percent sure of this. The build result is recorded at target/occ2-06-proxy-probe.txt. To be explicit about verification: the claim that the proxy probe matches the latent baseline is currently marked unknown; the method was manual_review.",
+    "payload": {
+      "task_id": "occ2-06",
+      "kind": "RESULT",
+      "status": "partial",
+      "message_id": "m-225",
+      "trace_id": "trace-occ2-06",
+      "sender_identity": "agent://worker-b",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "a text-only proxy probe ran; latent transfer remains unsupported on this transport",
+          "confidence": 0.6,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "build",
+          "locator": "target/occ2-06-proxy-probe.txt",
+          "verified": false
+        }
+      ],
+      "artifacts": [],
+      "verification": {
+        "claim": "the proxy probe matches the latent baseline",
+        "status": "unknown",
+        "method": "manual_review"
+      },
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 3,
+      "timestamp": "2026-10-16T11:26:00Z"
+    }
+  },
+  {
+    "id": "c26",
+    "holdout": false,
+    "plain_english": "Task occ2-07 is a new assignment and is currently pending. Point 1: update the retention policy from 30 days to 90 days before pruning. Next actions, in priority order: read the window from the policy file; re-run the prune tests.",
+    "payload": {
+      "task_id": "occ2-07",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-226",
+      "trace_id": "trace-occ2-07",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-d",
+      "findings": [
+        {
+          "statement": "update the retention policy from 30 days to 90 days before pruning",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "read the window from the policy file",
+        "re-run the prune tests"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T10:38:00Z"
+    }
+  },
+  {
+    "id": "c27",
+    "holdout": false,
+    "plain_english": "Task occ2-07 has a correction to an earlier claim. Point 1: the retention requirement changed from 30 days to 90 days before pruning, and I am about 95 percent sure of this. This follows from the earlier message m-226. Point 2: the prune threshold must be computed from the policy file, not the compiled-in constant. Next actions, in priority order: update the policy loader; re-run the prune tests.",
+    "payload": {
+      "task_id": "occ2-07",
+      "kind": "CORRECTION",
+      "status": "in_progress",
+      "message_id": "m-227",
+      "trace_id": "trace-occ2-07",
+      "sender_identity": "agent://worker-d",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the retention requirement changed from 30 days to 90 days before pruning",
+          "confidence": 0.95,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "the prune threshold must be computed from the policy file, not the compiled-in constant",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "finding",
+          "locator": "m-226"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "update the policy loader",
+        "re-run the prune tests"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-16T11:37:00Z"
+    }
+  },
+  {
+    "id": "c28",
+    "holdout": false,
+    "plain_english": "Task occ2-07 is finished and I am reporting the result now. Point 1: the policy loader reads the retention window from the policy file, and I am about 90 percent sure of this. The relevant lines are in crates/pi-coding-agent/src/core/occ/prune.rs, lines 96 to 140, read at revision ce8480d59. To be explicit about verification: the claim that the 90 day window is enforced by the prune tests is currently marked pass; the method was cargo_test and the receipt lives at reports/occ2-07-verify.txt.",
+    "payload": {
+      "task_id": "occ2-07",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-228",
+      "trace_id": "trace-occ2-07",
+      "sender_identity": "agent://worker-d",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the policy loader reads the retention window from the policy file",
+          "confidence": 0.9,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/occ/prune.rs",
+          "line_range": [
+            96,
+            140
+          ],
+          "revision": "ce8480d59"
+        }
+      ],
+      "artifacts": [],
+      "verification": {
+        "claim": "the 90 day window is enforced by the prune tests",
+        "status": "pass",
+        "method": "cargo_test",
+        "receipt": "reports/occ2-07-verify.txt"
+      },
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 3,
+      "timestamp": "2026-10-16T12:35:00Z"
+    }
+  },
+  {
+    "id": "c29",
+    "holdout": false,
+    "plain_english": "Task occ2-08 is a new assignment and is currently pending. Point 1: sign the OCC-2 artifacts for the internal registry. Next actions, in priority order: request vault approval; sign each artifact digest.",
+    "payload": {
+      "task_id": "occ2-08",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-229",
+      "trace_id": "trace-occ2-08",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-a",
+      "findings": [
+        {
+          "statement": "sign the OCC-2 artifacts for the internal registry",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "request vault approval",
+        "sign each artifact digest"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T10:46:00Z",
+      "expiry": "2026-10-19T10:46:00Z"
+    }
+  },
+  {
+    "id": "c30",
+    "holdout": false,
+    "plain_english": "Task occ2-08 is blocked and cannot proceed right now. Point 1: the signing key vault is sealed pending policy approval, and I am about 100 percent sure of this. The tool receipt lives at receipts/occ2-08-vault-status.txt. Point 2: no artifacts can be signed until the vault unseals. Next actions, in priority order: request vault approval from the release manager.",
+    "payload": {
+      "task_id": "occ2-08",
+      "kind": "BLOCKED",
+      "status": "blocked",
+      "message_id": "m-230",
+      "trace_id": "trace-occ2-08",
+      "sender_identity": "agent://worker-a",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the signing key vault is sealed pending policy approval",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        },
+        {
+          "statement": "no artifacts can be signed until the vault unseals",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "tool",
+          "locator": "receipts/occ2-08-vault-status.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "request vault approval from the release manager"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-16T11:39:00Z"
+    }
+  },
+  {
+    "id": "c31",
+    "holdout": false,
+    "plain_english": "Task occ2-08 was cancelled before completion. Point 1: artifact signing was cancelled; the registry now accepts unsigned internal builds, and I am about 90 percent sure of this. This is backed by commit c31e0a8b4, which I verified. Next actions, in priority order: archive the signing branch.",
+    "payload": {
+      "task_id": "occ2-08",
+      "kind": "CANCELLED",
+      "status": "cancelled",
+      "message_id": "m-231",
+      "trace_id": "trace-occ2-08",
+      "sender_identity": "agent://worker-a",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "artifact signing was cancelled; the registry now accepts unsigned internal builds",
+          "confidence": 0.9,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "commit",
+          "locator": "c31e0a8b4",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "archive the signing branch"
+      ],
+      "sequence": 3,
+      "timestamp": "2026-10-16T12:09:00Z"
+    }
+  },
+  {
+    "id": "c32",
+    "holdout": true,
+    "plain_english": "Task occ2-09 is a new assignment and is currently pending. Point 1: map the parity harness fields onto the telegram transport. Next actions, in priority order: list the 22 harness fields; write the mapping table.",
+    "payload": {
+      "task_id": "occ2-09",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-232",
+      "trace_id": "trace-occ2-09",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-e",
+      "findings": [
+        {
+          "statement": "map the parity harness fields onto the telegram transport",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "list the 22 harness fields",
+        "write the mapping table"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T10:44:00Z",
+      "parent_task_id": "t77"
+    }
+  },
+  {
+    "id": "c33",
+    "holdout": true,
+    "plain_english": "Task occ2-09 is in progress and this is an update. Point 1: the parity harness maps 18 of 22 fields, and I am about 70 percent sure of this. The supporting log is at logs/occ2-09-parity.log, though it has not been independently re-checked.",
+    "payload": {
+      "task_id": "occ2-09",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-233",
+      "trace_id": "trace-occ2-09",
+      "sender_identity": "agent://worker-e",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the parity harness maps 18 of 22 fields",
+          "confidence": 0.7,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ2-09-parity.log",
+          "verified": false
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 2,
+      "timestamp": "2026-10-16T11:32:00Z"
+    }
+  },
+  {
+    "id": "c34",
+    "holdout": true,
+    "plain_english": "Task occ2-09 needs additional detail from the peer. Point 1: request the upstream API changelog entries for the four unmapped fields. Next actions, in priority order: reply with the changelog links.",
+    "payload": {
+      "task_id": "occ2-09",
+      "kind": "REQUEST_DETAIL",
+      "status": "in_progress",
+      "message_id": "m-234",
+      "trace_id": "trace-occ2-09",
+      "sender_identity": "agent://worker-e",
+      "recipient_identity": "agent://worker-f",
+      "findings": [
+        {
+          "statement": "request the upstream API changelog entries for the four unmapped fields",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "reply with the changelog links"
+      ],
+      "sequence": 3,
+      "timestamp": "2026-10-16T11:45:00Z"
+    }
+  },
+  {
+    "id": "c35",
+    "holdout": true,
+    "plain_english": "Task occ2-09 was cancelled before completion. Point 1: parity work was cancelled because the upstream API changed, and I am about 90 percent sure of this. This is backed by commit 8c31d0af2, which I verified. Next actions, in priority order: archive the branch improve/telegram-parity.",
+    "payload": {
+      "task_id": "occ2-09",
+      "kind": "CANCELLED",
+      "status": "cancelled",
+      "message_id": "m-235",
+      "trace_id": "trace-occ2-09",
+      "sender_identity": "agent://worker-e",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "parity work was cancelled because the upstream API changed",
+          "confidence": 0.9,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "commit",
+          "locator": "8c31d0af2",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "archive the branch improve/telegram-parity"
+      ],
+      "sequence": 4,
+      "timestamp": "2026-10-16T11:55:00Z"
+    }
+  },
+  {
+    "id": "c36",
+    "holdout": false,
+    "plain_english": "Task occ2-10 is a new assignment and is currently pending. Point 1: investigate the reported race window in the session token refresh path. This work depended on t41 being finished first. Next actions, in priority order: read the refresh path; attempt a reproduction.",
+    "payload": {
+      "task_id": "occ2-10",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-236",
+      "trace_id": "trace-occ2-10",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-a",
+      "findings": [
+        {
+          "statement": "investigate the reported race window in the session token refresh path",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "t41"
+      ],
+      "next_actions": [
+        "read the refresh path",
+        "attempt a reproduction"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T11:04:00Z"
+    }
+  },
+  {
+    "id": "c37",
+    "holdout": false,
+    "plain_english": "Task occ2-10 is in progress and this is an update. Point 1: the refresh mutex is held across an await point, widening the race window, and I am about 75 percent sure of this. The relevant lines are in crates/pi-coding-agent/src/core/auth_storage.rs, lines 218 to 235, read at revision ce8480d59; the sha256 digest of the file is 0ec5bee4d4abaec6d8e81ebdd5c6b81ac6ecaab1330ed3dd6775f87250e267a0 and I confirmed the digest again after the run so the line numbers are trustworthy. Next actions, in priority order: write a stress reproduction.",
+    "payload": {
+      "task_id": "occ2-10",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-237",
+      "trace_id": "trace-occ2-10",
+      "sender_identity": "agent://worker-a",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the refresh mutex is held across an await point, widening the race window",
+          "confidence": 0.75,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/auth_storage.rs",
+          "line_range": [
+            218,
+            235
+          ],
+          "digest": "0ec5bee4d4abaec6d8e81ebdd5c6b81ac6ecaab1330ed3dd6775f87250e267a0",
+          "revision": "ce8480d59",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "write a stress reproduction"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-16T11:33:00Z"
+    }
+  },
+  {
+    "id": "c38",
+    "holdout": false,
+    "plain_english": "Task occ2-10 is finished and I am reporting the result now. Point 1: the race window is confirmed by reading but not reproducible with the current regression test, and I am about 90 percent sure of this. The relevant lines are in crates/pi-coding-agent/src/core/auth_storage.rs, lines 218 to 235, read at revision ce8480d59 and I confirmed the digest again after the run so the line numbers are trustworthy. The supporting log is at logs/occ2-10-refresh-stress.log, though it has not been independently re-checked. The artifacts produced are reports/occ2-10-race-window.md. To be explicit about verification: the claim that the refresh race reproduces under the existing regression test is currently marked fail; the method was cargo_test and the receipt lives at reports/occ2-10-verify.txt. Next actions, in priority order: inspect the mutex guarding refresh; add a regression test for concurrent refresh.",
+    "payload": {
+      "task_id": "occ2-10",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-238",
+      "trace_id": "trace-occ2-10",
+      "sender_identity": "agent://worker-a",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the race window is confirmed by reading but not reproducible with the current regression test",
+          "confidence": 0.9,
+          "evidence": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/auth_storage.rs",
+          "line_range": [
+            218,
+            235
+          ],
+          "revision": "ce8480d59",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "log",
+          "locator": "logs/occ2-10-refresh-stress.log",
+          "verified": false
+        }
+      ],
+      "artifacts": [
+        "reports/occ2-10-race-window.md"
+      ],
+      "verification": {
+        "claim": "the refresh race reproduces under the existing regression test",
+        "status": "fail",
+        "method": "cargo_test",
+        "receipt": "reports/occ2-10-verify.txt"
+      },
+      "dependencies": [],
+      "next_actions": [
+        "inspect the mutex guarding refresh",
+        "add a regression test for concurrent refresh"
+      ],
+      "sequence": 3,
+      "timestamp": "2026-10-16T11:38:00Z"
+    }
+  },
+  {
+    "id": "c39",
+    "holdout": true,
+    "plain_english": "Task occ2-11 is a new assignment and is currently pending. Point 1: raise the stress harness to 500 iterations per configuration. This work depended on occ2-10 being finished first. Next actions, in priority order: run the bad-interleaving configuration; keep the run log.",
+    "payload": {
+      "task_id": "occ2-11",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-239",
+      "trace_id": "trace-occ2-11",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-c",
+      "findings": [
+        {
+          "statement": "raise the stress harness to 500 iterations per configuration",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "occ2-10"
+      ],
+      "next_actions": [
+        "run the bad-interleaving configuration",
+        "keep the run log"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T11:17:00Z"
+    }
+  },
+  {
+    "id": "c40",
+    "holdout": true,
+    "plain_english": "Task occ2-11 is reported with evidence only and no new claims. The supporting log is at logs/occ2-11-stress-500.log and I re-checked it after the run. The build result is recorded at target/occ2-11-stress-build.txt.",
+    "payload": {
+      "task_id": "occ2-11",
+      "kind": "EVIDENCE",
+      "status": "done",
+      "message_id": "m-240",
+      "trace_id": "trace-occ2-11",
+      "sender_identity": "agent://worker-c",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ2-11-stress-500.log",
+          "verified": true
+        },
+        {
+          "id": "E2",
+          "kind": "build",
+          "locator": "target/occ2-11-stress-build.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 2,
+      "timestamp": "2026-10-16T11:31:00Z"
+    }
+  },
+  {
+    "id": "c41",
+    "holdout": true,
+    "plain_english": "Task occ2-11 is finished and I am reporting the result now. Point 1: the bad interleaving shows up twice in 500 iterations, and I am about 85 percent sure of this. The supporting log is at logs/occ2-11-stress-500.log and I re-checked it after the run. To be explicit about verification: the claim that the stress run completes within the latency budget is currently marked pass; the method was cargo_test and the receipt lives at reports/occ2-11-verify.txt.",
+    "payload": {
+      "task_id": "occ2-11",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-241",
+      "trace_id": "trace-occ2-11",
+      "sender_identity": "agent://worker-c",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the bad interleaving shows up twice in 500 iterations",
+          "confidence": 0.85,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ2-11-stress-500.log",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": {
+        "claim": "the stress run completes within the latency budget",
+        "status": "pass",
+        "method": "cargo_test",
+        "receipt": "reports/occ2-11-verify.txt"
+      },
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 3,
+      "timestamp": "2026-10-16T12:30:00Z"
+    }
+  },
+  {
+    "id": "c42",
+    "holdout": false,
+    "plain_english": "Task occ2-12 is a new assignment and is currently pending. Point 1: wire the fidelity metrics into the campaign dashboard. This work depended on occ2-04 being finished first. Next actions, in priority order: read the aggregate headline report; render per-split numbers.",
+    "payload": {
+      "task_id": "occ2-12",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-242",
+      "trace_id": "trace-occ2-12",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-f",
+      "findings": [
+        {
+          "statement": "wire the fidelity metrics into the campaign dashboard",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "occ2-04"
+      ],
+      "next_actions": [
+        "read the aggregate headline report",
+        "render per-split numbers"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T12:19:00Z"
+    }
+  },
+  {
+    "id": "c43",
+    "holdout": false,
+    "plain_english": "Task occ2-12 is in progress and this is an update. Point 1: the dashboard reads the aggregate headline report, and I am about 80 percent sure of this. The tool receipt lives at receipts/occ2-12-dashboard.txt.",
+    "payload": {
+      "task_id": "occ2-12",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-243",
+      "trace_id": "trace-occ2-12",
+      "sender_identity": "agent://worker-f",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the dashboard reads the aggregate headline report",
+          "confidence": 0.8,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "tool",
+          "locator": "receipts/occ2-12-dashboard.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 2,
+      "timestamp": "2026-10-16T13:23:00Z"
+    }
+  },
+  {
+    "id": "c44",
+    "holdout": false,
+    "plain_english": "Task occ2-12 has a correction to an earlier claim. Point 1: the dashboard showed pass counts, not assertion counts; the metric name is corrected, and I am about 90 percent sure of this. This follows from the earlier message m-243. Next actions, in priority order: rename the metric; backfill the last seven days.",
+    "payload": {
+      "task_id": "occ2-12",
+      "kind": "CORRECTION",
+      "status": "in_progress",
+      "message_id": "m-244",
+      "trace_id": "trace-occ2-12",
+      "sender_identity": "agent://worker-f",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the dashboard showed pass counts, not assertion counts; the metric name is corrected",
+          "confidence": 0.9,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "finding",
+          "locator": "m-243"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "rename the metric",
+        "backfill the last seven days"
+      ],
+      "sequence": 3,
+      "timestamp": "2026-10-16T14:31:00Z"
+    }
+  },
+  {
+    "id": "c45",
+    "holdout": false,
+    "plain_english": "Task occ2-12 is in progress and this is an update. Point 1: the corrected metric renders for both splits.",
+    "payload": {
+      "task_id": "occ2-12",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-245",
+      "trace_id": "trace-occ2-12",
+      "sender_identity": "agent://worker-f",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the corrected metric renders for both splits",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 4,
+      "timestamp": "2026-10-16T15:20:00Z"
+    }
+  },
+  {
+    "id": "c46",
+    "holdout": false,
+    "plain_english": "Task occ2-12 is finished and I am reporting the result now. Point 1: the dashboard now shows assertion counts per split, and I am about 90 percent sure of this. The exact change is pinned by line range 12 to 18 in reports/occ2-12-metrics.md. To be explicit about verification: the claim that the dashboard numbers match the fidelity suite output is currently marked pass; the method was digest_check and the receipt lives at receipts/occ2-12-digest.txt.",
+    "payload": {
+      "task_id": "occ2-12",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-246",
+      "trace_id": "trace-occ2-12",
+      "sender_identity": "agent://worker-f",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the dashboard now shows assertion counts per split",
+          "confidence": 0.9,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "lines",
+          "locator": "reports/occ2-12-metrics.md",
+          "line_range": [
+            12,
+            18
+          ]
+        }
+      ],
+      "artifacts": [],
+      "verification": {
+        "claim": "the dashboard numbers match the fidelity suite output",
+        "status": "pass",
+        "method": "digest_check",
+        "receipt": "receipts/occ2-12-digest.txt"
+      },
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 5,
+      "timestamp": "2026-10-16T15:30:00Z"
+    }
+  },
+  {
+    "id": "c47",
+    "holdout": false,
+    "plain_english": "Task occ2-13 is a new assignment and is currently pending. Point 1: migrate the OCC-1 regression gate to an isolated target directory. This work depended on occ2-03 being finished first. Next actions, in priority order: point CARGO_TARGET_DIR at the isolated directory; record pass and fail counts.",
+    "payload": {
+      "task_id": "occ2-13",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-247",
+      "trace_id": "trace-occ2-13",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-b",
+      "findings": [
+        {
+          "statement": "migrate the OCC-1 regression gate to an isolated target directory",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "occ2-03"
+      ],
+      "next_actions": [
+        "point CARGO_TARGET_DIR at the isolated directory",
+        "record pass and fail counts"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T11:56:00Z"
+    }
+  },
+  {
+    "id": "c48",
+    "holdout": false,
+    "plain_english": "Task occ2-13 is in progress and this is an update. Point 1: the gate now builds into the isolated target directory, and I am about 85 percent sure of this. The build result is recorded at target/occ2-13-gate-build.txt.",
+    "payload": {
+      "task_id": "occ2-13",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-248",
+      "trace_id": "trace-occ2-13",
+      "sender_identity": "agent://worker-b",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the gate now builds into the isolated target directory",
+          "confidence": 0.85,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "build",
+          "locator": "target/occ2-13-gate-build.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 2,
+      "timestamp": "2026-10-16T12:10:00Z"
+    }
+  },
+  {
+    "id": "c49",
+    "holdout": false,
+    "plain_english": "Task occ2-13 is finished and I am reporting the result now. Point 1: the gate runs green with 7 passed and 0 failed, and I am about 100 percent sure of this. The supporting log is at logs/occ2-13-gate-run.log and I re-checked it after the run. To be explicit about verification: the claim that the occ_comm_fidelity gate is green in the isolated target is currently marked pass; the method was cargo_test and the receipt lives at reports/occ2-13-verify.txt.",
+    "payload": {
+      "task_id": "occ2-13",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-249",
+      "trace_id": "trace-occ2-13",
+      "sender_identity": "agent://worker-b",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the gate runs green with 7 passed and 0 failed",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ2-13-gate-run.log",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": {
+        "claim": "the occ_comm_fidelity gate is green in the isolated target",
+        "status": "pass",
+        "method": "cargo_test",
+        "receipt": "reports/occ2-13-verify.txt"
+      },
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 3,
+      "timestamp": "2026-10-16T13:10:00Z"
+    }
+  },
+  {
+    "id": "c50",
+    "holdout": false,
+    "plain_english": "Task occ2-14 is a new assignment and is currently pending. Point 1: capture a flamegraph of the codec hot loop. Next actions, in priority order: profile encode and decode; store the svg artifact.",
+    "payload": {
+      "task_id": "occ2-14",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-250",
+      "trace_id": "trace-occ2-14",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-d",
+      "findings": [
+        {
+          "statement": "capture a flamegraph of the codec hot loop",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "profile encode and decode",
+        "store the svg artifact"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T12:49:00Z"
+    }
+  },
+  {
+    "id": "c51",
+    "holdout": false,
+    "plain_english": "Task occ2-14 is reported with evidence only and no new claims. The artifact at target/occ2-14-flamegraph.svg carries sha256 digest 1ffe8f28ed1ce65184a871b4efc4ada11d346e87926be5126c23c4fcfadcc63d. The relevant lines are in crates/pi-coding-agent/src/core/occ/occ1.rs, lines 122 to 180, read at revision ce8480d59. The artifacts produced are target/occ2-14-flamegraph.svg.",
+    "payload": {
+      "task_id": "occ2-14",
+      "kind": "EVIDENCE",
+      "status": "done",
+      "message_id": "m-251",
+      "trace_id": "trace-occ2-14",
+      "sender_identity": "agent://worker-d",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "artifact",
+          "locator": "target/occ2-14-flamegraph.svg",
+          "digest": "1ffe8f28ed1ce65184a871b4efc4ada11d346e87926be5126c23c4fcfadcc63d"
+        },
+        {
+          "id": "E2",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/occ/occ1.rs",
+          "line_range": [
+            122,
+            180
+          ],
+          "revision": "ce8480d59"
+        }
+      ],
+      "artifacts": [
+        "target/occ2-14-flamegraph.svg"
+      ],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 2,
+      "timestamp": "2026-10-16T13:49:00Z"
+    }
+  },
+  {
+    "id": "c52",
+    "holdout": false,
+    "plain_english": "Task occ2-14 is finished and I am reporting the result now. Point 1: the hot loop spends 62 percent of samples in digest verification, and I am about 70 percent sure of this. The artifact at target/occ2-14-flamegraph.svg was recorded. The relevant lines are in crates/pi-coding-agent/src/core/occ/occ1.rs, lines 122 to 180, read at revision ce8480d59. To be explicit about verification: the claim that the flamegraph attribute counts sum to the total samples is currently marked pass; the method was manual_review.",
+    "payload": {
+      "task_id": "occ2-14",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-252",
+      "trace_id": "trace-occ2-14",
+      "sender_identity": "agent://worker-d",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the hot loop spends 62 percent of samples in digest verification",
+          "confidence": 0.7,
+          "evidence": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "artifact",
+          "locator": "target/occ2-14-flamegraph.svg"
+        },
+        {
+          "id": "E2",
+          "kind": "src",
+          "locator": "crates/pi-coding-agent/src/core/occ/occ1.rs",
+          "line_range": [
+            122,
+            180
+          ],
+          "revision": "ce8480d59"
+        }
+      ],
+      "artifacts": [],
+      "verification": {
+        "claim": "the flamegraph attribute counts sum to the total samples",
+        "status": "pass",
+        "method": "manual_review"
+      },
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 3,
+      "timestamp": "2026-10-16T14:26:00Z"
+    }
+  },
+  {
+    "id": "c53",
+    "holdout": true,
+    "plain_english": "Task occ2-15 is a new assignment and is currently pending. Point 1: write the OCC-2 dialect specification draft. This work depended on occ2-01 being finished first. Next actions, in priority order: draft sections 1 through 6; leave the grammar section for review.",
+    "payload": {
+      "task_id": "occ2-15",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-253",
+      "trace_id": "trace-occ2-15",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-e",
+      "findings": [
+        {
+          "statement": "write the OCC-2 dialect specification draft",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "occ2-01"
+      ],
+      "next_actions": [
+        "draft sections 1 through 6",
+        "leave the grammar section for review"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T12:39:00Z"
+    }
+  },
+  {
+    "id": "c54",
+    "holdout": true,
+    "plain_english": "Task occ2-15 is in progress and this is an update. Point 1: sections 1 through 4 are drafted, and I am about 70 percent sure of this.",
+    "payload": {
+      "task_id": "occ2-15",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-254",
+      "trace_id": "trace-occ2-15",
+      "sender_identity": "agent://worker-e",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "sections 1 through 4 are drafted",
+          "confidence": 0.7,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 2,
+      "timestamp": "2026-10-16T12:48:00Z"
+    }
+  },
+  {
+    "id": "c55",
+    "holdout": true,
+    "plain_english": "Task occ2-15 is partially complete and scope remains. Point 1: the symbol table grammar section remains open pending the fallback design, and I am about 80 percent sure of this. The exact change is pinned by line range 88 to 121 in docs/occ2-dialect-spec.md. The artifacts produced are docs/occ2-dialect-spec.md. To be explicit about verification: the claim that the draft matches the implemented prototype is currently marked unknown; the method was manual_review. Next actions, in priority order: close the grammar section after the fallback lands.",
+    "payload": {
+      "task_id": "occ2-15",
+      "kind": "RESULT",
+      "status": "partial",
+      "message_id": "m-255",
+      "trace_id": "trace-occ2-15",
+      "sender_identity": "agent://worker-e",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the symbol table grammar section remains open pending the fallback design",
+          "confidence": 0.8,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "lines",
+          "locator": "docs/occ2-dialect-spec.md",
+          "line_range": [
+            88,
+            121
+          ]
+        }
+      ],
+      "artifacts": [
+        "docs/occ2-dialect-spec.md"
+      ],
+      "verification": {
+        "claim": "the draft matches the implemented prototype",
+        "status": "unknown",
+        "method": "manual_review"
+      },
+      "dependencies": [],
+      "next_actions": [
+        "close the grammar section after the fallback lands"
+      ],
+      "sequence": 3,
+      "timestamp": "2026-10-16T13:44:00Z"
+    }
+  },
+  {
+    "id": "c56",
+    "holdout": false,
+    "plain_english": "Task occ2-16 is a new assignment and is currently pending. Point 1: map the cross-task dependencies for the campaign. Next actions, in priority order: list every task and its declared deps; render the graph.",
+    "payload": {
+      "task_id": "occ2-16",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-256",
+      "trace_id": "trace-occ2-16",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-d",
+      "findings": [
+        {
+          "statement": "map the cross-task dependencies for the campaign",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "list every task and its declared deps",
+        "render the graph"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T12:44:00Z"
+    }
+  },
+  {
+    "id": "c57",
+    "holdout": false,
+    "plain_english": "Task occ2-16 finished unsuccessfully and I am reporting that now. Point 1: the dependency graph has 20 nodes and 31 edges, but the ledger lists 33 edges, and I am about 90 percent sure of this. The supporting log is at logs/occ2-16-depmap.log, though it has not been independently re-checked. The artifacts produced are reports/occ2-16-depmap.md. To be explicit about verification: the claim that the dependency graph matches the campaign ledger is currently marked fail; the method was manual_review and the receipt lives at reports/occ2-16-verify.txt. Next actions, in priority order: reconcile the two missing edges with the ledger.",
+    "payload": {
+      "task_id": "occ2-16",
+      "kind": "RESULT",
+      "status": "failed",
+      "message_id": "m-257",
+      "trace_id": "trace-occ2-16",
+      "sender_identity": "agent://worker-d",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the dependency graph has 20 nodes and 31 edges, but the ledger lists 33 edges",
+          "confidence": 0.9,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ2-16-depmap.log",
+          "verified": false
+        }
+      ],
+      "artifacts": [
+        "reports/occ2-16-depmap.md"
+      ],
+      "verification": {
+        "claim": "the dependency graph matches the campaign ledger",
+        "status": "fail",
+        "method": "manual_review",
+        "receipt": "reports/occ2-16-verify.txt"
+      },
+      "dependencies": [],
+      "next_actions": [
+        "reconcile the two missing edges with the ledger"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-16T13:11:00Z"
+    }
+  },
+  {
+    "id": "c58",
+    "holdout": true,
+    "plain_english": "Task occ2-17 is a new assignment and is currently pending. Point 1: run the dialect rollback drill on the staging gateway. Next actions, in priority order: confirm the staging window; measure the rollback time.",
+    "payload": {
+      "task_id": "occ2-17",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-258",
+      "trace_id": "trace-occ2-17",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-f",
+      "findings": [
+        {
+          "statement": "run the dialect rollback drill on the staging gateway",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "confirm the staging window",
+        "measure the rollback time"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T12:41:00Z",
+      "parent_task_id": "t77",
+      "expiry": "2026-10-19T12:41:00Z"
+    }
+  },
+  {
+    "id": "c59",
+    "holdout": true,
+    "plain_english": "Task occ2-17 is blocked and cannot proceed right now. Point 1: the drill needs the staging gateway, which is under maintenance, and I am about 100 percent sure of this. The tool receipt lives at receipts/occ2-17-staging-status.txt. Next actions, in priority order: hold the drill until the maintenance ends.",
+    "payload": {
+      "task_id": "occ2-17",
+      "kind": "BLOCKED",
+      "status": "blocked",
+      "message_id": "m-259",
+      "trace_id": "trace-occ2-17",
+      "sender_identity": "agent://worker-f",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the drill needs the staging gateway, which is under maintenance",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "tool",
+          "locator": "receipts/occ2-17-staging-status.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "hold the drill until the maintenance ends"
+      ],
+      "sequence": 2,
+      "timestamp": "2026-10-16T13:40:00Z"
+    }
+  },
+  {
+    "id": "c60",
+    "holdout": true,
+    "plain_english": "Task occ2-17 is acknowledged: receipt of the earlier message is confirmed. Point 1: receipt of the blocked report is confirmed; the drill stays on hold, and I am about 100 percent sure of this. This follows from the earlier message m-258.",
+    "payload": {
+      "task_id": "occ2-17",
+      "kind": "ACK",
+      "status": "done",
+      "message_id": "m-260",
+      "trace_id": "trace-occ2-17",
+      "sender_identity": "agent://worker-f",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "receipt of the blocked report is confirmed; the drill stays on hold",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "finding",
+          "locator": "m-258"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 3,
+      "timestamp": "2026-10-16T14:31:00Z"
+    }
+  },
+  {
+    "id": "c61",
+    "holdout": true,
+    "plain_english": "Task occ2-17 was cancelled before completion. Point 1: the drill is cancelled; the staging window closed before maintenance ended, and I am about 90 percent sure of this. This is backed by commit e04b7c911, which I verified.",
+    "payload": {
+      "task_id": "occ2-17",
+      "kind": "CANCELLED",
+      "status": "cancelled",
+      "message_id": "m-261",
+      "trace_id": "trace-occ2-17",
+      "sender_identity": "agent://worker-f",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the drill is cancelled; the staging window closed before maintenance ended",
+          "confidence": 0.9,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "commit",
+          "locator": "e04b7c911",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 4,
+      "timestamp": "2026-10-16T14:53:00Z"
+    }
+  },
+  {
+    "id": "c62",
+    "holdout": false,
+    "plain_english": "Task occ2-18 is a new assignment and is currently pending. Point 1: run the compression benchmark on the second gateway fleet. This work depended on occ2-04 being finished first. Next actions, in priority order: clone the harness config; compare with fleet one.",
+    "payload": {
+      "task_id": "occ2-18",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-262",
+      "trace_id": "trace-occ2-18",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://worker-c",
+      "findings": [
+        {
+          "statement": "run the compression benchmark on the second gateway fleet",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [
+        "occ2-04"
+      ],
+      "next_actions": [
+        "clone the harness config",
+        "compare with fleet one"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T13:45:00Z"
+    }
+  },
+  {
+    "id": "c63",
+    "holdout": false,
+    "plain_english": "Task occ2-18 is in progress and this is an update. Point 1: fleet two runs the same 100-iteration harness, and I am about 80 percent sure of this. The tool receipt lives at receipts/occ2-18-fleet2.txt.",
+    "payload": {
+      "task_id": "occ2-18",
+      "kind": "PROGRESS",
+      "status": "in_progress",
+      "message_id": "m-263",
+      "trace_id": "trace-occ2-18",
+      "sender_identity": "agent://worker-c",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "fleet two runs the same 100-iteration harness",
+          "confidence": 0.8,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "tool",
+          "locator": "receipts/occ2-18-fleet2.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 2,
+      "timestamp": "2026-10-16T13:57:00Z"
+    }
+  },
+  {
+    "id": "c64",
+    "holdout": false,
+    "plain_english": "Task occ2-18 is finished and I am reporting the result now. Point 1: savings hold within one percent of fleet one, and I am about 90 percent sure of this. The supporting log is at logs/occ2-18-fleet2.log and I re-checked it after the run. To be explicit about verification: the claim that fleet two reproduces the fleet one savings is currently marked pass; the method was bench_harness and the receipt lives at receipts/occ2-18-bench.txt.",
+    "payload": {
+      "task_id": "occ2-18",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-264",
+      "trace_id": "trace-occ2-18",
+      "sender_identity": "agent://worker-c",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "savings hold within one percent of fleet one",
+          "confidence": 0.9,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "log",
+          "locator": "logs/occ2-18-fleet2.log",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": {
+        "claim": "fleet two reproduces the fleet one savings",
+        "status": "pass",
+        "method": "bench_harness",
+        "receipt": "receipts/occ2-18-bench.txt"
+      },
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 3,
+      "timestamp": "2026-10-16T14:26:00Z"
+    }
+  },
+  {
+    "id": "c65",
+    "holdout": false,
+    "plain_english": "Task occ2-19 is a new assignment and is currently pending. Point 1: audit the verification receipts of the campaign so far. Next actions, in priority order: list every receipt path; spot-check five receipts.",
+    "payload": {
+      "task_id": "occ2-19",
+      "kind": "TASK",
+      "status": "pending",
+      "message_id": "m-265",
+      "trace_id": "trace-occ2-19",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://security-auditor",
+      "findings": [
+        {
+          "statement": "audit the verification receipts of the campaign so far",
+          "confidence": null,
+          "evidence": []
+        }
+      ],
+      "evidence": [],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "list every receipt path",
+        "spot-check five receipts"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T13:23:00Z"
+    }
+  },
+  {
+    "id": "c66",
+    "holdout": false,
+    "plain_english": "Task occ2-19 is reported with evidence only and no new claims. This follows from the earlier message m-265. The tool receipt lives at receipts/occ2-19-audit-run.txt.",
+    "payload": {
+      "task_id": "occ2-19",
+      "kind": "EVIDENCE",
+      "status": "done",
+      "message_id": "m-266",
+      "trace_id": "trace-occ2-19",
+      "sender_identity": "agent://security-auditor",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "finding",
+          "locator": "m-265"
+        },
+        {
+          "id": "E2",
+          "kind": "tool",
+          "locator": "receipts/occ2-19-audit-run.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 2,
+      "timestamp": "2026-10-16T14:20:00Z"
+    }
+  },
+  {
+    "id": "c67",
+    "holdout": false,
+    "plain_english": "Task occ2-19 is acknowledged: receipt of the earlier message is confirmed. Point 1: receipt of the audit plan is confirmed, and I am about 100 percent sure of this. This follows from the earlier message m-265. Next actions, in priority order: deliver the audit table by Friday.",
+    "payload": {
+      "task_id": "occ2-19",
+      "kind": "ACK",
+      "status": "done",
+      "message_id": "m-267",
+      "trace_id": "trace-occ2-19",
+      "sender_identity": "daemon://coordinator",
+      "recipient_identity": "agent://security-auditor",
+      "findings": [
+        {
+          "statement": "receipt of the audit plan is confirmed",
+          "confidence": 1.0,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "finding",
+          "locator": "m-265"
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "deliver the audit table by Friday"
+      ],
+      "sequence": 3,
+      "timestamp": "2026-10-16T15:09:00Z"
+    }
+  },
+  {
+    "id": "c68",
+    "holdout": false,
+    "plain_english": "Task occ2-19 is finished and I am reporting the result now. Point 1: all 16 verification receipts resolve; three spot-checks matched byte for byte, and I am about 95 percent sure of this. The tool receipt lives at receipts/occ2-19-audit-run.txt. The artifacts produced are reports/occ2-19-receipt-audit.md. To be explicit about verification: the claim that every receipt path in the corpus resolves on disk is currently marked pass; the method was manual_review.",
+    "payload": {
+      "task_id": "occ2-19",
+      "kind": "RESULT",
+      "status": "done",
+      "message_id": "m-268",
+      "trace_id": "trace-occ2-19",
+      "sender_identity": "agent://security-auditor",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "all 16 verification receipts resolve; three spot-checks matched byte for byte",
+          "confidence": 0.95,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "tool",
+          "locator": "receipts/occ2-19-audit-run.txt",
+          "verified": true
+        }
+      ],
+      "artifacts": [
+        "reports/occ2-19-receipt-audit.md"
+      ],
+      "verification": {
+        "claim": "every receipt path in the corpus resolves on disk",
+        "status": "pass",
+        "method": "manual_review"
+      },
+      "dependencies": [],
+      "next_actions": [],
+      "sequence": 4,
+      "timestamp": "2026-10-16T15:49:00Z"
+    }
+  },
+  {
+    "id": "c69",
+    "holdout": true,
+    "plain_english": "Task occ2-20 was cancelled before completion. Point 1: the archive sweep was cancelled; retention now covers the same ground, and I am about 90 percent sure of this. This is backed by commit 5d90cc3aa, which I verified. Next actions, in priority order: drop the sweep from the campaign board.",
+    "payload": {
+      "task_id": "occ2-20",
+      "kind": "CANCELLED",
+      "status": "cancelled",
+      "message_id": "m-269",
+      "trace_id": "trace-occ2-20",
+      "sender_identity": "agent://worker-b",
+      "recipient_identity": "daemon://coordinator",
+      "findings": [
+        {
+          "statement": "the archive sweep was cancelled; retention now covers the same ground",
+          "confidence": 0.9,
+          "evidence": [
+            "E1"
+          ]
+        }
+      ],
+      "evidence": [
+        {
+          "id": "E1",
+          "kind": "commit",
+          "locator": "5d90cc3aa",
+          "verified": true
+        }
+      ],
+      "artifacts": [],
+      "verification": null,
+      "dependencies": [],
+      "next_actions": [
+        "drop the sweep from the campaign board"
+      ],
+      "sequence": 1,
+      "timestamp": "2026-10-16T13:55:00Z"
+    }
+  }
+]

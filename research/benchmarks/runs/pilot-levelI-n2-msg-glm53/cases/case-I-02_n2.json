@@ -1,0 +1,67 @@
+{
+  "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-02_n2.json",
+  "protocol": "msg",
+  "model": "glm-5.3",
+  "comm_mode": "occ0_plain_english",
+  "case_dir": "C:\\Users\\openclawuser\\optimus-occ23-20261016\\research\\benchmarks\\runs\\pilot-levelI-n2-msg-glm53\\workspace\\I-02_p2p_glm-5.3_20261016041905",
+  "status": "completed",
+  "elapsed_s": 53.83,
+  "error": null,
+  "llm_transport": "gateway+content-reconstruction-proxy",
+  "official": {
+    "case_id": "I-02",
+    "case_name": "Word Frequency",
+    "paradigm": "Paradigm I",
+    "num_agents": 2,
+    "max_rounds": 20,
+    "rounds_executed": 9,
+    "execution_status": "completed",
+    "total_input_tokens": 24936,
+    "total_output_tokens": 3049,
+    "all_submitted": true,
+    "metrics": {
+      "S_success_rate": 1.0,
+      "P_partial_correctness": 1.0,
+      "C_token_consumption": 3109.4444444444,
+      "D_communication_density": 2.0,
+      "success_rate": 1.0,
+      "partial_correctness": 1.0,
+      "token_consumption": 3109.4444444444,
+      "communication_density": 2.0
+    },
+    "ground_truth": [
+      14,
+      14
+    ],
+    "submissions": [
+      {
+        "agent_id": 0,
+        "answer": 14,
+        "correct": true,
+        "round": 9
+      },
+      {
+        "agent_id": 1,
+        "answer": 14,
+        "correct": true,
+        "round": 9
+      }
+    ],
+    "success": true
+  },
+  "adapter": {
+    "llm_calls": 18,
+    "prompt_tokens_sum": 24936,
+    "output_tokens_sum": 3049,
+    "output_tokens_caveat": "gateway usage.completion_tokens includes hidden reasoning tokens; prompt_tokens are the real server-side count of what was sent",
+    "llm_latency_s": {
+      "mean": 2.933,
+      "p50": 2.549,
+      "p95": 5.163,
+      "max": 6.069
+    },
+    "inter_agent_messages": 4,
+    "inter_agent_message_payload_bytes": 665,
+    "inter_agent_message_file_bytes": 1049
+  }
+}
