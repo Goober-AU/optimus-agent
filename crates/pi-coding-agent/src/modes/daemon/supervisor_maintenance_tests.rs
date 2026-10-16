@@ -279,6 +279,89 @@ async fn nine_supervisor_dead_pid_only_orphans_are_nothing_to_reap() {
     assert!(!side.exists(), "nothing was unproven, so no side record is written");
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn nine_supervisor_foreign_owner_dead_records_are_nothing_to_reap() {
+    let fixture = SupervisorFixture::new("nine-orphan-foreign-dead").await;
+    let worker = dead_worker(&fixture, "dead");
+    let journal = fixture.root.join("orphans.jsonl");
+    // The journal is keyed by worker id and outlives the generations that wrote
+    // it, and sub-agent children inherit the journal path through the
+    // environment, so records owned by other pids are routine. A foreign record
+    // whose tracked process is provably gone is inert - a dead pid is nothing to
+    // reap, so the stop must not park on it. An inactive foreign record naming a
+    // live pid is equally inert: its owner already retired it.
+    let test_pid = std::process::id() as i64;
+    std::fs::write(&journal, format!("{}\n{}\n{}\n",
+        json!({"version":1,"ownerPid":4242i64,"pid":999_999_999i64,"active":true,"recordedAt":"now"}),
+        json!({"version":1,"ownerPid":4242i64,"pid":test_pid,"active":false,"recordedAt":"now"}),
+        json!({"version":1,"ownerPid":i32::MAX as i64,"pid":999_999_998i64,"active":true,"recordedAt":"now"}),
+    )).unwrap();
+    worker.descriptor.lock().unwrap().orphan_process_journal_path = Some(journal.to_string_lossy().into_owned());
+    fixture.supervisor.recover_uncertain_worker_operations(&worker).await.unwrap();
+    assert!(!journal.exists(), "inert foreign records are cleared with the journal");
+    let side = fixture.supervisor.descriptor_dir.join("dead.orphans.unreapable.jsonl");
+    assert!(!side.exists(), "nothing was unproven, so no side record is written");
+}
+
+#[cfg(windows)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn nine_supervisor_foreign_owner_live_orphans_are_deferred_not_failed() {
+    let fixture = SupervisorFixture::new("nine-orphan-foreign-defer").await;
+    let worker = dead_worker(&fixture, "dead");
+    let journal = fixture.root.join("orphans.jsonl");
+    // A foreign pid-only record naming the still-live test process: the stop
+    // must neither fail nor kill by bare pid; the uncertainty is superseded into
+    // the bounded side record, exactly like an owned unproven record.
+    let test_pid = std::process::id() as i64;
+    std::fs::write(&journal, format!("{}\n", json!({"version":1,"ownerPid":4242i64,"pid":test_pid,"active":true,"recordedAt":"now"}))).unwrap();
+    worker.descriptor.lock().unwrap().orphan_process_journal_path = Some(journal.to_string_lossy().into_owned());
+    fixture.supervisor.recover_uncertain_worker_operations(&worker).await.unwrap();
+    assert!(!journal.exists(), "the journal is superseded after a successful recovery");
+    let side = fixture.supervisor.descriptor_dir.join("dead.orphans.unreapable.jsonl");
+    let side_text = std::fs::read_to_string(&side).expect("deferred orphan side record");
+    assert!(side_text.contains(&test_pid.to_string()), "{side_text}");
+    assert!(side_text.contains("could not prove the live pid is the journaled process"), "{side_text}");
+    assert!(is_stopping_process_alive(&ProcessIdentity { pid: test_pid, process_start_id: None }), "the unproven pid must never be killed");
+}
+
+#[cfg(windows)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn nine_supervisor_foreign_owner_recycled_pid_is_nothing_to_reap() {
+    let fixture = SupervisorFixture::new("nine-orphan-foreign-recycled").await;
+    let worker = dead_worker(&fixture, "dead");
+    let journal = fixture.root.join("orphans.jsonl");
+    // A foreign record with a recorded start id that no longer matches the live
+    // pid: the journaled process is provably gone (the pid moved on), so the
+    // record is inert even though the pid is alive - and never killed.
+    let test_pid = std::process::id() as i64;
+    std::fs::write(&journal, format!("{}\n", json!({"version":1,"ownerPid":4242i64,"pid":test_pid,"processStartId":"not-this-generation","active":true,"recordedAt":"now"}))).unwrap();
+    worker.descriptor.lock().unwrap().orphan_process_journal_path = Some(journal.to_string_lossy().into_owned());
+    fixture.supervisor.recover_uncertain_worker_operations(&worker).await.unwrap();
+    assert!(!journal.exists(), "a provably gone journaled process is cleared with the journal");
+    let side = fixture.supervisor.descriptor_dir.join("dead.orphans.unreapable.jsonl");
+    assert!(!side.exists(), "the recycled pid was never this stop's to judge as unproven");
+    assert!(is_stopping_process_alive(&ProcessIdentity { pid: test_pid, process_start_id: None }), "the live pid must never be killed");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn nine_supervisor_corrupt_orphan_records_still_park_cleanup() {
+    let fixture = SupervisorFixture::new("nine-orphan-corrupt").await;
+    let worker = dead_worker(&fixture, "dead");
+    let journal = fixture.root.join("orphans.jsonl");
+    worker.descriptor.lock().unwrap().orphan_process_journal_path = Some(journal.to_string_lossy().into_owned());
+    // Corruption is judged before ownership: an unknown version or a
+    // non-positive pid parks the stop regardless of who wrote the record.
+    for bytes in [
+        format!("{}\n", json!({"version":2,"ownerPid":4242i64,"pid":999_999_999i64,"active":true,"recordedAt":"now"})),
+        format!("{}\n", json!({"version":1,"ownerPid":i32::MAX as i64,"pid":0i64,"active":true,"recordedAt":"now"})),
+    ] {
+        std::fs::write(&journal, &bytes).unwrap();
+        let error = fixture.supervisor.recover_uncertain_worker_operations(&worker).await.unwrap_err();
+        assert!(error.contains("Unverified orphan record"), "{error}");
+        assert_eq!(std::fs::read_to_string(&journal).unwrap(), bytes);
+    }
+}
+
 #[cfg(windows)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn nine_supervisor_dead_pid_with_recorded_start_id_is_nothing_to_reap() {
