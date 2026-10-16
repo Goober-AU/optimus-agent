@@ -18,6 +18,7 @@ use crate::core::memory::evidence::{
 use crate::core::memory::jobs::MemoryExtractor;
 use crate::core::memory::extraction::completion_fn_for;
 use crate::core::memory::service::MemoryService;
+use crate::core::memory::store::RecallFusion;
 use crate::core::messages::without_harness_digests_for_compaction;
 use crate::core::refinement::refinement::{
     get_local_harness_state_dir, load_harness_state, plan_refinement, HarnessScope,
@@ -391,7 +392,32 @@ fn recall_expansion_queries(text: &str, draws: usize) -> Option<Vec<String>> {
 /// corpora): keep the maximum score, union the matched terms, and rank by
 /// that maximum score. The stable sort keeps first-seen order on ties, so the
 /// original query's ranking wins among equal scores.
+/// Reciprocal Rank Fusion constant (G1, `recallFusion: "rrf"`): the standard
+/// k from the RRF paper and the TencentDB retrieval stack. Higher k flattens
+/// the per-rank contribution (more weight on lower ranks); the value is fixed
+/// by design: fusion modes are compared, never a tuned constant.
+const RRF_K: f64 = 60.0;
+
+/// Merge the per-query hit lists (original query, angle queries, BM25 leg)
+/// into one ranking. `RecallFusion::Off` keeps the historical per-entry
+/// maximum-score merge byte-identically; `RecallFusion::Rrf` fuses the lists
+/// with unweighted Reciprocal Rank Fusion.
 fn merge_recall_hits(
+    per_query: Vec<Vec<crate::core::memory::search::MemoryHit>>,
+    fusion: crate::core::memory::store::RecallFusion,
+) -> Vec<crate::core::memory::search::MemoryHit> {
+    match fusion {
+        crate::core::memory::store::RecallFusion::Off => {
+            merge_recall_hits_max(per_query)
+        }
+        crate::core::memory::store::RecallFusion::Rrf => rrf_merge_recall_hits(per_query, RRF_K),
+    }
+}
+
+/// The historical merge: per-entry maximum score across lists, matched terms
+/// unioned in first-seen order, stable sort by score (ties keep first-seen
+/// order). Unchanged from the pre-fusion implementation.
+fn merge_recall_hits_max(
     per_query: Vec<Vec<crate::core::memory::search::MemoryHit>>,
 ) -> Vec<crate::core::memory::search::MemoryHit> {
     let mut merged: Vec<crate::core::memory::search::MemoryHit> = Vec::new();
@@ -429,6 +455,75 @@ fn merge_recall_hits(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
     merged
+}
+
+/// Reciprocal Rank Fusion over the per-query hit lists: each list contributes
+/// `1/(k + rank + 1)` per entry (0-based rank, k constant, unweighted), an
+/// entry present in several lists sums its contributions, and the merged
+/// ranking sorts by the fused score. Consensus across independent query angles
+/// beats a single list's top position once two lists agree mid-rank - exactly
+/// the signal the max-score merge discards. Entry identity is the same
+/// `(id, title, content)` triple the max merge keys on; `matched` terms union
+/// for provenance. The fused score replaces each hit's lexical score (it is
+/// order, not magnitude, that downstream consumers use). Ties break by newest
+/// `created_at` first (the corpus search discipline), then id ascending, so
+/// the output is fully deterministic.
+fn rrf_merge_recall_hits(
+    per_query: Vec<Vec<crate::core::memory::search::MemoryHit>>,
+    k: f64,
+) -> Vec<crate::core::memory::search::MemoryHit> {
+    let mut merged: Vec<crate::core::memory::search::MemoryHit> = Vec::new();
+    let mut fused: Vec<f64> = Vec::new();
+    let mut index: HashMap<(String, String, String), usize> = HashMap::new();
+    for hits in per_query {
+        for (rank, hit) in hits.into_iter().enumerate() {
+            let key = (
+                hit.id.clone(),
+                hit.entry.title.clone(),
+                hit.entry.content.clone(),
+            );
+            let contribution = 1.0 / (k + rank as f64 + 1.0);
+            match index.get(&key) {
+                Some(&position) => {
+                    fused[position] += contribution;
+                    let target = &mut merged[position];
+                    for term in hit.matched {
+                        if !target.matched.contains(&term) {
+                            target.matched.push(term);
+                        }
+                    }
+                }
+                None => {
+                    index.insert(key, merged.len());
+                    merged.push(hit);
+                    fused.push(contribution);
+                }
+            }
+        }
+    }
+    let mut zipped: Vec<(crate::core::memory::search::MemoryHit, f64)> =
+        merged.into_iter().zip(fused.into_iter()).collect();
+    zipped.sort_by(|(left_hit, left_score), (right_hit, right_score)| {
+        right_score
+            .partial_cmp(left_score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            // Latest-wins tie-break, the corpus search discipline, then id
+            // ascending for full determinism.
+            .then_with(|| {
+                right_hit
+                    .entry
+                    .created_at
+                    .cmp(&left_hit.entry.created_at)
+            })
+            .then_with(|| left_hit.id.cmp(&right_hit.id))
+    });
+    zipped
+        .into_iter()
+        .map(|(mut hit, score)| {
+            hit.score = score;
+            hit
+        })
+        .collect()
 }
 
 pub const MEMORY_CONTROL_CUSTOM_TYPE: &str = "prime-agent.memory-control";
@@ -921,6 +1016,19 @@ fn create_memory_extension_impl(
                     let normal_key = key.clone();
                     let normal_angles = expansion_angles;
                     let rerank_enabled = settings.recall_rerank;
+                    // G1/G2: the fusion mode and the BM25 leg gate are fixed
+                    // per turn from the settings snapshot; both ride in the
+                    // recall cache key already (settings are serialized into
+                    // it), so a flag change re-runs the search.
+                    let fusion = settings.recall_fusion;
+                    let bm25_leg = crate::core::memory::store::recall_bm25_leg_active(
+                        settings.recall_fusion,
+                        settings.recall_bm25,
+                    );
+                    // Technique C: the persona floor flags, captured before
+                    // the recall worker future moves the settings object.
+                    let persona_layer = settings.persona_layer;
+                    let persona_snapshot_chars = settings.persona_snapshot_chars;
                     let rerank_ctx = ctx.clone();
                     let normal = async move {
                         match cached {
@@ -939,16 +1047,26 @@ fn create_memory_extension_impl(
                                             Vec::new()
                                         } else {
                                             // The original query plus one search per
-                                            // angle; the merge keeps the best score
-                                            // per entry so angle-only gold entries
-                                            // can surface above weaker lexical hits.
-                                            let mut per_query =
-                                                Vec::with_capacity(1 + angle_queries.len());
+                                            // angle, plus the optional BM25 leg per
+                                            // query (G2). Off-fusion keeps the
+                                            // historical per-entry max merge; RRF
+                                            // fuses every list's ranks so angle-only
+                                            // gold entries surface by consensus
+                                            // instead of a single list position.
+                                            let mut per_query = Vec::with_capacity(
+                                                (1 + angle_queries.len()) * if bm25_leg { 2 } else { 1 },
+                                            );
                                             per_query.push(normal_memory.search(&normal_query, false));
+                                            if bm25_leg {
+                                                per_query.push(normal_memory.search_bm25(&normal_query, false));
+                                            }
                                             for angle in &angle_queries {
                                                 per_query.push(normal_memory.search(angle, false));
+                                                if bm25_leg {
+                                                    per_query.push(normal_memory.search_bm25(angle, false));
+                                                }
                                             }
-                                            merge_recall_hits(per_query)
+                                            merge_recall_hits(per_query, fusion)
                                         }
                                     })
                                     .await
@@ -1121,11 +1239,33 @@ fn create_memory_extension_impl(
                         if filtered.len() == baseline.hits.len() { baseline.recalled.clone() }
                         else { Arc::new(memory.render_recall(&filtered)) }
                     };
-                    if !recalled.text.is_empty() {
+                    // Technique C: the deterministic persona snapshot rides
+                    // the recall message as a stable header — cache-stable
+                    // position, independent of lexical match (the floor).
+                    // `persona_floor` never touches the filesystem when the
+                    // layer is disabled, so flag-off output stays
+                    // byte-identical; a missing or corrupt snapshot is
+                    // regenerated here (technique D cold-start/recovery
+                    // path).
+                    let persona = {
+                        let memory = memory.clone();
+                        tokio::task::spawn_blocking(move || {
+                            crate::core::memory::persona::persona_floor(
+                                &memory.store,
+                                persona_layer,
+                                persona_snapshot_chars,
+                            )
+                        })
+                        .await
+                        .map_err(|_| "Memory recall worker failed".to_string())?
+                    };
+                    let note_text =
+                        crate::core::memory::persona::attach_floor(&persona.prefix, &recalled.text);
+                    if !note_text.is_empty() {
                         let note: AgentMessage =
                             AgentMessage::Custom(pi_agent_core::types::CustomAgentMessage::Custom {
                                 custom_type: MEMORY_RECALL_TYPE.to_string(),
-                                content: pi_agent_core::types::CustomMessageContent::Text(recalled.text.clone()),
+                                content: pi_agent_core::types::CustomMessageContent::Text(note_text),
                                 display: false,
                                 details: Some(serde_json::json!({ "ids": recalled.ids })),
                                 timestamp: user_timestamp(&user).map(|value| value as i64).unwrap_or(0),
@@ -1146,6 +1286,16 @@ fn create_memory_extension_impl(
                             "ids": recalled.ids,
                             "chars": recalled.chars,
                             "cacheHit": cache_hit,
+                            // G1/G2 experiment observability: which fusion
+                            // mode and whether the BM25 leg contributed lists.
+                            "fusion": fusion.as_str(),
+                            "bm25Leg": bm25_leg,
+                            // Technique C observability: floor status and
+                            // injected character count.
+                            "persona": {
+                                "status": persona.status,
+                                "chars": persona.prefix.chars().count(),
+                            },
                             "recallHelpers": {
                                 "queryDistillation": distillation_report,
                                 "queryExpansion": expansion_report,
@@ -1355,6 +1505,12 @@ fn create_memory_extension_impl(
                 if edits.is_empty() {
                     return None;
                 }
+                // Technique D: event-driven regeneration after a
+                // persona-claim promotion (exact change detection, not a
+                // count threshold).
+                let persona_touch = edits.iter().any(|edit| {
+                    crate::core::memory::persona::edit_marks_persona_claim(edit)
+                });
                 let proposal = RefinementProposal {
                     summary: payload.summary.clone(),
                     rationale: format!("Project facts from {}", payload.id),
@@ -1380,6 +1536,21 @@ fn create_memory_extension_impl(
                             "operation": "promote",
                             "status": "conflict",
                             "refinementId": payload.id,
+                        }),
+                    );
+                } else if persona_touch && memory.store.settings().persona_layer {
+                    // Technique D: the promotion applied persona claims, so
+                    // regenerate the snapshot floor. Failure is non-fatal
+                    // and reported; the sidecar only advances on success.
+                    let report = crate::core::memory::persona::regenerate(
+                        &memory.store,
+                        memory.store.settings().persona_snapshot_chars,
+                    );
+                    diagnostic(
+                        &pi,
+                        serde_json::json!({
+                            "operation": "personaSnapshot",
+                            "report": report,
                         }),
                     );
                 }
@@ -1730,7 +1901,7 @@ mod tests {
             lexical_hit("project:memory:beta", "quasar beta", "backup design", 0.9, vec!["nebula"]),
             lexical_hit("project:memory:gamma", "nebula gamma", "gold event", 0.5, vec!["nebula"]),
         ];
-        let merged = merge_recall_hits(vec![original, angle]);
+        let merged = merge_recall_hits(vec![original, angle], RecallFusion::Off);
         let ids: Vec<&str> = merged.iter().map(|hit| hit.id.as_str()).collect();
         assert_eq!(
             ids,
@@ -1748,7 +1919,7 @@ mod tests {
             lexical_hit("host:memory:collision", "quasar target", "TRANSMITTED_HOST_RECORD", 0.2, vec!["quasar"]),
             lexical_hit("host:memory:collision", "opaque shadow", "UNSUBMITTED_HOST_RECORD", 0.8, vec!["quasar"]),
         ];
-        let merged = merge_recall_hits(vec![collision.clone(), collision]);
+        let merged = merge_recall_hits(vec![collision.clone(), collision], RecallFusion::Off);
         assert_eq!(
             merged.len(),
             2,
@@ -1759,12 +1930,175 @@ mod tests {
             lexical_hit("project:memory:a", "tied a", "same body", 0.5, vec!["x"]),
             lexical_hit("project:memory:b", "tied b", "same body", 0.5, vec!["x"]),
         ];
-        let merged = merge_recall_hits(vec![tied.clone(), tied]);
+        let merged = merge_recall_hits(vec![tied.clone(), tied], RecallFusion::Off);
         assert_eq!(
             merged.iter().map(|hit| hit.id.as_str()).collect::<Vec<_>>(),
             vec!["project:memory:a", "project:memory:b"]
         );
-        assert!(merge_recall_hits(Vec::new()).is_empty());
+        assert!(merge_recall_hits(Vec::new(), RecallFusion::Off).is_empty());
+    }
+
+    /// A `lexical_hit` variant with a controllable `created_at`, for the RRF
+    /// tie-break tests (the default helper pins 2026-01-01 for everyone).
+    fn lexical_hit_at(
+        id: &str,
+        title: &str,
+        content: &str,
+        score: f64,
+        matched: Vec<&str>,
+        created_at: &str,
+    ) -> crate::core::memory::search::MemoryHit {
+        let mut hit = lexical_hit(id, title, content, score, matched);
+        hit.entry.created_at = created_at.to_string();
+        hit
+    }
+
+    /// Distinct filler entries so one entry never contributes twice from a
+    /// single list (RRF contributions accumulate across lists, not ranks of
+    /// the same list).
+    fn fillers(prefix: &str, count: usize) -> Vec<crate::core::memory::search::MemoryHit> {
+        (0..count)
+            .map(|index| {
+                lexical_hit(
+                    &format!("project:memory:{prefix}{index}"),
+                    "filler",
+                    "filler body",
+                    0.0,
+                    vec!["quasar"],
+                )
+            })
+            .collect()
+    }
+
+    #[test]
+    fn rrf_merge_rewards_cross_list_consensus_over_a_single_top_rank() {
+        // "consensus" sits at rank 5 in two lists: 2/(60+5+1) = 0.0303.
+        // "single" tops the first list but is absent from the second:
+        // 1/(60+0+1) = 0.0164. Consensus wins - exactly the agreement signal
+        // the max-score merge discards.
+        let consensus = lexical_hit("project:memory:consensus", "shared topic", "agreed body", 0.2, vec!["quasar"]);
+        let single = lexical_hit("project:memory:single", "loud topic", "one list only", 0.9, vec!["quasar"]);
+        let mut list_a = vec![single.clone()];
+        list_a.extend(fillers("fa", 4));
+        list_a.push(consensus.clone());
+        let mut list_b = fillers("fb", 5);
+        list_b.push(consensus.clone());
+        let merged = merge_recall_hits(vec![list_a, list_b], RecallFusion::Rrf);
+        assert_eq!(merged[0].id, "project:memory:consensus");
+        assert!((merged[0].score - 2.0 / 66.0).abs() < 1e-12);
+        assert!(
+            merged
+                .iter()
+                .position(|hit| hit.id == "project:memory:single")
+                .unwrap()
+                > 0
+        );
+        assert!((merged.iter().find(|hit| hit.id == "project:memory:single").unwrap().score - 1.0 / 61.0).abs() < 1e-12);
+        // Deep agreement does NOT beat a single top rank at k=60:
+        // ranks 100+101 across two lists sum to 1/161 + 1/162 = 0.0124.
+        let deep = lexical_hit("project:memory:deep", "deep topic", "buried body", 0.1, vec!["quasar"]);
+        let mut list_a = vec![single.clone()];
+        list_a.extend(fillers("fc", 99));
+        list_a.push(deep.clone());
+        let mut list_b = fillers("fd", 101);
+        list_b.push(deep.clone());
+        let merged = merge_recall_hits(vec![list_a, list_b], RecallFusion::Rrf);
+        let ids: Vec<&str> = merged.iter().map(|hit| hit.id.as_str()).collect();
+        assert!(
+            ids.iter().position(|id| *id == "project:memory:single").unwrap()
+                < ids.iter().position(|id| *id == "project:memory:deep").unwrap(),
+            "a single top rank outranks deep agreement at k=60"
+        );
+    }
+
+    #[test]
+    fn rrf_merge_k_constant_controls_the_consensus_tradeoff() {
+        // The same lists order differently at k=0 vs the fixed k=60.
+        // "single" tops list A only (1/(k+1)); "consensus" sits at ranks 1
+        // and 2 across the two lists. At k=0 the top rank (1.0) beats the
+        // pair (1/2 + 1/3 = 0.83); at k=60 the pair (1/62 + 1/63 = 0.032)
+        // beats the top (1/61 = 0.016). Pins that k is load-bearing and
+        // fixed. Positions (not [0]) because list B's own rank-0 filler
+        // ties "single" at k=0.
+        let consensus = lexical_hit("project:memory:consensus", "shared topic", "agreed body", 0.2, vec!["quasar"]);
+        let single = lexical_hit("project:memory:single", "loud topic", "one list only", 0.9, vec!["quasar"]);
+        let list_a = vec![single.clone(), consensus.clone()];
+        let mut list_b = fillers("fb", 2);
+        list_b.push(consensus.clone());
+        let position = |hits: &[crate::core::memory::search::MemoryHit], id: &str| {
+            hits.iter().position(|hit| hit.id == id).unwrap()
+        };
+        let k_zero = rrf_merge_recall_hits(vec![list_a.clone(), list_b.clone()], 0.0);
+        assert!(
+            position(&k_zero, "project:memory:single") < position(&k_zero, "project:memory:consensus"),
+            "k=0: the single top rank wins"
+        );
+        let k_sixty = rrf_merge_recall_hits(vec![list_a, list_b], RRF_K);
+        assert!(
+            position(&k_sixty, "project:memory:consensus") < position(&k_sixty, "project:memory:single"),
+            "k=60: consensus wins"
+        );
+    }
+
+    #[test]
+    fn rrf_merge_over_one_list_preserves_rank_order_and_scores() {
+        let list = vec![
+            lexical_hit("project:memory:a", "top", "body a", 0.9, vec!["quasar"]),
+            lexical_hit("project:memory:b", "mid", "body b", 0.5, vec!["quasar"]),
+            lexical_hit("project:memory:c", "low", "body c", 0.1, vec!["quasar"]),
+        ];
+        let merged = merge_recall_hits(vec![list.clone()], RecallFusion::Rrf);
+        let ids: Vec<&str> = merged.iter().map(|hit| hit.id.as_str()).collect();
+        assert_eq!(ids, vec!["project:memory:a", "project:memory:b", "project:memory:c"]);
+        for (rank, hit) in merged.iter().enumerate() {
+            assert!((hit.score - 1.0 / (RRF_K + rank as f64 + 1.0)).abs() < 1e-12);
+        }
+        // The Off path over one list is the same order via the max merge.
+        let off = merge_recall_hits(vec![list], RecallFusion::Off);
+        assert_eq!(
+            off.iter().map(|hit| hit.id.as_str()).collect::<Vec<_>>(),
+            ids
+        );
+    }
+
+    #[test]
+    fn rrf_merge_ties_break_by_recency_then_id_deterministically() {
+        // Same fused score (rank 0 in one list each): the newer entry first.
+        let older = lexical_hit_at("project:memory:old", "older", "body", 0.5, vec!["quasar"], "2026-01-01T00:00:00.000Z");
+        let newer = lexical_hit_at("project:memory:new", "newer", "body", 0.5, vec!["quasar"], "2026-02-01T00:00:00.000Z");
+        let merged = merge_recall_hits(vec![vec![older], vec![newer]], RecallFusion::Rrf);
+        assert_eq!(
+            merged.iter().map(|hit| hit.id.as_str()).collect::<Vec<_>>(),
+            vec!["project:memory:new", "project:memory:old"]
+        );
+        // Same score AND same recency: id ascending, fully deterministic.
+        let a = lexical_hit_at("project:memory:a", "tied a", "body", 0.5, vec!["quasar"], "2026-01-01T00:00:00.000Z");
+        let b = lexical_hit_at("project:memory:b", "tied b", "body", 0.5, vec!["quasar"], "2026-01-01T00:00:00.000Z");
+        let merged = merge_recall_hits(vec![vec![b], vec![a]], RecallFusion::Rrf);
+        assert_eq!(
+            merged.iter().map(|hit| hit.id.as_str()).collect::<Vec<_>>(),
+            vec!["project:memory:a", "project:memory:b"]
+        );
+    }
+
+    #[test]
+    fn rrf_merge_unions_matched_terms_and_keeps_distinct_records() {
+        let first = lexical_hit("project:memory:same", "shared title", "shared content", 0.4, vec!["quasar"]);
+        let second = lexical_hit("project:memory:same", "shared title", "shared content", 0.3, vec!["nebula"]);
+        let distinct = lexical_hit("host:memory:same", "other title", "other content", 0.2, vec!["nebula"]);
+        let merged = merge_recall_hits(
+            vec![vec![first, distinct.clone()], vec![second, distinct]],
+            RecallFusion::Rrf,
+        );
+        // Same (id, title, content) fuses into one entry with unioned terms;
+        // the scoped-id twin stays distinct, exactly like the max merge.
+        assert_eq!(merged.len(), 2);
+        let fused = merged.iter().find(|hit| hit.id == "project:memory:same").unwrap();
+        assert_eq!(fused.matched, vec!["quasar".to_string(), "nebula".to_string()]);
+        // Rank 0 in both lists: 1/61 + 1/61.
+        assert!((fused.score - 2.0 / 61.0).abs() < 1e-12);
+        assert!(merged.iter().any(|hit| hit.id == "host:memory:same"));
+        assert!(merge_recall_hits(Vec::new(), RecallFusion::Rrf).is_empty());
     }
 
     #[test]
@@ -3075,11 +3409,14 @@ mod recall_runtime_tests {
         let fixture = RecallFixture::new_with_helpers(false, false, true).await;
         fixture.queue(text_response(&json!(["nebula", "design cache"]).to_string()));
         let messages = fixture.recall("quasar", 1).await;
-        let expected: Vec<String> = merge_recall_hits(vec![
-            fixture.memory.search("quasar", false),
-            fixture.memory.search("nebula", false),
-            fixture.memory.search("design cache", false),
-        ])
+        let expected: Vec<String> = merge_recall_hits(
+            vec![
+                fixture.memory.search("quasar", false),
+                fixture.memory.search("nebula", false),
+                fixture.memory.search("design cache", false),
+            ],
+            RecallFusion::Off,
+        )
         .iter()
         .map(|hit| hit.id.clone())
         .collect();
@@ -3121,10 +3458,13 @@ mod recall_runtime_tests {
             .unwrap();
         fixture.queue(text_response(&json!(["nebula", "design cache"]).to_string()));
         let messages = fixture.recall("quasar", 1).await;
-        let expected: Vec<String> = merge_recall_hits(vec![
-            fixture.memory.search("quasar", false),
-            fixture.memory.search("nebula", false),
-        ])
+        let expected: Vec<String> = merge_recall_hits(
+            vec![
+                fixture.memory.search("quasar", false),
+                fixture.memory.search("nebula", false),
+            ],
+            RecallFusion::Off,
+        )
         .iter()
         .map(|hit| hit.id.clone())
         .collect();
@@ -3135,6 +3475,110 @@ mod recall_runtime_tests {
         );
         assert!(fixture.requests.lock().unwrap().len() == 1);
         assert!(request_text(&fixture.requests.lock().unwrap()[0]).contains("(1):"));
+    }
+
+    #[tokio::test]
+    async fn runtime_recall_rrf_fusion_fuses_angle_lists_by_rank() {
+        let fixture = RecallFixture::new_with_helpers(false, false, true).await;
+        fixture
+            .memory
+            .store
+            .configure(&json!({"recallFusion": "rrf"}))
+            .await
+            .unwrap();
+        fixture.queue(text_response(&json!(["nebula", "design cache"]).to_string()));
+        let messages = fixture.recall("quasar", 1).await;
+        // The runtime path must equal the RRF fusion of the exact per-query
+        // lists it searched: original + both angles.
+        let expected: Vec<String> = rrf_merge_recall_hits(
+            vec![
+                fixture.memory.search("quasar", false),
+                fixture.memory.search("nebula", false),
+                fixture.memory.search("design cache", false),
+            ],
+            RRF_K,
+        )
+        .iter()
+        .map(|hit| hit.id.clone())
+        .collect();
+        assert_eq!(recall_ids(&messages), expected);
+        // The diagnostic reports the effective fusion for arm observability.
+        let diagnostic = fixture.last_diagnostic();
+        assert_eq!(diagnostic["fusion"], "rrf");
+        assert_eq!(diagnostic["bm25Leg"], false);
+    }
+
+    #[tokio::test]
+    async fn runtime_recall_bm25_leg_adds_the_second_ranked_list() {
+        let fixture = RecallFixture::new_with_helpers(false, false, false).await;
+        fixture
+            .memory
+            .store
+            .configure(&json!({"recallFusion": "rrf", "recallBm25": true}))
+            .await
+            .unwrap();
+        let messages = fixture.recall("quasar", 1).await;
+        // The runtime path must equal the RRF fusion of the lexical list AND
+        // the BM25 leg's list for the same query.
+        let expected: Vec<String> = rrf_merge_recall_hits(
+            vec![
+                fixture.memory.search("quasar", false),
+                fixture.memory.search_bm25("quasar", false),
+            ],
+            RRF_K,
+        )
+        .iter()
+        .map(|hit| hit.id.clone())
+        .collect();
+        assert_eq!(recall_ids(&messages), expected);
+        let diagnostic = fixture.last_diagnostic();
+        assert_eq!(diagnostic["fusion"], "rrf");
+        assert_eq!(diagnostic["bm25Leg"], true);
+    }
+
+    #[tokio::test]
+    async fn runtime_recall_bm25_without_rrf_is_inert() {
+        let fixture = RecallFixture::new(false, false).await;
+        fixture
+            .memory
+            .store
+            .configure(&json!({"recallBm25": true}))
+            .await
+            .unwrap();
+        let messages = fixture.recall("quasar", 1).await;
+        // BM25 scores are never max-merged with lexical scores: without RRF
+        // fusion the flag changes nothing relative to the default merge.
+        let expected: Vec<String> = merge_recall_hits(
+            vec![fixture.memory.search("quasar", false)],
+            RecallFusion::Off,
+        )
+        .iter()
+        .map(|hit| hit.id.clone())
+        .collect();
+        assert_eq!(recall_ids(&messages), expected);
+        let diagnostic = fixture.last_diagnostic();
+        assert_eq!(diagnostic["fusion"], "off");
+        assert_eq!(diagnostic["bm25Leg"], false, "the leg stays inert without RRF fusion");
+    }
+
+    #[tokio::test]
+    async fn runtime_recall_default_flags_keep_the_max_merge_output() {
+        let fixture = RecallFixture::new(false, false).await;
+        let messages = fixture.recall("quasar", 1).await;
+        // Default flags (fusion off, BM25 off): byte-identical ordering to the
+        // historical single-list max merge.
+        let expected: Vec<String> = merge_recall_hits(
+            vec![fixture.memory.search("quasar", false)],
+            RecallFusion::Off,
+        )
+        .iter()
+        .map(|hit| hit.id.clone())
+        .collect();
+        assert_eq!(recall_ids(&messages), expected);
+        assert_eq!(
+            fixture.last_diagnostic()["fusion"], "off",
+            "default runs report the off fusion"
+        );
     }
 
     #[tokio::test]

@@ -61,7 +61,7 @@ use pi_coding_agent::core::memory::jobs::{
     ExtractionResult, ImportJobStatus, MemoryExtractor, MemoryJobs,
 };
 use pi_coding_agent::core::memory::service::{create_memory_host_handlers, MemoryService};
-use pi_coding_agent::core::memory::store::MemorySettings;
+use pi_coding_agent::core::memory::store::{MemorySettings, RecallFusion};
 use pi_coding_agent::core::model_registry::ModelRegistry;
 use pi_coding_agent::core::provider_retry::provider_retry_policy;
 use pi_coding_agent::core::refinement::refinement::{
@@ -279,6 +279,27 @@ struct ManifestSettings {
     /// metadata.
     #[serde(default, alias = "recall_source_spans")]
     recall_source_spans: bool,
+    /// Recall hit-list fusion (memory.recallFusion): "rrf" fuses the original
+    /// + angle (+ BM25) query lists with unweighted Reciprocal Rank Fusion
+    /// k=60; "off" (default) keeps the per-entry maximum-score merge.
+    #[serde(default, alias = "recall_fusion")]
+    recall_fusion: RecallFusion,
+    /// Add an Okapi BM25 second retrieval leg (memory.recallBm25, k1=1.2,
+    /// b=0.75, field weights title 3 / body 1 / span 0.5) whose ranked list
+    /// is RRF-fused with the lexical lists. Inert unless recallFusion is
+    /// "rrf". Default false.
+    #[serde(default, alias = "recall_bm25")]
+    recall_bm25: bool,
+    /// Compose a deterministic persona snapshot from typed persona claims
+    /// (metadata.personaKey + claimType) and inject it as a stable header
+    /// of the recall message (memory.personaLayer). Default false keeps
+    /// recall output byte-identical.
+    #[serde(default, alias = "persona_layer")]
+    persona_layer: bool,
+    /// Character budget for the composed persona snapshot
+    /// (memory.personaSnapshotChars). Default 2400; 512-4000 allowed.
+    #[serde(default, alias = "persona_snapshot_chars")]
+    persona_snapshot_chars: Option<i64>,
     /// LME-v2 only: after each session's import, run one bounded extraction
     /// call that distills reusable procedure notes (AgentRunbook-style:
     /// precondition -> action -> observed outcome) into create edits titled
@@ -316,6 +337,10 @@ impl Default for ManifestSettings {
             answer_thinking_level: None,
             max_recall_chars: None,
             max_recall_entries: None,
+            persona_layer: false,
+            persona_snapshot_chars: None,
+            recall_fusion: RecallFusion::Off,
+            recall_bm25: false,
             max_extraction_tokens: None,
             max_import_chunk_chars: None,
             import_run_retries: default_import_run_retries(),
@@ -1403,6 +1428,18 @@ fn manifest_memory_settings(settings: &ManifestSettings) -> Value {
     if settings.recall_source_spans || settings.memory_learning == Some(false) {
         memory["recallSourceSpans"] = json!(settings.recall_source_spans);
     }
+    if settings.recall_fusion != RecallFusion::Off || settings.memory_learning == Some(false) {
+        memory["recallFusion"] = json!(settings.recall_fusion);
+    }
+    if settings.recall_bm25 || settings.memory_learning == Some(false) {
+        memory["recallBm25"] = json!(settings.recall_bm25);
+    }
+    if settings.persona_layer || settings.memory_learning == Some(false) {
+        memory["personaLayer"] = json!(settings.persona_layer);
+    }
+    if let Some(persona_chars) = settings.persona_snapshot_chars {
+        memory["personaSnapshotChars"] = json!(persona_chars);
+    }
     if let Some(max_chars) = settings.max_recall_chars {
         memory["maxRecallChars"] = json!(max_chars);
     }
@@ -1445,6 +1482,12 @@ fn memory_feature_realization(
     }
     requested_memory["recallProspectiveIndex"] = json!(requested.recall_prospective_index);
     requested_memory["recallSourceSpans"] = json!(requested.recall_source_spans);
+    requested_memory["recallFusion"] = json!(requested.recall_fusion);
+    requested_memory["recallBm25"] = json!(requested.recall_bm25);
+    requested_memory["personaLayer"] = json!(requested.persona_layer);
+    if let Some(persona_chars) = requested.persona_snapshot_chars {
+        requested_memory["personaSnapshotChars"] = json!(persona_chars);
+    }
     // Keep the snapshot limited to memory behavior; never serialize sharing credentials.
     let effective_memory = json!({
         "recall": effective.recall,
@@ -1466,7 +1509,12 @@ fn memory_feature_realization(
         "recallQueryExpansion": effective.recall_query_expansion,
         "recallQueryExpansionDraws": effective.recall_query_expansion_draws,
         "recallProspectiveIndex": effective.recall_prospective_index,
-        "recallSourceSpans": effective.recall_source_spans,    });
+        "recallSourceSpans": effective.recall_source_spans,
+        "recallFusion": effective.recall_fusion,
+        "recallBm25": effective.recall_bm25,
+        "personaLayer": effective.persona_layer,
+        "personaSnapshotChars": effective.persona_snapshot_chars,
+    });
     let mut mismatches = Vec::new();
     for (key, value) in requested_memory
         .as_object()
@@ -4574,7 +4622,10 @@ mod tests {
                 "recallQueryStemming": false,
                 "recallQueryExpansion": false,
                 "recallProspectiveIndex": false,
-                "recallSourceSpans": false
+                "recallSourceSpans": false,
+                "recallFusion": "off",
+                "recallBm25": false,
+                "personaLayer": false
             })
         );
     }

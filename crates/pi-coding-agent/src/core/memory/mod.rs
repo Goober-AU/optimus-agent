@@ -2,6 +2,7 @@
 pub mod evidence;
 pub mod extraction;
 pub mod jobs;
+pub mod persona;
 pub mod project;
 pub mod search;
 pub mod server;
