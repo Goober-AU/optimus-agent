@@ -1617,7 +1617,7 @@ mod rlm_child_activity_tests {
                 ..entry
             })
             .unwrap();
-        assert_eq!(entry_serialized["activityElapsedMs"], json!(5.0));
-        assert_eq!(entry_serialized["stalledMs"], json!(6.0));
+        assert_eq!(entry_serialized["activity_elapsed_ms"], json!(5.0));
+        assert_eq!(entry_serialized["stalled_ms"], json!(6.0));
     }
 }

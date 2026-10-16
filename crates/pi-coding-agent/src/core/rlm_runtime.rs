@@ -89,10 +89,10 @@ pub struct RlmCollectResultEntry {
     pub replied_since_task: Option<bool>,
     /// Live age of the child's current activity, recomputed at read time so a
     /// running tool keeps showing a growing duration without child events.
-    #[serde(rename = "activityElapsedMs", default, skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub activity_elapsed_ms: Option<f64>,
     /// Set when the executing tool call exceeds the stall-notice threshold.
-    #[serde(rename = "stalledMs", default, skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stalled_ms: Option<f64>,
 }
 
