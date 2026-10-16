@@ -65,6 +65,89 @@ impl AgentSessionMessageController for SessionMessageController {
     }
 }
 
+/// Activity start time for one child event: the event's own timestamp when the
+/// serialized JSON carries one (assistant message events do), otherwise the
+/// observation time. Tool execution events carry no timestamp.
+fn rlm_child_activity_since_ms(value: &Value) -> f64 {
+    value
+        .get("timestamp")
+        .and_then(Value::as_f64)
+        .or_else(|| {
+            value
+                .get("message")
+                .and_then(|message| message.get("timestamp"))
+                .and_then(Value::as_f64)
+        })
+        .unwrap_or_else(now_ms)
+}
+
+/// One child event's transition onto the parent's run row. Extracted from the
+/// run subscription so the activity bookkeeping (kind, tool, start time, and
+/// the stall-notice reset) is directly testable without a live child.
+fn apply_rlm_child_run_event(
+    run: &mut RlmChildRun,
+    running_tools: &AtomicU64,
+    kind: &str,
+    value: &Value,
+    assistant: Option<&AssistantMessage>,
+) {
+    match kind {
+        "agent_start" => run.activity = Some(RlmChildAgentActivity {
+            kind: "waiting".into(),
+            tool_name: None,
+            since_ms: Some(rlm_child_activity_since_ms(value)),
+        }),
+        "agent_end" => {
+            run.activity = None;
+            run.stall_notice_since_ms = None;
+        }
+        "message_start" | "message_update" | "message_end" if assistant.is_some() => {
+            let text = compact_rlm_text(&read_assistant_text(assistant.unwrap()), 160);
+            if !text.is_empty() { run.answer_preview = Some(text); }
+            if kind != "message_end" {
+                run.activity = Some(RlmChildAgentActivity {
+                    kind: "writing".into(),
+                    tool_name: None,
+                    since_ms: Some(rlm_child_activity_since_ms(value)),
+                });
+            }
+        }
+        "tool_execution_start" => {
+            run.tool_use_count += 1.0;
+            running_tools.fetch_add(1, Ordering::SeqCst);
+            run.activity = Some(RlmChildAgentActivity {
+                kind: "executing".into(),
+                tool_name: value.get("toolName").and_then(Value::as_str).map(str::to_string),
+                since_ms: Some(rlm_child_activity_since_ms(value)),
+            });
+            run.stall_notice_since_ms = None;
+        }
+        "tool_execution_end" => {
+            let previous = running_tools.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |count| Some(count.saturating_sub(1))).unwrap_or(0);
+            if previous <= 1 {
+                run.activity = Some(RlmChildAgentActivity {
+                    kind: "waiting".into(),
+                    tool_name: None,
+                    since_ms: Some(rlm_child_activity_since_ms(value)),
+                });
+                run.stall_notice_since_ms = None;
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Wording for the one-per-stalled-call notice.
+fn rlm_child_stall_notice_text(session_name: &str, tool_name: Option<&str>, elapsed_ms: f64) -> String {
+    let minutes = ((elapsed_ms / 60_000.0).round() as u64).max(1);
+    format!(
+        "Child {} tool {} has been running for {} min",
+        session_name,
+        tool_name.unwrap_or("unknown"),
+        minutes
+    )
+}
+
 impl AgentSession {
     /// Read this chat's preference, inheriting only through its subagent ancestry.
     fn occ2_enabled(&self) -> bool {
@@ -321,6 +404,7 @@ impl AgentSession {
             emit_update: None,
             last_emitted_update: None,
             unsubscribe: None,
+            stall_notice_since_ms: None,
         }));
         let weak_parent = Arc::downgrade(self);
         let weak_run = Arc::downgrade(&run);
@@ -478,6 +562,40 @@ impl AgentSession {
         self.emit(AgentSessionEvent::RlmChildUpdate { child });
     }
 
+    /// Stall visibility for one child run: when the live tool-call age crosses
+    /// `DEFAULT_RLM_CHILD_TOOL_STALL_NOTICE_MS`, emit one `RlmChildUpdate`
+    /// carrying the stall summary plus the notice wording. The last-notified
+    /// tool-call start is tracked on the run, so each stalled call notifies at
+    /// most once. Piggybacks on roster and collect reads; a stall nobody
+    /// observes emits nothing, and no timer is spawned.
+    pub(super) fn maybe_emit_rlm_child_stall_notice(&self, run: &Arc<Mutex<RlmChildRun>>) {
+        let (current, notice) = {
+            let mut guard = run.lock().unwrap();
+            let Some(activity) = guard.activity.clone() else { return };
+            if activity.kind != "executing" {
+                return;
+            }
+            let Some(since_ms) = activity.since_ms else { return };
+            if guard.stall_notice_since_ms == Some(since_ms) {
+                return;
+            }
+            let elapsed_ms = now_ms() - since_ms;
+            if elapsed_ms <= DEFAULT_RLM_CHILD_TOOL_STALL_NOTICE_MS as f64 {
+                return;
+            }
+            guard.stall_notice_since_ms = Some(since_ms);
+            let notice = rlm_child_stall_notice_text(
+                &guard.session_name,
+                activity.tool_name.as_deref(),
+                elapsed_ms,
+            );
+            (guard.clone(), notice)
+        };
+        let mut child = self.rlm_child_snapshot_for_run(&current, None);
+        child.stall_notice = Some(notice);
+        self.emit(AgentSessionEvent::RlmChildUpdate { child });
+    }
+
     async fn execute_child_run(
         self: &Arc<Self>,
         run: Arc<Mutex<RlmChildRun>>,
@@ -524,25 +642,7 @@ impl AgentSession {
             }
             {
                 let mut run = run.lock().unwrap();
-                match kind {
-                    "agent_start" => run.activity = Some(RlmChildAgentActivity { kind: "waiting".into(), tool_name: None }),
-                    "agent_end" => run.activity = None,
-                    "message_start" | "message_update" | "message_end" if assistant.is_some() => {
-                        let text = compact_rlm_text(&read_assistant_text(assistant.as_ref().unwrap()), 160);
-                        if !text.is_empty() { run.answer_preview = Some(text); }
-                        if kind != "message_end" { run.activity = Some(RlmChildAgentActivity { kind: "writing".into(), tool_name: None }); }
-                    }
-                    "tool_execution_start" => {
-                        run.tool_use_count += 1.0;
-                        running_tools.fetch_add(1, Ordering::SeqCst);
-                        run.activity = Some(RlmChildAgentActivity { kind: "executing".into(), tool_name: value.get("toolName").and_then(Value::as_str).map(str::to_string) });
-                    }
-                    "tool_execution_end" => {
-                        let previous = running_tools.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |count| Some(count.saturating_sub(1))).unwrap_or(0);
-                        if previous <= 1 { run.activity = Some(RlmChildAgentActivity { kind: "waiting".into(), tool_name: None }); }
-                    }
-                    _ => {}
-                }
+                apply_rlm_child_run_event(&mut run, &running_tools, kind, &value, assistant.as_ref());
             }
             parent.emit_child_run_update(&run);
         }));
@@ -905,28 +1005,32 @@ impl AgentSession {
                 .lock()
                 .unwrap()
                 .values()
-                .map(|run| run.lock().unwrap().clone())
+                .cloned()
                 .collect();
             let retained = owner.rlm_child_sessions.lock().unwrap().clone();
             let mut recorded = HashSet::new();
             for run in runs {
-                if run.detached_deletion.is_some()
+                let current = run.lock().unwrap().clone();
+                if current.detached_deletion.is_some()
                     || owner
                         .deleting_rlm_children
                         .lock()
                         .unwrap()
-                        .contains_key(&run.id)
+                        .contains_key(&current.id)
                     || owner
                         .deleted_rlm_child_ids
                         .lock()
                         .unwrap()
-                        .contains(&run.id)
-                    || owner.is_unbound_terminal_rlm_child_run(&run)
+                        .contains(&current.id)
+                    || owner.is_unbound_terminal_rlm_child_run(&current)
                 {
                     continue;
                 }
-                recorded.insert(run.id.clone());
-                snapshots.push(owner.rlm_child_snapshot_for_run(&run, None));
+                recorded.insert(current.id.clone());
+                // Stall visibility piggybacks on roster reads: a silent child
+                // whose tool call outlived the threshold gets one notice.
+                owner.maybe_emit_rlm_child_stall_notice(&run);
+                snapshots.push(owner.rlm_child_snapshot_for_run(&current, None));
             }
             for (id, retained) in retained {
                 if recorded.contains(&id)
@@ -1007,5 +1111,513 @@ impl AgentSession {
             }
         }
         false
+    }
+}
+
+#[cfg(test)]
+mod rlm_child_activity_tests {
+    use super::*;
+    use crate::core::rlm_runtime::RlmCollectResultEntry;
+    use pi_agent_core::types::{
+        AgentEvent, AgentMessage, AgentState, ShouldStopAfterTurnContext, StreamFn,
+    };
+    use pi_ai::types::{Message, OnPayload, OnResponse};
+    use serde_json::json;
+
+    type Listener =
+        Arc<dyn Fn(AgentEvent, Option<CancellationToken>) -> BoxFuture<()> + Send + Sync>;
+
+    /// Minimal scripted agent: idle, no queue, `prompt` rejects so an accidental
+    /// dispatch is loud instead of silently completing (same shape as the
+    /// sibling test suites).
+    struct ScriptedAgent {
+        state: Mutex<AgentState>,
+        stream_fn: Mutex<StreamFn>,
+    }
+
+    impl ScriptedAgent {
+        fn new() -> Arc<Self> {
+            Arc::new(Self {
+                state: Mutex::new(AgentState::default()),
+                stream_fn: Mutex::new(pi_agent_core::agent::default_stream_fn()),
+            })
+        }
+    }
+
+    impl AgentHandle for ScriptedAgent {
+        fn state(&self) -> AgentState {
+            self.state.lock().unwrap().clone()
+        }
+
+        fn set_state(&self, state: AgentState) {
+            *self.state.lock().unwrap() = state;
+        }
+
+        fn subscribe(&self, _listener: Listener) -> Box<dyn Fn() + Send + Sync> {
+            Box::new(|| {})
+        }
+
+        fn set_before_tool_call(&self, _hook: BeforeToolCallHook) {}
+        fn set_after_tool_call(&self, _hook: AfterToolCallHook) {}
+        fn set_get_continuation_messages(&self, _hook: GetContinuationMessagesHook) {}
+        fn set_before_request(&self, _hook: BeforeRequestHook) {}
+        fn set_should_stop_before_turn(&self, _hook: Arc<dyn Fn() -> bool + Send + Sync>) {}
+        fn set_should_stop_after_turn(
+            &self,
+            _hook: Arc<
+                dyn Fn(ShouldStopAfterTurnContext) -> BoxFuture<bool> + Send + Sync,
+            >,
+        ) {
+        }
+
+        fn set_stream_fn(&self, stream_fn: StreamFn) {
+            *self.stream_fn.lock().unwrap() = stream_fn;
+        }
+
+        fn stream_fn(&self) -> StreamFn {
+            self.stream_fn.lock().unwrap().clone()
+        }
+
+        fn abort(&self) {}
+
+        fn wait_for_idle(&self) -> BoxFuture<()> {
+            Box::pin(async {})
+        }
+
+        fn prompt(&self, _messages: Vec<AgentMessage>) -> BoxFuture<Result<(), String>> {
+            Box::pin(async { Err("scripted agent does not run turns".to_string()) })
+        }
+
+        fn continue_(&self) -> BoxFuture<Result<(), AgentContinueError>> {
+            Box::pin(async { Ok(()) })
+        }
+
+        fn is_streaming(&self) -> bool {
+            self.state.lock().unwrap().is_streaming
+        }
+
+        fn has_queued_messages(&self) -> bool {
+            false
+        }
+
+        fn clear_all_queues(&self) {}
+
+        fn remove_queued_messages(
+            &self,
+            _predicate: Arc<dyn Fn(&AgentMessage) -> bool + Send + Sync>,
+        ) -> Vec<AgentMessage> {
+            Vec::new()
+        }
+
+        fn follow_up(&self, _message: AgentMessage) {}
+        fn set_follow_up_mode(&self, _mode: String) {}
+        fn set_steering_mode(&self, _mode: String) {}
+
+        fn set_convert_to_llm(
+            &self,
+            _convert: Arc<dyn Fn(Vec<AgentMessage>) -> BoxFuture<Vec<Message>> + Send + Sync>,
+        ) {
+        }
+
+        fn set_transform_context(
+            &self,
+            _transform: Arc<
+                dyn Fn(Vec<AgentMessage>, Option<CancellationToken>) -> BoxFuture<Vec<AgentMessage>>
+                    + Send
+                    + Sync,
+            >,
+        ) {
+        }
+
+        fn set_get_api_key(
+            &self,
+            _get_api_key: Arc<dyn Fn(String) -> BoxFuture<Option<String>> + Send + Sync>,
+        ) {
+        }
+
+        fn set_on_payload(&self, _hook: OnPayload) {}
+        fn set_on_response(&self, _hook: OnResponse) {}
+        fn set_tool_execution(&self, _mode: String) {}
+        fn performance_metrics(&self) -> Option<AgentLoopPerformanceMetrics> {
+            None
+        }
+        fn set_performance_metrics(&self, _metrics: Option<AgentLoopPerformanceMetrics>) {}
+        fn signal(&self) -> Option<CancellationToken> {
+            None
+        }
+    }
+
+    fn stall_test_session() -> Arc<AgentSession> {
+        let cwd = std::env::temp_dir().to_string_lossy().to_string();
+        let settings = Arc::new(Mutex::new(
+            crate::core::settings_manager::SettingsManager::in_memory(
+                serde_json::json!({
+                    "autoRefine": {"enabled": false},
+                    "retry": {"enabled": false},
+                    "compaction": {"enabled": false},
+                    "telemetryEnabled": false,
+                    "agentTracesEnabled": false,
+                })
+                .as_object()
+                .unwrap()
+                .clone(),
+            ),
+        ));
+        let manager =
+            crate::core::session_manager::SessionManager::in_memory(Some(&cwd), Some(&cwd))
+                .unwrap();
+        let loader = Arc::new(crate::core::resource_loader::DefaultResourceLoader::new(
+            crate::core::resource_loader::DefaultResourceLoaderOptions {
+                cwd: cwd.clone(),
+                agent_dir: cwd.clone(),
+                settings_manager: Some(settings.clone()),
+                no_extensions: true,
+                no_skills: true,
+                no_prompt_templates: true,
+                no_themes: true,
+                no_context_files: true,
+                bundled_skills_dir: Some(None),
+                ..Default::default()
+            },
+        ));
+        AgentSession::new(AgentSessionConfig {
+            agent: ScriptedAgent::new() as Arc<dyn AgentHandle>,
+            session_manager: Arc::new(Mutex::new(manager)),
+            settings_manager: settings,
+            service_tier_preference: None,
+            cwd: cwd.clone(),
+            agent_dir: Some(cwd.clone()),
+            scoped_models: None,
+            resource_loader: loader,
+            custom_tools: None,
+            model_registry: Arc::new(Mutex::new(
+                crate::core::model_registry::ModelRegistry::in_memory(
+                    crate::core::auth_storage::AuthStorage::in_memory(Default::default(), None),
+                ),
+            )),
+            initial_active_tool_names: None,
+            allowed_tool_names: None,
+            include_goals: Some(false),
+            agent_message_controller: None,
+            agent_observe_controller: None,
+            include_compact_skill: Some(false),
+            rlm_heartbeat_controller: None,
+            mcp_manager: None,
+            base_tools_override: Some(Vec::new()),
+            extension_runner_ref: None,
+            session_start_event: None,
+            rlm_depth: Some(0),
+            rlm_max_depth: Some(2),
+            rlm_session_dir: None,
+            rlm_parent_node_id: None,
+            rlm_parent_agent: None,
+            semantic_parent_session_id: None,
+            semantic_spawned_by_request_id: None,
+            subagent_runtime_host: None,
+            autonomous: None,
+            prewarm_ipython_kernel: Some(false),
+            auto_refine_reviewer: None,
+            serialized_refine: None,
+            initial_goal: None,
+        })
+        .unwrap()
+    }
+
+    /// `tool_execution_start` records the tool name and an activity start time.
+    #[test]
+    fn tool_execution_start_sets_since_ms_and_tool_name() {
+        let mut run = empty_rlm_child_run("child");
+        let running_tools = AtomicU64::new(0);
+        let before = now_ms();
+        apply_rlm_child_run_event(
+            &mut run,
+            &running_tools,
+            "tool_execution_start",
+            &json!({"toolCallId": "c1", "toolName": "ipython", "args": {}}),
+            None,
+        );
+        let after = now_ms();
+        let activity = run.activity.as_ref().expect("activity recorded");
+        assert_eq!(activity.kind, "executing");
+        assert_eq!(activity.tool_name.as_deref(), Some("ipython"));
+        let since_ms = activity.since_ms.expect("sinceMs recorded");
+        assert!(
+            since_ms >= before && since_ms <= after,
+            "sinceMs must be the observe time when the event carries no timestamp: {since_ms}"
+        );
+        assert_eq!(run.tool_use_count, 1.0);
+        assert_eq!(running_tools.load(Ordering::SeqCst), 1);
+    }
+
+    /// `tool_execution_end` returns the run to waiting with a fresh start time
+    /// and clears the stall-notice marker for the finished call.
+    #[test]
+    fn tool_execution_end_resets_activity_and_stall_tracking() {
+        let mut run = empty_rlm_child_run("child");
+        let running_tools = AtomicU64::new(0);
+        apply_rlm_child_run_event(
+            &mut run,
+            &running_tools,
+            "tool_execution_start",
+            &json!({"toolCallId": "c1", "toolName": "ipython", "args": {}}),
+            None,
+        );
+        run.stall_notice_since_ms = run.activity.as_ref().and_then(|a| a.since_ms);
+        let stale_since_ms = run.activity.as_ref().and_then(|a| a.since_ms).unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(2));
+        apply_rlm_child_run_event(
+            &mut run,
+            &running_tools,
+            "tool_execution_end",
+            &json!({"toolCallId": "c1", "toolName": "ipython", "result": {}, "isError": false}),
+            None,
+        );
+        let activity = run.activity.as_ref().expect("waiting activity recorded");
+        assert_eq!(activity.kind, "waiting");
+        assert_eq!(activity.tool_name, None);
+        let fresh_since_ms = activity.since_ms.expect("fresh sinceMs recorded");
+        assert!(
+            fresh_since_ms > stale_since_ms,
+            "waiting sinceMs must be fresh, not the finished tool call's start"
+        );
+        assert_eq!(run.stall_notice_since_ms, None);
+        assert_eq!(running_tools.load(Ordering::SeqCst), 0);
+    }
+
+    /// Assistant message events seed the writing activity from the message's
+    /// own timestamp when the event JSON carries one.
+    #[test]
+    fn writing_activity_uses_event_message_timestamp() {
+        let assistant = AssistantMessage {
+            content: vec![pi_ai::types::ContentBlock::Text(pi_ai::types::TextContent::new(
+                "partial",
+            ))],
+            stop_reason: "stop".to_string(),
+            timestamp: 777_000,
+            ..AssistantMessage::default()
+        };
+        let mut run = empty_rlm_child_run("child");
+        apply_rlm_child_run_event(
+            &mut run,
+            &AtomicU64::new(0),
+            "message_update",
+            &json!({"message": serde_json::to_value(&assistant).unwrap()}),
+            Some(&assistant),
+        );
+        let activity = run.activity.as_ref().expect("writing activity recorded");
+        assert_eq!(activity.kind, "writing");
+        assert_eq!(activity.since_ms, Some(777_000.0));
+    }
+
+    /// Roster and collect summaries recompute a live elapsed value at read
+    /// time, and an executing tool crosses into `stalledMs` past the threshold.
+    #[tokio::test]
+    async fn summaries_report_live_elapsed_and_stall_past_threshold() {
+        let session = stall_test_session();
+        let stalled = Arc::new(Mutex::new({
+            let mut run = empty_rlm_child_run("stalled");
+            run.status = RLM_CHILD_AGENT_STATUS_RUNNING.to_string();
+            run.session_name = "scanner".into();
+            run.activity = Some(RlmChildAgentActivity {
+                kind: "executing".into(),
+                tool_name: Some("ipython".into()),
+                since_ms: Some(now_ms() - DEFAULT_RLM_CHILD_TOOL_STALL_NOTICE_MS as f64 - 60_000.0),
+            });
+            run
+        }));
+        let fresh = Arc::new(Mutex::new({
+            let mut run = empty_rlm_child_run("fresh");
+            run.status = RLM_CHILD_AGENT_STATUS_RUNNING.to_string();
+            run.session_name = "quick".into();
+            run.activity = Some(RlmChildAgentActivity {
+                kind: "executing".into(),
+                tool_name: Some("bash".into()),
+                since_ms: Some(now_ms()),
+            });
+            run
+        }));
+        let untracked = Arc::new(Mutex::new({
+            let mut run = empty_rlm_child_run("untracked");
+            run.status = RLM_CHILD_AGENT_STATUS_RUNNING.to_string();
+            run.session_name = "legacy".into();
+            run.activity = Some(RlmChildAgentActivity {
+                kind: "executing".into(),
+                tool_name: Some("read".into()),
+                since_ms: None,
+            });
+            run
+        }));
+        {
+            let mut runs = session.active_rlm_child_runs.lock().unwrap();
+            runs.insert("stalled".into(), stalled.clone());
+            runs.insert("fresh".into(), fresh.clone());
+            runs.insert("untracked".into(), untracked.clone());
+        }
+        let snapshots = session.get_rlm_child_snapshots();
+        let by_id = |id: &str| {
+            snapshots
+                .iter()
+                .find(|snapshot| snapshot.id == id)
+                .unwrap_or_else(|| panic!("missing snapshot {id}"))
+        };
+        let stalled_snapshot = by_id("stalled");
+        assert_eq!(stalled_snapshot.activity.as_ref().unwrap().kind, "executing");
+        let elapsed = stalled_snapshot.activity_elapsed_ms.expect("live elapsed");
+        assert!(
+            elapsed > DEFAULT_RLM_CHILD_TOOL_STALL_NOTICE_MS as f64,
+            "stalled elapsed must exceed the threshold: {elapsed}"
+        );
+        assert_eq!(stalled_snapshot.stalled_ms, Some(elapsed));
+        let fresh_snapshot = by_id("fresh");
+        let fresh_elapsed = fresh_snapshot.activity_elapsed_ms.expect("live elapsed");
+        assert!(fresh_elapsed < 5_000.0, "fresh elapsed must be small: {fresh_elapsed}");
+        assert_eq!(fresh_snapshot.stalled_ms, None);
+        let untracked_snapshot = by_id("untracked");
+        assert_eq!(untracked_snapshot.activity_elapsed_ms, None);
+        assert_eq!(untracked_snapshot.stalled_ms, None);
+
+        let collected = session.collect_rlm_children(&[], 0).await.unwrap();
+        let entry = collected
+            .results
+            .iter()
+            .find(|entry| entry.rlm_child_id == "stalled")
+            .expect("stalled entry collected");
+        let collected_elapsed = entry.activity_elapsed_ms.expect("live elapsed");
+        assert!(
+            collected_elapsed >= elapsed && collected_elapsed < elapsed + 10_000.0,
+            "collect recomputes the live elapsed at read time: {collected_elapsed} vs {elapsed}"
+        );
+        assert_eq!(entry.stalled_ms, Some(collected_elapsed));
+        let fresh_entry = collected
+            .results
+            .iter()
+            .find(|entry| entry.rlm_child_id == "fresh")
+            .expect("fresh entry collected");
+        assert!(fresh_entry.stalled_ms.is_none());
+    }
+
+    /// One stall notice per stalled tool call: repeated reads stay quiet, a new
+    /// stalled call notifies again.
+    #[tokio::test]
+    async fn stall_notice_emitted_once_per_stalled_call() {
+        let session = stall_test_session();
+        let notices: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+        {
+            let notices = notices.clone();
+            session.subscribe(Arc::new(move |event| {
+                if let AgentSessionEvent::RlmChildUpdate { child } = event {
+                    if let Some(notice) = &child.stall_notice {
+                        notices.lock().unwrap().push(notice.clone());
+                    }
+                }
+            }));
+        }
+        let run = Arc::new(Mutex::new({
+            let mut run = empty_rlm_child_run("stalled");
+            run.status = RLM_CHILD_AGENT_STATUS_RUNNING.to_string();
+            run.session_name = "scanner".into();
+            run.activity = Some(RlmChildAgentActivity {
+                kind: "executing".into(),
+                tool_name: Some("ipython".into()),
+                since_ms: Some(now_ms() - DEFAULT_RLM_CHILD_TOOL_STALL_NOTICE_MS as f64 - 60_000.0),
+            });
+            run
+        }));
+        session
+            .active_rlm_child_runs
+            .lock()
+            .unwrap()
+            .insert("stalled".into(), run.clone());
+
+        session.get_rlm_child_snapshots();
+        assert_eq!(
+            notices.lock().unwrap().len(),
+            1,
+            "first roster read emits exactly one stall notice"
+        );
+        assert_eq!(
+            notices.lock().unwrap()[0],
+            "Child scanner tool ipython has been running for 11 min"
+        );
+        session.collect_rlm_children(&[], 0).await.unwrap();
+        session.get_rlm_child_snapshots();
+        assert_eq!(
+            notices.lock().unwrap().len(),
+            1,
+            "repeated reads must not repeat the notice for one stalled call"
+        );
+
+        // The stalled call ends; the next tool call stalls again and notifies again.
+        let mut guard = run.lock().unwrap();
+        apply_rlm_child_run_event(
+            &mut guard,
+            &AtomicU64::new(0),
+            "tool_execution_start",
+            &json!({"toolCallId": "c2", "toolName": "ipython", "args": {}}),
+            None,
+        );
+        guard.activity = Some(RlmChildAgentActivity {
+            kind: "executing".into(),
+            tool_name: Some("ipython".into()),
+            since_ms: Some(now_ms() - DEFAULT_RLM_CHILD_TOOL_STALL_NOTICE_MS as f64 - 120_000.0),
+        });
+        drop(guard);
+        session.get_rlm_child_snapshots();
+        assert_eq!(
+            notices.lock().unwrap().len(),
+            2,
+            "a new stalled tool call notifies once more"
+        );
+    }
+
+    /// Old serialized state without the new fields still deserializes, and
+    /// absent values stay out of the wire shape.
+    #[test]
+    fn serde_old_json_without_new_fields_still_deserializes() {
+        let activity: RlmChildAgentActivity =
+            serde_json::from_value(json!({"kind": "executing", "toolName": "ipython"})).unwrap();
+        assert_eq!(activity.kind, "executing");
+        assert_eq!(activity.tool_name.as_deref(), Some("ipython"));
+        assert_eq!(activity.since_ms, None);
+        assert!(serde_json::to_value(&activity).unwrap().get("sinceMs").is_none());
+
+        let snapshot: RlmChildAgentSnapshot = serde_json::from_value(json!({
+            "id": "child",
+            "label": "child agent",
+            "status": "running",
+            "sessionDir": "/synthetic/child",
+            "activity": {"kind": "waiting"},
+        }))
+        .unwrap();
+        assert_eq!(snapshot.activity_elapsed_ms, None);
+        assert_eq!(snapshot.stalled_ms, None);
+        assert_eq!(snapshot.stall_notice, None);
+        let serialized = serde_json::to_value(&RlmChildAgentSnapshot {
+            activity_elapsed_ms: Some(1_234.0),
+            ..snapshot.clone()
+        })
+        .unwrap();
+        assert_eq!(serialized["activityElapsedMs"], json!(1_234.0));
+        assert!(serialized.get("stalledMs").is_none());
+        assert!(serialized.get("stallNotice").is_none());
+
+        let entry: RlmCollectResultEntry = serde_json::from_value(json!({
+            "rlm_child_id": "child",
+            "session_dir": "/synthetic/child",
+            "status": "running",
+            "settled": false,
+        }))
+        .unwrap();
+        assert_eq!(entry.activity_elapsed_ms, None);
+        assert_eq!(entry.stalled_ms, None);
+        let entry_serialized =
+            serde_json::to_value(&RlmCollectResultEntry {
+                activity_elapsed_ms: Some(5.0),
+                stalled_ms: Some(6.0),
+                ..entry
+            })
+            .unwrap();
+        assert_eq!(entry_serialized["activityElapsedMs"], json!(5.0));
+        assert_eq!(entry_serialized["stalledMs"], json!(6.0));
     }
 }
