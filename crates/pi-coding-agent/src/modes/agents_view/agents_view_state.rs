@@ -222,6 +222,9 @@ pub struct SessionSummary {
     pub last_heard_from_at: Option<String>,
     pub worker_state: Option<WorkerState>,
     pub worker_pid: Option<i64>,
+    /// Optional schema-39 metadata. Unknown activity versions must not break the roster.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub communication_activity: Option<Value>,
 }
 
 impl SessionSummary {

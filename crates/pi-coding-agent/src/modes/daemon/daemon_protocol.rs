@@ -73,8 +73,10 @@ pub const DAEMON_COMMAND_ENVELOPE_MIN_PROTOCOL_VERSION: u32 = 7;
 // Revision 37 adds optional Jev memory-retrieval capability and feature metadata; no new commands.
 // Revision 38 adds optional maxTokensExplicit model metadata. Older readers ignore it;
 // newer readers default to catalog limits when it is absent. No command or startup gate.
-pub const DAEMON_SCHEMA_REVISION: u32 = 38;
-pub const DAEMON_SCHEMA_ID: &str = "protocol-7-schema-38-explicit-model-tokens";
+// Revision 39 adds optional, capability-gated communicationActivity roster metadata.
+// Existing roster commands/events and startup remain compatible.
+pub const DAEMON_SCHEMA_REVISION: u32 = 39;
+pub const DAEMON_SCHEMA_ID: &str = "protocol-7-schema-39-communication-activity";
 
 pub type DaemonProtocolName = String;
 pub type DaemonProtocolVersion = u32;
@@ -164,6 +166,7 @@ pub enum DaemonServerCapability {
     ExecutionMode,
     NodeExecutionMode,
     ClangExecutionMode,
+    AgentCommunicationActivity,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -214,7 +217,7 @@ pub const DAEMON_SUPPORTED_CLIENT_CAPABILITIES: [DaemonClientCapability; 7] = [
 /// `DAEMON_DEFAULT_SERVER_CAPABILITIES`: the supported client list plus the
 /// server-only surfaces. `direct_peer_transport` and `agent_roster` are
 /// deliberately absent, exactly as in the TypeScript.
-pub const DAEMON_DEFAULT_SERVER_CAPABILITIES: [DaemonServerCapability; 29] = [
+pub const DAEMON_DEFAULT_SERVER_CAPABILITIES: [DaemonServerCapability; 30] = [
     DaemonServerCapability::AttachSnapshot,
     DaemonServerCapability::EventSequence,
     DaemonServerCapability::ExtensionUi,
@@ -244,6 +247,7 @@ pub const DAEMON_DEFAULT_SERVER_CAPABILITIES: [DaemonServerCapability; 29] = [
     DaemonServerCapability::ExecutionMode,
     DaemonServerCapability::NodeExecutionMode,
     DaemonServerCapability::ClangExecutionMode,
+    DaemonServerCapability::AgentCommunicationActivity,
 ];
 
 /// `{ dev: number; ino: number }` on the peer transport ticket.
@@ -2166,6 +2170,7 @@ pub fn daemon_command_compatibility(command: &str) -> DaemonCommandCompatibility
             DaemonCommandCompatibility::gated(19, Capability::SessionInputPause)
         }
         "heartbeats_list" => DaemonCommandCompatibility::capability(Capability::HeartbeatCatalog),
+        // Schema-39 activity is optional; legacy roster requests keep their existing gate.
         "roster_subscribe" | "roster_unsubscribe" => {
             DaemonCommandCompatibility::capability(Capability::AgentRoster)
         }
@@ -2776,6 +2781,7 @@ pub fn daemon_outbound_compatibility(outbound: &'static str) -> DaemonCommandCom
     use DaemonServerCapability as Capability;
     match outbound {
         "heartbeats_changed" => DaemonCommandCompatibility::capability(Capability::HeartbeatCatalog),
+        // communicationActivity is additive metadata, not a new event requirement.
         "roster_update" => DaemonCommandCompatibility::capability(Capability::AgentRoster),
         // Jev feature/usage metadata, including revision 37 memory, is additive; no new startup or event requirement.
         "response" | "extension_ui_request" => DaemonCommandCompatibility::legacy(),
@@ -3086,7 +3092,7 @@ mod tests {
 
     #[test]
     fn keeps_the_advertised_schema_identity() {
-        assert_eq!(DAEMON_SCHEMA_ID, format!("protocol-{DAEMON_PROTOCOL_VERSION}-schema-{DAEMON_SCHEMA_REVISION}-explicit-model-tokens"));
+        assert_eq!(DAEMON_SCHEMA_ID, format!("protocol-{DAEMON_PROTOCOL_VERSION}-schema-{DAEMON_SCHEMA_REVISION}-communication-activity"));
     }
 
     #[test]
@@ -3107,6 +3113,19 @@ mod tests {
         );
         assert!(DAEMON_DEFAULT_SERVER_CAPABILITIES.contains(&DaemonServerCapability::HeartbeatCatalog));
         assert!(DAEMON_DEFAULT_SERVER_CAPABILITIES.contains(&DaemonServerCapability::HeartbeatManagement));
+    }
+
+    #[test]
+    fn communication_activity_does_not_raise_legacy_roster_or_startup_requirements() {
+        assert!(DAEMON_DEFAULT_SERVER_CAPABILITIES.contains(&DaemonServerCapability::AgentCommunicationActivity));
+        let older = DaemonCompatibilityHello {
+            protocol: daemon_protocol_info(), schema_revision: Some(38),
+            server_capabilities: Some(vec![DaemonServerCapability::AgentRoster]),
+        };
+        assert!(meets_daemon_command_compatibility(&older, &daemon_command_compatibility("roster_subscribe")));
+        assert!(meets_daemon_command_compatibility(&older, &daemon_outbound_compatibility("roster_update")));
+        assert_eq!(daemon_command_compatibility("attach"), DaemonCommandCompatibility::legacy());
+        assert_eq!(daemon_outbound_compatibility("response"), DaemonCommandCompatibility::legacy());
     }
 
     #[test]

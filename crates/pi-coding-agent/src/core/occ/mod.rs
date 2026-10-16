@@ -255,6 +255,7 @@
 //! canonical content (statement for findings, kind+locator+digest for
 //! evidence).
 
+pub mod activity;
 pub mod consolidation;
 pub mod contract;
 pub mod delta;

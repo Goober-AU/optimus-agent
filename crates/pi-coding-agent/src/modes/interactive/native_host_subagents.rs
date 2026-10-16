@@ -9,6 +9,8 @@ use pi_tui::tui::Focusable;
 
 #[path = "jev_activity.rs"]
 mod jev_activity;
+#[path = "communication_activity.rs"]
+mod communication_activity;
 
 #[derive(Default)]
 struct JevBarState {
@@ -51,6 +53,10 @@ pub(super) struct Bar {
     roster: Arc<Mutex<Option<Arc<dyn AgentConnectionRosterStore>>>>,
     jev: Arc<Mutex<JevBarState>>,
     jev_task: RefCell<Option<tokio::task::JoinHandle<()>>>,
+    communication: communication_activity::ActivityState,
+    pulse_task: Option<tokio::task::JoinHandle<()>>,
+    pulse_deadline: Option<std::time::Instant>,
+    render_send: RefCell<Option<mpsc::Sender<HostEvent>>>,
 }
 
 impl Bar {
@@ -65,6 +71,10 @@ impl Bar {
             roster: Arc::new(Mutex::new(None)),
             jev: Arc::new(Mutex::new(JevBarState::default())),
             jev_task: RefCell::new(None),
+            communication: communication_activity::ActivityState::default(),
+            pulse_task: None,
+            pulse_deadline: None,
+            render_send: RefCell::new(None),
         }
     }
 
@@ -82,6 +92,7 @@ impl Bar {
         connection: Arc<dyn wire::AgentConnection>,
         send: mpsc::Sender<HostEvent>,
     ) {
+        *self.render_send.borrow_mut() = Some(send.clone());
         let jev = self.jev.clone();
         let status_connection = connection.clone();
         let status_send = send.clone();
@@ -159,6 +170,31 @@ impl Bar {
         )
     }
 
+    fn update_communication(&mut self) {
+        let parent = self.mode.borrow().connection_state.as_ref().map(|state| RosterParent {
+            active_session_id: state.active_session_id.clone(),
+            session_id: Some(state.session_id.clone()), session_file: state.session_file.clone(),
+        }).unwrap_or_default();
+        let values = self.roster.lock().unwrap().as_ref().map(|store| store.summaries()).unwrap_or_default();
+        let rows = values.into_iter().filter_map(|row| serde_json::from_value(
+            crate::modes::agents_view::native_wire::normalize_browser_numbers(row),
+        ).ok()).collect::<Vec<_>>();
+        let now = std::time::Instant::now();
+        self.communication.observe(&rows, &parent, now);
+        let deadline = self.communication.next_deadline(now);
+        if self.pulse_deadline != deadline {
+            self.pulse_deadline = deadline;
+            if let Some(previous) = self.pulse_task.take() { previous.abort(); }
+            if let (Some(send), Some(deadline)) = (self.render_send.borrow().clone(), deadline) {
+                self.pulse_task = Some(tokio::spawn(async move {
+                    tokio::time::sleep_until(deadline.into()).await;
+                    let _ = send.send(HostEvent::Render);
+                }));
+            }
+        }
+        self.line.set_communication_status(Some(self.communication.indicators(now)));
+    }
+
     /// Returns true when the tray consumed input; all other input stays in chat.
     pub(super) fn input(
         &mut self,
@@ -212,6 +248,7 @@ impl TuiComponent for Bar {
             state.status.clone()
         };
         self.line.set_right_status(status);
+        self.update_communication();
         let counts = self.counts();
         self.line.set_subagent_counts(counts);
         if !self.line.is_selectable() && self.line.focused() {
@@ -246,6 +283,7 @@ impl TuiComponent for Bar {
 impl Drop for Bar {
     fn drop(&mut self) {
         if let Some(task) = self.jev_task.get_mut().take() { task.abort(); }
+        if let Some(task) = self.pulse_task.take() { task.abort(); }
     }
 }
 
