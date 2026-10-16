@@ -83,6 +83,7 @@ use crate::core::cron_jobs::{
     CreateAgentCronJobInput, HeartbeatCronSessionActivity, RlmHeartbeatCreateInput,
     RlmHeartbeatUpdateInput, DEFAULT_HEARTBEAT_SCHEDULE, RUN_RESULT_SKIPPED, SOURCE_RLM_HEARTBEAT,
 };
+use crate::core::occ::dialect::OccCapability;
 use crate::core::orphan_process_journal::ORPHAN_PROCESS_JOURNAL_ENV;
 use crate::core::prompt_admission::{wait_for_prompt_admission, PromptAdmissionCancelledError};
 use crate::core::session_action_store::{
@@ -13705,6 +13706,23 @@ impl AgentDaemon {
         }
     }
 
+    /// The OCC-2 capability advertisement for one daemon session
+    /// (OCC-2 integration design, section 4): the shipped `sym-v1` card
+    /// only, and only while the session's `agentCommunication.occ2Enabled`
+    /// setting is on. Absent means OCC-1: negotiation yields no dialect and
+    /// sends to this agent stay OCC-1.
+    fn occ_capability_for(&self, session: &Arc<dyn DaemonSession>) -> Option<OccCapability> {
+        session
+            .settings_manager()
+            .and_then(|settings| {
+                settings
+                    .lock()
+                    .expect("settings manager poisoned")
+                    .get_agent_communication_occ2_enabled()
+                    .then_some(OccCapability::here())
+            })
+    }
+
     /// `createAgentMessageAgentSummary(state)`.
     fn create_agent_message_agent_summary(
         &self,
@@ -13773,6 +13791,7 @@ impl AgentDaemon {
                 .to_string(),
             ),
             rlm_child_registry_status: None,
+            occ_capability: self.occ_capability_for(session),
         }
     }
 
@@ -13813,6 +13832,15 @@ impl AgentDaemon {
                 .len()
                 .checked_sub(2)
                 .and_then(|index| passive.chain.get(index));
+            // A passive subagent has no live session of its own. A resident
+            // root carries the family's settings (every session in one
+            // daemon shares the codec build), so its flag decides the
+            // sym-v1 advertisement; a fully saved tree has no settings
+            // source and stays conservative (absent = OCC-1).
+            let occ_capability = match &passive.root {
+                PassiveRlmRoot::Resident(state) => self.occ_capability_for(&self.session_of(state)),
+                PassiveRlmRoot::Saved(_) => None,
+            };
             local_agents.push(AgentSessionMessageAgentSummary {
                 // Before hydration the persisted session id is its
                 // supervisor-routable id.
@@ -13841,6 +13869,7 @@ impl AgentDaemon {
                 rlm_depth: Some(entry.rlm_depth.unwrap_or(info.rlm_depth) as f64),
                 status: Some(FAMILY_STATUS_INACTIVE.to_string()),
                 rlm_child_registry_status: Some(entry.status.clone()),
+                occ_capability,
             });
         }
         let local_ids: HashSet<String> = local_agents
