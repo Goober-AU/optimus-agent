@@ -10,6 +10,8 @@
 //! - `AbortSignal` -> `tokio_util::sync::CancellationToken`.
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::io::{Read, Write};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use pi_agent_core::types::{AgentMessage, CustomAgentMessage, CustomMessageContent};
@@ -17,7 +19,11 @@ use serde_json::{Map, Value};
 
 use crate::core::messages::{ASYNC_BASH_COMPLETION_CUSTOM_TYPE, HEARTBEAT_PROMPT_CUSTOM_TYPE};
 use crate::core::occ::contract::{AgentCommMessage, ContractError};
-use crate::core::occ::dialect::{DialectRegistry, OccCapability};
+use crate::core::occ::dialect::{DialectCard, DialectRegistry, OccCapability, CODEBOOK_PREFIX_LEN};
+use crate::core::occ::selection::{
+    select_with_policy, DialectEvaluationRecord, SelectionContext, SelectionDecision,
+    SelectionPolicy, SelectionReason,
+};
 use crate::core::occ::occ1::{Occ1Message, OCC1_HEADER};
 use crate::core::occ::occ2::{self, OCC2_FALLBACK_SENTINEL, OCC2_HEADER};
 
@@ -291,6 +297,11 @@ pub struct AgentSessionMessageDetails {
     pub from_relationship: Option<AgentFamilyRelationship>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub target: Option<AgentSessionMessageEndpoint>,
+    /// How the OCC-2 delivery consumed this body, recorded once at
+    /// delivery so telemetry never re-decodes. Absent on pre-OCC-2
+    /// records and plain bodies without an OCC/2 header involvement.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub occ2_delivery: Option<Occ2DeliveryDetails>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -793,38 +804,268 @@ fn split_occ2_dual_body(body: &str) -> Option<(&str, &str)> {
 }
 
 /// Validate before exposing symbolic text; retain the durable dual payload.
+///
+/// Conservative always-teach render: the listener's context is unknown, so
+/// every strict-decode body carries the full codebook legend. The spawn seam
+/// relies on this (the child's context starts empty), as do callers without
+/// access to the listener's message list. Delivery uses
+/// [`agent_session_message_prompt_body_with_codebooks`].
 pub fn agent_session_message_prompt_body(message: &str) -> std::borrow::Cow<'_, str> {
+    agent_session_message_prompt_body_with_registry_and_codebooks(
+        message,
+        &DialectRegistry::with_sym_v1(),
+        &Occ2CodebooksPresent::new(),
+    )
+}
+
+// ---------------------------------------------------------------------------
+// OCC-2 codebook amortization (efficiency campaign): the full codebook
+// legend is a fixed ~600-char block, and injecting it into every delivered
+// message grew total prompt tokens +32% on SILO-BENCH while the wire shrank.
+// The render below injects the full legend only when the listener's context
+// does not already carry the same codebook; later bodies carry a one-line
+// reference.
+//
+// Identity = dialect id + version + the leading `CODEBOOK_PREFIX_LEN` hex
+// of the codebook sha256 (the identity the OCC-2 wire header already
+// carries), so a re-tuned card re-injects. Presence is derived from the
+// listener's live message list, never from a volatile flag: compaction,
+// restart and context rebuilds are correct by construction, because
+// whatever the scan still finds is what the model still sees.
+// ---------------------------------------------------------------------------
+
+/// Identity of one codebook as injected into a listener context.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Occ2CodebookId {
+    /// Dialect id (e.g. `sym-v1`).
+    pub dialect: String,
+    /// Dialect version.
+    pub version: u32,
+    /// Leading `CODEBOOK_PREFIX_LEN` hex characters of the codebook sha256.
+    pub sha256_prefix: String,
+}
+
+impl Occ2CodebookId {
+    /// The identity of a registered dialect card.
+    pub fn of_card(card: &DialectCard) -> Self {
+        Self {
+            dialect: card.dialect_id.clone(),
+            version: card.version,
+            sha256_prefix: card.sha256.chars().take(CODEBOOK_PREFIX_LEN).collect(),
+        }
+    }
+}
+
+/// Codebook identities already present in a listener's context.
+pub type Occ2CodebooksPresent = BTreeSet<Occ2CodebookId>;
+
+/// The full codebook legend for one dialect card: identity plus the complete
+/// slot and subfield mapping and the reading rules. This is the only place
+/// the legend text is composed; the spawn seam and the delivery path share
+/// it, so both record the same identity scheme.
+pub fn occ2_codebook_legend(card: &DialectCard) -> String {
+    let identity = Occ2CodebookId::of_card(card);
+    let slots = card.symbol_table.slots.iter().map(|(name, symbol)| format!("{symbol}:{name}")).collect::<Vec<_>>().join(", ");
+    let subfields = card.symbol_table.subfields.iter().map(|(name, symbol)| format!("{name}:{symbol}")).collect::<Vec<_>>().join(", ");
+    format!(
+        "OCC-2 {dialect}@{version} codebook (sha256:{prefix}): {slots}. Indexed fields use 1-based indices; suffixes: {subfields}. Values follow '='; evidence references are comma-separated. Reply using OCC-1; transport handles encoding.",
+        dialect = identity.dialect,
+        version = identity.version,
+        prefix = identity.sha256_prefix,
+    )
+}
+
+/// The one-line reference to a codebook already present in the context.
+/// Session-scoped wording ("in this conversation") keeps the line true
+/// even when a later re-injection follows a compaction that removed the
+/// original legend.
+pub fn occ2_codebook_reference(identity: &Occ2CodebookId) -> String {
+    format!(
+        "OCC-2 {dialect}@{version} codebook (sha256:{prefix}) previously provided in this conversation; decode rules unchanged.",
+        dialect = identity.dialect,
+        version = identity.version,
+        prefix = identity.sha256_prefix,
+    )
+}
+
+/// Parses the identity from a rendered codebook legend line (exactly what
+/// [`occ2_codebook_legend`] emits). Reference lines do not parse: only a
+/// full legend counts as a codebook present in the context, so compaction
+/// that removes the legend-bearing record forces a re-injection instead of
+/// leaving a dangling reference as the only evidence.
+pub fn parse_occ2_codebook_legend(line: &str) -> Option<Occ2CodebookId> {
+    let rest = line.strip_prefix("OCC-2 ")?;
+    let (identity, tail) = rest.split_once(" codebook (sha256:")?;
+    let (dialect, version) = identity.split_once('@')?;
+    let version: u32 = version.parse().ok()?;
+    let prefix: String = tail
+        .chars()
+        .take_while(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase())
+        .collect();
+    if prefix.len() != CODEBOOK_PREFIX_LEN || !tail[prefix.len()..].starts_with("):") {
+        return None;
+    }
+    let valid_dialect = !dialect.is_empty()
+        && dialect.chars().next().is_some_and(|c| c.is_ascii_lowercase())
+        && dialect
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
+    if !valid_dialect {
+        return None;
+    }
+    Some(Occ2CodebookId {
+        dialect: dialect.to_string(),
+        version,
+        sha256_prefix: prefix,
+    })
+}
+
+/// The codebook identities present in a listener's message list: every
+/// stored agent-message record whose rendered content carries a full
+/// legend. Delivered messages and RLM spawn prompts both record their
+/// content as `agent_message` custom messages, so one scan covers both
+/// seams, and the spawn codebook suppresses the first delivered message's
+/// legend (no double injection).
+pub fn occ2_codebooks_present(messages: &[AgentMessage]) -> Occ2CodebooksPresent {
+    let mut present = Occ2CodebooksPresent::new();
+    for message in messages {
+        let AgentMessage::Custom(CustomAgentMessage::Custom {
+            custom_type,
+            content: CustomMessageContent::Text(text),
+            ..
+        }) = message
+        else {
+            continue;
+        };
+        if custom_type != AGENT_MESSAGE_CUSTOM_TYPE {
+            continue;
+        }
+        for line in text.lines() {
+            if let Some(identity) = parse_occ2_codebook_legend(line) {
+                present.insert(identity);
+            }
+        }
+    }
+    present
+}
+
+/// Resolves the dialect card a body advertises, from its wire header
+/// (`OCC/2 D=<dialect>@<version> C=<prefix>`).
+fn occ2_body_dialect_card<'a>(
+    message: &str,
+    registry: &'a DialectRegistry,
+) -> Option<&'a DialectCard> {
+    let header = message.lines().next()?;
+    let rest = header.strip_prefix(OCC2_HEADER)?;
+    let mut tokens = rest.split(' ').filter(|token| !token.is_empty());
+    let dialect = tokens.next()?.strip_prefix("D=")?;
+    let (dialect, version) = dialect.split_once('@')?;
+    let version: u32 = version.parse().ok()?;
+    registry.get(dialect, version)
+}
+
+/// The render core shared by every public variant. One fallback split, the
+/// strict decode as the validity gate, then either the full legend (first
+/// body of this identity in the listener's context) or the one-line
+/// reference. Fallback bodies render the embedded OCC-1 section; anything
+/// else passes through unchanged.
+fn render_agent_session_message_prompt_body<'a>(
+    message: &'a str,
+    registry: &DialectRegistry,
+    codebooks: &Occ2CodebooksPresent,
+) -> std::borrow::Cow<'a, str> {
     use std::borrow::Cow;
     if !message.starts_with(OCC2_HEADER) {
         return Cow::Borrowed(message);
     }
-    let registry = DialectRegistry::with_sym_v1();
-    if occ2::decode(message, &registry).is_ok() {
-        let symbolic = split_occ2_dual_body(message).map(|(body, _)| body).unwrap_or(message).trim_end_matches('\n');
-        // The model needs the codebook even when this is its first OCC-2 task.
-        let card = registry.get("sym-v1", 1).expect("builtin dialect");
-        let slots = card.symbol_table.slots.iter().map(|(name, symbol)| format!("{symbol}:{name}")).collect::<Vec<_>>().join(", ");
-        let subfields = card.symbol_table.subfields.iter().map(|(name, symbol)| format!("{name}:{symbol}")).collect::<Vec<_>>().join(", ");
-        return Cow::Owned(format!("OCC-2 sym-v1 codebook: {slots}. Indexed fields use 1-based indices; suffixes: {subfields}. Values follow '='; evidence references are comma-separated. Reply using OCC-1; transport handles encoding.\n\n{symbolic}"));
+    // One split serves both branches; the strict decode below re-splits
+    // internally, but the render needs the original section bytes.
+    let split = split_occ2_dual_body(message);
+    if occ2::decode(message, registry).is_ok() {
+        let symbolic = split
+            .map(|(body, _)| body)
+            .unwrap_or(message)
+            .trim_end_matches('\n');
+        // A strict decode resolved this exact card; the lookup cannot miss.
+        let Some(card) = occ2_body_dialect_card(message, registry) else {
+            return Cow::Owned(symbolic.to_string());
+        };
+        let identity = Occ2CodebookId::of_card(card);
+        let lead = if codebooks.contains(&identity) {
+            occ2_codebook_reference(&identity)
+        } else {
+            occ2_codebook_legend(card)
+        };
+        return Cow::Owned(format!("{lead}\n\n{symbolic}"));
     }
-    if occ2::occ1_fallback(message).is_ok() {
-        if let Some((_, fallback)) = split_occ2_dual_body(message) {
-            return Cow::Borrowed(fallback);
+    // Fallback: consume the embedded OCC-1 section when it parses. This
+    // mirrors `occ2::occ1_fallback` on the already-split sections; a body
+    // without a sentinel cannot parse as OCC-1 because it starts with the
+    // OCC/2 header.
+    if let Some((_, fallback)) = split {
+        if let Ok(occ1) = Occ1Message::decode(fallback) {
+            if AgentCommMessage::from_occ1(&occ1).is_ok() {
+                return Cow::Borrowed(fallback);
+            }
         }
     }
     Cow::Borrowed(message)
+}
+
+/// [`agent_session_message_prompt_body`] with the codebook identities
+/// already present in the listener's context (from
+/// [`occ2_codebooks_present`]): the first body of an identity carries the
+/// full legend, later ones the one-line reference.
+pub fn agent_session_message_prompt_body_with_codebooks<'a>(
+    message: &'a str,
+    codebooks: &Occ2CodebooksPresent,
+) -> std::borrow::Cow<'a, str> {
+    agent_session_message_prompt_body_with_registry_and_codebooks(
+        message,
+        &DialectRegistry::with_sym_v1(),
+        codebooks,
+    )
+}
+
+/// The amortized render against an explicit dialect registry, so tests can
+/// model evolved dialects alongside the built-in card.
+pub fn agent_session_message_prompt_body_with_registry_and_codebooks<'a>(
+    message: &'a str,
+    registry: &DialectRegistry,
+    codebooks: &Occ2CodebooksPresent,
+) -> std::borrow::Cow<'a, str> {
+    render_agent_session_message_prompt_body(message, registry, codebooks)
 }
 
 /// Incidents per (sender, listener) pair before OCC-2 is disabled for
 /// that pair for the session (design section 3, tier 3).
 pub const OCC2_STRIKE_LIMIT: usize = 3;
 
-/// Pure strike ledger for OCC-2 decode failures. Session state, no I/O;
-/// the runtime recorder wiring is a daemon-side follow-up.
+/// Quiet period after which a pair's strike counts decay to zero: transient
+/// corruption (a mismatched build, one truncated write) must not disable a
+/// pair forever. 24 hours, conservative.
+pub const OCC2_STRIKE_DECAY_MS: u64 = 24 * 60 * 60 * 1000;
+
+/// The strike pair key: speaker -> listener, scoped to one dialect
+/// version, so a strike against one dialect never disables another.
+pub fn occ2_pair_key(speaker: &str, listener: &str, dialect: &str, version: u32) -> String {
+    format!("{speaker}->{listener}|{dialect}@{version}")
+}
+
+/// Pure strike ledger for OCC-2 decode failures, with the per-pair last
+/// incident time the persisted form needs for decay.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Occ2StrikeLedger {
     strikes: BTreeMap<String, usize>,
     disabled: BTreeSet<String>,
+    last_incident_ms: BTreeMap<String, u64>,
+}
+
+fn unix_now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_millis() as u64)
+        .unwrap_or(0)
 }
 
 impl Occ2StrikeLedger {
@@ -842,11 +1083,23 @@ impl Occ2StrikeLedger {
         self.disabled.contains(pair)
     }
 
-    /// Records one incident. Returns true when this strike disabled the
-    /// pair.
+    /// When the pair's most recent incident was recorded.
+    pub fn last_incident_ms(&self, pair: &str) -> Option<u64> {
+        self.last_incident_ms.get(pair).copied()
+    }
+
+    /// Records one incident at the wall clock. Returns true when this
+    /// strike disabled the pair.
     pub fn record_incident(&mut self, pair: &str) -> bool {
+        self.record_incident_at(pair, unix_now_ms())
+    }
+
+    /// Records one incident at an injected time, so decay tests stay
+    /// deterministic. Returns true when this strike disabled the pair.
+    pub fn record_incident_at(&mut self, pair: &str, now_ms: u64) -> bool {
         let strikes = self.strikes.entry(pair.to_string()).or_insert(0);
         *strikes += 1;
+        self.last_incident_ms.insert(pair.to_string(), now_ms);
         if *strikes >= OCC2_STRIKE_LIMIT {
             self.disabled.insert(pair.to_string());
             true
@@ -855,10 +1108,232 @@ impl Occ2StrikeLedger {
         }
     }
 
+    /// Drops every pair whose last incident is older than
+    /// [`OCC2_STRIKE_DECAY_MS`], re-enabling decayed pairs. Returns true
+    /// when anything was dropped. Entries without a recorded time decay
+    /// immediately: an unknown age is not evidence of a persistent fault.
+    pub fn decay(&mut self, now_ms: u64) -> bool {
+        let expired: Vec<String> = self
+            .last_incident_ms
+            .iter()
+            .filter(|(_, last)| now_ms.saturating_sub(**last) > OCC2_STRIKE_DECAY_MS)
+            .map(|(pair, _)| pair.clone())
+            .collect();
+        let timed_out: Vec<String> = self
+            .last_incident_ms
+            .keys()
+            .filter(|pair| !self.strikes.contains_key(*pair))
+            .cloned()
+            .collect();
+        let mut changed = false;
+        for pair in expired.into_iter().chain(timed_out) {
+            self.strikes.remove(&pair);
+            self.disabled.remove(&pair);
+            self.last_incident_ms.remove(&pair);
+            changed = true;
+        }
+        changed
+    }
+
+    /// Every recorded pair, ordered by key: (pair id, strikes, last
+    /// incident ms).
+    pub fn pairs(&self) -> Vec<(String, usize, u64)> {
+        self.strikes
+            .iter()
+            .map(|(pair, strikes)| {
+                (
+                    pair.clone(),
+                    *strikes,
+                    self.last_incident_ms.get(pair).copied().unwrap_or(0),
+                )
+            })
+            .collect()
+    }
+
+    /// Rebuilds a ledger from persisted pairs; a pair with at least
+    /// [`OCC2_STRIKE_LIMIT`] strikes is disabled, exactly as
+    /// [`Occ2StrikeLedger::record_incident_at`] would have left it.
+    pub fn from_pairs(pairs: impl IntoIterator<Item = (String, usize, u64)>) -> Self {
+        let mut ledger = Self::new();
+        for (pair, strikes, last_ms) in pairs {
+            if strikes == 0 {
+                continue;
+            }
+            ledger.strikes.insert(pair.clone(), strikes);
+            ledger.last_incident_ms.insert(pair.clone(), last_ms);
+            if strikes >= OCC2_STRIKE_LIMIT {
+                ledger.disabled.insert(pair);
+            }
+        }
+        ledger
+    }
+
     /// Pairs disabled by the strike limit, ordered by id.
     pub fn disabled_pairs(&self) -> Vec<&str> {
         self.disabled.iter().map(String::as_str).collect()
     }
+}
+
+// ---------------------------------------------------------------------------
+// Strike ledger persistence: one file per listener session, in the same
+// artifact directory as the OCC preference (session_settings precedent:
+// atomic tempfile write, bounded read, fail-open on error).
+// ---------------------------------------------------------------------------
+
+const OCC2_STRIKES_SCHEMA: &str = "optimus.occ2-strikes.v1";
+/// Maximum strike-file read, mirroring the bounded reads in
+/// session_settings.rs.
+const OCC2_STRIKES_MAX_READ: u64 = 64 * 1024;
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Occ2StrikeLedgerFile {
+    schema: String,
+    /// Pair key -> strike record.
+    entries: BTreeMap<String, Occ2StrikeEntryFile>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Occ2StrikeEntryFile {
+    strikes: usize,
+    last_strike_ms: u64,
+}
+
+/// The strike ledger file for one listener session, in its artifact
+/// directory (sibling of the OCC preference's `occ.json`).
+pub fn occ2_strike_ledger_path(session_file: &str) -> PathBuf {
+    PathBuf::from(crate::core::session_manager::get_session_artifact_path_for_file(
+        session_file, None,
+    ))
+    .join("occ2-strikes.json")
+}
+
+/// The OCC preference file for one session; must match
+/// `session_settings::preference_path`, whose write time drives the
+/// toggle-clears-strikes rule.
+fn occ2_preference_marker_path(session_file: &str) -> PathBuf {
+    PathBuf::from(crate::core::session_manager::get_session_artifact_path_for_file(
+        session_file, None,
+    ))
+    .join("occ.json")
+}
+
+/// Atomically persists the ledger for one listener session.
+pub fn save_occ2_strike_ledger(
+    session_file: &str,
+    ledger: &Occ2StrikeLedger,
+) -> Result<(), String> {
+    if session_file.is_empty() {
+        return Err("This chat has no saved session identity".into());
+    }
+    let path = occ2_strike_ledger_path(session_file);
+    let parent = path
+        .parent()
+        .ok_or("Invalid OCC-2 strike ledger path")?;
+    std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    let file = Occ2StrikeLedgerFile {
+        schema: OCC2_STRIKES_SCHEMA.into(),
+        entries: ledger
+            .pairs()
+            .into_iter()
+            .map(|(pair, strikes, last_strike_ms)| {
+                (
+                    pair,
+                    Occ2StrikeEntryFile {
+                        strikes,
+                        last_strike_ms,
+                    },
+                )
+            })
+            .collect(),
+    };
+    let mut pending = tempfile::NamedTempFile::new_in(parent).map_err(|e| e.to_string())?;
+    serde_json::to_writer(pending.as_file_mut(), &file).map_err(|e| e.to_string())?;
+    pending.write_all(b"\n").map_err(|e| e.to_string())?;
+    pending.as_file().sync_all().map_err(|e| e.to_string())?;
+    pending.persist(path).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Loads the strike ledger for one listener session. Missing file is an
+/// empty ledger; so is any read or parse error (fail open: strikes degrade
+/// a convenience, they never gate delivery). Decay is applied at load, and
+/// a preference write newer than the strike file clears the ledger: the
+/// `/occ` toggle re-arming OCC-2 starts the chat's pairs from zero.
+pub fn load_occ2_strike_ledger(session_file: &str, now_ms: u64) -> Result<Occ2StrikeLedger, String> {
+    let path = occ2_strike_ledger_path(session_file);
+    let bytes = match std::fs::File::open(&path) {
+        Ok(mut file) => {
+            let mut bytes = Vec::new();
+            file.take(OCC2_STRIKES_MAX_READ + 1)
+                .read_to_end(&mut bytes)
+                .map_err(|e| e.to_string())?;
+            if bytes.len() as u64 > OCC2_STRIKES_MAX_READ {
+                return Err("OCC-2 strike ledger is too large".into());
+            }
+            bytes
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Occ2StrikeLedger::new()),
+        Err(error) => return Err(error.to_string()),
+    };
+    // A preference write after the last strike clears the ledger (the
+    // user re-armed OCC-2 for this chat). Deleting the file makes the
+    // clear sticky without rewriting it.
+    if let (Ok(strike_meta), Ok(preference_meta)) = (
+        std::fs::metadata(&path),
+        std::fs::metadata(occ2_preference_marker_path(session_file)),
+    ) {
+        let newer_preference = preference_meta
+            .modified()
+            .ok()
+            .zip(strike_meta.modified().ok())
+            .is_some_and(|(preference, strike)| preference > strike);
+        if newer_preference {
+            let _ = std::fs::remove_file(&path);
+            return Ok(Occ2StrikeLedger::new());
+        }
+    }
+    let file: Occ2StrikeLedgerFile = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
+    if file.schema != OCC2_STRIKES_SCHEMA {
+        return Err("Unsupported OCC-2 strike ledger schema".into());
+    }
+    let mut ledger = Occ2StrikeLedger::from_pairs(
+        file.entries
+            .into_iter()
+            .map(|(pair, entry)| (pair, entry.strikes, entry.last_strike_ms)),
+    );
+    ledger.decay(now_ms);
+    Ok(ledger)
+}
+
+/// Explicitly clears the strike ledger for one session (the function a
+/// `/occ` toggle can call directly; the load path already clears when the
+/// preference file is newer than the strike file).
+pub fn occ2_strike_ledger_clear(session_file: &str) -> Result<(), String> {
+    let path = occ2_strike_ledger_path(session_file);
+    match std::fs::remove_file(&path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(error.to_string()),
+    }
+}
+
+/// True when one (speaker, listener, dialect) pair is strike-disabled for
+/// the listener session: the check the send-side selection path applies
+/// before negotiating OCC-2 for that target.
+pub fn occ2_strike_pair_disabled(
+    session_file: &str,
+    speaker: &str,
+    listener: &str,
+    dialect: (&str, u32),
+    now_ms: u64,
+) -> bool {
+    load_occ2_strike_ledger(session_file, now_ms)
+        .map(|ledger| {
+            ledger.is_disabled(&occ2_pair_key(speaker, listener, dialect.0, dialect.1))
+        })
+        .unwrap_or(false)
 }
 
 /// How one delivered body was consumed (design section 3, tier 3).
@@ -908,7 +1383,313 @@ pub fn decode_agent_session_message_body(
     Ok(Occ2BodyDecode::Occ1(message))
 }
 
+// ---------------------------------------------------------------------------
+// Delivery decode + render: the one production path that renders an
+// agent-session message body for model consumption. Strict OCC-2 decode
+// first; a failure consults and increments the strike ledger for the
+// (speaker, listener, dialect) pair and the body is consumed through its
+// embedded OCC-1 section - the payload is never dropped or nulled. The
+// classification is computed here, once, and recorded in the durable
+// details so telemetry reads it instead of re-decoding.
+// ---------------------------------------------------------------------------
+
+/// How one delivered body reached the model.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Occ2DeliveryKind {
+    /// Strict OCC-2 decode succeeded; the symbolic section (with the
+    /// amortized codebook legend or reference) was rendered.
+    Symbolic,
+    /// Strict OCC-2 decode failed; the strike ledger recorded an
+    /// incident and the embedded OCC-1 section was consumed.
+    FallbackConsumed,
+    /// The body carried no OCC/2 header: plain OCC-1, rendered as-is.
+    Occ1Native,
+    /// The pair was already strike-disabled; the strict decode was
+    /// skipped and the embedded OCC-1 section was consumed.
+    DisabledByStrikes,
+    /// Plain text or an undecodable body, passed through raw (no data
+    /// loss).
+    Text,
+}
+
+impl Occ2DeliveryKind {
+    /// Stable serde/telemetry label.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Occ2DeliveryKind::Symbolic => "symbolic",
+            Occ2DeliveryKind::FallbackConsumed => "fallback_consumed",
+            Occ2DeliveryKind::Occ1Native => "occ1_native",
+            Occ2DeliveryKind::DisabledByStrikes => "occ2_disabled_by_strikes",
+            Occ2DeliveryKind::Text => "text",
+        }
+    }
+}
+
+/// The delivery classification recorded once in the durable details.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Occ2DeliveryDetails {
+    /// [`Occ2DeliveryKind::as_str`] label.
+    pub kind: String,
+    /// The strike pair key, when the body carried an OCC/2 header.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pair: Option<String>,
+    /// True when this delivery's strict-decode failure recorded a strike.
+    #[serde(default)]
+    pub strike_recorded: bool,
+    /// True when this delivery's strike disabled the pair.
+    #[serde(default)]
+    pub pair_disabled_now: bool,
+}
+
+/// The result of one delivery render.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Occ2DeliveryOutcome {
+    /// The rendered prompt body (what the model consumes).
+    pub body: String,
+    /// How the body was consumed.
+    pub kind: Occ2DeliveryKind,
+    /// The strike pair key, when the body carried an OCC/2 header.
+    pub pair: Option<String>,
+    /// True when this render recorded a strike.
+    pub strike_recorded: bool,
+    /// True when this render's strike disabled the pair.
+    pub pair_disabled_now: bool,
+}
+
+/// The dialect id and version a body's OCC/2 header advertises, whether
+/// or not the registry knows it: strikes are scoped to the advertised
+/// dialect, so an unknown dialect still counts against its own pair.
+fn occ2_body_dialect_id(message: &str) -> Option<(String, u32)> {
+    let header = message.lines().next()?;
+    let rest = header.strip_prefix(OCC2_HEADER)?;
+    let mut tokens = rest.split(' ').filter(|token| !token.is_empty());
+    let dialect = tokens.next()?.strip_prefix("D=")?;
+    let (dialect, version) = dialect.split_once('@')?;
+    let version: u32 = version.parse().ok()?;
+    Some((dialect.to_string(), version))
+}
+
+/// The delivery render: ledger-gated strict decode with the OCC-1
+/// fallback and the amortized codebook render in one pass.
+pub fn render_agent_session_message_delivery(
+    message: &str,
+    registry: &DialectRegistry,
+    codebooks: &Occ2CodebooksPresent,
+    speaker: &str,
+    listener: &str,
+    ledger: &mut Occ2StrikeLedger,
+    now_ms: u64,
+) -> Occ2DeliveryOutcome {
+    if !message.starts_with(OCC2_HEADER) {
+        let kind = if message.starts_with(OCC1_HEADER) {
+            Occ2DeliveryKind::Occ1Native
+        } else {
+            Occ2DeliveryKind::Text
+        };
+        return Occ2DeliveryOutcome {
+            body: message.to_string(),
+            kind,
+            pair: None,
+            strike_recorded: false,
+            pair_disabled_now: false,
+        };
+    }
+    let split = split_occ2_dual_body(message);
+    let advertised = occ2_body_dialect_id(message);
+    let pair = advertised
+        .as_ref()
+        .map(|(dialect, version)| occ2_pair_key(speaker, listener, dialect, *version));
+    // A disabled pair skips the strict decode entirely: straight through
+    // the embedded OCC-1 section, no further strikes (design section 3).
+    if let Some(pair) = pair.as_deref().filter(|pair| ledger.is_disabled(pair)) {
+        return Occ2DeliveryOutcome {
+            body: render_fallback_section(split.as_ref()).unwrap_or_else(|| message.to_string()),
+            kind: Occ2DeliveryKind::DisabledByStrikes,
+            pair: Some(pair.to_string()),
+            strike_recorded: false,
+            pair_disabled_now: false,
+        };
+    }
+    if occ2::decode(message, registry).is_ok() {
+        let symbolic = split
+            .map(|(body, _)| body)
+            .unwrap_or(message)
+            .trim_end_matches('\n');
+        let rendered = match occ2_body_dialect_card(message, registry) {
+            Some(card) => {
+                let identity = Occ2CodebookId::of_card(card);
+                let lead = if codebooks.contains(&identity) {
+                    occ2_codebook_reference(&identity)
+                } else {
+                    occ2_codebook_legend(card)
+                };
+                format!("{lead}\n\n{symbolic}")
+            }
+            None => symbolic.to_string(),
+        };
+        return Occ2DeliveryOutcome {
+            body: rendered,
+            kind: Occ2DeliveryKind::Symbolic,
+            pair,
+            strike_recorded: false,
+            pair_disabled_now: false,
+        };
+    }
+    // Strict decode failed: one strike for the advertised dialect's pair,
+    // then the embedded OCC-1 section (or the raw body, never dropped).
+    let disabled_now = pair
+        .as_deref()
+        .map(|pair| ledger.record_incident_at(pair, now_ms))
+        .unwrap_or(false);
+    Occ2DeliveryOutcome {
+        body: render_fallback_section(split.as_ref()).unwrap_or_else(|| message.to_string()),
+        kind: Occ2DeliveryKind::FallbackConsumed,
+        pair: pair.clone(),
+        strike_recorded: pair.is_some(),
+        pair_disabled_now: disabled_now,
+    }
+}
+
+/// The embedded OCC-1 section of a dual body, when it parses as a valid
+/// contract message; `None` leaves the raw body untouched.
+fn render_fallback_section(split: Option<&(&str, &str)>) -> Option<String> {
+    let (_, fallback) = split?;
+    let occ1 = Occ1Message::decode(fallback).ok()?;
+    AgentCommMessage::from_occ1(&occ1).ok()?;
+    Some(fallback.to_string())
+}
+
 pub fn create_agent_session_message_prompt(payload: &AgentSessionMessagePayload) -> String {
+    create_agent_session_message_prompt_with_codebooks(payload, &Occ2CodebooksPresent::new())
+}
+
+/// [`create_agent_session_message_prompt`] with the codebook identities
+/// already present in the listener's context: the first OCC-2 body of an
+/// identity carries the full codebook legend, later ones a one-line
+/// reference. The prompt text and the durable record must be built from the
+/// same set, so both render identically.
+pub fn create_agent_session_message_prompt_with_codebooks(
+    payload: &AgentSessionMessagePayload,
+    codebooks: &Occ2CodebooksPresent,
+) -> String {
+    // OCC-2 seam: a dual payload renders its symbolic section only; the
+    // durable record keeps the full dual body (design section 3). The
+    // codebook legend is amortized by the passed-in presence set.
+    let body = agent_session_message_prompt_body_with_codebooks(&payload.message, codebooks);
+    create_agent_session_message_prompt_with_body(payload, &body)
+}
+
+pub fn create_agent_session_message(
+    payload: &AgentSessionMessagePayload,
+    timestamp: i64,
+) -> CustomAgentMessage {
+    create_agent_session_message_with_codebooks(
+        payload,
+        timestamp,
+        &Occ2CodebooksPresent::new(),
+    )
+}
+
+/// [`create_agent_session_message`] with the codebook identities already
+/// present in the listener's context; pass the same set that built the
+/// prompt text so the durable record's content matches the delivered text.
+pub fn create_agent_session_message_with_codebooks(
+    payload: &AgentSessionMessagePayload,
+    timestamp: i64,
+    codebooks: &Occ2CodebooksPresent,
+) -> CustomAgentMessage {
+    let details = AgentSessionMessageDetails {
+        id: payload.id.clone(),
+        message: payload.message.clone(),
+        from: payload.from.clone(),
+        from_relationship: payload.from_relationship.clone(),
+        target: Some(payload.target.clone()),
+        occ2_delivery: None,
+    };
+    CustomAgentMessage::Custom {
+        custom_type: AGENT_MESSAGE_CUSTOM_TYPE.to_string(),
+        content: CustomMessageContent::Text(create_agent_session_message_prompt_with_codebooks(
+            payload, codebooks,
+        )),
+        display: true,
+        details: serde_json::to_value(&details).ok(),
+        timestamp,
+    }
+}
+
+/// One delivery render result: the visible prompt text, the durable
+/// record, and the decode classification, all from a single pass.
+#[derive(Debug, Clone)]
+pub struct Occ2AgentSessionMessageDelivery {
+    /// The prompt text the model consumes (header lines + rendered body).
+    pub content: String,
+    /// The durable transcript record (dual body verbatim in details,
+    /// rendered content, delivery classification).
+    pub record: CustomAgentMessage,
+    /// How the body was consumed, plus the strike effects.
+    pub outcome: Occ2DeliveryOutcome,
+}
+
+/// Builds one delivered agent-session message end to end: one
+/// strict-decode attempt (ledger-gated), the amortized codebook render,
+/// the OCC-1 fallback on failure, and the delivery classification
+/// recorded in the durable details. This is the production seam
+/// (`daemon_mode.rs` `accept_agent_session_message`); the prompt text
+/// and the record are built from the same render so they agree.
+pub fn create_agent_session_message_delivery(
+    payload: &AgentSessionMessagePayload,
+    timestamp: i64,
+    codebooks: &Occ2CodebooksPresent,
+    speaker: &str,
+    listener: &str,
+    ledger: &mut Occ2StrikeLedger,
+    now_ms: u64,
+) -> Occ2AgentSessionMessageDelivery {
+    let outcome = render_agent_session_message_delivery(
+        &payload.message,
+        &DialectRegistry::with_sym_v1(),
+        codebooks,
+        speaker,
+        listener,
+        ledger,
+        now_ms,
+    );
+    let content = create_agent_session_message_prompt_with_body(payload, &outcome.body);
+    let details = AgentSessionMessageDetails {
+        id: payload.id.clone(),
+        message: payload.message.clone(),
+        from: payload.from.clone(),
+        from_relationship: payload.from_relationship.clone(),
+        target: Some(payload.target.clone()),
+        occ2_delivery: Some(Occ2DeliveryDetails {
+            kind: outcome.kind.as_str().to_string(),
+            pair: outcome.pair.clone(),
+            strike_recorded: outcome.strike_recorded,
+            pair_disabled_now: outcome.pair_disabled_now,
+        }),
+    };
+    let record = CustomAgentMessage::Custom {
+        custom_type: AGENT_MESSAGE_CUSTOM_TYPE.to_string(),
+        content: CustomMessageContent::Text(content.clone()),
+        display: true,
+        details: serde_json::to_value(&details).ok(),
+        timestamp,
+    };
+    Occ2AgentSessionMessageDelivery {
+        content,
+        record,
+        outcome,
+    }
+}
+
+/// The listener scaffolding (label, Source/From/To/Message id lines)
+/// around an already-rendered body: shared by the pure prompt builder
+/// and the delivery builder so both produce identical text.
+fn create_agent_session_message_prompt_with_body(
+    payload: &AgentSessionMessagePayload,
+    body: &str,
+) -> String {
     let relationship_label = payload.from_relationship.as_ref().map(|relationship| {
         if relationship == FAMILY_RELATIONSHIP_PARENT {
             format!("[from {relationship}]")
@@ -932,10 +1713,7 @@ pub fn create_agent_session_message_prompt(payload: &AgentSessionMessagePayload)
     lines.push("Agent-to-agent message received.".to_string());
     lines.push(format!("Source: {}", payload.source));
     if let Some(from) = &payload.from {
-        lines.push(format!(
-            "From: {}",
-            format_agent_session_message_sender(from)
-        ));
+        lines.push(format!("From: {}", format_agent_session_message_sender(from)));
     }
     lines.push(format!(
         "To: {}",
@@ -943,30 +1721,8 @@ pub fn create_agent_session_message_prompt(payload: &AgentSessionMessagePayload)
     ));
     lines.push(format!("Message id: {}", payload.id));
     lines.push(String::new());
-    // OCC-2 seam: a dual payload renders its symbolic section only; the
-    // durable record keeps the full dual body (design section 3).
-    lines.push(agent_session_message_prompt_body(&payload.message).to_string());
+    lines.push(body.to_string());
     lines.join("\n")
-}
-
-pub fn create_agent_session_message(
-    payload: &AgentSessionMessagePayload,
-    timestamp: i64,
-) -> CustomAgentMessage {
-    let details = AgentSessionMessageDetails {
-        id: payload.id.clone(),
-        message: payload.message.clone(),
-        from: payload.from.clone(),
-        from_relationship: payload.from_relationship.clone(),
-        target: Some(payload.target.clone()),
-    };
-    CustomAgentMessage::Custom {
-        custom_type: AGENT_MESSAGE_CUSTOM_TYPE.to_string(),
-        content: CustomMessageContent::Text(create_agent_session_message_prompt(payload)),
-        display: true,
-        details: serde_json::to_value(&details).ok(),
-        timestamp,
-    }
 }
 
 pub fn is_agent_session_message(message: &AgentMessage) -> bool {
@@ -1233,8 +1989,12 @@ pub trait AgentSessionMessageController: Send + Sync {
     /// OCC-2 send policy for one target id (OCC-2 integration design,
     /// section 4). The default is the conservative disabled policy, so
     /// existing implementors keep OCC-1 behavior unchanged.
-    fn occ2_send_policy(&self, target: &str) -> pi_ai::types::BoxFuture<Occ2SendPolicy> {
-        let _ = target;
+    fn occ2_send_policy(
+        &self,
+        target: &str,
+        message: &str,
+    ) -> pi_ai::types::BoxFuture<Occ2SendPolicy> {
+        let _ = (target, message);
         Box::pin(async { Occ2SendPolicy::disabled() })
     }
 }
@@ -1311,7 +2071,7 @@ async fn handle_agent_message_send(
         for entry in &roster.entries {
             // OCC-2 S1 seam, broadcast arm: each recipient encodes against
             // its own negotiated dialect (design R6); no receipt change.
-            let policy = controller.occ2_send_policy(&entry.id).await;
+            let policy = controller.occ2_send_policy(&entry.id, &message).await;
             let message = wrap_outgoing_body(&message, &policy);
             let input = AgentSessionMessageSendInput {
                 target: entry.id.clone(),
@@ -1402,7 +2162,7 @@ async fn handle_agent_message_send(
     // OCC-2 S1 seam, direct arm: the body is substituted only when the
     // feature is enabled and a dialect was negotiated for this target;
     // otherwise the send is byte-identical OCC-0/OCC-1.
-    let policy = controller.occ2_send_policy(&target).await;
+    let policy = controller.occ2_send_policy(&target, &message).await;
     let message = wrap_outgoing_body(&message, &policy);
     let receipt = controller
         .send_agent_message(AgentSessionMessageSendInput {
@@ -1413,6 +2173,289 @@ async fn handle_agent_message_send(
         .await
         .map_err(KernelError::new)?;
     Ok(serde_json::to_value(receipt).unwrap_or(Value::Null))
+}
+
+/// Strike incidents recorded for one (speaker, listener, dialect) pair,
+/// decay-applied: the selection input for the send seams. Any load error
+/// reads as zero (fail open).
+pub fn occ2_strike_pair_incidents(
+    session_file: &str,
+    speaker: &str,
+    listener: &str,
+    dialect: (&str, u32),
+    now_ms: u64,
+) -> usize {
+    load_occ2_strike_ledger(session_file, now_ms)
+        .map(|ledger| ledger.incidents(&occ2_pair_key(speaker, listener, dialect.0, dialect.1)))
+        .unwrap_or(0)
+}
+
+// ---------------------------------------------------------------------------
+// Dialect evaluation store: the minimal durable form behind
+// SelectionContext.evaluations. One file per sender session, in its
+// artifact directory (sibling of occ.json and occ2-strikes.json),
+// written atomically, read fail-open. Empty by default: both shipped
+// dialects are honestly unevaluated, so production selection stays
+// OCC-1 until a validated record lands here.
+// ---------------------------------------------------------------------------
+
+const OCC2_EVALS_SCHEMA: &str = "optimus.occ2-evals.v1";
+/// Maximum evaluation-store read, mirroring the bounded reads of the
+/// other OCC artifact files.
+const OCC2_EVALS_MAX_READ: u64 = 64 * 1024;
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Occ2EvaluationsFile {
+    schema: String,
+    /// One record per (dialect, version).
+    records: Vec<Occ2EvaluationRecordFile>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Occ2EvaluationRecordFile {
+    dialect: String,
+    version: u32,
+    samples: usize,
+    listener_fidelity_mean: f64,
+    wire_tokens_vs_occ1: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    last_evaluated: Option<u64>,
+}
+
+/// The evaluation-store file for one session, in its artifact directory.
+pub fn occ2_evaluations_path(session_file: &str) -> PathBuf {
+    PathBuf::from(crate::core::session_manager::get_session_artifact_path_for_file(
+        session_file, None,
+    ))
+    .join("occ2-evals.json")
+}
+
+/// Loads the dialect evaluation records for one session, keyed by
+/// (dialect id, version). Missing file, parse error or size violation
+/// all read as an empty map (fail open: unevaluated means the production
+/// policy conservatively picks OCC-1, never an error).
+pub fn load_occ2_evaluations(
+    session_file: &str,
+) -> BTreeMap<(String, u32), DialectEvaluationRecord> {
+    let mut records = BTreeMap::new();
+    let path = occ2_evaluations_path(session_file);
+    let bytes = match std::fs::File::open(&path) {
+        Ok(mut file) => {
+            let mut bytes = Vec::new();
+            if file
+                .take(OCC2_EVALS_MAX_READ + 1)
+                .read_to_end(&mut bytes)
+                .is_err()
+            {
+                return records;
+            }
+            if bytes.len() as u64 > OCC2_EVALS_MAX_READ {
+                return records;
+            }
+            bytes
+        }
+        Err(_) => return records,
+    };
+    let Ok(file) = serde_json::from_slice::<Occ2EvaluationsFile>(&bytes) else {
+        return records;
+    };
+    if file.schema != OCC2_EVALS_SCHEMA {
+        return records;
+    }
+    for record in file.records {
+        records.insert(
+            (record.dialect.clone(), record.version),
+            DialectEvaluationRecord {
+                samples: record.samples,
+                listener_fidelity_mean: record.listener_fidelity_mean,
+                wire_tokens_vs_occ1: record.wire_tokens_vs_occ1,
+                last_evaluated: record.last_evaluated,
+            },
+        );
+    }
+    records
+}
+
+/// Atomically persists the dialect evaluation records for one session.
+/// The offline evaluation harness (or a test injecting a synthetic
+/// record) is the intended writer.
+pub fn save_occ2_evaluations(
+    session_file: &str,
+    records: &BTreeMap<(String, u32), DialectEvaluationRecord>,
+) -> Result<(), String> {
+    if session_file.is_empty() {
+        return Err("This chat has no saved session identity".into());
+    }
+    let path = occ2_evaluations_path(session_file);
+    let parent = path.parent().ok_or("Invalid OCC-2 evaluations path")?;
+    std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    let file = Occ2EvaluationsFile {
+        schema: OCC2_EVALS_SCHEMA.into(),
+        records: records
+            .iter()
+            .map(|((dialect, version), record)| Occ2EvaluationRecordFile {
+                dialect: dialect.clone(),
+                version: *version,
+                samples: record.samples,
+                listener_fidelity_mean: record.listener_fidelity_mean,
+                wire_tokens_vs_occ1: record.wire_tokens_vs_occ1,
+                last_evaluated: record.last_evaluated,
+            })
+            .collect(),
+    };
+    let mut pending = tempfile::NamedTempFile::new_in(parent).map_err(|e| e.to_string())?;
+    serde_json::to_writer(pending.as_file_mut(), &file).map_err(|e| e.to_string())?;
+    pending.write_all(b"\n").map_err(|e| e.to_string())?;
+    pending.as_file().sync_all().map_err(|e| e.to_string())?;
+    pending.persist(path).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Selection assembly: one function turns a filled SelectionContext into
+// the send policy the seams apply, so the decision order lives in
+// exactly one place.
+// ---------------------------------------------------------------------------
+
+/// The selection outcome trace for one send decision: the production
+/// decision, and the development fallback when the experimental path
+/// exercised it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Occ2SelectionOutcome {
+    /// The production-policy decision (always evaluated).
+    pub production: SelectionDecision,
+    /// The development-policy decision, when the experimental path ran
+    /// (production refused an unevaluated dialect).
+    pub development: Option<SelectionDecision>,
+    /// The final send policy.
+    pub policy: Occ2SendPolicy,
+}
+
+/// Turns a filled [`SelectionContext`] into the send policy.
+///
+/// Decision order: the production policy always runs. A validated
+/// dialect that wins on measured economics selects OCC-2 outright. When
+/// production refuses only because the dialect is unevaluated AND the
+/// experimental path is enabled (`experimental = true`, today the
+/// `/occ 2` opt-in), the development policy runs with the SILO reference
+/// profile so the wire can be exercised end to end - still behind the
+/// small-message floor, the strike guard and the codebook economics.
+/// Every other production refusal (unknown listener, no shared
+/// dialect, strikes, no savings) is final.
+pub fn occ2_send_policy_from_selection(
+    context: &SelectionContext<'_>,
+    experimental: bool,
+) -> Occ2SelectionOutcome {
+    let for_dialect = |dialect: (String, u32), registry: &DialectRegistry| {
+        Occ2SendPolicy::for_dialect(
+            registry.clone(),
+            dialect,
+            DEFAULT_AGENT_MESSAGE_MAX_CHARS,
+        )
+    };
+    let production = select_with_policy(context, &SelectionPolicy::default());
+    match &production {
+        SelectionDecision::Occ2 { dialect, .. } => Occ2SelectionOutcome {
+            production: production.clone(),
+            development: None,
+            policy: for_dialect(dialect.clone(), context.registry),
+        },
+        SelectionDecision::Occ1(SelectionReason::UnevaluatedDialect) if experimental => {
+            let development = select_with_policy(context, &SelectionPolicy::development());
+            let policy = match &development {
+                SelectionDecision::Occ2 { dialect, .. } => {
+                    for_dialect(dialect.clone(), context.registry)
+                }
+                _ => Occ2SendPolicy::disabled(),
+            };
+            Occ2SelectionOutcome {
+                production: production.clone(),
+                development: Some(development),
+                policy,
+            }
+        }
+        _ => Occ2SelectionOutcome {
+            production: production.clone(),
+            development: None,
+            policy: Occ2SendPolicy::disabled(),
+        },
+    }
+}
+
+/// The `KIND=` field of an OCC-1 body when present, else `"TASK"`
+/// (informational in policy v1).
+pub fn occ2_message_kind_hint(message: &str) -> &str {
+    message
+        .lines()
+        .find_map(|line| line.strip_prefix("KIND="))
+        .map(|kind| match kind {
+            "TASK" | "PROGRESS" | "RESULT" | "EVIDENCE" | "REQUEST_DETAIL" | "ACK"
+            | "CORRECTION" | "BLOCKED" | "CANCELLED" => kind,
+            _ => "TASK",
+        })
+        .unwrap_or("TASK")
+}
+
+/// The shared send-seam selection from session-level inputs. Both the
+/// in-process seam (`AgentSession::occ2_selected_send_policy`) and the
+/// daemon-bridged controller resolve their own speaker/listener/model
+/// inputs and call this one function, so the decision order and the
+/// artifact reads live in exactly one place.
+///
+/// `speaker_session_file` scopes the strike-ledger and evaluation-store
+/// reads (the sender's session artifacts); `None` reads as no strikes
+/// and no evaluations. `experimental` is the `/occ 2` opt-in.
+pub fn occ2_send_policy_for_send(
+    peer: Option<&OccCapability>,
+    listener: &str,
+    message: &str,
+    speaker_session_file: Option<&str>,
+    speaker_model: Option<&str>,
+    speaker_session_id: &str,
+    experimental: bool,
+) -> Occ2SendPolicy {
+    let local = OccCapability::here();
+    // Negotiate once for the strike lookup key; select_with_policy
+    // re-negotiates identically inside.
+    let Some((dialect_id, version)) = peer.and_then(|peer| local.negotiate(peer)) else {
+        return Occ2SendPolicy::disabled();
+    };
+    let registry = crate::core::occ::dialect_load::promoted_registry()
+        .unwrap_or_else(|_| DialectRegistry::with_sym_v1());
+    let now_ms = unix_now_ms();
+    let strikes = speaker_session_file
+        .map(|file| {
+            occ2_strike_pair_incidents(
+                file,
+                speaker_session_id,
+                listener,
+                (&dialect_id, version),
+                now_ms,
+            )
+        })
+        .unwrap_or(0);
+    let evaluations = speaker_session_file
+        .map(load_occ2_evaluations)
+        .unwrap_or_default();
+    let context = SelectionContext {
+        local: &local,
+        listener: peer,
+        speaker_model,
+        listener_model: None,
+        registry: &registry,
+        evaluations: &evaluations,
+        message_chars: message.chars().count(),
+        kind: occ2_message_kind_hint(message),
+        // The sender cannot cheaply know the listener's transcript;
+        // conservative false lets the amortization gate decide via
+        // messages_remaining.
+        codebook_in_context: false,
+        strikes,
+        messages_remaining: crate::core::occ::selection::EXPECTED_REMAINING_MESSAGES,
+    };
+    occ2_send_policy_from_selection(&context, experimental).policy
 }
 
 #[cfg(test)]
@@ -1972,7 +3015,7 @@ mod tests {
             })
         }
 
-        fn occ2_send_policy(&self, _target: &str) -> pi_ai::types::BoxFuture<Occ2SendPolicy> {
+        fn occ2_send_policy(&self, _target: &str, _message: &str) -> pi_ai::types::BoxFuture<Occ2SendPolicy> {
             let enabled = self.occ2;
             Box::pin(async move {
                 if enabled {
@@ -2095,3 +3138,5 @@ mod tests {
         assert_eq!(round.occ_capability, Some(OccCapability::here()));
     }
 }
+
+

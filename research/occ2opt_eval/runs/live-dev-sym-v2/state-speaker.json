@@ -1,0 +1,246 @@
+{
+  "codebook_carrier_items": [],
+  "missing": [
+    {
+      "item": "e2-d01-01",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d01-02",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d01-03",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d01-04",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d01-05",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d01-06",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d01-07",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d01-08",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d02-01",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d02-02",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d02-03",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d02-04",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d02-05",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d02-06",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d02-07",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d03-01",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d03-02",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d03-03",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d03-04",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d03-05",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d03-06",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d03-07",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d04-01",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d04-02",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d04-03",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d04-04",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d04-05",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d04-06",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d04-07",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d05-01",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d05-02",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d05-03",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d05-04",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d05-05",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d05-06",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d05-07",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d05-08",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d06-01",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d06-02",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d06-03",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d06-04",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d06-05",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d06-06",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d06-07",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d07-01",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d07-02",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d07-03",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d07-04",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d07-05",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d07-06",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d07-07",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d07-08",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d08-01",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d08-02",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d08-03",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d08-04",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d08-05",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d08-06",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d08-07",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    },
+    {
+      "item": "e2-d08-08",
+      "reason": "speaker protocol fault: unexpected preamble before the wire header"
+    }
+  ],
+  "wire_by_item": {}
+}

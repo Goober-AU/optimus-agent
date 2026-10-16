@@ -91,12 +91,34 @@ pub fn from_admitted_messages_with_registry(messages: &[AgentMessage], session_i
         ) else { continue; };
         if source == session_id || deliveries.iter().any(|delivery: &CommunicationDelivery| delivery.id == id) { continue; }
         deliveries.push(CommunicationDelivery {
-            id: id.to_owned(), source_session_id: source.to_owned(), kind: classify_with_registry(text, registry), timestamp: *timestamp,
+            id: id.to_owned(), source_session_id: source.to_owned(), kind: recorded_delivery_kind(details).unwrap_or_else(|| classify_with_registry(text, registry)), timestamp: *timestamp,
         });
         if deliveries.len() == MAX_ACTIVITY_MESSAGES { break; }
     }
     deliveries.reverse();
     CommunicationActivity { generation: generation.to_owned(), deliveries }
+}
+
+/// The delivery classification recorded once at delivery time
+/// (`details.occ2Delivery.kind`, written by the delivery render):
+/// `symbolic` -> Symbolic, `text` -> Text, the OCC-1-consumed kinds
+/// (`fallback_consumed`, `occ1_native`, `occ2_disabled_by_strikes`)
+/// -> Occ1. `None` for legacy records without the field, unknown
+/// labels, or non-string values: the caller then classifies from
+/// the body as before.
+fn recorded_delivery_kind(details: &serde_json::Value) -> Option<CommunicationKind> {
+    let kind = details
+        .get("occ2Delivery")?
+        .get("kind")?
+        .as_str()?;
+    match kind {
+        "symbolic" => Some(CommunicationKind::Symbolic),
+        "fallback_consumed" | "occ1_native" | "occ2_disabled_by_strikes" => {
+            Some(CommunicationKind::Occ1)
+        }
+        "text" => Some(CommunicationKind::Text),
+        _ => None,
+    }
 }
 
 #[cfg(test)]

@@ -1,4 +1,8 @@
-//! Chat-local OCC controls; workers read session artifacts at each send.
+//! Chat-local OCC controls. The host that owns the session persists them:
+//! daemons expose the capability-gated `occ_get_preferences` /
+//! `occ_set_preferences` commands (schema revision 41), so a client never
+//! writes storage the daemon may not read. Workers read session artifacts at
+//! each send either way.
 
 use super::*;
 
@@ -27,20 +31,118 @@ fn status(enabled: bool) -> String {
     )
 }
 
+const UNSUPPORTED: &str = "This daemon does not support OCC-2 controls. Restart it with Optimus Agent v0.1.34 or later; OCC-1 remains available.";
+
+/// How /occ reaches the preference storage for the attached host.
+#[derive(Debug, PartialEq, Eq)]
+enum Route {
+    /// The host owns the get/set (v0.1.34+ daemons; in-process hosts).
+    Remote,
+    /// A v0.1.33 daemon: it has OCC-2 encoding but no session-preference
+    /// commands. Keep the historical local write keyed on the daemon-reported
+    /// session file, and never claim silent success.
+    LegacyLocal,
+    /// No OCC-2 support at all.
+    Unsupported,
+}
+
+fn route(supports_session_preferences: bool, supports_occ2_communication: bool) -> Route {
+    if supports_session_preferences {
+        Route::Remote
+    } else if supports_occ2_communication {
+        Route::LegacyLocal
+    } else {
+        Route::Unsupported
+    }
+}
+
+/// The effective toggle plus its provenance as the host reports it: the full
+/// `occ_get_preferences` payload for Remote routes (so `/occ status` can show
+/// inheritance), just the value for legacy hosts.
+async fn read_preference(
+    connection: &Arc<dyn wire::AgentConnection>,
+    route: &Route,
+) -> Result<serde_json::Value, String> {
+    match route {
+        Route::Remote => connection.get_occ_preferences().await,
+        Route::LegacyLocal => {
+            let state = connection.get_state().await?;
+            let session_file = state.session_file.as_deref().ok_or("This chat has no saved session identity")?;
+            let occ2_enabled = crate::core::occ::session_settings::load(session_file)?;
+            Ok(serde_json::json!({ "occ2Enabled": occ2_enabled }))
+        }
+        Route::Unsupported => Err(UNSUPPORTED.to_string()),
+    }
+}
+
+/// The effective toggle from a host preference payload.
+fn enabled_of(payload: &serde_json::Value) -> Result<bool, String> {
+    payload
+        .get("occ2Enabled")
+        .and_then(serde_json::Value::as_bool)
+        .ok_or_else(|| "Daemon returned an invalid OCC-2 preference".to_string())
+}
+
+/// The status panel from a host preference payload, with provenance when the
+/// host reports the value was inherited from an ancestor chat (daemon truth,
+/// not a client-local read).
+fn status_of(payload: &serde_json::Value) -> Result<String, String> {
+    let mut panel = status(enabled_of(payload)?);
+    if payload.get("inherited").and_then(serde_json::Value::as_bool).unwrap_or(false) {
+        if let Some(source) = payload.get("sourceSessionId").and_then(serde_json::Value::as_str) {
+            panel.push_str(&format!(
+                "\nInherited from chat {source}: this chat has no own override, so /occ 2 off here saves one."
+            ));
+        }
+    }
+    Ok(panel)
+}
+
+async fn write_preference(
+    connection: &Arc<dyn wire::AgentConnection>,
+    route: &Route,
+    enabled: bool,
+) -> Result<CommandOutput, String> {
+    match route {
+        Route::Remote => {
+            let value = connection.set_occ_preferences(enabled).await?;
+            // The daemon-authoritative echo, rendered with any provenance it
+            // reports; an invalid echo is an error, never a success panel.
+            Ok(CommandOutput::Status(status_of(&value)?))
+        }
+        Route::LegacyLocal => {
+            let state = connection.get_state().await?;
+            let session_file = state.session_file.as_deref().ok_or("This chat has no saved session identity")?;
+            crate::core::occ::session_settings::save(session_file, enabled)?;
+            // Never a silent success: a v0.1.33 daemon may read session
+            // preferences (same machine) or may not (older storage); the
+            // warning keeps both outcomes honest while OCC-1 stays available.
+            Ok(CommandOutput::Warning(format!(
+                "Saved the OCC-2 preference for this chat locally, but this daemon does not advertise OCC-2 session controls (Optimus Agent v0.1.34 or later). The preference takes effect only when the daemon reads session preferences; OCC-1 remains the default and fallback.\n\n{}",
+                status(enabled)
+            )))
+        }
+        Route::Unsupported => Ok(CommandOutput::Warning(UNSUPPORTED.into())),
+    }
+}
+
 pub(super) async fn run(
     connection: &Arc<dyn wire::AgentConnection>,
     send: &mpsc::Sender<HostEvent>,
     args: &str,
 ) -> Result<CommandOutput, String> {
     let choice = parse(args)?;
-    if !connection.supports_occ2_communication() {
-        return Ok(CommandOutput::Warning("This daemon does not support OCC-2 controls. Restart it with Optimus Agent v0.1.33 or later; OCC-1 remains available.".into()));
+    let route = route(
+        connection.supports_occ_session_preferences(),
+        connection.supports_occ2_communication(),
+    );
+    if route == Route::Unsupported {
+        return Ok(CommandOutput::Warning(UNSUPPORTED.into()));
     }
-    let state = connection.get_state().await?;
-    let session_file = state.session_file.as_deref().ok_or("This chat has no saved session identity")?;
-    let enabled = crate::core::occ::session_settings::load(session_file)?;
+    let payload = read_preference(connection, &route).await?;
+    let enabled = enabled_of(&payload)?;
     let requested = match choice {
-        Choice::Status => return Ok(CommandOutput::Panel(status(enabled))),
+        Choice::Status => return Ok(CommandOutput::Panel(status_of(&payload)?)),
         Choice::Set(value) => value,
         Choice::Menu => {
             let title = format!("OCC-1 ON · OCC-2 {}", if enabled { "ON" } else { "OFF" });
@@ -50,8 +152,7 @@ pub(super) async fn run(
             }
         }
     };
-    crate::core::occ::session_settings::save(session_file, requested)?;
-    Ok(CommandOutput::Status(status(requested)))
+    write_preference(connection, &route, requested).await
 }
 
 #[cfg(test)]
@@ -71,6 +172,33 @@ mod tests {
         for args in ["3 on", "1 off", "2 maybe", "2 on off"] {
             assert!(parse(args).is_err());
         }
+    }
+
+    #[test]
+    fn occ_status_renders_host_truth_with_provenance() {
+        // A chat's own preference: no provenance line.
+        let own = serde_json::json!({"occ2Enabled": true, "inherited": false, "sourceSessionId": "chat-1"});
+        let panel = status_of(&own).unwrap();
+        assert!(panel.contains("OCC-2: ON"));
+        assert!(!panel.contains("Inherited from chat"));
+        // A subagent chat: the daemon reports the ancestor as the source.
+        let inherited = serde_json::json!({"occ2Enabled": true, "inherited": true, "sourceSessionId": "parent-7"});
+        let panel = status_of(&inherited).unwrap();
+        assert!(panel.contains("OCC-2: ON"));
+        assert!(panel.contains("Inherited from chat parent-7"));
+        // A host response without the toggle is an error, never a silent value.
+        assert!(status_of(&serde_json::json!({})).is_err());
+    }
+
+    #[test]
+    fn occ_control_routes_by_host_capability_and_never_succeeds_silently_on_old_daemons() {
+        // v0.1.34+ daemon: the daemon owns get/set.
+        assert_eq!(route(true, true), Route::Remote);
+        assert_eq!(route(true, false), Route::Remote);
+        // v0.1.33 daemon: OCC-2 encoding without session-preference commands.
+        assert_eq!(route(false, true), Route::LegacyLocal);
+        // Older daemon: no OCC-2 at all.
+        assert_eq!(route(false, false), Route::Unsupported);
     }
 
 }

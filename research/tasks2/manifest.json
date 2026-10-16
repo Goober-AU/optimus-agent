@@ -1,0 +1,413 @@
+{
+  "artifact": "occ2opt expanded message corpus (msgs_corpus2)",
+  "version": 1,
+  "owner": "occ2-baseline",
+  "campaign": "OCC-2 optimization (occ2opt), mission section 18 corpus expansion",
+  "purpose": "3x expansion of the frozen research/tasks/msgs_corpus.json (69 messages, 18 holdout). New artifact set alongside the v1 corpus; v1 is never modified. Every message is a typed optimus.agent-comm.v1 payload in the exact v1 fixture shape, carries a plain-English OCC-0 rendering, a split tag, scenario tags, and deterministic QA items with gold answers for interpretation-accuracy scoring.",
+  "frozen_config": {
+    "seed_base_evolve_dev": "occ2opt-corpus2-ed-v1",
+    "seed_base_holdout": "occ2opt-corpus2-ho-v1",
+    "holdout_seed_independent": true,
+    "base_day": "2026-11-02T08:00:00Z",
+    "message_delta_minutes": {
+      "normal": [
+        5,
+        75
+      ],
+      "long_pace": [
+        30,
+        240
+      ]
+    },
+    "digest_enrichment_probability": 0.5,
+    "split_targets": {
+      "evolve": 90,
+      "dev": 60,
+      "holdout": 54
+    },
+    "split_assignment": "story-level; a story's whole chain stays in exactly one split",
+    "entry_id_scheme": "e2-<story-suffix>-<chain-position-02d>",
+    "message_id_scheme": "m2-<story-suffix>-<chain-position-02d>",
+    "trace_id_scheme": "trace-<story-id>",
+    "id_namespace": "disjoint from v1 (cNN / m-NNN) by construction",
+    "qa_policy": {
+      "count_per_message": "2-4, deterministic selection seeded by message id",
+      "families": {
+        "A": "text exact (whitespace-collapsed, casefold)",
+        "D": "order-insensitive comma-separated set; 'none' for empty",
+        "E": "numeric, 1e-6 relative tolerance"
+      },
+      "gold_source": "derived deterministically from the typed payload",
+      "checker": "research/tasks/checkers.py (frozen, imported read-only)"
+    },
+    "payload_schema": "identical to v1 msgs_corpus.json payload shape (fixture-compatible with crates/pi-coding-agent/tests/fixtures/occ/scenarios.json)",
+    "roundtrip_oracle": "research/symbolic_comm/contract.py (frozen): from_payload -> to_occ1 -> Occ1Message.encode -> Occ1Message.decode -> from_occ1 -> contract.equal; kernel codec prime-agent-runtime/src/rlm/occ1.py",
+    "codec_bounds": {
+      "max_fields": 128,
+      "max_key_bytes": 32,
+      "max_value_bytes": 4096,
+      "max_message_bytes": 65536
+    },
+    "scenario_types": [
+      "parent_to_child",
+      "child_to_parent",
+      "sibling_handoff",
+      "multi_hop",
+      "large_findings",
+      "small_findings",
+      "contradictory_evidence",
+      "source_code_evidence",
+      "failed_tests",
+      "successful_tests",
+      "partial_completion",
+      "cancellation",
+      "new_dependencies",
+      "state_updates",
+      "missing_evidence",
+      "multiple_source_refs",
+      "task_reassignment",
+      "long_history",
+      "repeated_messages",
+      "model_switching"
+    ],
+    "required_split_scenario_coverage": "every split file must realize all 20 scenario types at message level",
+    "duplicate_policy": "identical content digests are allowed only within one story (designed repeated-message scenario); never across stories or splits"
+  },
+  "generation_order": [
+    "1. manifest.json written and frozen (this file)",
+    "2. gen_corpus2.py authored against this manifest",
+    "3. phase evolvedev: msgs_corpus2_evolve.json + msgs_corpus2_dev.json generated",
+    "4. phase holdout: msgs_corpus2_holdout.json generated LAST, independent seed base",
+    "5. selftest.py: full deterministic self-test; receipts.json written with file hashes",
+    "6. no adaptation of generator, manifest, evolve or dev artifacts after holdout generation"
+  ],
+  "holdout_discipline": "The holdout split is generated in a separate invocation after evolve+dev are complete, from an independent seed base. Nothing is tuned, filtered or adapted against holdout content after its generation. If any post-generation fix is ever required, all three splits are regenerated from scratch and the regeneration is recorded in receipts.json.",
+  "stories": [
+    {
+      "id": "occ2b-e01",
+      "title": "codebook amortization rollout",
+      "split": "evolve",
+      "messages": 8,
+      "scenarios": [
+        "parent_to_child",
+        "child_to_parent",
+        "state_updates",
+        "successful_tests"
+      ]
+    },
+    {
+      "id": "occ2b-e02",
+      "title": "fidelity gate triage",
+      "split": "evolve",
+      "messages": 7,
+      "scenarios": [
+        "failed_tests",
+        "source_code_evidence",
+        "multiple_source_refs",
+        "child_to_parent"
+      ]
+    },
+    {
+      "id": "occ2b-e03",
+      "title": "cross-worker wire migration",
+      "split": "evolve",
+      "messages": 8,
+      "scenarios": [
+        "sibling_handoff",
+        "multi_hop",
+        "new_dependencies",
+        "child_to_parent"
+      ]
+    },
+    {
+      "id": "occ2b-e04",
+      "title": "delta encoding revision",
+      "split": "evolve",
+      "messages": 7,
+      "scenarios": [
+        "contradictory_evidence",
+        "source_code_evidence",
+        "child_to_parent",
+        "state_updates"
+      ]
+    },
+    {
+      "id": "occ2b-e05",
+      "title": "strike ledger resurrection",
+      "split": "evolve",
+      "messages": 8,
+      "scenarios": [
+        "large_findings",
+        "missing_evidence",
+        "state_updates"
+      ]
+    },
+    {
+      "id": "occ2b-e06",
+      "title": "session settings daemonization",
+      "split": "evolve",
+      "messages": 7,
+      "scenarios": [
+        "partial_completion",
+        "parent_to_child",
+        "multiple_source_refs"
+      ]
+    },
+    {
+      "id": "occ2b-e07",
+      "title": "benchmark corpus expansion",
+      "split": "evolve",
+      "messages": 9,
+      "scenarios": [
+        "long_history",
+        "repeated_messages",
+        "small_findings",
+        "parent_to_child"
+      ]
+    },
+    {
+      "id": "occ2b-e08",
+      "title": "model gateway migration",
+      "split": "evolve",
+      "messages": 7,
+      "scenarios": [
+        "model_switching",
+        "state_updates",
+        "child_to_parent",
+        "successful_tests"
+      ]
+    },
+    {
+      "id": "occ2b-e09",
+      "title": "holdout discipline audit",
+      "split": "evolve",
+      "messages": 7,
+      "scenarios": [
+        "contradictory_evidence",
+        "missing_evidence",
+        "successful_tests",
+        "source_code_evidence"
+      ]
+    },
+    {
+      "id": "occ2b-e10",
+      "title": "worker pool rebalance",
+      "split": "evolve",
+      "messages": 8,
+      "scenarios": [
+        "task_reassignment",
+        "cancellation",
+        "parent_to_child",
+        "new_dependencies"
+      ]
+    },
+    {
+      "id": "occ2b-e11",
+      "title": "codec fuzz corpus",
+      "split": "evolve",
+      "messages": 6,
+      "scenarios": [
+        "small_findings",
+        "source_code_evidence",
+        "failed_tests",
+        "child_to_parent"
+      ]
+    },
+    {
+      "id": "occ2b-e12",
+      "title": "evolution loop tuning",
+      "split": "evolve",
+      "messages": 8,
+      "scenarios": [
+        "long_history",
+        "multi_hop",
+        "sibling_handoff",
+        "successful_tests",
+        "large_findings"
+      ]
+    },
+    {
+      "id": "occ2b-d01",
+      "title": "daemon compat matrix",
+      "split": "dev",
+      "messages": 8,
+      "scenarios": [
+        "sibling_handoff",
+        "multi_hop",
+        "new_dependencies"
+      ]
+    },
+    {
+      "id": "occ2b-d02",
+      "title": "prune policy regression",
+      "split": "dev",
+      "messages": 7,
+      "scenarios": [
+        "failed_tests",
+        "contradictory_evidence",
+        "source_code_evidence",
+        "child_to_parent"
+      ]
+    },
+    {
+      "id": "occ2b-d03",
+      "title": "latency budget rework",
+      "split": "dev",
+      "messages": 7,
+      "scenarios": [
+        "partial_completion",
+        "child_to_parent",
+        "state_updates"
+      ]
+    },
+    {
+      "id": "occ2b-d04",
+      "title": "capacity headroom check",
+      "split": "dev",
+      "messages": 7,
+      "scenarios": [
+        "small_findings",
+        "successful_tests",
+        "missing_evidence"
+      ]
+    },
+    {
+      "id": "occ2b-d05",
+      "title": "token cost audit",
+      "split": "dev",
+      "messages": 8,
+      "scenarios": [
+        "large_findings",
+        "multiple_source_refs",
+        "model_switching"
+      ]
+    },
+    {
+      "id": "occ2b-d06",
+      "title": "worker timeout policy",
+      "split": "dev",
+      "messages": 7,
+      "scenarios": [
+        "cancellation",
+        "task_reassignment",
+        "parent_to_child"
+      ]
+    },
+    {
+      "id": "occ2b-d07",
+      "title": "trace consolidation",
+      "split": "dev",
+      "messages": 8,
+      "scenarios": [
+        "repeated_messages",
+        "long_history",
+        "state_updates",
+        "small_findings"
+      ]
+    },
+    {
+      "id": "occ2b-d08",
+      "title": "evidence digest rotation",
+      "split": "dev",
+      "messages": 8,
+      "scenarios": [
+        "source_code_evidence",
+        "missing_evidence",
+        "child_to_parent"
+      ]
+    },
+    {
+      "id": "occ2b-h01",
+      "title": "cold cache replay",
+      "split": "holdout",
+      "messages": 7,
+      "scenarios": [
+        "parent_to_child",
+        "child_to_parent",
+        "successful_tests"
+      ]
+    },
+    {
+      "id": "occ2b-h02",
+      "title": "wire compression trial",
+      "split": "holdout",
+      "messages": 8,
+      "scenarios": [
+        "source_code_evidence",
+        "multiple_source_refs",
+        "small_findings"
+      ]
+    },
+    {
+      "id": "occ2b-h03",
+      "title": "foreign daemon probe",
+      "split": "holdout",
+      "messages": 8,
+      "scenarios": [
+        "multi_hop",
+        "sibling_handoff",
+        "missing_evidence"
+      ]
+    },
+    {
+      "id": "occ2b-h04",
+      "title": "verification receipt gap",
+      "split": "holdout",
+      "messages": 7,
+      "scenarios": [
+        "missing_evidence",
+        "failed_tests",
+        "contradictory_evidence"
+      ]
+    },
+    {
+      "id": "occ2b-h05",
+      "title": "schedule window migration",
+      "split": "holdout",
+      "messages": 8,
+      "scenarios": [
+        "model_switching",
+        "state_updates",
+        "new_dependencies"
+      ]
+    },
+    {
+      "id": "occ2b-h06",
+      "title": "abandoned feature branch",
+      "split": "holdout",
+      "messages": 8,
+      "scenarios": [
+        "cancellation",
+        "task_reassignment",
+        "partial_completion"
+      ]
+    },
+    {
+      "id": "occ2b-h07",
+      "title": "long trace archival",
+      "split": "holdout",
+      "messages": 8,
+      "scenarios": [
+        "long_history",
+        "repeated_messages",
+        "large_findings"
+      ]
+    }
+  ],
+  "reproduction": {
+    "python": "3.11 (any CPython; stdlib only for the generator)",
+    "commands": [
+      "python research/tasks2/gen_corpus2.py --phase evolvedev",
+      "python research/tasks2/gen_corpus2.py --phase holdout",
+      "python research/tasks2/selftest.py"
+    ],
+    "working_directory": "worktree root",
+    "determinism": "all randomness flows from sha256-derived seeds; no wall-clock input; byte-identical regeneration"
+  },
+  "imports_read_only": [
+    "research/tasks/gen_corpus.py (render_plain, finding/evidence/verification helpers)",
+    "research/tasks/checkers.py (QA family checkers)",
+    "research/symbolic_comm/contract.py (typed contract + round-trip oracle)",
+    "prime-agent-runtime/src/rlm/occ1.py (kernel OCC-1 codec, loaded by contract.py)"
+  ]
+}

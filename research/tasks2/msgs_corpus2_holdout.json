@@ -1,0 +1,3128 @@
+{
+  "meta": {
+    "artifact": "occ2opt msgs_corpus2",
+    "split": "holdout",
+    "manifest": "research/tasks2/manifest.json",
+    "seed_base": "occ2opt-corpus2-ho-v1",
+    "count": 54,
+    "scenario_types_covered": 20
+  },
+  "messages": [
+    {
+      "id": "e2-h01-01",
+      "split": "holdout",
+      "story": "occ2b-h01",
+      "scenarios": [
+        "parent_to_child"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h01 is a new assignment and is currently pending. Point 1: replay the session corpus from a cold cache to verify the amortized codebook path. Next actions, in priority order: clear the cache; replay the corpus; compare against the warm run.",
+      "payload": {
+        "task_id": "occ2b-h01",
+        "kind": "TASK",
+        "status": "pending",
+        "message_id": "m2-h01-01",
+        "trace_id": "trace-occ2b-h01",
+        "sender_identity": "daemon://coordinator",
+        "recipient_identity": "agent://worker-b",
+        "findings": [
+          {
+            "statement": "replay the session corpus from a cold cache to verify the amortized codebook path",
+            "confidence": null,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "clear the cache",
+          "replay the corpus",
+          "compare against the warm run"
+        ],
+        "sequence": 1,
+        "timestamp": "2026-11-14T04:24:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many evidence entries does message e2-h01-01 carry?",
+          "a": "0"
+        },
+        {
+          "family": "D",
+          "q": "Which evidence kinds does message e2-h01-01 cite? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "A",
+          "q": "Which task is message e2-h01-01 about?",
+          "a": "occ2b-h01"
+        }
+      ]
+    },
+    {
+      "id": "e2-h01-02",
+      "split": "holdout",
+      "story": "occ2b-h01",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h01 is in progress and this is an update. Point 1: the cold replay is slower only on the first two messages as designed, and I am about 85 percent sure of this. The supporting log is at reports/occ2b-h01-cold-run.txt and I re-checked it after the run. Next actions, in priority order: compare the totals.",
+      "payload": {
+        "task_id": "occ2b-h01",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h01-02",
+        "trace_id": "trace-occ2b-h01",
+        "sender_identity": "agent://worker-b",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the cold replay is slower only on the first two messages as designed",
+            "confidence": 0.85,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "log",
+            "locator": "reports/occ2b-h01-cold-run.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "compare the totals"
+        ],
+        "sequence": 2,
+        "timestamp": "2026-11-14T05:26:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h01-02 in its trace?",
+          "a": "2"
+        },
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h01-02?",
+          "a": "in_progress"
+        },
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h01-02?",
+          "a": "PROGRESS"
+        }
+      ]
+    },
+    {
+      "id": "e2-h01-03",
+      "split": "holdout",
+      "story": "occ2b-h01",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h01 is in progress and this is an update. Point 1: the totals match the warm run within one percent, and I am about 90 percent sure of this. The tool receipt lives at receipts/occ2b-h01-compare.txt.",
+      "payload": {
+        "task_id": "occ2b-h01",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h01-03",
+        "trace_id": "trace-occ2b-h01",
+        "sender_identity": "agent://worker-b",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the totals match the warm run within one percent",
+            "confidence": 0.9,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "tool",
+            "locator": "receipts/occ2b-h01-compare.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 3,
+        "timestamp": "2026-11-14T06:03:00Z"
+      },
+      "qa": [
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h01-03?",
+          "a": "in_progress"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h01-03 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "D",
+          "q": "Which task dependencies does message e2-h01-03 declare? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    },
+    {
+      "id": "e2-h01-04",
+      "split": "holdout",
+      "story": "occ2b-h01",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h01 is reported with evidence only and no new claims. The supporting log is at reports/occ2b-h01-cold-run.txt and I re-checked it after the run. The supporting log is at reports/occ2b-h01-warm-run.txt and I re-checked it after the run.",
+      "payload": {
+        "task_id": "occ2b-h01",
+        "kind": "EVIDENCE",
+        "status": "done",
+        "message_id": "m2-h01-04",
+        "trace_id": "trace-occ2b-h01",
+        "sender_identity": "agent://worker-b",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "log",
+            "locator": "reports/occ2b-h01-cold-run.txt",
+            "verified": true
+          },
+          {
+            "id": "E2",
+            "kind": "log",
+            "locator": "reports/occ2b-h01-warm-run.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 4,
+        "timestamp": "2026-11-14T06:32:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h01-04 in its trace?",
+          "a": "4"
+        },
+        {
+          "family": "A",
+          "q": "Which task is message e2-h01-04 about?",
+          "a": "occ2b-h01"
+        },
+        {
+          "family": "A",
+          "q": "Who is the sender of message e2-h01-04?",
+          "a": "agent://worker-b"
+        }
+      ]
+    },
+    {
+      "id": "e2-h01-05",
+      "split": "holdout",
+      "story": "occ2b-h01",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h01 is in progress and this is an update. Point 1: the first-message penalty is exactly one codebook injection, and I am about 90 percent sure of this. The tool receipt lives at receipts/occ2b-h01-compare.txt.",
+      "payload": {
+        "task_id": "occ2b-h01",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h01-05",
+        "trace_id": "trace-occ2b-h01",
+        "sender_identity": "agent://worker-b",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the first-message penalty is exactly one codebook injection",
+            "confidence": 0.9,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "tool",
+            "locator": "receipts/occ2b-h01-compare.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 5,
+        "timestamp": "2026-11-14T07:26:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the confidence value of point 1 in message e2-h01-05? Answer as a decimal number.",
+          "a": "0.900"
+        },
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h01-05?",
+          "a": "in_progress"
+        },
+        {
+          "family": "D",
+          "q": "Which task dependencies does message e2-h01-05 declare? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    },
+    {
+      "id": "e2-h01-06",
+      "split": "holdout",
+      "story": "occ2b-h01",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h01 is in progress and this is an update. Point 1: the replay completes without cache drift across sessions, and I am about 90 percent sure of this. The supporting log is at reports/occ2b-h01-cold-run.txt and I re-checked it after the run.",
+      "payload": {
+        "task_id": "occ2b-h01",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h01-06",
+        "trace_id": "trace-occ2b-h01",
+        "sender_identity": "agent://worker-b",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the replay completes without cache drift across sessions",
+            "confidence": 0.9,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "log",
+            "locator": "reports/occ2b-h01-cold-run.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 6,
+        "timestamp": "2026-11-14T07:32:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many evidence entries does message e2-h01-06 carry?",
+          "a": "1"
+        },
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h01-06?",
+          "a": "PROGRESS"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h01-06 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    },
+    {
+      "id": "e2-h01-07",
+      "split": "holdout",
+      "story": "occ2b-h01",
+      "scenarios": [
+        "child_to_parent",
+        "successful_tests"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h01 is finished and I am reporting the result now. Point 1: the cold cache replay matches the warm run and the amortization holds, and I am about 95 percent sure of this. The tool receipt lives at receipts/occ2b-h01-compare.txt. To be explicit about verification: the claim that cold and warm replays agree within one percent is currently marked pass; the method was manual_replay and the receipt lives at receipts/occ2b-h01-compare.txt.",
+      "payload": {
+        "task_id": "occ2b-h01",
+        "kind": "RESULT",
+        "status": "done",
+        "message_id": "m2-h01-07",
+        "trace_id": "trace-occ2b-h01",
+        "sender_identity": "agent://worker-b",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the cold cache replay matches the warm run and the amortization holds",
+            "confidence": 0.95,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "tool",
+            "locator": "receipts/occ2b-h01-compare.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": {
+          "claim": "cold and warm replays agree within one percent",
+          "status": "pass",
+          "method": "manual_replay",
+          "receipt": "receipts/occ2b-h01-compare.txt"
+        },
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 7,
+        "timestamp": "2026-11-14T08:45:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the confidence value of point 1 in message e2-h01-07? Answer as a decimal number.",
+          "a": "0.950"
+        },
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h01-07?",
+          "a": "done"
+        },
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h01-07?",
+          "a": "RESULT"
+        }
+      ]
+    },
+    {
+      "id": "e2-h02-01",
+      "split": "holdout",
+      "story": "occ2b-h02",
+      "scenarios": [
+        "parent_to_child"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h02 is a new assignment and is currently pending. Point 1: trial the wire compression on the longest messages in the corpus. Next actions, in priority order: pick the longest messages; apply the trial codec; measure the savings.",
+      "payload": {
+        "task_id": "occ2b-h02",
+        "kind": "TASK",
+        "status": "pending",
+        "message_id": "m2-h02-01",
+        "trace_id": "trace-occ2b-h02",
+        "sender_identity": "daemon://coordinator",
+        "recipient_identity": "agent://worker-d",
+        "findings": [
+          {
+            "statement": "trial the wire compression on the longest messages in the corpus",
+            "confidence": null,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "pick the longest messages",
+          "apply the trial codec",
+          "measure the savings"
+        ],
+        "sequence": 1,
+        "timestamp": "2026-11-07T09:47:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many evidence entries does message e2-h02-01 carry?",
+          "a": "0"
+        },
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h02-01?",
+          "a": "TASK"
+        },
+        {
+          "family": "A",
+          "q": "Who is the sender of message e2-h02-01?",
+          "a": "daemon://coordinator"
+        }
+      ]
+    },
+    {
+      "id": "e2-h02-02",
+      "split": "holdout",
+      "story": "occ2b-h02",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h02 is in progress and this is an update. Point 1: the longest messages cluster in the large-finding scenarios, and I am about 80 percent sure of this. The artifact at research/tasks2/msgs_corpus2_holdout.json was recorded. Next actions, in priority order: apply the trial codec.",
+      "payload": {
+        "task_id": "occ2b-h02",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h02-02",
+        "trace_id": "trace-occ2b-h02",
+        "sender_identity": "agent://worker-d",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the longest messages cluster in the large-finding scenarios",
+            "confidence": 0.8,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "artifact",
+            "locator": "research/tasks2/msgs_corpus2_holdout.json"
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "apply the trial codec"
+        ],
+        "sequence": 2,
+        "timestamp": "2026-11-07T10:27:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the confidence value of point 1 in message e2-h02-02? Answer as a decimal number.",
+          "a": "0.800"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h02-02 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "A",
+          "q": "Which task is message e2-h02-02 about?",
+          "a": "occ2b-h02"
+        }
+      ]
+    },
+    {
+      "id": "e2-h02-03",
+      "split": "holdout",
+      "story": "occ2b-h02",
+      "scenarios": [
+        "source_code_evidence",
+        "multiple_source_refs"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h02 is in progress and this is an update. Point 1: the trial codec cuts the largest messages by a fifth without breaking the field grammar, and I am about 85 percent sure of this. The relevant lines are in crates/pi-coding-agent/src/core/occ/occ1.rs, lines 1 to 60, read at revision 1863b5dea; the sha256 digest of the file is 46967c55529615d942845cb3a8b9a22272ea7a5c202dd00a730c5a293b17386f. The relevant lines are in crates/pi-coding-agent/src/core/occ/contract.rs, lines 20 to 90, read at revision 1863b5dea; the sha256 digest of the file is f11e5d6ffc9224a71b69a36614ff034ae608b07aee10d790cceb09b63cc8c64a.",
+      "payload": {
+        "task_id": "occ2b-h02",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h02-03",
+        "trace_id": "trace-occ2b-h02",
+        "sender_identity": "agent://worker-d",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the trial codec cuts the largest messages by a fifth without breaking the field grammar",
+            "confidence": 0.85,
+            "evidence": [
+              "E1",
+              "E2"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "src",
+            "locator": "crates/pi-coding-agent/src/core/occ/occ1.rs",
+            "line_range": [
+              1,
+              60
+            ],
+            "revision": "1863b5dea",
+            "digest": "46967c55529615d942845cb3a8b9a22272ea7a5c202dd00a730c5a293b17386f"
+          },
+          {
+            "id": "E2",
+            "kind": "src",
+            "locator": "crates/pi-coding-agent/src/core/occ/contract.rs",
+            "line_range": [
+              20,
+              90
+            ],
+            "revision": "1863b5dea",
+            "digest": "f11e5d6ffc9224a71b69a36614ff034ae608b07aee10d790cceb09b63cc8c64a"
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 3,
+        "timestamp": "2026-11-07T10:32:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h02-03 carry?",
+          "a": "1"
+        },
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h02-03 in its trace?",
+          "a": "3"
+        },
+        {
+          "family": "D",
+          "q": "Which evidence kinds does message e2-h02-03 cite? Answer with a comma-separated list.",
+          "a": "src"
+        }
+      ]
+    },
+    {
+      "id": "e2-h02-04",
+      "split": "holdout",
+      "story": "occ2b-h02",
+      "scenarios": [
+        "small_findings"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h02 is in progress and this is an update. Point 1: the short messages see no benefit, and I am about 90 percent sure of this. Next actions, in priority order: record the crossover.",
+      "payload": {
+        "task_id": "occ2b-h02",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h02-04",
+        "trace_id": "trace-occ2b-h02",
+        "sender_identity": "agent://worker-d",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the short messages see no benefit",
+            "confidence": 0.9,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "record the crossover"
+        ],
+        "sequence": 4,
+        "timestamp": "2026-11-07T11:32:00Z"
+      },
+      "qa": [
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h02-04 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "D",
+          "q": "Which evidence kinds does message e2-h02-04 cite? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "A",
+          "q": "Who is the sender of message e2-h02-04?",
+          "a": "agent://worker-d"
+        }
+      ]
+    },
+    {
+      "id": "e2-h02-05",
+      "split": "holdout",
+      "story": "occ2b-h02",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h02 is reported with evidence only and no new claims. The tool receipt lives at receipts/occ2b-h02-compression.txt. The exact change is pinned by line range 88 to 120 in crates/pi-coding-agent/src/core/occ/occ1.rs.",
+      "payload": {
+        "task_id": "occ2b-h02",
+        "kind": "EVIDENCE",
+        "status": "done",
+        "message_id": "m2-h02-05",
+        "trace_id": "trace-occ2b-h02",
+        "sender_identity": "agent://worker-d",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "tool",
+            "locator": "receipts/occ2b-h02-compression.txt",
+            "verified": true
+          },
+          {
+            "id": "E2",
+            "kind": "lines",
+            "locator": "crates/pi-coding-agent/src/core/occ/occ1.rs",
+            "line_range": [
+              88,
+              120
+            ]
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 5,
+        "timestamp": "2026-11-07T12:06:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h02-05 carry?",
+          "a": "0"
+        },
+        {
+          "family": "D",
+          "q": "Which evidence kinds does message e2-h02-05 cite? Answer with a comma-separated list.",
+          "a": "lines,tool"
+        },
+        {
+          "family": "D",
+          "q": "Which task dependencies does message e2-h02-05 declare? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    },
+    {
+      "id": "e2-h02-06",
+      "split": "holdout",
+      "story": "occ2b-h02",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h02 is in progress and this is an update. Point 1: the crossover sits at six hundred bytes; below it the header cost dominates, and I am about 85 percent sure of this. The tool receipt lives at receipts/occ2b-h02-compression.txt.",
+      "payload": {
+        "task_id": "occ2b-h02",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h02-06",
+        "trace_id": "trace-occ2b-h02",
+        "sender_identity": "agent://worker-d",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the crossover sits at six hundred bytes; below it the header cost dominates",
+            "confidence": 0.85,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "tool",
+            "locator": "receipts/occ2b-h02-compression.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 6,
+        "timestamp": "2026-11-07T12:51:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many evidence entries does message e2-h02-06 carry?",
+          "a": "1"
+        },
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h02-06 in its trace?",
+          "a": "6"
+        },
+        {
+          "family": "D",
+          "q": "Which task dependencies does message e2-h02-06 declare? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    },
+    {
+      "id": "e2-h02-07",
+      "split": "holdout",
+      "story": "occ2b-h02",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h02 is in progress and this is an update. Point 1: the round trip holds on every trialed message, and I am about 90 percent sure of this. The build result is recorded at reports/occ2b-h02-roundtrip.txt.",
+      "payload": {
+        "task_id": "occ2b-h02",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h02-07",
+        "trace_id": "trace-occ2b-h02",
+        "sender_identity": "agent://worker-d",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the round trip holds on every trialed message",
+            "confidence": 0.9,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "build",
+            "locator": "reports/occ2b-h02-roundtrip.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 7,
+        "timestamp": "2026-11-07T13:20:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the confidence value of point 1 in message e2-h02-07? Answer as a decimal number.",
+          "a": "0.900"
+        },
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h02-07 in its trace?",
+          "a": "7"
+        },
+        {
+          "family": "A",
+          "q": "Which task is message e2-h02-07 about?",
+          "a": "occ2b-h02"
+        }
+      ]
+    },
+    {
+      "id": "e2-h02-08",
+      "split": "holdout",
+      "story": "occ2b-h02",
+      "scenarios": [
+        "child_to_parent"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h02 is finished and I am reporting the result now. Point 1: the compression trial is recorded with its crossover and the round trip is intact, and I am about 95 percent sure of this. The tool receipt lives at receipts/occ2b-h02-compression.txt.",
+      "payload": {
+        "task_id": "occ2b-h02",
+        "kind": "RESULT",
+        "status": "done",
+        "message_id": "m2-h02-08",
+        "trace_id": "trace-occ2b-h02",
+        "sender_identity": "agent://worker-d",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the compression trial is recorded with its crossover and the round trip is intact",
+            "confidence": 0.95,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "tool",
+            "locator": "receipts/occ2b-h02-compression.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 8,
+        "timestamp": "2026-11-07T13:38:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many evidence entries does message e2-h02-08 carry?",
+          "a": "1"
+        },
+        {
+          "family": "E",
+          "q": "What is the confidence value of point 1 in message e2-h02-08? Answer as a decimal number.",
+          "a": "0.950"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h02-08 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    },
+    {
+      "id": "e2-h03-01",
+      "split": "holdout",
+      "story": "occ2b-h03",
+      "scenarios": [
+        "parent_to_child"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h03 is a new assignment and is currently pending. Point 1: probe how a foreign daemon reacts to our OCC-2 session messages. Next actions, in priority order: craft the probe message; send it to the foreign daemon; record the reaction.",
+      "payload": {
+        "task_id": "occ2b-h03",
+        "kind": "TASK",
+        "status": "pending",
+        "message_id": "m2-h03-01",
+        "trace_id": "trace-occ2b-h03",
+        "sender_identity": "daemon://coordinator",
+        "recipient_identity": "agent://worker-c",
+        "findings": [
+          {
+            "statement": "probe how a foreign daemon reacts to our OCC-2 session messages",
+            "confidence": null,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "craft the probe message",
+          "send it to the foreign daemon",
+          "record the reaction"
+        ],
+        "sequence": 1,
+        "timestamp": "2026-11-02T17:09:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h03-01 carry?",
+          "a": "1"
+        },
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h03-01 in its trace?",
+          "a": "1"
+        },
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h03-01?",
+          "a": "pending"
+        }
+      ]
+    },
+    {
+      "id": "e2-h03-02",
+      "split": "holdout",
+      "story": "occ2b-h03",
+      "scenarios": [
+        "sibling_handoff"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h03 is in progress and this is an update. Point 1: handing the probe result to worker e for the reverse direction. Next actions, in priority order: run the reverse probe.",
+      "payload": {
+        "task_id": "occ2b-h03",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h03-02",
+        "trace_id": "trace-occ2b-h03",
+        "sender_identity": "c",
+        "recipient_identity": "e",
+        "findings": [
+          {
+            "statement": "handing the probe result to worker e for the reverse direction",
+            "confidence": null,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "run the reverse probe"
+        ],
+        "sequence": 2,
+        "timestamp": "2026-11-02T17:58:00Z"
+      },
+      "qa": [
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h03-02?",
+          "a": "in_progress"
+        },
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h03-02?",
+          "a": "PROGRESS"
+        },
+        {
+          "family": "A",
+          "q": "Who is the sender of message e2-h03-02?",
+          "a": "c"
+        }
+      ]
+    },
+    {
+      "id": "e2-h03-03",
+      "split": "holdout",
+      "story": "occ2b-h03",
+      "scenarios": [
+        "multi_hop"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h03 is acknowledged: receipt of the earlier message is confirmed. Point 1: the probe result is received and the reverse probe is queued. This follows from the earlier message m2-h03-03.",
+      "payload": {
+        "task_id": "occ2b-h03",
+        "kind": "ACK",
+        "status": "in_progress",
+        "message_id": "m2-h03-03",
+        "trace_id": "trace-occ2b-h03",
+        "sender_identity": "e",
+        "recipient_identity": "c",
+        "findings": [
+          {
+            "statement": "the probe result is received and the reverse probe is queued",
+            "confidence": null,
+            "evidence": []
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "finding",
+            "locator": "m2-h03-03"
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 3,
+        "timestamp": "2026-11-02T18:36:00Z"
+      },
+      "qa": [
+        {
+          "family": "D",
+          "q": "Which task dependencies does message e2-h03-03 declare? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "A",
+          "q": "Which task is message e2-h03-03 about?",
+          "a": "occ2b-h03"
+        },
+        {
+          "family": "A",
+          "q": "Who is the sender of message e2-h03-03?",
+          "a": "e"
+        }
+      ]
+    },
+    {
+      "id": "e2-h03-04",
+      "split": "holdout",
+      "story": "occ2b-h03",
+      "scenarios": [
+        "multi_hop"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h03 is in progress and this is an update. Point 1: the foreign daemon silently drops the occ2 message body and stores only the plain fallback, and I am about 80 percent sure of this. The supporting log is at reports/occ2b-h03-drop.txt and I re-checked it after the run.",
+      "payload": {
+        "task_id": "occ2b-h03",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h03-04",
+        "trace_id": "trace-occ2b-h03",
+        "sender_identity": "e",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the foreign daemon silently drops the occ2 message body and stores only the plain fallback",
+            "confidence": 0.8,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "log",
+            "locator": "reports/occ2b-h03-drop.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 4,
+        "timestamp": "2026-11-02T19:46:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h03-04 carry?",
+          "a": "1"
+        },
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h03-04 in its trace?",
+          "a": "4"
+        },
+        {
+          "family": "A",
+          "q": "Which task is message e2-h03-04 about?",
+          "a": "occ2b-h03"
+        }
+      ]
+    },
+    {
+      "id": "e2-h03-05",
+      "split": "holdout",
+      "story": "occ2b-h03",
+      "scenarios": [
+        "missing_evidence"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h03 is in progress and this is an update. Point 1: no error receipt exists on the foreign side so the drop reason is not yet provable, and I am about 60 percent sure of this. Next actions, in priority order: request the foreign side logs.",
+      "payload": {
+        "task_id": "occ2b-h03",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h03-05",
+        "trace_id": "trace-occ2b-h03",
+        "sender_identity": "agent://worker-c",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "no error receipt exists on the foreign side so the drop reason is not yet provable",
+            "confidence": 0.6,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "request the foreign side logs"
+        ],
+        "sequence": 5,
+        "timestamp": "2026-11-02T20:59:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many evidence entries does message e2-h03-05 carry?",
+          "a": "0"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h03-05 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "A",
+          "q": "Who is the sender of message e2-h03-05?",
+          "a": "agent://worker-c"
+        }
+      ]
+    },
+    {
+      "id": "e2-h03-06",
+      "split": "holdout",
+      "story": "occ2b-h03",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h03 is reported with evidence only and no new claims. The supporting log is at reports/occ2b-h03-drop.txt and I re-checked it after the run.",
+      "payload": {
+        "task_id": "occ2b-h03",
+        "kind": "EVIDENCE",
+        "status": "done",
+        "message_id": "m2-h03-06",
+        "trace_id": "trace-occ2b-h03",
+        "sender_identity": "agent://worker-c",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "log",
+            "locator": "reports/occ2b-h03-drop.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 6,
+        "timestamp": "2026-11-02T21:31:00Z"
+      },
+      "qa": [
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h03-06?",
+          "a": "EVIDENCE"
+        },
+        {
+          "family": "D",
+          "q": "Which evidence kinds does message e2-h03-06 cite? Answer with a comma-separated list.",
+          "a": "log"
+        },
+        {
+          "family": "D",
+          "q": "Which task dependencies does message e2-h03-06 declare? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    },
+    {
+      "id": "e2-h03-07",
+      "split": "holdout",
+      "story": "occ2b-h03",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h03 is in progress and this is an update. Point 1: the foreign logs arrive and confirm the schema mismatch as the drop cause, and I am about 85 percent sure of this. The supporting log is at reports/occ2b-h03-foreign-logs.txt and I re-checked it after the run.",
+      "payload": {
+        "task_id": "occ2b-h03",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h03-07",
+        "trace_id": "trace-occ2b-h03",
+        "sender_identity": "agent://worker-c",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the foreign logs arrive and confirm the schema mismatch as the drop cause",
+            "confidence": 0.85,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "log",
+            "locator": "reports/occ2b-h03-foreign-logs.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 7,
+        "timestamp": "2026-11-02T22:35:00Z"
+      },
+      "qa": [
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h03-07?",
+          "a": "in_progress"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h03-07 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "A",
+          "q": "Which task is message e2-h03-07 about?",
+          "a": "occ2b-h03"
+        }
+      ]
+    },
+    {
+      "id": "e2-h03-08",
+      "split": "holdout",
+      "story": "occ2b-h03",
+      "scenarios": [
+        "child_to_parent"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h03 is finished and I am reporting the result now. Point 1: the foreign daemon drops occ2 bodies on a schema mismatch and keeps the plain fallback, and I am about 90 percent sure of this. The supporting log is at reports/occ2b-h03-foreign-logs.txt and I re-checked it after the run.",
+      "payload": {
+        "task_id": "occ2b-h03",
+        "kind": "RESULT",
+        "status": "done",
+        "message_id": "m2-h03-08",
+        "trace_id": "trace-occ2b-h03",
+        "sender_identity": "agent://worker-c",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the foreign daemon drops occ2 bodies on a schema mismatch and keeps the plain fallback",
+            "confidence": 0.9,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "log",
+            "locator": "reports/occ2b-h03-foreign-logs.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 8,
+        "timestamp": "2026-11-02T23:48:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the confidence value of point 1 in message e2-h03-08? Answer as a decimal number.",
+          "a": "0.900"
+        },
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h03-08?",
+          "a": "RESULT"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h03-08 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    },
+    {
+      "id": "e2-h04-01",
+      "split": "holdout",
+      "story": "occ2b-h04",
+      "scenarios": [
+        "parent_to_child"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h04 is a new assignment and is currently pending. Point 1: audit the verification receipts for the gate runs claimed in the last report. Next actions, in priority order: list the claimed gates; match each claim to a receipt; report the gaps.",
+      "payload": {
+        "task_id": "occ2b-h04",
+        "kind": "TASK",
+        "status": "pending",
+        "message_id": "m2-h04-01",
+        "trace_id": "trace-occ2b-h04",
+        "sender_identity": "daemon://coordinator",
+        "recipient_identity": "agent://security-auditor",
+        "findings": [
+          {
+            "statement": "audit the verification receipts for the gate runs claimed in the last report",
+            "confidence": null,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "list the claimed gates",
+          "match each claim to a receipt",
+          "report the gaps"
+        ],
+        "sequence": 1,
+        "timestamp": "2026-11-10T03:11:00Z"
+      },
+      "qa": [
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h04-01?",
+          "a": "pending"
+        },
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h04-01?",
+          "a": "TASK"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h04-01 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    },
+    {
+      "id": "e2-h04-02",
+      "split": "holdout",
+      "story": "occ2b-h04",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h04 is in progress and this is an update. Point 1: eleven of twelve claims have receipts, and I am about 85 percent sure of this. The artifact at reports/occ2opt/BASELINE-GATES.md carries sha256 digest bbcdec1b3a66d93f493c761ade54b2716bc2ba68c02061994d0d498a7e1bac42. Next actions, in priority order: chase the missing receipt.",
+      "payload": {
+        "task_id": "occ2b-h04",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h04-02",
+        "trace_id": "trace-occ2b-h04",
+        "sender_identity": "agent://security-auditor",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "eleven of twelve claims have receipts",
+            "confidence": 0.85,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "artifact",
+            "locator": "reports/occ2opt/BASELINE-GATES.md",
+            "digest": "bbcdec1b3a66d93f493c761ade54b2716bc2ba68c02061994d0d498a7e1bac42"
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "chase the missing receipt"
+        ],
+        "sequence": 2,
+        "timestamp": "2026-11-10T03:54:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h04-02 in its trace?",
+          "a": "2"
+        },
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h04-02?",
+          "a": "in_progress"
+        },
+        {
+          "family": "D",
+          "q": "Which evidence kinds does message e2-h04-02 cite? Answer with a comma-separated list.",
+          "a": "artifact"
+        }
+      ]
+    },
+    {
+      "id": "e2-h04-03",
+      "split": "holdout",
+      "story": "occ2b-h04",
+      "scenarios": [
+        "failed_tests"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h04 is in progress and this is an update. Point 1: the remaining claim fails its receipt check; the referenced log file does not exist, and I am about 90 percent sure of this. The supporting log is at reports/occ2b-h04-missing.txt and I re-checked it after the run. Next actions, in priority order: trace the log path.",
+      "payload": {
+        "task_id": "occ2b-h04",
+        "kind": "PROGRESS",
+        "status": "failed",
+        "message_id": "m2-h04-03",
+        "trace_id": "trace-occ2b-h04",
+        "sender_identity": "agent://security-auditor",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the remaining claim fails its receipt check; the referenced log file does not exist",
+            "confidence": 0.9,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "log",
+            "locator": "reports/occ2b-h04-missing.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "trace the log path"
+        ],
+        "sequence": 3,
+        "timestamp": "2026-11-10T04:02:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h04-03 in its trace?",
+          "a": "3"
+        },
+        {
+          "family": "D",
+          "q": "Which evidence kinds does message e2-h04-03 cite? Answer with a comma-separated list.",
+          "a": "log"
+        },
+        {
+          "family": "D",
+          "q": "Which task dependencies does message e2-h04-03 declare? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    },
+    {
+      "id": "e2-h04-04",
+      "split": "holdout",
+      "story": "occ2b-h04",
+      "scenarios": [
+        "contradictory_evidence"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h04 is in progress and this is an update. Point 1: the claim text says the log lives under reports, and I am about 60 percent sure of this. The artifact at reports/occ2opt/BASELINE-GATES.md carries sha256 digest f49c1f48f2c362329ff746d91ab484dca0f54133bf050bbc95d78dd3d50206a7. Point 2: the receipts index says the log was written to the scratch directory, and I am about 80 percent sure of this. The tool receipt lives at receipts/occ2b-h04-index.txt.",
+      "payload": {
+        "task_id": "occ2b-h04",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h04-04",
+        "trace_id": "trace-occ2b-h04",
+        "sender_identity": "agent://security-auditor",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the claim text says the log lives under reports",
+            "confidence": 0.6,
+            "evidence": [
+              "E1"
+            ]
+          },
+          {
+            "statement": "the receipts index says the log was written to the scratch directory",
+            "confidence": 0.8,
+            "evidence": [
+              "E2"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "artifact",
+            "locator": "reports/occ2opt/BASELINE-GATES.md",
+            "digest": "f49c1f48f2c362329ff746d91ab484dca0f54133bf050bbc95d78dd3d50206a7"
+          },
+          {
+            "id": "E2",
+            "kind": "tool",
+            "locator": "receipts/occ2b-h04-index.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 4,
+        "timestamp": "2026-11-10T04:09:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h04-04 carry?",
+          "a": "2"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h04-04 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "A",
+          "q": "Which task is message e2-h04-04 about?",
+          "a": "occ2b-h04"
+        }
+      ]
+    },
+    {
+      "id": "e2-h04-05",
+      "split": "holdout",
+      "story": "occ2b-h04",
+      "scenarios": [
+        "missing_evidence"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h04 is in progress and this is an update. Point 1: the referenced log cannot be produced from either location so the claim stays unverified, and I am about 75 percent sure of this. Next actions, in priority order: mark the claim unverified.",
+      "payload": {
+        "task_id": "occ2b-h04",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h04-05",
+        "trace_id": "trace-occ2b-h04",
+        "sender_identity": "agent://security-auditor",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the referenced log cannot be produced from either location so the claim stays unverified",
+            "confidence": 0.75,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "mark the claim unverified"
+        ],
+        "sequence": 5,
+        "timestamp": "2026-11-10T05:01:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h04-05 carry?",
+          "a": "1"
+        },
+        {
+          "family": "E",
+          "q": "What is the confidence value of point 1 in message e2-h04-05? Answer as a decimal number.",
+          "a": "0.750"
+        },
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h04-05?",
+          "a": "in_progress"
+        }
+      ]
+    },
+    {
+      "id": "e2-h04-06",
+      "split": "holdout",
+      "story": "occ2b-h04",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h04 has a correction to an earlier claim. Point 1: the scratch copy was found after all; the claim verifies and the earlier failure is retracted, and I am about 90 percent sure of this. The tool receipt lives at receipts/occ2b-h04-scratch-copy.txt.",
+      "payload": {
+        "task_id": "occ2b-h04",
+        "kind": "CORRECTION",
+        "status": "in_progress",
+        "message_id": "m2-h04-06",
+        "trace_id": "trace-occ2b-h04",
+        "sender_identity": "agent://security-auditor",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the scratch copy was found after all; the claim verifies and the earlier failure is retracted",
+            "confidence": 0.9,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "tool",
+            "locator": "receipts/occ2b-h04-scratch-copy.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 6,
+        "timestamp": "2026-11-10T06:11:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the confidence value of point 1 in message e2-h04-06? Answer as a decimal number.",
+          "a": "0.900"
+        },
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h04-06 in its trace?",
+          "a": "6"
+        },
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h04-06?",
+          "a": "in_progress"
+        }
+      ]
+    },
+    {
+      "id": "e2-h04-07",
+      "split": "holdout",
+      "story": "occ2b-h04",
+      "scenarios": [
+        "child_to_parent"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h04 is finished and I am reporting the result now. Point 1: all twelve claims verify; one needed the scratch copy and is now receipted, and I am about 95 percent sure of this. The tool receipt lives at receipts/occ2b-h04-scratch-copy.txt.",
+      "payload": {
+        "task_id": "occ2b-h04",
+        "kind": "RESULT",
+        "status": "done",
+        "message_id": "m2-h04-07",
+        "trace_id": "trace-occ2b-h04",
+        "sender_identity": "agent://security-auditor",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "all twelve claims verify; one needed the scratch copy and is now receipted",
+            "confidence": 0.95,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "tool",
+            "locator": "receipts/occ2b-h04-scratch-copy.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 7,
+        "timestamp": "2026-11-10T06:16:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h04-07 in its trace?",
+          "a": "7"
+        },
+        {
+          "family": "D",
+          "q": "Which task dependencies does message e2-h04-07 declare? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "A",
+          "q": "Who is the sender of message e2-h04-07?",
+          "a": "agent://security-auditor"
+        }
+      ]
+    },
+    {
+      "id": "e2-h05-01",
+      "split": "holdout",
+      "story": "occ2b-h05",
+      "scenarios": [
+        "parent_to_child"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h05 is a new assignment and is currently pending. Point 1: migrate the scheduled maintenance window without dropping queued work. Next actions, in priority order: drain the queue; move the window; verify the drained items.",
+      "payload": {
+        "task_id": "occ2b-h05",
+        "kind": "TASK",
+        "status": "pending",
+        "message_id": "m2-h05-01",
+        "trace_id": "trace-occ2b-h05",
+        "sender_identity": "daemon://coordinator",
+        "recipient_identity": "agent://worker-e",
+        "findings": [
+          {
+            "statement": "migrate the scheduled maintenance window without dropping queued work",
+            "confidence": null,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "drain the queue",
+          "move the window",
+          "verify the drained items"
+        ],
+        "sequence": 1,
+        "timestamp": "2026-11-12T18:47:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h05-01 carry?",
+          "a": "1"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h05-01 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "D",
+          "q": "Which task dependencies does message e2-h05-01 declare? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    },
+    {
+      "id": "e2-h05-02",
+      "split": "holdout",
+      "story": "occ2b-h05",
+      "scenarios": [
+        "model_switching"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h05 is in progress and this is an update. Point 1: the migration session switched from deepseek-v4-pro to glm-5.3 for the window operations; the queue state carries over unchanged, and I am about 85 percent sure of this. The supporting log is at reports/occ2b-h05-switch.txt and I re-checked it after the run. Next actions, in priority order: drain the queue.",
+      "payload": {
+        "task_id": "occ2b-h05",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h05-02",
+        "trace_id": "trace-occ2b-h05",
+        "sender_identity": "agent://worker-e",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the migration session switched from deepseek-v4-pro to glm-5.3 for the window operations; the queue state carries over unchanged",
+            "confidence": 0.85,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "log",
+            "locator": "reports/occ2b-h05-switch.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "drain the queue"
+        ],
+        "sequence": 2,
+        "timestamp": "2026-11-12T19:35:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h05-02 in its trace?",
+          "a": "2"
+        },
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h05-02?",
+          "a": "in_progress"
+        },
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h05-02?",
+          "a": "PROGRESS"
+        }
+      ]
+    },
+    {
+      "id": "e2-h05-03",
+      "split": "holdout",
+      "story": "occ2b-h05",
+      "scenarios": [
+        "state_updates"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h05 is in progress and this is an update. Point 1: the queue drains and the window moves with no lost items, and I am about 90 percent sure of this. The supporting log is at reports/occ2b-h05-drain.txt and I re-checked it after the run.",
+      "payload": {
+        "task_id": "occ2b-h05",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h05-03",
+        "trace_id": "trace-occ2b-h05",
+        "sender_identity": "agent://worker-e",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the queue drains and the window moves with no lost items",
+            "confidence": 0.9,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "log",
+            "locator": "reports/occ2b-h05-drain.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 3,
+        "timestamp": "2026-11-12T20:40:00Z"
+      },
+      "qa": [
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h05-03?",
+          "a": "PROGRESS"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h05-03 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "A",
+          "q": "Who is the sender of message e2-h05-03?",
+          "a": "agent://worker-e"
+        }
+      ]
+    },
+    {
+      "id": "e2-h05-04",
+      "split": "holdout",
+      "story": "occ2b-h05",
+      "scenarios": [
+        "new_dependencies"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h05 is in progress and this is an update. Point 1: the verification step now depends on the trace consolidation work to compare queue states, and I am about 80 percent sure of this. This work depended on occ2b-d07 being finished first. Next actions, in priority order: wait for the consolidation result.",
+      "payload": {
+        "task_id": "occ2b-h05",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h05-04",
+        "trace_id": "trace-occ2b-h05",
+        "sender_identity": "agent://worker-e",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the verification step now depends on the trace consolidation work to compare queue states",
+            "confidence": 0.8,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [
+          "occ2b-d07"
+        ],
+        "next_actions": [
+          "wait for the consolidation result"
+        ],
+        "sequence": 4,
+        "timestamp": "2026-11-12T21:02:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many evidence entries does message e2-h05-04 carry?",
+          "a": "0"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h05-04 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "D",
+          "q": "Which task dependencies does message e2-h05-04 declare? Answer with a comma-separated list, or none.",
+          "a": "occ2b-d07"
+        }
+      ]
+    },
+    {
+      "id": "e2-h05-05",
+      "split": "holdout",
+      "story": "occ2b-h05",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h05 is reported with evidence only and no new claims. The supporting log is at reports/occ2b-h05-drain.txt and I re-checked it after the run.",
+      "payload": {
+        "task_id": "occ2b-h05",
+        "kind": "EVIDENCE",
+        "status": "done",
+        "message_id": "m2-h05-05",
+        "trace_id": "trace-occ2b-h05",
+        "sender_identity": "agent://worker-e",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "log",
+            "locator": "reports/occ2b-h05-drain.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 5,
+        "timestamp": "2026-11-12T21:08:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h05-05 in its trace?",
+          "a": "5"
+        },
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h05-05?",
+          "a": "EVIDENCE"
+        },
+        {
+          "family": "D",
+          "q": "Which evidence kinds does message e2-h05-05 cite? Answer with a comma-separated list.",
+          "a": "log"
+        }
+      ]
+    },
+    {
+      "id": "e2-h05-06",
+      "split": "holdout",
+      "story": "occ2b-h05",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h05 is in progress and this is an update. Point 1: the drained items replay to the same queue state under the consolidation rules, and I am about 85 percent sure of this. The build result is recorded at reports/occ2b-h05-replay.txt.",
+      "payload": {
+        "task_id": "occ2b-h05",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h05-06",
+        "trace_id": "trace-occ2b-h05",
+        "sender_identity": "agent://worker-e",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the drained items replay to the same queue state under the consolidation rules",
+            "confidence": 0.85,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "build",
+            "locator": "reports/occ2b-h05-replay.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 6,
+        "timestamp": "2026-11-12T22:17:00Z"
+      },
+      "qa": [
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h05-06?",
+          "a": "PROGRESS"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h05-06 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "A",
+          "q": "Who is the sender of message e2-h05-06?",
+          "a": "agent://worker-e"
+        }
+      ]
+    },
+    {
+      "id": "e2-h05-07",
+      "split": "holdout",
+      "story": "occ2b-h05",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h05 is in progress and this is an update. Point 1: the new window holds and no work is dropped, and I am about 90 percent sure of this. The supporting log is at reports/occ2b-h05-window.txt and I re-checked it after the run.",
+      "payload": {
+        "task_id": "occ2b-h05",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h05-07",
+        "trace_id": "trace-occ2b-h05",
+        "sender_identity": "agent://worker-e",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the new window holds and no work is dropped",
+            "confidence": 0.9,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "log",
+            "locator": "reports/occ2b-h05-window.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 7,
+        "timestamp": "2026-11-12T23:02:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the confidence value of point 1 in message e2-h05-07? Answer as a decimal number.",
+          "a": "0.900"
+        },
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h05-07 in its trace?",
+          "a": "7"
+        },
+        {
+          "family": "A",
+          "q": "Who is the sender of message e2-h05-07?",
+          "a": "agent://worker-e"
+        }
+      ]
+    },
+    {
+      "id": "e2-h05-08",
+      "split": "holdout",
+      "story": "occ2b-h05",
+      "scenarios": [
+        "child_to_parent"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h05 is finished and I am reporting the result now. Point 1: the maintenance window migration is complete with the queue intact, and I am about 95 percent sure of this. The supporting log is at reports/occ2b-h05-window.txt and I re-checked it after the run.",
+      "payload": {
+        "task_id": "occ2b-h05",
+        "kind": "RESULT",
+        "status": "done",
+        "message_id": "m2-h05-08",
+        "trace_id": "trace-occ2b-h05",
+        "sender_identity": "agent://worker-e",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the maintenance window migration is complete with the queue intact",
+            "confidence": 0.95,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "log",
+            "locator": "reports/occ2b-h05-window.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 8,
+        "timestamp": "2026-11-13T00:00:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many evidence entries does message e2-h05-08 carry?",
+          "a": "1"
+        },
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h05-08 carry?",
+          "a": "1"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h05-08 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    },
+    {
+      "id": "e2-h06-01",
+      "split": "holdout",
+      "story": "occ2b-h06",
+      "scenarios": [
+        "parent_to_child"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h06 is a new assignment and is currently pending. Point 1: revive the abandoned feature branch or close it with a partial record. Next actions, in priority order: assess the branch state; decide revive or close; record the outcome.",
+      "payload": {
+        "task_id": "occ2b-h06",
+        "kind": "TASK",
+        "status": "pending",
+        "message_id": "m2-h06-01",
+        "trace_id": "trace-occ2b-h06",
+        "sender_identity": "daemon://coordinator",
+        "recipient_identity": "agent://worker-f",
+        "findings": [
+          {
+            "statement": "revive the abandoned feature branch or close it with a partial record",
+            "confidence": null,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "assess the branch state",
+          "decide revive or close",
+          "record the outcome"
+        ],
+        "sequence": 1,
+        "timestamp": "2026-11-02T10:44:00Z"
+      },
+      "qa": [
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h06-01?",
+          "a": "TASK"
+        },
+        {
+          "family": "D",
+          "q": "Which evidence kinds does message e2-h06-01 cite? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "A",
+          "q": "Which task is message e2-h06-01 about?",
+          "a": "occ2b-h06"
+        }
+      ]
+    },
+    {
+      "id": "e2-h06-02",
+      "split": "holdout",
+      "story": "occ2b-h06",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h06 is in progress and this is an update. Point 1: the branch is four weeks stale and conflicts with the current main, and I am about 85 percent sure of this. This is backed by commit ce8480d59, which I verified. Next actions, in priority order: attempt the rebase.",
+      "payload": {
+        "task_id": "occ2b-h06",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h06-02",
+        "trace_id": "trace-occ2b-h06",
+        "sender_identity": "agent://worker-f",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the branch is four weeks stale and conflicts with the current main",
+            "confidence": 0.85,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "locator": "ce8480d59",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "attempt the rebase"
+        ],
+        "sequence": 2,
+        "timestamp": "2026-11-02T11:38:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h06-02 carry?",
+          "a": "1"
+        },
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h06-02?",
+          "a": "in_progress"
+        },
+        {
+          "family": "A",
+          "q": "Who is the sender of message e2-h06-02?",
+          "a": "agent://worker-f"
+        }
+      ]
+    },
+    {
+      "id": "e2-h06-03",
+      "split": "holdout",
+      "story": "occ2b-h06",
+      "scenarios": [
+        "partial_completion",
+        "child_to_parent"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h06 is partially complete and scope remains. Point 1: the rebase lands but two features on the branch no longer apply; the record stays partial, and I am about 80 percent sure of this. The build result is recorded at reports/occ2b-h06-rebase.txt. Next actions, in priority order: split the surviving parts.",
+      "payload": {
+        "task_id": "occ2b-h06",
+        "kind": "RESULT",
+        "status": "partial",
+        "message_id": "m2-h06-03",
+        "trace_id": "trace-occ2b-h06",
+        "sender_identity": "agent://worker-f",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the rebase lands but two features on the branch no longer apply; the record stays partial",
+            "confidence": 0.8,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "build",
+            "locator": "reports/occ2b-h06-rebase.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "split the surviving parts"
+        ],
+        "sequence": 3,
+        "timestamp": "2026-11-02T12:28:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many evidence entries does message e2-h06-03 carry?",
+          "a": "1"
+        },
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h06-03 carry?",
+          "a": "1"
+        },
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h06-03 in its trace?",
+          "a": "3"
+        }
+      ]
+    },
+    {
+      "id": "e2-h06-04",
+      "split": "holdout",
+      "story": "occ2b-h06",
+      "scenarios": [
+        "cancellation"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h06 was cancelled before completion. Point 1: the branch work is cancelled; the surviving parts move to a fresh task.",
+      "payload": {
+        "task_id": "occ2b-h06",
+        "kind": "CANCELLED",
+        "status": "cancelled",
+        "message_id": "m2-h06-04",
+        "trace_id": "trace-occ2b-h06",
+        "sender_identity": "daemon://coordinator",
+        "recipient_identity": "f",
+        "findings": [
+          {
+            "statement": "the branch work is cancelled; the surviving parts move to a fresh task",
+            "confidence": null,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 4,
+        "timestamp": "2026-11-02T13:41:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h06-04 carry?",
+          "a": "1"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h06-04 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "D",
+          "q": "Which task dependencies does message e2-h06-04 declare? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    },
+    {
+      "id": "e2-h06-05",
+      "split": "holdout",
+      "story": "occ2b-h06",
+      "scenarios": [
+        "task_reassignment",
+        "parent_to_child"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h06b is a new assignment and is currently pending. Point 1: the surviving parts are reissued under a child task id to the free worker. Next actions, in priority order: port the two surviving features.",
+      "payload": {
+        "task_id": "occ2b-h06b",
+        "kind": "TASK",
+        "status": "pending",
+        "message_id": "m2-h06-05",
+        "trace_id": "trace-occ2b-h06",
+        "sender_identity": "daemon://coordinator",
+        "recipient_identity": "a",
+        "findings": [
+          {
+            "statement": "the surviving parts are reissued under a child task id to the free worker",
+            "confidence": null,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "port the two surviving features"
+        ],
+        "sequence": 5,
+        "timestamp": "2026-11-02T13:53:00Z",
+        "parent_task_id": "occ2b-h06"
+      },
+      "qa": [
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h06-05 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "D",
+          "q": "Which task dependencies does message e2-h06-05 declare? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "A",
+          "q": "Which task is message e2-h06-05 about?",
+          "a": "occ2b-h06b"
+        }
+      ]
+    },
+    {
+      "id": "e2-h06-06",
+      "split": "holdout",
+      "story": "occ2b-h06",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h06 is acknowledged: receipt of the earlier message is confirmed. Point 1: the reissued task is acknowledged and the rebase record was received. This follows from the earlier message m2-h06-05.",
+      "payload": {
+        "task_id": "occ2b-h06",
+        "kind": "ACK",
+        "status": "in_progress",
+        "message_id": "m2-h06-06",
+        "trace_id": "trace-occ2b-h06",
+        "sender_identity": "a",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the reissued task is acknowledged and the rebase record was received",
+            "confidence": null,
+            "evidence": []
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "finding",
+            "locator": "m2-h06-05"
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 6,
+        "timestamp": "2026-11-02T14:00:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h06-06 carry?",
+          "a": "1"
+        },
+        {
+          "family": "D",
+          "q": "Which evidence kinds does message e2-h06-06 cite? Answer with a comma-separated list.",
+          "a": "finding"
+        },
+        {
+          "family": "A",
+          "q": "Which task is message e2-h06-06 about?",
+          "a": "occ2b-h06"
+        }
+      ]
+    },
+    {
+      "id": "e2-h06-07",
+      "split": "holdout",
+      "story": "occ2b-h06",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h06 is in progress and this is an update. Point 1: the first surviving feature ports cleanly, and I am about 85 percent sure of this. The build result is recorded at reports/occ2b-h06b-port.txt.",
+      "payload": {
+        "task_id": "occ2b-h06",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h06-07",
+        "trace_id": "trace-occ2b-h06",
+        "sender_identity": "a",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the first surviving feature ports cleanly",
+            "confidence": 0.85,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "build",
+            "locator": "reports/occ2b-h06b-port.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 7,
+        "timestamp": "2026-11-02T14:11:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h06-07 carry?",
+          "a": "1"
+        },
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h06-07 in its trace?",
+          "a": "7"
+        },
+        {
+          "family": "A",
+          "q": "Which task is message e2-h06-07 about?",
+          "a": "occ2b-h06"
+        }
+      ]
+    },
+    {
+      "id": "e2-h06-08",
+      "split": "holdout",
+      "story": "occ2b-h06",
+      "scenarios": [
+        "child_to_parent"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h06 is finished and I am reporting the result now. Point 1: both surviving features are ported and the abandoned branch is closed with a partial record, and I am about 90 percent sure of this. This is backed by commit f37ed6a79, which I verified.",
+      "payload": {
+        "task_id": "occ2b-h06",
+        "kind": "RESULT",
+        "status": "done",
+        "message_id": "m2-h06-08",
+        "trace_id": "trace-occ2b-h06",
+        "sender_identity": "a",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "both surviving features are ported and the abandoned branch is closed with a partial record",
+            "confidence": 0.9,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "commit",
+            "locator": "f37ed6a79",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 8,
+        "timestamp": "2026-11-02T14:26:00Z"
+      },
+      "qa": [
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h06-08?",
+          "a": "done"
+        },
+        {
+          "family": "D",
+          "q": "Which evidence kinds does message e2-h06-08 cite? Answer with a comma-separated list.",
+          "a": "commit"
+        },
+        {
+          "family": "A",
+          "q": "Who is the sender of message e2-h06-08?",
+          "a": "a"
+        }
+      ]
+    },
+    {
+      "id": "e2-h07-01",
+      "split": "holdout",
+      "story": "occ2b-h07",
+      "scenarios": [
+        "parent_to_child"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h07 is a new assignment and is currently pending. Point 1: archive the longest session traces with their repeated updates preserved. Next actions, in priority order: select the longest traces; archive with dedup metadata; verify the restore.",
+      "payload": {
+        "task_id": "occ2b-h07",
+        "kind": "TASK",
+        "status": "pending",
+        "message_id": "m2-h07-01",
+        "trace_id": "trace-occ2b-h07",
+        "sender_identity": "daemon://coordinator",
+        "recipient_identity": "agent://worker-a",
+        "findings": [
+          {
+            "statement": "archive the longest session traces with their repeated updates preserved",
+            "confidence": null,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "select the longest traces",
+          "archive with dedup metadata",
+          "verify the restore"
+        ],
+        "sequence": 1,
+        "timestamp": "2026-11-12T17:59:00Z"
+      },
+      "qa": [
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h07-01?",
+          "a": "pending"
+        },
+        {
+          "family": "D",
+          "q": "Which task dependencies does message e2-h07-01 declare? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "A",
+          "q": "Which task is message e2-h07-01 about?",
+          "a": "occ2b-h07"
+        }
+      ]
+    },
+    {
+      "id": "e2-h07-02",
+      "split": "holdout",
+      "story": "occ2b-h07",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h07 is in progress and this is an update. Point 1: the longest traces are selected by message count, and I am about 85 percent sure of this. The tool receipt lives at receipts/occ2b-h07-selection.txt. Next actions, in priority order: archive with dedup metadata.",
+      "payload": {
+        "task_id": "occ2b-h07",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h07-02",
+        "trace_id": "trace-occ2b-h07",
+        "sender_identity": "agent://worker-a",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the longest traces are selected by message count",
+            "confidence": 0.85,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "tool",
+            "locator": "receipts/occ2b-h07-selection.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "archive with dedup metadata"
+        ],
+        "sequence": 2,
+        "timestamp": "2026-11-12T19:34:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h07-02 in its trace?",
+          "a": "2"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h07-02 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        },
+        {
+          "family": "A",
+          "q": "Who is the sender of message e2-h07-02?",
+          "a": "agent://worker-a"
+        }
+      ]
+    },
+    {
+      "id": "e2-h07-03",
+      "split": "holdout",
+      "story": "occ2b-h07",
+      "scenarios": [
+        "repeated_messages"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h07 is in progress and this is an update. Point 1: the traces are archived with the repeated updates preserved, and I am about 85 percent sure of this. The tool receipt lives at receipts/occ2b-h07-selection.txt. Next actions, in priority order: verify the restore.",
+      "payload": {
+        "task_id": "occ2b-h07",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h07-03",
+        "trace_id": "trace-occ2b-h07",
+        "sender_identity": "agent://worker-a",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the traces are archived with the repeated updates preserved",
+            "confidence": 0.85,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "tool",
+            "locator": "receipts/occ2b-h07-selection.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "verify the restore"
+        ],
+        "sequence": 3,
+        "timestamp": "2026-11-12T21:45:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many evidence entries does message e2-h07-03 carry?",
+          "a": "1"
+        },
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h07-03 carry?",
+          "a": "1"
+        },
+        {
+          "family": "D",
+          "q": "Which evidence kinds does message e2-h07-03 cite? Answer with a comma-separated list.",
+          "a": "tool"
+        }
+      ]
+    },
+    {
+      "id": "e2-h07-04",
+      "split": "holdout",
+      "story": "occ2b-h07",
+      "scenarios": [
+        "repeated_messages"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h07 is in progress and this is an update. Point 1: the traces are archived with the repeated updates preserved, and I am about 85 percent sure of this. The tool receipt lives at receipts/occ2b-h07-selection.txt. Next actions, in priority order: verify the restore.",
+      "payload": {
+        "task_id": "occ2b-h07",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h07-04",
+        "trace_id": "trace-occ2b-h07",
+        "sender_identity": "agent://worker-a",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the traces are archived with the repeated updates preserved",
+            "confidence": 0.85,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "tool",
+            "locator": "receipts/occ2b-h07-selection.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "verify the restore"
+        ],
+        "sequence": 4,
+        "timestamp": "2026-11-13T01:06:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the confidence value of point 1 in message e2-h07-04? Answer as a decimal number.",
+          "a": "0.850"
+        },
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h07-04 in its trace?",
+          "a": "4"
+        },
+        {
+          "family": "D",
+          "q": "Which task dependencies does message e2-h07-04 declare? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    },
+    {
+      "id": "e2-h07-05",
+      "split": "holdout",
+      "story": "occ2b-h07",
+      "scenarios": [],
+      "holdout": true,
+      "plain_english": "Task occ2b-h07 is acknowledged: receipt of the earlier message is confirmed. Point 1: the duplicate archival notice was received; the dedup metadata covers it.",
+      "payload": {
+        "task_id": "occ2b-h07",
+        "kind": "ACK",
+        "status": "in_progress",
+        "message_id": "m2-h07-05",
+        "trace_id": "trace-occ2b-h07",
+        "sender_identity": "daemon://coordinator",
+        "recipient_identity": "a",
+        "findings": [
+          {
+            "statement": "the duplicate archival notice was received; the dedup metadata covers it",
+            "confidence": null,
+            "evidence": []
+          }
+        ],
+        "evidence": [],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 5,
+        "timestamp": "2026-11-13T05:00:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h07-05 carry?",
+          "a": "1"
+        },
+        {
+          "family": "E",
+          "q": "What is the sequence number of message e2-h07-05 in its trace?",
+          "a": "5"
+        },
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h07-05?",
+          "a": "ACK"
+        }
+      ]
+    },
+    {
+      "id": "e2-h07-06",
+      "split": "holdout",
+      "story": "occ2b-h07",
+      "scenarios": [
+        "large_findings",
+        "long_history"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h07 is in progress and this is an update. Point 1: the archive preserves all nine message kinds, and I am about 90 percent sure of this. Point 2: the repeated updates restore as distinct messages with shared content digests, and I am about 85 percent sure of this. Point 3: the evidence chains restore with their line ranges, and I am about 90 percent sure of this. Point 4: the verification records restore with their receipts, and I am about 90 percent sure of this. Point 5: the trace ids and sequence numbers restore without gaps, and I am about 95 percent sure of this. Point 6: the restore time stays under the archival budget, and I am about 85 percent sure of this. The build result is recorded at reports/occ2b-h07-restore.txt. Next actions, in priority order: sign off the archive.",
+      "payload": {
+        "task_id": "occ2b-h07",
+        "kind": "PROGRESS",
+        "status": "in_progress",
+        "message_id": "m2-h07-06",
+        "trace_id": "trace-occ2b-h07",
+        "sender_identity": "agent://worker-a",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the archive preserves all nine message kinds",
+            "confidence": 0.9,
+            "evidence": []
+          },
+          {
+            "statement": "the repeated updates restore as distinct messages with shared content digests",
+            "confidence": 0.85,
+            "evidence": []
+          },
+          {
+            "statement": "the evidence chains restore with their line ranges",
+            "confidence": 0.9,
+            "evidence": []
+          },
+          {
+            "statement": "the verification records restore with their receipts",
+            "confidence": 0.9,
+            "evidence": []
+          },
+          {
+            "statement": "the trace ids and sequence numbers restore without gaps",
+            "confidence": 0.95,
+            "evidence": []
+          },
+          {
+            "statement": "the restore time stays under the archival budget",
+            "confidence": 0.85,
+            "evidence": []
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "build",
+            "locator": "reports/occ2b-h07-restore.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [
+          "sign off the archive"
+        ],
+        "sequence": 6,
+        "timestamp": "2026-11-13T07:55:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "What is the confidence value of point 1 in message e2-h07-06? Answer as a decimal number.",
+          "a": "0.900"
+        },
+        {
+          "family": "E",
+          "q": "What is the confidence value of point 5 in message e2-h07-06? Answer as a decimal number.",
+          "a": "0.950"
+        },
+        {
+          "family": "A",
+          "q": "What is the status of the task in message e2-h07-06?",
+          "a": "in_progress"
+        }
+      ]
+    },
+    {
+      "id": "e2-h07-07",
+      "split": "holdout",
+      "story": "occ2b-h07",
+      "scenarios": [
+        "long_history"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h07 is reported with evidence only and no new claims. The artifact at research/occ2opt/trace-archive/ was recorded. The build result is recorded at reports/occ2b-h07-restore.txt.",
+      "payload": {
+        "task_id": "occ2b-h07",
+        "kind": "EVIDENCE",
+        "status": "done",
+        "message_id": "m2-h07-07",
+        "trace_id": "trace-occ2b-h07",
+        "sender_identity": "agent://worker-a",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "artifact",
+            "locator": "research/occ2opt/trace-archive/"
+          },
+          {
+            "id": "E2",
+            "kind": "build",
+            "locator": "reports/occ2b-h07-restore.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": null,
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 7,
+        "timestamp": "2026-11-13T08:58:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many evidence entries does message e2-h07-07 carry?",
+          "a": "2"
+        },
+        {
+          "family": "E",
+          "q": "How many findings does message e2-h07-07 carry?",
+          "a": "0"
+        },
+        {
+          "family": "A",
+          "q": "Who is the sender of message e2-h07-07?",
+          "a": "agent://worker-a"
+        }
+      ]
+    },
+    {
+      "id": "e2-h07-08",
+      "split": "holdout",
+      "story": "occ2b-h07",
+      "scenarios": [
+        "child_to_parent",
+        "long_history"
+      ],
+      "holdout": true,
+      "plain_english": "Task occ2b-h07 is finished and I am reporting the result now. Point 1: the long trace archival is complete and the restore is verified, and I am about 95 percent sure of this. The build result is recorded at reports/occ2b-h07-restore.txt. To be explicit about verification: the claim that every archived trace restores byte-identically is currently marked pass; the method was manual_restore and the receipt lives at reports/occ2b-h07-restore.txt.",
+      "payload": {
+        "task_id": "occ2b-h07",
+        "kind": "RESULT",
+        "status": "done",
+        "message_id": "m2-h07-08",
+        "trace_id": "trace-occ2b-h07",
+        "sender_identity": "agent://worker-a",
+        "recipient_identity": "daemon://coordinator",
+        "findings": [
+          {
+            "statement": "the long trace archival is complete and the restore is verified",
+            "confidence": 0.95,
+            "evidence": [
+              "E1"
+            ]
+          }
+        ],
+        "evidence": [
+          {
+            "id": "E1",
+            "kind": "build",
+            "locator": "reports/occ2b-h07-restore.txt",
+            "verified": true
+          }
+        ],
+        "artifacts": [],
+        "verification": {
+          "claim": "every archived trace restores byte-identically",
+          "status": "pass",
+          "method": "manual_restore",
+          "receipt": "reports/occ2b-h07-restore.txt"
+        },
+        "dependencies": [],
+        "next_actions": [],
+        "sequence": 8,
+        "timestamp": "2026-11-13T10:22:00Z"
+      },
+      "qa": [
+        {
+          "family": "E",
+          "q": "How many evidence entries does message e2-h07-08 carry?",
+          "a": "1"
+        },
+        {
+          "family": "A",
+          "q": "What kind of message is message e2-h07-08?",
+          "a": "RESULT"
+        },
+        {
+          "family": "D",
+          "q": "Which artifacts does message e2-h07-08 report? Answer with a comma-separated list, or none.",
+          "a": "none"
+        }
+      ]
+    }
+  ]
+}

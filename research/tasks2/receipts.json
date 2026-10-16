@@ -1,0 +1,151 @@
+{
+  "artifact": "occ2opt msgs_corpus2 generation receipt",
+  "generated_utc": "2026-10-16T13:18:48+00:00",
+  "manifest_sha256": "153aea66d3cc9e61b5826fb7c79897e576aef2f506f5b0515b83186dd786a0bc",
+  "generator_sha256": "19b2538effd86ff713456f9b5918320f3ef5dfd753e73d7f4d965e5eb43b7637",
+  "splits": {
+    "evolve": {
+      "path": "research/tasks2/msgs_corpus2_evolve.json",
+      "sha256": "16d063127a92435d972b31bc51f07fbe30ad706a350ea03dddadaf1fbea47edf",
+      "messages": 90,
+      "qa_items": 270,
+      "scenario_types_covered": 20,
+      "kinds": {
+        "ACK": 7,
+        "BLOCKED": 1,
+        "CANCELLED": 1,
+        "CORRECTION": 5,
+        "EVIDENCE": 9,
+        "PROGRESS": 39,
+        "REQUEST_DETAIL": 3,
+        "RESULT": 12,
+        "TASK": 13
+      },
+      "statuses": {
+        "blocked": 1,
+        "cancelled": 1,
+        "done": 19,
+        "failed": 1,
+        "in_progress": 53,
+        "partial": 2,
+        "pending": 13
+      },
+      "evidence_kinds": {
+        "artifact": 10,
+        "build": 14,
+        "commit": 7,
+        "finding": 3,
+        "lines": 1,
+        "log": 10,
+        "src": 15,
+        "tool": 12
+      },
+      "verification_statuses": {
+        "fail": 1,
+        "pass": 9,
+        "unknown": 1
+      },
+      "bytes": {
+        "plain": 29302,
+        "json": 57831,
+        "occ1": 32527
+      },
+      "max_occ1_bytes": 747
+    },
+    "dev": {
+      "path": "research/tasks2/msgs_corpus2_dev.json",
+      "sha256": "8604e7eae49074040a5904121b3449940d9b6b1716fa8779d584113db861bf57",
+      "messages": 60,
+      "qa_items": 180,
+      "scenario_types_covered": 20,
+      "kinds": {
+        "ACK": 4,
+        "CANCELLED": 1,
+        "CORRECTION": 2,
+        "EVIDENCE": 7,
+        "PROGRESS": 27,
+        "REQUEST_DETAIL": 2,
+        "RESULT": 8,
+        "TASK": 9
+      },
+      "statuses": {
+        "cancelled": 1,
+        "done": 14,
+        "failed": 1,
+        "in_progress": 34,
+        "partial": 1,
+        "pending": 9
+      },
+      "evidence_kinds": {
+        "artifact": 5,
+        "build": 9,
+        "commit": 1,
+        "finding": 2,
+        "log": 12,
+        "src": 3,
+        "tool": 13
+      },
+      "verification_statuses": {
+        "pass": 4
+      },
+      "bytes": {
+        "plain": 16635,
+        "json": 35950,
+        "occ1": 19643
+      },
+      "max_occ1_bytes": 749
+    },
+    "holdout": {
+      "path": "research/tasks2/msgs_corpus2_holdout.json",
+      "sha256": "fea3839e17cc8014f332e0372fdf3b5efeab2a468eae521e1f6a8106f5f02e92",
+      "messages": 54,
+      "qa_items": 162,
+      "scenario_types_covered": 20,
+      "kinds": {
+        "ACK": 3,
+        "CANCELLED": 1,
+        "CORRECTION": 1,
+        "EVIDENCE": 5,
+        "PROGRESS": 28,
+        "RESULT": 8,
+        "TASK": 8
+      },
+      "statuses": {
+        "cancelled": 1,
+        "done": 12,
+        "failed": 1,
+        "in_progress": 31,
+        "partial": 1,
+        "pending": 8
+      },
+      "evidence_kinds": {
+        "artifact": 4,
+        "build": 7,
+        "commit": 2,
+        "finding": 2,
+        "lines": 1,
+        "log": 14,
+        "src": 2,
+        "tool": 12
+      },
+      "verification_statuses": {
+        "pass": 2
+      },
+      "bytes": {
+        "plain": 14792,
+        "json": 32241,
+        "occ1": 17441
+      },
+      "max_occ1_bytes": 660
+    }
+  },
+  "checks_total": 5098,
+  "designed_repeat_digests": 3,
+  "designed_repeat_extra_messages": 3,
+  "notes": [
+    "phases: evolvedev written, then holdout written last from its independent seed base",
+    "pre-holdout authoring fixes (before any holdout generation): long_history tag rule for long-pace stories; chain-count trims in occ2b-d03, occ2b-h03, occ2b-h07 to match the frozen manifest targets",
+    "evolve split byte-identical across regenerations; dev split regenerated once for the d03 trim before holdout generation",
+    "nothing was adapted to holdout content after its generation"
+  ]
+}

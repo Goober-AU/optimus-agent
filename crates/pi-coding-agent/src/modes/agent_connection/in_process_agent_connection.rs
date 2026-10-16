@@ -379,6 +379,29 @@ impl AgentConnection for InProcessAgentConnection {
 
     fn supports_jev_dynamic(&self) -> bool { true }
     fn supports_occ2_communication(&self) -> bool { true }
+    fn supports_occ_session_preferences(&self) -> bool { true }
+
+    fn get_occ_preferences(&self) -> BoxFuture<Result<Value, String>> {
+        // Same process, same filesystem: the session's own artifact storage
+        // is authoritative, so the in-process host answers locally.
+        let session_file = self.runtime_host.snapshot_source().session.session_file;
+        Box::pin(async move {
+            let session_file = session_file
+                .as_deref()
+                .ok_or("This chat has no saved session identity")?;
+            crate::core::occ::session_settings::preferences(session_file)
+        })
+    }
+
+    fn set_occ_preferences(&self, occ2_enabled: bool) -> BoxFuture<Result<Value, String>> {
+        let session_file = self.runtime_host.snapshot_source().session.session_file;
+        Box::pin(async move {
+            let session_file = session_file
+                .as_deref()
+                .ok_or("This chat has no saved session identity")?;
+            crate::core::occ::session_settings::set_preferences(session_file, occ2_enabled)
+        })
+    }
     fn supports_execution_mode(&self) -> bool { true }
     fn supports_node_execution_mode(&self) -> bool { true }
     fn supports_clang_execution_mode(&self) -> bool { true }

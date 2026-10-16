@@ -1,0 +1,114 @@
+{
+  "batch_size": 10,
+  "batches": 6,
+  "canaries": {
+    "accuracy": 1.0,
+    "drift_detected": false,
+    "items": 12,
+    "per_batch": [
+      {
+        "accuracy": 1.0,
+        "batch": 0,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 1,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 2,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 3,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 4,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 5,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      }
+    ],
+    "qa_correct": 36,
+    "qa_total": 36
+  },
+  "child_loss": {
+    "count": 0,
+    "items": []
+  },
+  "comprehension": {
+    "ok": 60,
+    "rate": 1.0,
+    "scored": 60
+  },
+  "dry_run": false,
+  "faults": {
+    "child_lost": 0,
+    "listener_protocol": 0,
+    "speaker_protocol": 0,
+    "speaker_semantic": 0,
+    "unaccounted_items": 0,
+    "unaccounted_items_list": []
+  },
+  "gates": {
+    "checks": 22,
+    "failures": [],
+    "gate_names": [
+      "manifest_complete",
+      "child_loss_accounting",
+      "canary_drift",
+      "fault_rate_reporting",
+      "labeling_rules"
+    ],
+    "passed": true
+  },
+  "items_total": 60,
+  "labels": {
+    "channel": "agent_message (DGX GLM 5.3 children, parent-orchestrated)",
+    "heterogeneous_model_pairs": "X1-X4 deferred to the online phase",
+    "latency_dry_run": "synthetic (dry-run)",
+    "latency_live": "wall-clock, channel-inclusive (agent_message)",
+    "matrix_cell": "C1 (glm-5.3 -> glm-5.3)",
+    "sizes": "chars, not provider tokens"
+  },
+  "listener": {
+    "protocol_faults": 0,
+    "scored": 60,
+    "skipped_speaker_fault": 0
+  },
+  "mode": "scripted",
+  "qa": {
+    "accuracy": 1.0,
+    "accuracy_incl_protocol_faults": 1.0,
+    "correct": 180,
+    "total": 180
+  },
+  "run_id": "live-dev-scripted-20261016T142348Z",
+  "speaker": {
+    "fidelity_ok": 60,
+    "fidelity_rate": 1.0,
+    "protocol_faults": 0,
+    "scored": 60
+  },
+  "split": "dev"
+}
