@@ -52,3 +52,9 @@ crates/*/target/
 
 # iteration4 question-loop scratch (question-scoped rescore dirs)
 scratch/
+
+# OCC-2/OCC-3 campaign research artifacts
+research/latent_handoff/.venv/
+research/**/__pycache__/
+research/**/*.json.tmp
+.rlm-review-target/
