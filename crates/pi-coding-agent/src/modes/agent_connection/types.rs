@@ -1345,6 +1345,23 @@ pub trait AgentConnection: Send + Sync {
     /// Local settings writes must check this too, not only daemon RPCs.
     fn supports_jev_dynamic(&self) -> bool { false }
     fn supports_occ2_communication(&self) -> bool { false }
+    /// Whether the execution host owns the per-chat OCC-2 preference get/set
+    /// (`occ_session_preferences`, schema revision 41). When true, /occ must
+    /// use `get_occ_preferences` / `set_occ_preferences` instead of writing
+    /// storage the host may never read.
+    fn supports_occ_session_preferences(&self) -> bool { false }
+    /// Daemon-owned OCC-2 preference read. Returns the host-side response
+    /// data: `occ2Enabled`, `inherited`, `sourceSessionId`.
+    fn get_occ_preferences(&self) -> pi_ai::types::BoxFuture<Result<Value, String>> {
+        Box::pin(async { Err("get_occ_preferences is not supported by this connection".to_string()) })
+    }
+    /// Daemon-owned OCC-2 preference write. Returns the host-side echo:
+    /// `occ2Enabled`, `applied`, `scope`, `effectiveForNewMessages`,
+    /// `sourceSessionId`.
+    fn set_occ_preferences(&self, occ2_enabled: bool) -> pi_ai::types::BoxFuture<Result<Value, String>> {
+        let _ = occ2_enabled;
+        Box::pin(async { Err("set_occ_preferences is not supported by this connection".to_string()) })
+    }
     fn supports_execution_mode(&self) -> bool { false }
     fn supports_node_execution_mode(&self) -> bool { false }
     fn supports_clang_execution_mode(&self) -> bool { false }

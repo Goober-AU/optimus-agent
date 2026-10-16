@@ -1,0 +1,107 @@
+{
+  "batch_size": 10,
+  "batches": 6,
+  "canaries": {
+    "accuracy": 1.0,
+    "drift_detected": false,
+    "items": 12,
+    "per_batch": [
+      {
+        "accuracy": 1.0,
+        "batch": 0,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 1,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 2,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 3,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 4,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 5,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      }
+    ],
+    "qa_correct": 36,
+    "qa_total": 36
+  },
+  "child_loss": {
+    "count": 1,
+    "items": [
+      "e2-d01-07"
+    ]
+  },
+  "comprehension": {
+    "ok": 54,
+    "rate": 0.9474,
+    "scored": 57
+  },
+  "dialect": null,
+  "dry_run": false,
+  "faults": {
+    "child_lost": 1,
+    "listener_protocol": 1,
+    "speaker_protocol": 1,
+    "speaker_semantic": 2,
+    "unaccounted_items": 1,
+    "unaccounted_items_list": [
+      "e2-d01-07"
+    ]
+  },
+  "items_total": 60,
+  "labels": {
+    "channel": "agent_message (DGX GLM 5.3 children, parent-orchestrated)",
+    "heterogeneous_model_pairs": "X1-X4 deferred to the online phase",
+    "latency_dry_run": "synthetic (dry-run)",
+    "latency_live": "wall-clock, channel-inclusive (agent_message)",
+    "matrix_cell": "C1 (glm-5.3 -> glm-5.3)",
+    "sizes": "chars, not provider tokens"
+  },
+  "listener": {
+    "protocol_faults": 1,
+    "scored": 57,
+    "skipped_speaker_fault": 1
+  },
+  "mode": "scripted",
+  "qa": {
+    "accuracy": 0.9883,
+    "accuracy_incl_protocol_faults": 0.9713,
+    "correct": 169,
+    "total": 171
+  },
+  "run_id": "dry-dev-scripted-b10",
+  "speaker": {
+    "fidelity_ok": 56,
+    "fidelity_rate": 0.9655,
+    "protocol_faults": 1,
+    "scored": 58
+  },
+  "split": "dev"
+}

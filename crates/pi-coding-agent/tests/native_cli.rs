@@ -804,7 +804,8 @@ fn communication_activity_reaches_the_supervisor_roster_after_real_delivery() {
         client.connect(1000).await.unwrap();
         let hello = client.wait_for_hello(1000).await.unwrap();
         assert!(hello.supports("agent_communication_activity"));
-        assert!(hello.supports("occ2_communication"));
+        assert!(hello.supports("occ_session_preferences"));
+        assert!(!hello.supports("occ2_communication"));
         let mut sessions = Vec::new();
         for prompt in ["source baseline", "target baseline"] {
             let created = request(&client, json!({"type":"create", "config":{

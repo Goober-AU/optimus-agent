@@ -1,0 +1,23 @@
+{
+ "schema": "optimus.occ2-evals.v1",
+ "records": [
+  {
+   "dialect": "sym-v2-d2-r1",
+   "version": 1,
+   "samples": 60,
+   "listenerFidelityMean": 1.0,
+   "wireTokensVsOcc1": 0.6143,
+   "lastEvaluated": 1792171961
+  },
+  {
+   "dialect": "sym-v2-d2-r1",
+   "version": 1,
+   "samples": 114,
+   "listenerFidelityMean": 1.0,
+   "wireTokensVsOcc1": 0.6065,
+   "lastEvaluated": 1792171961,
+   "split": "holdout",
+   "holdoutRunId": "live-holdout-sym-v2-d2-r1-scripted-20261016T175430Z"
+  }
+ ]
+}

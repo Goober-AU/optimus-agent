@@ -281,6 +281,7 @@ mod tests {
             from: None,
             from_relationship: Some("parent".to_string()),
             target: None,
+            occ2_delivery: None,
         }
     }
 

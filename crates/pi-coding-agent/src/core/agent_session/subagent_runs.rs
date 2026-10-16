@@ -3,12 +3,11 @@
 
 use super::*;
 use crate::core::agent_messages::{
-    agent_session_message_prompt_body, select_occ2_dialect, wrap_outgoing_body,
-    AgentFamilyRosterResult, AgentSessionMessageReceipt, AgentSessionMessageSendInput,
-    Occ2SendPolicy, DEFAULT_AGENT_MESSAGE_MAX_CHARS,
+    agent_session_message_prompt_body, wrap_outgoing_body, AgentFamilyRosterResult,
+    AgentSessionMessageReceipt, AgentSessionMessageSendInput, Occ2SendPolicy,
 };
 use crate::core::messages::RlmChildFailureDetails;
-use crate::core::occ::dialect::{DialectRegistry, OccCapability};
+use crate::core::occ::dialect::OccCapability;
 
 pub(super) struct SessionMessageController(pub std::sync::Weak<AgentSession>);
 
@@ -53,12 +52,13 @@ impl AgentSessionMessageController for SessionMessageController {
     /// OCC-2 S1 negotiation source (OCC-2 integration design, section 4):
     /// the feature flag plus the target's advertised capability decide the
     /// dialect; anything missing keeps the send OCC-1.
-    fn occ2_send_policy(&self, target: &str) -> BoxFuture<Occ2SendPolicy> {
+    fn occ2_send_policy(&self, target: &str, message: &str) -> BoxFuture<Occ2SendPolicy> {
         let weak = self.0.clone();
         let target = target.to_string();
+        let message = message.to_string();
         Box::pin(async move {
             match weak.upgrade() {
-                Some(session) => session.occ2_target_send_policy(&target).await,
+                Some(session) => session.occ2_target_send_policy(&target, &message).await,
                 None => Occ2SendPolicy::disabled(),
             }
         })
@@ -71,15 +71,22 @@ impl AgentSession {
         crate::core::occ::session_settings::enabled(self.session_file().as_deref())
     }
 
-    /// OCC-2 send policy for one target session. The peer capability comes
-    /// from the family listing's optional `occ_capability` field; a target
-    /// that reports nothing, or a dialect this build does not register,
-    /// keeps the send OCC-1. The dev flag allows the unevaluated built-in
-    /// dialect; production requires an evaluated card (design section 3,
-    /// tier 2).
+    /// OCC-2 send policy for one target session (S1). The peer capability
+    /// comes from the family listing's optional `occ_capability` field; a
+    /// target that reports nothing, or a dialect this build does not
+    /// register, keeps the send OCC-1.
+    ///
+    /// Selection is delegated to `occ2_send_policy_from_selection`
+    /// (selection.rs policy v1): the production policy runs first and
+    /// selects OCC-2 only for a validated dialect that wins on measured
+    /// economics; the experimental `/occ 2` opt-in additionally allows
+    /// the unevaluated dialect through the development policy (SILO
+    /// reference profile), still behind the small-message floor, the
+    /// strike guard and the codebook amortization gate.
     pub(super) async fn occ2_target_send_policy(
         self: &Arc<Self>,
         target: &str,
+        message: &str,
     ) -> Occ2SendPolicy {
         if !self.occ2_enabled() {
             return Occ2SendPolicy::disabled();
@@ -91,35 +98,65 @@ impl AgentSession {
             Ok(Some(listed)) => listed,
             _ => return Occ2SendPolicy::disabled(),
         };
-        let peer = listed
+        let Some(peer_entry) = listed
             .agents
             .iter()
             .find(|agent| agent.active_session_id == target || agent.session_id == target)
-            .and_then(|agent| agent.occ_capability.clone());
-        let registry = DialectRegistry::with_sym_v1();
-        match select_occ2_dialect(&OccCapability::here(), peer.as_ref(), &registry, true) {
-            Some(dialect) => {
-                Occ2SendPolicy::for_dialect(registry, dialect, DEFAULT_AGENT_MESSAGE_MAX_CHARS)
-            }
-            None => Occ2SendPolicy::disabled(),
-        }
+        else {
+            return Occ2SendPolicy::disabled();
+        };
+        let peer = peer_entry.occ_capability.clone();
+        // The delivery-side pair key uses the target's session id; the
+        // listing entry carries it even when the caller passed an
+        // active-session id.
+        let listener = peer_entry.session_id.clone();
+        self.occ2_selected_send_policy(peer.as_ref(), &listener, message, None)
+            .await
     }
 
     /// OCC-2 send policy for the S2 spawn seam: a freshly spawned child
     /// shares this daemon's codec build, so v1 negotiates
     /// `OccCapability::here()` against itself (design sections 4 and 7).
-    async fn occ2_spawn_send_policy(self: &Arc<Self>) -> Occ2SendPolicy {
+    /// The spawn prompt length feeds the small-message floor and the
+    /// codebook economics; the child's fresh context never holds the
+    /// codebook yet.
+    async fn occ2_spawn_send_policy(
+        self: &Arc<Self>,
+        listener: &str,
+        prompt: &str,
+    ) -> Occ2SendPolicy {
         if !self.occ2_enabled() {
             return Occ2SendPolicy::disabled();
         }
-        let registry = DialectRegistry::with_sym_v1();
         let local = OccCapability::here();
-        match select_occ2_dialect(&local, Some(&local), &registry, true) {
-            Some(dialect) => {
-                Occ2SendPolicy::for_dialect(registry, dialect, DEFAULT_AGENT_MESSAGE_MAX_CHARS)
-            }
-            None => Occ2SendPolicy::disabled(),
-        }
+        self.occ2_selected_send_policy(Some(&local), listener, prompt, None)
+            .await
+    }
+
+    /// The shared selection assembly behind both send seams: resolves
+    /// this session's real inputs (evaluation store, strike ledger,
+    /// model identity) and delegates to the one send-selection
+    /// function in `agent_messages.rs`, which the daemon-bridged
+    /// controller also calls.
+    async fn occ2_selected_send_policy(
+        self: &Arc<Self>,
+        peer: Option<&OccCapability>,
+        listener: &str,
+        message: &str,
+        _listener_model: Option<&str>,
+    ) -> Occ2SendPolicy {
+        let session_file = self.session_file();
+        let speaker_model = self.model().map(|model| model.id);
+        let speaker = self.session_id();
+        crate::core::agent_messages::occ2_send_policy_for_send(
+            peer,
+            listener,
+            message,
+            session_file.as_deref(),
+            speaker_model.as_deref(),
+            &speaker,
+            true,
+        )
     }
 }
 
@@ -553,7 +590,9 @@ impl AgentSession {
         // negotiated for the child. The model-visible prompt carries the
         // symbolic section of a dual payload; the durable `message` detail
         // keeps the full dual body.
-        let spawn_policy = self.occ2_spawn_send_policy().await;
+        let spawn_policy = self
+            .occ2_spawn_send_policy(&child.session_id(), &current.prompt)
+            .await;
         let dual_prompt = wrap_outgoing_body(&current.prompt, &spawn_policy);
         let visible_prompt = agent_session_message_prompt_body(&dual_prompt).to_string();
         let content = format!("[task from parent]\n\n{}", visible_prompt);

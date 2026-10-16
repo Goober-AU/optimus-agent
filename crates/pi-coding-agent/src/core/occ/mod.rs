@@ -25,6 +25,12 @@
 //!   (implemented here; foundation for learned dialects).
 //! - [`dialect`]: the OCC-2 dialect registry: dialects as data, codebook
 //!   hashing and capability negotiation (implemented here; foundation).
+//! - [`dialect_load`]: the DIALECT/1 research-card promotion path: load,
+//!   checksum-verify and translate frozen research cards into registry
+//!   cards behind an explicit, non-default constructor.
+//! - [`selection`]: deterministic OCC-1 vs OCC-2 selection: a measured
+//!   policy (codebook amortization, message size, strike ledger,
+//!   evaluation records) plus a validated-registry constructor.
 //! - [`contract`]: the `optimus.agent-comm.v1` typed task/result contract
 //!   (implemented here; frozen API).
 //! - `delta`: change-only updates on top of the contract (WORKER B owns this
@@ -267,9 +273,11 @@ pub mod consolidation;
 pub mod contract;
 pub mod delta;
 pub mod dialect;
+pub mod dialect_load;
 pub mod occ1;
 pub mod occ2;
 pub mod prune;
+pub mod selection;
 pub mod session_settings;
 
 #[cfg(test)]

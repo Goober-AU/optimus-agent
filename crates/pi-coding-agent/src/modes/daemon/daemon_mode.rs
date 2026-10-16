@@ -53,15 +53,16 @@ use pi_agent_core::types::AgentMessage;
 use crate::cli::subprocess_launch::{create_cli_subprocess_env, create_cli_subprocess_launch_spec};
 use crate::core::agent_messages::{
     agent_family_relationship, assert_agent_family_reach, assert_agent_session_name_available,
-    assert_direct_agent_message_target, build_agent_family_roster, create_agent_session_message,
-    create_agent_session_message_id, create_agent_session_message_prompt,
+    assert_direct_agent_message_target, build_agent_family_roster,
+    create_agent_session_message_delivery, create_agent_session_message_id,
     create_agent_session_message_receipt, format_agent_session_name_unavailable,
-    normalize_agent_session_message, session_name_reservation_key, AgentFamilyCatalogEntry,
+    load_occ2_strike_ledger, normalize_agent_session_message, occ2_codebooks_present,
+    save_occ2_strike_ledger, session_name_reservation_key, AgentFamilyCatalogEntry,
     AgentFamilyRelationship, AgentFamilyRosterResult, AgentSessionMessageAgentSummary,
     AgentSessionMessageController, AgentSessionMessageDeliveryStatus, AgentSessionMessageEndpoint,
     AgentSessionMessageListResult, AgentSessionMessagePayload, AgentSessionMessageRateLimiter,
     AgentSessionMessageReceipt, AgentSessionMessageSendInput, AgentSessionMessageSender,
-    AgentSessionNameAvailabilityInput,
+    AgentSessionNameAvailabilityInput, Occ2SendPolicy,
     AgentSessionNameScope, RateLimitResult, AGENT_FAMILY_REACH_ERROR, AGENT_MESSAGE_SOURCE,
     DEFAULT_AGENT_MESSAGE_MAX_CHARS, DEFAULT_AGENT_MESSAGE_MAX_PENDING_PER_SESSION,
     DEFAULT_AGENT_MESSAGE_RATE_LIMIT_CAPACITY, DEFAULT_AGENT_MESSAGE_RATE_LIMIT_REFILL_MS,
@@ -692,7 +693,7 @@ pub struct DaemonHistoryRange {
 }
 
 /// `DAEMON_COMMAND_TYPES` (ported verbatim from daemon-mode.ts).
-pub const DAEMON_COMMAND_TYPES: [&str; 103] = [
+pub const DAEMON_COMMAND_TYPES: [&str; 105] = [
     "ack_result",
     "list",
     "list_saved_sessions",
@@ -796,6 +797,10 @@ pub const DAEMON_COMMAND_TYPES: [&str; 103] = [
     "jev_get_settings",
     "jev_set_session_mode",
     "jev_get_status",
+    // Daemon-owned OCC session preferences (schema revision 41): optional and
+    // capability-gated; an old daemon answers "Unknown daemon command".
+    "occ_get_preferences",
+    "occ_set_preferences",
     "extension_ui_response",
     "prepare_update_restart",
     "retry_worker",
@@ -5845,6 +5850,41 @@ impl AgentDaemon {
                     id,
                     "get_connection_state",
                     Some(self.create_connection_state(&state)),
+                )))
+            }
+            // Daemon-owned OCC session preferences (schema revision 41): the
+            // daemon reads and writes its own session artifacts, so a client
+            // with a different agentDir, CWD or filesystem never decides where
+            // the toggle lands. Capability-gated by `occ_session_preferences`;
+            // v0.1.33 daemons answer "Unknown daemon command".
+            "occ_get_preferences" => {
+                let state = self.get_session_state(active_session_id)?;
+                let session_file = self
+                    .session_of(&state)
+                    .session_file()
+                    .ok_or_else(|| "This chat has no saved session identity".to_string())?;
+                let value = crate::core::occ::session_settings::preferences(&session_file)?;
+                Ok(Some(DaemonResponse::success(
+                    id,
+                    "occ_get_preferences",
+                    Some(value),
+                )))
+            }
+            "occ_set_preferences" => {
+                let requested = body
+                    .get("occ2Enabled")
+                    .and_then(Value::as_bool)
+                    .ok_or_else(|| "occ2Enabled must be a boolean".to_string())?;
+                let state = self.get_session_state(active_session_id)?;
+                let session_file = self
+                    .session_of(&state)
+                    .session_file()
+                    .ok_or_else(|| "This chat has no saved session identity".to_string())?;
+                let value = crate::core::occ::session_settings::set_preferences(&session_file, requested)?;
+                Ok(Some(DaemonResponse::success(
+                    id,
+                    "occ_set_preferences",
+                    Some(value),
                 )))
             }
             "get_messages" => {
@@ -15640,8 +15680,57 @@ impl AgentDaemon {
         target_state: &Arc<StdMutex<ActiveSessionState>>,
         payload: &AgentSessionMessagePayload,
     ) -> Result<AgentSessionMessageDeliveryStatus, String> {
-        let content = create_agent_session_message_prompt(payload);
-        let message = create_agent_session_message(payload, now_millis() as i64);
+        // OCC-2 codebook amortization + strike ledger: the full dialect
+        // legend is rendered only when the target's live context does not
+        // already carry the same codebook identity (delivered messages and
+        // spawn prompts both record their legend), and the strict OCC-2
+        // decode is ledger-gated per (speaker, listener, dialect) pair:
+        // a failed decode counts a strike (persisted in the target's
+        // session artifacts, decaying after 24h), three strikes disable
+        // the pair for OCC-2, and the embedded OCC-1 section always
+        // delivers the payload - never a drop.
+        let session = self.session_of(target_state);
+        let codebooks = occ2_codebooks_present(&session.messages());
+        let listener = payload.target.session_id.clone();
+        let speaker = payload
+            .from
+            .as_ref()
+            .and_then(|from| from.session_id.clone())
+            .or_else(|| {
+                payload
+                    .from
+                    .as_ref()
+                    .and_then(|from| from.active_session_id.clone())
+            })
+            .or_else(|| {
+                payload
+                    .from
+                    .as_ref()
+                    .and_then(|from| from.client_id.clone())
+            })
+            .unwrap_or_else(|| "unknown".to_string());
+        let now_ms = now_millis();
+        let session_file = session.session_file();
+        let mut ledger = session_file
+            .as_deref()
+            .and_then(|file| load_occ2_strike_ledger(file, now_ms as u64).ok())
+            .unwrap_or_default();
+        let delivery = create_agent_session_message_delivery(
+            payload,
+            now_ms as i64,
+            &codebooks,
+            &speaker,
+            &listener,
+            &mut ledger,
+            now_ms as u64,
+        );
+        if delivery.outcome.strike_recorded || delivery.outcome.pair_disabled_now {
+            if let Some(file) = session_file.as_deref() {
+                let _ = save_occ2_strike_ledger(file, &ledger);
+            }
+        }
+        let content = delivery.content;
+        let message = delivery.record;
         let target_active_session_id = target_state
             .lock()
             .expect("active session poisoned")
@@ -16730,6 +16819,57 @@ impl AgentSessionMessageController for DaemonAgentMessageController {
                     origin: "agent".to_string(),
                 })
                 .await
+        })
+    }
+    /// OCC-2 send policy for one target, daemon-bridged: resolves the
+    /// speaker's session inputs from the daemon's session map and the
+    /// peer's advertised capability from the agent listing, then calls
+    /// the one shared send-selection function the in-process seam
+    /// uses, so daemon-bridged sends get the identical production /
+    /// experimental decision path (selection.rs policy v1).
+    fn occ2_send_policy(
+        &self,
+        target: &str,
+        message: &str,
+    ) -> pi_ai::types::BoxFuture<Occ2SendPolicy> {
+        let daemon = Arc::clone(&self.daemon);
+        let current = self.require_current_state();
+        let target = target.to_string();
+        let message = message.to_string();
+        Box::pin(async move {
+            let Ok(current) = current else {
+                return Occ2SendPolicy::disabled();
+            };
+            // The /occ toggle is the opt-in gate, exactly like the
+            // in-process seam's `occ2_enabled` check.
+            let session = daemon.session_of(&current);
+            let speaker_file = session.session_file();
+            if !crate::core::occ::session_settings::enabled(speaker_file.as_deref()) {
+                return Occ2SendPolicy::disabled();
+            }
+            // Peer capability and the canonical listener session id
+            // from the same listing the send handler resolves with.
+            let listed = daemon.create_agent_message_list_result(&current, None).await;
+            let Some(peer_entry) = listed
+                .agents
+                .iter()
+                .find(|agent| agent.active_session_id == target || agent.session_id == target)
+            else {
+                return Occ2SendPolicy::disabled();
+            };
+            let peer = peer_entry.occ_capability.clone();
+            let listener = peer_entry.session_id.clone();
+            let speaker_model = session.model_identity().map(|model| model.id);
+            let speaker = session.session_id();
+            crate::core::agent_messages::occ2_send_policy_for_send(
+                peer.as_ref(),
+                &listener,
+                &message,
+                speaker_file.as_deref(),
+                speaker_model.as_deref(),
+                &speaker,
+                true,
+            )
         })
     }
 }

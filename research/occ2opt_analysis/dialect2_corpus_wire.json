@@ -1,0 +1,1391 @@
+{
+ "card_path": "research/symbolic_comm2/dialect2-card.json",
+ "card_checksum": "d69eb25ebf7b4359aacd9994880e5c96fb58f993dd333bcb26a7621ffc65876e",
+ "format": "DIALECT/1",
+ "dialect": "DIALECT/2 extensions (wire_header, value_encodings, scalar_pack)",
+ "corpora": [
+  {
+   "path": "research/tasks/msgs_corpus.json",
+   "count": 69
+  },
+  {
+   "path": "research/tasks2/msgs_corpus2_evolve.json",
+   "count": 90
+  },
+  {
+   "path": "research/tasks2/msgs_corpus2_dev.json",
+   "count": 60
+  },
+  {
+   "path": "research/tasks2/msgs_corpus2_holdout.json",
+   "count": 54
+  }
+ ],
+ "messages": [
+  {
+   "id": "c01",
+   "kind": "TASK",
+   "wire": "d\nn=survey the existing OCC-1 call sites|draft the offline discovery loop|keep the feature flag off by default\nu=t39\n$=m-201 occ2-01 %occ2-01 tmzt3c\nr=\u00a7b\nk=T\ns=0\ni1=implement the OCC-2 dialect discovery prototype behind a feature flag"
+  },
+  {
+   "id": "c02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:\u00b5occ1.rs@88-120~pgtjo0p\nv1=1\nn=rank the pairs by frequency|cap the symbol table at 48 entries\nc1=m8\n$=m-202 occ2-01 %occ2-01 tmzuko\nf=\u00a7b\nq=2\ni1=the discovery loop now enumerates the top 40 field pairs per trace\ni2=the feature flag defaults to off in every build profile"
+  },
+  {
+   "id": "c03",
+   "kind": "RESULT",
+   "wire": "d\ne1=t:j:occ2-01-discovery-run.txt!1\ne2=s:\u00b5dialect.rs@14-61#vcsbedgj2mxosl6144g18nawuqx0h20y35qi9odsep5fdrtbm~pgtjo0p\nv1=1,2\nn=review the symbol table before any wire use\nc1=p0\n$=m-203 occ2-01 %occ2-01 tmzxjc\nf=\u00a7b\nk=R\ns=2\nq=3\ni1=the prototype discovers a stable symbol table for 27 of 28 fidelity scenarios\nh1=z:occ2/dialect-table.json\nvc=the discovered dialect round-trips all 28 fidelity scenarios\nvs=+\nvm=cargo_test\nvr=reports/occ2-01-verify.txt"
+  },
+  {
+   "id": "c04",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=c:4f2a91c37!1\ne2=a:z:occ2/dialect-table.json#51o9fdcar5vy2nj2oat1izn2z0b659sst59zazyk8qo21ndxq7\n$=m-204 occ2-01 %occ2-01 tmzyz0\nf=\u00a7b\nk=E\ns=2\nq=4\nh1=z:occ2/dialect-table.json"
+  },
+  {
+   "id": "c05",
+   "kind": "CORRECTION",
+   "wire": "d\ne1=f:m-203\nv1=1\nn=add the fallback symbol for s19|re-run the discovery loop\nc1=950\n$=m-205 occ2-01 trace-occ2-01 tn0260\nf=agent://worker-b\nr=daemon://coordinator\nk=C\ns=1\nq=5\ni1=the stable count is 26 of 28, not 27; scenario s19 needs a fallback symbol"
+  },
+  {
+   "id": "c06",
+   "kind": "TASK",
+   "wire": "d\nn=batch the 28 fidelity scenarios|record usage.prompt_tokens per encoding|write the comparison table\n$=m-206 occ2-02 %occ2-02 tmzsq0\np=t77\nr=\u00a7c\nk=T\ns=0\ni1=measure real tokenizer counts for OCC-1 versus plain English on the model gateway"
+  },
+  {
+   "id": "c07",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:g:occ2-02-tokens-batch1.log!0\nv1=1\nn=run batch two after the gateway restart window\nc1=jg\n$=m-207 occ2-02 %occ2-02 tmzw0c\nf=\u00a7c\nq=2\ni1=batch one of two is measured; OCC-1 prompt tokens run 40 to 48 percent below plain English"
+  },
+  {
+   "id": "c08",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2-02-health.txt!1\nv1=1\nc1=1000\n$=m-208 occ2-02 %occ2-02 tmzync\nf=\u00a7c\nq=3\ni1=the gateway health check passes between batches"
+  },
+  {
+   "id": "c09",
+   "kind": "RESULT",
+   "wire": "d\ne1=l:g:occ2-02-tokens-batch2.log!0\nv1=1\nn=resume batch two|cross-check three scenarios by hand\nc1=nm\n$=m-209 occ2-02 %occ2-02 tn00jo\nf=\u00a7c\nk=R\ns=3\nq=4\ni1=14 of 28 scenarios are measured; the gateway restart interrupts long batches\nh1=q:occ2-02-tokens-partial.md\nvc=token counts are reproducible across gateway restarts\nvs=?\nvm=manual_review"
+  },
+  {
+   "id": "c10",
+   "kind": "ACK",
+   "wire": "d\ne1=f:m-206\nv1=1\nn=finish the remaining batch within 24 hours\nc1=1000\n$=m-210 occ2-02 trace-occ2-02 tn0170\nf=agent://worker-c\nr=daemon://coordinator\nk=A\ns=2\nq=5\ni1=receipt of the assignment is confirmed; the first batch has started\nxp=tn1vv0"
+  },
+  {
+   "id": "c11",
+   "kind": "TASK",
+   "wire": "d\nn=cover all nine message kinds|cover all seven task statuses|keep the fixture schema unchanged\nu=occ2-01\n$=m-211 occ2-03 %occ2-03 tmzt8c\nr=\u00a7e\nk=T\ns=0\ni1=extend the fidelity fixture corpus with at least 60 new typed messages"
+  },
+  {
+   "id": "c12",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=b:y:occ2-03-corpus-build.txt!1\nv1=1\nn=draft the remaining REQUEST_DETAIL and CORRECTION messages\nc1=ku\n$=m-212 occ2-03 %occ2-03 tmzvbc\nf=\u00a7e\nq=2\ni1=41 of 60 messages are drafted; kinds TASK and RESULT are fully covered"
+  },
+  {
+   "id": "c13",
+   "kind": "RESULT",
+   "wire": "d\ne1=s:^tests/fixtures/occ/scenarios.json@1-40~pgtjo0p\ne2=l:g:occ2-03-schema-check.log!1\nv1=1,2\nc1=qe\n$=m-213 occ2-03 %occ2-03 tmzwm0\nf=\u00a7e\nk=R\ns=2\nq=3\ni1=60 new messages cover all nine kinds and all seven statuses with zero schema drift\nh1=z:occ2/corpus-extension.json\nvc=the extended corpus passes the fidelity round-trip test\nvs=+\nvm=cargo_test\nvr=reports/occ2-03-verify.txt"
+  },
+  {
+   "id": "c14",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=c:9b41d02ef!1\ne2=a:z:occ2/corpus-extension.json#4rpyac54yepsm6j6kwy3mxidrvucx0n7vrmb9oksgy14utiz6\n$=m-214 occ2-03 %occ2-03 tmzxg0\nf=\u00a7e\nk=E\ns=2\nq=4"
+  },
+  {
+   "id": "c15",
+   "kind": "TASK",
+   "wire": "d\nn=reuse the 100-iteration latency harness|report bytes and proxy tokens per encoding\nu=occ2-02\n$=m-215 occ2-04 %occ2-04 tmzuhc\nr=\u00a7f\nk=T\ns=0\ni1=benchmark OCC-1 versus JSON versus plain English on the new corpus"
+  },
+  {
+   "id": "c16",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2-04-harness.txt!1\nv1=1\nc1=m8\n$=m-216 occ2-04 %occ2-04 tmzxoc\nf=\u00a7f\nq=2\ni1=the harness runs 100 iterations per message with warm caches"
+  },
+  {
+   "id": "c17",
+   "kind": "REQUEST_DETAIL",
+   "wire": "d\nn=reply with the route and the model name\n$=m-217 occ2-04 %occ2-04 tmzzao\nf=\u00a7f\nr=\u00a7c\nk=Q\nq=3\ni1=request the exact gateway route and model used for the tokenizer measurement"
+  },
+  {
+   "id": "c18",
+   "kind": "ACK",
+   "wire": "d\ne1=f:m-217\nv1=1\nn=send the route and model name today\nc1=1000\n$=m-218 occ2-04 trace-occ2-04 tn01do\nf=agent://worker-c\nr=agent://worker-f\nk=A\ns=2\nq=4\ni1=receipt of the detail request is confirmed"
+  },
+  {
+   "id": "c19",
+   "kind": "RESULT",
+   "wire": "d\ne1=l:g:occ2-04-compression.log!1\nv1=1\nc1=p0\n$=m-219 occ2-04 %occ2-04 tn04fo\nf=\u00a7f\nk=R\ns=2\nq=5\ni1=OCC-1 saves 38.2 percent bytes against plain English on the new corpus\nh1=q:occ2-04-compression.md\nvc=the byte and token savings reproduce within one percent\nvs=+\nvm=bench_harness\nvr=receipts/occ2-04-bench.txt"
+  },
+  {
+   "id": "c20",
+   "kind": "TASK",
+   "wire": "d\nn=wire the never-prune exemption list|gate every prune on a measured utility signal\nu=t41\n$=m-220 occ2-05 %occ2-05 tmzu90\nr=\u00a7a\nk=T\ns=0\ni1=port the periodic fractional pruning skeleton behind measured utility"
+  },
+  {
+   "id": "c21",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:\u00b5prune.rs@20-74#3kfmknnh50qq5q3gdifkk6jtxpl186zpytcmae5mg7tie6at4f~pgtjo0p\nv1=1\nc1=nm\n$=m-221 occ2-05 %occ2-05 tmzwdo\nf=\u00a7a\nq=2\ni1=the never-prune exemption list is wired and covered by tests"
+  },
+  {
+   "id": "c22",
+   "kind": "RESULT",
+   "wire": "d\ne1=l:logs/occ2-05-utility-noise.log!0\nv1=1\nn=collect a longer utility trace|keep pruning disabled\nc1=800\n$=m-222 occ2-05 trace-occ2-05 tmzy50\nf=agent://worker-a\nr=daemon://coordinator\nk=R\ns=5\nq=3\ni1=the utility signal is too noisy to gate pruning safely\nvc=pruning with the measured utility never drops a needed message\nvs=-\nvm=cargo_test\nvr=reports/occ2-05-verify.txt"
+  },
+  {
+   "id": "c23",
+   "kind": "TASK",
+   "wire": "d\nn=check transport capabilities|document the hard limits\n$=m-223 occ2-06 %occ2-06 tmzwfc\nr=\u00a7b\nk=T\ns=0\ni1=probe whether the local models can share hidden states through the daemon transport"
+  },
+  {
+   "id": "c24",
+   "kind": "BLOCKED",
+   "wire": "d\ne1=t:receipts/occ2-06-transport-check.txt!1\nv1=1\nn=request a design review of the transport boundary\nc1=1000\n$=m-224 occ2-06 trace-occ2-06 tmzxl0\nf=agent://worker-b\nr=daemon://coordinator\nk=B\ns=4\nq=2\ni1=the daemon transport carries text only; tensor access is unavailable at this layer\ni2=no latent handoff can run without a same-process runtime"
+  },
+  {
+   "id": "c25",
+   "kind": "RESULT",
+   "wire": "d\ne1=b:y:occ2-06-proxy-probe.txt!0\nv1=1\nc1=go\n$=m-225 occ2-06 %occ2-06 tmzzrc\nf=\u00a7b\nk=R\ns=3\nq=3\ni1=a text-only proxy probe ran; latent transfer remains unsupported on this transport\nvc=the proxy probe matches the latent baseline\nvs=?\nvm=manual_review"
+  },
+  {
+   "id": "c26",
+   "kind": "TASK",
+   "wire": "d\nn=read the window from the policy file|re-run the prune tests\n$=m-226 occ2-07 %occ2-07 tmzxjc\nr=\u00a7d\nk=T\ns=0\ni1=update the retention policy from 30 days to 90 days before pruning"
+  },
+  {
+   "id": "c27",
+   "kind": "CORRECTION",
+   "wire": "d\ne1=f:m-226\nv1=1\nn=update the policy loader|re-run the prune tests\nc1=950\n$=m-227 occ2-07 trace-occ2-07 tn009o\nf=agent://worker-d\nr=daemon://coordinator\nk=C\ns=1\nq=2\ni1=the retention requirement changed from 30 days to 90 days before pruning\ni2=the prune threshold must be computed from the policy file, not the compiled-in constant"
+  },
+  {
+   "id": "c28",
+   "kind": "RESULT",
+   "wire": "d\ne1=s:\u00b5prune.rs@96-140~pgtjo0p\nv1=1\nc1=p0\n$=m-228 occ2-07 %occ2-07 tn02yc\nf=\u00a7d\nk=R\ns=2\nq=3\ni1=the policy loader reads the retention window from the policy file\nvc=the 90 day window is enforced by the prune tests\nvs=+\nvm=cargo_test\nvr=reports/occ2-07-verify.txt"
+  },
+  {
+   "id": "c29",
+   "kind": "TASK",
+   "wire": "d\nn=request vault approval|sign each artifact digest\n$=m-229 occ2-08 %occ2-08 tmzxwo\nr=\u00a7a\nk=T\ns=0\ni1=sign the OCC-2 artifacts for the internal registry\nxp=tn5hwo"
+  },
+  {
+   "id": "c30",
+   "kind": "BLOCKED",
+   "wire": "d\ne1=t:receipts/occ2-08-vault-status.txt!1\nv1=1\nn=request vault approval from the release manager\nc1=1000\n$=m-230 occ2-08 trace-occ2-08 tn00d0\nf=agent://worker-a\nr=daemon://coordinator\nk=B\ns=4\nq=2\ni1=the signing key vault is sealed pending policy approval\ni2=no artifacts can be signed until the vault unseals"
+  },
+  {
+   "id": "c31",
+   "kind": "CANCELLED",
+   "wire": "d\ne1=c:c31e0a8b4!1\nv1=1\nn=archive the signing branch\nc1=900\n$=m-231 occ2-08 trace-occ2-08 tn01r0\nf=agent://worker-a\nr=daemon://coordinator\nk=X\ns=6\nq=3\ni1=artifact signing was cancelled; the registry now accepts unsigned internal builds"
+  },
+  {
+   "id": "c32",
+   "kind": "TASK",
+   "wire": "d\nn=list the 22 harness fields|write the mapping table\n$=m-232 occ2-09 %occ2-09 tmzxtc\np=t77\nr=\u00a7e\nk=T\ns=0\ni1=map the parity harness fields onto the telegram transport"
+  },
+  {
+   "id": "c33",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:g:occ2-09-parity.log!0\nv1=1\nc1=jg\n$=m-233 occ2-09 %occ2-09 tn001c\nf=\u00a7e\nq=2\ni1=the parity harness maps 18 of 22 fields"
+  },
+  {
+   "id": "c34",
+   "kind": "REQUEST_DETAIL",
+   "wire": "d\nn=reply with the changelog links\n$=m-234 occ2-09 %occ2-09 tn00n0\nf=\u00a7e\nr=\u00a7f\nk=Q\nq=3\ni1=request the upstream API changelog entries for the four unmapped fields"
+  },
+  {
+   "id": "c35",
+   "kind": "CANCELLED",
+   "wire": "d\ne1=c:8c31d0af2!1\nv1=1\nn=archive the branch improve/telegram-parity\nc1=900\n$=m-235 occ2-09 trace-occ2-09 tn013o\nf=agent://worker-e\nr=daemon://coordinator\nk=X\ns=6\nq=4\ni1=parity work was cancelled because the upstream API changed"
+  },
+  {
+   "id": "c36",
+   "kind": "TASK",
+   "wire": "d\nn=read the refresh path|attempt a reproduction\nu=t41\n$=m-236 occ2-10 %occ2-10 tmzyqo\nr=\u00a7a\nk=T\ns=0\ni1=investigate the reported race window in the session token refresh path"
+  },
+  {
+   "id": "c37",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:^src/core/auth_storage.rs@218-235#d9656umw06v4bl6ifgd7cge2xtxk64e9ojaqqf6zs8z24iun4~pgtjo0p!1\nv1=1\nn=write a stress reproduction\nc1=ku\n$=m-237 occ2-10 %occ2-10 tn0030\nf=\u00a7a\nq=2\ni1=the refresh mutex is held across an await point, widening the race window"
+  },
+  {
+   "id": "c38",
+   "kind": "RESULT",
+   "wire": "d\ne1=s:crates/pi-coding-agent/src/core/auth_storage.rs@218-235~ce8480d59!1\ne2=l:logs/occ2-10-refresh-stress.log!0\nv1=1,2\nn=inspect the mutex guarding refresh|add a regression test for concurrent refresh\nc1=900\n$=m-238 occ2-10 trace-occ2-10 tn00bc\nf=agent://worker-a\nr=daemon://coordinator\nk=R\ns=2\nq=3\ni1=the race window is confirmed by reading but not reproducible with the current regression test\nh1=reports/occ2-10-race-window.md\nvc=the refresh race reproduces under the existing regression test\nvs=-\nvm=cargo_test\nvr=reports/occ2-10-verify.txt"
+  },
+  {
+   "id": "c39",
+   "kind": "TASK",
+   "wire": "d\nn=\u00a7 bad-interleaving configuration|keep the run log\nu=occ2-10\n$=m-239 occ2-11 %occ2-11 tmzzcc\nr=\u00a7c\nk=T\ns=0\ni1=raise the stress harness to 500 iterations per configuration"
+  },
+  {
+   "id": "c40",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=l:g:occ2-11-stress-500.log!1\ne2=b:y:occ2-11-stress-build.txt!1\n$=m-240 occ2-11 %occ2-11 tmzzzo\nf=\u00a7c\nk=E\ns=2\nq=2"
+  },
+  {
+   "id": "c41",
+   "kind": "RESULT",
+   "wire": "d\ne1=l:g:occ2-11-stress-500.log!1\nv1=1\nc1=nm\n$=m-241 occ2-11 %occ2-11 tn02q0\nf=\u00a7c\nk=R\ns=2\nq=3\ni1=the bad interleaving shows up twice in 500 iterations\nvc=the stress run completes within the latency budget\nvs=+\nvm=cargo_test\nvr=reports/occ2-11-verify.txt"
+  },
+  {
+   "id": "c42",
+   "kind": "TASK",
+   "wire": "d\nn=read the aggregate headline report|render per-split numbers\nu=occ2-04\n$=m-242 occ2-12 %occ2-12 tn027o\nr=\u00a7f\nk=T\ns=0\ni1=wire the fidelity metrics into the campaign dashboard"
+  },
+  {
+   "id": "c43",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2-12-dashboard.txt!1\nv1=1\nc1=m8\n$=m-243 occ2-12 %occ2-12 tn056c\nf=\u00a7f\nq=2\ni1=the dashboard reads the aggregate headline report"
+  },
+  {
+   "id": "c44",
+   "kind": "CORRECTION",
+   "wire": "d\ne1=f:m-243\nv1=1\nn=rename the metric|backfill the last seven days\nc1=900\n$=m-244 occ2-12 trace-occ2-12 tn08bo\nf=agent://worker-f\nr=daemon://coordinator\nk=C\ns=1\nq=3\ni1=the dashboard showed pass counts, not assertion counts; the metric name is corrected"
+  },
+  {
+   "id": "c45",
+   "kind": "PROGRESS",
+   "wire": "d\n$=m-245 occ2-12 %occ2-12 tn0alc\nf=\u00a7f\nq=4\ni1=the corrected metric renders for both splits"
+  },
+  {
+   "id": "c46",
+   "kind": "RESULT",
+   "wire": "d\ne1=n:q:occ2-12-metrics.md@12-18\nv1=1\nc1=p0\n$=m-246 occ2-12 %occ2-12 tn0b20\nf=\u00a7f\nk=R\ns=2\nq=5\ni1=the dashboard now shows assertion counts per split\nvc=the dashboard numbers match the fidelity suite output\nvs=+\nvm=digest_check\nvr=receipts/occ2-12-digest.txt"
+  },
+  {
+   "id": "c47",
+   "kind": "TASK",
+   "wire": "d\nn=point CARGO_TARGET_DIR at the isolated directory|record pass and fail counts\nu=occ2-03\n$=m-247 occ2-13 %occ2-13 tn015c\nr=\u00a7b\nk=T\ns=0\ni1=migrate the OCC-1 regression gate to an isolated target directory"
+  },
+  {
+   "id": "c48",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=b:y:occ2-13-gate-build.txt!1\nv1=1\nc1=nm\n$=m-248 occ2-13 %occ2-13 tn01so\nf=\u00a7b\nq=2\ni1=the gate now builds into the isolated target directory"
+  },
+  {
+   "id": "c49",
+   "kind": "RESULT",
+   "wire": "d\ne1=l:g:occ2-13-gate-run.log!1\nv1=1\nc1=1000\n$=m-249 occ2-13 %occ2-13 tn04ko\nf=\u00a7b\nk=R\ns=2\nq=3\ni1=the gate runs green with 7 passed and 0 failed\nvc=the occ_comm_fidelity gate is green in the isolated target\nvs=+\nvm=cargo_test\nvr=reports/occ2-13-verify.txt"
+  },
+  {
+   "id": "c50",
+   "kind": "TASK",
+   "wire": "d\nn=profile encode and decode|store the svg artifact\n$=m-250 occ2-14 %occ2-14 tn03lo\nr=\u00a7d\nk=T\ns=0\ni1=capture a flamegraph of the codec hot loop"
+  },
+  {
+   "id": "c51",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=a:y:occ2-14-flamegraph.svg#spgo6r7pcawd0bp1ziknz7uhl54z69hi1z6j06foz9uq2jakd\ne2=s:\u00b5occ1.rs@122-180~pgtjo0p\n$=m-251 occ2-14 %occ2-14 tn06do\nf=\u00a7d\nk=E\ns=2\nq=2\nh1=y:occ2-14-flamegraph.svg"
+  },
+  {
+   "id": "c52",
+   "kind": "RESULT",
+   "wire": "d\ne1=a:y:occ2-14-flamegraph.svg\ne2=s:\u00b5occ1.rs@122-180~pgtjo0p\nv1=1,2\nc1=jg\n$=m-252 occ2-14 %occ2-14 tn083c\nf=\u00a7d\nk=R\ns=2\nq=3\ni1=the hot loop spends 62 percent of samples in digest verification\nvc=the flamegraph attribute counts sum to the total samples\nvs=+\nvm=manual_review"
+  },
+  {
+   "id": "c53",
+   "kind": "TASK",
+   "wire": "d\nn=draft sections 1 through 6|leave the grammar section for review\nu=occ2-01\n$=m-253 occ2-15 %occ2-15 tn0350\nr=\u00a7e\nk=T\ns=0\ni1=write the OCC-2 dialect specification draft"
+  },
+  {
+   "id": "c54",
+   "kind": "PROGRESS",
+   "wire": "d\nc1=jg\n$=m-254 occ2-15 %occ2-15 tn03k0\nf=\u00a7e\nq=2\ni1=sections 1 through 4 are drafted"
+  },
+  {
+   "id": "c55",
+   "kind": "RESULT",
+   "wire": "d\ne1=n:o:occ2-dialect-spec.md@88-121\nv1=1\nn=close the grammar section after the fallback lands\nc1=m8\n$=m-255 occ2-15 %occ2-15 tn065c\nf=\u00a7e\nk=R\ns=3\nq=3\ni1=the symbol table grammar section remains open pending the fallback design\nh1=docs/occ2-dialect-spec.md\nvc=the draft matches the implemented prototype\nvs=?\nvm=manual_review"
+  },
+  {
+   "id": "c56",
+   "kind": "TASK",
+   "wire": "d\nn=list every task and its declared deps|render the graph\n$=m-256 occ2-16 %occ2-16 tn03dc\nr=\u00a7d\nk=T\ns=0\ni1=map the cross-task dependencies for the campaign"
+  },
+  {
+   "id": "c57",
+   "kind": "RESULT",
+   "wire": "d\ne1=l:logs/occ2-16-depmap.log!0\nv1=1\nn=reconcile the two missing edges with the ledger\nc1=900\n$=m-257 occ2-16 trace-occ2-16 tn04mc\nf=agent://worker-d\nr=daemon://coordinator\nk=R\ns=5\nq=2\ni1=the dependency graph has 20 nodes and 31 edges, but the ledger lists 33 edges\nh1=reports/occ2-16-depmap.md\nvc=the dependency graph matches the campaign ledger\nvs=-\nvm=manual_review\nvr=reports/occ2-16-verify.txt"
+  },
+  {
+   "id": "c58",
+   "kind": "TASK",
+   "wire": "d\nn=confirm the staging window|measure the rollback time\n$=m-258 occ2-17 %occ2-17 tn038c\np=t77\nr=\u00a7f\nk=T\ns=0\ni1=run the dialect rollback drill on the staging gateway\nxp=tn5n8c"
+  },
+  {
+   "id": "c59",
+   "kind": "BLOCKED",
+   "wire": "d\ne1=t:receipts/occ2-17-staging-status.txt!1\nv1=1\nn=hold the drill until the maintenance ends\nc1=1000\n$=m-259 occ2-17 trace-occ2-17 tn05yo\nf=agent://worker-f\nr=daemon://coordinator\nk=B\ns=4\nq=2\ni1=the drill needs the staging gateway, which is under maintenance"
+  },
+  {
+   "id": "c60",
+   "kind": "ACK",
+   "wire": "d\ne1=f:m-258\nv1=1\nc1=1000\n$=m-260 occ2-17 trace-occ2-17 tn08bo\nf=agent://worker-f\nr=daemon://coordinator\nk=A\ns=2\nq=3\ni1=receipt of the blocked report is confirmed; the drill stays on hold"
+  },
+  {
+   "id": "c61",
+   "kind": "CANCELLED",
+   "wire": "d\ne1=c:e04b7c911!1\nv1=1\nc1=900\n$=m-261 occ2-17 trace-occ2-17 tn09cc\nf=agent://worker-f\nr=daemon://coordinator\nk=X\ns=6\nq=4\ni1=the drill is cancelled; the staging window closed before maintenance ended"
+  },
+  {
+   "id": "c62",
+   "kind": "TASK",
+   "wire": "d\nn=clone the harness config|compare with fleet one\nu=occ2-04\n$=m-262 occ2-18 %occ2-18 tn0670\nr=\u00a7c\nk=T\ns=0\ni1=run the compression benchmark on the second gateway fleet"
+  },
+  {
+   "id": "c63",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2-18-fleet2.txt!1\nv1=1\nc1=m8\n$=m-263 occ2-18 %occ2-18 tn06r0\nf=\u00a7c\nq=2\ni1=fleet two runs the same 100-iteration harness"
+  },
+  {
+   "id": "c64",
+   "kind": "RESULT",
+   "wire": "d\ne1=l:g:occ2-18-fleet2.log!1\nv1=1\nc1=p0\n$=m-264 occ2-18 %occ2-18 tn083c\nf=\u00a7c\nk=R\ns=2\nq=3\ni1=savings hold within one percent of fleet one\nvc=fleet two reproduces the fleet one savings\nvs=+\nvm=bench_harness\nvr=receipts/occ2-18-bench.txt"
+  },
+  {
+   "id": "c65",
+   "kind": "TASK",
+   "wire": "d\nn=list every receipt path|spot-check five receipts\n$=m-265 occ2-19 %occ2-19 tn056c\nr=a:security-auditor\nk=T\ns=0\ni1=audit the verification receipts of the campaign so far"
+  },
+  {
+   "id": "c66",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=f:m-265\ne2=t:j:occ2-19-audit-run.txt!1\n$=m-266 occ2-19 %occ2-19 tn07tc\nf=a:security-auditor\nk=E\ns=2\nq=2"
+  },
+  {
+   "id": "c67",
+   "kind": "ACK",
+   "wire": "d\ne1=f:m-265\nv1=1\nn=deliver the audit table by Friday\nc1=1000\n$=m-267 occ2-19 trace-occ2-19 tn0a30\nf=daemon://coordinator\nr=agent://security-auditor\nk=A\ns=2\nq=3\ni1=receipt of the audit plan is confirmed"
+  },
+  {
+   "id": "c68",
+   "kind": "RESULT",
+   "wire": "d\ne1=t:j:occ2-19-audit-run.txt!1\nv1=1\nc1=qe\n$=m-268 occ2-19 %occ2-19 tn0bxo\nf=a:security-auditor\nk=R\ns=2\nq=4\ni1=all 16 verification receipts resolve; three spot-checks matched byte for byte\nh1=q:occ2-19-receipt-audit.md\nvc=every receipt path in the corpus resolves on disk\nvs=+\nvm=manual_review"
+  },
+  {
+   "id": "c69",
+   "kind": "CANCELLED",
+   "wire": "d\ne1=c:5d90cc3aa!1\nv1=1\nn=drop the sweep from the campaign board\nc1=900\n$=m-269 occ2-20 trace-occ2-20 tn06no\nf=agent://worker-b\nr=daemon://coordinator\nk=X\ns=6\nq=1\ni1=the archive sweep was cancelled; retention now covers the same ground"
+  },
+  {
+   "id": "e2-e01-01",
+   "kind": "TASK",
+   "wire": "d\nn=profile the per-message injection site|design the session-scoped codebook cache|keep OCC-1 sessions byte-identical\nu=t77\n$=\u00a71-01 \u00a71 \u00b61 tobxvc\nr=\u00a7b\nk=T\ns=0\ni1=amortize the OCC-2 codebook injection across a session instead of rebuilding it for every message"
+  },
+  {
+   "id": "e2-e01-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:^src/core/agent_messages.rs@804-808~309x1be\nv1=1\nn=wire cache invalidation on dialect change|measure the token delta\nc1=m8\n$=\u00a71-02 \u00a71 \u00b61 tobym0\nf=\u00a7b\nq=2\ni1=the per-message codebook injection now reads from a session-scoped cache"
+  },
+  {
+   "id": "e2-e01-03",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:^src/core/agent_messages.rs@965-1011#2oa7rdexjqxoovj10gw6p1u6iyvh7t59nd05fckvc3a3c29xem~309x1be\nv1=1\nn=\u00a7 fidelity gates on the rebased tree\nc1=ku\n$=\u00a71-03 \u00a71 \u00b61 tobzb0\nf=\u00a7b\nq=3\ni1=cache invalidation is wired and the stored dual payload no longer re-bakes the codebook per message"
+  },
+  {
+   "id": "e2-e01-04",
+   "kind": "ACK",
+   "wire": "d\n$=m2-e01-04 occ2b-e01 trace-occ2b-e01 toc0lo\nf=daemon://coordinator\nr=b\nk=A\ns=1\nq=4\ni1=receipt of the cache design is confirmed; proceed with the measurements"
+  },
+  {
+   "id": "e2-e01-05",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:\u00b601-token-delta.txt!1\nv1=1\nc1=p0\n$=\u00a71-05 \u00a71 \u00b61 toc0u0\nf=\u00a7b\nq=5\ni1=token measurements show the session-scoped codebook saves roughly 175 tokens per message from the third message onward"
+  },
+  {
+   "id": "e2-e01-06",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=a:z:occ2opt/codebook-amortization-report.md#5sbv1hoef84instz9ztyekm41yivj4zgyn6a61cdvos0gn1px2\ne2=b:\u00a11-build.txt!1\n$=\u00a71-06 \u00a71 \u00b61 toc2to\nf=\u00a7b\nk=E\ns=2\nq=6"
+  },
+  {
+   "id": "e2-e01-07",
+   "kind": "REQUEST_DETAIL",
+   "wire": "d\nn=attach the gate log|attach the build log\n$=\u00a71-07 \u00a71 \u00b61 toc640\nr=b\nk=Q\nq=7\ni1=the final gate receipts are needed before the task can close"
+  },
+  {
+   "id": "e2-e01-08",
+   "kind": "RESULT",
+   "wire": "d\ne1=t:\u00a11-gates.txt!1\ne2=b:\u00a11-build.txt!1\nv1=1,2\nc1=qe\n$=\u00a71-08 \u00a71 \u00b61 toc780\nf=\u00a7b\nk=R\ns=2\nq=8\ni1=the session-scoped codebook cache is active and the token cost per message is flat from the third message\nh1=z:occ2opt/codebook-amortization-report.md\nvc=the codebook cache keeps all fidelity gates green\nvs=+\nvm=cargo_test\nvr=reports/occ2b-e01-gates.txt"
+  },
+  {
+   "id": "e2-e02-01",
+   "kind": "TASK",
+   "wire": "d\nn=reproduce the failures|split regressions from environment noise|report the split\n$=\u00a72-01 \u00a72 \u00b62 toj0s0\nr=\u00a7c\nk=T\ns=0\ni1=triage the failing occ2_comm_fidelity gate on the rebased tree"
+  },
+  {
+   "id": "e2-e02-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=b:\u00a12-gate-run.txt!1\ne2=s:^tests/occ2_comm_fidelity.rs@40-96~309x1be\nn=compare each failure against the base commit\n$=\u00a72-02 \u00a72 \u00b62 toj2ho\nf=\u00a7c\ns=5\nq=2\ni1=the fidelity gate is red after the rebase\ni2=three of twelve scenarios fail the dual round trip\nc2=0.850\nv2=E1,E2"
+  },
+  {
+   "id": "e2-e02-03",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:^src/core/agent_messages.rs@965-1025#4dlsj61q3dfd3zad5p4j6u2zewb1j98tedbkbaf6tnhd1juef4~309x1be\nv1=1\nn=rebuild in a fresh target dir|rerun the gate\nc1=jg\n$=\u00a72-03 \u00a72 \u00b62 toj45o\nf=\u00a7c\nq=3\ni1=one failure is a real regression introduced by the mid-edit tree and two are environment failures from a stale target directory"
+  },
+  {
+   "id": "e2-e02-04",
+   "kind": "CORRECTION",
+   "wire": "d\ne1=l:reports/occ2b-e02-rerun.txt!1\nv1=1\nc1=900\n$=m2-e02-04 occ2b-e02 trace-occ2b-e02 toj7l0\nf=agent://worker-c\nr=daemon://coordinator\nk=C\ns=1\nq=4\ni1=the earlier count of three failures was wrong; the fresh target directory run shows one real regression and two pre-existing environment failures"
+  },
+  {
+   "id": "e2-e02-05",
+   "kind": "PROGRESS",
+   "wire": "d\nn=land the fix|rerun the full gate\nc1=m8\n$=\u00a72-05 \u00a72 \u00b62 toj9ao\nf=\u00a7c\nq=5\ni1=the regression is narrowed to the prompt body renderer and a fix is in flight"
+  },
+  {
+   "id": "e2-e02-06",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=c:9c41f0ab2!1\ne2=b:\u00a12-gate-green.txt!1\n$=\u00a72-06 \u00a72 \u00b62 tojcb0\nf=\u00a7c\nk=E\ns=2\nq=6"
+  },
+  {
+   "id": "e2-e02-07",
+   "kind": "RESULT",
+   "wire": "d\ne1=b:\u00a12-gate-green.txt!1\ne2=c:9c41f0ab2!1\nv1=1,2\nc1=qe\n$=\u00a72-07 \u00a72 \u00b62 tojepo\nf=\u00a7c\nk=R\ns=2\nq=7\ni1=the gate is green again; one regression was real and is fixed, the other two failures were environment noise\nvc=the fidelity gate passes 12 of 12 scenarios\nvs=+\nvm=cargo_test\nvr=reports/occ2b-e02-gate-green.txt"
+  },
+  {
+   "id": "e2-e03-01",
+   "kind": "TASK",
+   "wire": "d\nn=survey the call sites|split the work across workers|keep the wire bytes stable\nu=occ2b-e01\n$=\u00a73-01 \u00a73 \u00b63 to3pcc\nr=\u00a7d\nk=T\ns=0\ni1=migrate the remaining OCC-1 call sites to the shared wire helpers"
+  },
+  {
+   "id": "e2-e03-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:\u00b603-callgraph.txt!1\nv1=1\nn=split the sites between workers\nc1=nm\n$=\u00a73-02 \u00a73 \u00b63 to3r0c\nf=\u00a7d\nq=2\ni1=the survey found fourteen call sites; nine are in the daemon path and five in the session path"
+  },
+  {
+   "id": "e2-e03-03",
+   "kind": "PROGRESS",
+   "wire": "d\nn=acknowledge the handoff|start with delta.rs\n$=\u00a73-03 \u00a73 \u00b63 to3ucc\nf=d\nr=e\nq=3\ni1=handing off the delta encoding call sites to worker e\ni2=the consolidation sites stay with me"
+  },
+  {
+   "id": "e2-e03-04",
+   "kind": "ACK",
+   "wire": "d\ne1=f:m2-e03-03\n$=m2-e03-04 occ2b-e03 trace-occ2b-e03 to3wso\nf=e\nr=d\nk=A\ns=1\nq=4\ni1=the handoff is acknowledged and the delta sites are queued after my current task"
+  },
+  {
+   "id": "e2-e03-05",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:\u00b5delta.rs@14-61~309x1be\nv1=1\nc1=p0\n$=\u00a73-05 \u00a73 \u00b63 to3zj0\nf=e\nq=5\ni1=the delta encoding sites are migrated with no wire byte drift"
+  },
+  {
+   "id": "e2-e03-06",
+   "kind": "REQUEST_DETAIL",
+   "wire": "d\n$=\u00a73-06 \u00a73 \u00b63 to4080\nr=d\nk=Q\nq=6\ni1=the remaining site list is needed to schedule the review"
+  },
+  {
+   "id": "e2-e03-07",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=a:z:occ2opt/wire-migration-sites.md\nv1=1\nn=wait for the session settings design\nu=occ2b-e06\nc1=m8\n$=\u00a73-07 \u00a73 \u00b63 to43ic\nf=\u00a7d\nq=7\ni1=the remaining sites are listed and a new dependency on the session settings work was discovered"
+  },
+  {
+   "id": "e2-e03-08",
+   "kind": "RESULT",
+   "wire": "d\ne1=c:b7d902e41!1\nv1=1\nc1=qe\n$=\u00a73-08 \u00a73 \u00b63 to46w0\nf=\u00a7d\nk=R\ns=2\nq=8\ni1=all fourteen call sites now use the shared wire helpers and the wire bytes are stable\nvc=wire bytes are identical before and after the migration\nvs=+\nvm=cargo_test\nvr=reports/occ2b-e03-wire-diff.txt"
+  },
+  {
+   "id": "e2-e04-01",
+   "kind": "TASK",
+   "wire": "d\nn=benchmark the current encoding|design the incremental path|guard the size bound\n$=\u00a74-01 \u00a74 \u00b64 toecb0\nr=\u00a7a\nk=T\ns=0\ni1=revise the delta encoding so small updates stay cheaper than a full re-encode"
+  },
+  {
+   "id": "e2-e04-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:\u00b5delta.rs@88-140#4psqxttsdm5upzivx5c6rz131ruitxo1an8im1gnn4d7ocg7bd~309x1be\nv1=1\nn=measure against the full re-encode\nc1=m8\n$=\u00a74-02 \u00a74 \u00b64 toecwo\nf=\u00a7a\nq=2\ni1=the incremental path is drafted on top of the existing EADD wire"
+  },
+  {
+   "id": "e2-e04-03",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:\u00b5delta.rs@88-140~309x1be\ne2=s:\u00b5delta.rs@88-140#3huqd8389m8gorom1rywinn3cwywzzj8boo9cux4yi9dgodc04~j9p0iia\nv1=1\nv2=2\nc1=jg\nc2=i2\n$=\u00a74-03 \u00a74 \u00b64 toeeo0\nf=\u00a7a\nq=3\ni1=the delta path beats the full re-encode on the fixture corpus\ni2=the same benchmark on the live traffic profile shows the delta path losing by eight percent"
+  },
+  {
+   "id": "e2-e04-04",
+   "kind": "CORRECTION",
+   "wire": "d\ne1=c:9c41f0ab2!1\nv1=1\nc1=900\n$=m2-e04-04 occ2b-e04 trace-occ2b-e04 toeh4c\nf=agent://worker-a\nr=daemon://coordinator\nk=C\ns=1\nq=4\ni1=the conflicting measurements came from two revisions; the newer revision contains the size guard and is authoritative"
+  },
+  {
+   "id": "e2-e04-05",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:\u00b604-bench.txt!1\nv1=1\nn=\u00a7 fidelity gates\nc1=nm\n$=\u00a74-05 \u00a74 \u00b64 toei50\nf=\u00a7a\nq=5\ni1=the size guard is in and the delta path now wins on both profiles for updates under forty percent of the message"
+  },
+  {
+   "id": "e2-e04-06",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=b:\u00a14-gates.txt!1\ne2=n:\u00b5delta.rs@140-158\n$=\u00a74-06 \u00a74 \u00b64 toejfo\nf=\u00a7a\nk=E\ns=2\nq=6"
+  },
+  {
+   "id": "e2-e04-07",
+   "kind": "RESULT",
+   "wire": "d\ne1=b:\u00a14-gates.txt!1\nv1=1\nn=measure the crossover threshold on mixed traffic\nc1=m8\n$=\u00a74-07 \u00a74 \u00b64 toelpc\nf=\u00a7a\nk=R\ns=3\nq=7\ni1=the incremental delta path is landed and guarded; the open question about the crossover threshold on mixed traffic is deferred"
+  },
+  {
+   "id": "e2-e05-01",
+   "kind": "TASK",
+   "wire": "d\nn=find why only tests call the ledger|wire it into the decode path|add the three-strike gate\n$=\u00a75-01 \u00a75 \u00b65 to65q0\nr=\u00a7f\nk=T\ns=0\ni1=resurrect the strike ledger so repeated wire faults disable a session dialect before corruption spreads"
+  },
+  {
+   "id": "e2-e05-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:\u00b5occ2.rs@200-260~309x1be\nn=collect the decode fault receipts\nc1=p0\nc2=p0\nc3=m8\nc4=ku\nc5=nm\nc6=qe\n$=\u00a75-02 \u00a75 \u00b65 to68eo\nf=\u00a7f\nq=2\ni1=the ledger struct exists but the production decode path bypasses it\ni2=the test suite exercises the ledger through a direct call\ni3=the decode path is the only production entry point for wire faults\ni4=the ledger needs a session-scoped home to survive across messages\ni5=the three-strike rule is already specified in the contract tests\ni6=no production state currently persists strike counts"
+  },
+  {
+   "id": "e2-e05-03",
+   "kind": "PROGRESS",
+   "wire": "d\nn=collect the receipts before claiming the ledger is live\nc1=go\n$=\u00a75-03 \u00a75 \u00b65 to6bu0\nf=\u00a7f\nq=3\ni1=the ledger wiring is drafted but no production fault receipt exists yet to prove the disable path"
+  },
+  {
+   "id": "e2-e05-04",
+   "kind": "REQUEST_DETAIL",
+   "wire": "d\n$=\u00a75-04 \u00a75 \u00b65 to6cko\nr=f\nk=Q\nq=4\ni1=the fault receipts from the parallel lane are needed to validate the disable path"
+  },
+  {
+   "id": "e2-e05-05",
+   "kind": "BLOCKED",
+   "wire": "d\nn=wait for the receipts\n$=m2-e05-05 occ2b-e05 trace-occ2b-e05 to6d1c\nf=agent://worker-f\nr=daemon://coordinator\nk=B\ns=4\nq=5\ni1=the task is blocked until the parallel lane publishes its fault receipts"
+  },
+  {
+   "id": "e2-e05-06",
+   "kind": "ACK",
+   "wire": "d\n$=m2-e05-06 occ2b-e05 trace-occ2b-e05 to6dyo\nf=daemon://coordinator\nr=f\nk=A\ns=1\nq=6\ni1=the receipts arrived and the task is unblocked"
+  },
+  {
+   "id": "e2-e05-07",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:\u00b605-disable-path.txt!1\nv1=1\nn=\u00a7 three-strike gate\nc1=p0\n$=\u00a75-07 \u00a75 \u00b65 to6fg0\nf=\u00a7f\nq=7\ni1=the disable path is validated against the published receipts and the ledger is live in the decode path"
+  },
+  {
+   "id": "e2-e05-08",
+   "kind": "RESULT",
+   "wire": "d\ne1=c:d51cc7e90!1\nv1=1\nc1=qe\n$=\u00a75-08 \u00a75 \u00b65 to6ibc\nf=\u00a7f\nk=R\ns=2\nq=8\ni1=the strike ledger is live in the decode path and the three-strike gate is green\nvc=the three-strike session disable works on injected faults\nvs=+\nvm=cargo_test\nvr=reports/occ2b-e05-strike-gate.txt"
+  },
+  {
+   "id": "e2-e06-01",
+   "kind": "TASK",
+   "wire": "d\nn=design the capability handshake|spec the get and set RPCs|keep the client profile as fallback\n$=\u00a76-01 \u00a76 \u00b66 to3y3c\nr=\u00a7b\nk=T\ns=0\ni1=move the /occ session settings from client-local state to daemon-owned state"
+  },
+  {
+   "id": "e2-e06-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:^src/modes/daemon/daemon_protocol.rs@1200-1260#3oxxeertil6sooaysx1p776sfndntd1l613oick5kuclnmf3db~309x1be\nv1=1\nn=implement the get path first\nc1=m8\n$=\u00a76-02 \u00a76 \u00b66 to3yf0\nf=\u00a7b\nq=2\ni1=the design follows the existing session-plane RPC pattern"
+  },
+  {
+   "id": "e2-e06-03",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:\u00b5session_settings.rs@1-60#4t4hnuhqwwd63q670hw0h3vjkmvsamdmj4rin400h1qh3ruoyi~309x1be\ne2=s:^src/modes/daemon/daemon_mode.rs@9820-9900~309x1be\ne3=t:\u00b606-get-path.txt!1\nv1=1,2,3\nc1=nm\n$=\u00a76-03 \u00a76 \u00b66 to3yxc\nf=\u00a7b\nq=3\ni1=the get path reads daemon-owned state and echoes it back with an authoritative flag"
+  },
+  {
+   "id": "e2-e06-04",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=l:\u00a16-handshake.txt!1\ne2=a:z:occ2opt/daemon-settings-design.md#3k5zex3qybh3yh0jykcgd7ulfncm5al1q9mu4xz4qg1tkdlioi\n$=\u00a76-04 \u00a76 \u00b66 to41fc\nf=\u00a7b\nk=E\ns=2\nq=4"
+  },
+  {
+   "id": "e2-e06-05",
+   "kind": "PROGRESS",
+   "wire": "d\nn=define the durable layout\nc1=jg\n$=\u00a76-05 \u00a76 \u00b66 to41xo\nf=\u00a7b\nq=5\ni1=the set path is drafted but the durable write needs the state store layout"
+  },
+  {
+   "id": "e2-e06-06",
+   "kind": "RESULT",
+   "wire": "d\ne1=t:\u00b606-get-path.txt!1\nv1=1\nn=implement the set path|add the migration for client-local profiles\nc1=nm\n$=\u00a76-06 \u00a76 \u00b66 to436o\nf=\u00a7b\nk=R\ns=3\nq=6\ni1=the get path is done and the set path remains; the client-local profile stays the fallback until the set path lands\nvc=the daemon-owned get path returns authoritative settings\nvs=?\nvm=manual_probe"
+  },
+  {
+   "id": "e2-e06-07",
+   "kind": "ACK",
+   "wire": "d\n$=m2-e06-07 occ2b-e06 trace-occ2b-e06 to44zo\nf=daemon://coordinator\nr=b\nk=A\ns=1\nq=7\ni1=the partial scope is acknowledged; the set path is scheduled for the next phase"
+  },
+  {
+   "id": "e2-e07-01",
+   "kind": "TASK",
+   "wire": "d\nn=freeze the generation manifest|author the story roster|generate the holdout last\n$=\u00a77-01 \u00a77 \u00b67 tnxk8c\nr=\u00a7b\nk=T\ns=0\ni1=expand the message corpus to roughly three times its size with new evolve dev and holdout splits"
+  },
+  {
+   "id": "e2-e07-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=a:\u00bfmanifest.json\nv1=1\nn=author the evolve and dev stories\nc1=qe\n$=\u00a77-02 \u00a77 \u00b67 tnxmyo\nf=\u00a7b\nq=2\ni1=the manifest is frozen with seed bases and split targets before any generation"
+  },
+  {
+   "id": "e2-e07-03",
+   "kind": "PROGRESS",
+   "wire": "d\nn=generate the splits\nc1=p0\n$=\u00a77-03 \u00a77 \u00b67 tnxweo\nf=\u00a7b\nq=3\ni1=the evolve and dev stories are authored"
+  },
+  {
+   "id": "e2-e07-04",
+   "kind": "PROGRESS",
+   "wire": "d\nn=generate the splits\nc1=p0\n$=\u00a77-04 \u00a77 \u00b67 tny4f0\nf=\u00a7b\nq=4\ni1=the evolve and dev stories are authored"
+  },
+  {
+   "id": "e2-e07-05",
+   "kind": "ACK",
+   "wire": "d\n$=m2-e07-05 occ2b-e07 trace-occ2b-e07 tny770\nf=daemon://coordinator\nr=b\nk=A\ns=1\nq=5\ni1=the duplicate update was received; consolidation applies"
+  },
+  {
+   "id": "e2-e07-06",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=b:\u00a17-selftest.txt!1\nv1=1\nn=generate the holdout split last\nc1=p0\n$=\u00a77-06 \u00a77 \u00b67 tnyfzo\nf=\u00a7b\nq=6\ni1=the evolve and dev files are generated and validated"
+  },
+  {
+   "id": "e2-e07-07",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=a:\u00bfmsgs_corpus2_evolve.json#41collryxxdg7ymvbzsw0dfoxifmoutevykijrf0h123zv4io2\ne2=a:\u00bfmsgs_corpus2_dev.json#36453wolotmsmntdrlzdq195svlbwlaeofuwmphs0lu44ej3ho\n$=\u00a77-07 \u00a77 \u00b67 tnyllc\nf=\u00a7b\nk=E\ns=2\nq=7"
+  },
+  {
+   "id": "e2-e07-08",
+   "kind": "PROGRESS",
+   "wire": "d\nn=\u00a7 full self-test\nc1=p0\n$=\u00a77-08 \u00a77 \u00b67 tnyv80\nf=\u00a7b\nq=8\ni1=the holdout split is generated from an independent seed base after evolve and dev are frozen"
+  },
+  {
+   "id": "e2-e07-09",
+   "kind": "RESULT",
+   "wire": "d\ne1=b:\u00a17-selftest.txt!1\nv1=1\nc1=qe\n$=\u00a77-09 \u00a77 \u00b67 tnyx2o\nf=\u00a7b\nk=R\ns=2\nq=9\ni1=the expanded corpus has 204 messages across three splits with a green deterministic self-test\nvc=all corpus invariants and round trips pass\nvs=+\nvm=selftest\nvr=reports/occ2b-e07-selftest.txt"
+  },
+  {
+   "id": "e2-e08-01",
+   "kind": "TASK",
+   "wire": "d\nn=snapshot the session state|cut over the endpoint|verify the trace continuity\n$=\u00a78-01 \u00a78 \u00b68 tod8ho\nr=\u00a7e\nk=T\ns=0\ni1=migrate the model gateway calls to the new endpoint without losing the running session state"
+  },
+  {
+   "id": "e2-e08-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:\u00a18-model-switch.txt!1\nv1=1\nn=verify the trace continuity\nc1=p0\nc2=nm\n$=\u00a78-02 \u00a78 \u00b68 todae0\nf=\u00a7e\nq=2\ni1=the session switched from glm-5.3 to deepseek-v4-pro mid-task; the trace continues on the new model\ni2=the context was re-read from the durable transcript so no work was lost"
+  },
+  {
+   "id": "e2-e08-03",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:\u00a18-trace-check.txt!1\nv1=1\nc1=p0\n$=\u00a78-03 \u00a78 \u00b68 todc8o\nf=\u00a7e\nq=3\ni1=the trace id is unchanged across the switch and the sequence numbers continue without a gap"
+  },
+  {
+   "id": "e2-e08-04",
+   "kind": "CORRECTION",
+   "wire": "d\ne1=l:reports/occ2b-e08-duplicate-call.txt!1\nv1=1\nc1=850\n$=m2-e08-04 occ2b-e08 trace-occ2b-e08 toddmo\nf=agent://worker-e\nr=daemon://coordinator\nk=C\ns=1\nq=4\ni1=the earlier statement that no work was lost was too strong; one in-flight call was duplicated and is now deduplicated"
+  },
+  {
+   "id": "e2-e08-05",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:\u00b608-latency.txt!1\nv1=1\nc1=nm\n$=\u00a78-05 \u00a78 \u00b68 todek0\nf=\u00a7e\nq=5\ni1=the gateway cutover is complete and the latency profile matches the old endpoint"
+  },
+  {
+   "id": "e2-e08-06",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=l:\u00a18-cutover.txt!1\ne2=b:\u00a18-gates.txt!1\n$=\u00a78-06 \u00a78 \u00b68 todfcc\nf=\u00a7e\nk=E\ns=2\nq=6"
+  },
+  {
+   "id": "e2-e08-07",
+   "kind": "RESULT",
+   "wire": "d\ne1=l:\u00a18-cutover.txt!1\nv1=1\nc1=qe\n$=\u00a78-07 \u00a78 \u00b68 todg9o\nf=\u00a7e\nk=R\ns=2\nq=7\ni1=the gateway migration is complete with trace continuity verified across the model switch\nvc=trace ids and sequence numbers survive the model switch\nvs=+\nvm=cargo_test\nvr=reports/occ2b-e08-gates.txt"
+  },
+  {
+   "id": "e2-e09-01",
+   "kind": "TASK",
+   "wire": "d\nn=pull the manifest and receipts|interview the generation order|report the verdict\n$=\u00a79-01 \u00a79 \u00b69 to59s0\nr=a:security-auditor\nk=T\ns=0\ni1=audit that no evaluation or tuning decision was adapted to holdout content after its generation"
+  },
+  {
+   "id": "e2-e09-02",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=s:\u00bfmanifest.json@1-40\ne2=c:1863b5dea!1\n$=\u00a79-02 \u00a79 \u00b69 to5d7c\nf=a:security-auditor\nk=E\ns=2\nq=2"
+  },
+  {
+   "id": "e2-e09-03",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:\u00a19-receipt-log.txt\ne2=a:\u00bfmanifest.json\nv1=1\nv2=2\nc1=go\nc2=p0\n$=\u00a79-03 \u00a79 \u00b69 to5fdo\nf=a:security-auditor\nq=3\ni1=the receipt log shows a holdout read at a time before the holdout generation timestamp\ni2=the manifest freeze timestamp precedes every split generation"
+  },
+  {
+   "id": "e2-e09-04",
+   "kind": "PROGRESS",
+   "wire": "d\nn=request the clock provenance\nc1=jg\n$=\u00a79-04 \u00a79 \u00b69 to5hxc\nf=a:security-auditor\nq=4\ni1=the clock source of the receipt log is not recorded so the ordering cannot be concluded from timestamps alone"
+  },
+  {
+   "id": "e2-e09-05",
+   "kind": "CORRECTION",
+   "wire": "d\ne1=t:receipts/occ2b-e09-clock-skew.txt!1\nv1=1\nc1=900\n$=m2-e09-05 occ2b-e09 trace-occ2b-e09 to5lb0\nf=agent://security-auditor\nr=daemon://coordinator\nk=C\ns=1\nq=5\ni1=the apparent early read was clock skew between the receipt host and the generation host; the content hashes prove the holdout did not exist at that time"
+  },
+  {
+   "id": "e2-e09-06",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=a:\u00bfreceipts.json#inp0zbqmu9xmap5q0rq5afd2k86nmg7wizlc710e3gol3zogk\nv1=1\nc1=qe\n$=\u00a79-06 \u00a79 \u00b69 to5ltc\nf=a:security-auditor\nq=6\ni1=the generation order is confirmed: manifest first then evolve and dev then holdout last"
+  },
+  {
+   "id": "e2-e09-07",
+   "kind": "RESULT",
+   "wire": "d\ne1=a:\u00bfreceipts.json\nv1=1\nc1=qe\n$=\u00a79-07 \u00a79 \u00b69 to5ovc\nf=a:security-auditor\nk=R\ns=2\nq=7\ni1=no holdout leakage is found; the discipline holds and the audit is clean\nvc=the holdout discipline audit finds no leakage\nvs=+\nvm=manual_audit\nvr=reports/occ2b-e09-verdict.txt"
+  },
+  {
+   "id": "e2-e10-01",
+   "kind": "TASK",
+   "wire": "d\nn=list the queued tasks|pick the idle worker|reassign with a parent task id\n$=\u00b60-01 \u00b60 \u00b50 to7h9o\nr=\u00a7a\nk=T\ns=0\ni1=rebalance the worker pool so the overloaded lane hands its queued work to an idle worker"
+  },
+  {
+   "id": "e2-e10-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:\u00b610-queue-snapshot.txt!1\nv1=1\nn=cancel the current assignment\nc1=nm\n$=\u00b60-02 \u00b60 \u00b50 to7hn0\nf=\u00a7a\nq=2\ni1=the queued work is listed and worker c is idle"
+  },
+  {
+   "id": "e2-e10-03",
+   "kind": "CANCELLED",
+   "wire": "d\nn=reissue the work to worker c\n$=m2-e10-03 occ2b-e10 trace-occ2b-e10 to7ir0\nf=daemon://coordinator\nr=a\nk=X\ns=6\nq=3\ni1=the assignment on the overloaded worker is cancelled so the work can move to an idle worker"
+  },
+  {
+   "id": "e2-e10-04",
+   "kind": "TASK",
+   "wire": "d\nn=resume from the queue snapshot\n$=\u00b60-04 \u00b60b \u00b50 to7jq0\np=occ2b-e10\nr=c\nk=T\ns=0\nq=4\ni1=the rebalanced work is reissued to the idle worker under a child task id"
+  },
+  {
+   "id": "e2-e10-05",
+   "kind": "ACK",
+   "wire": "d\ne1=f:m2-e10-04\n$=m2-e10-05 occ2b-e10 trace-occ2b-e10 to7md0\nf=c\nr=daemon://coordinator\nk=A\ns=1\nq=5\ni1=the reassigned task is acknowledged and the queue snapshot was received"
+  },
+  {
+   "id": "e2-e10-06",
+   "kind": "PROGRESS",
+   "wire": "d\nu=occ2b-e07\nc1=m8\n$=\u00b60-06 \u00b60 \u00b50 to7ooc\nf=c\nq=6\ni1=the rebalanced work depends on the corpus expansion output for its measurement step"
+  },
+  {
+   "id": "e2-e10-07",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:\u00b610b-progress.txt!1\nv1=1\nc1=nm\n$=\u00b60-07 \u00b60 \u00b50 to7p6o\nf=c\nq=7\ni1=the rebalanced work is ahead of the original schedule"
+  },
+  {
+   "id": "e2-e10-08",
+   "kind": "RESULT",
+   "wire": "d\ne1=c:0aa3d5c77!1\nv1=1\nc1=qe\n$=\u00b60-08 \u00b60 \u00b50 to7q40\nf=c\nk=R\ns=2\nq=8\ni1=the rebalance is complete and the pool is evenly loaded"
+  },
+  {
+   "id": "e2-e11-01",
+   "kind": "TASK",
+   "wire": "d\nn=derive inputs from the field grammar|\u00a7 fuzzer offline|triage any crash\n$=\u00b61-01 \u00b61 \u00b51 to1bz0\nr=\u00a7f\nk=T\ns=0\ni1=build a deterministic fuzz corpus for the OCC-1 codec bounds"
+  },
+  {
+   "id": "e2-e11-02",
+   "kind": "PROGRESS",
+   "wire": "d\nn=\u00a7 fuzzer\nc1=p0\n$=\u00b61-02 \u00b61 \u00b51 to1edo\nf=\u00a7f\nq=2\ni1=the grammar-derived inputs are generated"
+  },
+  {
+   "id": "e2-e11-03",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:prime-agent-runtime/src/rlm/occ1.py@150-180#1e3c76054ca40074d1382cd69cf8583b4f1ddf15110285c443bb9da3e804b9fe~1863b5dea\nv1=1\nn=triage the panic\nc1=900\n$=m2-e11-03 occ2b-e11 trace-occ2b-e11 to1f2o\nf=agent://worker-f\nr=daemon://coordinator\nk=P\ns=1\nq=3\ni1=one input trips a panic in the key length check\nvc=the fuzz corpus passes without panics\nvs=-\nvm=fuzz"
+  },
+  {
+   "id": "e2-e11-04",
+   "kind": "CORRECTION",
+   "wire": "d\ne1=l:reports/occ2b-e11-triage.txt!1\nv1=1\nc1=900\n$=m2-e11-04 occ2b-e11 trace-occ2b-e11 to1id0\nf=agent://worker-f\nr=daemon://coordinator\nk=C\ns=1\nq=4\ni1=the panic is not a codec bug; the fuzz generator emitted a key above the documented bound and the rejection is correct behavior"
+  },
+  {
+   "id": "e2-e11-05",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=b:\u00a711-fuzz-run.txt!1\n$=\u00b61-05 \u00b61 \u00b51 to1j0c\nf=\u00a7f\nk=E\ns=2\nq=5"
+  },
+  {
+   "id": "e2-e11-06",
+   "kind": "RESULT",
+   "wire": "d\ne1=b:\u00a711-fuzz-run.txt!1\nv1=1\nc1=qe\n$=\u00b61-06 \u00b61 \u00b51 to1l6o\nf=\u00a7f\nk=R\ns=2\nq=6\ni1=the fuzz corpus is green after the generator fix and the codec rejects all out-of-bound inputs cleanly\nvc=the fuzz run completes with zero codec panics\nvs=+\nvm=fuzz\nvr=reports/occ2b-e11-fuzz-run.txt"
+  },
+  {
+   "id": "e2-e12-01",
+   "kind": "TASK",
+   "wire": "d\nn=profile the loop|hand the harness to the bench runner|pick the winner by the frozen rule\n$=\u00b62-01 \u00b62 \u00b52 tobz4c\nr=\u00a7b\nk=T\ns=0\ni1=tune the dialect evolution loop so generations converge before the evaluation budget is spent"
+  },
+  {
+   "id": "e2-e12-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:z:symbolic_comm/evolve.py@1-80~309x1be\nv1=1\nn=cache unchanged scores\nc1=nm\n$=\u00b62-02 \u00b62 \u00b52 toc3m0\nf=\u00a7b\nq=2\ni1=the loop spends most of its budget on redundant re-scoring of unchanged dialects"
+  },
+  {
+   "id": "e2-e12-03",
+   "kind": "PROGRESS",
+   "wire": "d\nn=\u00a7 sweep on the evolve split\n$=\u00b62-03 \u00b62 \u00b52 toccto\nf=b\nr=bench\nq=3\ni1=handing the measurement harness to the bench runner for the sweep"
+  },
+  {
+   "id": "e2-e12-04",
+   "kind": "ACK",
+   "wire": "d\ne1=f:m2-e12-03\n$=m2-e12-04 occ2b-e12 trace-occ2b-e12 tocewo\nf=bench\nr=b\nk=A\ns=1\nq=4\ni1=the harness is received and the sweep is queued on the bench lane"
+  },
+  {
+   "id": "e2-e12-05",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:\u00b612-sweep.txt!1\nn=freeze the winner\nc1=p0\nc2=nm\nc3=p0\nc4=qe\nc5=m8\nc6=nm\n$=\u00b62-05 \u00b62 \u00b52 tocjq0\nf=\u00a7b\nq=5\ni1=caching unchanged scores cuts the loop budget by forty percent\ni2=generation five converges on the same winner as generation nine\ni3=the fresh-group rule prevents exemplar memorization\ni4=the selection rule needs no change\ni5=the wire size of the winner is within two percent of OCC-1\ni6=the latency budget holds at the ninety-ninth percentile"
+  },
+  {
+   "id": "e2-e12-06",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=a:z:symbolic_comm/evolution-winner.json#2dlgd8go7539wo8jo68wu5d48dqnhakaqn2vb7xuks59e6f9e7\nv1=1\nc1=p0\n$=\u00b62-06 \u00b62 \u00b52 tocpp0\nf=\u00a7b\nq=6\ni1=the winner is frozen and logged with its checksum"
+  },
+  {
+   "id": "e2-e12-07",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=l:\u00a712-loop-profile.txt!1\ne2=b:\u00a712-gates.txt!1\n$=\u00b62-07 \u00b62 \u00b52 tocw9o\nf=\u00a7b\nk=E\ns=2\nq=7"
+  },
+  {
+   "id": "e2-e12-08",
+   "kind": "RESULT",
+   "wire": "d\ne1=b:\u00a712-gates.txt!1\nv1=1\nc1=qe\n$=\u00b62-08 \u00b62 \u00b52 tod5uo\nf=\u00a7b\nk=R\ns=2\nq=8\ni1=the evolution loop converges within budget and the frozen winner passes every gate\nvc=the frozen dialect winner passes all fidelity gates\nvs=+\nvm=cargo_test\nvr=reports/occ2b-e12-gates.txt"
+  },
+  {
+   "id": "e2-d01-01",
+   "kind": "TASK",
+   "wire": "d\nn=enumerate the version pairs|reproduce each offline|record the verdicts\n$=m2-d01-01 occ2b-d01 %occ2b-d01 to1jfc\nr=\u00a7c\nk=T\ns=0\ni1=run the daemon compatibility matrix across old and new client and daemon builds"
+  },
+  {
+   "id": "e2-d01-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=a:z:occ2opt/DAEMON-COMPAT.md#k752glq8nj35pkdx8exble6zobm9p3tqdja7ygjw70ao2117f\nv1=1\nn=reproduce the silent no-op pair\nc1=nm\n$=m2-d01-02 occ2b-d01 %occ2b-d01 to1jzc\nf=\u00a7c\nq=2\ni1=the matrix has four pairs: new client to old daemon and the three reverse combinations"
+  },
+  {
+   "id": "e2-d01-03",
+   "kind": "PROGRESS",
+   "wire": "d\nn=\u00a7 reverse pairs\n$=m2-d01-03 occ2b-d01 %occ2b-d01 to1lqo\nf=c\nr=d\nq=3\ni1=handing the reproduction scripts for the reverse pairs to worker d"
+  },
+  {
+   "id": "e2-d01-04",
+   "kind": "ACK",
+   "wire": "d\ne1=f:m2-d01-03\n$=m2-d01-04 occ2b-d01 trace-occ2b-d01 to1oso\nf=d\nr=c\nk=A\ns=1\nq=4\ni1=the scripts are received and queued after the current probe"
+  },
+  {
+   "id": "e2-d01-05",
+   "kind": "PROGRESS",
+   "wire": "d\nu=occ2b-e06\nc1=m8\n$=m2-d01-05 occ2b-d01 %occ2b-d01 to1rt0\nf=d\nq=5\ni1=the matrix depends on the schema version work to pin the capability bytes"
+  },
+  {
+   "id": "e2-d01-06",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=l:q:occ2b-d01-matrix-run.txt!1\ne2=b:q:occ2b-d01-repro.txt!1\n$=m2-d01-06 occ2b-d01 %occ2b-d01 to1v00\nf=\u00a7c\nk=E\ns=2\nq=6"
+  },
+  {
+   "id": "e2-d01-07",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:q:occ2b-d01-matrix-run.txt!1\nv1=1\nc1=p0\n$=m2-d01-07 occ2b-d01 %occ2b-d01 to1ydo\nf=\u00a7c\nq=7\ni1=six of seven scenarios reproduce offline with five distinct defects"
+  },
+  {
+   "id": "e2-d01-08",
+   "kind": "RESULT",
+   "wire": "d\ne1=l:q:occ2b-d01-matrix-run.txt!1\nv1=1\nc1=qe\n$=m2-d01-08 occ2b-d01 %occ2b-d01 to1yw0\nf=\u00a7c\nk=R\ns=2\nq=8\ni1=the matrix is complete; the silent no-op and the client-profile pollution are the two blocking defects\nvc=all four version pairs are exercised offline\nvs=+\nvm=manual_repro\nvr=reports/occ2b-d01-matrix-run.txt"
+  },
+  {
+   "id": "e2-d02-01",
+   "kind": "TASK",
+   "wire": "d\nn=reproduce the suppression|find the policy branch|add the regression test\n$=m2-d02-01 occ2b-d02 %occ2b-d02 to5zkc\nr=\u00a7a\nk=T\ns=0\ni1=fix the prune policy regression where verification messages are suppressed mid-chain"
+  },
+  {
+   "id": "e2-d02-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=b:q:occ2b-d02-prune-gate.txt!1\nv1=1\nn=inspect the policy branch\nc1=p0\n$=m2-d02-02 occ2b-d02 %occ2b-d02 to62ko\nf=\u00a7a\ns=5\nq=2\ni1=the prune gate is red; verification messages vanish when the next action list is empty"
+  },
+  {
+   "id": "e2-d02-03",
+   "kind": "CORRECTION",
+   "wire": "d\ne1=l:reports/occ2b-d02-first-reading.txt\ne2=l:reports/occ2b-d02-trace.txt!1\nv1=1\nv2=2\nc1=600\nc2=850\n$=m2-d02-03 occ2b-d02 trace-occ2b-d02 to65wo\nf=agent://worker-a\nr=daemon://coordinator\nk=C\ns=1\nq=3\ni1=the first reading blamed the consolidation rules\ni2=the trace shows the prune rules are the actual cause; the consolidation output is correct"
+  },
+  {
+   "id": "e2-d02-04",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:\u00b5prune.rs@40-88~309x1be\nv1=1\nn=narrow the drop condition\nc1=p0\n$=m2-d02-04 occ2b-d02 %occ2b-d02 to68n0\nf=\u00a7a\nq=4\ni1=the policy branch drops verification messages when no next action follows"
+  },
+  {
+   "id": "e2-d02-05",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=c:4f3dc4f83!1\n$=m2-d02-05 occ2b-d02 %occ2b-d02 to69uc\nf=\u00a7a\nk=E\ns=2\nq=5"
+  },
+  {
+   "id": "e2-d02-06",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=b:q:occ2b-d02-prune-green.txt!1\nv1=1\nc1=nm\n$=m2-d02-06 occ2b-d02 %occ2b-d02 to6bbo\nf=\u00a7a\nq=6\ni1=the drop condition now requires a verified terminal state before suppressing"
+  },
+  {
+   "id": "e2-d02-07",
+   "kind": "RESULT",
+   "wire": "d\ne1=b:q:occ2b-d02-prune-green.txt!1\nv1=1\nc1=qe\n$=m2-d02-07 occ2b-d02 %occ2b-d02 to6dx0\nf=\u00a7a\nk=R\ns=2\nq=7\ni1=the prune policy regression is fixed with a pinned regression test\nvc=verification messages survive the prune chain\nvs=+\nvm=cargo_test\nvr=reports/occ2b-d02-prune-green.txt"
+  },
+  {
+   "id": "e2-d03-01",
+   "kind": "TASK",
+   "wire": "d\nn=profile the encode path|find the hot allocation|re-measure\n$=m2-d03-01 occ2b-d03 %occ2b-d03 to0tvc\nr=\u00a7e\nk=T\ns=0\ni1=rework the encode latency budget so the ninety-ninth percentile stays under the cap"
+  },
+  {
+   "id": "e2-d03-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:q:occ2b-d03-profile.txt!1\nv1=1\nn=eliminate the copies\nc1=nm\n$=m2-d03-02 occ2b-d03 %occ2b-d03 to0uh0\nf=\u00a7e\nq=2\ni1=the profile shows the wire build dominates with repeated string copies"
+  },
+  {
+   "id": "e2-d03-03",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=b:q:occ2b-d03-first-fix.txt!1\n$=m2-d03-03 occ2b-d03 %occ2b-d03 to0wu0\nf=\u00a7e\nk=E\ns=2\nq=3"
+  },
+  {
+   "id": "e2-d03-04",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:q:occ2b-d03-tail-analysis.txt!1\nv1=1\nc1=nm\n$=m2-d03-04 occ2b-d03 %occ2b-d03 to0y1c\nf=\u00a7e\nq=4\ni1=the tail comes from the fault injection path which only runs on decode errors"
+  },
+  {
+   "id": "e2-d03-05",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2b-d03-bench2.txt!1\nv1=1\nn=re-measure the full budget\nc1=p0\n$=m2-d03-05 occ2b-d03 %occ2b-d03 to10ho\nf=\u00a7e\nq=5\ni1=the second fix short-circuits the fault path for clean messages"
+  },
+  {
+   "id": "e2-d03-06",
+   "kind": "RESULT",
+   "wire": "d\ne1=t:j:occ2b-d03-bench2.txt!1\nv1=1\nn=profile the mixed traffic tail\nc1=m8\n$=m2-d03-06 occ2b-d03 %occ2b-d03 to1330\nf=\u00a7e\nk=R\ns=3\nq=6\ni1=the encode path meets the budget on the corpus profile; the mixed traffic profile still shows a tail above the cap"
+  },
+  {
+   "id": "e2-d03-07",
+   "kind": "ACK",
+   "wire": "d\n$=m2-d03-07 occ2b-d03 trace-occ2b-d03 to15mo\nf=daemon://coordinator\nr=e\nk=A\ns=1\nq=7\ni1=the partial scope is acknowledged; the mixed traffic tail is scheduled next"
+  },
+  {
+   "id": "e2-d04-01",
+   "kind": "TASK",
+   "wire": "d\nn=measure the per-item cost|project the full run|report the headroom\n$=m2-d04-01 occ2b-d04 %occ2b-d04 toedz0\nr=\u00a7f\nk=T\ns=0\ni1=check the capacity headroom for the corpus evaluation under the four subagent cap"
+  },
+  {
+   "id": "e2-d04-02",
+   "kind": "PROGRESS",
+   "wire": "d\nn=project the full run\nc1=p0\n$=m2-d04-02 occ2b-d04 %occ2b-d04 toeguc\nf=\u00a7f\nq=2\ni1=the per-item cost is measured"
+  },
+  {
+   "id": "e2-d04-03",
+   "kind": "PROGRESS",
+   "wire": "d\nn=collect the measurement receipt\nc1=go\n$=m2-d04-03 occ2b-d04 %occ2b-d04 toekbc\nf=\u00a7f\nq=3\ni1=the projection is drafted but the receipt for the per-item measurement is missing so the numbers cannot be pinned"
+  },
+  {
+   "id": "e2-d04-04",
+   "kind": "REQUEST_DETAIL",
+   "wire": "d\n$=m2-d04-04 occ2b-d04 %occ2b-d04 toekvc\nr=f\nk=Q\nq=4\ni1=the per-item measurement receipt is needed to pin the projection"
+  },
+  {
+   "id": "e2-d04-05",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=t:j:occ2b-d04-per-item.txt!1\n$=m2-d04-05 occ2b-d04 %occ2b-d04 toenk0\nf=\u00a7f\nk=E\ns=2\nq=5"
+  },
+  {
+   "id": "e2-d04-06",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2b-d04-per-item.txt!1\nv1=1\nc1=nm\n$=m2-d04-06 occ2b-d04 %occ2b-d04 toep1c\nf=\u00a7f\nq=6\ni1=the projection shows the full run fits inside the cap with one slot to spare"
+  },
+  {
+   "id": "e2-d04-07",
+   "kind": "RESULT",
+   "wire": "d\ne1=t:j:occ2b-d04-per-item.txt!1\nv1=1\nc1=qe\n$=m2-d04-07 occ2b-d04 %occ2b-d04 toerjc\nf=\u00a7f\nk=R\ns=2\nq=7\ni1=the headroom check passes; the full run fits the four subagent cap with margin\nvc=the projected run fits the subagent cap\nvs=+\nvm=manual_projection\nvr=receipts/occ2b-d04-per-item.txt"
+  },
+  {
+   "id": "e2-d05-01",
+   "kind": "TASK",
+   "wire": "d\nn=collect the per-message token counts|break them down by field|report the drivers\n$=m2-d05-01 occ2b-d05 %occ2b-d05 to8jnc\nr=a:bench-runner\nk=T\ns=0\ni1=audit the token cost of the current message pipeline end to end"
+  },
+  {
+   "id": "e2-d05-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:q:occ2b-d05-audit-switch.txt!1\nv1=1\nn=collect the counts\nc1=p0\n$=m2-d05-02 occ2b-d05 %occ2b-d05 to8lvc\nf=a:bench-runner\nq=2\ni1=the audit session switched from glm-5.3-flash to glm-5.3 for the long-context items; the audit continues on the new model"
+  },
+  {
+   "id": "e2-d05-03",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2b-d05-counts.txt!1\nv1=1\nc1=nm\n$=m2-d05-03 occ2b-d05 %occ2b-d05 to8oz0\nf=a:bench-runner\nq=3\ni1=the per-message token counts are collected for both models"
+  },
+  {
+   "id": "e2-d05-04",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2b-d05-counts.txt!1\nn=write the report\nc1=qe\nc2=p0\nc3=nm\nc4=p0\nc5=p0\nc6=m8\n$=m2-d05-04 occ2b-d05 %occ2b-d05 to8po0\nf=a:bench-runner\nq=4\ni1=the per-message codebook alone explains the largest share of the increase\ni2=the dual payload doubles the durable bytes but is stripped from prompts\ni3=the symbolic body itself is slightly larger than OCC-1\ni4=once-per-session codebook injection beats OCC-1 from the third message on session-profile traffic\ni5=on corpus-profile traffic the once-per-session variant never beats OCC-1\ni6=the prompt body remains the second largest driver"
+  },
+  {
+   "id": "e2-d05-05",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=a:q:occ2opt/CODEBOOK-COST.md#3wcj2ozorffo09wv6tk6kmtswqxlaivnrsgmb8jvawe7gcn8fd\ne2=t:j:occ2b-d05-counts.txt!1\n$=m2-d05-05 occ2b-d05 %occ2b-d05 to8t1o\nf=a:bench-runner\nk=E\ns=2\nq=5"
+  },
+  {
+   "id": "e2-d05-06",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=b:q:occ2b-d05-gates.txt!1\ne2=a:q:occ2opt/CODEBOOK-COST.md#222aj4k6jqih8cueznlw26kyfymtn1gorarmxnh5zn4gcrmm4d\ne3=t:j:occ2b-d05-counts.txt!1\nv1=1,2,3\nc1=p0\n$=m2-d05-06 occ2b-d05 %occ2b-d05 to8tp0\nf=a:bench-runner\nq=6\ni1=the breakdown cross-checks against the gate receipts and the analysis artifacts"
+  },
+  {
+   "id": "e2-d05-07",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=a:q:occ2opt/CODEBOOK-COST.md\nv1=1\nc1=p0\n$=m2-d05-07 occ2b-d05 %occ2b-d05 to8uy0\nf=a:bench-runner\nq=7\ni1=the report is drafted with the verdict and the second-order issue for dialect design"
+  },
+  {
+   "id": "e2-d05-08",
+   "kind": "RESULT",
+   "wire": "d\ne1=a:q:occ2opt/CODEBOOK-COST.md#2p7ajyf85b7xr50lgp8loevopz5kc0pzj65ke7obs4zthupt9y\nv1=1\nc1=qe\n$=m2-d05-08 occ2b-d05 %occ2b-d05 to8ww0\nf=a:bench-runner\nk=R\ns=2\nq=8\ni1=the token cost audit is complete; the codebook injection is confirmed as the primary driver"
+  },
+  {
+   "id": "e2-d06-01",
+   "kind": "TASK",
+   "wire": "d\nn=measure the current tail|pick the timeout|define the release rule\n$=m2-d06-01 occ2b-d06 %occ2b-d06 tnvx2c\nr=\u00a7b\nk=T\ns=0\ni1=define the worker timeout policy for delegated subtasks so slow lanes release their slots"
+  },
+  {
+   "id": "e2-d06-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:q:occ2b-d06-tail.txt!1\nv1=1\nn=draft the release rule\nc1=nm\n$=m2-d06-02 occ2b-d06 %occ2b-d06 tnvyjo\nf=\u00a7b\nq=2\ni1=the current tail shows two lanes holding slots past their useful life"
+  },
+  {
+   "id": "e2-d06-03",
+   "kind": "CANCELLED",
+   "wire": "d\n$=m2-d06-03 occ2b-d06 trace-occ2b-d06 tnw060\nf=daemon://coordinator\nr=b\nk=X\ns=6\nq=3\ni1=the assignment is cancelled because the lane is needed for the timeout measurement itself"
+  },
+  {
+   "id": "e2-d06-04",
+   "kind": "TASK",
+   "wire": "d\nn=resume from the tail measurement\n$=m2-d06-04 occ2b-d06b %occ2b-d06 tnw22c\np=occ2b-d06\nr=d\nk=T\ns=0\nq=4\ni1=the timeout policy work is reissued to the free worker under a child task id"
+  },
+  {
+   "id": "e2-d06-05",
+   "kind": "ACK",
+   "wire": "d\ne1=f:m2-d06-04\n$=m2-d06-05 occ2b-d06 trace-occ2b-d06 tnw3qc\nf=d\nr=daemon://coordinator\nk=A\ns=1\nq=5\ni1=the reissued task is acknowledged and the tail measurement was received"
+  },
+  {
+   "id": "e2-d06-06",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:q:occ2b-d06b-policy.txt!1\nv1=1\nc1=p0\n$=m2-d06-06 occ2b-d06 %occ2b-d06 tnw48o\nf=d\nq=6\ni1=the timeout is picked from the tail distribution and the release rule is written"
+  },
+  {
+   "id": "e2-d06-07",
+   "kind": "RESULT",
+   "wire": "d\ne1=l:q:occ2b-d06b-policy.txt!1\nv1=1\nc1=qe\n$=m2-d06-07 occ2b-d06 %occ2b-d06 tnw6vo\nf=d\nk=R\ns=2\nq=7\ni1=the timeout policy is defined and the slow lanes release their slots under it"
+  },
+  {
+   "id": "e2-d07-01",
+   "kind": "TASK",
+   "wire": "d\nn=define the consolidation rule|implement the collapse|verify the replay\n$=m2-d07-01 occ2b-d07 %occ2b-d07 tohizc\nr=\u00a7c\nk=T\ns=0\ni1=consolidate the long session traces so repeated updates collapse into a single durable record"
+  },
+  {
+   "id": "e2-d07-02",
+   "kind": "PROGRESS",
+   "wire": "d\nn=implement the collapse\nc1=p0\n$=m2-d07-02 occ2b-d07 %occ2b-d07 tohlrc\nf=\u00a7c\nq=2\ni1=the consolidation rule is defined"
+  },
+  {
+   "id": "e2-d07-03",
+   "kind": "PROGRESS",
+   "wire": "d\nn=implement the collapse\nc1=p0\n$=m2-d07-03 occ2b-d07 %occ2b-d07 tohqhc\nf=\u00a7c\nq=3\ni1=the consolidation rule is defined"
+  },
+  {
+   "id": "e2-d07-04",
+   "kind": "ACK",
+   "wire": "d\n$=m2-d07-04 occ2b-d07 trace-occ2b-d07 tohy10\nf=daemon://coordinator\nr=c\nk=A\ns=1\nq=4\ni1=the duplicate update was received; the consolidation rule applies to it"
+  },
+  {
+   "id": "e2-d07-05",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:\u00b5consolidation.rs@20-70~309x1be\nv1=1\nn=verify the replay\nc1=nm\n$=m2-d07-05 occ2b-d07 %occ2b-d07 toi0t0\nf=\u00a7c\nq=5\ni1=the collapse is implemented and the repeated updates merge into one durable record"
+  },
+  {
+   "id": "e2-d07-06",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=b:q:occ2b-d07-replay.txt!1\ne2=l:q:occ2b-d07-collapse.txt!1\n$=m2-d07-06 occ2b-d07 %occ2b-d07 toi9qo\nf=\u00a7c\nk=E\ns=2\nq=6"
+  },
+  {
+   "id": "e2-d07-07",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=b:q:occ2b-d07-replay.txt!1\nv1=1\nc1=p0\n$=m2-d07-07 occ2b-d07 %occ2b-d07 toiib0\nf=\u00a7c\nq=7\ni1=the replay of the consolidated trace matches the original state machine"
+  },
+  {
+   "id": "e2-d07-08",
+   "kind": "RESULT",
+   "wire": "d\ne1=b:q:occ2b-d07-replay.txt!1\nv1=1\nc1=qe\n$=m2-d07-08 occ2b-d07 %occ2b-d07 toik40\nf=\u00a7c\nk=R\ns=2\nq=8\ni1=the trace consolidation is done and the replay is verified\nvc=the consolidated trace replays to the same state\nvs=+\nvm=cargo_test\nvr=reports/occ2b-d07-replay.txt"
+  },
+  {
+   "id": "e2-d08-01",
+   "kind": "TASK",
+   "wire": "d\nn=list the stale digests|recompute them|record the mapping\n$=m2-d08-01 occ2b-d08 %occ2b-d08 to64no\nr=\u00a7a\nk=T\ns=0\ni1=rotate the evidence digests after the repository rebase so old receipts stop matching"
+  },
+  {
+   "id": "e2-d08-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:\u00b5delta.rs@14-61#5l294r0jxbhszodobl7lewnj7v13iu4tx1dx2s7sx1p2eyd6ur~j9p0iia\nv1=1\nn=compare against the stored receipts\nc1=nm\n$=m2-d08-02 occ2b-d08 %occ2b-d08 to65jc\nf=\u00a7a\nq=2\ni1=the digest list is recomputed for the rebased sources"
+  },
+  {
+   "id": "e2-d08-03",
+   "kind": "PROGRESS",
+   "wire": "d\nn=find the original runs or re-execute them\nc1=jg\n$=m2-d08-03 occ2b-d08 %occ2b-d08 to67hc\nf=\u00a7a\nq=3\ni1=two stored digests no longer match any recomputed value and the original tool runs are gone"
+  },
+  {
+   "id": "e2-d08-04",
+   "kind": "REQUEST_DETAIL",
+   "wire": "d\n$=m2-d08-04 occ2b-d08 %occ2b-d08 to6ajc\nr=a\nk=Q\nq=4\ni1=the original tool run logs are needed to re-derive the two stale digests"
+  },
+  {
+   "id": "e2-d08-05",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=t:j:occ2b-d08-digest-map.txt!1\n$=m2-d08-05 occ2b-d08 %occ2b-d08 to6cfo\nf=\u00a7a\nk=E\ns=2\nq=5"
+  },
+  {
+   "id": "e2-d08-06",
+   "kind": "CORRECTION",
+   "wire": "d\ne1=t:receipts/occ2b-d08-digest-map.txt!1\nv1=1\nc1=900\n$=m2-d08-06 occ2b-d08 trace-occ2b-d08 to6foc\nf=agent://worker-a\nr=daemon://coordinator\nk=C\ns=1\nq=6\ni1=the two digests were rotated by the rebase itself; the mapping table recovers them without re-execution"
+  },
+  {
+   "id": "e2-d08-07",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2b-d08-digest-map.txt!1\nv1=1\nc1=qe\n$=m2-d08-07 occ2b-d08 %occ2b-d08 to6gu0\nf=\u00a7a\nq=7\ni1=all digests verify against the rebased tree"
+  },
+  {
+   "id": "e2-d08-08",
+   "kind": "RESULT",
+   "wire": "d\ne1=t:j:occ2b-d08-digest-map.txt!1\nv1=1\nc1=qe\n$=m2-d08-08 occ2b-d08 %occ2b-d08 to6jso\nf=\u00a7a\nk=R\ns=2\nq=8\ni1=the evidence digests are rotated and verified against the rebased tree"
+  },
+  {
+   "id": "e2-h01-01",
+   "kind": "TASK",
+   "wire": "d\nn=clear the cache|replay the corpus|compare against the warm run\n$=m2-h01-01 occ2b-h01 %occ2b-h01 toh5k0\nr=\u00a7b\nk=T\ns=0\ni1=replay the session corpus from a cold cache to verify the amortized codebook path"
+  },
+  {
+   "id": "e2-h01-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:q:occ2b-h01-cold-run.txt!1\nv1=1\nn=compare the totals\nc1=nm\n$=m2-h01-02 occ2b-h01 %occ2b-h01 toh8fc\nf=\u00a7b\nq=2\ni1=the cold replay is slower only on the first two messages as designed"
+  },
+  {
+   "id": "e2-h01-03",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2b-h01-compare.txt!1\nv1=1\nc1=p0\n$=m2-h01-03 occ2b-h01 %occ2b-h01 toha50\nf=\u00a7b\nq=3\ni1=the totals match the warm run within one percent"
+  },
+  {
+   "id": "e2-h01-04",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=l:q:occ2b-h01-cold-run.txt!1\ne2=l:q:occ2b-h01-warm-run.txt!1\n$=m2-h01-04 occ2b-h01 %occ2b-h01 tohbhc\nf=\u00a7b\nk=E\ns=2\nq=4"
+  },
+  {
+   "id": "e2-h01-05",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2b-h01-compare.txt!1\nv1=1\nc1=p0\n$=m2-h01-05 occ2b-h01 %occ2b-h01 tohdzc\nf=\u00a7b\nq=5\ni1=the first-message penalty is exactly one codebook injection"
+  },
+  {
+   "id": "e2-h01-06",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:q:occ2b-h01-cold-run.txt!1\nv1=1\nc1=p0\n$=m2-h01-06 occ2b-h01 %occ2b-h01 tohe9c\nf=\u00a7b\nq=6\ni1=the replay completes without cache drift across sessions"
+  },
+  {
+   "id": "e2-h01-07",
+   "kind": "RESULT",
+   "wire": "d\ne1=t:j:occ2b-h01-compare.txt!1\nv1=1\nc1=qe\n$=m2-h01-07 occ2b-h01 %occ2b-h01 tohhn0\nf=\u00a7b\nk=R\ns=2\nq=7\ni1=the cold cache replay matches the warm run and the amortization holds\nvc=cold and warm replays agree within one percent\nvs=+\nvm=manual_replay\nvr=receipts/occ2b-h01-compare.txt"
+  },
+  {
+   "id": "e2-h02-01",
+   "kind": "TASK",
+   "wire": "d\nn=pick the longest messages|apply the trial codec|measure the savings\n$=m2-h02-01 occ2b-h02 %occ2b-h02 to4luc\nr=\u00a7d\nk=T\ns=0\ni1=trial the wire compression on the longest messages in the corpus"
+  },
+  {
+   "id": "e2-h02-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=a:\u00bfmsgs_corpus2_holdout.json\nv1=1\nn=apply the trial codec\nc1=m8\n$=m2-h02-02 occ2b-h02 %occ2b-h02 to4np0\nf=\u00a7d\nq=2\ni1=the longest messages cluster in the large-finding scenarios"
+  },
+  {
+   "id": "e2-h02-03",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=s:\u00b5occ1.rs@1-60#1rc33lflxgf2hyvk8043cstrmsqxu5eoqd8qthkgl50ztm9apb~309x1be\ne2=s:\u00b5contract.rs@20-90#60cgwiwbez8g8xpy4vib0y8bfr5j3d1webmf15era90d3dw47e~309x1be\nv1=1,2\nc1=nm\n$=m2-h02-03 occ2b-h02 %occ2b-h02 to4nxc\nf=\u00a7d\nq=3\ni1=the trial codec cuts the largest messages by a fifth without breaking the field grammar"
+  },
+  {
+   "id": "e2-h02-04",
+   "kind": "PROGRESS",
+   "wire": "d\nn=record the crossover\nc1=p0\n$=m2-h02-04 occ2b-h02 %occ2b-h02 to4qpc\nf=\u00a7d\nq=4\ni1=the short messages see no benefit"
+  },
+  {
+   "id": "e2-h02-05",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=t:j:occ2b-h02-compression.txt!1\ne2=n:\u00b5occ1.rs@88-120\n$=m2-h02-05 occ2b-h02 %occ2b-h02 to4sa0\nf=\u00a7d\nk=E\ns=2\nq=5"
+  },
+  {
+   "id": "e2-h02-06",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2b-h02-compression.txt!1\nv1=1\nc1=nm\n$=m2-h02-06 occ2b-h02 %occ2b-h02 to4ud0\nf=\u00a7d\nq=6\ni1=the crossover sits at six hundred bytes; below it the header cost dominates"
+  },
+  {
+   "id": "e2-h02-07",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=b:q:occ2b-h02-roundtrip.txt!1\nv1=1\nc1=p0\n$=m2-h02-07 occ2b-h02 %occ2b-h02 to4vpc\nf=\u00a7d\nq=7\ni1=the round trip holds on every trialed message"
+  },
+  {
+   "id": "e2-h02-08",
+   "kind": "RESULT",
+   "wire": "d\ne1=t:j:occ2b-h02-compression.txt!1\nv1=1\nc1=qe\n$=m2-h02-08 occ2b-h02 %occ2b-h02 to4wjc\nf=\u00a7d\nk=R\ns=2\nq=8\ni1=the compression trial is recorded with its crossover and the round trip is intact"
+  },
+  {
+   "id": "e2-h03-01",
+   "kind": "TASK",
+   "wire": "d\nn=craft the probe message|send it to the foreign daemon|record the reaction\n$=m2-h03-01 occ2b-h03 %occ2b-h03 tnvwz0\nr=\u00a7c\nk=T\ns=0\ni1=probe how a foreign daemon reacts to our OCC-2 session messages"
+  },
+  {
+   "id": "e2-h03-02",
+   "kind": "PROGRESS",
+   "wire": "d\nn=\u00a7 reverse probe\n$=m2-h03-02 occ2b-h03 %occ2b-h03 tnvz8o\nf=c\nr=e\nq=2\ni1=handing the probe result to worker e for the reverse direction"
+  },
+  {
+   "id": "e2-h03-03",
+   "kind": "ACK",
+   "wire": "d\ne1=f:m2-h03-03\n$=m2-h03-03 occ2b-h03 trace-occ2b-h03 tnw100\nf=e\nr=c\nk=A\ns=1\nq=3\ni1=the probe result is received and the reverse probe is queued"
+  },
+  {
+   "id": "e2-h03-04",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:q:occ2b-h03-drop.txt!1\nv1=1\nc1=m8\n$=m2-h03-04 occ2b-h03 %occ2b-h03 tnw48o\nf=e\nq=4\ni1=the foreign daemon silently drops the occ2 message body and stores only the plain fallback"
+  },
+  {
+   "id": "e2-h03-05",
+   "kind": "PROGRESS",
+   "wire": "d\nn=request the foreign side logs\nc1=go\n$=m2-h03-05 occ2b-h03 %occ2b-h03 tnw7mc\nf=\u00a7c\nq=5\ni1=no error receipt exists on the foreign side so the drop reason is not yet provable"
+  },
+  {
+   "id": "e2-h03-06",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=l:q:occ2b-h03-drop.txt!1\n$=m2-h03-06 occ2b-h03 %occ2b-h03 tnw93o\nf=\u00a7c\nk=E\ns=2\nq=6"
+  },
+  {
+   "id": "e2-h03-07",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:q:occ2b-h03-foreign-logs.txt!1\nv1=1\nc1=nm\n$=m2-h03-07 occ2b-h03 %occ2b-h03 tnwc2c\nf=\u00a7c\nq=7\ni1=the foreign logs arrive and confirm the schema mismatch as the drop cause"
+  },
+  {
+   "id": "e2-h03-08",
+   "kind": "RESULT",
+   "wire": "d\ne1=l:q:occ2b-h03-foreign-logs.txt!1\nv1=1\nc1=p0\n$=m2-h03-08 occ2b-h03 %occ2b-h03 tnwfg0\nf=\u00a7c\nk=R\ns=2\nq=8\ni1=the foreign daemon drops occ2 bodies on a schema mismatch and keeps the plain fallback"
+  },
+  {
+   "id": "e2-h04-01",
+   "kind": "TASK",
+   "wire": "d\nn=list the claimed gates|match each claim to a receipt|report the gaps\n$=m2-h04-01 occ2b-h04 %occ2b-h04 to9nic\nr=a:security-auditor\nk=T\ns=0\ni1=audit the verification receipts for the gate runs claimed in the last report"
+  },
+  {
+   "id": "e2-h04-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=a:q:occ2opt/BASELINE-GATES.md#4oicfa5m3texi22axe6d36t359hc42125c8e7908kzrlnszhoi\nv1=1\nn=chase the missing receipt\nc1=nm\n$=m2-h04-02 occ2b-h04 %occ2b-h04 to9pi0\nf=a:security-auditor\nq=2\ni1=eleven of twelve claims have receipts"
+  },
+  {
+   "id": "e2-h04-03",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:q:occ2b-h04-missing.txt!1\nv1=1\nn=trace the log path\nc1=p0\n$=m2-h04-03 occ2b-h04 %occ2b-h04 to9pvc\nf=a:security-auditor\ns=5\nq=3\ni1=the remaining claim fails its receipt check; the referenced log file does not exist"
+  },
+  {
+   "id": "e2-h04-04",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=a:q:occ2opt/BASELINE-GATES.md#63h8oxq078onhy5cxhwyve8v3pp4oz5q5ifcs6hfwwqzdggs6f\ne2=t:j:occ2b-h04-index.txt!1\nv1=1\nv2=2\nc1=go\nc2=m8\n$=m2-h04-04 occ2b-h04 %occ2b-h04 to9q70\nf=a:security-auditor\nq=4\ni1=the claim text says the log lives under reports\ni2=the receipts index says the log was written to the scratch directory"
+  },
+  {
+   "id": "e2-h04-05",
+   "kind": "PROGRESS",
+   "wire": "d\nn=mark the claim unverified\nc1=ku\n$=m2-h04-05 occ2b-h04 %occ2b-h04 to9slo\nf=a:security-auditor\nq=5\ni1=the referenced log cannot be produced from either location so the claim stays unverified"
+  },
+  {
+   "id": "e2-h04-06",
+   "kind": "CORRECTION",
+   "wire": "d\ne1=t:receipts/occ2b-h04-scratch-copy.txt!1\nv1=1\nc1=900\n$=m2-h04-06 occ2b-h04 trace-occ2b-h04 to9vuc\nf=agent://security-auditor\nr=daemon://coordinator\nk=C\ns=1\nq=6\ni1=the scratch copy was found after all; the claim verifies and the earlier failure is retracted"
+  },
+  {
+   "id": "e2-h04-07",
+   "kind": "RESULT",
+   "wire": "d\ne1=t:j:occ2b-h04-scratch-copy.txt!1\nv1=1\nc1=qe\n$=m2-h04-07 occ2b-h04 %occ2b-h04 to9w2o\nf=a:security-auditor\nk=R\ns=2\nq=7\ni1=all twelve claims verify; one needed the scratch copy and is now receipted"
+  },
+  {
+   "id": "e2-h05-01",
+   "kind": "TASK",
+   "wire": "d\nn=drain the queue|move the window|verify the drained items\n$=m2-h05-01 occ2b-h05 %occ2b-h05 toek6c\nr=\u00a7e\nk=T\ns=0\ni1=migrate the scheduled maintenance window without dropping queued work"
+  },
+  {
+   "id": "e2-h05-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:q:occ2b-h05-switch.txt!1\nv1=1\nn=drain the queue\nc1=nm\n$=m2-h05-02 occ2b-h05 %occ2b-h05 toemec\nf=\u00a7e\nq=2\ni1=the migration session switched from deepseek-v4-pro to glm-5.3 for the window operations; the queue state carries over unchanged"
+  },
+  {
+   "id": "e2-h05-03",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:q:occ2b-h05-drain.txt!1\nv1=1\nc1=p0\n$=m2-h05-03 occ2b-h05 %occ2b-h05 toepeo\nf=\u00a7e\nq=3\ni1=the queue drains and the window moves with no lost items"
+  },
+  {
+   "id": "e2-h05-04",
+   "kind": "PROGRESS",
+   "wire": "d\nn=wait for the consolidation result\nu=occ2b-d07\nc1=m8\n$=m2-h05-04 occ2b-h05 %occ2b-h05 toeqfc\nf=\u00a7e\nq=4\ni1=the verification step now depends on the trace consolidation work to compare queue states"
+  },
+  {
+   "id": "e2-h05-05",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=l:q:occ2b-h05-drain.txt!1\n$=m2-h05-05 occ2b-h05 %occ2b-h05 toeqpc\nf=\u00a7e\nk=E\ns=2\nq=5"
+  },
+  {
+   "id": "e2-h05-06",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=b:q:occ2b-h05-replay.txt!1\nv1=1\nc1=nm\n$=m2-h05-06 occ2b-h05 %occ2b-h05 toetwc\nf=\u00a7e\nq=6\ni1=the drained items replay to the same queue state under the consolidation rules"
+  },
+  {
+   "id": "e2-h05-07",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=l:q:occ2b-h05-window.txt!1\nv1=1\nc1=p0\n$=m2-h05-07 occ2b-h05 %occ2b-h05 toevzc\nf=\u00a7e\nq=7\ni1=the new window holds and no work is dropped"
+  },
+  {
+   "id": "e2-h05-08",
+   "kind": "RESULT",
+   "wire": "d\ne1=l:q:occ2b-h05-window.txt!1\nv1=1\nc1=qe\n$=m2-h05-08 occ2b-h05 %occ2b-h05 toeyo0\nf=\u00a7e\nk=R\ns=2\nq=8\ni1=the maintenance window migration is complete with the queue intact"
+  },
+  {
+   "id": "e2-h06-01",
+   "kind": "TASK",
+   "wire": "d\nn=assess the branch state|decide revive or close|record the outcome\n$=m2-h06-01 occ2b-h06 %occ2b-h06 tnvf5c\nr=\u00a7f\nk=T\ns=0\ni1=revive the abandoned feature branch or close it with a partial record"
+  },
+  {
+   "id": "e2-h06-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=c:ce8480d59!1\nv1=1\nn=attempt the rebase\nc1=nm\n$=m2-h06-02 occ2b-h06 %occ2b-h06 tnvhnc\nf=\u00a7f\nq=2\ni1=the branch is four weeks stale and conflicts with the current main"
+  },
+  {
+   "id": "e2-h06-03",
+   "kind": "RESULT",
+   "wire": "d\ne1=b:q:occ2b-h06-rebase.txt!1\nv1=1\nn=split the surviving parts\nc1=m8\n$=m2-h06-03 occ2b-h06 %occ2b-h06 tnvjyo\nf=\u00a7f\nk=R\ns=3\nq=3\ni1=the rebase lands but two features on the branch no longer apply; the record stays partial"
+  },
+  {
+   "id": "e2-h06-04",
+   "kind": "CANCELLED",
+   "wire": "d\n$=m2-h06-04 occ2b-h06 trace-occ2b-h06 tnvncc\nf=daemon://coordinator\nr=f\nk=X\ns=6\nq=4\ni1=the branch work is cancelled; the surviving parts move to a fresh task"
+  },
+  {
+   "id": "e2-h06-05",
+   "kind": "TASK",
+   "wire": "d\nn=port the two surviving features\n$=m2-h06-05 occ2b-h06b %occ2b-h06 tnvnwc\np=occ2b-h06\nr=a\nk=T\ns=0\nq=5\ni1=the surviving parts are reissued under a child task id to the free worker"
+  },
+  {
+   "id": "e2-h06-06",
+   "kind": "ACK",
+   "wire": "d\ne1=f:m2-h06-05\n$=m2-h06-06 occ2b-h06 trace-occ2b-h06 tnvo80\nf=a\nr=daemon://coordinator\nk=A\ns=1\nq=6\ni1=the reissued task is acknowledged and the rebase record was received"
+  },
+  {
+   "id": "e2-h06-07",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=b:q:occ2b-h06b-port.txt!1\nv1=1\nc1=nm\n$=m2-h06-07 occ2b-h06 %occ2b-h06 tnvoqc\nf=a\nq=7\ni1=the first surviving feature ports cleanly"
+  },
+  {
+   "id": "e2-h06-08",
+   "kind": "RESULT",
+   "wire": "d\ne1=c:f37ed6a79!1\nv1=1\nc1=p0\n$=m2-h06-08 occ2b-h06 %occ2b-h06 tnvpfc\nf=a\nk=R\ns=2\nq=8\ni1=both surviving features are ported and the abandoned branch is closed with a partial record"
+  },
+  {
+   "id": "e2-h07-01",
+   "kind": "TASK",
+   "wire": "d\nn=select the longest traces|archive with dedup metadata|verify the restore\n$=m2-h07-01 occ2b-h07 %occ2b-h07 toehyc\nr=\u00a7a\nk=T\ns=0\ni1=archive the longest session traces with their repeated updates preserved"
+  },
+  {
+   "id": "e2-h07-02",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2b-h07-selection.txt!1\nv1=1\nn=archive with dedup metadata\nc1=nm\n$=m2-h07-02 occ2b-h07 %occ2b-h07 toemco\nf=\u00a7a\nq=2\ni1=the longest traces are selected by message count"
+  },
+  {
+   "id": "e2-h07-03",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2b-h07-selection.txt!1\nv1=1\nn=verify the restore\nc1=nm\n$=m2-h07-03 occ2b-h07 %occ2b-h07 toesf0\nf=\u00a7a\nq=3\ni1=the traces are archived with the repeated updates preserved"
+  },
+  {
+   "id": "e2-h07-04",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=t:j:occ2b-h07-selection.txt!1\nv1=1\nn=verify the restore\nc1=nm\n$=m2-h07-04 occ2b-h07 %occ2b-h07 tof1q0\nf=\u00a7a\nq=4\ni1=the traces are archived with the repeated updates preserved"
+  },
+  {
+   "id": "e2-h07-05",
+   "kind": "ACK",
+   "wire": "d\n$=m2-h07-05 occ2b-h07 trace-occ2b-h07 tofck0\nf=daemon://coordinator\nr=a\nk=A\ns=1\nq=5\ni1=the duplicate archival notice was received; the dedup metadata covers it"
+  },
+  {
+   "id": "e2-h07-06",
+   "kind": "PROGRESS",
+   "wire": "d\ne1=b:q:occ2b-h07-restore.txt!1\nn=sign off the archive\nc1=p0\nc2=nm\nc3=p0\nc4=p0\nc5=qe\nc6=nm\n$=m2-h07-06 occ2b-h07 %occ2b-h07 tofkno\nf=\u00a7a\nq=6\ni1=the archive preserves all nine message kinds\ni2=the repeated updates restore as distinct messages with shared content digests\ni3=the evidence chains restore with their line ranges\ni4=the verification records restore with their receipts\ni5=the trace ids and sequence numbers restore without gaps\ni6=the restore time stays under the archival budget"
+  },
+  {
+   "id": "e2-h07-07",
+   "kind": "EVIDENCE",
+   "wire": "d\ne1=a:z:occ2opt/trace-archive/\ne2=b:q:occ2b-h07-restore.txt!1\n$=m2-h07-07 occ2b-h07 %occ2b-h07 tofnko\nf=\u00a7a\nk=E\ns=2\nq=7"
+  },
+  {
+   "id": "e2-h07-08",
+   "kind": "RESULT",
+   "wire": "d\ne1=b:q:occ2b-h07-restore.txt!1\nv1=1\nc1=qe\n$=m2-h07-08 occ2b-h07 %occ2b-h07 tofrgo\nf=\u00a7a\nk=R\ns=2\nq=8\ni1=the long trace archival is complete and the restore is verified\nvc=every archived trace restores byte-identically\nvs=+\nvm=manual_restore\nvr=reports/occ2b-h07-restore.txt"
+  }
+ ]
+}

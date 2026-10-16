@@ -155,7 +155,7 @@ pub fn supervisor_server_capabilities() -> Vec<String> {
 }
 
 /// `DAEMON_COMMAND_TYPES`.
-pub const DAEMON_COMMAND_TYPES: [&str; 110] = [
+pub const DAEMON_COMMAND_TYPES: [&str; 112] = [
     "ack_result",
     "list",
     "list_agent_peers",
@@ -263,6 +263,13 @@ pub const DAEMON_COMMAND_TYPES: [&str; 110] = [
     "jev_get_settings",
     "jev_set_session_mode",
     "jev_get_status",
+    // Daemon-owned OCC session preferences (schema revision 41): the
+    // supervisor serves no OCC state itself, it only forwards these to the
+    // owning worker, so they need no supervisor-side arm. They stay listed
+    // here or `handle_line` answers "Unknown daemon command" before the
+    // worker that implements them is ever reached.
+    "occ_get_preferences",
+    "occ_set_preferences",
     "extension_ui_response",
     "prepare_update_restart",
     "retry_worker",

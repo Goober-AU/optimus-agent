@@ -77,8 +77,14 @@ pub const DAEMON_COMMAND_ENVELOPE_MIN_PROTOCOL_VERSION: u32 = 7;
 // Existing roster commands/events and startup remain compatible.
 // Revision 40 advertises optional OCC-2 support. Family summaries carry optional
 // occCapability; absent peers use OCC-1. No new commands or startup requirement.
-pub const DAEMON_SCHEMA_REVISION: u32 = 40;
-pub const DAEMON_SCHEMA_ID: &str = "protocol-7-schema-40-occ2-communication";
+// Revision 41 adds capability-gated, daemon-owned OCC session preferences:
+// occ_get_preferences / occ_set_preferences persist the per-chat toggle in the
+// daemon's own session artifacts, so foreign agentDir, relative paths and remote
+// clients can no longer write a preference the daemon never reads. The daemon
+// stops advertising occ2_communication (it described the pre-41 storage
+// semantics), so older clients see a visible warning instead of a silent no-op.
+pub const DAEMON_SCHEMA_REVISION: u32 = 41;
+pub const DAEMON_SCHEMA_ID: &str = "protocol-7-schema-41-occ-session-preferences";
 
 pub type DaemonProtocolName = String;
 pub type DaemonProtocolVersion = u32;
@@ -169,7 +175,11 @@ pub enum DaemonServerCapability {
     NodeExecutionMode,
     ClangExecutionMode,
     AgentCommunicationActivity,
+    // Kept so pre-41 hello frames still parse; no longer advertised (revision 41).
     Occ2Communication,
+    /// Daemon-owned per-chat OCC-2 preference get/set (occ_get_preferences /
+    /// occ_set_preferences). Clients must check before sending them.
+    OccSessionPreferences,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -251,7 +261,7 @@ pub const DAEMON_DEFAULT_SERVER_CAPABILITIES: [DaemonServerCapability; 31] = [
     DaemonServerCapability::NodeExecutionMode,
     DaemonServerCapability::ClangExecutionMode,
     DaemonServerCapability::AgentCommunicationActivity,
-    DaemonServerCapability::Occ2Communication,
+    DaemonServerCapability::OccSessionPreferences,
 ];
 
 /// `{ dev: number; ino: number }` on the peer transport ticket.
@@ -2186,6 +2196,12 @@ pub fn daemon_command_compatibility(command: &str) -> DaemonCommandCompatibility
         "jev_get_settings" | "jev_set_session_mode" => {
             DaemonCommandCompatibility::capability(Capability::JevControl)
         }
+        // Daemon-owned OCC session preferences (revision 41): the daemon
+        // persists the per-chat toggle itself, so a client never writes the
+        // daemon's storage. Old daemons answer "Unknown daemon command".
+        "occ_get_preferences" | "occ_set_preferences" => {
+            DaemonCommandCompatibility::capability(Capability::OccSessionPreferences)
+        }
         // Revisions 31/37 usage and memory feature metadata are optional; older workers still provide valid status.
         "jev_get_status" => {
             DaemonCommandCompatibility::capability(Capability::JevControl)
@@ -2241,7 +2257,8 @@ pub fn daemon_command_plane(command: &str) -> Option<&'static str> {
         | "navigate_tree" | "import_jsonl" | "export_html" | "export_jsonl" | "get_rlm_max_depth_status"
         | "set_rlm_max_depth" | "get_session_context" | "get_session_tree" | "get_user_messages_for_forking"
         | "get_last_assistant_text" | "get_system_prompt" | "get_tool_definition" | "set_session_entry_label"
-        | "extension_ui_response" | "jev_get_settings" | "jev_set_session_mode" | "jev_get_status" => {
+        | "extension_ui_response" | "jev_get_settings" | "jev_set_session_mode" | "jev_get_status"
+        | "occ_get_preferences" | "occ_set_preferences" => {
             Some("session")
         }
         _ => None,
@@ -2843,7 +2860,7 @@ pub fn salvage_daemon_command_id(line: &str) -> Option<String> {
 }
 
 /// `READ_ONLY_DAEMON_COMMANDS`.
-pub const READ_ONLY_DAEMON_COMMANDS: [DaemonCommandName; 36] = [
+pub const READ_ONLY_DAEMON_COMMANDS: [DaemonCommandName; 37] = [
     "ack_result",
     "list",
     "list_saved_sessions",
@@ -2883,6 +2900,9 @@ pub const READ_ONLY_DAEMON_COMMANDS: [DaemonCommandName; 36] = [
     // setting, so a read-only client must not send it.
     "jev_get_settings",
     "jev_get_status",
+    // The OCC getter is read-only. The SETTER is deliberately absent: it
+    // persists the chat preference, so a read-only client must not send it.
+    "occ_get_preferences",
 ];
 
 pub fn is_daemon_mutating_command(command_type: &str) -> bool {
@@ -3096,7 +3116,7 @@ mod tests {
 
     #[test]
     fn keeps_the_advertised_schema_identity() {
-        assert_eq!(DAEMON_SCHEMA_ID, format!("protocol-{DAEMON_PROTOCOL_VERSION}-schema-{DAEMON_SCHEMA_REVISION}-occ2-communication"));
+        assert_eq!(DAEMON_SCHEMA_ID, format!("protocol-{DAEMON_PROTOCOL_VERSION}-schema-{DAEMON_SCHEMA_REVISION}-occ-session-preferences"));
     }
 
     #[test]
@@ -3133,16 +3153,31 @@ mod tests {
     }
 
     #[test]
-    fn occ2_metadata_and_controls_leave_old_peers_on_legacy_commands() {
-        assert!(DAEMON_DEFAULT_SERVER_CAPABILITIES.contains(&DaemonServerCapability::Occ2Communication));
+    fn occ_session_preferences_gate_old_peers_and_keep_legacy_commands() {
+        // Revision 41: the daemon owns the per-chat OCC toggle. The new capability
+        // is advertised; the pre-41 occ2_communication (global-settings semantics)
+        // is deliberately not, so older clients warn instead of writing stale storage.
+        assert!(DAEMON_DEFAULT_SERVER_CAPABILITIES.contains(&DaemonServerCapability::OccSessionPreferences));
+        assert!(!DAEMON_DEFAULT_SERVER_CAPABILITIES.contains(&DaemonServerCapability::Occ2Communication));
+        assert_eq!(daemon_command_plane("occ_get_preferences"), Some("session"));
+        assert_eq!(daemon_command_plane("occ_set_preferences"), Some("session"));
+        assert!(READ_ONLY_DAEMON_COMMANDS.contains(&"occ_get_preferences"));
+        assert!(!READ_ONLY_DAEMON_COMMANDS.contains(&"occ_set_preferences"));
+        // A peer without the capability never passes the command gate; an old
+        // v0.1.33 daemon additionally answers "Unknown daemon command".
         let older = DaemonCompatibilityHello {
-            protocol: daemon_protocol_info(), schema_revision: Some(39),
-            server_capabilities: Some(vec![DaemonServerCapability::AgentRoster, DaemonServerCapability::AgentCommunicationActivity]),
-        };
-        assert!(!meets_daemon_command_compatibility(&older,
-            &DaemonCommandCompatibility::capability(DaemonServerCapability::Occ2Communication)));
-        let current = DaemonCompatibilityHello {
             protocol: daemon_protocol_info(), schema_revision: Some(40),
+            server_capabilities: Some(vec![DaemonServerCapability::AgentRoster, DaemonServerCapability::Occ2Communication]),
+        };
+        for command in ["occ_get_preferences", "occ_set_preferences"] {
+            assert!(!meets_daemon_command_compatibility(&older, &daemon_command_compatibility(command)), "command {command} must be gated");
+            assert_eq!(
+                daemon_command_compatibility(command),
+                DaemonCommandCompatibility::capability(DaemonServerCapability::OccSessionPreferences)
+            );
+        }
+        let current = DaemonCompatibilityHello {
+            protocol: daemon_protocol_info(), schema_revision: Some(DAEMON_SCHEMA_REVISION),
             server_capabilities: Some(DAEMON_DEFAULT_SERVER_CAPABILITIES.into_iter().chain([DaemonServerCapability::AgentRoster]).collect()),
         };
         for peer in [&older, &current] {
@@ -3152,6 +3187,10 @@ mod tests {
             for event in ["response", "session_event", "roster_update"] {
                 assert!(meets_daemon_command_compatibility(peer, &daemon_outbound_compatibility(event)), "event {event} at {:?}", peer.schema_revision);
             }
+        }
+        // A current peer may send the new commands.
+        for command in ["occ_get_preferences", "occ_set_preferences"] {
+            assert!(meets_daemon_command_compatibility(&current, &daemon_command_compatibility(command)));
         }
     }
 

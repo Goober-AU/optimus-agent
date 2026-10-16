@@ -1,0 +1,137 @@
+{
+  "batch_size": 10,
+  "batches": 6,
+  "canaries": {
+    "accuracy": 1.0,
+    "drift_detected": false,
+    "items": 12,
+    "per_batch": [
+      {
+        "accuracy": 1.0,
+        "batch": 0,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 1,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 2,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 3,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 4,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      },
+      {
+        "accuracy": 1.0,
+        "batch": 5,
+        "canary_items": 2,
+        "qa_correct": 6,
+        "qa_total": 6
+      }
+    ],
+    "qa_correct": 36,
+    "qa_total": 36
+  },
+  "child_loss": {
+    "count": 0,
+    "items": []
+  },
+  "codebook_overhead": {
+    "amortized_chars_per_item": 346.6,
+    "amortized_tokens_per_item": 118.7,
+    "batches": 6,
+    "carrier_items": 6,
+    "codebook_chars": 3466,
+    "codebook_tokens": 1187,
+    "injections_per_batch": 1,
+    "speaker_codebook_emission_rate": 1.0,
+    "tokens_source": "qwen2.5-0.5b-instruct-local"
+  },
+  "comprehension": {
+    "ok": 60,
+    "rate": 1.0,
+    "scored": 60
+  },
+  "dialect": "sym-v2-d2-r1",
+  "dry_run": false,
+  "faults": {
+    "child_lost": 0,
+    "listener_protocol": 0,
+    "speaker_protocol": 0,
+    "speaker_semantic": 0,
+    "unaccounted_items": 0,
+    "unaccounted_items_list": []
+  },
+  "gates": {
+    "checks": 22,
+    "failures": [],
+    "gate_names": [
+      "manifest_complete",
+      "child_loss_accounting",
+      "canary_drift",
+      "fault_rate_reporting",
+      "labeling_rules"
+    ],
+    "passed": true
+  },
+  "items_total": 60,
+  "labels": {
+    "channel": "agent_message (DGX GLM 5.3 children, parent-orchestrated)",
+    "heterogeneous_model_pairs": "X1-X4 deferred to the online phase",
+    "latency_dry_run": "synthetic (dry-run)",
+    "latency_live": "wall-clock, channel-inclusive (agent_message)",
+    "matrix_cell": "C1 (glm-5.3 -> glm-5.3)",
+    "sizes": "chars, not provider tokens"
+  },
+  "listener": {
+    "protocol_faults": 0,
+    "scored": 60,
+    "skipped_speaker_fault": 0
+  },
+  "mode": "scripted",
+  "qa": {
+    "accuracy": 1.0,
+    "accuracy_incl_protocol_faults": 1.0,
+    "correct": 180,
+    "total": 180
+  },
+  "run_id": "live-dev-sym-v2-d2-r1-scripted-20261016T162253Z",
+  "speaker": {
+    "fidelity_ok": 60,
+    "fidelity_rate": 1.0,
+    "protocol_faults": 0,
+    "scored": 60
+  },
+  "split": "dev",
+  "wire_tokens": {
+    "mean_occ1_chars": 327.3833,
+    "mean_occ1_tokens": 144.1667,
+    "mean_token_delta": 55.6,
+    "mean_token_ratio": 0.6143,
+    "mean_wire_chars": 195.55,
+    "mean_wire_tokens": 88.5667,
+    "scored_items": 60,
+    "source": "qwen2.5-0.5b-instruct-local",
+    "tokens_measured_items": 60
+  }
+}

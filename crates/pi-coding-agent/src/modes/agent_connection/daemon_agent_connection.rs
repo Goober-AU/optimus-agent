@@ -2840,6 +2840,51 @@ impl AgentConnection for DaemonAgentConnection {
     fn supports_occ2_communication(&self) -> bool {
         self.client.supports_server_capability("occ2_communication")
     }
+    fn supports_occ_session_preferences(&self) -> bool {
+        self.client.supports_server_capability("occ_session_preferences")
+    }
+
+    fn get_occ_preferences(&self) -> BoxFuture<Result<Value, String>> {
+        let this = self.clone();
+        Box::pin(async move {
+            if !this.client.supports_server_capability("occ_session_preferences") {
+                return Err("The attached daemon does not support OCC-2 session controls".to_string());
+            }
+            let active_session_id = this.active_session_id();
+            let command = command_body(
+                "occ_get_preferences",
+                vec![("activeSessionId", Value::String(active_session_id.clone()))],
+            );
+            let data = this.request_data(command, None).await?;
+            // Status must not describe a different chat after a reconnect.
+            if this.active_session_id() != active_session_id {
+                return Err("Session changed while reading OCC preferences".to_string());
+            }
+            Ok(data)
+        })
+    }
+
+    fn set_occ_preferences(&self, occ2_enabled: bool) -> BoxFuture<Result<Value, String>> {
+        let this = self.clone();
+        Box::pin(async move {
+            if !this.client.supports_server_capability("occ_session_preferences") {
+                return Err("The attached daemon does not support OCC-2 session controls".to_string());
+            }
+            let active_session_id = this.active_session_id();
+            let command = command_body(
+                "occ_set_preferences",
+                vec![
+                    ("activeSessionId", Value::String(active_session_id.clone())),
+                    ("occ2Enabled", Value::Bool(occ2_enabled)),
+                ],
+            );
+            let data = this.request_data(command, None).await?;
+            if this.active_session_id() != active_session_id {
+                return Err("Session changed while setting OCC preferences".to_string());
+            }
+            Ok(data)
+        })
+    }
     fn supports_execution_mode(&self) -> bool {
         self.client.supports_server_capability("execution_mode")
     }

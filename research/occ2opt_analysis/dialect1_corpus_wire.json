@@ -1,0 +1,353 @@
+{
+ "card_path": "research/symbolic_comm/dialect-card.json",
+ "card_checksum": "17836322dced3bb56e10bb0466abb5cb8d463ac6e4aba471f906ad5f24a4d49b",
+ "format": "DIALECT/1",
+ "corpus_path": "research/tasks/msgs_corpus.json",
+ "messages": [
+  {
+   "id": "c01",
+   "kind": "TASK",
+   "wire": "D/1\nn=survey the existing OCC-1 call sites|draft the offline discovery loop|keep the feature flag off by default\nm=m-201\nt=occ2-01\nx=%occ2-01\nr=a:worker-b\nk=T\ns=0\ni1=implement the OCC-2 dialect discovery prototype behind a feature flag\nu1=t39\nw=20261016090200"
+  },
+  {
+   "id": "c02",
+   "kind": "PROGRESS",
+   "wire": "D/1\ne1=s:^src/core/occ/occ1.rs@88-120~ce8480d59\nv1=1\nn=rank the pairs by frequency|cap the symbol table at 48 entries\nc1=800\nm=m-202\nt=occ2-01\nx=%occ2-01\nf=a:worker-b\nk=P\ns=1\nq=2\ni1=the discovery loop now enumerates the top 40 field pairs per trace\ni2=the feature flag defaults to off in every build profile\nw=20261016093400"
+  },
+  {
+   "id": "c03",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=t:j:occ2-01-discovery-run.txt!1\ne2=s:^src/core/occ/dialect.rs@14-61#22f20801191539b2c888c695878804959d03ee676b58f1d6322f3808862e2632~ce8480d59\nv1=1,2\nn=review the symbol table before any wire use\nc1=900\nm=m-203\nt=occ2-01\nx=%occ2-01\nf=a:worker-b\nk=R\ns=2\nq=3\ni1=the prototype discovers a stable symbol table for 27 of 28 fidelity scenarios\nh1=z:occ2/dialect-table.json\nvc=the discovered dialect round-trips all 28 fidelity scenarios\nvs=+\nvm=cargo_test\nvr=reports/occ2-01-verify.txt\nw=20261016103800"
+  },
+  {
+   "id": "c04",
+   "kind": "EVIDENCE",
+   "wire": "D/1\ne1=c:4f2a91c37!1\ne2=a:z:occ2/dialect-table.json#ca79e11ec69512dc40b581e38c26cacea8cb2c8b711a50388de7e235d8c026ff\nm=m-204\nt=occ2-01\nx=%occ2-01\nf=a:worker-b\nk=E\ns=2\nq=4\nh1=z:occ2/dialect-table.json\nw=20261016110900"
+  },
+  {
+   "id": "c05",
+   "kind": "CORRECTION",
+   "wire": "D/1\ne1=f:m-203\nv1=1\nn=add the fallback symbol for s19|re-run the discovery loop\nc1=950\nm=m-205\nt=occ2-01\nx=trace-occ2-01\nf=agent://worker-b\nr=daemon://coordinator\nk=C\ns=1\nq=5\ni1=the stable count is 26 of 28, not 27; scenario s19 needs a fallback symbol\nw=2026-10-16T12:18:00Z"
+  },
+  {
+   "id": "c06",
+   "kind": "TASK",
+   "wire": "D/1\nn=batch the 28 fidelity scenarios|record usage.prompt_tokens per encoding|write the comparison table\nm=m-206\nt=occ2-02\np=t77\nx=%occ2-02\nr=a:worker-c\nk=T\ns=0\ni1=measure real tokenizer counts for OCC-1 versus plain English on the model gateway\nw=20261016085400"
+  },
+  {
+   "id": "c07",
+   "kind": "PROGRESS",
+   "wire": "D/1\ne1=l:g:occ2-02-tokens-batch1.log!0\nv1=1\nn=run batch two after the gateway restart window\nc1=700\nm=m-207\nt=occ2-02\nx=%occ2-02\nf=a:worker-c\nk=P\ns=1\nq=2\ni1=batch one of two is measured; OCC-1 prompt tokens run 40 to 48 percent below plain English\nw=20261016100500"
+  },
+  {
+   "id": "c08",
+   "kind": "PROGRESS",
+   "wire": "D/1\ne1=t:j:occ2-02-health.txt!1\nv1=1\nc1=1000\nm=m-208\nt=occ2-02\nx=%occ2-02\nf=a:worker-c\nk=P\ns=1\nq=3\ni1=the gateway health check passes between batches\nw=20261016110200"
+  },
+  {
+   "id": "c09",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=l:g:occ2-02-tokens-batch2.log!0\nv1=1\nn=resume batch two|cross-check three scenarios by hand\nc1=850\nm=m-209\nt=occ2-02\nx=%occ2-02\nf=a:worker-c\nk=R\ns=3\nq=4\ni1=14 of 28 scenarios are measured; the gateway restart interrupts long batches\nh1=q:occ2-02-tokens-partial.md\nvc=token counts are reproducible across gateway restarts\nvs=?\nvm=manual_review\nw=20261016114300"
+  },
+  {
+   "id": "c10",
+   "kind": "ACK",
+   "wire": "D/1\ne1=f:m-206\nv1=1\nn=finish the remaining batch within 24 hours\nc1=1000\nm=m-210\nt=occ2-02\nx=trace-occ2-02\nf=agent://worker-c\nr=daemon://coordinator\nk=A\ns=2\nq=5\ni1=receipt of the assignment is confirmed; the first batch has started\nw=2026-10-16T11:57:00Z\nxp=2026-10-17T11:57:00Z"
+  },
+  {
+   "id": "c11",
+   "kind": "TASK",
+   "wire": "D/1\nn=cover all nine message kinds|cover all seven task statuses|keep the fixture schema unchanged\nm=m-211\nt=occ2-03\nx=%occ2-03\nr=a:worker-e\nk=T\ns=0\ni1=extend the fidelity fixture corpus with at least 60 new typed messages\nu1=occ2-01\nw=20261016090500"
+  },
+  {
+   "id": "c12",
+   "kind": "PROGRESS",
+   "wire": "D/1\ne1=b:y:occ2-03-corpus-build.txt!1\nv1=1\nn=draft the remaining REQUEST_DETAIL and CORRECTION messages\nc1=750\nm=m-212\nt=occ2-03\nx=%occ2-03\nf=a:worker-e\nk=P\ns=1\nq=2\ni1=41 of 60 messages are drafted; kinds TASK and RESULT are fully covered\nw=20261016095000"
+  },
+  {
+   "id": "c13",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=s:^tests/fixtures/occ/scenarios.json@1-40~ce8480d59\ne2=l:g:occ2-03-schema-check.log!1\nv1=1,2\nc1=950\nm=m-213\nt=occ2-03\nx=%occ2-03\nf=a:worker-e\nk=R\ns=2\nq=3\ni1=60 new messages cover all nine kinds and all seven statuses with zero schema drift\nh1=z:occ2/corpus-extension.json\nvc=the extended corpus passes the fidelity round-trip test\nvs=+\nvm=cargo_test\nvr=reports/occ2-03-verify.txt\nw=20261016101800"
+  },
+  {
+   "id": "c14",
+   "kind": "EVIDENCE",
+   "wire": "D/1\ne1=c:9b41d02ef!1\ne2=a:z:occ2/corpus-extension.json#0550f2d9b3a2b0c24ca451ec6e94f77cba7f762927694e0497df510811040352\nm=m-214\nt=occ2-03\nx=%occ2-03\nf=a:worker-e\nk=E\ns=2\nq=4\nw=20261016103600"
+  },
+  {
+   "id": "c15",
+   "kind": "TASK",
+   "wire": "D/1\nn=reuse the 100-iteration latency harness|report bytes and proxy tokens per encoding\nm=m-215\nt=occ2-04\nx=%occ2-04\nr=a:worker-f\nk=T\ns=0\ni1=benchmark OCC-1 versus JSON versus plain English on the new corpus\nu1=occ2-02\nw=20261016093200"
+  },
+  {
+   "id": "c16",
+   "kind": "PROGRESS",
+   "wire": "D/1\ne1=t:j:occ2-04-harness.txt!1\nv1=1\nc1=800\nm=m-216\nt=occ2-04\nx=%occ2-04\nf=a:worker-f\nk=P\ns=1\nq=2\ni1=the harness runs 100 iterations per message with warm caches\nw=20261016104100"
+  },
+  {
+   "id": "c17",
+   "kind": "REQUEST_DETAIL",
+   "wire": "D/1\nn=reply with the route and the model name\nm=m-217\nt=occ2-04\nx=%occ2-04\nf=a:worker-f\nr=a:worker-c\nk=Q\ns=1\nq=3\ni1=request the exact gateway route and model used for the tokenizer measurement\nw=20261016111600"
+  },
+  {
+   "id": "c18",
+   "kind": "ACK",
+   "wire": "D/1\ne1=f:m-217\nv1=1\nn=send the route and model name today\nc1=1000\nm=m-218\nt=occ2-04\nx=trace-occ2-04\nf=agent://worker-c\nr=agent://worker-f\nk=A\ns=2\nq=4\ni1=receipt of the detail request is confirmed\nw=2026-10-16T12:01:00Z"
+  },
+  {
+   "id": "c19",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=l:g:occ2-04-compression.log!1\nv1=1\nc1=900\nm=m-219\nt=occ2-04\nx=%occ2-04\nf=a:worker-f\nk=R\ns=2\nq=5\ni1=OCC-1 saves 38.2 percent bytes against plain English on the new corpus\nh1=q:occ2-04-compression.md\nvc=the byte and token savings reproduce within one percent\nvs=+\nvm=bench_harness\nvr=receipts/occ2-04-bench.txt\nw=20261016130700"
+  },
+  {
+   "id": "c20",
+   "kind": "TASK",
+   "wire": "D/1\nn=wire the never-prune exemption list|gate every prune on a measured utility signal\nm=m-220\nt=occ2-05\nx=%occ2-05\nr=a:worker-a\nk=T\ns=0\ni1=port the periodic fractional pruning skeleton behind measured utility\nu1=t41\nw=20261016092700"
+  },
+  {
+   "id": "c21",
+   "kind": "PROGRESS",
+   "wire": "D/1\ne1=s:^src/core/occ/prune.rs@20-74#8f23df8f1331265a1ce4f8e4e809676457117b2c0b3709144e5693acc359cfef~ce8480d59\nv1=1\nc1=850\nm=m-221\nt=occ2-05\nx=%occ2-05\nf=a:worker-a\nk=P\ns=1\nq=2\ni1=the never-prune exemption list is wired and covered by tests\nw=20261016101300"
+  },
+  {
+   "id": "c22",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=l:logs/occ2-05-utility-noise.log!0\nv1=1\nn=collect a longer utility trace|keep pruning disabled\nc1=800\nm=m-222\nt=occ2-05\nx=trace-occ2-05\nf=agent://worker-a\nr=daemon://coordinator\nk=R\ns=5\nq=3\ni1=the utility signal is too noisy to gate pruning safely\nvc=pruning with the measured utility never drops a needed message\nvs=-\nvm=cargo_test\nvr=reports/occ2-05-verify.txt\nw=2026-10-16T10:51:00Z"
+  },
+  {
+   "id": "c23",
+   "kind": "TASK",
+   "wire": "D/1\nn=check transport capabilities|document the hard limits\nm=m-223\nt=occ2-06\nx=%occ2-06\nr=a:worker-b\nk=T\ns=0\ni1=probe whether the local models can share hidden states through the daemon transport\nw=20261016101400"
+  },
+  {
+   "id": "c24",
+   "kind": "BLOCKED",
+   "wire": "D/1\ne1=t:receipts/occ2-06-transport-check.txt!1\nv1=1\nn=request a design review of the transport boundary\nc1=1000\nm=m-224\nt=occ2-06\nx=trace-occ2-06\nf=agent://worker-b\nr=daemon://coordinator\nk=B\ns=4\nq=2\ni1=the daemon transport carries text only; tensor access is unavailable at this layer\ni2=no latent handoff can run without a same-process runtime\nw=2026-10-16T10:39:00Z"
+  },
+  {
+   "id": "c25",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=b:y:occ2-06-proxy-probe.txt!0\nv1=1\nc1=600\nm=m-225\nt=occ2-06\nx=%occ2-06\nf=a:worker-b\nk=R\ns=3\nq=3\ni1=a text-only proxy probe ran; latent transfer remains unsupported on this transport\nvc=the proxy probe matches the latent baseline\nvs=?\nvm=manual_review\nw=20261016112600"
+  },
+  {
+   "id": "c26",
+   "kind": "TASK",
+   "wire": "D/1\nn=read the window from the policy file|re-run the prune tests\nm=m-226\nt=occ2-07\nx=%occ2-07\nr=a:worker-d\nk=T\ns=0\ni1=update the retention policy from 30 days to 90 days before pruning\nw=20261016103800"
+  },
+  {
+   "id": "c27",
+   "kind": "CORRECTION",
+   "wire": "D/1\ne1=f:m-226\nv1=1\nn=update the policy loader|re-run the prune tests\nc1=950\nm=m-227\nt=occ2-07\nx=trace-occ2-07\nf=agent://worker-d\nr=daemon://coordinator\nk=C\ns=1\nq=2\ni1=the retention requirement changed from 30 days to 90 days before pruning\ni2=the prune threshold must be computed from the policy file, not the compiled-in constant\nw=2026-10-16T11:37:00Z"
+  },
+  {
+   "id": "c28",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=s:^src/core/occ/prune.rs@96-140~ce8480d59\nv1=1\nc1=900\nm=m-228\nt=occ2-07\nx=%occ2-07\nf=a:worker-d\nk=R\ns=2\nq=3\ni1=the policy loader reads the retention window from the policy file\nvc=the 90 day window is enforced by the prune tests\nvs=+\nvm=cargo_test\nvr=reports/occ2-07-verify.txt\nw=20261016123500"
+  },
+  {
+   "id": "c29",
+   "kind": "TASK",
+   "wire": "D/1\nn=request vault approval|sign each artifact digest\nm=m-229\nt=occ2-08\nx=%occ2-08\nr=a:worker-a\nk=T\ns=0\ni1=sign the OCC-2 artifacts for the internal registry\nw=20261016104600\nxp=20261019104600"
+  },
+  {
+   "id": "c30",
+   "kind": "BLOCKED",
+   "wire": "D/1\ne1=t:receipts/occ2-08-vault-status.txt!1\nv1=1\nn=request vault approval from the release manager\nc1=1000\nm=m-230\nt=occ2-08\nx=trace-occ2-08\nf=agent://worker-a\nr=daemon://coordinator\nk=B\ns=4\nq=2\ni1=the signing key vault is sealed pending policy approval\ni2=no artifacts can be signed until the vault unseals\nw=2026-10-16T11:39:00Z"
+  },
+  {
+   "id": "c31",
+   "kind": "CANCELLED",
+   "wire": "D/1\ne1=c:c31e0a8b4!1\nv1=1\nn=archive the signing branch\nc1=900\nm=m-231\nt=occ2-08\nx=trace-occ2-08\nf=agent://worker-a\nr=daemon://coordinator\nk=X\ns=6\nq=3\ni1=artifact signing was cancelled; the registry now accepts unsigned internal builds\nw=2026-10-16T12:09:00Z"
+  },
+  {
+   "id": "c32",
+   "kind": "TASK",
+   "wire": "D/1\nn=list the 22 harness fields|write the mapping table\nm=m-232\nt=occ2-09\np=t77\nx=%occ2-09\nr=a:worker-e\nk=T\ns=0\ni1=map the parity harness fields onto the telegram transport\nw=20261016104400"
+  },
+  {
+   "id": "c33",
+   "kind": "PROGRESS",
+   "wire": "D/1\ne1=l:g:occ2-09-parity.log!0\nv1=1\nc1=700\nm=m-233\nt=occ2-09\nx=%occ2-09\nf=a:worker-e\nk=P\ns=1\nq=2\ni1=the parity harness maps 18 of 22 fields\nw=20261016113200"
+  },
+  {
+   "id": "c34",
+   "kind": "REQUEST_DETAIL",
+   "wire": "D/1\nn=reply with the changelog links\nm=m-234\nt=occ2-09\nx=%occ2-09\nf=a:worker-e\nr=a:worker-f\nk=Q\ns=1\nq=3\ni1=request the upstream API changelog entries for the four unmapped fields\nw=20261016114500"
+  },
+  {
+   "id": "c35",
+   "kind": "CANCELLED",
+   "wire": "D/1\ne1=c:8c31d0af2!1\nv1=1\nn=archive the branch improve/telegram-parity\nc1=900\nm=m-235\nt=occ2-09\nx=trace-occ2-09\nf=agent://worker-e\nr=daemon://coordinator\nk=X\ns=6\nq=4\ni1=parity work was cancelled because the upstream API changed\nw=2026-10-16T11:55:00Z"
+  },
+  {
+   "id": "c36",
+   "kind": "TASK",
+   "wire": "D/1\nn=read the refresh path|attempt a reproduction\nm=m-236\nt=occ2-10\nx=%occ2-10\nr=a:worker-a\nk=T\ns=0\ni1=investigate the reported race window in the session token refresh path\nu1=t41\nw=20261016110400"
+  },
+  {
+   "id": "c37",
+   "kind": "PROGRESS",
+   "wire": "D/1\ne1=s:^src/core/auth_storage.rs@218-235#0ec5bee4d4abaec6d8e81ebdd5c6b81ac6ecaab1330ed3dd6775f87250e267a0~ce8480d59!1\nv1=1\nn=write a stress reproduction\nc1=750\nm=m-237\nt=occ2-10\nx=%occ2-10\nf=a:worker-a\nk=P\ns=1\nq=2\ni1=the refresh mutex is held across an await point, widening the race window\nw=20261016113300"
+  },
+  {
+   "id": "c38",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=s:crates/pi-coding-agent/src/core/auth_storage.rs@218-235~ce8480d59!1\ne2=l:logs/occ2-10-refresh-stress.log!0\nv1=1,2\nn=inspect the mutex guarding refresh|add a regression test for concurrent refresh\nc1=900\nm=m-238\nt=occ2-10\nx=trace-occ2-10\nf=agent://worker-a\nr=daemon://coordinator\nk=R\ns=2\nq=3\ni1=the race window is confirmed by reading but not reproducible with the current regression test\nh1=reports/occ2-10-race-window.md\nvc=the refresh race reproduces under the existing regression test\nvs=-\nvm=cargo_test\nvr=reports/occ2-10-verify.txt\nw=2026-10-16T11:38:00Z"
+  },
+  {
+   "id": "c39",
+   "kind": "TASK",
+   "wire": "D/1\nn=run the bad-interleaving configuration|keep the run log\nm=m-239\nt=occ2-11\nx=%occ2-11\nr=a:worker-c\nk=T\ns=0\ni1=raise the stress harness to 500 iterations per configuration\nu1=occ2-10\nw=20261016111700"
+  },
+  {
+   "id": "c40",
+   "kind": "EVIDENCE",
+   "wire": "D/1\ne1=l:g:occ2-11-stress-500.log!1\ne2=b:y:occ2-11-stress-build.txt!1\nm=m-240\nt=occ2-11\nx=%occ2-11\nf=a:worker-c\nk=E\ns=2\nq=2\nw=20261016113100"
+  },
+  {
+   "id": "c41",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=l:g:occ2-11-stress-500.log!1\nv1=1\nc1=850\nm=m-241\nt=occ2-11\nx=%occ2-11\nf=a:worker-c\nk=R\ns=2\nq=3\ni1=the bad interleaving shows up twice in 500 iterations\nvc=the stress run completes within the latency budget\nvs=+\nvm=cargo_test\nvr=reports/occ2-11-verify.txt\nw=20261016123000"
+  },
+  {
+   "id": "c42",
+   "kind": "TASK",
+   "wire": "D/1\nn=read the aggregate headline report|render per-split numbers\nm=m-242\nt=occ2-12\nx=%occ2-12\nr=a:worker-f\nk=T\ns=0\ni1=wire the fidelity metrics into the campaign dashboard\nu1=occ2-04\nw=20261016121900"
+  },
+  {
+   "id": "c43",
+   "kind": "PROGRESS",
+   "wire": "D/1\ne1=t:j:occ2-12-dashboard.txt!1\nv1=1\nc1=800\nm=m-243\nt=occ2-12\nx=%occ2-12\nf=a:worker-f\nk=P\ns=1\nq=2\ni1=the dashboard reads the aggregate headline report\nw=20261016132300"
+  },
+  {
+   "id": "c44",
+   "kind": "CORRECTION",
+   "wire": "D/1\ne1=f:m-243\nv1=1\nn=rename the metric|backfill the last seven days\nc1=900\nm=m-244\nt=occ2-12\nx=trace-occ2-12\nf=agent://worker-f\nr=daemon://coordinator\nk=C\ns=1\nq=3\ni1=the dashboard showed pass counts, not assertion counts; the metric name is corrected\nw=2026-10-16T14:31:00Z"
+  },
+  {
+   "id": "c45",
+   "kind": "PROGRESS",
+   "wire": "D/1\nm=m-245\nt=occ2-12\nx=%occ2-12\nf=a:worker-f\nk=P\ns=1\nq=4\ni1=the corrected metric renders for both splits\nw=20261016152000"
+  },
+  {
+   "id": "c46",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=n:q:occ2-12-metrics.md@12-18\nv1=1\nc1=900\nm=m-246\nt=occ2-12\nx=%occ2-12\nf=a:worker-f\nk=R\ns=2\nq=5\ni1=the dashboard now shows assertion counts per split\nvc=the dashboard numbers match the fidelity suite output\nvs=+\nvm=digest_check\nvr=receipts/occ2-12-digest.txt\nw=20261016153000"
+  },
+  {
+   "id": "c47",
+   "kind": "TASK",
+   "wire": "D/1\nn=point CARGO_TARGET_DIR at the isolated directory|record pass and fail counts\nm=m-247\nt=occ2-13\nx=%occ2-13\nr=a:worker-b\nk=T\ns=0\ni1=migrate the OCC-1 regression gate to an isolated target directory\nu1=occ2-03\nw=20261016115600"
+  },
+  {
+   "id": "c48",
+   "kind": "PROGRESS",
+   "wire": "D/1\ne1=b:y:occ2-13-gate-build.txt!1\nv1=1\nc1=850\nm=m-248\nt=occ2-13\nx=%occ2-13\nf=a:worker-b\nk=P\ns=1\nq=2\ni1=the gate now builds into the isolated target directory\nw=20261016121000"
+  },
+  {
+   "id": "c49",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=l:g:occ2-13-gate-run.log!1\nv1=1\nc1=1000\nm=m-249\nt=occ2-13\nx=%occ2-13\nf=a:worker-b\nk=R\ns=2\nq=3\ni1=the gate runs green with 7 passed and 0 failed\nvc=the occ_comm_fidelity gate is green in the isolated target\nvs=+\nvm=cargo_test\nvr=reports/occ2-13-verify.txt\nw=20261016131000"
+  },
+  {
+   "id": "c50",
+   "kind": "TASK",
+   "wire": "D/1\nn=profile encode and decode|store the svg artifact\nm=m-250\nt=occ2-14\nx=%occ2-14\nr=a:worker-d\nk=T\ns=0\ni1=capture a flamegraph of the codec hot loop\nw=20261016124900"
+  },
+  {
+   "id": "c51",
+   "kind": "EVIDENCE",
+   "wire": "D/1\ne1=a:y:occ2-14-flamegraph.svg#1ffe8f28ed1ce65184a871b4efc4ada11d346e87926be5126c23c4fcfadcc63d\ne2=s:^src/core/occ/occ1.rs@122-180~ce8480d59\nm=m-251\nt=occ2-14\nx=%occ2-14\nf=a:worker-d\nk=E\ns=2\nq=2\nh1=y:occ2-14-flamegraph.svg\nw=20261016134900"
+  },
+  {
+   "id": "c52",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=a:y:occ2-14-flamegraph.svg\ne2=s:^src/core/occ/occ1.rs@122-180~ce8480d59\nv1=1,2\nc1=700\nm=m-252\nt=occ2-14\nx=%occ2-14\nf=a:worker-d\nk=R\ns=2\nq=3\ni1=the hot loop spends 62 percent of samples in digest verification\nvc=the flamegraph attribute counts sum to the total samples\nvs=+\nvm=manual_review\nw=20261016142600"
+  },
+  {
+   "id": "c53",
+   "kind": "TASK",
+   "wire": "D/1\nn=draft sections 1 through 6|leave the grammar section for review\nm=m-253\nt=occ2-15\nx=%occ2-15\nr=a:worker-e\nk=T\ns=0\ni1=write the OCC-2 dialect specification draft\nu1=occ2-01\nw=20261016123900"
+  },
+  {
+   "id": "c54",
+   "kind": "PROGRESS",
+   "wire": "D/1\nc1=700\nm=m-254\nt=occ2-15\nx=%occ2-15\nf=a:worker-e\nk=P\ns=1\nq=2\ni1=sections 1 through 4 are drafted\nw=20261016124800"
+  },
+  {
+   "id": "c55",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=n:o:occ2-dialect-spec.md@88-121\nv1=1\nn=close the grammar section after the fallback lands\nc1=800\nm=m-255\nt=occ2-15\nx=%occ2-15\nf=a:worker-e\nk=R\ns=3\nq=3\ni1=the symbol table grammar section remains open pending the fallback design\nh1=docs/occ2-dialect-spec.md\nvc=the draft matches the implemented prototype\nvs=?\nvm=manual_review\nw=20261016134400"
+  },
+  {
+   "id": "c56",
+   "kind": "TASK",
+   "wire": "D/1\nn=list every task and its declared deps|render the graph\nm=m-256\nt=occ2-16\nx=%occ2-16\nr=a:worker-d\nk=T\ns=0\ni1=map the cross-task dependencies for the campaign\nw=20261016124400"
+  },
+  {
+   "id": "c57",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=l:logs/occ2-16-depmap.log!0\nv1=1\nn=reconcile the two missing edges with the ledger\nc1=900\nm=m-257\nt=occ2-16\nx=trace-occ2-16\nf=agent://worker-d\nr=daemon://coordinator\nk=R\ns=5\nq=2\ni1=the dependency graph has 20 nodes and 31 edges, but the ledger lists 33 edges\nh1=reports/occ2-16-depmap.md\nvc=the dependency graph matches the campaign ledger\nvs=-\nvm=manual_review\nvr=reports/occ2-16-verify.txt\nw=2026-10-16T13:11:00Z"
+  },
+  {
+   "id": "c58",
+   "kind": "TASK",
+   "wire": "D/1\nn=confirm the staging window|measure the rollback time\nm=m-258\nt=occ2-17\np=t77\nx=%occ2-17\nr=a:worker-f\nk=T\ns=0\ni1=run the dialect rollback drill on the staging gateway\nw=20261016124100\nxp=20261019124100"
+  },
+  {
+   "id": "c59",
+   "kind": "BLOCKED",
+   "wire": "D/1\ne1=t:receipts/occ2-17-staging-status.txt!1\nv1=1\nn=hold the drill until the maintenance ends\nc1=1000\nm=m-259\nt=occ2-17\nx=trace-occ2-17\nf=agent://worker-f\nr=daemon://coordinator\nk=B\ns=4\nq=2\ni1=the drill needs the staging gateway, which is under maintenance\nw=2026-10-16T13:40:00Z"
+  },
+  {
+   "id": "c60",
+   "kind": "ACK",
+   "wire": "D/1\ne1=f:m-258\nv1=1\nc1=1000\nm=m-260\nt=occ2-17\nx=trace-occ2-17\nf=agent://worker-f\nr=daemon://coordinator\nk=A\ns=2\nq=3\ni1=receipt of the blocked report is confirmed; the drill stays on hold\nw=2026-10-16T14:31:00Z"
+  },
+  {
+   "id": "c61",
+   "kind": "CANCELLED",
+   "wire": "D/1\ne1=c:e04b7c911!1\nv1=1\nc1=900\nm=m-261\nt=occ2-17\nx=trace-occ2-17\nf=agent://worker-f\nr=daemon://coordinator\nk=X\ns=6\nq=4\ni1=the drill is cancelled; the staging window closed before maintenance ended\nw=2026-10-16T14:53:00Z"
+  },
+  {
+   "id": "c62",
+   "kind": "TASK",
+   "wire": "D/1\nn=clone the harness config|compare with fleet one\nm=m-262\nt=occ2-18\nx=%occ2-18\nr=a:worker-c\nk=T\ns=0\ni1=run the compression benchmark on the second gateway fleet\nu1=occ2-04\nw=20261016134500"
+  },
+  {
+   "id": "c63",
+   "kind": "PROGRESS",
+   "wire": "D/1\ne1=t:j:occ2-18-fleet2.txt!1\nv1=1\nc1=800\nm=m-263\nt=occ2-18\nx=%occ2-18\nf=a:worker-c\nk=P\ns=1\nq=2\ni1=fleet two runs the same 100-iteration harness\nw=20261016135700"
+  },
+  {
+   "id": "c64",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=l:g:occ2-18-fleet2.log!1\nv1=1\nc1=900\nm=m-264\nt=occ2-18\nx=%occ2-18\nf=a:worker-c\nk=R\ns=2\nq=3\ni1=savings hold within one percent of fleet one\nvc=fleet two reproduces the fleet one savings\nvs=+\nvm=bench_harness\nvr=receipts/occ2-18-bench.txt\nw=20261016142600"
+  },
+  {
+   "id": "c65",
+   "kind": "TASK",
+   "wire": "D/1\nn=list every receipt path|spot-check five receipts\nm=m-265\nt=occ2-19\nx=%occ2-19\nr=a:security-auditor\nk=T\ns=0\ni1=audit the verification receipts of the campaign so far\nw=20261016132300"
+  },
+  {
+   "id": "c66",
+   "kind": "EVIDENCE",
+   "wire": "D/1\ne1=f:m-265\ne2=t:j:occ2-19-audit-run.txt!1\nm=m-266\nt=occ2-19\nx=%occ2-19\nf=a:security-auditor\nk=E\ns=2\nq=2\nw=20261016142000"
+  },
+  {
+   "id": "c67",
+   "kind": "ACK",
+   "wire": "D/1\ne1=f:m-265\nv1=1\nn=deliver the audit table by Friday\nc1=1000\nm=m-267\nt=occ2-19\nx=trace-occ2-19\nf=daemon://coordinator\nr=agent://security-auditor\nk=A\ns=2\nq=3\ni1=receipt of the audit plan is confirmed\nw=2026-10-16T15:09:00Z"
+  },
+  {
+   "id": "c68",
+   "kind": "RESULT",
+   "wire": "D/1\ne1=t:j:occ2-19-audit-run.txt!1\nv1=1\nc1=950\nm=m-268\nt=occ2-19\nx=%occ2-19\nf=a:security-auditor\nk=R\ns=2\nq=4\ni1=all 16 verification receipts resolve; three spot-checks matched byte for byte\nh1=q:occ2-19-receipt-audit.md\nvc=every receipt path in the corpus resolves on disk\nvs=+\nvm=manual_review\nw=20261016154900"
+  },
+  {
+   "id": "c69",
+   "kind": "CANCELLED",
+   "wire": "D/1\ne1=c:5d90cc3aa!1\nv1=1\nn=drop the sweep from the campaign board\nc1=900\nm=m-269\nt=occ2-20\nx=trace-occ2-20\nf=agent://worker-b\nr=daemon://coordinator\nk=X\ns=6\nq=1\ni1=the archive sweep was cancelled; retention now covers the same ground\nw=2026-10-16T13:55:00Z"
+  }
+ ]
+}

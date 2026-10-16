@@ -33,6 +33,32 @@
 //!   OCC-2 for the pair while delivery continues through OCC-1.
 //! - `t11` latency: mean dual encode/decode under the 5 ms budget.
 //! - `t12` aggregate headline report (final test by name order).
+//! - `t13` codebook amortization: the first OCC-2 body of a dialect
+//!   carries the full codebook legend, later ones a one-line reference;
+//!   identity = dialect id + version + codebook hash prefix.
+//! - `t14` reference compactness, identity pinning, stateless always-teach.
+//! - `t15` a different or re-tuned codebook identity re-injects.
+//! - `t16` compaction that removes the legend forces re-injection.
+//! - `t17` replay/restart reconstructs exactly one codebook.
+//! - `t18` the spawn seam's legend suppresses the first delivery's legend.
+//! - `t19` fallback and pass-through renders are presence-independent.
+//! - `t20` first failed decode falls back and records exactly one strike.
+//! - `t21` three strikes disable the pair; selection reads the persisted
+//!   ledger; disabled pairs consume OCC-1 without further strikes.
+//! - `t22` restart restores strike counts.
+//! - `t23` strike counts decay after the 24h quiet period.
+//! - `t24` an unknown dialect strikes its own advertised pair.
+//! - `t25` a corrupt codebook strikes and never drops the payload.
+//! - `t26` the /occ toggle (newer preference marker) and the explicit
+//!   clear reset the ledger.
+//! - `t27` restart mid-strikes never double-counts; the durable record
+//!   carries the delivery classification.
+//! - `t28` the shared send-selection function over real artifacts
+//!   (strikes, evals, experimental flag), the seam both the
+//!   in-process path and the daemon bridge call.
+//! - `t29` the message-kind hint parses OCC-1 KIND values.
+//! - `t30` telemetry reads the recorded occ2Delivery kind (legacy
+//!   records fall back to body classification).
 //!
 //! Holdout rule: the corpus declares its holdout flag (`c23`-`c25`,
 //! `c32`-`c35`, `c39`-`c41`, `c53`-`c55`, `c58`-`c61`, `c69`, the
@@ -48,13 +74,18 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::{Duration, Instant};
 
+use pi_agent_core::types::{AgentMessage, CustomAgentMessage, CustomMessageContent};
 use pi_coding_agent::core::agent_messages::{
-    agent_session_message_prompt_body, create_agent_session_message,
-    create_agent_session_message_prompt, decode_agent_session_message_body,
-    parse_agent_session_message_prompt_id, select_occ2_dialect, wrap_outgoing_body,
-    AgentSessionMessageAgentSummary, AgentSessionMessageEndpoint, AgentSessionMessagePayload,
-    AgentSessionMessageSender, Occ2SendPolicy, Occ2StrikeLedger, AGENT_MESSAGE_SOURCE,
-    DEFAULT_AGENT_MESSAGE_MAX_CHARS,
+    agent_session_message_prompt_body, agent_session_message_prompt_body_with_codebooks,
+    agent_session_message_prompt_body_with_registry_and_codebooks, create_agent_session_message,
+    create_agent_session_message_prompt, create_agent_session_message_prompt_with_codebooks,
+    create_agent_session_message_with_codebooks, decode_agent_session_message_body,
+    occ2_codebook_legend, occ2_codebook_reference, occ2_codebooks_present,
+    parse_agent_session_message_prompt_id, parse_occ2_codebook_legend, select_occ2_dialect,
+    wrap_outgoing_body, AgentSessionMessageAgentSummary, AgentSessionMessageEndpoint,
+    AgentSessionMessagePayload, AgentSessionMessageSender, Occ2CodebookId,
+    Occ2CodebooksPresent, Occ2SendPolicy, Occ2StrikeLedger, AGENT_MESSAGE_CUSTOM_TYPE,
+    AGENT_MESSAGE_SOURCE, DEFAULT_AGENT_MESSAGE_MAX_CHARS,
 };
 use pi_coding_agent::core::occ::activity::{classify, classify_with_registry, CommunicationKind};
 use pi_coding_agent::core::occ::contract::AgentCommMessage;
@@ -993,4 +1024,1066 @@ fn t12_aggregate_headline_report() {
     assert!(symbolic.bytes < occ1.bytes);
     assert!(symbolic.bytes < plain.bytes);
     assert!(symbolic.bytes < dual.bytes);
+}
+
+// ---------------------------------------------------------------------------
+// t13 - codebook amortization: first full legend, then a one-line reference
+// ---------------------------------------------------------------------------
+
+/// The symbolic section of a dual body (before the fallback sentinel).
+fn symbolic_of(dual: &str) -> &str {
+    let sentinel = dual
+        .find(&format!("\n{}\n", occ2::OCC2_FALLBACK_SENTINEL))
+        .expect("sentinel in dual body");
+    dual[..sentinel].trim_end_matches('\n')
+}
+
+#[test]
+fn t13_codebook_amortization_first_full_then_reference() {
+    let corpus = load_corpus();
+    let card = sym_v1_card();
+    // A cold context carries no codebook identities.
+    let empty = Occ2CodebooksPresent::new();
+
+    let first = build_message(&corpus[0].payload);
+    let second = build_message(&corpus[1].payload);
+    let dual_first = dual_wire(&first, &card);
+    let dual_second = dual_wire(&second, &card);
+
+    // Cold context: the full legend, carrying the codebook identity.
+    let rendered_first = agent_session_message_prompt_body_with_codebooks(&dual_first, &empty);
+    let (legend, symbolic) = rendered_first
+        .split_once("\n\n")
+        .expect("legend precedes the symbolic body");
+    assert!(
+        legend.starts_with("OCC-2 sym-v1@1 codebook (sha256:"),
+        "legend carries the identity: {legend}"
+    );
+    assert!(legend.contains("T:task_id") && legend.contains("F:finding.statement"));
+    // The legend's hash prefix matches the dual body's wire header.
+    let wire_prefix = dual_first
+        .lines()
+        .next()
+        .and_then(|line| line.split("C=").nth(1))
+        .expect("codebook token in the wire header");
+    assert!(
+        legend.contains(&format!("sha256:{wire_prefix})")),
+        "legend prefix matches the wire header: {legend}"
+    );
+    assert_eq!(symbolic, symbolic_of(&dual_first));
+    // The identity parses back from the legend line.
+    assert_eq!(
+        parse_occ2_codebook_legend(legend).as_ref(),
+        Some(&Occ2CodebookId::of_card(&card))
+    );
+
+    // The durable record stores the same full legend and reports presence.
+    let record = create_agent_session_message_with_codebooks(
+        &sample_payload(&dual_first),
+        5,
+        &empty,
+    );
+    let present = occ2_codebooks_present(&[AgentMessage::Custom(record)]);
+    assert_eq!(present.len(), 1, "exactly one codebook identity recorded");
+    assert!(present.contains(&Occ2CodebookId::of_card(&card)));
+
+    // Warm context: the next message of the same dialect references only.
+    let rendered_second = agent_session_message_prompt_body_with_codebooks(&dual_second, &present);
+    let (reference, symbolic_second) = rendered_second
+        .split_once("\n\n")
+        .expect("reference precedes the symbolic body");
+    assert!(
+        reference.starts_with("OCC-2 sym-v1@1 codebook (sha256:"),
+        "reference carries the identity: {reference}"
+    );
+    assert!(
+        reference.contains("previously provided in this conversation"),
+        "reference wording: {reference}"
+    );
+    assert!(!rendered_second.contains("Indexed fields use 1-based indices"));
+    assert_eq!(symbolic_second, symbolic_of(&dual_second));
+    // Reference lines do not parse as legends (presence needs the full form).
+    assert!(parse_occ2_codebook_legend(reference).is_none());
+
+    // The full prompt built with the same presence agrees with the body
+    // render (the delivered text and the durable record must match).
+    let prompt = create_agent_session_message_prompt_with_codebooks(
+        &sample_payload(&dual_second),
+        &present,
+    );
+    assert!(prompt.contains("previously provided in this conversation"));
+    assert!(!prompt.contains("Indexed fields use 1-based indices"));
+    assert_eq!(
+        parse_agent_session_message_prompt_id(&prompt).as_deref(),
+        Some("agentmsg_1")
+    );
+}
+
+// ---------------------------------------------------------------------------
+// t14 - reference compactness and identity pinning
+// ---------------------------------------------------------------------------
+
+#[test]
+fn t14_reference_is_compact_and_identity_is_pinned() {
+    let card = sym_v1_card();
+    let legend = occ2_codebook_legend(&card);
+    let reference = occ2_codebook_reference(&Occ2CodebookId::of_card(&card));
+
+    // Compactness: the reference is a small fraction of the full legend.
+    assert!(legend.chars().count() > 550, "legend: {}", legend.chars().count());
+    assert!(reference.chars().count() < 200, "reference: {}", reference.chars().count());
+    assert!(reference.chars().count() * 4 < legend.chars().count());
+
+    // The sym-v1 identity is pinned: dialect, version and the wire prefix.
+    let identity = Occ2CodebookId::of_card(&card);
+    assert_eq!(identity.dialect, "sym-v1");
+    assert_eq!(identity.version, 1);
+    assert_eq!(identity.sha256_prefix.len(), 12);
+    assert!(
+        card.sha256.starts_with(&identity.sha256_prefix),
+        "the prefix is the head of the card sha256"
+    );
+    assert_eq!(
+        parse_occ2_codebook_legend(&legend),
+        Some(Occ2CodebookId::of_card(&card))
+    );
+
+    // The stateless render stays always-teach (spawn-seam semantics).
+    let corpus = load_corpus();
+    let message = build_message(&corpus[0].payload);
+    let dual = dual_wire(&message, &card);
+    let a = agent_session_message_prompt_body(&dual);
+    let b = agent_session_message_prompt_body(&dual);
+    assert_eq!(a, b, "stateless render is deterministic");
+    assert!(a.contains("Indexed fields use 1-based indices"), "stateless render teaches");
+
+    // Legend and reference sizes feed the amortization math.
+    println!(
+        "codebook legend: {} chars; reference: {} chars; saved per warm message: {} chars",
+        legend.chars().count(),
+        reference.chars().count(),
+        legend.chars().count() - reference.chars().count()
+    );
+}
+
+// ---------------------------------------------------------------------------
+// t15 - a different codebook identity re-injects the full legend
+// ---------------------------------------------------------------------------
+
+#[test]
+fn t15_dialect_switch_reinjects_full_legend() {
+    let corpus = load_corpus();
+    let card = sym_v1_card();
+    let mut other = DialectCard::sym_v1();
+    other.dialect_id = "sym-b".to_string();
+    other.sha256 = codebook_sha256(&other.grammar, &other.symbol_table);
+    let mut registry = DialectRegistry::with_sym_v1();
+    registry.insert(other.clone()).expect("second dialect card validates");
+
+    let message = build_message(&corpus[0].payload);
+    let dual_a = dual_wire(&message, &card);
+    let dual_b = dual_wire(&message, &other);
+
+    let present_a: Occ2CodebooksPresent =
+        [Occ2CodebookId::of_card(&card)].into_iter().collect();
+
+    // Same dialect: reference only.
+    let rendered = agent_session_message_prompt_body_with_registry_and_codebooks(
+        &dual_a,
+        &registry,
+        &present_a,
+    );
+    assert!(rendered.contains("previously provided in this conversation"));
+
+    // Different dialect with the same presence: full re-injection.
+    let rendered = agent_session_message_prompt_body_with_registry_and_codebooks(
+        &dual_b,
+        &registry,
+        &present_a,
+    );
+    assert!(rendered.contains("Indexed fields use 1-based indices"));
+    assert!(rendered.contains("sym-b@1 codebook (sha256:"));
+
+    // Both identities present: both reference.
+    let present_ab: Occ2CodebooksPresent = [
+        Occ2CodebookId::of_card(&card),
+        Occ2CodebookId::of_card(&other),
+    ]
+    .into_iter()
+    .collect();
+    for dual in [&dual_a, &dual_b] {
+        let rendered = agent_session_message_prompt_body_with_registry_and_codebooks(
+            dual,
+            &registry,
+            &present_ab,
+        );
+        assert!(rendered.contains("previously provided in this conversation"));
+        assert!(!rendered.contains("Indexed fields use 1-based indices"));
+    }
+
+    // A re-tuned sym-v1@1 (same id and version, different codebook) is a
+    // different identity and re-injects.
+    let mut retuned = DialectCard::sym_v1();
+    retuned.symbol_table.slots.insert(
+        pi_coding_agent::core::occ::dialect::slots::NEXT_ACTION.to_string(),
+        "Z".to_string(),
+    );
+    retuned.sha256 = codebook_sha256(&retuned.grammar, &retuned.symbol_table);
+    assert_ne!(
+        Occ2CodebookId::of_card(&retuned),
+        Occ2CodebookId::of_card(&card),
+        "a changed codebook is a new identity"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// t16 - compaction simulation: a removed legend forces re-injection
+// ---------------------------------------------------------------------------
+
+#[test]
+fn t16_compaction_reinjects_full_legend() {
+    let corpus = load_corpus();
+    let card = sym_v1_card();
+
+    let first = build_message(&corpus[0].payload);
+    let second = build_message(&corpus[3].payload);
+    let third = build_message(&corpus[5].payload);
+    let dual_first = dual_wire(&first, &card);
+    let dual_second = dual_wire(&second, &card);
+    let dual_third = dual_wire(&third, &card);
+
+    // Deliver two messages into a transcript.
+    let mut messages: Vec<AgentMessage> = Vec::new();
+    for (index, dual) in [&dual_first, &dual_second].into_iter().enumerate() {
+        let present = occ2_codebooks_present(&messages);
+        let record = create_agent_session_message_with_codebooks(
+            &sample_payload(dual),
+            index as i64,
+            &present,
+        );
+        messages.push(AgentMessage::Custom(record));
+    }
+    let full_legends = || {
+        messages
+            .iter()
+            .filter(|message| {
+                matches!(
+                    message,
+                    AgentMessage::Custom(CustomAgentMessage::Custom {
+                        content: CustomMessageContent::Text(text),
+                        ..
+                    }) if text.contains("Indexed fields use 1-based indices")
+                )
+            })
+            .count()
+    };
+    assert_eq!(full_legends(), 1, "one legend after two deliveries");
+
+    // Compaction removes the legend-bearing entry (the second message's
+    // reference line survives).
+    let compacted: Vec<AgentMessage> = messages
+        .into_iter()
+        .filter(|message| {
+            !matches!(
+                message,
+                AgentMessage::Custom(CustomAgentMessage::Custom {
+                    content: CustomMessageContent::Text(text),
+                    ..
+                }) if text.contains("Indexed fields use 1-based indices")
+            )
+        })
+        .collect();
+    assert_eq!(compacted.len(), 1);
+
+    // The surviving reference line alone is not presence.
+    let present = occ2_codebooks_present(&compacted);
+    assert!(present.is_empty(), "a reference line is not a codebook");
+
+    // The next delivery re-injects the full legend.
+    let rendered = agent_session_message_prompt_body_with_codebooks(&dual_third, &present);
+    assert!(
+        rendered.contains("Indexed fields use 1-based indices"),
+        "re-injection after compaction removed the legend"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// t17 - replay and restart reconstruct exactly one codebook
+// ---------------------------------------------------------------------------
+
+#[test]
+fn t17_replay_reconstructs_exactly_one_codebook() {
+    let corpus = load_corpus();
+    let card = sym_v1_card();
+
+    // Deliver eight messages, deriving presence from the transcript before
+    // each delivery exactly like the daemon seam does.
+    let mut messages: Vec<AgentMessage> = Vec::new();
+    for (index, entry) in corpus.iter().take(8).enumerate() {
+        let message = build_message(&entry.payload);
+        let dual = dual_wire(&message, &card);
+        let present = occ2_codebooks_present(&messages);
+        let record = create_agent_session_message_with_codebooks(
+            &sample_payload(&dual),
+            index as i64,
+            &present,
+        );
+        messages.push(AgentMessage::Custom(record));
+    }
+
+    let count_full = |messages: &[AgentMessage]| {
+        messages
+            .iter()
+            .filter(|message| {
+                matches!(
+                    message,
+                    AgentMessage::Custom(CustomAgentMessage::Custom {
+                        content: CustomMessageContent::Text(text),
+                        ..
+                    }) if text.contains("Indexed fields use 1-based indices")
+                )
+            })
+            .count()
+    };
+    let count_references = |messages: &[AgentMessage]| {
+        messages
+            .iter()
+            .filter(|message| {
+                matches!(
+                    message,
+                    AgentMessage::Custom(CustomAgentMessage::Custom {
+                        content: CustomMessageContent::Text(text),
+                        ..
+                    }) if text.contains("previously provided in this conversation")
+                )
+            })
+            .count()
+    };
+    assert_eq!(count_full(&messages), 1, "exactly one full codebook");
+    assert_eq!(count_references(&messages), 7, "seven references");
+
+    // Restart: presence re-derived from the stored transcript is the same
+    // single identity, and the next delivery still references.
+    let present = occ2_codebooks_present(&messages);
+    let expected: Occ2CodebooksPresent = [Occ2CodebookId::of_card(&card)].into_iter().collect();
+    assert_eq!(present, expected);
+    let ninth = build_message(&corpus[8].payload);
+    let dual_ninth = dual_wire(&ninth, &card);
+    let rendered = agent_session_message_prompt_body_with_codebooks(&dual_ninth, &present);
+    assert!(rendered.contains("previously provided in this conversation"));
+    assert!(!rendered.contains("Indexed fields use 1-based indices"));
+
+    // Every record still carries its dual body verbatim in the details.
+    for message in &messages {
+        let AgentMessage::Custom(CustomAgentMessage::Custom {
+            details: Some(details),
+            ..
+        }) = message
+        else {
+            panic!("agent session message is a custom message");
+        };
+        assert!(details["message"].as_str().unwrap_or("").starts_with("OCC/2 D=sym-v1@1 C="));
+    }
+}
+
+// ---------------------------------------------------------------------------
+// t18 - spawn seam: the spawn legend suppresses the first delivery's legend
+// ---------------------------------------------------------------------------
+
+#[test]
+fn t18_spawn_legend_suppresses_first_delivery_injection() {
+    let corpus = load_corpus();
+    let card = sym_v1_card();
+
+    // The spawn seam renders the stateless (always-teach) body into the
+    // child prompt and records it as an agent-message custom message
+    // (subagent_runs.rs: the "[task from parent]" content plus the dual
+    // body in the details).
+    let spawn_task = build_message(&corpus[0].payload);
+    let dual_spawn = dual_wire(&spawn_task, &card);
+    let visible = agent_session_message_prompt_body(&dual_spawn).to_string();
+    assert!(visible.contains("Indexed fields use 1-based indices"), "spawn teaches");
+    let content = format!("[task from parent]\n\n{visible}");
+    let spawn_record = AgentMessage::Custom(CustomAgentMessage::Custom {
+        custom_type: AGENT_MESSAGE_CUSTOM_TYPE.to_string(),
+        content: CustomMessageContent::Text(content),
+        display: true,
+        details: Some(serde_json::json!({
+            "id": "spawn:run-1",
+            "message": dual_spawn,
+            "target": { "sessionId": "child" },
+            "from": { "sessionId": "parent" },
+            "fromRelationship": "parent",
+        })),
+        timestamp: 5,
+    });
+
+    // The child's context now carries the codebook.
+    let present = occ2_codebooks_present(&[spawn_record]);
+    assert!(
+        present.contains(&Occ2CodebookId::of_card(&card)),
+        "the spawn legend counts as presence"
+    );
+
+    // The first delivered message after the spawn references, not re-teaches.
+    let delivered = build_message(&corpus[1].payload);
+    let dual_delivered = dual_wire(&delivered, &card);
+    let rendered = agent_session_message_prompt_body_with_codebooks(&dual_delivered, &present);
+    assert!(
+        rendered.contains("previously provided in this conversation"),
+        "no double injection after the spawn prompt"
+    );
+    assert!(!rendered.contains("Indexed fields use 1-based indices"));
+    assert!(rendered.contains("OCC/2 D=sym-v1@1 C="), "symbolic section present");
+}
+
+// ---------------------------------------------------------------------------
+// t19 - fallback and pass-through paths are presence-independent
+// ---------------------------------------------------------------------------
+
+#[test]
+fn t19_fallback_and_passthrough_ignore_presence() {
+    let corpus = load_corpus();
+    let card = sym_v1_card();
+    let message = build_message(&corpus[0].payload);
+    let dual = dual_wire(&message, &card);
+    let occ1 = occ1_wire(&message);
+    let present: Occ2CodebooksPresent = [Occ2CodebookId::of_card(&card)]
+        .into_iter()
+        .collect();
+
+    // Unknown dialect: the embedded OCC-1 section renders, present or not.
+    let unknown = dual.replace("D=sym-v1@1", "D=unknown@1");
+    assert_eq!(
+        agent_session_message_prompt_body_with_codebooks(&unknown, &present),
+        occ1
+    );
+    assert_eq!(agent_session_message_prompt_body_with_codebooks(&unknown, &Occ2CodebooksPresent::new()), occ1);
+
+    // A hash mismatch renders the fallback section too.
+    let marker = dual.find(" C=").expect("codebook token");
+    let zeroed = format!("{}{}{}", &dual[..marker + 3], "000000000000", &dual[marker + 15..]);
+    assert_eq!(
+        agent_session_message_prompt_body_with_codebooks(&zeroed, &present),
+        occ1
+    );
+
+    // Plain text and plain OCC-1 pass through untouched.
+    assert_eq!(
+        agent_session_message_prompt_body_with_codebooks(&corpus[0].plain_english, &present),
+        corpus[0].plain_english
+    );
+    assert_eq!(
+        agent_session_message_prompt_body_with_codebooks(&occ1, &present),
+        occ1
+    );
+
+    // Broken OCC-2 stays raw.
+    let broken = "OCC/2 invalid\n#FALLBACK-OCC1\ninvalid";
+    assert_eq!(
+        agent_session_message_prompt_body_with_codebooks(broken, &present),
+        broken
+    );
+}
+
+// ---------------------------------------------------------------------------
+// t20 - t27: production strike ledger wiring
+// ---------------------------------------------------------------------------
+
+use pi_coding_agent::core::agent_messages::{
+    create_agent_session_message_delivery, load_occ2_strike_ledger, occ2_pair_key,
+    occ2_strike_ledger_clear, occ2_strike_pair_disabled, render_agent_session_message_delivery,
+    save_occ2_strike_ledger, Occ2DeliveryKind, OCC2_STRIKE_DECAY_MS,
+};
+
+/// A fake session file path inside a tempdir; only the path shape matters
+/// (the artifact directory is derived from it).
+fn strike_session_file(root: &std::path::Path, id: &str) -> String {
+    root.join("sessions")
+        .join(format!("{id}.jsonl"))
+        .to_string_lossy()
+        .into_owned()
+}
+
+/// Writes the OCC preference marker with an mtime strictly newer than the
+/// reference file, spinning briefly on coarse-grained clocks so the
+/// toggle-clears-strikes rule is exercised deterministically.
+fn write_preference_marker_newer(artifact_dir: &std::path::Path, reference: &std::path::Path) {
+    let marker = artifact_dir.join("occ.json");
+    let reference_modified = std::fs::metadata(reference)
+        .and_then(|meta| meta.modified())
+        .expect("reference file exists");
+    for _ in 0..200 {
+        std::fs::write(&marker, b"{\"schema\":\"optimus.occ-session.v1\",\"occ2Enabled\":true}\n")
+            .expect("write preference marker");
+        let newer = std::fs::metadata(&marker)
+            .and_then(|meta| meta.modified())
+            .is_ok_and(|modified| modified > reference_modified);
+        if newer {
+            return;
+        }
+    }
+    panic!("could not make the preference marker newer than the strike file");
+}
+
+#[test]
+fn t20_first_failed_decode_falls_back_and_records_one_strike() {
+    let corpus = load_corpus();
+    let card = sym_v1_card();
+    let registry = DialectRegistry::with_sym_v1();
+    let message = build_message(&corpus[0].payload);
+    let dual = dual_wire(&message, &card);
+    let occ1 = occ1_wire(&message);
+    let empty = Occ2CodebooksPresent::new();
+
+    // A good dual renders symbolically with the codebook legend, no strike.
+    let mut ledger = Occ2StrikeLedger::new();
+    let outcome = render_agent_session_message_delivery(
+        &dual, &registry, &empty, "speaker-1", "listener-1", &mut ledger, 1_000,
+    );
+    assert_eq!(outcome.kind, Occ2DeliveryKind::Symbolic);
+    assert!(!outcome.strike_recorded);
+    assert!(outcome.body.contains("Indexed fields use 1-based indices"));
+    assert_eq!(ledger.pairs().len(), 0);
+
+    // A duplicated task line in the symbolic section fails the strict
+    // decode (duplicate field), while the embedded OCC-1 section stays
+    // intact: one strike, the payload still delivered.
+    let header_end = dual.find('\n').map(|index| index + 1).unwrap_or(0);
+    let corrupt = format!(
+        "{}T={}\n{}",
+        &dual[..header_end],
+        message.task_id,
+        &dual[header_end..]
+    );
+    assert!(corrupt != dual, "the duplicated task line was inserted");
+    let mut ledger = Occ2StrikeLedger::new();
+    let outcome = render_agent_session_message_delivery(
+        &corrupt, &registry, &empty, "speaker-1", "listener-1", &mut ledger, 1_000,
+    );
+    assert_eq!(outcome.kind, Occ2DeliveryKind::FallbackConsumed);
+    assert!(outcome.strike_recorded);
+    assert!(!outcome.pair_disabled_now);
+    let pair = occ2_pair_key("speaker-1", "listener-1", "sym-v1", 1);
+    assert_eq!(outcome.pair.as_deref(), Some(pair.as_str()));
+    assert_eq!(ledger.incidents(&pair), 1, "exactly one strike");
+    assert_eq!(outcome.body, occ1, "the OCC-1 payload is delivered");
+
+    // Plain OCC-1 and plain text classify without touching the ledger.
+    let outcome = render_agent_session_message_delivery(
+        &occ1, &registry, &empty, "speaker-1", "listener-1", &mut ledger, 1_000,
+    );
+    assert_eq!(outcome.kind, Occ2DeliveryKind::Occ1Native);
+    assert_eq!(outcome.body, occ1);
+    let outcome = render_agent_session_message_delivery(
+        "plain english", &registry, &empty, "speaker-1", "listener-1", &mut ledger, 1_000,
+    );
+    assert_eq!(outcome.kind, Occ2DeliveryKind::Text);
+    assert_eq!(outcome.body, "plain english");
+    assert_eq!(ledger.incidents(&pair), 1, "no strikes for non-OCC/2 bodies");
+}
+
+#[test]
+fn t21_three_strikes_disable_the_pair_for_selection() {
+    let corpus = load_corpus();
+    let card = sym_v1_card();
+    let registry = DialectRegistry::with_sym_v1();
+    let message = build_message(&corpus[0].payload);
+    let dual = dual_wire(&message, &card);
+    let corrupt = corrupt_hash_prefix(&dual);
+    let empty = Occ2CodebooksPresent::new();
+    let pair = occ2_pair_key("speaker-1", "listener-1", "sym-v1", 1);
+
+    let mut ledger = Occ2StrikeLedger::new();
+    for round in 1..=3 {
+        let outcome = render_agent_session_message_delivery(
+            &corrupt, &registry, &empty, "speaker-1", "listener-1", &mut ledger, round * 1_000,
+        );
+        assert_eq!(outcome.kind, Occ2DeliveryKind::FallbackConsumed);
+        assert_eq!(outcome.pair_disabled_now, round == 3, "disable on the third strike");
+    }
+    assert!(ledger.is_disabled(&pair));
+
+    // A disabled pair skips the strict decode entirely: no further
+    // strikes, the OCC-1 payload still delivers.
+    let outcome = render_agent_session_message_delivery(
+        &corrupt, &registry, &empty, "speaker-1", "listener-1", &mut ledger, 10_000,
+    );
+    assert_eq!(outcome.kind, Occ2DeliveryKind::DisabledByStrikes);
+    assert!(!outcome.strike_recorded);
+    assert_eq!(ledger.incidents(&pair), 3, "no strike past the disable");
+    assert_eq!(outcome.body, occ1_wire(&message));
+
+    // The persisted ledger is what a sender-side selection check reads:
+    // disabled for this pair and dialect, not for others.
+    let root = tempfile::tempdir().unwrap();
+    let session_file = strike_session_file(root.path(), "listener-1");
+    save_occ2_strike_ledger(&session_file, &ledger).unwrap();
+    assert!(occ2_strike_pair_disabled(
+        &session_file, "speaker-1", "listener-1", ("sym-v1", 1), 10_000
+    ));
+    assert!(!occ2_strike_pair_disabled(
+        &session_file, "speaker-1", "listener-1", ("sym-b", 1), 10_000
+    ), "a different dialect is not disabled");
+    assert!(!occ2_strike_pair_disabled(
+        &session_file, "speaker-2", "listener-1", ("sym-v1", 1), 10_000
+    ), "a different speaker is not disabled");
+    assert!(!occ2_strike_pair_disabled(
+        &strike_session_file(root.path(), "other"), "speaker-1", "listener-1", ("sym-v1", 1), 10_000
+    ), "a different listener session is not disabled");
+}
+
+#[test]
+fn t22_restart_restores_strike_counts() {
+    let corpus = load_corpus();
+    let card = sym_v1_card();
+    let registry = DialectRegistry::with_sym_v1();
+    let message = build_message(&corpus[0].payload);
+    let dual = dual_wire(&message, &card);
+    let corrupt = corrupt_hash_prefix(&dual);
+    let empty = Occ2CodebooksPresent::new();
+    let pair = occ2_pair_key("speaker-1", "listener-1", "sym-v1", 1);
+
+    // Two strikes, then the session restarts (persist + fresh load).
+    let mut ledger = Occ2StrikeLedger::new();
+    ledger.record_incident_at(&pair, 1_000);
+    ledger.record_incident_at(&pair, 2_000);
+    let root = tempfile::tempdir().unwrap();
+    let session_file = strike_session_file(root.path(), "listener-1");
+    save_occ2_strike_ledger(&session_file, &ledger).unwrap();
+
+    let mut restored = load_occ2_strike_ledger(&session_file, 5_000).unwrap();
+    assert_eq!(restored.incidents(&pair), 2, "counts survive the restart");
+    assert!(!restored.is_disabled(&pair));
+
+    // The third strike after the restart disables.
+    let outcome = render_agent_session_message_delivery(
+        &corrupt, &registry, &empty, "speaker-1", "listener-1", &mut restored, 6_000,
+    );
+    assert!(outcome.pair_disabled_now);
+    assert!(restored.is_disabled(&pair));
+    save_occ2_strike_ledger(&session_file, &restored).unwrap();
+
+    // A second restart keeps the disabled verdict.
+    let reloaded = load_occ2_strike_ledger(&session_file, 7_000).unwrap();
+    assert!(reloaded.is_disabled(&pair));
+    assert_eq!(reloaded.incidents(&pair), 3);
+}
+
+#[test]
+fn t23_decay_reenables_after_the_quiet_period() {
+    let pair = occ2_pair_key("speaker-1", "listener-1", "sym-v1", 1);
+    let mut ledger = Occ2StrikeLedger::new();
+    ledger.record_incident_at(&pair, 1_000);
+    ledger.record_incident_at(&pair, 2_000);
+    ledger.record_incident_at(&pair, 3_000);
+    assert!(ledger.is_disabled(&pair));
+
+    let root = tempfile::tempdir().unwrap();
+    let session_file = strike_session_file(root.path(), "listener-1");
+    save_occ2_strike_ledger(&session_file, &ledger).unwrap();
+
+    // Inside the quiet window the disable holds.
+    let before = load_occ2_strike_ledger(&session_file, 3_000 + OCC2_STRIKE_DECAY_MS - 1).unwrap();
+    assert!(before.is_disabled(&pair), "no decay inside 24h of the last strike");
+
+    // After the window the pair is re-enabled from zero.
+    let after = load_occ2_strike_ledger(&session_file, 3_000 + OCC2_STRIKE_DECAY_MS + 1).unwrap();
+    assert_eq!(after.incidents(&pair), 0, "counts decay to zero");
+    assert!(!after.is_disabled(&pair), "the pair is re-enabled");
+}
+
+#[test]
+fn t24_unknown_dialect_strikes_its_own_pair() {
+    let corpus = load_corpus();
+    let card = sym_v1_card();
+    let message = build_message(&corpus[0].payload);
+    let dual = dual_wire(&message, &card);
+    let occ1 = occ1_wire(&message);
+    let unknown = dual.replace("D=sym-v1@1", "D=unknown@1");
+    let registry = DialectRegistry::with_sym_v1();
+    let empty = Occ2CodebooksPresent::new();
+
+    let mut ledger = Occ2StrikeLedger::new();
+    let outcome = render_agent_session_message_delivery(
+        &unknown, &registry, &empty, "speaker-1", "listener-1", &mut ledger, 1_000,
+    );
+    assert_eq!(outcome.kind, Occ2DeliveryKind::FallbackConsumed);
+    assert!(outcome.strike_recorded);
+    // The strike is scoped to the advertised dialect, not the registered one.
+    assert_eq!(
+        outcome.pair.as_deref(),
+        Some(occ2_pair_key("speaker-1", "listener-1", "unknown", 1).as_str())
+    );
+    assert_eq!(outcome.body, occ1, "the OCC-1 payload is delivered");
+}
+
+#[test]
+fn t25_corrupt_codebook_strikes_and_preserves_the_payload() {
+    let corpus = load_corpus();
+    let card = sym_v1_card();
+    let registry = DialectRegistry::with_sym_v1();
+    let message = build_message(&corpus[0].payload);
+    let dual = dual_wire(&message, &card);
+    let empty = Occ2CodebooksPresent::new();
+
+    // A hash prefix that matches no registered card: strike + fallback.
+    let corrupt = corrupt_hash_prefix(&dual);
+    let mut ledger = Occ2StrikeLedger::new();
+    let outcome = render_agent_session_message_delivery(
+        &corrupt, &registry, &empty, "speaker-1", "listener-1", &mut ledger, 1_000,
+    );
+    assert_eq!(outcome.kind, Occ2DeliveryKind::FallbackConsumed);
+    assert!(outcome.strike_recorded);
+    assert_eq!(outcome.body, occ1_wire(&message));
+
+    // A body whose embedded OCC-1 section is also broken: the strike is
+    // still recorded (the strict decode did fail) and the raw body is
+    // delivered untouched - never dropped, never nulled.
+    let marker = dual.find("#FALLBACK-OCC1").expect("sentinel");
+    let broken_fallback = format!(
+        "{}\n{}\n{}",
+        &dual[..marker],
+        "#FALLBACK-OCC1",
+        "OCC/1\nTASK=\nKIND=BROKEN"
+    );
+    let outcome = render_agent_session_message_delivery(
+        &broken_fallback, &registry, &empty, "speaker-1", "listener-1", &mut ledger, 2_000,
+    );
+    assert_eq!(outcome.kind, Occ2DeliveryKind::FallbackConsumed);
+    assert!(outcome.strike_recorded);
+    assert_eq!(outcome.body, broken_fallback, "no data loss on a broken body");
+}
+
+#[test]
+fn t26_occ_toggle_and_explicit_clear_reset_strikes() {
+    let pair = occ2_pair_key("speaker-1", "listener-1", "sym-v1", 1);
+    let mut ledger = Occ2StrikeLedger::new();
+    ledger.record_incident_at(&pair, 1_000);
+    ledger.record_incident_at(&pair, 2_000);
+    ledger.record_incident_at(&pair, 3_000);
+    assert!(ledger.is_disabled(&pair));
+
+    let root = tempfile::tempdir().unwrap();
+    let session_file = strike_session_file(root.path(), "listener-1");
+    save_occ2_strike_ledger(&session_file, &ledger).unwrap();
+    let artifact_dir = std::path::PathBuf::from(
+        pi_coding_agent::core::session_manager::get_session_artifact_path_for_file(
+            &session_file, None,
+        ),
+    );
+    let strikes_path = artifact_dir.join("occ2-strikes.json");
+    assert!(strikes_path.exists());
+
+    // A preference marker written after the last strike (the /occ 2 on
+    // toggle) clears the ledger and removes the strike file.
+    write_preference_marker_newer(&artifact_dir, &strikes_path);
+    let cleared = load_occ2_strike_ledger(&session_file, 4_000).unwrap();
+    assert_eq!(cleared.incidents(&pair), 0);
+    assert!(!cleared.is_disabled(&pair));
+    assert!(!strikes_path.exists(), "the clear is sticky");
+
+    // The explicit clear function behaves the same on a fresh ledger.
+    let mut ledger = Occ2StrikeLedger::new();
+    ledger.record_incident_at(&pair, 5_000);
+    save_occ2_strike_ledger(&session_file, &ledger).unwrap();
+    assert!(strikes_path.exists());
+    occ2_strike_ledger_clear(&session_file).unwrap();
+    assert!(!strikes_path.exists());
+    let loaded = load_occ2_strike_ledger(&session_file, 6_000).unwrap();
+    assert_eq!(loaded.incidents(&pair), 0);
+}
+
+#[test]
+fn t27_restart_mid_strikes_never_double_counts() {
+    let corpus = load_corpus();
+    let card = sym_v1_card();
+    let registry = DialectRegistry::with_sym_v1();
+    let message = build_message(&corpus[0].payload);
+    let dual = dual_wire(&message, &card);
+    let corrupt = corrupt_hash_prefix(&dual);
+    let empty = Occ2CodebooksPresent::new();
+    let pair = occ2_pair_key("speaker-1", "listener-1", "sym-v1", 1);
+
+    // Two strikes recorded before a restart.
+    let mut ledger = Occ2StrikeLedger::new();
+    ledger.record_incident_at(&pair, 1_000);
+    ledger.record_incident_at(&pair, 2_000);
+    let root = tempfile::tempdir().unwrap();
+    let session_file = strike_session_file(root.path(), "listener-1");
+    save_occ2_strike_ledger(&session_file, &ledger).unwrap();
+
+    // After the restart a GOOD delivery consumes symbolically and counts
+    // nothing: strikes are per failed decode, never per delivery.
+    let mut ledger = load_occ2_strike_ledger(&session_file, 5_000).unwrap();
+    let outcome = render_agent_session_message_delivery(
+        &dual, &registry, &empty, "speaker-1", "listener-1", &mut ledger, 5_000,
+    );
+    assert_eq!(outcome.kind, Occ2DeliveryKind::Symbolic);
+    assert!(!outcome.strike_recorded);
+    assert_eq!(ledger.incidents(&pair), 2);
+
+    // The durable record from the same render carries the classification
+    // and keeps the dual payload verbatim.
+    let delivery = create_agent_session_message_delivery(
+        &sample_payload(&dual), 5, &empty, "speaker-1", "listener-1", &mut ledger, 5_000,
+    );
+    let CustomAgentMessage::Custom { details: Some(details), .. } = &delivery.record else {
+        panic!("agent session message is a custom message");
+    };
+    assert_eq!(details["message"].as_str(), Some(dual.as_str()));
+    assert_eq!(details["occ2Delivery"]["kind"].as_str(), Some("symbolic"));
+    assert_eq!(
+        details["occ2Delivery"]["pair"].as_str(),
+        Some(occ2_pair_key("speaker-1", "listener-1", "sym-v1", 1).as_str())
+    );
+    assert!(!details["occ2Delivery"]["strikeRecorded"].as_bool().unwrap_or(true));
+    assert!(delivery.content.contains("OCC/2 D=sym-v1@1 C="));
+
+    // The third failed decode disables; a restart keeps exactly three.
+    let outcome = render_agent_session_message_delivery(
+        &corrupt, &registry, &empty, "speaker-1", "listener-1", &mut ledger, 6_000,
+    );
+    assert!(outcome.pair_disabled_now);
+    save_occ2_strike_ledger(&session_file, &ledger).unwrap();
+    let reloaded = load_occ2_strike_ledger(&session_file, 7_000).unwrap();
+    assert_eq!(reloaded.incidents(&pair), 3, "no duplicate counting across restarts");
+    assert!(reloaded.is_disabled(&pair));
+}
+
+// ---------------------------------------------------------------------------
+// t28 - t30: production gap closures (daemon-bridge + telemetry)
+// ---------------------------------------------------------------------------
+
+use pi_coding_agent::core::agent_messages::{
+    occ2_message_kind_hint, occ2_send_policy_for_send, save_occ2_evaluations,
+};
+use pi_coding_agent::core::occ::activity::from_admitted_messages_with_registry;
+
+/// A fake sender session file path inside a tempdir.
+fn send_session_file(root: &std::path::Path, id: &str) -> String {
+    root.join("sessions")
+        .join(format!("{id}.jsonl"))
+        .to_string_lossy()
+        .into_owned()
+}
+
+#[test]
+fn t28_shared_send_selection_end_to_end_with_real_artifacts() {
+    let local = OccCapability::here();
+    let registry = DialectRegistry::with_sym_v1();
+    let corpus = load_corpus();
+    let card = sym_v1_card();
+    let message = build_message(&corpus[0].payload);
+    let occ1 = occ1_wire(&message);
+    assert!(occ1.chars().count() >= 220, "the corpus body clears the floor");
+
+    let root = tempfile::tempdir().unwrap();
+    let sender_file = send_session_file(root.path(), "speaker-1");
+
+    // Cold: the shared function with an empty artifact set selects OCC-2
+    // only on the experimental path (the /occ 2 opt-in), never production.
+    let policy = occ2_send_policy_for_send(
+        Some(&local),
+        "listener-1",
+        &occ1,
+        Some(&sender_file),
+        None,
+        "speaker-1",
+        false,
+    );
+    assert!(!policy.enabled, "production stays OCC-1 unevaluated");
+
+    let policy = occ2_send_policy_for_send(
+        Some(&local),
+        "listener-1",
+        &occ1,
+        Some(&sender_file),
+        None,
+        "speaker-1",
+        true,
+    );
+    assert!(policy.enabled, "the experimental path selects OCC-2");
+    assert_eq!(policy.dialect, Some(("sym-v1".to_string(), 1)));
+
+    // A persisted strike for the pair flips even the experimental send
+    // to OCC-1 (the same gate the daemon-bridged controller applies).
+    let pair = pi_coding_agent::core::agent_messages::occ2_pair_key(
+        "speaker-1", "listener-1", "sym-v1", 1,
+    );
+    let mut ledger = Occ2StrikeLedger::new();
+    let real_now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_millis() as u64)
+        .unwrap_or(0);
+    ledger.record_incident_at(&pair, real_now);
+    save_occ2_strike_ledger(&sender_file, &ledger).unwrap();
+    let policy = occ2_send_policy_for_send(
+        Some(&local),
+        "listener-1",
+        &occ1,
+        Some(&sender_file),
+        None,
+        "speaker-1",
+        true,
+    );
+    assert!(!policy.enabled, "a struck pair stays OCC-1");
+
+    // A validated evaluation record in the sender's store flips the
+    // production send to OCC-2 - the daemon-bridge and the in-process
+    // seam read the same store. The strike is cleared first: a strike
+    // is a measured refusal and stays final until decay or an
+    // explicit clear, so validated economics can only take over on
+    // an unstruck pair.
+    let mut records = std::collections::BTreeMap::new();
+    records.insert(
+        ("sym-v1".to_string(), 1),
+        pi_coding_agent::core::occ::selection::DialectEvaluationRecord {
+            samples: 30,
+            listener_fidelity_mean: 1.0,
+            wire_tokens_vs_occ1: 0.60,
+            last_evaluated: Some(1_800_000_000),
+        },
+    );
+    save_occ2_evaluations(&sender_file, &records).unwrap();
+    save_occ2_strike_ledger(&sender_file, &Occ2StrikeLedger::new()).unwrap();
+    let policy = occ2_send_policy_for_send(
+        Some(&local),
+        "listener-1",
+        &occ1,
+        Some(&sender_file),
+        None,
+        "speaker-1",
+        false,
+    );
+    assert!(policy.enabled, "validated economics select OCC-2 in production");
+    assert_eq!(policy.dialect, Some(("sym-v1".to_string(), 1)));
+
+    // No session file at all: no strikes, no evals, no crash.
+    let policy = occ2_send_policy_for_send(
+        Some(&local),
+        "listener-1",
+        &occ1,
+        None,
+        None,
+        "speaker-1",
+        false,
+    );
+    assert!(!policy.enabled);
+
+    // Unknown listener: OCC-1 regardless.
+    let policy = occ2_send_policy_for_send(
+        None,
+        "listener-1",
+        &occ1,
+        Some(&sender_file),
+        None,
+        "speaker-1",
+        true,
+    );
+    assert!(!policy.enabled);
+    // The unused registry binding keeps the corpus card in scope.
+    let _ = (&registry, &card, &message);
+}
+
+#[test]
+fn t29_message_kind_hint_parses_kinds() {
+    assert_eq!(occ2_message_kind_hint("OCC/1\nTASK=t\nKIND=RESULT\nSTATUS=done"), "RESULT");
+    assert_eq!(occ2_message_kind_hint("OCC/1\nTASK=t\nKIND=ACK\nSTATUS=done"), "ACK");
+    assert_eq!(occ2_message_kind_hint("OCC/1\nTASK=t"), "TASK");
+    assert_eq!(occ2_message_kind_hint("plain english"), "TASK");
+    assert_eq!(occ2_message_kind_hint("OCC/1\nKIND=WEIRD"), "TASK");
+}
+
+#[test]
+fn t30_telemetry_reads_recorded_delivery_kind() {
+    let corpus = load_corpus();
+    let card = sym_v1_card();
+    let empty = Occ2CodebooksPresent::new();
+    let message = build_message(&corpus[0].payload);
+    let dual = dual_wire(&message, &card);
+    let mut ledger = Occ2StrikeLedger::new();
+
+    // A delivered record stamped symbolic by the render: the projection
+    // reports Symbolic from the recorded field...
+    let delivery = create_agent_session_message_delivery(
+        &sample_payload(&dual),
+        5,
+        &empty,
+        "session-1",
+        "session-2",
+        &mut ledger,
+        1_000,
+    );
+    let activity = from_admitted_messages_with_registry(
+        &[AgentMessage::Custom(delivery.record.clone())],
+        "session-2",
+        "gen",
+        &DialectRegistry::new(), // an empty registry: decode would fail
+    );
+    assert_eq!(activity.deliveries.len(), 1);
+    assert_eq!(activity.deliveries[0].kind, CommunicationKind::Symbolic);
+
+    // ...and a fallback_consumed record reports Occ1 even though its
+    // body would strict-decode as Symbolic: the recorded truth wins.
+    let corrupt = dual.replacen("=", "!=", 3);
+    let mut ledger = Occ2StrikeLedger::new();
+    let delivery = create_agent_session_message_delivery(
+        &sample_payload(&corrupt),
+        6,
+        &empty,
+        "session-1",
+        "session-2",
+        &mut ledger,
+        1_000,
+    );
+    let details = match &delivery.record {
+        pi_agent_core::types::CustomAgentMessage::Custom { details: Some(details), .. } => details.clone(),
+        _ => panic!("custom message"),
+    };
+    assert_eq!(details["occ2Delivery"]["kind"].as_str(), Some("fallback_consumed"));
+    let activity = from_admitted_messages_with_registry(
+        &[AgentMessage::Custom(delivery.record.clone())],
+        "session-2",
+        "gen",
+        &DialectRegistry::with_sym_v1(), // would decode the symbolic part... but it is corrupt
+    );
+    assert_eq!(activity.deliveries[0].kind, CommunicationKind::Occ1);
+
+    // Legacy records without the field classify from the body as before.
+    let legacy = create_agent_session_message(&sample_payload(&dual), 7);
+    let activity = from_admitted_messages_with_registry(
+        &[AgentMessage::Custom(legacy)],
+        "session-2",
+        "gen",
+        &DialectRegistry::with_sym_v1(),
+    );
+    assert_eq!(activity.deliveries[0].kind, CommunicationKind::Symbolic);
+    let legacy_text = create_agent_session_message(&sample_payload("plain english"), 8);
+    let activity = from_admitted_messages_with_registry(
+        &[AgentMessage::Custom(legacy_text)],
+        "session-2",
+        "gen",
+        &DialectRegistry::with_sym_v1(),
+    );
+    assert_eq!(activity.deliveries[0].kind, CommunicationKind::Text);
+
+    // An unknown recorded label falls back to body classification.
+    let mut tampered = match create_agent_session_message(&sample_payload(&dual), 9) {
+        pi_agent_core::types::CustomAgentMessage::Custom { custom_type, mut details, content, display, timestamp } => {
+            if let Some(details) = details.as_mut() {
+                details["occ2Delivery"] = serde_json::json!({ "kind": "not-a-label" });
+            }
+            pi_agent_core::types::CustomAgentMessage::Custom { custom_type, details, content, display, timestamp }
+        }
+        _ => panic!("custom message"),
+    };
+    let _ = &mut tampered;
+    let activity = from_admitted_messages_with_registry(
+        &[AgentMessage::Custom(tampered)],
+        "session-2",
+        "gen",
+        &DialectRegistry::with_sym_v1(),
+    );
+    assert_eq!(activity.deliveries[0].kind, CommunicationKind::Symbolic);
 }

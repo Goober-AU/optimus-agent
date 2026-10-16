@@ -1,0 +1,151 @@
+{
+  "batch_size": 10,
+  "batches": [
+    {
+      "canaries": [
+        "e2-d01-03",
+        "e2-d01-08"
+      ],
+      "index": 0,
+      "items": [
+        "e2-d02-02",
+        "e2-d01-06",
+        "e2-d01-04",
+        "e2-d01-07",
+        "e2-d01-01",
+        "e2-d01-08",
+        "e2-d02-01",
+        "e2-d01-05",
+        "e2-d01-02",
+        "e2-d01-03"
+      ]
+    },
+    {
+      "canaries": [
+        "e2-d03-02",
+        "e2-d03-04"
+      ],
+      "index": 1,
+      "items": [
+        "e2-d02-03",
+        "e2-d03-05",
+        "e2-d03-02",
+        "e2-d02-07",
+        "e2-d02-06",
+        "e2-d02-04",
+        "e2-d03-01",
+        "e2-d03-04",
+        "e2-d02-05",
+        "e2-d03-03"
+      ]
+    },
+    {
+      "canaries": [
+        "e2-d04-05",
+        "e2-d04-07"
+      ],
+      "index": 2,
+      "items": [
+        "e2-d04-01",
+        "e2-d04-05",
+        "e2-d03-07",
+        "e2-d04-06",
+        "e2-d04-04",
+        "e2-d04-07",
+        "e2-d04-03",
+        "e2-d03-06",
+        "e2-d04-02",
+        "e2-d05-01"
+      ]
+    },
+    {
+      "canaries": [
+        "e2-d05-03",
+        "e2-d05-08"
+      ],
+      "index": 3,
+      "items": [
+        "e2-d06-01",
+        "e2-d05-03",
+        "e2-d05-06",
+        "e2-d05-05",
+        "e2-d06-02",
+        "e2-d05-07",
+        "e2-d05-08",
+        "e2-d05-04",
+        "e2-d05-02",
+        "e2-d06-03"
+      ]
+    },
+    {
+      "canaries": [
+        "e2-d07-02",
+        "e2-d07-03"
+      ],
+      "index": 4,
+      "items": [
+        "e2-d06-05",
+        "e2-d07-05",
+        "e2-d07-01",
+        "e2-d07-06",
+        "e2-d06-04",
+        "e2-d07-04",
+        "e2-d07-03",
+        "e2-d06-07",
+        "e2-d07-02",
+        "e2-d06-06"
+      ]
+    },
+    {
+      "canaries": [
+        "e2-d08-04",
+        "e2-d08-05"
+      ],
+      "index": 5,
+      "items": [
+        "e2-d08-03",
+        "e2-d07-07",
+        "e2-d08-06",
+        "e2-d08-02",
+        "e2-d08-07",
+        "e2-d08-05",
+        "e2-d08-08",
+        "e2-d08-01",
+        "e2-d07-08",
+        "e2-d08-04"
+      ]
+    }
+  ],
+  "corpus": {
+    "receipts": "research/tasks2/receipts.json",
+    "sha256": "8604e7eae49074040a5904121b3449940d9b6b1716fa8779d584113db861bf57",
+    "split_file": "research/tasks2/msgs_corpus2_dev.json"
+  },
+  "decision_log": {
+    "decisions": [],
+    "frozen_before_run": true,
+    "note": "live run; the parent froze all tuning decisions before start"
+  },
+  "design": "reports/occ2opt/DGX-EVAL-DRIVER.md",
+  "driver": "research/occ2opt_eval/driver.py",
+  "dry_run": false,
+  "generated_utc": "2026-10-16T14:23:48+00:00",
+  "labels": {
+    "channel": "agent_message (DGX GLM 5.3 children, parent-orchestrated)",
+    "heterogeneous_model_pairs": "X1-X4 deferred to the online phase",
+    "latency_dry_run": "synthetic (dry-run)",
+    "latency_live": "wall-clock, channel-inclusive (agent_message)",
+    "matrix_cell": "C1 (glm-5.3 -> glm-5.3)",
+    "sizes": "chars, not provider tokens"
+  },
+  "limit": 60,
+  "mode": "scripted",
+  "run_id": "live-dev-scripted-20261016T142348Z",
+  "seed": 9377262116823234955,
+  "slot_ledger": {
+    "note": "the parent appends actual occupancy per batch",
+    "peak_slots": 4,
+    "topology": "T1 paired: 2 pipelines x (1 speaker + 1 listener)"
+  },
+  "split": "dev"
+}

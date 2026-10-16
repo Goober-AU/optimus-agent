@@ -1,0 +1,159 @@
+{
+  "batch_size": 10,
+  "batches": [
+    {
+      "canaries": [
+        "e2-h01-04",
+        "e2-h01-07"
+      ],
+      "index": 0,
+      "items": [
+        "e2-h01-04",
+        "e2-h01-05",
+        "e2-h01-06",
+        "e2-h01-02",
+        "e2-h02-01",
+        "e2-h01-07",
+        "e2-h02-03",
+        "e2-h02-02",
+        "e2-h01-01",
+        "e2-h01-03"
+      ]
+    },
+    {
+      "canaries": [
+        "e2-h02-04",
+        "e2-h03-04"
+      ],
+      "index": 1,
+      "items": [
+        "e2-h03-02",
+        "e2-h02-05",
+        "e2-h03-05",
+        "e2-h02-04",
+        "e2-h03-01",
+        "e2-h03-03",
+        "e2-h02-08",
+        "e2-h02-07",
+        "e2-h03-04",
+        "e2-h02-06"
+      ]
+    },
+    {
+      "canaries": [
+        "e2-h03-08",
+        "e2-h04-07"
+      ],
+      "index": 2,
+      "items": [
+        "e2-h04-03",
+        "e2-h03-08",
+        "e2-h03-07",
+        "e2-h04-05",
+        "e2-h04-02",
+        "e2-h04-06",
+        "e2-h04-01",
+        "e2-h04-07",
+        "e2-h04-04",
+        "e2-h03-06"
+      ]
+    },
+    {
+      "canaries": [
+        "e2-h05-03",
+        "e2-h05-07"
+      ],
+      "index": 3,
+      "items": [
+        "e2-h06-01",
+        "e2-h05-08",
+        "e2-h05-05",
+        "e2-h05-03",
+        "e2-h05-06",
+        "e2-h05-04",
+        "e2-h06-02",
+        "e2-h05-01",
+        "e2-h05-07",
+        "e2-h05-02"
+      ]
+    },
+    {
+      "canaries": [
+        "e2-h06-03",
+        "e2-h07-03"
+      ],
+      "index": 4,
+      "items": [
+        "e2-h07-02",
+        "e2-h06-03",
+        "e2-h06-07",
+        "e2-h07-03",
+        "e2-h06-08",
+        "e2-h06-06",
+        "e2-h06-05",
+        "e2-h06-04",
+        "e2-h07-01",
+        "e2-h07-04"
+      ]
+    },
+    {
+      "canaries": [
+        "e2-h07-06",
+        "e2-h07-08"
+      ],
+      "index": 5,
+      "items": [
+        "e2-h07-05",
+        "e2-h07-08",
+        "e2-h07-06",
+        "e2-h07-07"
+      ]
+    }
+  ],
+  "corpus": {
+    "receipts": "research/tasks2/receipts.json",
+    "sha256": "fea3839e17cc8014f332e0372fdf3b5efeab2a468eae521e1f6a8106f5f02e92",
+    "split_file": "research/tasks2/msgs_corpus2_holdout.json"
+  },
+  "decision_log": {
+    "decisions": [],
+    "frozen_before_run": true,
+    "note": "dry-run: no tuning decisions; synthetic replies"
+  },
+  "design": "reports/occ2opt/DGX-EVAL-DRIVER.md",
+  "dialect": "sym-v2-d2-r1",
+  "dialect_codec": {
+    "codebook_sha256_prefix": "d69eb25ebf7b",
+    "dialect_id": "sym-v2-d2-r1",
+    "version": 1
+  },
+  "driver": "research/occ2opt_eval/driver.py",
+  "dry_run": true,
+  "dry_run_fault_plan": {
+    "listener_comprehension": "e2-h01-05",
+    "listener_format": "e2-h01-06",
+    "listener_qa": "e2-h01-03",
+    "speaker_format": "e2-h01-01",
+    "speaker_next_drop": "e2-h02-01",
+    "speaker_status": "e2-h01-02"
+  },
+  "generated_utc": "2026-10-16T17:52:39+00:00",
+  "labels": {
+    "channel": "agent_message (DGX GLM 5.3 children, parent-orchestrated)",
+    "heterogeneous_model_pairs": "X1-X4 deferred to the online phase",
+    "latency_dry_run": "synthetic (dry-run)",
+    "latency_live": "wall-clock, channel-inclusive (agent_message)",
+    "matrix_cell": "C1 (glm-5.3 -> glm-5.3)",
+    "sizes": "chars, not provider tokens"
+  },
+  "limit": 54,
+  "mode": "scripted",
+  "run_id": "dry-holdout-sym-v2-d2-r1-scripted-b10",
+  "seed": 13433501215592801824,
+  "slot_ledger": {
+    "note": "synthetic children in dry-run; the parent records live occupancy",
+    "peak_slots": 4,
+    "topology": "T1 paired: 2 pipelines x (1 speaker + 1 listener)"
+  },
+  "split": "holdout"
+}
