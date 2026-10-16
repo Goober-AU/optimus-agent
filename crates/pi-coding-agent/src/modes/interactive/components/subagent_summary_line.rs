@@ -475,6 +475,34 @@ mod tests {
         }
     }
 
+    /// Parallel pin for the three-slot communication indicator string
+    /// (TXT/OCC/SYM): the renderer must keep it within the terminal width,
+    /// show it in full once it fits, and never invent a LAT indicator.
+    #[test]
+    fn three_slot_communication_indicators_respect_terminal_width() {
+        crate::modes::interactive::theme::theme::init_theme(Some("dark"), false);
+        let mut line = SubagentSummaryLine::default();
+        line.set_always_visible(true);
+        line.set_communication_status(Some("[1;38;5;39mTXT ●  OCC ○  SYM ●[22;39m".into()));
+        line.set_right_status(Some(RightStatus { full: "Jev active · 12 req".into(), compact: "Jev 12 req".into(), minimal: "Jev".into() }));
+        for width in [2, 5, 15, 22, 40, 80, 120] {
+            let lines = line.render(width as f64);
+            assert!(lines.iter().all(|row| visible_width(row) <= width));
+            let text = pi_tui::utils::strip_ansi(&lines.join("
+"));
+            // "TXT ●  OCC ○  SYM ●" is 19 visible columns; with the leading
+            // space the below-line needs inner = width - 2 >= 20, so the
+            // full string appears from width 22 up and is truncated below.
+            if width >= 22 {
+                assert!(text.contains("TXT ●  OCC ○  SYM ●"));
+            } else {
+                assert!(!text.contains("TXT ●  OCC ○  SYM ●"));
+            }
+            if width >= 40 { assert!(text.contains("Jev")); }
+            assert!(!text.contains("LAT"));
+        }
+    }
+
     fn snapshot(
         id: &str,
         parent: &str,

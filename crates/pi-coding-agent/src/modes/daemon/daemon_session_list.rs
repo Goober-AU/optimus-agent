@@ -901,6 +901,59 @@ mod tests {
         assert_eq!(legacy.session_id, "child");
     }
 
+    /// A delivered body that is a REAL OCC/2 dual payload (built with the
+    /// public `occ2::encode_dual` against the shipped sym-v1 card) reports
+    /// kind "symbolic" on the wire: the roster projection, the
+    /// worker-roster view and the agents-view row all carry the same
+    /// content-free delivery metadata. The settings flag is never
+    /// consulted by the projection: telemetry reflects the wire, not the
+    /// sender's feature flag. With the flag off (the default) this daemon
+    /// never sends OCC/2 itself, so a symbolic kind can then only come
+    /// from externally-authored OCC/2 bodies - intended, because the
+    /// indicator must show what the recipient actually consumed.
+    #[test]
+    fn communication_metadata_reports_symbolic_for_real_dual_payloads() {
+        use crate::core::agent_messages::{create_agent_session_message, AgentSessionMessagePayload, AgentSessionMessageSender, AgentSessionMessageEndpoint};
+        use crate::core::occ::contract::AgentCommMessage;
+        use crate::core::occ::dialect::DialectCard;
+        use crate::core::occ::occ2;
+        use crate::core::settings_manager::SettingsManager;
+
+        let card = DialectCard::sym_v1();
+        let message = AgentCommMessage::new("TASK", "t1", "pending");
+        let dual = occ2::encode_dual(&message, &card).expect("encode_dual builds the dual payload");
+        assert!(dual.starts_with("OCC/2"));
+
+        // The flag is OFF by default; the projection below must not care.
+        let settings = SettingsManager::in_memory(
+            serde_json::json!({}).as_object().unwrap().clone(),
+        );
+        assert!(!settings.get_agent_communication_occ2_enabled());
+
+        let mut runtime = super::super::active_session_state::AgentSessionRuntime::default();
+        runtime.session.session_id = "child".into();
+        runtime.session.messages.push(pi_agent_core::types::AgentMessage::Custom(create_agent_session_message(
+            &AgentSessionMessagePayload {
+                id: "delivery-sym".into(), message: dual.clone(),
+                from: Some(AgentSessionMessageSender { session_id: Some("parent".into()), ..Default::default() }),
+                target: AgentSessionMessageEndpoint { session_id: "child".into(), ..Default::default() },
+                ..Default::default()
+            }, 1000,
+        )));
+        let state = Arc::new(StdMutex::new(ActiveSessionState::new("active-child", runtime)));
+        let summary = summary_for_active_session(&state, None, false, false, false);
+        let wire = serde_json::to_value(summary.roster_view()).unwrap();
+        let view: crate::modes::agents_view::agents_view_state::SessionSummary = serde_json::from_value(wire.clone()).unwrap();
+        let final_row = serde_json::to_value(view).unwrap();
+        assert_eq!(final_row["communicationActivity"], wire["communicationActivity"]);
+        assert_eq!(final_row["communicationActivity"]["deliveries"][0]["kind"], "symbolic");
+        // Content-free: no body, no OCC/2 header, no fallback sentinel.
+        assert!(final_row["communicationActivity"]["deliveries"][0].get("message").is_none());
+        let serialized = final_row.to_string();
+        assert!(!serialized.contains("OCC/2"));
+        assert!(!serialized.contains("#FALLBACK-OCC1"));
+    }
+
     #[test]
     fn background_only_summary_keeps_liveness_and_labels_the_helper() {
         let mut runtime = super::super::active_session_state::AgentSessionRuntime::default();
