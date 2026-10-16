@@ -1,4 +1,4 @@
-//! Local OCC controls; workers read the persisted setting at each send.
+//! Chat-local OCC controls; workers read session artifacts at each send.
 
 use super::*;
 
@@ -22,7 +22,7 @@ fn parse(args: &str) -> Result<Choice, String> {
 
 fn status(enabled: bool) -> String {
     format!(
-        "Agent communication\n\nOCC-1: ON (default and fallback)\nOCC-2: {} (experimental symbolic encoding)\n\n/occ 2 on enables OCC-2; /occ 2 off returns to OCC-1.\nApplies to subsequent structured messages, including existing subagents. Plain-text messages remain TXT.\nNeon-blue TXT / OCC1 / OCC2 indicators flash on delivered messages. OCC-3 is not active.",
+        "Agent communication (this chat)\n\nOCC-1: ON (default and fallback)\nOCC-2: {} (experimental symbolic encoding)\n\n/occ 2 on enables OCC-2; /occ 2 off returns to OCC-1.\nSaved for this chat and inherited by its subagents unless they have an override. Other chats are unchanged. Applies to subsequent structured messages. Plain-text messages remain TXT.\nNeon-blue TXT / OCC1 / OCC2 indicators flash on delivered messages. OCC-3 is not active.",
         if enabled { "ON" } else { "OFF" }
     )
 }
@@ -37,11 +37,8 @@ pub(super) async fn run(
         return Ok(CommandOutput::Warning("This daemon does not support OCC-2 controls. Restart it with Optimus Agent v0.1.33 or later; OCC-1 remains available.".into()));
     }
     let state = connection.get_state().await?;
-    let mut settings = SettingsManager::create(&state.cwd, None);
-    if let Some(error) = settings.drain_errors(None).first() {
-        return Err(error.error.to_string());
-    }
-    let enabled = settings.get_agent_communication_occ2_enabled();
+    let session_file = state.session_file.as_deref().ok_or("This chat has no saved session identity")?;
+    let enabled = crate::core::occ::session_settings::load(session_file)?;
     let requested = match choice {
         Choice::Status => return Ok(CommandOutput::Panel(status(enabled))),
         Choice::Set(value) => value,
@@ -53,20 +50,8 @@ pub(super) async fn run(
             }
         }
     };
-    settings.set_agent_communication_occ2_enabled(requested);
-    settings.flush().await;
-    if let Some(error) = settings.drain_errors(None).first() {
-        return Err(error.error.to_string());
-    }
-    let effective = settings.get_agent_communication_occ2_enabled();
-    if effective != requested {
-        return Ok(CommandOutput::Warning(format!(
-            "Saved the global OCC-2 setting, but this project's override keeps OCC-2 {}. Update agentCommunication.occ2Enabled in project settings to change it.",
-            if effective { "ON" } else { "OFF" }
-        )));
-    }
-    let _ = send.send(HostEvent::ReloadSettings);
-    Ok(CommandOutput::Status(status(effective)))
+    crate::core::occ::session_settings::save(session_file, requested)?;
+    Ok(CommandOutput::Status(status(requested)))
 }
 
 #[cfg(test)]
@@ -88,27 +73,4 @@ mod tests {
         }
     }
 
-    #[test]
-    fn occ_control_persistence_is_seen_by_already_running_settings_readers() {
-        let directory = tempfile::tempdir().unwrap();
-        let cwd = directory.path().join("workspace");
-        let profile = directory.path().join("profile");
-        std::fs::create_dir_all(&cwd).unwrap();
-        let cwd = cwd.to_str().unwrap();
-        let profile = profile.to_str().unwrap();
-        let mut writer = SettingsManager::create(cwd, Some(profile));
-        let reader = SettingsManager::create(cwd, Some(profile));
-        assert!(!reader.get_agent_communication_occ2_enabled());
-        writer.set_agent_communication_occ2_enabled(true);
-        assert!(writer.drain_errors(None).is_empty());
-        assert!(reader.get_agent_communication_occ2_enabled());
-        writer.set_agent_communication_occ2_enabled(false);
-        assert!(!reader.get_agent_communication_occ2_enabled());
-        let mut overridden = SettingsManager::create(cwd, Some(profile));
-        overridden.apply_overrides(&serde_json::from_value(serde_json::json!({"agentCommunication":{"occ2Enabled":false}})).unwrap());
-        writer.set_agent_communication_occ2_enabled(true);
-        assert!(!overridden.get_agent_communication_occ2_enabled());
-        std::fs::write(std::path::Path::new(profile).join("settings.json"), "invalid").unwrap();
-        assert!(!reader.get_agent_communication_occ2_enabled());
-    }
 }

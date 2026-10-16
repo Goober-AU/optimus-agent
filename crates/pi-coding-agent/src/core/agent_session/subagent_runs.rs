@@ -66,13 +66,9 @@ impl AgentSessionMessageController for SessionMessageController {
 }
 
 impl AgentSession {
-    /// The OCC-2 feature flag (settings `agentCommunication.occ2Enabled`),
-    /// default OFF: sends stay byte-identical OCC-0/OCC-1.
+    /// Read this chat's preference, inheriting only through its subagent ancestry.
     fn occ2_enabled(&self) -> bool {
-        self.settings_manager
-            .lock()
-            .unwrap()
-            .get_agent_communication_occ2_enabled()
+        crate::core::occ::session_settings::enabled(self.session_file().as_deref())
     }
 
     /// OCC-2 send policy for one target session. The peer capability comes
