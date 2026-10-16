@@ -2,8 +2,7 @@
 //!
 //! Pre-rendered ASCII versions of the Prime butterfly mark.
 //!
-//! Source: assets/brand/prime-butterfly.svg
-//! Re-render at any width: `uv run scripts/render-logo.py --width N`
+//! Render an external SVG: `uv run scripts/render-logo.py --svg path --width N`
 
 /// ~10 rows x 32 cols. The default brand mark - half-block butterfly, splash-ready.
 pub const PRIME_BUTTERFLY_LOGO: &str = "                          \u{2584}\u{2584}\u{2588}\u{2588}\u{2588}\u{2580}
