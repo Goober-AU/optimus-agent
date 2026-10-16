@@ -101,6 +101,7 @@ FAMILY_CONFIG = {
     "longmemeval_s":  {"bench_flag": "longmemeval","judge_profile": "official-lme-v1", "models_json": True},
     "longmemeval_m":  {"bench_flag": "longmemeval","judge_profile": "official-lme-v1", "models_json": True},
     "lme_v2":         {"bench_flag": "lme_v2",    "judge_profile": "default",         "models_json": True},
+    "pmem":           {"bench_flag": "pmem",      "judge_profile": "local-f1",       "models_json": False},
 }
 
 # Legacy longmemeval common-set rows predate the 2.0.0 protocol annotations:

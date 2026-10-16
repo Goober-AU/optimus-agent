@@ -19,18 +19,22 @@ QUESTION_PROTOCOLS = {
     "locomo_plus": "optimus-normalized-cues/1.0.0",
     "longmemeval": "optimus-longmemeval-adapter/2.0.0",
     "lme_v2": "optimus-lme-v2-adapter/2.0.0",
+    # PersonaMem v1 (explicit-persona MCQ; converter bench/converters/pmem.py).
+    # Official presentation and official extract_answer semantics.
+    "pmem": "optimus-pmem-adapter/1.0.0",
 }
 SCORING_PROTOCOLS = {
     "locomo": LOCAL_SCORING_VERSION,
     "locomo_plus": LOCAL_SCORING_VERSION,
     "longmemeval": "optimus-longmemeval-dgx-port/2.0.0",
     "lme_v2": "optimus-lme-v2-dgx-port/2.0.0",
+    "pmem": "optimus-pmem-scoring/1.0.0",
 }
 SOURCE_FILES = (
     "protocol.py", "evidence.py", "io.py", "eval/evaluate.py", "eval/deterministic.py", "eval/porter.py",
     "eval/judges.py", "eval/local_scoring.py", "eval/local_adapters.py",
     "converters/common.py", "converters/locomo.py", "converters/locomo_plus.py",
-    "converters/longmemeval.py", "converters/lme_v2.py",
+    "converters/longmemeval.py", "converters/lme_v2.py", "converters/pmem.py",
 )
 
 
