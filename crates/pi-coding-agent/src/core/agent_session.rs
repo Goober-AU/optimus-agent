@@ -15002,6 +15002,11 @@ impl AgentSession {
                         signal: Some(signal.clone()),
                         ..Default::default()
                     },
+                    // The planner requests the least thinking level so
+                    // reasoning-capable models spend the output budget on the
+                    // JSON object; pi-ai clamps levels the model does not
+                    // support.
+                    reasoning: request.thinking_level.clone(),
                     ..Default::default()
                 };
                 let context = pi_ai::types::Context {
