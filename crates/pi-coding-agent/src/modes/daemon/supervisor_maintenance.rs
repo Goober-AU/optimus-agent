@@ -157,20 +157,50 @@ impl Supervisor {
             // The permissive journal reader tolerates crash-truncated appends. That
             // is useful for inspection, but not evidence that the entire journal
             // can be erased. Preserve malformed/unknown records for later repair.
+            // The journal is keyed by worker id and outlives the generations that
+            // wrote it, and sub-agent children inherit the journal path through
+            // the environment, so records owned by other pids are routine here:
+            // only records this stop cannot account for may fail it.
+            let mut foreign_latest: Vec<OrphanProcessRecord> = Vec::new();
+            let mut foreign_index: HashMap<i64, usize> = HashMap::new();
             match std::fs::read_to_string(path) {
                 Ok(contents) => for line in contents.lines().filter(|line| !line.trim().is_empty()) {
                     let record: OrphanProcessRecord = serde_json::from_str(line)
                         .map_err(|_| "Malformed orphan record; recovery journal retained".to_string())?;
-                    if record.version != 1 || record.pid <= 0 || record.owner_pid != descriptor.pid as i64 {
+                    if record.version != 1 || record.pid <= 0 {
                         return Err("Unverified orphan record; recovery journal retained".into());
+                    }
+                    if record.owner_pid == descriptor.pid as i64 { continue; }
+                    // Keep only the latest record per foreign pid, mirroring the
+                    // journal reader: a later inactive line supersedes an earlier
+                    // active line for the same pid.
+                    match foreign_index.get(&record.pid) {
+                        Some(index) => foreign_latest[*index] = record,
+                        None => {
+                            foreign_index.insert(record.pid, foreign_latest.len());
+                            foreign_latest.push(record);
+                        }
                     }
                 },
                 Err(error) if error.kind() == std::io::ErrorKind::NotFound => {},
                 Err(error) => return Err(error.to_string()),
             }
+            let mut foreign = Vec::new();
+            for record in foreign_latest {
+                if !record.active { continue; }
+                // A foreign record whose journaled process is provably gone is
+                // inert: a dead pid is nothing to reap, not a failed stop.
+                let identity = ProcessIdentity { pid: record.pid, process_start_id: record.process_start_id.clone() };
+                if !is_stopping_process_alive(&identity) { continue; }
+                // A foreign record that may still be live is not this stop's to
+                // kill: a bare pid is never kill authority. Supersede the
+                // uncertainty into the bounded side record, exactly like an owned
+                // record the reaper cannot prove.
+                foreign.push(ActiveOrphanProcess { pid: record.pid, kernel_pid: record.kernel_pid, process_start_id: record.process_start_id });
+            }
             let orphans = read_active_orphan_processes(path, descriptor.pid as i64).map_err(|error| error.to_string())?;
             let mut failed = false;
-            let mut deferred = Vec::new();
+            let mut deferred = foreign;
             for orphan in orphans {
                 self.assert_dead_registration(worker, &descriptor).await?;
                 let identity = ProcessIdentity { pid: orphan.pid, process_start_id: orphan.process_start_id.clone() };
