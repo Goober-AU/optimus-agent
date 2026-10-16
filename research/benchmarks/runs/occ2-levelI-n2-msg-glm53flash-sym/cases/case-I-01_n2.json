@@ -1,0 +1,82 @@
+{
+  "task_file": "I-01_n2.json",
+  "protocol": "msg",
+  "model": "glm-5.3-flash",
+  "comm_mode": "sym_v1_handdesigned",
+  "case_dir": "C:\\Users\\openclawuser\\optimus-occ23-20261016\\research\\benchmarks\\runs\\occ2-levelI-n2-msg-glm53flash-sym\\workspace\\I-01_p2p_glm-5.3-flash_20261016060801",
+  "status": "completed",
+  "elapsed_s": 37.038,
+  "error": null,
+  "llm_transport": "gateway+content-reconstruction-proxy",
+  "official": {
+    "case_id": "I-01",
+    "case_name": "Global Max",
+    "paradigm": "Paradigm I",
+    "num_agents": 2,
+    "max_rounds": 20,
+    "rounds_executed": 5,
+    "execution_status": "completed",
+    "total_input_tokens": 23937,
+    "total_output_tokens": 3867,
+    "all_submitted": true,
+    "metrics": {
+      "S_success_rate": 1.0,
+      "P_partial_correctness": 1.0,
+      "C_token_consumption": 5560.8,
+      "D_communication_density": 2.0,
+      "success_rate": 1.0,
+      "partial_correctness": 1.0,
+      "token_consumption": 5560.8,
+      "communication_density": 2.0
+    },
+    "ground_truth": [
+      827,
+      827
+    ],
+    "submissions": [
+      {
+        "agent_id": 0,
+        "answer": 827,
+        "correct": true,
+        "round": 5
+      },
+      {
+        "agent_id": 1,
+        "answer": 827,
+        "correct": true,
+        "round": 4
+      }
+    ],
+    "success": true
+  },
+  "adapter": {
+    "llm_calls": 9,
+    "prompt_tokens_sum": 23937,
+    "output_tokens_sum": 3867,
+    "output_tokens_caveat": "gateway usage.completion_tokens includes hidden reasoning tokens; prompt_tokens are the real server-side count of what was sent",
+    "llm_latency_s": {
+      "mean": 4.025,
+      "p50": 2.366,
+      "p95": 9.704,
+      "max": 10.894
+    },
+    "inter_agent_messages": 4,
+    "inter_agent_message_payload_bytes": 431,
+    "inter_agent_message_file_bytes": 837
+  },
+  "encoding_hook": {
+    "guidance_chars": 4305,
+    "agents": [
+      {
+        "agent": "agent-000",
+        "system_chars_before": 2988,
+        "system_chars_after": 7295
+      },
+      {
+        "agent": "agent-001",
+        "system_chars_before": 2988,
+        "system_chars_after": 7295
+      }
+    ]
+  }
+}

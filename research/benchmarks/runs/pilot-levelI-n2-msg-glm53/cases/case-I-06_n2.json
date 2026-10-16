@@ -1,0 +1,67 @@
+{
+  "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-06_n2.json",
+  "protocol": "msg",
+  "model": "glm-5.3",
+  "comm_mode": "occ0_plain_english",
+  "case_dir": "C:\\Users\\openclawuser\\optimus-occ23-20261016\\research\\benchmarks\\runs\\pilot-levelI-n2-msg-glm53\\workspace\\I-06_p2p_glm-5.3_20261016042227",
+  "status": "completed",
+  "elapsed_s": 470.531,
+  "error": null,
+  "llm_transport": "gateway+content-reconstruction-proxy",
+  "official": {
+    "case_id": "I-06",
+    "case_name": "Checksum",
+    "paradigm": "Paradigm I",
+    "num_agents": 2,
+    "max_rounds": 20,
+    "rounds_executed": 8,
+    "execution_status": "completed",
+    "total_input_tokens": 25302,
+    "total_output_tokens": 67232,
+    "all_submitted": true,
+    "metrics": {
+      "S_success_rate": 0.5,
+      "P_partial_correctness": 0.5,
+      "C_token_consumption": 11566.75,
+      "D_communication_density": 2.5,
+      "success_rate": 0.5,
+      "partial_correctness": 0.5,
+      "token_consumption": 11566.75,
+      "communication_density": 2.5
+    },
+    "ground_truth": [
+      251,
+      251
+    ],
+    "submissions": [
+      {
+        "agent_id": 0,
+        "answer": 251,
+        "correct": true,
+        "round": 8
+      },
+      {
+        "agent_id": 1,
+        "answer": 235,
+        "correct": false,
+        "round": 6
+      }
+    ],
+    "success": false
+  },
+  "adapter": {
+    "llm_calls": 14,
+    "prompt_tokens_sum": 25302,
+    "output_tokens_sum": 67232,
+    "output_tokens_caveat": "gateway usage.completion_tokens includes hidden reasoning tokens; prompt_tokens are the real server-side count of what was sent",
+    "llm_latency_s": {
+      "mean": 33.401,
+      "p50": 3.409,
+      "p95": 169.175,
+      "max": 237.349
+    },
+    "inter_agent_messages": 5,
+    "inter_agent_message_payload_bytes": 2037,
+    "inter_agent_message_file_bytes": 2520
+  }
+}

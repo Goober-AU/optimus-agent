@@ -864,6 +864,8 @@ mod keys {
     pub const MODEL_TOOL_OUTPUT_POLICY: &str = "modelToolOutputPolicy";
     pub const AUTO_REFINE: &str = "autoRefine";
     pub const AGENT_TRACES: &str = "agentTraces";
+    pub const AGENT_COMMUNICATION: &str = "agentCommunication";
+    pub const OCC2_ENABLED: &str = "occ2Enabled";
     pub const TELEMETRY: &str = "telemetry";
     pub const BRANCH_SUMMARY: &str = "branchSummary";
     pub const RETRY: &str = "retry";
@@ -1897,6 +1899,22 @@ impl SettingsManager {
         ensure_object(&mut self.global_settings, keys::AGENT_TRACES)
             .insert(keys::ENABLED.to_string(), Value::Bool(enabled));
         self.mark_modified(keys::AGENT_TRACES, Some(keys::ENABLED));
+        self.save();
+    }
+
+    /// OCC-2 symbolic encoding for agent messages
+    /// (research/integration/OCC2-INTEGRATION-DESIGN.md, section 9).
+    /// Default OFF: sends stay byte-identical OCC-0/OCC-1. When enabled
+    /// (dev), structured OCC-1 bodies are dual-encoded against the
+    /// negotiated dialect and recipients see the symbolic section.
+    pub fn get_agent_communication_occ2_enabled(&self) -> bool {
+        nested_bool(&self.settings, keys::AGENT_COMMUNICATION, keys::OCC2_ENABLED).unwrap_or(false)
+    }
+
+    pub fn set_agent_communication_occ2_enabled(&mut self, enabled: bool) {
+        ensure_object(&mut self.global_settings, keys::AGENT_COMMUNICATION)
+            .insert(keys::OCC2_ENABLED.to_string(), Value::Bool(enabled));
+        self.mark_modified(keys::AGENT_COMMUNICATION, Some(keys::OCC2_ENABLED));
         self.save();
     }
 

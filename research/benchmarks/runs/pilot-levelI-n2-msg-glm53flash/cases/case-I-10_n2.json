@@ -1,0 +1,67 @@
+{
+  "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-10_n2.json",
+  "protocol": "msg",
+  "model": "glm-5.3-flash",
+  "comm_mode": "occ0_plain_english",
+  "case_dir": "C:\\Users\\openclawuser\\optimus-occ23-20261016\\research\\benchmarks\\runs\\pilot-levelI-n2-msg-glm53flash\\workspace\\I-10_p2p_glm-5.3-flash_20261016051407",
+  "status": "completed",
+  "elapsed_s": 486.75,
+  "error": null,
+  "llm_transport": "gateway+content-reconstruction-proxy",
+  "official": {
+    "case_id": "I-10",
+    "case_name": "Standard Deviation",
+    "paradigm": "Paradigm I",
+    "num_agents": 2,
+    "max_rounds": 20,
+    "rounds_executed": 7,
+    "execution_status": "completed",
+    "total_input_tokens": 27285,
+    "total_output_tokens": 142890,
+    "all_submitted": true,
+    "metrics": {
+      "S_success_rate": 1.0,
+      "P_partial_correctness": 1.0,
+      "C_token_consumption": 24310.7142857143,
+      "D_communication_density": 3.0,
+      "success_rate": 1.0,
+      "partial_correctness": 1.0,
+      "token_consumption": 24310.7142857143,
+      "communication_density": 3.0
+    },
+    "ground_truth": [
+      30.58,
+      30.58
+    ],
+    "submissions": [
+      {
+        "agent_id": 0,
+        "answer": 30.58,
+        "correct": true,
+        "round": 7
+      },
+      {
+        "agent_id": 1,
+        "answer": 30.58,
+        "correct": true,
+        "round": 6
+      }
+    ],
+    "success": true
+  },
+  "adapter": {
+    "llm_calls": 13,
+    "prompt_tokens_sum": 27285,
+    "output_tokens_sum": 142890,
+    "output_tokens_caveat": "gateway usage.completion_tokens includes hidden reasoning tokens; prompt_tokens are the real server-side count of what was sent",
+    "llm_latency_s": {
+      "mean": 37.384,
+      "p50": 1.854,
+      "p95": 119.037,
+      "max": 132.763
+    },
+    "inter_agent_messages": 6,
+    "inter_agent_message_payload_bytes": 4172,
+    "inter_agent_message_file_bytes": 5124
+  }
+}

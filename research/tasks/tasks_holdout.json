@@ -1,0 +1,2050 @@
+{
+  "meta": {
+    "generator": "research/tasks/gen_tasks.py",
+    "seed_base": "occ23-bench-tasks-v1",
+    "split": "holdout",
+    "families": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "family_names": {
+      "A": "fact handoff",
+      "B": "state update",
+      "C": "procedural transfer",
+      "D": "multi-fact reasoning",
+      "E": "dependent calculation"
+    },
+    "count": 150,
+    "difficulty_counts": {
+      "easy": 68,
+      "hard": 30,
+      "medium": 52
+    },
+    "tasks_sha256": "e99c01a109b81be4577c0d2042492f4ec293634f3136eb03b9d7be968f08b78c"
+  },
+  "tasks": [
+    {
+      "task_id": "A-holdout-001",
+      "family": "A",
+      "sender_input": "Configuration briefing for subscription sub-57436 (fact ids in brackets):\n  [F1] quota expiry: 2027-02-08\n  [F2] VM family: standard-d8s\n  [F3] vCPU used: 48\n  [F4] region: us-east\n  [F5] vCPU limit: 512",
+      "receiver_task": "Using only the facts the sender communicates, what is the quota expiry for subscription sub-57436? Answer with the value only.",
+      "gold_answer": "2027-02-08",
+      "required_facts": [
+        "F1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-002",
+      "family": "A",
+      "sender_input": "Configuration briefing for notify-relay (fact ids in brackets):\n  [F1] host address: 10.119.81.160\n  [F2] database engine: mongodb\n  [F3] backup window: 02:00-06:00 UTC\n  [F4] app user: svc_notify\n  [F5] max connections: 633",
+      "receiver_task": "Using only the facts the sender communicates, what is the backup window for notify-relay? Answer with the value only.",
+      "gold_answer": "02:00-06:00 UTC",
+      "required_facts": [
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-003",
+      "family": "A",
+      "sender_input": "Configuration briefing for search-api (fact ids in brackets):\n  [F1] listen port: 38151\n  [F2] host address: 10.245.54.77\n  [F3] database engine: mysql\n  [F4] database name: db_billing",
+      "receiver_task": "Using only the facts the sender communicates, on which host and port does search-api listen? Answer as host:port.",
+      "gold_answer": "10.245.54.77:38151",
+      "required_facts": [
+        "F1",
+        "F2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-holdout-004",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v1.3.11 (fact ids in brackets):\n  [F1] release version: v3.6.13\n  [F2] source commit: f194f7d06\n  [F3] release date: 2026-11-19\n  [F4] artifact digest: 5199456950d7\n  [F5] signatory: release engineer moreau\n  [F6] release channel: nightly",
+      "receiver_task": "Using only the facts the sender communicates, what is the artifact digest for release v1.3.11? Answer with the value only.",
+      "gold_answer": "5199456950d7",
+      "required_facts": [
+        "F4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-holdout-005",
+      "family": "A",
+      "sender_input": "Configuration briefing for subscription sub-60073 (fact ids in brackets):\n  [F1] vCPU limit: 64\n  [F2] VM family: standard-d4s\n  [F3] vCPU used: 29\n  [F4] quota expiry: 2027-02-02\n  [F5] owner team: fjord\n  [F6] region: ap-south",
+      "receiver_task": "Using only the facts the sender communicates, what is the VM family for subscription sub-60073? Answer with the value only.",
+      "gold_answer": "standard-d4s",
+      "required_facts": [
+        "F2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-holdout-006",
+      "family": "A",
+      "sender_input": "Configuration briefing for nodepool pool-cache (fact ids in brackets):\n  [F1] region: sa-east\n  [F2] kubernetes version: v1.25.6\n  [F3] owner team: grit\n  [F4] autoscale maximum: 57\n  [F5] container runtime: cri-o",
+      "receiver_task": "Using only the facts the sender communicates, what is the kubernetes version for nodepool pool-cache? Answer with the value only.",
+      "gold_answer": "v1.25.6",
+      "required_facts": [
+        "F2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-007",
+      "family": "A",
+      "sender_input": "Configuration briefing for nodepool pool-search (fact ids in brackets):\n  [F1] owner team: delta\n  [F2] container runtime: containerd\n  [F3] autoscale maximum: 17\n  [F4] region: ap-south",
+      "receiver_task": "Using only the facts the sender communicates, what is the container runtime for nodepool pool-search? Answer with the value only.",
+      "gold_answer": "containerd",
+      "required_facts": [
+        "F2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-008",
+      "family": "A",
+      "sender_input": "Configuration briefing for search-hub (fact ids in brackets):\n  [F1] deployed version: v0.3.11\n  [F2] listen port: 45561\n  [F3] owner team: ember\n  [F4] host address: 10.191.30.19\n  [F5] service name: search-hub",
+      "receiver_task": "Using only the facts the sender communicates, on which host and port does search-hub listen? Answer as host:port.",
+      "gold_answer": "10.191.30.19:45561",
+      "required_facts": [
+        "F2",
+        "F4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-holdout-009",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v4.3.1 (fact ids in brackets):\n  [F1] artifact digest: 42e04a6ca2c7\n  [F2] release channel: beta\n  [F3] release version: v5.11.20\n  [F4] release date: 2026-11-23",
+      "receiver_task": "Using only the facts the sender communicates, what is the artifact digest for release v4.3.1? Answer with the value only.",
+      "gold_answer": "42e04a6ca2c7",
+      "required_facts": [
+        "F1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-010",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v0.12.27 (fact ids in brackets):\n  [F1] release channel: stable\n  [F2] source commit: 5480ebd7e\n  [F3] artifact digest: 84cb65942eec\n  [F4] signatory: release engineer moreau",
+      "receiver_task": "Using only the facts the sender communicates, what is the release channel for release v0.12.27? Answer with the value only.",
+      "gold_answer": "stable",
+      "required_facts": [
+        "F1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-011",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v9.17.8 (fact ids in brackets):\n  [F1] signatory: release engineer lindqvist\n  [F2] release channel: nightly\n  [F3] release version: v3.9.20\n  [F4] release date: 2026-11-12\n  [F5] artifact digest: 6c9e2a70589f\n  [F6] source commit: 066b271b1",
+      "receiver_task": "Using only the facts the sender communicates, what is the signatory for release v9.17.8? Answer with the value only.",
+      "gold_answer": "release engineer lindqvist",
+      "required_facts": [
+        "F1"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-holdout-012",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v5.0.23 (fact ids in brackets):\n  [F1] signatory: release engineer okafor\n  [F2] release date: 2026-11-09\n  [F3] release channel: stable\n  [F4] source commit: 5e0a9d77f\n  [F5] release version: v2.20.25",
+      "receiver_task": "Using only the facts the sender communicates, what is the source commit for release v5.0.23? Answer with the value only.",
+      "gold_answer": "5e0a9d77f",
+      "required_facts": [
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-013",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v0.18.12 (fact ids in brackets):\n  [F1] source commit: 818b5a0ef\n  [F2] release date: 2026-11-14\n  [F3] artifact digest: d30fbf2dc378\n  [F4] release channel: stable\n  [F5] release version: v4.17.28\n  [F6] signatory: release engineer tanaka",
+      "receiver_task": "Using only the facts the sender communicates, what is the source commit for release v0.18.12? Answer with the value only.",
+      "gold_answer": "818b5a0ef",
+      "required_facts": [
+        "F1"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-holdout-014",
+      "family": "A",
+      "sender_input": "Configuration briefing for policy-daemon (fact ids in brackets):\n  [F1] app user: svc_policy\n  [F2] listen port: 6048\n  [F3] database name: db_billing\n  [F4] backup window: 05:00-06:00 UTC\n  [F5] max connections: 791\n  [F6] database engine: mongodb\n  [F7] host address: 10.108.6.150",
+      "receiver_task": "Using only the facts the sender communicates, on which host and port does policy-daemon listen? Answer as host:port.",
+      "gold_answer": "10.108.6.150:6048",
+      "required_facts": [
+        "F2",
+        "F7"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "A-holdout-015",
+      "family": "A",
+      "sender_input": "Configuration briefing for ingest-scheduler (fact ids in brackets):\n  [F1] listen port: 39349\n  [F2] service name: ingest-scheduler\n  [F3] region: us-west\n  [F4] replica count: 10\n  [F5] deployed version: v7.17.8",
+      "receiver_task": "Using only the facts the sender communicates, what is the deployed version for ingest-scheduler? Answer with the value only.",
+      "gold_answer": "v7.17.8",
+      "required_facts": [
+        "F5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-016",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v5.7.20 (fact ids in brackets):\n  [F1] signatory: release engineer tanaka\n  [F2] release version: v1.20.28\n  [F3] source commit: 8a4e8454c\n  [F4] release date: 2026-11-01\n  [F5] artifact digest: f7e1277ea7af",
+      "receiver_task": "Using only the facts the sender communicates, what is the release date for release v5.7.20? Answer with the value only.",
+      "gold_answer": "2026-11-01",
+      "required_facts": [
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-017",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v4.8.28 (fact ids in brackets):\n  [F1] release channel: stable\n  [F2] signatory: release engineer tanaka\n  [F3] release version: v8.11.6\n  [F4] source commit: 949245d83\n  [F5] artifact digest: b79084b586d2\n  [F6] release date: 2026-11-20",
+      "receiver_task": "Using only the facts the sender communicates, what is the source commit for release v4.8.28? Answer with the value only.",
+      "gold_answer": "949245d83",
+      "required_facts": [
+        "F4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-holdout-018",
+      "family": "A",
+      "sender_input": "Configuration briefing for nodepool pool-vector (fact ids in brackets):\n  [F1] owner team: cinder\n  [F2] autoscale maximum: 30\n  [F3] container runtime: cri-o\n  [F4] node count: 40\n  [F5] region: us-east",
+      "receiver_task": "Using only the facts the sender communicates, what is the owner team for nodepool pool-vector? Answer with the value only.",
+      "gold_answer": "cinder",
+      "required_facts": [
+        "F1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-019",
+      "family": "A",
+      "sender_input": "Configuration briefing for nodepool pool-billing (fact ids in brackets):\n  [F1] owner team: delta\n  [F2] container runtime: cri-o\n  [F3] node count: 31\n  [F4] autoscale maximum: 10\n  [F5] region: eu-west",
+      "receiver_task": "Using only the facts the sender communicates, what is the autoscale maximum for nodepool pool-billing? Answer with the value only.",
+      "gold_answer": "10",
+      "required_facts": [
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-020",
+      "family": "A",
+      "sender_input": "Configuration briefing for render-edge (fact ids in brackets):\n  [F1] owner team: borealis\n  [F2] replica count: 7\n  [F3] host address: 10.196.69.150\n  [F4] region: us-west\n  [F5] listen port: 33632\n  [F6] service name: render-edge",
+      "receiver_task": "Using only the facts the sender communicates, what is the region for render-edge? Answer with the value only.",
+      "gold_answer": "us-west",
+      "required_facts": [
+        "F4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-holdout-021",
+      "family": "A",
+      "sender_input": "Configuration briefing for policy-api (fact ids in brackets):\n  [F1] backup window: 00:00-06:00 UTC\n  [F2] listen port: 60940\n  [F3] host address: 10.165.255.131\n  [F4] database engine: mysql",
+      "receiver_task": "Using only the facts the sender communicates, what is the database engine for policy-api? Answer with the value only.",
+      "gold_answer": "mysql",
+      "required_facts": [
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-022",
+      "family": "A",
+      "sender_input": "Configuration briefing for search-edge (fact ids in brackets):\n  [F1] listen port: 55107\n  [F2] host address: 10.175.58.171\n  [F3] database engine: mongodb\n  [F4] database name: db_model",
+      "receiver_task": "Using only the facts the sender communicates, on which host and port does search-edge listen? Answer as host:port.",
+      "gold_answer": "10.175.58.171:55107",
+      "required_facts": [
+        "F1",
+        "F2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-holdout-023",
+      "family": "A",
+      "sender_input": "Configuration briefing for release v0.8.18 (fact ids in brackets):\n  [F1] release date: 2026-11-13\n  [F2] signatory: release engineer tanaka\n  [F3] artifact digest: 55c2d429b9a1\n  [F4] release version: v5.19.1\n  [F5] release channel: stable\n  [F6] source commit: 61127efad",
+      "receiver_task": "Using only the facts the sender communicates, what is the release version for release v0.8.18? Answer with the value only.",
+      "gold_answer": "v5.19.1",
+      "required_facts": [
+        "F4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "A-holdout-024",
+      "family": "A",
+      "sender_input": "Configuration briefing for auth-hub (fact ids in brackets):\n  [F1] host address: 10.24.177.112\n  [F2] listen port: 46152\n  [F3] database engine: postgres\n  [F4] max connections: 590",
+      "receiver_task": "Using only the facts the sender communicates, what is the listen port for auth-hub? Answer with the value only.",
+      "gold_answer": "46152",
+      "required_facts": [
+        "F2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-025",
+      "family": "A",
+      "sender_input": "Configuration briefing for search-service (fact ids in brackets):\n  [F1] deployed version: v3.10.28\n  [F2] environment: staging\n  [F3] replica count: 4\n  [F4] owner team: fjord\n  [F5] host address: 10.139.67.29\n  [F6] region: us-west\n  [F7] listen port: 20712\n  [F8] service name: search-service",
+      "receiver_task": "Using only the facts the sender communicates, what is the environment for search-service? Answer with the value only.",
+      "gold_answer": "staging",
+      "required_facts": [
+        "F2"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "A-holdout-026",
+      "family": "A",
+      "sender_input": "Configuration briefing for nodepool pool-gateway (fact ids in brackets):\n  [F1] autoscale maximum: 5\n  [F2] region: ap-south\n  [F3] container runtime: cri-o\n  [F4] node count: 32\n  [F5] owner team: fjord",
+      "receiver_task": "Using only the facts the sender communicates, what is the container runtime for nodepool pool-gateway? Answer with the value only.",
+      "gold_answer": "cri-o",
+      "required_facts": [
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-027",
+      "family": "A",
+      "sender_input": "Configuration briefing for auth-daemon (fact ids in brackets):\n  [F1] max connections: 767\n  [F2] database name: db_policy\n  [F3] host address: 10.50.45.119\n  [F4] database engine: mongodb\n  [F5] app user: svc_search\n  [F6] listen port: 37255",
+      "receiver_task": "Using only the facts the sender communicates, on which host and port does auth-daemon listen? Answer as host:port.",
+      "gold_answer": "10.50.45.119:37255",
+      "required_facts": [
+        "F3",
+        "F6"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "A-holdout-028",
+      "family": "A",
+      "sender_input": "Configuration briefing for vector-gateway (fact ids in brackets):\n  [F1] host address: 10.91.209.169\n  [F2] listen port: 41415\n  [F3] database engine: redis\n  [F4] backup window: 05:00-07:00 UTC\n  [F5] database name: db_billing",
+      "receiver_task": "Using only the facts the sender communicates, what is the database engine for vector-gateway? Answer with the value only.",
+      "gold_answer": "redis",
+      "required_facts": [
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "A-holdout-029",
+      "family": "A",
+      "sender_input": "Configuration briefing for cache-hub (fact ids in brackets):\n  [F1] listen port: 19664\n  [F2] deployed version: v9.16.23\n  [F3] host address: 10.21.112.217\n  [F4] service name: cache-hub\n  [F5] replica count: 8\n  [F6] region: eu-north\n  [F7] owner team: delta",
+      "receiver_task": "Using only the facts the sender communicates, on which host and port does cache-hub listen? Answer as host:port.",
+      "gold_answer": "10.21.112.217:19664",
+      "required_facts": [
+        "F1",
+        "F3"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "A-holdout-030",
+      "family": "A",
+      "sender_input": "Configuration briefing for audit-api (fact ids in brackets):\n  [F1] environment: staging\n  [F2] deployed version: v0.18.25\n  [F3] region: eu-north\n  [F4] host address: 10.206.115.70\n  [F5] replica count: 6\n  [F6] listen port: 13441",
+      "receiver_task": "Using only the facts the sender communicates, what is the deployed version for audit-api? Answer with the value only.",
+      "gold_answer": "v0.18.25",
+      "required_facts": [
+        "F2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-holdout-001",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-h4302 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: provisioning -> running (accepted)\n  E2: running -> stopping (accepted)\n  E3: stopping -> stopped (accepted)\n  E4: stopped -> running (accepted)\n  E5: terminated -> stopping (rejected: transition not legal)\n  E6: running -> terminated (accepted)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-h4302? Answer with the exact state name.",
+      "gold_answer": "terminated",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E6"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-holdout-002",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-h1905 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: provisioning -> running\n  E2: running -> stopping\n  E3: stopping -> provisioning",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-h1905? Answer with the exact state name.",
+      "gold_answer": "stopping",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-holdout-003",
+      "family": "B",
+      "sender_input": "Entity under observation: order ord-h5135 (a customer order).\nInitial state: placed.\nLegal transitions accepted by the controller:\n  placed -> confirmed\n  confirmed -> packed\n  packed -> shipped\n  shipped -> delivered\n  placed -> cancelled\n  confirmed -> cancelled\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: placed -> confirmed (accepted)\n  E2: confirmed -> shipped (rejected: transition not legal)\n  E3: confirmed -> cancelled (accepted)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of order ord-h5135? Answer with the exact state name.",
+      "gold_answer": "cancelled",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-holdout-004",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-h4750 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: provisioning -> running (accepted)\n  E2: stopping -> running (rejected: transition not legal)\n  E3: running -> stopping (accepted)\n  E4: stopping -> stopped (accepted)\n  E5: stopped -> provisioning (rejected: transition not legal)\n  E6: terminated -> running (rejected: transition not legal)\n  E7: stopped -> running (accepted)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-h4750? Answer with the exact state name.",
+      "gold_answer": "running",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E3",
+        "E4",
+        "E7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-holdout-005",
+      "family": "B",
+      "sender_input": "Entity under observation: order ord-h8904 (a customer order).\nInitial state: placed.\nLegal transitions accepted by the controller:\n  placed -> confirmed\n  confirmed -> packed\n  packed -> shipped\n  shipped -> delivered\n  placed -> cancelled\n  confirmed -> cancelled\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: placed -> confirmed\n  E2: confirmed -> shipped\n  E3: confirmed -> cancelled\n  E4: delivered -> packed",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of order ord-h8904? Answer with the exact state name.",
+      "gold_answer": "cancelled",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E3"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-holdout-006",
+      "family": "B",
+      "sender_input": "Entity under observation: session ses-h1165 (an agent session).\nInitial state: created.\nLegal transitions accepted by the controller:\n  created -> active\n  active -> idle\n  idle -> active\n  active -> closed\n  idle -> closed\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: created -> active (accepted)\n  E2: closed -> idle (rejected: transition not legal)\n  E3: active -> closed (accepted)\n  E4: closed -> idle (rejected: transition not legal)\n  E5: closed -> created (rejected: transition not legal)\n  E6: closed -> active (rejected: transition not legal)\n  E7: closed -> active (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of session ses-h1165? Answer with the exact state name.",
+      "gold_answer": "closed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E3"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-holdout-007",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-h3310 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: pending -> building\n  E2: building -> built\n  E3: built -> testing\n  E4: testing -> tested",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-h3310? Answer with the exact state name.",
+      "gold_answer": "tested",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E3",
+        "E4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-holdout-008",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-h8217 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: provisioning -> running\n  E2: running -> terminated\n  E3: running -> stopping",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-h8217? Answer with the exact state name.",
+      "gold_answer": "terminated",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-holdout-009",
+      "family": "B",
+      "sender_input": "Entity under observation: session ses-h5604 (an agent session).\nInitial state: created.\nLegal transitions accepted by the controller:\n  created -> active\n  active -> idle\n  idle -> active\n  active -> closed\n  idle -> closed\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: created -> active\n  E2: active -> created\n  E3: active -> closed\n  E4: closed -> idle",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of session ses-h5604? Answer with the exact state name.",
+      "gold_answer": "closed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E3"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-holdout-010",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-h7982 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: pending -> building (accepted)\n  E2: building -> built (accepted)\n  E3: deployed -> pending (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-h7982? Answer with the exact state name.",
+      "gold_answer": "built",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-holdout-011",
+      "family": "B",
+      "sender_input": "Entity under observation: order ord-h7092 (a customer order).\nInitial state: placed.\nLegal transitions accepted by the controller:\n  placed -> confirmed\n  confirmed -> packed\n  packed -> shipped\n  shipped -> delivered\n  placed -> cancelled\n  confirmed -> cancelled\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: placed -> cancelled\n  E2: cancelled -> placed\n  E3: shipped -> delivered\n  E4: cancelled -> confirmed\n  E5: delivered -> placed\n  E6: cancelled -> shipped",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of order ord-h7092? Answer with the exact state name.",
+      "gold_answer": "cancelled",
+      "required_facts": [
+        "INIT",
+        "E1"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-holdout-012",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-h2003 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: provisioning -> running (accepted)\n  E2: running -> terminated (accepted)\n  E3: terminated -> stopped (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-h2003? Answer with the exact state name.",
+      "gold_answer": "terminated",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-holdout-013",
+      "family": "B",
+      "sender_input": "Entity under observation: order ord-h3087 (a customer order).\nInitial state: placed.\nLegal transitions accepted by the controller:\n  placed -> confirmed\n  confirmed -> packed\n  packed -> shipped\n  shipped -> delivered\n  placed -> cancelled\n  confirmed -> cancelled\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: placed -> confirmed\n  E2: confirmed -> packed\n  E3: packed -> cancelled",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of order ord-h3087? Answer with the exact state name.",
+      "gold_answer": "packed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-holdout-014",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-h2164 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: provisioning -> running (accepted)\n  E2: running -> terminated (accepted)\n  E3: running -> stopped (rejected: transition not legal)\n  E4: terminated -> stopping (rejected: transition not legal)\n  E5: terminated -> stopping (rejected: transition not legal)\n  E6: provisioning -> running (rejected: stale from-state)\n  E7: provisioning -> stopped (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-h2164? Answer with the exact state name.",
+      "gold_answer": "terminated",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-holdout-015",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-h1027 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: pending -> building (accepted)\n  E2: building -> built (accepted)\n  E3: built -> testing (accepted)\n  E4: testing -> building (rejected: transition not legal)\n  E5: testing -> tested (accepted)\n  E6: tested -> deployed (accepted)\n  E7: deployed -> rolled_back (accepted)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-h1027? Answer with the exact state name.",
+      "gold_answer": "rolled_back",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E3",
+        "E5",
+        "E6",
+        "E7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-holdout-016",
+      "family": "B",
+      "sender_input": "Entity under observation: session ses-h9186 (an agent session).\nInitial state: created.\nLegal transitions accepted by the controller:\n  created -> active\n  active -> idle\n  idle -> active\n  active -> closed\n  idle -> closed\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: created -> active (accepted)\n  E2: active -> closed (accepted)\n  E3: closed -> created (rejected: transition not legal)\n  E4: closed -> idle (rejected: transition not legal)\n  E5: idle -> closed (rejected: stale from-state)\n  E6: closed -> created (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of session ses-h9186? Answer with the exact state name.",
+      "gold_answer": "closed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-holdout-017",
+      "family": "B",
+      "sender_input": "Entity under observation: virtual machine vm-h3159 (a compute instance).\nInitial state: provisioning.\nLegal transitions accepted by the controller:\n  provisioning -> running\n  running -> stopping\n  stopping -> stopped\n  stopped -> running\n  running -> terminated\n  stopped -> terminated\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: provisioning -> running\n  E2: provisioning -> running\n  E3: running -> stopped\n  E4: running -> terminated\n  E5: terminated -> stopped\n  E6: provisioning -> running",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of virtual machine vm-h3159? Answer with the exact state name.",
+      "gold_answer": "terminated",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E4"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-holdout-018",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-h5792 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: pending -> building\n  E2: building -> deployed\n  E3: building -> built\n  E4: built -> testing",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-h5792? Answer with the exact state name.",
+      "gold_answer": "testing",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E3",
+        "E4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-holdout-019",
+      "family": "B",
+      "sender_input": "Entity under observation: pull request pr-h5851 (a code change).\nInitial state: draft.\nLegal transitions accepted by the controller:\n  draft -> open\n  open -> in_review\n  in_review -> approved\n  approved -> merged\n  open -> closed\n  in_review -> closed\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: draft -> open (accepted)\n  E2: open -> closed (accepted)\n  E3: closed -> draft (rejected: transition not legal)\n  E4: closed -> approved (rejected: transition not legal)\n  E5: closed -> open (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of pull request pr-h5851? Answer with the exact state name.",
+      "gold_answer": "closed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-holdout-020",
+      "family": "B",
+      "sender_input": "Entity under observation: pull request pr-h4792 (a code change).\nInitial state: draft.\nLegal transitions accepted by the controller:\n  draft -> open\n  open -> in_review\n  in_review -> approved\n  approved -> merged\n  open -> closed\n  in_review -> closed\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: draft -> open\n  E2: open -> closed\n  E3: closed -> open\n  E4: draft -> open\n  E5: closed -> merged\n  E6: open -> closed",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of pull request pr-h4792? Answer with the exact state name.",
+      "gold_answer": "closed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-holdout-021",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-h9376 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: pending -> building (accepted)\n  E2: building -> built (accepted)\n  E3: built -> testing (accepted)\n  E4: testing -> tested (accepted)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-h9376? Answer with the exact state name.",
+      "gold_answer": "tested",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E3",
+        "E4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-holdout-022",
+      "family": "B",
+      "sender_input": "Entity under observation: pull request pr-h5657 (a code change).\nInitial state: draft.\nLegal transitions accepted by the controller:\n  draft -> open\n  open -> in_review\n  in_review -> approved\n  approved -> merged\n  open -> closed\n  in_review -> closed\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: draft -> open\n  E2: open -> closed\n  E3: in_review -> closed",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of pull request pr-h5657? Answer with the exact state name.",
+      "gold_answer": "closed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-holdout-023",
+      "family": "B",
+      "sender_input": "Entity under observation: order ord-h6721 (a customer order).\nInitial state: placed.\nLegal transitions accepted by the controller:\n  placed -> confirmed\n  confirmed -> packed\n  packed -> shipped\n  shipped -> delivered\n  placed -> cancelled\n  confirmed -> cancelled\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: placed -> cancelled\n  E2: cancelled -> packed\n  E3: cancelled -> packed\n  E4: shipped -> placed\n  E5: cancelled -> placed\n  E6: shipped -> delivered\n  E7: cancelled -> confirmed",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of order ord-h6721? Answer with the exact state name.",
+      "gold_answer": "cancelled",
+      "required_facts": [
+        "INIT",
+        "E1"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-holdout-024",
+      "family": "B",
+      "sender_input": "Entity under observation: order ord-h2814 (a customer order).\nInitial state: placed.\nLegal transitions accepted by the controller:\n  placed -> confirmed\n  confirmed -> packed\n  packed -> shipped\n  shipped -> delivered\n  placed -> cancelled\n  confirmed -> cancelled\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: placed -> confirmed (accepted)\n  E2: confirmed -> cancelled (accepted)\n  E3: packed -> confirmed (rejected: transition not legal)\n  E4: cancelled -> packed (rejected: transition not legal)\n  E5: cancelled -> packed (rejected: transition not legal)\n  E6: cancelled -> shipped (rejected: transition not legal)\n  E7: cancelled -> confirmed (rejected: transition not legal)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of order ord-h2814? Answer with the exact state name.",
+      "gold_answer": "cancelled",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-holdout-025",
+      "family": "B",
+      "sender_input": "Entity under observation: session ses-h8823 (an agent session).\nInitial state: created.\nLegal transitions accepted by the controller:\n  created -> active\n  active -> idle\n  idle -> active\n  active -> closed\n  idle -> closed\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: created -> active (accepted)\n  E2: active -> closed (accepted)\n  E3: idle -> closed (rejected: stale from-state)\n  E4: active -> closed (rejected: stale from-state)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of session ses-h8823? Answer with the exact state name.",
+      "gold_answer": "closed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-holdout-026",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-h1775 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: pending -> building (accepted)\n  E2: building -> built (accepted)\n  E3: built -> rolled_back (rejected: transition not legal)\n  E4: tested -> building (rejected: transition not legal)\n  E5: built -> testing (accepted)\n  E6: tested -> deployed (rejected: stale from-state)\n  E7: testing -> tested (accepted)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-h1775? Answer with the exact state name.",
+      "gold_answer": "tested",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E5",
+        "E7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "B-holdout-027",
+      "family": "B",
+      "sender_input": "Entity under observation: order ord-h6872 (a customer order).\nInitial state: placed.\nLegal transitions accepted by the controller:\n  placed -> confirmed\n  confirmed -> packed\n  packed -> shipped\n  shipped -> delivered\n  placed -> cancelled\n  confirmed -> cancelled\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: placed -> cancelled (accepted)\n  E2: confirmed -> shipped (rejected: transition not legal)\n  E3: shipped -> delivered (rejected: stale from-state)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of order ord-h6872? Answer with the exact state name.",
+      "gold_answer": "cancelled",
+      "required_facts": [
+        "INIT",
+        "E1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "B-holdout-028",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-h6349 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: pending -> building\n  E2: building -> built\n  E3: built -> testing\n  E4: building -> deployed\n  E5: testing -> tested\n  E6: tested -> deployed\n  E7: deployed -> rolled_back",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-h6349? Answer with the exact state name.",
+      "gold_answer": "rolled_back",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E3",
+        "E5",
+        "E6",
+        "E7"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-holdout-029",
+      "family": "B",
+      "sender_input": "Entity under observation: deployment dep-h1636 (a service rollout).\nInitial state: pending.\nLegal transitions accepted by the controller:\n  pending -> building\n  building -> built\n  built -> testing\n  testing -> tested\n  tested -> deployed\n  deployed -> rolled_back\nThe controller applies an event only when the event from-state equals the current state and the transition is listed as legal; every other event is rejected automatically.\nEvent log, in chronological order:\n  E1: pending -> building\n  E2: building -> built\n  E3: built -> testing\n  E4: testing -> tested\n  E5: tested -> pending\n  E6: tested -> deployed\n  E7: deployed -> building",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of deployment dep-h1636? Answer with the exact state name.",
+      "gold_answer": "deployed",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E6"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "B-holdout-030",
+      "family": "B",
+      "sender_input": "Entity under observation: order ord-h1357 (a customer order).\nInitial state: placed.\nLegal transitions accepted by the controller:\n  placed -> confirmed\n  confirmed -> packed\n  packed -> shipped\n  shipped -> delivered\n  placed -> cancelled\n  confirmed -> cancelled\nEvent log, in chronological order (each event is marked with the controller decision):\n  E1: placed -> confirmed (accepted)\n  E2: confirmed -> cancelled (accepted)\n  E3: packed -> shipped (rejected: stale from-state)",
+      "receiver_task": "Using only the state change events the sender communicates, what is the final valid state of order ord-h1357? Answer with the exact state name.",
+      "gold_answer": "cancelled",
+      "required_facts": [
+        "INIT",
+        "E1",
+        "E2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-holdout-001",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'incident triage' runbook (step ids in brackets).\n  [S1] open the incident channel\n  [S2] collect the failing request ids\n  [S3] check the rolling error rate\n  [S4] bisect the last five deploys",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'open the incident channel'? Answer with the number only.",
+      "gold_answer": "1",
+      "required_facts": [
+        "S1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-holdout-002",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'service deploy' runbook (step ids in brackets).\n  [S1] announce the maintenance window\n  [S2] drain the load balancer\n  [S3] stop the service\n  [S4] apply the database migration\n  [S5] run the smoke tests\n  [S6] restore traffic to the service\n  [S7] verify the error budget",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'verify the error budget'? Answer with that step's text exactly as written.",
+      "gold_answer": "restore traffic to the service",
+      "required_facts": [
+        "S7",
+        "S6"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-holdout-003",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'data migration' runbook (step ids in brackets).\n  [S1] snapshot the source database\n  [S2] record the source row counts\n  [S3] start the bulk copy\n  [S4] verify the checksums on the target\n  [S5] update the application config\n  [S6] resume the write traffic",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'update the application config'? Answer with that step's text exactly as written.",
+      "gold_answer": "verify the checksums on the target",
+      "required_facts": [
+        "S5",
+        "S4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-holdout-004",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'release cut' runbook (step ids in brackets).\n  [S1] freeze the main branch\n  [S2] update the version constant\n  [S3] update the changelog\n  [S4] build the release binaries\n  [S5] upload the artifacts to the registry\n  [S6] run the installer smoke test\n  [S7] tag the release commit",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'upload the artifacts to the registry'? Answer with that step's text exactly as written.",
+      "gold_answer": "build the release binaries",
+      "required_facts": [
+        "S5",
+        "S4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-holdout-005",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'service deploy' runbook (step ids in brackets).\n  [S1] announce the maintenance window\n  [S2] drain the load balancer\n  [S3] stop the service\n  [S4] apply the database migration\n  [S5] run the smoke tests\n  [S6] restore traffic to the service\n  [S7] verify the error budget\n  [S8] close the incident channel",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'verify the error budget'? Answer with the number only.",
+      "gold_answer": "7",
+      "required_facts": [
+        "S7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-holdout-006",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'incident triage' runbook (step ids in brackets).\n  [S1] open the incident channel\n  [S2] collect the failing request ids\n  [S3] check the rolling error rate\n  [S4] bisect the last five deploys\n  [S5] write the mitigation note\n  [S6] page the on-call engineer\n  [S7] schedule the postmortem\n  [S8] archive the incident log",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'page the on-call engineer'? Answer with that step's text exactly as written.",
+      "gold_answer": "write the mitigation note",
+      "required_facts": [
+        "S6",
+        "S5"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "C-holdout-007",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'service deploy' runbook (step ids in brackets).\n  [S1] announce the maintenance window\n  [S2] drain the load balancer\n  [S3] stop the service\n  [S4] apply the database migration\n  [S5] run the smoke tests\n  [S6] restore traffic to the service\n  [S7] verify the error budget\n  [S8] close the incident channel",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'run the smoke tests'? Answer with that step's text exactly as written.",
+      "gold_answer": "apply the database migration",
+      "required_facts": [
+        "S5",
+        "S4"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "C-holdout-008",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'data migration' runbook (step ids in brackets).\n  [S1] snapshot the source database\n  [S2] record the source row counts\n  [S3] start the bulk copy\n  [S4] verify the checksums on the target\n  [S5] update the application config\n  [S6] resume the write traffic\n  [S7] watch the replication lag for one hour\n  [S8] decommission the source database",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'watch the replication lag for one hour'? Answer with the number only.",
+      "gold_answer": "7",
+      "required_facts": [
+        "S7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-holdout-009",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'key rotation' runbook (step ids in brackets).\n  [S1] generate the new key pair\n  [S2] stage the new public key\n  [S3] flip the serving key\n  [S4] watch the error rate for one hour\n  [S5] revoke the old key\n  [S6] update the key inventory\n  [S7] archive the rotation receipt\n  [S8] notify the security channel",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'archive the rotation receipt'? Answer with that step's text exactly as written.",
+      "gold_answer": "update the key inventory",
+      "required_facts": [
+        "S7",
+        "S6"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "C-holdout-010",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'incident triage' runbook (step ids in brackets).\n  [S1] open the incident channel\n  [S2] collect the failing request ids\n  [S3] check the rolling error rate\n  [S4] bisect the last five deploys\n  [S5] write the mitigation note\n  [S6] page the on-call engineer\n  [S7] schedule the postmortem",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'schedule the postmortem'? Answer with the number only.",
+      "gold_answer": "7",
+      "required_facts": [
+        "S7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-holdout-011",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'release cut' runbook (step ids in brackets).\n  [S1] freeze the main branch\n  [S2] update the version constant\n  [S3] update the changelog\n  [S4] build the release binaries\n  [S5] upload the artifacts to the registry\n  [S6] run the installer smoke test\n  [S7] tag the release commit\n  [S8] announce the release",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'tag the release commit'? Answer with that step's text exactly as written.",
+      "gold_answer": "run the installer smoke test",
+      "required_facts": [
+        "S7",
+        "S6"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "C-holdout-012",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'data migration' runbook (step ids in brackets).\n  [S1] snapshot the source database\n  [S2] record the source row counts\n  [S3] start the bulk copy\n  [S4] verify the checksums on the target\n  [S5] update the application config\n  [S6] resume the write traffic",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'update the application config'? Answer with the number only.",
+      "gold_answer": "5",
+      "required_facts": [
+        "S5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-holdout-013",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'release cut' runbook (step ids in brackets).\n  [S1] freeze the main branch\n  [S2] update the version constant\n  [S3] update the changelog\n  [S4] build the release binaries\n  [S5] upload the artifacts to the registry\n  [S6] run the installer smoke test",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'build the release binaries'? Answer with that step's text exactly as written.",
+      "gold_answer": "update the changelog",
+      "required_facts": [
+        "S4",
+        "S3"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-holdout-014",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'data migration' runbook (step ids in brackets).\n  [S1] snapshot the source database\n  [S2] record the source row counts\n  [S3] start the bulk copy\n  [S4] verify the checksums on the target\n  [S5] update the application config\n  [S6] resume the write traffic\n  [S7] watch the replication lag for one hour\n  [S8] decommission the source database",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'record the source row counts'? Answer with the number only.",
+      "gold_answer": "2",
+      "required_facts": [
+        "S2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-holdout-015",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'incident triage' runbook (step ids in brackets).\n  [S1] open the incident channel\n  [S2] collect the failing request ids\n  [S3] check the rolling error rate\n  [S4] bisect the last five deploys\n  [S5] write the mitigation note\n  [S6] page the on-call engineer\n  [S7] schedule the postmortem\n  [S8] archive the incident log",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'write the mitigation note'? Answer with the number only.",
+      "gold_answer": "5",
+      "required_facts": [
+        "S5"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-holdout-016",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'data migration' runbook (step ids in brackets).\n  [S1] snapshot the source database\n  [S2] record the source row counts\n  [S3] start the bulk copy\n  [S4] verify the checksums on the target",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'start the bulk copy'? Answer with the number only.",
+      "gold_answer": "3",
+      "required_facts": [
+        "S3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-holdout-017",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'release cut' runbook (step ids in brackets).\n  [S1] freeze the main branch\n  [S2] update the version constant\n  [S3] update the changelog\n  [S4] build the release binaries\n  [S5] upload the artifacts to the registry",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'update the changelog'? Answer with that step's text exactly as written.",
+      "gold_answer": "update the version constant",
+      "required_facts": [
+        "S3",
+        "S2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-holdout-018",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'data migration' runbook (step ids in brackets).\n  [S1] snapshot the source database\n  [S2] record the source row counts\n  [S3] start the bulk copy\n  [S4] verify the checksums on the target",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'record the source row counts'? Answer with that step's text exactly as written.",
+      "gold_answer": "snapshot the source database",
+      "required_facts": [
+        "S2",
+        "S1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-holdout-019",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'service deploy' runbook (step ids in brackets).\n  [S1] announce the maintenance window\n  [S2] drain the load balancer\n  [S3] stop the service\n  [S4] apply the database migration\n  [S5] run the smoke tests\n  [S6] restore traffic to the service",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'restore traffic to the service'? Answer with that step's text exactly as written.",
+      "gold_answer": "run the smoke tests",
+      "required_facts": [
+        "S6",
+        "S5"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-holdout-020",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'data migration' runbook (step ids in brackets).\n  [S1] snapshot the source database\n  [S2] record the source row counts\n  [S3] start the bulk copy\n  [S4] verify the checksums on the target\n  [S5] update the application config\n  [S6] resume the write traffic\n  [S7] watch the replication lag for one hour\n  [S8] decommission the source database",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'watch the replication lag for one hour'? Answer with that step's text exactly as written.",
+      "gold_answer": "resume the write traffic",
+      "required_facts": [
+        "S7",
+        "S6"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "C-holdout-021",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'service deploy' runbook (step ids in brackets).\n  [S1] announce the maintenance window\n  [S2] drain the load balancer\n  [S3] stop the service\n  [S4] apply the database migration\n  [S5] run the smoke tests\n  [S6] restore traffic to the service\n  [S7] verify the error budget",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'restore traffic to the service'? Answer with the number only.",
+      "gold_answer": "6",
+      "required_facts": [
+        "S6"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-holdout-022",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'key rotation' runbook (step ids in brackets).\n  [S1] generate the new key pair\n  [S2] stage the new public key\n  [S3] flip the serving key\n  [S4] watch the error rate for one hour\n  [S5] revoke the old key",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'stage the new public key'? Answer with that step's text exactly as written.",
+      "gold_answer": "generate the new key pair",
+      "required_facts": [
+        "S2",
+        "S1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-holdout-023",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'key rotation' runbook (step ids in brackets).\n  [S1] generate the new key pair\n  [S2] stage the new public key\n  [S3] flip the serving key\n  [S4] watch the error rate for one hour\n  [S5] revoke the old key",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'watch the error rate for one hour'? Answer with the number only.",
+      "gold_answer": "4",
+      "required_facts": [
+        "S4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-holdout-024",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'incident triage' runbook (step ids in brackets).\n  [S1] open the incident channel\n  [S2] collect the failing request ids\n  [S3] check the rolling error rate\n  [S4] bisect the last five deploys\n  [S5] write the mitigation note\n  [S6] page the on-call engineer",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'page the on-call engineer'? Answer with the number only.",
+      "gold_answer": "6",
+      "required_facts": [
+        "S6"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-holdout-025",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'incident triage' runbook (step ids in brackets).\n  [S1] open the incident channel\n  [S2] collect the failing request ids\n  [S3] check the rolling error rate\n  [S4] bisect the last five deploys\n  [S5] write the mitigation note",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'check the rolling error rate'? Answer with the number only.",
+      "gold_answer": "3",
+      "required_facts": [
+        "S3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-holdout-026",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'data migration' runbook (step ids in brackets).\n  [S1] snapshot the source database\n  [S2] record the source row counts\n  [S3] start the bulk copy\n  [S4] verify the checksums on the target\n  [S5] update the application config\n  [S6] resume the write traffic\n  [S7] watch the replication lag for one hour",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'verify the checksums on the target'? Answer with the number only.",
+      "gold_answer": "4",
+      "required_facts": [
+        "S4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-holdout-027",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'service deploy' runbook (step ids in brackets).\n  [S1] announce the maintenance window\n  [S2] drain the load balancer\n  [S3] stop the service\n  [S4] apply the database migration",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'announce the maintenance window'? Answer with the number only.",
+      "gold_answer": "1",
+      "required_facts": [
+        "S1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-holdout-028",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'release cut' runbook (step ids in brackets).\n  [S1] freeze the main branch\n  [S2] update the version constant\n  [S3] update the changelog\n  [S4] build the release binaries",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'update the version constant'? Answer with that step's text exactly as written.",
+      "gold_answer": "freeze the main branch",
+      "required_facts": [
+        "S2",
+        "S1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "C-holdout-029",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'incident triage' runbook (step ids in brackets).\n  [S1] open the incident channel\n  [S2] collect the failing request ids\n  [S3] check the rolling error rate\n  [S4] bisect the last five deploys\n  [S5] write the mitigation note\n  [S6] page the on-call engineer\n  [S7] schedule the postmortem\n  [S8] archive the incident log",
+      "receiver_task": "Using only the procedure the sender communicates, at which step number does the runbook say 'archive the incident log'? Answer with the number only.",
+      "gold_answer": "8",
+      "required_facts": [
+        "S8"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "C-holdout-030",
+      "family": "C",
+      "sender_input": "Procedure handoff: the 'key rotation' runbook (step ids in brackets).\n  [S1] generate the new key pair\n  [S2] stage the new public key\n  [S3] flip the serving key\n  [S4] watch the error rate for one hour\n  [S5] revoke the old key\n  [S6] update the key inventory\n  [S7] archive the rotation receipt\n  [S8] notify the security channel",
+      "receiver_task": "Using only the procedure the sender communicates, which step comes immediately before the step that says 'notify the security channel'? Answer with that step's text exactly as written.",
+      "gold_answer": "archive the rotation receipt",
+      "required_facts": [
+        "S8",
+        "S7"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "D-holdout-001",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service search-edge, team grit, status failing, region eu-west, tier premium, replicas 6\n  [F2] service cache-daemon, team grit, status degraded, region sa-east, tier standard, replicas 9\n  [F3] service gateway-edge, team halcyon, status degraded, region eu-north, tier standard, replicas 5\n  [F4] service notify-gateway, team grit, status failing, region sa-east, tier premium, replicas 7\n  [F5] service audit-relay, team grit, status failing, region us-west, tier free, replicas 1\n  [F6] service notify-api, team grit, status paused, region us-west, tier free, replicas 3\n  [F7] service notify-edge, team grit, status paused, region us-west, tier free, replicas 8",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team grit and currently in status failing? List the service names, comma-separated.",
+      "gold_answer": "audit-relay, notify-gateway, search-edge",
+      "required_facts": [
+        "F5",
+        "F4",
+        "F1",
+        "F6",
+        "F2",
+        "F7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-holdout-002",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service render-service, team fjord, status healthy, region us-west, tier premium, replicas 8\n  [F2] service auth-edge, team ember, status paused, region eu-north, tier premium, replicas 4\n  [F3] service auth-daemon, team ember, status degraded, region eu-west, tier standard, replicas 1\n  [F4] service audit-daemon, team halcyon, status healthy, region eu-north, tier premium, replicas 8\n  [F5] service vector-service, team ember, status healthy, region us-west, tier standard, replicas 9\n  [F6] service billing-service, team cinder, status healthy, region eu-west, tier standard, replicas 7",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status healthy and located in region us-west? List the service names, comma-separated.",
+      "gold_answer": "render-service, vector-service",
+      "required_facts": [
+        "F5",
+        "F1",
+        "F6",
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-003",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service model-gateway, team fjord, status failing, region eu-west, tier free, replicas 7\n  [F2] service auth-relay, team fjord, status failing, region us-east, tier standard, replicas 8\n  [F3] service policy-relay, team ember, status failing, region us-east, tier standard, replicas 4\n  [F4] service gateway-api, team fjord, status degraded, region us-east, tier free, replicas 9\n  [F5] service auth-hub, team fjord, status failing, region us-east, tier standard, replicas 4\n  [F6] service model-relay, team borealis, status failing, region us-west, tier standard, replicas 7",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team fjord and located in region us-east? List the service names, comma-separated.",
+      "gold_answer": "auth-hub, auth-relay, gateway-api",
+      "required_facts": [
+        "F5",
+        "F2",
+        "F4",
+        "F1",
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-004",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service gateway-service, team atlas, status failing, region eu-west, tier premium, replicas 6\n  [F2] service gateway-api, team halcyon, status paused, region eu-west, tier free, replicas 8\n  [F3] service policy-scheduler, team delta, status degraded, region us-west, tier free, replicas 1\n  [F4] service render-relay, team ember, status failing, region ap-south, tier free, replicas 3\n  [F5] service model-api, team delta, status healthy, region ap-south, tier free, replicas 3",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status failing and located in region us-west? List the service names, comma-separated.",
+      "gold_answer": "none",
+      "required_facts": [
+        "F4",
+        "F1",
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-005",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service cache-daemon, team borealis, status healthy, region eu-west, tier free, replicas 6\n  [F2] service cache-edge, team atlas, status healthy, region us-west, tier standard, replicas 4\n  [F3] service billing-scheduler, team ember, status healthy, region eu-west, tier premium, replicas 1\n  [F4] service notify-service, team ember, status healthy, region eu-west, tier free, replicas 3\n  [F5] service policy-edge, team atlas, status paused, region eu-west, tier free, replicas 2\n  [F6] service billing-edge, team fjord, status healthy, region us-east, tier premium, replicas 9\n  [F7] service model-gateway, team fjord, status degraded, region ap-south, tier premium, replicas 2",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status healthy and located in region eu-west? List the service names, comma-separated.",
+      "gold_answer": "billing-scheduler, cache-daemon, notify-service",
+      "required_facts": [
+        "F1",
+        "F3",
+        "F4",
+        "F6",
+        "F2",
+        "F5"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-holdout-006",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service audit-relay, team halcyon, status healthy, region us-east, tier standard, replicas 6\n  [F2] service search-api, team delta, status degraded, region sa-east, tier premium, replicas 6\n  [F3] service cache-daemon, team ember, status paused, region eu-west, tier premium, replicas 7\n  [F4] service render-gateway, team borealis, status paused, region us-west, tier free, replicas 9\n  [F5] service render-service, team delta, status degraded, region us-west, tier free, replicas 5\n  [F6] service audit-hub, team ember, status paused, region ap-south, tier free, replicas 8",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status paused and located in region us-west? List the service names, comma-separated.",
+      "gold_answer": "render-gateway",
+      "required_facts": [
+        "F4",
+        "F5",
+        "F6",
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-007",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service render-daemon, team cinder, status paused, region eu-north, tier premium, replicas 3\n  [F2] service model-relay, team cinder, status failing, region us-east, tier premium, replicas 8\n  [F3] service ingest-api, team cinder, status healthy, region eu-north, tier premium, replicas 5\n  [F4] service ingest-gateway, team fjord, status degraded, region eu-west, tier premium, replicas 9\n  [F5] service auth-edge, team borealis, status paused, region us-west, tier free, replicas 6\n  [F6] service audit-scheduler, team halcyon, status failing, region sa-east, tier standard, replicas 2\n  [F7] service cache-api, team cinder, status healthy, region eu-north, tier standard, replicas 4\n  [F8] service model-edge, team atlas, status degraded, region eu-north, tier standard, replicas 9",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team cinder and located in region eu-north? List the service names, comma-separated.",
+      "gold_answer": "cache-api, ingest-api, render-daemon",
+      "required_facts": [
+        "F3",
+        "F1",
+        "F7",
+        "F2",
+        "F8"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-holdout-008",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service auth-hub, team halcyon, status paused, region sa-east, tier premium, replicas 4\n  [F2] service policy-edge, team delta, status paused, region us-west, tier free, replicas 7\n  [F3] service model-edge, team atlas, status healthy, region eu-north, tier standard, replicas 6\n  [F4] service render-gateway, team atlas, status paused, region eu-west, tier standard, replicas 5\n  [F5] service cache-hub, team atlas, status failing, region us-west, tier premium, replicas 6\n  [F6] service search-relay, team ember, status degraded, region eu-north, tier premium, replicas 8",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team cinder and currently in status paused? List the service names, comma-separated.",
+      "gold_answer": "none",
+      "required_facts": [
+        "F4",
+        "F2",
+        "F1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-009",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service model-service, team fjord, status paused, region sa-east, tier free, replicas 5\n  [F2] service gateway-edge, team fjord, status degraded, region us-west, tier standard, replicas 1\n  [F3] service notify-gateway, team ember, status degraded, region eu-north, tier standard, replicas 6\n  [F4] service ingest-service, team halcyon, status degraded, region us-west, tier free, replicas 9\n  [F5] service auth-edge, team fjord, status failing, region us-west, tier premium, replicas 1\n  [F6] service render-edge, team delta, status degraded, region eu-north, tier free, replicas 4\n  [F7] service search-scheduler, team grit, status paused, region us-west, tier premium, replicas 6",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team fjord and located in region us-west? List the service names, comma-separated.",
+      "gold_answer": "auth-edge, gateway-edge",
+      "required_facts": [
+        "F5",
+        "F2",
+        "F7",
+        "F1",
+        "F4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-holdout-010",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service billing-api, team fjord, status failing, region eu-north, tier free, replicas 8\n  [F2] service search-api, team fjord, status failing, region eu-west, tier free, replicas 7\n  [F3] service audit-edge, team ember, status degraded, region us-west, tier free, replicas 5\n  [F4] service search-edge, team fjord, status healthy, region ap-south, tier free, replicas 1",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team fjord and located in region eu-north? List the service names, comma-separated.",
+      "gold_answer": "billing-api",
+      "required_facts": [
+        "F1",
+        "F2",
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-011",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service notify-scheduler, team borealis, status failing, region us-east, tier standard, replicas 8\n  [F2] service cache-relay, team fjord, status paused, region eu-north, tier premium, replicas 9\n  [F3] service render-edge, team fjord, status failing, region eu-north, tier free, replicas 7\n  [F4] service billing-hub, team fjord, status healthy, region sa-east, tier standard, replicas 2",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team fjord and currently in status healthy? List the service names, comma-separated.",
+      "gold_answer": "billing-hub",
+      "required_facts": [
+        "F4",
+        "F3",
+        "F2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-012",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service render-relay, team fjord, status degraded, region us-east, tier premium, replicas 7\n  [F2] service vector-gateway, team halcyon, status failing, region sa-east, tier standard, replicas 9\n  [F3] service cache-hub, team halcyon, status degraded, region eu-west, tier premium, replicas 6\n  [F4] service vector-relay, team borealis, status degraded, region us-east, tier free, replicas 1\n  [F5] service vector-scheduler, team halcyon, status paused, region us-west, tier premium, replicas 2\n  [F6] service ingest-relay, team atlas, status paused, region sa-east, tier free, replicas 4",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team borealis and located in region sa-east? List the service names, comma-separated.",
+      "gold_answer": "none",
+      "required_facts": [
+        "F2",
+        "F6",
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-013",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service policy-daemon, team grit, status failing, region sa-east, tier free, replicas 8\n  [F2] service notify-api, team grit, status paused, region sa-east, tier premium, replicas 8\n  [F3] service policy-api, team atlas, status failing, region sa-east, tier premium, replicas 9\n  [F4] service billing-daemon, team halcyon, status paused, region ap-south, tier standard, replicas 7\n  [F5] service audit-edge, team ember, status paused, region sa-east, tier free, replicas 6\n  [F6] service billing-scheduler, team borealis, status degraded, region us-east, tier standard, replicas 1\n  [F7] service render-api, team grit, status healthy, region us-east, tier standard, replicas 9",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team grit and located in region sa-east? List the service names, comma-separated.",
+      "gold_answer": "notify-api, policy-daemon",
+      "required_facts": [
+        "F1",
+        "F2",
+        "F5",
+        "F3",
+        "F7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-holdout-014",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service ingest-hub, team halcyon, status degraded, region ap-south, tier free, replicas 9\n  [F2] service search-relay, team halcyon, status degraded, region ap-south, tier standard, replicas 1\n  [F3] service cache-gateway, team atlas, status healthy, region ap-south, tier standard, replicas 7\n  [F4] service vector-edge, team delta, status paused, region eu-west, tier standard, replicas 9\n  [F5] service billing-relay, team halcyon, status failing, region us-east, tier standard, replicas 3\n  [F6] service audit-scheduler, team grit, status paused, region ap-south, tier standard, replicas 5",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team halcyon and located in region ap-south? List the service names, comma-separated.",
+      "gold_answer": "ingest-hub, search-relay",
+      "required_facts": [
+        "F2",
+        "F1",
+        "F6",
+        "F5",
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-015",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service cache-gateway, team cinder, status healthy, region ap-south, tier free, replicas 1\n  [F2] service policy-relay, team cinder, status degraded, region us-west, tier free, replicas 5\n  [F3] service billing-hub, team ember, status paused, region sa-east, tier standard, replicas 7\n  [F4] service auth-api, team delta, status healthy, region us-west, tier premium, replicas 9",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team cinder and located in region sa-east? List the service names, comma-separated.",
+      "gold_answer": "none",
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-016",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service policy-relay, team borealis, status degraded, region eu-west, tier standard, replicas 1\n  [F2] service render-hub, team borealis, status degraded, region ap-south, tier standard, replicas 4\n  [F3] service search-relay, team borealis, status degraded, region ap-south, tier standard, replicas 6\n  [F4] service model-api, team ember, status failing, region ap-south, tier free, replicas 6\n  [F5] service billing-daemon, team fjord, status paused, region sa-east, tier standard, replicas 8\n  [F6] service policy-api, team cinder, status degraded, region us-west, tier standard, replicas 6\n  [F7] service cache-gateway, team borealis, status degraded, region ap-south, tier standard, replicas 6\n  [F8] service billing-service, team delta, status healthy, region sa-east, tier free, replicas 6",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status degraded and located in region ap-south? List the service names, comma-separated.",
+      "gold_answer": "cache-gateway, render-hub, search-relay",
+      "required_facts": [
+        "F7",
+        "F2",
+        "F3",
+        "F1",
+        "F6",
+        "F4"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-holdout-017",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service gateway-service, team halcyon, status failing, region eu-west, tier free, replicas 6\n  [F2] service model-api, team cinder, status failing, region eu-north, tier free, replicas 2\n  [F3] service policy-scheduler, team halcyon, status failing, region sa-east, tier standard, replicas 8\n  [F4] service billing-hub, team halcyon, status degraded, region us-east, tier standard, replicas 1",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team fjord and currently in status failing? List the service names, comma-separated.",
+      "gold_answer": "none",
+      "required_facts": [
+        "F3",
+        "F2",
+        "F1"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-018",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service auth-api, team halcyon, status paused, region sa-east, tier standard, replicas 9\n  [F2] service billing-scheduler, team delta, status degraded, region us-east, tier free, replicas 6\n  [F3] service auth-gateway, team atlas, status paused, region sa-east, tier free, replicas 1\n  [F4] service search-edge, team ember, status healthy, region sa-east, tier free, replicas 6\n  [F5] service render-api, team fjord, status paused, region sa-east, tier premium, replicas 6",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team ember and located in region sa-east? List the service names, comma-separated.",
+      "gold_answer": "search-edge",
+      "required_facts": [
+        "F4",
+        "F3",
+        "F1",
+        "F5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-019",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service model-scheduler, team delta, status degraded, region eu-west, tier premium, replicas 2\n  [F2] service search-relay, team atlas, status healthy, region eu-north, tier standard, replicas 1\n  [F3] service gateway-gateway, team atlas, status degraded, region us-east, tier standard, replicas 9\n  [F4] service policy-daemon, team delta, status healthy, region sa-east, tier premium, replicas 8\n  [F5] service ingest-edge, team atlas, status healthy, region eu-west, tier standard, replicas 1\n  [F6] service policy-service, team fjord, status paused, region eu-west, tier free, replicas 7",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team atlas and currently in status healthy? List the service names, comma-separated.",
+      "gold_answer": "ingest-edge, search-relay",
+      "required_facts": [
+        "F5",
+        "F2",
+        "F4",
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-020",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service audit-hub, team borealis, status degraded, region eu-north, tier standard, replicas 2\n  [F2] service vector-api, team grit, status healthy, region eu-west, tier standard, replicas 9\n  [F3] service policy-edge, team borealis, status healthy, region eu-west, tier premium, replicas 2\n  [F4] service billing-api, team grit, status healthy, region us-east, tier free, replicas 6\n  [F5] service ingest-gateway, team atlas, status paused, region eu-north, tier free, replicas 1\n  [F6] service render-api, team delta, status healthy, region us-east, tier free, replicas 8\n  [F7] service notify-relay, team fjord, status healthy, region eu-north, tier premium, replicas 4\n  [F8] service model-service, team ember, status healthy, region us-east, tier standard, replicas 4",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status healthy and located in region us-east? List the service names, comma-separated.",
+      "gold_answer": "billing-api, model-service, render-api",
+      "required_facts": [
+        "F4",
+        "F8",
+        "F6",
+        "F7",
+        "F3",
+        "F2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-holdout-021",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service ingest-hub, team halcyon, status healthy, region us-east, tier free, replicas 3\n  [F2] service ingest-edge, team halcyon, status paused, region us-west, tier premium, replicas 4\n  [F3] service auth-hub, team halcyon, status degraded, region us-west, tier premium, replicas 9\n  [F4] service vector-service, team halcyon, status paused, region sa-east, tier standard, replicas 3\n  [F5] service render-gateway, team halcyon, status paused, region eu-north, tier free, replicas 4\n  [F6] service cache-gateway, team ember, status healthy, region us-west, tier premium, replicas 9\n  [F7] service ingest-daemon, team fjord, status failing, region eu-west, tier premium, replicas 2\n  [F8] service notify-scheduler, team halcyon, status healthy, region eu-west, tier standard, replicas 1",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team halcyon and currently in status paused? List the service names, comma-separated.",
+      "gold_answer": "ingest-edge, render-gateway, vector-service",
+      "required_facts": [
+        "F5",
+        "F4",
+        "F2",
+        "F3",
+        "F8",
+        "F1"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-holdout-022",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service notify-daemon, team cinder, status healthy, region ap-south, tier free, replicas 3\n  [F2] service notify-scheduler, team borealis, status degraded, region us-east, tier standard, replicas 2\n  [F3] service policy-relay, team cinder, status healthy, region eu-west, tier free, replicas 3\n  [F4] service ingest-gateway, team cinder, status failing, region ap-south, tier premium, replicas 2\n  [F5] service billing-edge, team cinder, status failing, region us-east, tier premium, replicas 1\n  [F6] service render-api, team cinder, status failing, region eu-west, tier standard, replicas 1\n  [F7] service policy-api, team ember, status failing, region us-west, tier free, replicas 7\n  [F8] service audit-service, team delta, status healthy, region eu-west, tier free, replicas 7",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team cinder and currently in status failing? List the service names, comma-separated.",
+      "gold_answer": "billing-edge, ingest-gateway, render-api",
+      "required_facts": [
+        "F6",
+        "F5",
+        "F4",
+        "F1",
+        "F3",
+        "F7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-holdout-023",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service audit-api, team halcyon, status paused, region us-west, tier free, replicas 3\n  [F2] service auth-daemon, team delta, status healthy, region eu-north, tier premium, replicas 1\n  [F3] service billing-scheduler, team delta, status healthy, region us-west, tier free, replicas 5\n  [F4] service render-hub, team fjord, status failing, region eu-north, tier free, replicas 5\n  [F5] service ingest-edge, team delta, status paused, region eu-north, tier standard, replicas 7",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team delta and located in region eu-north? List the service names, comma-separated.",
+      "gold_answer": "auth-daemon, ingest-edge",
+      "required_facts": [
+        "F2",
+        "F5",
+        "F3",
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-024",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service search-hub, team fjord, status degraded, region sa-east, tier free, replicas 6\n  [F2] service auth-gateway, team atlas, status degraded, region eu-west, tier free, replicas 5\n  [F3] service model-hub, team atlas, status failing, region sa-east, tier free, replicas 3\n  [F4] service render-hub, team borealis, status degraded, region ap-south, tier standard, replicas 2\n  [F5] service gateway-api, team cinder, status paused, region us-east, tier standard, replicas 7",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team atlas and currently in status degraded? List the service names, comma-separated.",
+      "gold_answer": "auth-gateway",
+      "required_facts": [
+        "F2",
+        "F3",
+        "F1",
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-025",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service auth-relay, team halcyon, status degraded, region us-east, tier premium, replicas 1\n  [F2] service gateway-api, team halcyon, status healthy, region us-east, tier standard, replicas 5\n  [F3] service policy-service, team grit, status paused, region eu-west, tier standard, replicas 3\n  [F4] service auth-api, team fjord, status paused, region sa-east, tier premium, replicas 5",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team halcyon and located in region eu-west? List the service names, comma-separated.",
+      "gold_answer": "none",
+      "required_facts": [
+        "F1",
+        "F3",
+        "F2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-026",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service policy-gateway, team grit, status healthy, region eu-west, tier free, replicas 6\n  [F2] service billing-hub, team ember, status paused, region eu-west, tier free, replicas 6\n  [F3] service cache-daemon, team cinder, status failing, region us-east, tier standard, replicas 1\n  [F4] service billing-relay, team cinder, status failing, region eu-west, tier standard, replicas 3\n  [F5] service auth-service, team cinder, status failing, region eu-west, tier premium, replicas 5\n  [F6] service vector-edge, team cinder, status paused, region eu-west, tier standard, replicas 3\n  [F7] service billing-api, team borealis, status healthy, region sa-east, tier premium, replicas 6",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team cinder and located in region eu-west? List the service names, comma-separated.",
+      "gold_answer": "auth-service, billing-relay, vector-edge",
+      "required_facts": [
+        "F6",
+        "F5",
+        "F4",
+        "F3",
+        "F1",
+        "F2"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "D-holdout-027",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service policy-daemon, team atlas, status healthy, region us-west, tier free, replicas 8\n  [F2] service gateway-service, team cinder, status paused, region eu-west, tier free, replicas 5\n  [F3] service model-relay, team grit, status degraded, region us-east, tier standard, replicas 1\n  [F4] service policy-hub, team cinder, status paused, region us-west, tier premium, replicas 9\n  [F5] service render-relay, team halcyon, status failing, region us-west, tier premium, replicas 3",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team cinder and located in region us-west? List the service names, comma-separated.",
+      "gold_answer": "policy-hub",
+      "required_facts": [
+        "F4",
+        "F5",
+        "F1",
+        "F2"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-028",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service gateway-scheduler, team fjord, status paused, region eu-west, tier standard, replicas 5\n  [F2] service cache-hub, team delta, status paused, region eu-west, tier free, replicas 6\n  [F3] service vector-api, team borealis, status paused, region us-east, tier free, replicas 2\n  [F4] service vector-relay, team cinder, status failing, region us-west, tier free, replicas 1\n  [F5] service gateway-daemon, team fjord, status failing, region eu-west, tier free, replicas 1\n  [F6] service ingest-relay, team fjord, status failing, region us-east, tier free, replicas 8\n  [F7] service policy-relay, team ember, status paused, region ap-south, tier free, replicas 5\n  [F8] service render-relay, team fjord, status degraded, region eu-west, tier standard, replicas 5\n  [F9] service model-daemon, team fjord, status healthy, region us-east, tier free, replicas 9",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team fjord and located in region eu-west? List the service names, comma-separated.",
+      "gold_answer": "gateway-daemon, gateway-scheduler, render-relay",
+      "required_facts": [
+        "F5",
+        "F1",
+        "F8",
+        "F6",
+        "F2",
+        "F9"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "D-holdout-029",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service ingest-hub, team halcyon, status paused, region us-west, tier premium, replicas 2\n  [F2] service billing-api, team ember, status failing, region eu-west, tier standard, replicas 4\n  [F3] service auth-edge, team grit, status failing, region eu-north, tier free, replicas 6\n  [F4] service gateway-api, team delta, status failing, region eu-north, tier premium, replicas 3\n  [F5] service cache-daemon, team delta, status failing, region eu-north, tier free, replicas 3\n  [F6] service search-hub, team halcyon, status degraded, region eu-north, tier premium, replicas 7",
+      "receiver_task": "Using only the inventory the sender communicates, which services are currently in status failing and located in region eu-north? List the service names, comma-separated.",
+      "gold_answer": "auth-edge, cache-daemon, gateway-api",
+      "required_facts": [
+        "F4",
+        "F3",
+        "F5",
+        "F2",
+        "F6"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "D-holdout-030",
+      "family": "D",
+      "sender_input": "Service inventory report (fact ids in brackets):\n  [F1] service billing-scheduler, team borealis, status healthy, region us-east, tier premium, replicas 7\n  [F2] service auth-relay, team cinder, status paused, region ap-south, tier premium, replicas 1\n  [F3] service ingest-edge, team borealis, status healthy, region eu-north, tier standard, replicas 7\n  [F4] service model-daemon, team borealis, status degraded, region us-west, tier free, replicas 3\n  [F5] service cache-api, team borealis, status degraded, region sa-east, tier standard, replicas 1",
+      "receiver_task": "Using only the inventory the sender communicates, which services are owned by team borealis and located in region us-east? List the service names, comma-separated.",
+      "gold_answer": "billing-scheduler",
+      "required_facts": [
+        "F1",
+        "F4",
+        "F5",
+        "F3"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-holdout-001",
+      "family": "E",
+      "sender_input": "Measurement handoff: test durations for the codec suite (fact ids in brackets):\n  [F1] test 1 duration (s): 60\n  [F2] test 2 duration (s): 225\n  [F3] test 3 duration (s): 210\n  [F4] test 4 duration (s): 283\n  [F5] test 5 duration (s): 150\n  [F6] timeout budget (s): 212",
+      "receiver_task": "Using only the numbers the sender communicates, how many tests in the codec run exceed the timeout budget?",
+      "gold_answer": 2,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "E-holdout-002",
+      "family": "E",
+      "sender_input": "Measurement handoff: test durations for the fidelity suite (fact ids in brackets):\n  [F1] test 1 duration (s): 281\n  [F2] test 2 duration (s): 130\n  [F3] test 3 duration (s): 185\n  [F4] test 4 duration (s): 91\n  [F5] test 5 duration (s): 100\n  [F6] test 6 duration (s): 129\n  [F7] test 7 duration (s): 209\n  [F8] timeout budget (s): 182",
+      "receiver_task": "Using only the numbers the sender communicates, what is the duration (s) of the longest test in the fidelity run?",
+      "gold_answer": 281,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "E-holdout-003",
+      "family": "E",
+      "sender_input": "Measurement handoff: queue counters for evidence-batch (fact ids in brackets):\n  [F1] interval 1 arrivals: 170\n  [F2] interval 1 served: 148\n  [F3] interval 2 arrivals: 384\n  [F4] interval 2 served: 375\n  [F5] interval 3 arrivals: 152\n  [F6] interval 3 served: 151\n  [F7] interval 4 arrivals: 308\n  [F8] interval 4 served: 292\n  [F9] interval 5 arrivals: 129\n  [F10] interval 5 served: 115\n  [F11] interval 6 arrivals: 43\n  [F12] interval 6 served: 30",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total number of arrivals on the evidence-batch queue across the intervals?",
+      "gold_answer": 1186,
+      "required_facts": [
+        "F1",
+        "F3",
+        "F5",
+        "F7",
+        "F9",
+        "F11"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-holdout-004",
+      "family": "E",
+      "sender_input": "Measurement handoff: queue counters for evidence-batch (fact ids in brackets):\n  [F1] interval 1 arrivals: 38\n  [F2] interval 1 served: 10\n  [F3] interval 2 arrivals: 243\n  [F4] interval 2 served: 241\n  [F5] interval 3 arrivals: 77\n  [F6] interval 3 served: 53\n  [F7] interval 4 arrivals: 363\n  [F8] interval 4 served: 354\n  [F9] interval 5 arrivals: 101\n  [F10] interval 5 served: 94\n  [F11] interval 6 arrivals: 36\n  [F12] interval 6 served: 28\n  [F13] interval 7 arrivals: 203\n  [F14] interval 7 served: 181\n  [F15] interval 8 arrivals: 108\n  [F16] interval 8 served: 93",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total number of served requests on the evidence-batch queue across the intervals?",
+      "gold_answer": 1054,
+      "required_facts": [
+        "F2",
+        "F4",
+        "F6",
+        "F8",
+        "F10",
+        "F12",
+        "F14",
+        "F16"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-holdout-005",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service notify-hub (fact ids in brackets):\n  [F1] sample 1 latency (ms): 515\n  [F2] sample 2 latency (ms): 271\n  [F3] sample 3 latency (ms): 806\n  [F4] sample 4 latency (ms): 220\n  [F5] sample 5 latency (ms): 46\n  [F6] sample 6 latency (ms): 564\n  [F7] sample 7 latency (ms): 300\n  [F8] alert threshold (ms): 260",
+      "receiver_task": "Using only the numbers the sender communicates, how many latency samples for notify-hub exceed the alert threshold?",
+      "gold_answer": 5,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-holdout-006",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service model-edge (fact ids in brackets):\n  [F1] sample 1 latency (ms): 560\n  [F2] sample 2 latency (ms): 684\n  [F3] sample 3 latency (ms): 693\n  [F4] sample 4 latency (ms): 592\n  [F5] sample 5 latency (ms): 840\n  [F6] sample 6 latency (ms): 854\n  [F7] sample 7 latency (ms): 689\n  [F8] alert threshold (ms): 751",
+      "receiver_task": "Using only the numbers the sender communicates, how many latency samples for model-edge exceed the alert threshold?",
+      "gold_answer": 2,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-holdout-007",
+      "family": "E",
+      "sender_input": "Measurement handoff: test durations for the codec suite (fact ids in brackets):\n  [F1] test 1 duration (s): 29\n  [F2] test 2 duration (s): 285\n  [F3] test 3 duration (s): 158\n  [F4] test 4 duration (s): 160\n  [F5] test 5 duration (s): 163\n  [F6] test 6 duration (s): 62\n  [F7] test 7 duration (s): 62\n  [F8] test 8 duration (s): 155\n  [F9] test 9 duration (s): 5\n  [F10] timeout budget (s): 107",
+      "receiver_task": "Using only the numbers the sender communicates, what is the spread (s) between the longest and the shortest test in the codec run?",
+      "gold_answer": 280,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-holdout-008",
+      "family": "E",
+      "sender_input": "Measurement handoff: budget bookkeeping for the dialect trial (fact ids in brackets):\n  [F1] total budget (USD): 980\n  [F2] recorded spend 1 (USD): 100\n  [F3] recorded spend 2 (USD): 160\n  [F4] recorded spend 3 (USD): 190",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total amount spent so far on the dialect trial (USD)?",
+      "gold_answer": 450,
+      "required_facts": [
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-holdout-009",
+      "family": "E",
+      "sender_input": "Measurement handoff: queue counters for task-ingest (fact ids in brackets):\n  [F1] interval 1 arrivals: 114\n  [F2] interval 1 served: 107\n  [F3] interval 2 arrivals: 61\n  [F4] interval 2 served: 39\n  [F5] interval 3 arrivals: 212\n  [F6] interval 3 served: 195\n  [F7] interval 4 arrivals: 213\n  [F8] interval 4 served: 205",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total number of arrivals on the task-ingest queue across the intervals?",
+      "gold_answer": 600,
+      "required_facts": [
+        "F1",
+        "F3",
+        "F5",
+        "F7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "E-holdout-010",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service gateway-relay (fact ids in brackets):\n  [F1] sample 1 latency (ms): 180\n  [F2] sample 2 latency (ms): 741\n  [F3] sample 3 latency (ms): 746\n  [F4] sample 4 latency (ms): 131\n  [F5] sample 5 latency (ms): 114\n  [F6] sample 6 latency (ms): 707\n  [F7] sample 7 latency (ms): 710\n  [F8] sample 8 latency (ms): 268\n  [F9] sample 9 latency (ms): 337\n  [F10] alert threshold (ms): 594",
+      "receiver_task": "Using only the numbers the sender communicates, how many latency samples for gateway-relay exceed the alert threshold?",
+      "gold_answer": 4,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-holdout-011",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service billing-relay (fact ids in brackets):\n  [F1] sample 1 latency (ms): 385\n  [F2] sample 2 latency (ms): 246\n  [F3] sample 3 latency (ms): 126\n  [F4] sample 4 latency (ms): 293\n  [F5] sample 5 latency (ms): 630\n  [F6] sample 6 latency (ms): 815\n  [F7] sample 7 latency (ms): 545\n  [F8] alert threshold (ms): 697",
+      "receiver_task": "Using only the numbers the sender communicates, what is the difference between the highest and the lowest latency sample (ms) for billing-relay?",
+      "gold_answer": 689,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-holdout-012",
+      "family": "E",
+      "sender_input": "Measurement handoff: budget bookkeeping for the fidelity extension (fact ids in brackets):\n  [F1] total budget (USD): 2830\n  [F2] recorded spend 1 (USD): 80\n  [F3] recorded spend 2 (USD): 230\n  [F4] recorded spend 3 (USD): 340\n  [F5] recorded spend 4 (USD): 400\n  [F6] recorded spend 5 (USD): 450",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total amount spent so far on the fidelity extension (USD)?",
+      "gold_answer": 1500,
+      "required_facts": [
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-holdout-013",
+      "family": "E",
+      "sender_input": "Measurement handoff: test durations for the fidelity suite (fact ids in brackets):\n  [F1] test 1 duration (s): 78\n  [F2] test 2 duration (s): 291\n  [F3] test 3 duration (s): 246\n  [F4] test 4 duration (s): 175\n  [F5] test 5 duration (s): 145\n  [F6] test 6 duration (s): 154\n  [F7] test 7 duration (s): 66\n  [F8] test 8 duration (s): 258\n  [F9] timeout budget (s): 115",
+      "receiver_task": "Using only the numbers the sender communicates, what is the spread (s) between the longest and the shortest test in the fidelity run?",
+      "gold_answer": 225,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-holdout-014",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service model-api (fact ids in brackets):\n  [F1] sample 1 latency (ms): 298\n  [F2] sample 2 latency (ms): 132\n  [F3] sample 3 latency (ms): 216\n  [F4] sample 4 latency (ms): 477\n  [F5] sample 5 latency (ms): 83\n  [F6] alert threshold (ms): 719",
+      "receiver_task": "Using only the numbers the sender communicates, what is the lowest latency sample (ms) for model-api?",
+      "gold_answer": 83,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-holdout-015",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service gateway-gateway (fact ids in brackets):\n  [F1] sample 1 latency (ms): 635\n  [F2] sample 2 latency (ms): 577\n  [F3] sample 3 latency (ms): 150\n  [F4] sample 4 latency (ms): 288\n  [F5] alert threshold (ms): 664",
+      "receiver_task": "Using only the numbers the sender communicates, how many latency samples for gateway-gateway exceed the alert threshold?",
+      "gold_answer": 0,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-holdout-016",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service render-relay (fact ids in brackets):\n  [F1] sample 1 latency (ms): 802\n  [F2] sample 2 latency (ms): 157\n  [F3] sample 3 latency (ms): 579\n  [F4] sample 4 latency (ms): 84\n  [F5] sample 5 latency (ms): 203\n  [F6] sample 6 latency (ms): 679\n  [F7] alert threshold (ms): 544",
+      "receiver_task": "Using only the numbers the sender communicates, how many latency samples for render-relay exceed the alert threshold?",
+      "gold_answer": 3,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "E-holdout-017",
+      "family": "E",
+      "sender_input": "Measurement handoff: test durations for the regression suite (fact ids in brackets):\n  [F1] test 1 duration (s): 120\n  [F2] test 2 duration (s): 106\n  [F3] test 3 duration (s): 221\n  [F4] test 4 duration (s): 98\n  [F5] test 5 duration (s): 121\n  [F6] test 6 duration (s): 36\n  [F7] timeout budget (s): 68",
+      "receiver_task": "Using only the numbers the sender communicates, how many tests in the regression run exceed the timeout budget?",
+      "gold_answer": 5,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "E-holdout-018",
+      "family": "E",
+      "sender_input": "Measurement handoff: budget bookkeeping for the dialect trial (fact ids in brackets):\n  [F1] total budget (USD): 2650\n  [F2] recorded spend 1 (USD): 10\n  [F3] recorded spend 2 (USD): 480\n  [F4] recorded spend 3 (USD): 640",
+      "receiver_task": "Using only the numbers the sender communicates, how much of the budget for the dialect trial remains after the recorded spends (USD)?",
+      "gold_answer": 1520,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-holdout-019",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service auth-daemon (fact ids in brackets):\n  [F1] sample 1 latency (ms): 155\n  [F2] sample 2 latency (ms): 409\n  [F3] sample 3 latency (ms): 99\n  [F4] sample 4 latency (ms): 77\n  [F5] sample 5 latency (ms): 73\n  [F6] sample 6 latency (ms): 450\n  [F7] sample 7 latency (ms): 619\n  [F8] sample 8 latency (ms): 103\n  [F9] sample 9 latency (ms): 461\n  [F10] sample 10 latency (ms): 129\n  [F11] alert threshold (ms): 309",
+      "receiver_task": "Using only the numbers the sender communicates, what is the difference between the highest and the lowest latency sample (ms) for auth-daemon?",
+      "gold_answer": 546,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9",
+        "F10"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-holdout-020",
+      "family": "E",
+      "sender_input": "Measurement handoff: queue counters for result-reports (fact ids in brackets):\n  [F1] interval 1 arrivals: 163\n  [F2] interval 1 served: 140\n  [F3] interval 2 arrivals: 332\n  [F4] interval 2 served: 329\n  [F5] interval 3 arrivals: 356\n  [F6] interval 3 served: 330\n  [F7] interval 4 arrivals: 134\n  [F8] interval 4 served: 131\n  [F9] interval 5 arrivals: 267\n  [F10] interval 5 served: 258\n  [F11] interval 6 arrivals: 230\n  [F12] interval 6 served: 225",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total number of served requests on the result-reports queue across the intervals?",
+      "gold_answer": 1413,
+      "required_facts": [
+        "F2",
+        "F4",
+        "F6",
+        "F8",
+        "F10",
+        "F12"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-holdout-021",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service billing-daemon (fact ids in brackets):\n  [F1] sample 1 latency (ms): 591\n  [F2] sample 2 latency (ms): 697\n  [F3] sample 3 latency (ms): 870\n  [F4] sample 4 latency (ms): 835\n  [F5] sample 5 latency (ms): 94\n  [F6] alert threshold (ms): 900",
+      "receiver_task": "Using only the numbers the sender communicates, what is the lowest latency sample (ms) for billing-daemon?",
+      "gold_answer": 94,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-holdout-022",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service audit-relay (fact ids in brackets):\n  [F1] sample 1 latency (ms): 923\n  [F2] sample 2 latency (ms): 566\n  [F3] sample 3 latency (ms): 516\n  [F4] sample 4 latency (ms): 923\n  [F5] sample 5 latency (ms): 459\n  [F6] alert threshold (ms): 547",
+      "receiver_task": "Using only the numbers the sender communicates, how many latency samples for audit-relay exceed the alert threshold?",
+      "gold_answer": 3,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "E-holdout-023",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service ingest-daemon (fact ids in brackets):\n  [F1] sample 1 latency (ms): 693\n  [F2] sample 2 latency (ms): 688\n  [F3] sample 3 latency (ms): 86\n  [F4] sample 4 latency (ms): 562\n  [F5] sample 5 latency (ms): 318\n  [F6] sample 6 latency (ms): 830\n  [F7] alert threshold (ms): 559",
+      "receiver_task": "Using only the numbers the sender communicates, what is the lowest latency sample (ms) for ingest-daemon?",
+      "gold_answer": 86,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "E-holdout-024",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service search-service (fact ids in brackets):\n  [F1] sample 1 latency (ms): 799\n  [F2] sample 2 latency (ms): 340\n  [F3] sample 3 latency (ms): 214\n  [F4] sample 4 latency (ms): 419\n  [F5] sample 5 latency (ms): 413\n  [F6] alert threshold (ms): 185",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total of the latency samples (ms) for search-service?",
+      "gold_answer": 2185,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-holdout-025",
+      "family": "E",
+      "sender_input": "Measurement handoff: test durations for the adversarial suite (fact ids in brackets):\n  [F1] test 1 duration (s): 123\n  [F2] test 2 duration (s): 213\n  [F3] test 3 duration (s): 150\n  [F4] test 4 duration (s): 78\n  [F5] timeout budget (s): 100",
+      "receiver_task": "Using only the numbers the sender communicates, what is the duration (s) of the longest test in the adversarial run?",
+      "gold_answer": 213,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "task_id": "E-holdout-026",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service ingest-service (fact ids in brackets):\n  [F1] sample 1 latency (ms): 914\n  [F2] sample 2 latency (ms): 238\n  [F3] sample 3 latency (ms): 591\n  [F4] sample 4 latency (ms): 631\n  [F5] sample 5 latency (ms): 715\n  [F6] sample 6 latency (ms): 305\n  [F7] sample 7 latency (ms): 228\n  [F8] sample 8 latency (ms): 890\n  [F9] alert threshold (ms): 603",
+      "receiver_task": "Using only the numbers the sender communicates, what is the difference between the highest and the lowest latency sample (ms) for ingest-service?",
+      "gold_answer": 686,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-holdout-027",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service search-gateway (fact ids in brackets):\n  [F1] sample 1 latency (ms): 567\n  [F2] sample 2 latency (ms): 208\n  [F3] sample 3 latency (ms): 795\n  [F4] sample 4 latency (ms): 608\n  [F5] sample 5 latency (ms): 389\n  [F6] sample 6 latency (ms): 439\n  [F7] sample 7 latency (ms): 861\n  [F8] alert threshold (ms): 887",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total of the latency samples (ms) for search-gateway?",
+      "gold_answer": 3867,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "task_id": "E-holdout-028",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service auth-api (fact ids in brackets):\n  [F1] sample 1 latency (ms): 403\n  [F2] sample 2 latency (ms): 930\n  [F3] sample 3 latency (ms): 839\n  [F4] sample 4 latency (ms): 65\n  [F5] sample 5 latency (ms): 422\n  [F6] sample 6 latency (ms): 686\n  [F7] sample 7 latency (ms): 930\n  [F8] sample 8 latency (ms): 889\n  [F9] sample 9 latency (ms): 877\n  [F10] alert threshold (ms): 263",
+      "receiver_task": "Using only the numbers the sender communicates, what is the total of the latency samples (ms) for auth-api?",
+      "gold_answer": 6041,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8",
+        "F9"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-holdout-029",
+      "family": "E",
+      "sender_input": "Measurement handoff: latency samples for service auth-api (fact ids in brackets):\n  [F1] sample 1 latency (ms): 780\n  [F2] sample 2 latency (ms): 750\n  [F3] sample 3 latency (ms): 228\n  [F4] sample 4 latency (ms): 127\n  [F5] sample 5 latency (ms): 486\n  [F6] sample 6 latency (ms): 355\n  [F7] sample 7 latency (ms): 744\n  [F8] alert threshold (ms): 726",
+      "receiver_task": "Using only the numbers the sender communicates, how many latency samples for auth-api exceed the alert threshold?",
+      "gold_answer": 3,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "task_id": "E-holdout-030",
+      "family": "E",
+      "sender_input": "Measurement handoff: test durations for the regression suite (fact ids in brackets):\n  [F1] test 1 duration (s): 261\n  [F2] test 2 duration (s): 158\n  [F3] test 3 duration (s): 64\n  [F4] test 4 duration (s): 94\n  [F5] timeout budget (s): 243",
+      "receiver_task": "Using only the numbers the sender communicates, what is the spread (s) between the longest and the shortest test in the regression run?",
+      "gold_answer": 197,
+      "required_facts": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "difficulty": "easy"
+    }
+  ]
+}

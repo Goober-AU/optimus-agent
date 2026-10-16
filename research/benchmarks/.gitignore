@@ -1,0 +1,8 @@
+# Adapter runtime state - do not commit
+adapter/.venv/
+**/__pycache__/
+*.pyc
+
+# Pilot workspaces are official-engine run artifacts (rounds/, contexts/,
+# logs/) - large, reproducible, keep local only.
+runs/*/workspace/

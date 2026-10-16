@@ -1,0 +1,2234 @@
+{
+  "rows": [
+    {
+      "run": "pilot-levelI-n2-msg-glm53",
+      "mode": "occ0",
+      "model": "glm-5.3",
+      "case_accuracy": 0.8,
+      "mean_S": 0.9444444444444444,
+      "mean_P": 0.9444444444444444,
+      "mean_C": 4159.719000135667,
+      "mean_D": 1.8333333333333333,
+      "cases_completed": 9,
+      "cases_errored": 1,
+      "rounds_mean": 7.888888888888889,
+      "total_llm_calls": 127,
+      "total_prompt_tokens": 184416,
+      "total_output_tokens_incl_reasoning": 115801,
+      "total_messages": 33,
+      "total_message_payload_bytes": 7657,
+      "bytes_per_message": 232.0,
+      "case_latency_mean_s": 265.59360000000004,
+      "case_latency_p50_s": 51.9685,
+      "case_latency_p95_s": 904.1877499999993,
+      "header_compliance": null,
+      "message_chars_mean": 230.9,
+      "message_chars_median": 191,
+      "message_chars_p95": 447
+    },
+    {
+      "run": "pilot-levelI-n2-msg-glm53flash",
+      "mode": "occ0",
+      "model": "glm-5.3-flash",
+      "case_accuracy": 1.0,
+      "mean_S": 1.0,
+      "mean_P": 1.0,
+      "mean_C": 5142.9114285714295,
+      "mean_D": 2.0,
+      "cases_completed": 10,
+      "cases_errored": 0,
+      "rounds_mean": 6.0,
+      "total_llm_calls": 100,
+      "total_prompt_tokens": 149034,
+      "total_output_tokens_incl_reasoning": 182834,
+      "total_messages": 40,
+      "total_message_payload_bytes": 10558,
+      "bytes_per_message": 263.9,
+      "case_latency_mean_s": 79.8869,
+      "case_latency_p50_s": 38.054,
+      "case_latency_p95_s": 288.6676499999995,
+      "header_compliance": null,
+      "message_chars_mean": 246.5,
+      "message_chars_median": 172.0,
+      "message_chars_p95": 835
+    },
+    {
+      "run": "occ2-levelI-n2-msg-glm53flash-occ1",
+      "mode": "occ1",
+      "model": "glm-5.3-flash",
+      "case_accuracy": 1.0,
+      "mean_S": 1.0,
+      "mean_P": 1.0,
+      "mean_C": 5620.36658730159,
+      "mean_D": 2.1,
+      "cases_completed": 10,
+      "cases_errored": 0,
+      "rounds_mean": 5.6,
+      "total_llm_calls": 97,
+      "total_prompt_tokens": 191634,
+      "total_output_tokens_incl_reasoning": 173395,
+      "total_messages": 42,
+      "total_message_payload_bytes": 12173,
+      "bytes_per_message": 289.8,
+      "case_latency_mean_s": 109.4523,
+      "case_latency_p50_s": 43.537,
+      "case_latency_p95_s": 418.41524999999933,
+      "header_compliance": 1.0,
+      "message_chars_mean": 289.8,
+      "message_chars_median": 276.0,
+      "message_chars_p95": 480
+    },
+    {
+      "run": "occ2-levelI-n2-msg-glm53flash-sym",
+      "mode": "sym-v1-hand-designed",
+      "model": "glm-5.3-flash",
+      "case_accuracy": 0.9,
+      "mean_S": 1.0,
+      "mean_P": 1.0,
+      "mean_C": 6866.606878306878,
+      "mean_D": 2.0,
+      "cases_completed": 9,
+      "cases_errored": 1,
+      "rounds_mean": 6.0,
+      "total_llm_calls": 88,
+      "total_prompt_tokens": 253864,
+      "total_output_tokens_incl_reasoning": 89859,
+      "total_messages": 36,
+      "total_message_payload_bytes": 5538,
+      "bytes_per_message": 153.8,
+      "case_latency_mean_s": 191.3598,
+      "case_latency_p50_s": 65.563,
+      "case_latency_p95_s": 751.147149999999,
+      "header_compliance": 0.9487,
+      "message_chars_mean": 170.1,
+      "message_chars_median": 172,
+      "message_chars_p95": 260
+    }
+  ],
+  "detail": {
+    "pilot-levelI-n2-msg-glm53": {
+      "scorecard": {
+        "run_name": "pilot-levelI-n2-msg-glm53",
+        "comm_mode": "occ0_plain_english",
+        "model": "glm-5.3",
+        "protocol": "msg",
+        "max_rounds": 20,
+        "task_count": 10,
+        "adapter_aggregates": {
+          "case_accuracy": 0.8,
+          "mean_S": 0.9444444444444444,
+          "mean_P": 0.9444444444444444,
+          "mean_C": 4159.719000135667,
+          "mean_D": 1.8333333333333333,
+          "cases_completed": 9,
+          "cases_errored": 1,
+          "rounds_mean": 7.888888888888889,
+          "total_prompt_tokens": 184416,
+          "total_output_tokens_incl_reasoning": 115801,
+          "total_llm_calls": 127,
+          "total_inter_agent_messages": 33,
+          "total_inter_agent_message_payload_bytes": 7657,
+          "case_latency_s": {
+            "mean": 265.59360000000004,
+            "p50": 51.9685,
+            "p95": 904.1877499999993
+          },
+          "per_case_mean_llm_latency_s": {
+            "mean": 9.678888888888888,
+            "p50": 3.794,
+            "p95": 28.468999999999998
+          }
+        },
+        "output_tokens_caveat": "usage.completion_tokens from the gateway includes hidden reasoning tokens; do not use for wire-cost claims. prompt_tokens are real server-side counts.",
+        "per_case": [
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-01_n2.json",
+            "case_id": "I-01",
+            "case_name": "Global Max",
+            "status": "completed",
+            "rounds": 6,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 2423.0,
+            "D": 1.5,
+            "success": true,
+            "prompt_tokens": 11875,
+            "output_tokens_incl_reasoning": 2663,
+            "llm_calls": 10,
+            "messages": 3,
+            "message_payload_bytes": 476,
+            "elapsed_s": 40.669,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-02_n2.json",
+            "case_id": "I-02",
+            "case_name": "Word Frequency",
+            "status": "completed",
+            "rounds": 9,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 3109.4444444444,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 24936,
+            "output_tokens_incl_reasoning": 3049,
+            "llm_calls": 18,
+            "messages": 4,
+            "message_payload_bytes": 665,
+            "elapsed_s": 53.83,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-03_n2.json",
+            "case_id": "I-03",
+            "case_name": "Distributed Vote",
+            "status": "completed",
+            "rounds": 8,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 2839.375,
+            "D": 1.5,
+            "success": true,
+            "prompt_tokens": 19400,
+            "output_tokens_incl_reasoning": 3315,
+            "llm_calls": 15,
+            "messages": 3,
+            "message_payload_bytes": 553,
+            "elapsed_s": 49.724,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-04_n2.json",
+            "case_id": "I-04",
+            "case_name": "Any Match",
+            "status": "completed",
+            "rounds": 6,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 2578.5,
+            "D": 1.0,
+            "success": true,
+            "prompt_tokens": 13261,
+            "output_tokens_incl_reasoning": 2210,
+            "llm_calls": 11,
+            "messages": 2,
+            "message_payload_bytes": 476,
+            "elapsed_s": 35.414,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-05_n2.json",
+            "case_id": "I-05",
+            "case_name": "Range Count",
+            "status": "completed",
+            "rounds": 8,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 2941.125,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 19643,
+            "output_tokens_incl_reasoning": 3886,
+            "llm_calls": 13,
+            "messages": 4,
+            "message_payload_bytes": 688,
+            "elapsed_s": 50.107,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-06_n2.json",
+            "case_id": "I-06",
+            "case_name": "Checksum",
+            "status": "completed",
+            "rounds": 8,
+            "S": 0.5,
+            "P": 0.5,
+            "C": 11566.75,
+            "D": 2.5,
+            "success": false,
+            "prompt_tokens": 25302,
+            "output_tokens_incl_reasoning": 67232,
+            "llm_calls": 14,
+            "messages": 5,
+            "message_payload_bytes": 2037,
+            "elapsed_s": 470.531,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-07_n2.json",
+            "case_id": "I-07",
+            "case_name": "Average Value",
+            "status": "completed",
+            "rounds": 6,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 5013.1666666667,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 17246,
+            "output_tokens_incl_reasoning": 12833,
+            "llm_calls": 11,
+            "messages": 4,
+            "message_payload_bytes": 1101,
+            "elapsed_s": 166.076,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-08_n2.json",
+            "case_id": "I-08",
+            "case_name": "Set Union Size",
+            "status": "completed",
+            "rounds": 7,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 2865.5714285714,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 15243,
+            "output_tokens_incl_reasoning": 4816,
+            "llm_calls": 10,
+            "messages": 4,
+            "message_payload_bytes": 921,
+            "elapsed_s": 49.326,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-09_n2.json",
+            "case_id": "I-09",
+            "case_name": "Top-K Select",
+            "status": "completed",
+            "rounds": 13,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 4100.5384615385,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 37510,
+            "output_tokens_incl_reasoning": 15797,
+            "llm_calls": 25,
+            "messages": 4,
+            "message_payload_bytes": 740,
+            "elapsed_s": 529.547,
+            "error": null
+          },
+          {
+            "task_file": "I-10_n2.json",
+            "case_id": null,
+            "case_name": null,
+            "status": "timeout",
+            "rounds": null,
+            "S": null,
+            "P": null,
+            "C": null,
+            "D": null,
+            "success": null,
+            "prompt_tokens": null,
+            "output_tokens_incl_reasoning": null,
+            "llm_calls": null,
+            "messages": null,
+            "message_payload_bytes": null,
+            "elapsed_s": 1210.712,
+            "error": "exceeded per-case wall-clock budget of 1200s"
+          }
+        ]
+      },
+      "message_stats": {
+        "messages_total": 35,
+        "compliant": 0,
+        "compliance_rate": null,
+        "chars_mean": 230.9,
+        "chars_median": 191,
+        "chars_p95": 447,
+        "per_case": {
+          "I-01": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 92,
+              "header_ok": null
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 226,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 158,
+              "header_ok": null
+            }
+          ],
+          "I-02": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 120,
+              "header_ok": null
+            },
+            {
+              "round": 5,
+              "from": 0,
+              "to": 1,
+              "chars": 222,
+              "header_ok": null
+            },
+            {
+              "round": 8,
+              "from": 0,
+              "to": 1,
+              "chars": 162,
+              "header_ok": null
+            },
+            {
+              "round": 8,
+              "from": 1,
+              "to": 0,
+              "chars": 161,
+              "header_ok": null
+            }
+          ],
+          "I-03": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 183,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 179,
+              "header_ok": null
+            },
+            {
+              "round": 6,
+              "from": 1,
+              "to": 0,
+              "chars": 191,
+              "header_ok": null
+            }
+          ],
+          "I-04": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 311,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 165,
+              "header_ok": null
+            }
+          ],
+          "I-05": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 263,
+              "header_ok": null
+            },
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 110,
+              "header_ok": null
+            },
+            {
+              "round": 3,
+              "from": 1,
+              "to": 0,
+              "chars": 192,
+              "header_ok": null
+            },
+            {
+              "round": 5,
+              "from": 0,
+              "to": 1,
+              "chars": 123,
+              "header_ok": null
+            }
+          ],
+          "I-06": [
+            {
+              "round": 2,
+              "from": 0,
+              "to": 1,
+              "chars": 172,
+              "header_ok": null
+            },
+            {
+              "round": 2,
+              "from": 1,
+              "to": 0,
+              "chars": 205,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 447,
+              "header_ok": null
+            },
+            {
+              "round": 5,
+              "from": 1,
+              "to": 0,
+              "chars": 230,
+              "header_ok": null
+            },
+            {
+              "round": 8,
+              "from": 0,
+              "to": 1,
+              "chars": 979,
+              "header_ok": null
+            }
+          ],
+          "I-07": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 261,
+              "header_ok": null
+            },
+            {
+              "round": 2,
+              "from": 1,
+              "to": 0,
+              "chars": 162,
+              "header_ok": null
+            },
+            {
+              "round": 3,
+              "from": 1,
+              "to": 0,
+              "chars": 403,
+              "header_ok": null
+            },
+            {
+              "round": 5,
+              "from": 0,
+              "to": 1,
+              "chars": 273,
+              "header_ok": null
+            }
+          ],
+          "I-08": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 191,
+              "header_ok": null
+            },
+            {
+              "round": 2,
+              "from": 0,
+              "to": 1,
+              "chars": 215,
+              "header_ok": null
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 308,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 205,
+              "header_ok": null
+            }
+          ],
+          "I-09": [
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 155,
+              "header_ok": null
+            },
+            {
+              "round": 10,
+              "from": 1,
+              "to": 0,
+              "chars": 151,
+              "header_ok": null
+            },
+            {
+              "round": 12,
+              "from": 0,
+              "to": 1,
+              "chars": 165,
+              "header_ok": null
+            },
+            {
+              "round": 12,
+              "from": 1,
+              "to": 0,
+              "chars": 269,
+              "header_ok": null
+            }
+          ],
+          "I-10": [
+            {
+              "round": 2,
+              "from": 0,
+              "to": 1,
+              "chars": 244,
+              "header_ok": null
+            },
+            {
+              "round": 2,
+              "from": 1,
+              "to": 0,
+              "chars": 187,
+              "header_ok": null
+            }
+          ]
+        }
+      }
+    },
+    "pilot-levelI-n2-msg-glm53flash": {
+      "scorecard": {
+        "run_name": "pilot-levelI-n2-msg-glm53flash",
+        "comm_mode": "occ0_plain_english",
+        "model": "glm-5.3-flash",
+        "protocol": "msg",
+        "max_rounds": 20,
+        "task_count": 10,
+        "adapter_aggregates": {
+          "case_accuracy": 1.0,
+          "mean_S": 1.0,
+          "mean_P": 1.0,
+          "mean_C": 5142.9114285714295,
+          "mean_D": 2.0,
+          "cases_completed": 10,
+          "cases_errored": 0,
+          "rounds_mean": 6.0,
+          "total_prompt_tokens": 149034,
+          "total_output_tokens_incl_reasoning": 182834,
+          "total_llm_calls": 100,
+          "total_inter_agent_messages": 40,
+          "total_inter_agent_message_payload_bytes": 10558,
+          "case_latency_s": {
+            "mean": 79.8869,
+            "p50": 38.054,
+            "p95": 288.6676499999995
+          },
+          "per_case_mean_llm_latency_s": {
+            "mean": 6.8203000000000005,
+            "p50": 3.4525,
+            "p95": 22.71309999999997
+          }
+        },
+        "output_tokens_caveat": "usage.completion_tokens from the gateway includes hidden reasoning tokens; do not use for wire-cost claims. prompt_tokens are real server-side counts.",
+        "per_case": [
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-01_n2.json",
+            "case_id": "I-01",
+            "case_name": "Global Max",
+            "status": "completed",
+            "rounds": 5,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 2650.2,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 10362,
+            "output_tokens_incl_reasoning": 2889,
+            "llm_calls": 8,
+            "messages": 4,
+            "message_payload_bytes": 409,
+            "elapsed_s": 40.87,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-02_n2.json",
+            "case_id": "I-02",
+            "case_name": "Word Frequency",
+            "status": "completed",
+            "rounds": 7,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 2553.0,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 15335,
+            "output_tokens_incl_reasoning": 2536,
+            "llm_calls": 12,
+            "messages": 4,
+            "message_payload_bytes": 653,
+            "elapsed_s": 32.36,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-03_n2.json",
+            "case_id": "I-03",
+            "case_name": "Distributed Vote",
+            "status": "completed",
+            "rounds": 7,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 2485.0,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 14299,
+            "output_tokens_incl_reasoning": 3096,
+            "llm_calls": 11,
+            "messages": 4,
+            "message_payload_bytes": 872,
+            "elapsed_s": 27.631,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-04_n2.json",
+            "case_id": "I-04",
+            "case_name": "Any Match",
+            "status": "completed",
+            "rounds": 4,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 1604.5,
+            "D": 1.0,
+            "success": true,
+            "prompt_tokens": 5352,
+            "output_tokens_incl_reasoning": 1066,
+            "llm_calls": 5,
+            "messages": 2,
+            "message_payload_bytes": 366,
+            "elapsed_s": 15.364,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-05_n2.json",
+            "case_id": "I-05",
+            "case_name": "Range Count",
+            "status": "completed",
+            "rounds": 6,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 2978.0,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 14407,
+            "output_tokens_incl_reasoning": 3461,
+            "llm_calls": 10,
+            "messages": 4,
+            "message_payload_bytes": 611,
+            "elapsed_s": 28.255,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-06_n2.json",
+            "case_id": "I-06",
+            "case_name": "Checksum",
+            "status": "completed",
+            "rounds": 6,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 3531.3333333333,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 12834,
+            "output_tokens_incl_reasoning": 8354,
+            "llm_calls": 9,
+            "messages": 4,
+            "message_payload_bytes": 666,
+            "elapsed_s": 39.109,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-07_n2.json",
+            "case_id": "I-07",
+            "case_name": "Average Value",
+            "status": "completed",
+            "rounds": 5,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 4243.2,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 13846,
+            "output_tokens_incl_reasoning": 7370,
+            "llm_calls": 9,
+            "messages": 4,
+            "message_payload_bytes": 847,
+            "elapsed_s": 46.567,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-08_n2.json",
+            "case_id": "I-08",
+            "case_name": "Set Union Size",
+            "status": "completed",
+            "rounds": 7,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 4047.0,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 22313,
+            "output_tokens_incl_reasoning": 6016,
+            "llm_calls": 13,
+            "messages": 4,
+            "message_payload_bytes": 1333,
+            "elapsed_s": 44.964,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-09_n2.json",
+            "case_id": "I-09",
+            "case_name": "Top-K Select",
+            "status": "completed",
+            "rounds": 6,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 3026.1666666667,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 13001,
+            "output_tokens_incl_reasoning": 5156,
+            "llm_calls": 10,
+            "messages": 4,
+            "message_payload_bytes": 629,
+            "elapsed_s": 36.999,
+            "error": null
+          },
+          {
+            "task_file": "C:\\Users\\openclawuser\\optimus-rlm-references\\silo-bench\\benchmarks\\I-10_n2.json",
+            "case_id": "I-10",
+            "case_name": "Standard Deviation",
+            "status": "completed",
+            "rounds": 7,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 24310.7142857143,
+            "D": 3.0,
+            "success": true,
+            "prompt_tokens": 27285,
+            "output_tokens_incl_reasoning": 142890,
+            "llm_calls": 13,
+            "messages": 6,
+            "message_payload_bytes": 4172,
+            "elapsed_s": 486.75,
+            "error": null
+          }
+        ]
+      },
+      "message_stats": {
+        "messages_total": 44,
+        "compliant": 0,
+        "compliance_rate": null,
+        "chars_mean": 246.5,
+        "chars_median": 172.0,
+        "chars_p95": 835,
+        "per_case": {
+          "I-01": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 127,
+              "header_ok": null
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 27,
+              "header_ok": null
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 138,
+              "header_ok": null
+            },
+            {
+              "round": 3,
+              "from": 1,
+              "to": 0,
+              "chars": 117,
+              "header_ok": null
+            }
+          ],
+          "I-02": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 166,
+              "header_ok": null
+            },
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 210,
+              "header_ok": null
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 129,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 148,
+              "header_ok": null
+            }
+          ],
+          "I-03": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 153,
+              "header_ok": null
+            },
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 190,
+              "header_ok": null
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 213,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 316,
+              "header_ok": null
+            }
+          ],
+          "I-04": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 178,
+              "header_ok": null
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 186,
+              "header_ok": null
+            }
+          ],
+          "I-05": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 142,
+              "header_ok": null
+            },
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 207,
+              "header_ok": null
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 115,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 147,
+              "header_ok": null
+            }
+          ],
+          "I-06": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 204,
+              "header_ok": null
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 195,
+              "header_ok": null
+            },
+            {
+              "round": 3,
+              "from": 1,
+              "to": 0,
+              "chars": 119,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 148,
+              "header_ok": null
+            }
+          ],
+          "I-07": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 220,
+              "header_ok": null
+            },
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 233,
+              "header_ok": null
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 235,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 157,
+              "header_ok": null
+            }
+          ],
+          "I-08": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 276,
+              "header_ok": null
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 312,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 329,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 416,
+              "header_ok": null
+            }
+          ],
+          "I-09": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 152,
+              "header_ok": null
+            },
+            {
+              "round": 2,
+              "from": 0,
+              "to": 1,
+              "chars": 157,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 165,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 155,
+              "header_ok": null
+            }
+          ],
+          "I-10": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 494,
+              "header_ok": null
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 288,
+              "header_ok": null
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 916,
+              "header_ok": null
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 835,
+              "header_ok": null
+            },
+            {
+              "round": 6,
+              "from": 1,
+              "to": 0,
+              "chars": 485,
+              "header_ok": null
+            },
+            {
+              "round": 7,
+              "from": 0,
+              "to": 1,
+              "chars": 1009,
+              "header_ok": null
+            }
+          ]
+        }
+      }
+    },
+    "occ2-levelI-n2-msg-glm53flash-occ1": {
+      "scorecard": {
+        "run_name": "occ2-levelI-n2-msg-glm53flash-occ1",
+        "comm_mode": "occ1_structured",
+        "model": "glm-5.3-flash",
+        "protocol": "msg",
+        "max_rounds": 20,
+        "task_count": 10,
+        "adapter_aggregates": {
+          "case_accuracy": 1.0,
+          "mean_S": 1.0,
+          "mean_P": 1.0,
+          "mean_C": 5620.36658730159,
+          "mean_D": 2.1,
+          "cases_completed": 10,
+          "cases_errored": 0,
+          "rounds_mean": 5.6,
+          "total_prompt_tokens": 191634,
+          "total_output_tokens_incl_reasoning": 173395,
+          "total_llm_calls": 97,
+          "total_inter_agent_messages": 42,
+          "total_inter_agent_message_payload_bytes": 12173,
+          "case_latency_s": {
+            "mean": 109.4523,
+            "p50": 43.537,
+            "p95": 418.41524999999933
+          },
+          "per_case_mean_llm_latency_s": {
+            "mean": 8.7992,
+            "p50": 4.2860000000000005,
+            "p95": 28.17164999999996
+          }
+        },
+        "output_tokens_caveat": "usage.completion_tokens from the gateway includes hidden reasoning tokens; do not use for wire-cost claims. prompt_tokens are real server-side counts.",
+        "per_case": [
+          {
+            "task_file": "I-01_n2.json",
+            "case_id": "I-01",
+            "case_name": "Global Max",
+            "status": "completed",
+            "rounds": 6,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 3344.6666666667,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 17455,
+            "output_tokens_incl_reasoning": 2613,
+            "llm_calls": 10,
+            "messages": 4,
+            "message_payload_bytes": 905,
+            "elapsed_s": 26.167,
+            "error": null
+          },
+          {
+            "task_file": "I-02_n2.json",
+            "case_id": "I-02",
+            "case_name": "Word Frequency",
+            "status": "completed",
+            "rounds": 7,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 3648.2857142857,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 22341,
+            "output_tokens_incl_reasoning": 3197,
+            "llm_calls": 12,
+            "messages": 4,
+            "message_payload_bytes": 893,
+            "elapsed_s": 34.272,
+            "error": null
+          },
+          {
+            "task_file": "I-03_n2.json",
+            "case_id": "I-03",
+            "case_name": "Distributed Vote",
+            "status": "completed",
+            "rounds": 4,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 4148.25,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 13383,
+            "output_tokens_incl_reasoning": 3210,
+            "llm_calls": 8,
+            "messages": 4,
+            "message_payload_bytes": 1098,
+            "elapsed_s": 28.097,
+            "error": null
+          },
+          {
+            "task_file": "I-04_n2.json",
+            "case_id": "I-04",
+            "case_name": "Any Match",
+            "status": "completed",
+            "rounds": 3,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 3237.0,
+            "D": 1.5,
+            "success": true,
+            "prompt_tokens": 7885,
+            "output_tokens_incl_reasoning": 1826,
+            "llm_calls": 5,
+            "messages": 3,
+            "message_payload_bytes": 843,
+            "elapsed_s": 19.181,
+            "error": null
+          },
+          {
+            "task_file": "I-05_n2.json",
+            "case_id": "I-05",
+            "case_name": "Range Count",
+            "status": "completed",
+            "rounds": 7,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 3604.2857142857,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 21741,
+            "output_tokens_incl_reasoning": 3489,
+            "llm_calls": 11,
+            "messages": 4,
+            "message_payload_bytes": 1007,
+            "elapsed_s": 35.86,
+            "error": null
+          },
+          {
+            "task_file": "I-06_n2.json",
+            "case_id": "I-06",
+            "case_name": "Checksum",
+            "status": "completed",
+            "rounds": 5,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 4741.8,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 14574,
+            "output_tokens_incl_reasoning": 9135,
+            "llm_calls": 8,
+            "messages": 4,
+            "message_payload_bytes": 974,
+            "elapsed_s": 68.066,
+            "error": null
+          },
+          {
+            "task_file": "I-07_n2.json",
+            "case_id": "I-07",
+            "case_name": "Average Value",
+            "status": "completed",
+            "rounds": 5,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 5308.0,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 18373,
+            "output_tokens_incl_reasoning": 8167,
+            "llm_calls": 9,
+            "messages": 4,
+            "message_payload_bytes": 1050,
+            "elapsed_s": 56.625,
+            "error": null
+          },
+          {
+            "task_file": "I-08_n2.json",
+            "case_id": "I-08",
+            "case_name": "Set Union Size",
+            "status": "completed",
+            "rounds": 5,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 5500.0,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 22220,
+            "output_tokens_incl_reasoning": 5280,
+            "llm_calls": 10,
+            "messages": 4,
+            "message_payload_bytes": 1795,
+            "elapsed_s": 51.214,
+            "error": null
+          },
+          {
+            "task_file": "I-09_n2.json",
+            "case_id": "I-09",
+            "case_name": "Top-K Select",
+            "status": "completed",
+            "rounds": 5,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 3475.6,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 13624,
+            "output_tokens_incl_reasoning": 3754,
+            "llm_calls": 8,
+            "messages": 4,
+            "message_payload_bytes": 946,
+            "elapsed_s": 78.573,
+            "error": null
+          },
+          {
+            "task_file": "I-10_n2.json",
+            "case_id": "I-10",
+            "case_name": "Standard Deviation",
+            "status": "completed",
+            "rounds": 9,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 19195.7777777778,
+            "D": 3.5,
+            "success": true,
+            "prompt_tokens": 40038,
+            "output_tokens_incl_reasoning": 132724,
+            "llm_calls": 16,
+            "messages": 7,
+            "message_payload_bytes": 2662,
+            "elapsed_s": 696.468,
+            "error": null
+          }
+        ]
+      },
+      "message_stats": {
+        "messages_total": 42,
+        "compliant": 42,
+        "compliance_rate": 1.0,
+        "chars_mean": 289.8,
+        "chars_median": 276.0,
+        "chars_p95": 480,
+        "per_case": {
+          "I-01": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 149,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 203,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 1,
+              "to": 0,
+              "chars": 273,
+              "header_ok": true
+            },
+            {
+              "round": 5,
+              "from": 0,
+              "to": 1,
+              "chars": 280,
+              "header_ok": true
+            }
+          ],
+          "I-02": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 238,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 180,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 1,
+              "to": 0,
+              "chars": 299,
+              "header_ok": true
+            },
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 176,
+              "header_ok": true
+            }
+          ],
+          "I-03": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 292,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 226,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 1,
+              "to": 0,
+              "chars": 265,
+              "header_ok": true
+            },
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 315,
+              "header_ok": true
+            }
+          ],
+          "I-04": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 401,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 227,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 215,
+              "header_ok": true
+            }
+          ],
+          "I-05": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 279,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 225,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 205,
+              "header_ok": true
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 298,
+              "header_ok": true
+            }
+          ],
+          "I-06": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 212,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 168,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 328,
+              "header_ok": true
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 266,
+              "header_ok": true
+            }
+          ],
+          "I-07": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 146,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 306,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 1,
+              "to": 0,
+              "chars": 236,
+              "header_ok": true
+            },
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 362,
+              "header_ok": true
+            }
+          ],
+          "I-08": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 445,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 361,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 1,
+              "to": 0,
+              "chars": 486,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 501,
+              "header_ok": true
+            }
+          ],
+          "I-09": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 182,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 221,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 1,
+              "to": 0,
+              "chars": 312,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 231,
+              "header_ok": true
+            }
+          ],
+          "I-10": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 335,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 248,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 480,
+              "header_ok": true
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 436,
+              "header_ok": true
+            },
+            {
+              "round": 7,
+              "from": 1,
+              "to": 0,
+              "chars": 411,
+              "header_ok": true
+            },
+            {
+              "round": 7,
+              "from": 0,
+              "to": 1,
+              "chars": 387,
+              "header_ok": true
+            },
+            {
+              "round": 9,
+              "from": 0,
+              "to": 1,
+              "chars": 365,
+              "header_ok": true
+            }
+          ]
+        }
+      }
+    },
+    "occ2-levelI-n2-msg-glm53flash-sym": {
+      "scorecard": {
+        "run_name": "occ2-levelI-n2-msg-glm53flash-sym",
+        "comm_mode": "sym_v1_handdesigned",
+        "model": "glm-5.3-flash",
+        "protocol": "msg",
+        "max_rounds": 20,
+        "task_count": 10,
+        "adapter_aggregates": {
+          "case_accuracy": 0.9,
+          "mean_S": 1.0,
+          "mean_P": 1.0,
+          "mean_C": 6866.606878306878,
+          "mean_D": 2.0,
+          "cases_completed": 9,
+          "cases_errored": 1,
+          "rounds_mean": 6.0,
+          "total_prompt_tokens": 253864,
+          "total_output_tokens_incl_reasoning": 89859,
+          "total_llm_calls": 88,
+          "total_inter_agent_messages": 36,
+          "total_inter_agent_message_payload_bytes": 5538,
+          "case_latency_s": {
+            "mean": 191.3598,
+            "p50": 65.563,
+            "p95": 751.147149999999
+          },
+          "per_case_mean_llm_latency_s": {
+            "mean": 8.610777777777777,
+            "p50": 5.635,
+            "p95": 18.392199999999995
+          }
+        },
+        "output_tokens_caveat": "usage.completion_tokens from the gateway includes hidden reasoning tokens; do not use for wire-cost claims. prompt_tokens are real server-side counts.",
+        "per_case": [
+          {
+            "task_file": "I-01_n2.json",
+            "case_id": "I-01",
+            "case_name": "Global Max",
+            "status": "completed",
+            "rounds": 5,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 5560.8,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 23937,
+            "output_tokens_incl_reasoning": 3867,
+            "llm_calls": 9,
+            "messages": 4,
+            "message_payload_bytes": 431,
+            "elapsed_s": 37.038,
+            "error": null
+          },
+          {
+            "task_file": "I-02_n2.json",
+            "case_id": "I-02",
+            "case_name": "Word Frequency",
+            "status": "completed",
+            "rounds": 5,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 6583.4,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 27567,
+            "output_tokens_incl_reasoning": 5350,
+            "llm_calls": 10,
+            "messages": 4,
+            "message_payload_bytes": 611,
+            "elapsed_s": 53.78,
+            "error": null
+          },
+          {
+            "task_file": "I-03_n2.json",
+            "case_id": "I-03",
+            "case_name": "Distributed Vote",
+            "status": "completed",
+            "rounds": 15,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 4244.5333333333,
+            "D": 3.0,
+            "success": true,
+            "prompt_tokens": 58010,
+            "output_tokens_incl_reasoning": 5658,
+            "llm_calls": 19,
+            "messages": 6,
+            "message_payload_bytes": 880,
+            "elapsed_s": 72.801,
+            "error": null
+          },
+          {
+            "task_file": "I-04_n2.json",
+            "case_id": "I-04",
+            "case_name": "Any Match",
+            "status": "completed",
+            "rounds": 3,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 5640.0,
+            "D": 1.0,
+            "success": true,
+            "prompt_tokens": 12813,
+            "output_tokens_incl_reasoning": 4107,
+            "llm_calls": 5,
+            "messages": 2,
+            "message_payload_bytes": 469,
+            "elapsed_s": 58.325,
+            "error": null
+          },
+          {
+            "task_file": "I-05_n2.json",
+            "case_id": "I-05",
+            "case_name": "Range Count",
+            "status": "completed",
+            "rounds": 5,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 5243.8,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 22412,
+            "output_tokens_incl_reasoning": 3807,
+            "llm_calls": 8,
+            "messages": 4,
+            "message_payload_bytes": 556,
+            "elapsed_s": 52.023,
+            "error": null
+          },
+          {
+            "task_file": "I-06_n2.json",
+            "case_id": "I-06",
+            "case_name": "Checksum",
+            "status": "completed",
+            "rounds": 7,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 6397.4285714286,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 33610,
+            "output_tokens_incl_reasoning": 11172,
+            "llm_calls": 12,
+            "messages": 4,
+            "message_payload_bytes": 435,
+            "elapsed_s": 105.918,
+            "error": null
+          },
+          {
+            "task_file": "I-07_n2.json",
+            "case_id": "I-07",
+            "case_name": "Average Value",
+            "status": "completed",
+            "rounds": 5,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 13324.4,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 27037,
+            "output_tokens_incl_reasoning": 39585,
+            "llm_calls": 9,
+            "messages": 4,
+            "message_payload_bytes": 749,
+            "elapsed_s": 202.471,
+            "error": null
+          },
+          {
+            "task_file": "I-08_n2.json",
+            "case_id": "I-08",
+            "case_name": "Set Union Size",
+            "status": "completed",
+            "rounds": 4,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 9234.5,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 24707,
+            "output_tokens_incl_reasoning": 12231,
+            "llm_calls": 7,
+            "messages": 4,
+            "message_payload_bytes": 771,
+            "elapsed_s": 91.383,
+            "error": null
+          },
+          {
+            "task_file": "I-09_n2.json",
+            "case_id": "I-09",
+            "case_name": "Top-K Select",
+            "status": "completed",
+            "rounds": 5,
+            "S": 1.0,
+            "P": 1.0,
+            "C": 5570.6,
+            "D": 2.0,
+            "success": true,
+            "prompt_tokens": 23771,
+            "output_tokens_incl_reasoning": 4082,
+            "llm_calls": 9,
+            "messages": 4,
+            "message_payload_bytes": 636,
+            "elapsed_s": 39.795,
+            "error": null
+          },
+          {
+            "task_file": "I-10_n2.json",
+            "case_id": null,
+            "case_name": null,
+            "status": "timeout",
+            "rounds": null,
+            "S": null,
+            "P": null,
+            "C": null,
+            "D": null,
+            "success": null,
+            "prompt_tokens": null,
+            "output_tokens_incl_reasoning": null,
+            "llm_calls": null,
+            "messages": null,
+            "message_payload_bytes": null,
+            "elapsed_s": 1200.064,
+            "error": "exceeded per-case wall-clock budget of 1200s"
+          }
+        ]
+      },
+      "message_stats": {
+        "messages_total": 39,
+        "compliant": 37,
+        "compliance_rate": 0.9487,
+        "chars_mean": 170.1,
+        "chars_median": 172,
+        "chars_p95": 260,
+        "per_case": {
+          "I-01": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 82,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 101,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 1,
+              "to": 0,
+              "chars": 138,
+              "header_ok": true
+            },
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 110,
+              "header_ok": true
+            }
+          ],
+          "I-02": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 129,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 197,
+              "header_ok": true
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 164,
+              "header_ok": true
+            },
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 121,
+              "header_ok": true
+            }
+          ],
+          "I-03": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 240,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 0,
+              "header_ok": false
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 0,
+              "header_ok": false
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 189,
+              "header_ok": true
+            },
+            {
+              "round": 7,
+              "from": 1,
+              "to": 0,
+              "chars": 215,
+              "header_ok": true
+            },
+            {
+              "round": 14,
+              "from": 1,
+              "to": 0,
+              "chars": 236,
+              "header_ok": true
+            }
+          ],
+          "I-04": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 260,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 209,
+              "header_ok": true
+            }
+          ],
+          "I-05": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 114,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 142,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 69,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 1,
+              "to": 0,
+              "chars": 231,
+              "header_ok": true
+            }
+          ],
+          "I-06": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 117,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 80,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 1,
+              "to": 0,
+              "chars": 133,
+              "header_ok": true
+            },
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 105,
+              "header_ok": true
+            }
+          ],
+          "I-07": [
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 172,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 204,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 1,
+              "to": 0,
+              "chars": 175,
+              "header_ok": true
+            },
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 198,
+              "header_ok": true
+            }
+          ],
+          "I-08": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 174,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 164,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 256,
+              "header_ok": true
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 177,
+              "header_ok": true
+            }
+          ],
+          "I-09": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 191,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 190,
+              "header_ok": true
+            },
+            {
+              "round": 3,
+              "from": 0,
+              "to": 1,
+              "chars": 117,
+              "header_ok": true
+            },
+            {
+              "round": 4,
+              "from": 1,
+              "to": 0,
+              "chars": 138,
+              "header_ok": true
+            }
+          ],
+          "I-10": [
+            {
+              "round": 1,
+              "from": 0,
+              "to": 1,
+              "chars": 191,
+              "header_ok": true
+            },
+            {
+              "round": 1,
+              "from": 1,
+              "to": 0,
+              "chars": 188,
+              "header_ok": true
+            },
+            {
+              "round": 4,
+              "from": 0,
+              "to": 1,
+              "chars": 717,
+              "header_ok": true
+            }
+          ]
+        }
+      }
+    }
+  }
+}

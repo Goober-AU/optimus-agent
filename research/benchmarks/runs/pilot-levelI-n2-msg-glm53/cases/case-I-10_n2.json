@@ -1,0 +1,10 @@
+{
+  "task_file": "I-10_n2.json",
+  "protocol": "msg",
+  "model": "glm-5.3",
+  "comm_mode": "occ0_plain_english",
+  "status": "timeout",
+  "timeout": true,
+  "elapsed_s": 1210.712,
+  "error": "exceeded per-case wall-clock budget of 1200s"
+}

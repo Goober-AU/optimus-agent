@@ -9,13 +9,17 @@
 //! - `randomUUID()` -> `uuid::Uuid::new_v4()`.
 //! - `AbortSignal` -> `tokio_util::sync::CancellationToken`.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::Arc;
 
 use pi_agent_core::types::{AgentMessage, CustomAgentMessage, CustomMessageContent};
 use serde_json::{Map, Value};
 
 use crate::core::messages::{ASYNC_BASH_COMPLETION_CUSTOM_TYPE, HEARTBEAT_PROMPT_CUSTOM_TYPE};
+use crate::core::occ::contract::{AgentCommMessage, ContractError};
+use crate::core::occ::dialect::{DialectRegistry, OccCapability};
+use crate::core::occ::occ1::{Occ1Message, OCC1_HEADER};
+use crate::core::occ::occ2::{self, OCC2_FALLBACK_SENTINEL, OCC2_HEADER};
 
 /// Port of `agentFamilyRelationship`'s use of `canonicalSessionPath`: the pure
 /// path canonicalisation from core/session-lease.ts, kept private here so this
@@ -179,6 +183,11 @@ pub struct AgentSessionMessageAgentSummary {
     pub status: Option<AgentFamilyStatus>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rlm_child_registry_status: Option<String>,
+    /// OCC-2 dialect capability of this agent (OCC-2 integration design,
+    /// section 4). Absent means the agent reported nothing: negotiation
+    /// then yields no dialect and sends stay OCC-1.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub occ_capability: Option<OccCapability>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -651,6 +660,245 @@ pub fn is_agent_session_message_prompt(text: &str) -> bool {
     parse_agent_session_message_prompt_id(text).is_some()
 }
 
+// ---------------------------------------------------------------------------
+// OCC-2 payload encoding seam (research/integration/
+// OCC2-INTEGRATION-DESIGN.md, sections 1-4). OCC levels are interchangeable
+// encodings of one typed payload: this seam substitutes only the single
+// `AgentSessionMessagePayload.message` string, so sender identity,
+// queueing, receipts, rate limits and family scoping are untouched. With
+// the feature disabled (the default) every function here is the identity
+// on the body and prompt output stays byte-identical.
+// ---------------------------------------------------------------------------
+
+/// Send policy for the OCC-2 wrap seam. `enabled: false` (the default)
+/// makes [`wrap_outgoing_body`] the identity function.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Occ2SendPolicy {
+    /// Feature flag (`agentCommunication.occ2Enabled`), default OFF.
+    pub enabled: bool,
+    /// Negotiated (dialect id, version) for this target; `None` keeps OCC-1.
+    pub dialect: Option<(String, u32)>,
+    /// Dialect cards available for encoding.
+    pub registry: DialectRegistry,
+    /// Transport bound mirroring `normalize_agent_session_message`: a dual
+    /// payload that would exceed it is never sent (R1: no truncation).
+    pub max_message_chars: usize,
+}
+
+impl Occ2SendPolicy {
+    /// The conservative default: OCC-1 only, byte-identical behavior.
+    pub fn disabled() -> Self {
+        Self {
+            enabled: false,
+            dialect: None,
+            registry: DialectRegistry::new(),
+            max_message_chars: DEFAULT_AGENT_MESSAGE_MAX_CHARS,
+        }
+    }
+
+    /// An enabled policy for one negotiated dialect.
+    pub fn for_dialect(
+        registry: DialectRegistry,
+        dialect: (String, u32),
+        max_message_chars: usize,
+    ) -> Self {
+        Self {
+            enabled: true,
+            dialect: Some(dialect),
+            registry,
+            max_message_chars,
+        }
+    }
+}
+
+/// Negotiates the OCC-2 dialect for one target (design section 4). A
+/// target that reports no capability, a peer with no shared dialect, or a
+/// dialect that is not registered yields `None` and the send stays OCC-1.
+/// Cards must be evaluated with round-trip fidelity 1.0 unless
+/// `allow_unevaluated` is set (the dev flag): this is the tier-2 gate of
+/// the fallback policy. Model-pair and task-family matching on evolved
+/// cards is a daemon-side follow-up.
+pub fn select_occ2_dialect(
+    local: &OccCapability,
+    peer: Option<&OccCapability>,
+    registry: &DialectRegistry,
+    allow_unevaluated: bool,
+) -> Option<(String, u32)> {
+    let peer = peer?;
+    let (dialect_id, version) = local.negotiate(peer)?;
+    let card = registry.get(&dialect_id, version)?;
+    let evaluated = card.metrics.samples > 0 && card.metrics.round_trip_fidelity >= 1.0;
+    if evaluated || allow_unevaluated {
+        Some((dialect_id, version))
+    } else {
+        None
+    }
+}
+
+/// Wraps one outgoing body (design section 2). Called at both send seams
+/// after the target is known and before the payload is built:
+///
+/// 1. Disabled or no negotiated dialect: identity.
+/// 2. The body must be a complete OCC-1 contract message; plain English,
+///    deltas (excluded in v1, OQ4) and malformed OCC-1 pass through.
+/// 3. `occ2::encode_dual` emits the symbolic section, the
+///    [`OCC2_FALLBACK_SENTINEL`] line and the full OCC-1 text.
+/// 4. Any encode error, or a dual payload that would exceed the transport
+///    bound, returns the original body (R1: the message is never lost,
+///    altered or truncated).
+pub fn wrap_outgoing_body(body: &str, policy: &Occ2SendPolicy) -> String {
+    if !policy.enabled {
+        return body.to_string();
+    }
+    let Some((dialect_id, version)) = &policy.dialect else {
+        return body.to_string();
+    };
+    if !body.starts_with(OCC1_HEADER) {
+        return body.to_string();
+    }
+    let Ok(occ1) = Occ1Message::decode(body) else {
+        return body.to_string();
+    };
+    let Ok(message) = AgentCommMessage::from_occ1(&occ1) else {
+        return body.to_string();
+    };
+    let Some(card) = policy.registry.get(dialect_id, *version) else {
+        return body.to_string();
+    };
+    let Ok(dual) = occ2::encode_dual(&message, card) else {
+        return body.to_string();
+    };
+    if dual.trim().chars().count() > policy.max_message_chars {
+        return body.to_string();
+    }
+    dual
+}
+
+/// Splits a dual OCC-2 payload at the fallback sentinel, mirroring the
+/// codec's private splitter: (symbolic section, OCC-1 section). Returns
+/// `None` when the body carries no sentinel line.
+fn split_occ2_dual_body(body: &str) -> Option<(&str, &str)> {
+    let mut offset = 0usize;
+    for line in body.split('\n') {
+        let line_start = offset;
+        let line_end = line_start + line.len();
+        offset = line_end + 1;
+        let bare = line.strip_suffix('\r').unwrap_or(line);
+        if bare == OCC2_FALLBACK_SENTINEL {
+            let fallback_start = (line_end + 1).min(body.len());
+            return Some((&body[..line_start], &body[fallback_start..]));
+        }
+    }
+    None
+}
+
+/// The body a recipient model should see (design section 3): the symbolic
+/// section of a dual payload, or the message verbatim when it is not a
+/// dual payload (OCC-0/OCC-1, or the feature off). Only bodies that start
+/// with the OCC-2 header are ever split, so every other body is
+/// byte-identical to the previous behavior.
+pub fn agent_session_message_prompt_body(message: &str) -> &str {
+    if message.starts_with(OCC2_HEADER) {
+        if let Some((symbolic, _)) = split_occ2_dual_body(message) {
+            return symbolic.trim_end_matches('\n');
+        }
+    }
+    message
+}
+
+/// Incidents per (sender, listener) pair before OCC-2 is disabled for
+/// that pair for the session (design section 3, tier 3).
+pub const OCC2_STRIKE_LIMIT: usize = 3;
+
+/// Pure strike ledger for OCC-2 decode failures. Session state, no I/O;
+/// the runtime recorder wiring is a daemon-side follow-up.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Occ2StrikeLedger {
+    strikes: BTreeMap<String, usize>,
+    disabled: BTreeSet<String>,
+}
+
+impl Occ2StrikeLedger {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Incidents recorded for one pair.
+    pub fn incidents(&self, pair: &str) -> usize {
+        self.strikes.get(pair).copied().unwrap_or(0)
+    }
+
+    /// True when the strike limit disabled OCC-2 for this pair.
+    pub fn is_disabled(&self, pair: &str) -> bool {
+        self.disabled.contains(pair)
+    }
+
+    /// Records one incident. Returns true when this strike disabled the
+    /// pair.
+    pub fn record_incident(&mut self, pair: &str) -> bool {
+        let strikes = self.strikes.entry(pair.to_string()).or_insert(0);
+        *strikes += 1;
+        if *strikes >= OCC2_STRIKE_LIMIT {
+            self.disabled.insert(pair.to_string());
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Pairs disabled by the strike limit, ordered by id.
+    pub fn disabled_pairs(&self) -> Vec<&str> {
+        self.disabled.iter().map(String::as_str).collect()
+    }
+}
+
+/// How one delivered body was consumed (design section 3, tier 3).
+#[derive(Debug, Clone, PartialEq)]
+pub enum Occ2BodyDecode {
+    /// Strict `occ2::decode` succeeded on the symbolic section.
+    Symbolic(AgentCommMessage),
+    /// Consumed through the OCC-1 fallback section, or plain OCC-1.
+    Occ1(AgentCommMessage),
+}
+
+impl Occ2BodyDecode {
+    /// The decoded typed payload, regardless of the consumed section.
+    pub fn message(&self) -> &AgentCommMessage {
+        match self {
+            Occ2BodyDecode::Symbolic(message) | Occ2BodyDecode::Occ1(message) => message,
+        }
+    }
+
+    /// True when the symbolic path decoded the message.
+    pub fn is_symbolic(&self) -> bool {
+        matches!(self, Occ2BodyDecode::Symbolic(_))
+    }
+}
+
+/// Decodes one delivered body: strict OCC-2 first, OCC-1 fallback second.
+/// An OCC-2 body whose strict decode fails counts one incident for the
+/// pair and is consumed through its embedded OCC-1 section; after
+/// [`OCC2_STRIKE_LIMIT`] incidents the pair decodes straight through the
+/// fallback. Nothing is invented: a body with no decodable OCC-1 form is
+/// an error.
+pub fn decode_agent_session_message_body(
+    body: &str,
+    registry: &DialectRegistry,
+    pair: &str,
+    ledger: &mut Occ2StrikeLedger,
+) -> Result<Occ2BodyDecode, ContractError> {
+    if body.starts_with(OCC2_HEADER) && !ledger.is_disabled(pair) {
+        match occ2::decode(body, registry) {
+            Ok(message) => return Ok(Occ2BodyDecode::Symbolic(message)),
+            Err(_) => {
+                ledger.record_incident(pair);
+            }
+        }
+    }
+    let message = occ2::occ1_fallback(body)?;
+    Ok(Occ2BodyDecode::Occ1(message))
+}
+
 pub fn create_agent_session_message_prompt(payload: &AgentSessionMessagePayload) -> String {
     let relationship_label = payload.from_relationship.as_ref().map(|relationship| {
         if relationship == FAMILY_RELATIONSHIP_PARENT {
@@ -686,7 +934,9 @@ pub fn create_agent_session_message_prompt(payload: &AgentSessionMessagePayload)
     ));
     lines.push(format!("Message id: {}", payload.id));
     lines.push(String::new());
-    lines.push(payload.message.clone());
+    // OCC-2 seam: a dual payload renders its symbolic section only; the
+    // durable record keeps the full dual body (design section 3).
+    lines.push(agent_session_message_prompt_body(&payload.message).to_string());
     lines.join("\n")
 }
 
@@ -971,6 +1221,13 @@ pub trait AgentSessionMessageController: Send + Sync {
     ) -> std::pin::Pin<
         Box<dyn std::future::Future<Output = Result<AgentSessionMessageReceipt, String>> + Send>,
     >;
+    /// OCC-2 send policy for one target id (OCC-2 integration design,
+    /// section 4). The default is the conservative disabled policy, so
+    /// existing implementors keep OCC-1 behavior unchanged.
+    fn occ2_send_policy(&self, target: &str) -> pi_ai::types::BoxFuture<Occ2SendPolicy> {
+        let _ = target;
+        Box::pin(async { Occ2SendPolicy::disabled() })
+    }
 }
 
 /// `createAgentMessageHostHandlers(controller)`.
@@ -1043,9 +1300,13 @@ async fn handle_agent_message_send(
         let roster = controller.roster().await.map_err(KernelError::new)?;
         let mut receipts: Vec<Value> = Vec::with_capacity(roster.entries.len());
         for entry in &roster.entries {
+            // OCC-2 S1 seam, broadcast arm: each recipient encodes against
+            // its own negotiated dialect (design R6); no receipt change.
+            let policy = controller.occ2_send_policy(&entry.id).await;
+            let message = wrap_outgoing_body(&message, &policy);
             let input = AgentSessionMessageSendInput {
                 target: entry.id.clone(),
-                message: message.clone(),
+                message,
                 receiver_role: Some(entry.relationship.clone()),
             };
             match controller.send_agent_message(input).await {
@@ -1129,6 +1390,11 @@ async fn handle_agent_message_send(
     }
     target = matches[0].id.clone();
 
+    // OCC-2 S1 seam, direct arm: the body is substituted only when the
+    // feature is enabled and a dialect was negotiated for this target;
+    // otherwise the send is byte-identical OCC-0/OCC-1.
+    let policy = controller.occ2_send_policy(&target).await;
+    let message = wrap_outgoing_body(&message, &policy);
     let receipt = controller
         .send_agent_message(AgentSessionMessageSendInput {
             target,
@@ -1463,5 +1729,347 @@ mod tests {
         assert!(create_agent_session_message_id().starts_with("agentmsg_"));
         assert!(serde_json::to_value(AGENT_MESSAGE_CUSTOM_TYPE).is_ok());
         let _ = json!({});
+    }
+
+    // -- OCC-2 seam unit tests (u2/u3 of the integration design) --------
+
+    fn occ1_contract_body() -> String {
+        let message = crate::core::occ::contract::AgentCommMessage::new("TASK", "t1", "pending");
+        message
+            .to_occ1()
+            .expect("to_occ1")
+            .encode()
+            .expect("encode")
+    }
+
+    fn enabled_policy() -> Occ2SendPolicy {
+        Occ2SendPolicy::for_dialect(
+            DialectRegistry::with_sym_v1(),
+            ("sym-v1".to_string(), 1),
+            DEFAULT_AGENT_MESSAGE_MAX_CHARS,
+        )
+    }
+
+    #[test]
+    fn occ2_disabled_policy_is_the_identity() {
+        let body = occ1_contract_body();
+        assert_eq!(wrap_outgoing_body(&body, &Occ2SendPolicy::disabled()), body);
+        assert_eq!(wrap_outgoing_body("hello", &enabled_policy()), "hello");
+        // Enabled but no negotiated dialect: identity.
+        let mut policy = enabled_policy();
+        policy.dialect = None;
+        assert_eq!(wrap_outgoing_body(&body, &policy), body);
+    }
+
+    #[test]
+    fn occ2_wrap_encodes_contract_bodies_as_dual() {
+        let body = occ1_contract_body();
+        let dual = wrap_outgoing_body(&body, &enabled_policy());
+        assert!(dual.starts_with("OCC/2 D=sym-v1@1 C="), "dual header");
+        assert!(dual.contains("\n#FALLBACK-OCC1\n"), "sentinel section");
+        assert!(dual.ends_with(body.trim_end_matches('\n')) || dual.contains(&body));
+        let registry = DialectRegistry::with_sym_v1();
+        let decoded = crate::core::occ::occ2::decode(&dual, &registry).expect("strict decode");
+        assert_eq!(
+            decoded,
+            crate::core::occ::contract::AgentCommMessage::from_occ1(
+                &Occ1Message::decode(&body).expect("decode")
+            )
+            .expect("from_occ1")
+        );
+    }
+
+    #[test]
+    fn occ2_wrap_leaves_plain_english_and_deltas_unchanged() {
+        // Plain English never parses as an OCC-1 contract message.
+        assert_eq!(wrap_outgoing_body("plain english body", &enabled_policy()), "plain english body");
+        // A delta body (no KIND) is excluded from wrapping in v1 (OQ4).
+        let delta_body = "OCC/1\nTASK=t\nSEQ=2\nBASE=1\nSTATUS=done";
+        assert_eq!(wrap_outgoing_body(delta_body, &enabled_policy()), delta_body);
+        // Malformed OCC-1 passes through unchanged.
+        let malformed = "OCC/1\nTASK=t\nKIND=RESULT\nSTATUS=weird";
+        assert_eq!(wrap_outgoing_body(malformed, &enabled_policy()), malformed);
+    }
+
+    #[test]
+    fn occ2_size_guard_sends_plain_occ1_instead_of_truncating() {
+        // A body near the transport bound: its dual form would exceed the
+        // bound, so the original OCC-1 body is sent, never truncated.
+        let mut message =
+            crate::core::occ::contract::AgentCommMessage::new("RESULT", "t-big", "done");
+        for index in 0..6 {
+            message.findings.push(crate::core::occ::contract::Finding {
+                id: format!("F{}", index + 1),
+                statement: "x".repeat(2_500),
+                confidence: None,
+                evidence: Vec::new(),
+            });
+        }
+        let body = message.to_occ1().expect("to_occ1").encode().expect("encode");
+        assert!(body.chars().count() <= DEFAULT_AGENT_MESSAGE_MAX_CHARS);
+        let dual = crate::core::occ::occ2::encode_dual(
+            &message,
+            DialectRegistry::with_sym_v1().get("sym-v1", 1).expect("card"),
+        )
+        .expect("encode_dual");
+        assert!(dual.chars().count() > DEFAULT_AGENT_MESSAGE_MAX_CHARS);
+        assert_eq!(wrap_outgoing_body(&body, &enabled_policy()), body);
+    }
+
+    #[test]
+    fn occ2_prompt_shows_symbolic_section_and_record_keeps_dual() {
+        let body = occ1_contract_body();
+        let dual = wrap_outgoing_body(&body, &enabled_policy());
+        let mut with_dual = payload();
+        with_dual.message = dual.clone();
+        let prompt = create_agent_session_message_prompt(&with_dual);
+        assert!(prompt.starts_with("Agent-to-agent message received.\nSource: agent_message\n"));
+        assert!(prompt.contains("OCC/2 D=sym-v1@1 C="));
+        assert!(!prompt.contains("#FALLBACK-OCC1"));
+        assert!(!prompt.contains("OCC/1\n"));
+        assert_eq!(
+            parse_agent_session_message_prompt_id(&prompt).as_deref(),
+            Some("agentmsg_1")
+        );
+        // The durable record keeps the dual payload verbatim.
+        let record = create_agent_session_message(&with_dual, 5);
+        let CustomAgentMessage::Custom { details: Some(details), .. } = &record else {
+            panic!("agent session message is a custom message");
+        };
+        let stored: AgentSessionMessageDetails = serde_json::from_value(details.clone()).unwrap();
+        assert_eq!(stored.message, dual);
+        // A plain body renders byte-identically to the pre-OCC-2 format.
+        let mut plain = payload();
+        plain.message = body.clone();
+        let expected = format!(
+            "Agent-to-agent message received.\nSource: {}\nFrom: parent, active active-1, session session-1\nTo: child, active active-2, session session-2\nMessage id: agentmsg_1\n\n{}",
+            AGENT_MESSAGE_SOURCE,
+            body
+        );
+        assert_eq!(create_agent_session_message_prompt(&plain), expected);
+    }
+
+    #[test]
+    fn occ2_decode_strict_then_fallback_with_three_strikes() {
+        let body = occ1_contract_body();
+        let dual = wrap_outgoing_body(&body, &enabled_policy());
+        let empty_registry = DialectRegistry::new();
+        let mut ledger = Occ2StrikeLedger::new();
+        let pair = "sender->listener";
+        for round in 1..=OCC2_STRIKE_LIMIT {
+            let decoded =
+                decode_agent_session_message_body(&dual, &empty_registry, pair, &mut ledger)
+                    .expect("fallback decodes the embedded OCC-1");
+            assert!(!decoded.is_symbolic(), "unknown dialect consumes via fallback");
+            assert_eq!(ledger.incidents(pair), round);
+        }
+        assert!(ledger.is_disabled(pair));
+        assert_eq!(ledger.disabled_pairs(), vec![pair]);
+        // Disabled pairs decode straight through the fallback, no more strikes.
+        let decoded =
+            decode_agent_session_message_body(&dual, &empty_registry, pair, &mut ledger).unwrap();
+        assert!(!decoded.is_symbolic());
+        assert_eq!(ledger.incidents(pair), OCC2_STRIKE_LIMIT);
+        // With the dialect registered the strict path wins and costs nothing.
+        let registry = DialectRegistry::with_sym_v1();
+        let mut fresh = Occ2StrikeLedger::new();
+        let decoded = decode_agent_session_message_body(&dual, &registry, pair, &mut fresh).unwrap();
+        assert!(decoded.is_symbolic());
+        assert_eq!(fresh.incidents(pair), 0);
+    }
+
+    /// A minimal `AgentSessionMessageController` that records sends, for
+    /// host-handler seam tests.
+    struct RecordingController {
+        sent: std::sync::Mutex<Vec<(String, String)>>,
+        occ2: bool,
+    }
+
+    impl AgentSessionMessageController for RecordingController {
+        fn roster(
+            &self,
+        ) -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = Result<AgentFamilyRosterResult, String>> + Send>,
+        > {
+            let entries = vec![
+                AgentFamilyRosterEntry {
+                    relationship: FAMILY_RELATIONSHIP_PARENT.to_string(),
+                    name: "parent".to_string(),
+                    id: "parent-id".to_string(),
+                    depth: 0.0,
+                    status: FAMILY_STATUS_RUNNING.to_string(),
+                    replied_since_task: None,
+                },
+                AgentFamilyRosterEntry {
+                    relationship: FAMILY_RELATIONSHIP_SIBLING.to_string(),
+                    name: "sibling".to_string(),
+                    id: "sibling-id".to_string(),
+                    depth: 1.0,
+                    status: FAMILY_STATUS_RUNNING.to_string(),
+                    replied_since_task: None,
+                },
+            ];
+            Box::pin(async move { Ok(AgentFamilyRosterResult { current: AgentFamilyRosterCurrent { name: "self".into(), id: "self-id".into(), depth: 1.0 }, entries }) })
+        }
+
+        fn await_pending_child_publication(
+            &self,
+            _selector: String,
+        ) -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = Result<Option<String>, String>> + Send>,
+        > {
+            Box::pin(async move { Ok(None) })
+        }
+
+        fn send_agent_message(
+            &self,
+            input: AgentSessionMessageSendInput,
+        ) -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = Result<AgentSessionMessageReceipt, String>> + Send>,
+        > {
+            self.sent
+                .lock()
+                .unwrap()
+                .push((input.target.clone(), input.message.clone()));
+            Box::pin(async move {
+                Ok(AgentSessionMessageReceipt {
+                    id: create_agent_session_message_id(),
+                    source: AGENT_MESSAGE_SOURCE.to_string(),
+                    target: AgentSessionMessageEndpoint {
+                        active_session_id: input.target.clone(),
+                        session_id: input.target,
+                        ..Default::default()
+                    },
+                    from: None,
+                    message: input.message,
+                    delivery_status: DELIVERY_STATUS_DELIVERED.to_string(),
+                    delivered_at: None,
+                    queued_at: None,
+                    delivery_mode: None,
+                })
+            })
+        }
+
+        fn occ2_send_policy(&self, _target: &str) -> pi_ai::types::BoxFuture<Occ2SendPolicy> {
+            let enabled = self.occ2;
+            Box::pin(async move {
+                if enabled {
+                    Occ2SendPolicy::for_dialect(
+                        DialectRegistry::with_sym_v1(),
+                        ("sym-v1".to_string(), 1),
+                        DEFAULT_AGENT_MESSAGE_MAX_CHARS,
+                    )
+                } else {
+                    Occ2SendPolicy::disabled()
+                }
+            })
+        }
+    }
+
+    async fn run_send_handler(
+        controller: Arc<RecordingController>,
+        payload: Value,
+    ) -> Result<Value, crate::core::kernel::shared::KernelError> {
+        let handlers = create_agent_message_host_handlers(controller);
+        let send = handlers.get("agent_message.send").expect("send handler");
+        send(payload).await
+    }
+
+    #[tokio::test]
+    async fn occ2_host_send_seam_wraps_only_when_enabled() {
+        let body = occ1_contract_body();
+
+        // Disabled: the direct arm sends the body byte-identically.
+        let disabled = Arc::new(RecordingController {
+            sent: std::sync::Mutex::new(Vec::new()),
+            occ2: false,
+        });
+        run_send_handler(
+            disabled.clone(),
+            serde_json::json!({ "message": body, "receiver_role": "parent" }),
+        )
+        .await
+        .expect("disabled send succeeds");
+        assert_eq!(disabled.sent.lock().unwrap()[0].1, body, "no wrapping when disabled");
+
+        // Enabled: the direct arm sends the dual payload.
+        let enabled = Arc::new(RecordingController {
+            sent: std::sync::Mutex::new(Vec::new()),
+            occ2: true,
+        });
+        run_send_handler(
+            enabled.clone(),
+            serde_json::json!({ "message": body, "receiver_role": "parent" }),
+        )
+        .await
+        .expect("enabled send succeeds");
+        let sent = enabled.sent.lock().unwrap();
+        assert_eq!(sent.len(), 1);
+        assert!(sent[0].1.starts_with("OCC/2 D=sym-v1@1 C="), "dual payload sent");
+        assert_eq!(
+            sent[0].1.matches("#FALLBACK-OCC1").count(),
+            1,
+            "exactly one sentinel: the wrap never compounds"
+        );
+
+        // Broadcast: every roster entry receives its own single wrap of the
+        // original body (R6), never a re-wrap of a wrapped body.
+        let broadcast = Arc::new(RecordingController {
+            sent: std::sync::Mutex::new(Vec::new()),
+            occ2: true,
+        });
+        let result = run_send_handler(
+            broadcast.clone(),
+            serde_json::json!({ "target": "all", "message": body }),
+        )
+        .await
+        .expect("broadcast succeeds");
+        let receipts = result
+            .get("receipts")
+            .and_then(Value::as_array)
+            .expect("broadcast receipts");
+        assert_eq!(receipts.len(), 2);
+        let sent = broadcast.sent.lock().unwrap();
+        assert_eq!(sent.len(), 2, "one send per roster entry");
+        for (target, message) in sent.iter() {
+            assert!(message.starts_with("OCC/2 D=sym-v1@1 C="), "{target}: dual payload");
+            assert_eq!(
+                message.matches("#FALLBACK-OCC1").count(),
+                1,
+                "{target}: no compound wrapping across broadcast entries"
+            );
+            assert!(message.contains(body.trim_end_matches('\n')), "{target}: OCC-1 section intact");
+        }
+    }
+
+    #[test]
+    fn occ2_negotiation_absence_keeps_occ1() {
+        let local = OccCapability::here();
+        let registry = DialectRegistry::with_sym_v1();
+        assert_eq!(
+            select_occ2_dialect(&local, Some(&local), &registry, true),
+            Some(("sym-v1".to_string(), 1))
+        );
+        // No reported capability: OCC-1.
+        assert_eq!(select_occ2_dialect(&local, None, &registry, true), None);
+        // A peer that speaks OCC-1 only: OCC-1.
+        let occ1_only = OccCapability { occ1: true, dialects: BTreeMap::new() };
+        assert_eq!(select_occ2_dialect(&local, Some(&occ1_only), &registry, true), None);
+        // Unevaluated cards are refused without the dev override.
+        assert_eq!(select_occ2_dialect(&local, Some(&local), &registry, false), None);
+        // The summary field is absent for sessions that report nothing.
+        let absent = AgentSessionMessageAgentSummary::default();
+        assert!(absent.occ_capability.is_none());
+        let serialized = serde_json::to_value(&absent).unwrap();
+        assert!(serialized.get("occCapability").is_none());
+        let present = AgentSessionMessageAgentSummary {
+            occ_capability: Some(OccCapability::here()),
+            ..absent
+        };
+        let serialized = serde_json::to_value(&present).unwrap();
+        assert_eq!(serialized["occCapability"]["occ1"], json!(true));
+        let round: AgentSessionMessageAgentSummary =
+            serde_json::from_value(serialized).unwrap();
+        assert_eq!(round.occ_capability, Some(OccCapability::here()));
     }
 }
