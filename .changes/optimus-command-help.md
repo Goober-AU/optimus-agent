@@ -1,0 +1,1 @@
+- Fixed CLI help to use `optimus-agent` in usage and examples and Optimus Agent in the update description.

@@ -2,8 +2,8 @@
 
 use std::collections::BTreeSet;
 
-/// TODO(slice): APP_NAME lives in `crate::config` (ca-root slice, not landed yet).
-const APP_NAME: &str = "prime-agent";
+/// Public command name shown in CLI help.
+const APP_NAME: &str = "optimus-agent";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommandSpec {
@@ -130,7 +130,7 @@ pub const COMMAND_SPECS: &[CommandSpec] = &[
     },
     spec(&["package", "list"], "package list", "List installed capability packages"),
     spec(&["package", "update"], "package update [source]", "Update capability packages"),
-    spec(&["update"], "update [--force]", "Update Prime Agent"),
+    spec(&["update"], "update [--force]", "Update Optimus Agent"),
     spec(&["model"], "model list [search]", "Inspect available models"),
     spec(&["model", "list"], "model list [search]", "List available models"),
     spec(&["session"], "session export <file> [output]", "Manage saved sessions"),
@@ -459,20 +459,20 @@ mod tests {
     #[test]
     fn top_level_help_lists_commands_and_options() {
         let help = format_top_level_help();
-        assert!(help.starts_with("prime-agent - AI coding assistant with a Python REPL tool\n"));
+        assert!(help.starts_with("optimus-agent - AI coding assistant with a Python REPL tool\n"));
         assert!(help.contains("\nOptions:\nRun options:\n  -p, --print"));
         assert!(help.contains("\nCommands:\n"));
         assert!(help.contains("  help      Show command help"));
-        assert!(help.ends_with("Run \"prime-agent help <command>\" for command details."));
+        assert!(help.ends_with("Run \"optimus-agent help <command>\" for command details."));
     }
 
     #[test]
     fn command_help_includes_children_options_and_examples() {
         let help = format_command_help(&["schedule"]).unwrap();
-        assert!(help.starts_with("Usage:\n  prime-agent schedule <list|add|cancel>\n\nManage prompts"));
+        assert!(help.starts_with("Usage:\n  optimus-agent schedule <list|add|cancel>\n\nManage prompts"));
         assert!(help.contains("\nCommands:\n  list"));
         let help = format_command_help(&["schedule", "add"]).unwrap();
-        assert!(help.contains("\nExamples:\n  prime-agent schedule add worker \"0 9 * * 1-5\" -- \"Check open work\""));
+        assert!(help.contains("\nExamples:\n  optimus-agent schedule add worker \"0 9 * * 1-5\" -- \"Check open work\""));
         assert!(format_command_help(&["nope"]).is_none());
     }
 }
