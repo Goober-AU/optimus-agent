@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Render the Prime butterfly SVG to ASCII via half-block encoding.
+"""Render an SVG to ASCII via half-block encoding.
 
 Usage:
-  uv run scripts/render-logo.py [--width 60] [--threshold 96] [--svg path]
+  uv run scripts/render-logo.py [--width 60] [--threshold 96] --svg path
 
 Outputs the rendered art to stdout.
 
@@ -79,9 +79,6 @@ def render(svg_path: Path, width: int, threshold: int, style: str) -> str:
 
 
 def main() -> int:
-    repo_root = Path(__file__).resolve().parent.parent
-    default_svg = repo_root / "assets" / "brand" / "prime-butterfly.svg"
-
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--width", type=int, default=60, help="output columns (default: 60)")
     parser.add_argument(
@@ -91,7 +88,7 @@ def main() -> int:
         help="luminance cutoff 0-255; raise for thinner strokes (default: 96)",
     )
     parser.add_argument(
-        "--svg", type=Path, default=default_svg, help=f"input SVG (default: {default_svg})"
+        "--svg", type=Path, required=True, help="input SVG path"
     )
     parser.add_argument(
         "--style",

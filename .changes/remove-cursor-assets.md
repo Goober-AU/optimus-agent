@@ -1,0 +1,2 @@
+- Removed the repository `.cursor` review guidance and bundled Prime logo SVG assets.
+- Changed the logo rendering utility to require an explicit `--svg` input.
