@@ -90,18 +90,21 @@ Kernel helpers: `from rlm.occ1 import Occ1Message` -
 `validate_index_gaps(message)` for the contiguity rule. Malformed OCC-1
 must be rejected, never guessed.
 
-## Optional OCC-2 transport
+## Adaptive OCC-2 transport
 
-OCC-1 remains the default. The user can open `/occ`, inspect `/occ status`,
-or use `/occ 2 on` and `/occ 2 off`. OCC-2 is experimental and off by default in each chat. The toggle is saved with
+OCC-1 remains the authoring format and fallback. OCC-2 is enabled by default
+for chats without a saved preference. The user can open `/occ`, inspect
+`/occ status`, or use `/occ 2 on` and `/occ 2 off`. Existing explicit off
+preferences stay off. The toggle is saved with
 that chat and restored on resume. Subagents dynamically inherit their nearest
 parent preference unless they have an explicit override. Other chats and
 independent forks keep their own settings; the toggle never edits global or
 project settings.
 Continue authoring valid OCC-1 messages: when enabled, the native transport
-negotiates a shared dialect and wraps complete contract messages as OCC-2.
+negotiates a shared dialect and selects OCC-2 for eligible complete contract
+messages using size, economics, codebook availability, and decode-failure guards.
 Plain English, OCC-1 deltas, and messages without a compatible peer stay unchanged.
-The receiving model gets validated symbolic text with its codebook; invalid
+The receiving model gets validated symbolic text with a reusable codebook; invalid
 symbolic text uses the validated OCC-1 fallback when available. The durable
 record retains both encodings. This mode does not promise lower total token use.
 
