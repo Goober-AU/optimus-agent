@@ -425,6 +425,12 @@ fn canonical_builtin_slash_commands() -> Vec<BuiltinSlashCommand> {
         Some("[off|compare|active|compare-active|on|compact|feature|default|full-jev|status|key|models|model]"),
         Some(true),
     );
+    push(
+        "occ",
+        "Agent communication: OCC-1 default, optional OCC-2 symbolic encoding".into(),
+        Some("[status|1|2 on|2 off]"),
+        Some(true),
+    );
     push("quit", format!("Quit {APP_NAME}"), None, None);
     commands
 }
