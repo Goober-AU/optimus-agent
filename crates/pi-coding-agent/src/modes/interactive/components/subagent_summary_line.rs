@@ -157,6 +157,7 @@ pub struct SubagentSummaryLine {
     openable: bool,
     always_visible: bool,
     right_status: Option<RightStatus>,
+    communication_status: Option<String>,
     get_location_label: Box<dyn Fn() -> Option<String>>,
     get_context_label: Box<dyn Fn() -> Option<String>>,
     get_override_label: Box<dyn Fn() -> Option<String>>,
@@ -177,6 +178,7 @@ impl SubagentSummaryLine {
             openable: false,
             always_visible: false,
             right_status: None,
+            communication_status: None,
             get_location_label,
             get_context_label,
             get_override_label,
@@ -192,6 +194,10 @@ impl SubagentSummaryLine {
 
     pub fn set_right_status(&mut self, status: Option<RightStatus>) {
         self.right_status = status;
+    }
+
+    pub fn set_communication_status(&mut self, status: Option<String>) {
+        self.communication_status = status;
     }
 
     pub fn set_openable(&mut self, openable: bool) {
@@ -335,6 +341,14 @@ impl Component for SubagentSummaryLine {
         if self.counts.waiting > 0 {
             counts.push_str(&format!("   · {} waiting", self.counts.waiting));
         }
+        let available = (inner - 2.0).max(0.0) as usize;
+        let right_min = self.right_status.as_ref().map(|status| visible_width(&status.minimal) + 2).unwrap_or(0);
+        let communication_below = self.communication_status.as_ref().is_some_and(|status| {
+            visible_width(&counts) + 3 + visible_width(status) + right_min > available
+        });
+        if !communication_below {
+            if let Some(status) = &self.communication_status { counts.push_str(&format!("   {status}")); }
+        }
         let open_hint = if self.is_selectable() {
             if self.focused {
                 format!(
@@ -395,6 +409,15 @@ impl Component for SubagentSummaryLine {
             theme().fg("border", "\u{2502}"),
             theme().fg("border", "\u{2502}")
         ));
+        if communication_below {
+            if let Some(status) = &self.communication_status {
+                let text = truncate_to_width(&format!(" {status}"), inner, "…", false);
+                let padding = " ".repeat((inner as usize).saturating_sub(visible_width(&text)));
+                let content = format!("{text}{padding}");
+                let content = if self.focused { theme().bg("selectedBg", &content) } else { content };
+                lines.push(format!("{}{content}{}", theme().fg("border", "│"), theme().fg("border", "│")));
+            }
+        }
         lines.push(theme().fg(
             "border",
             &format!(
@@ -432,6 +455,25 @@ fn key_text_primary_only(keybinding: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+
+    #[test]
+    fn communication_indicators_remain_visible_with_jev_and_respect_terminal_width() {
+        crate::modes::interactive::theme::theme::init_theme(Some("dark"), false);
+        let mut line = SubagentSummaryLine::default();
+        line.set_always_visible(true);
+        line.set_communication_status(Some("\x1b[1;38;5;39mTXT ●  OCC ○\x1b[22;39m".into()));
+        line.set_right_status(Some(RightStatus { full: "Jev active · 12 req".into(), compact: "Jev 12 req".into(), minimal: "Jev".into() }));
+        for width in [2, 5, 15, 40, 80, 120] {
+            let lines = line.render(width as f64);
+            assert!(lines.iter().all(|row| visible_width(row) <= width));
+            let text = pi_tui::utils::strip_ansi(&lines.join("\n"));
+            if width >= 15 { assert!(text.contains("TXT ●  OCC ○")); }
+            if width >= 40 { assert!(text.contains("Jev")); }
+            if width >= 80 { assert!(text.contains("0 running") && text.contains("0 idle") && text.contains("0 inactive")); }
+            assert!(!text.contains("SYM") && !text.contains("LAT"));
+        }
+    }
 
     fn snapshot(
         id: &str,

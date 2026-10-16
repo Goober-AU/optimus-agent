@@ -782,3 +782,74 @@ fn daemon_cli_finds_default_socket_without_uid_and_honours_worker_socket() {
     assert!(model.requests.lock().unwrap().is_empty(), "socket discovery must not call the model");
     drop(daemon);
 }
+
+
+#[test]
+fn communication_activity_reaches_the_supervisor_roster_after_real_delivery() {
+    let mut model = LocalModel::start();
+    let fixture = PrivateCli::new(&format!("http://{}/v1", model.address));
+    let mut daemon = OwnedDaemon {
+        process: fixture.spawn("communication-daemon", &["--mode", "daemon", "--offline"]),
+        socket: fixture.socket.clone(),
+    };
+    wait_for_daemon(&mut daemon);
+    async fn request(client: &Arc<DaemonClient>, body: Value) -> Value {
+        let response = client.request(body.as_object().unwrap().clone(), Some(30_000), Default::default()).await.unwrap();
+        assert!(response.success, "{:?}", response.error);
+        response.data.unwrap_or(Value::Null)
+    }
+    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+    runtime.block_on(async {
+        let client = DaemonClient::create(&fixture.socket);
+        client.connect(1000).await.unwrap();
+        assert!(client.wait_for_hello(1000).await.unwrap().supports("agent_communication_activity"));
+        let mut sessions = Vec::new();
+        for prompt in ["source baseline", "target baseline"] {
+            let created = request(&client, json!({"type":"create", "config":{
+                "cwd":fixture.workspace, "agentDir":fixture.agent_dir, "sessionDir":fixture.root.path().join("sessions"),
+                "provider":"local-cli-fixture", "model":"fixture-model", "noSkills":true, "noExtensions":true
+            }})).await;
+            let active = created.get("activeSessionId").or_else(|| created.get("id")).unwrap().as_str().unwrap().to_string();
+            request(&client, json!({"type":"prompt_and_wait", "activeSessionId":active, "message":prompt})).await;
+            sessions.push(active);
+        }
+        let mut ids = Vec::new();
+        for (message, kind) in [("plain private message", "text"), ("OCC/1\nTASK=t\nKIND=RESULT\nSTATUS=done", "occ1")] {
+            let receipt = request(&client, json!({"type":"send_message", "fromActiveSessionId":sessions[0],
+                "targetActiveSessionId":sessions[1], "message":message})).await;
+            let id = receipt["id"].as_str().unwrap().to_string();
+            ids.push(id.clone());
+            let deadline = Instant::now() + Duration::from_secs(10);
+            loop {
+                let roster = request(&client, json!({"type":"roster_subscribe"})).await;
+                let row = roster["roster"].as_array().unwrap().iter()
+                    .find(|row| row["summary"]["activeSessionId"] == sessions[1]);
+                let activity = row.map(|row| &row["summary"]["communicationActivity"]);
+                let delivery = activity.and_then(|activity| activity["deliveries"].as_array())
+                    .and_then(|messages| messages.iter().find(|message| message["id"] == id));
+                if let Some(delivery) = delivery {
+                    assert_eq!(delivery["kind"], kind);
+                    assert!(delivery.get("message").is_none());
+                    break;
+                }
+                assert!(Instant::now() < deadline, "delivery missing from roster: {roster}");
+                tokio::time::sleep(Duration::from_millis(50)).await;
+            }
+        }
+        let failed = client.request(json!({"type":"send_message", "fromActiveSessionId":sessions[0],
+            "targetActiveSessionId":sessions[1], "message":""}).as_object().unwrap().clone(), Some(1000), Default::default()).await.unwrap();
+        assert!(!failed.success);
+        request(&client, json!({"type":"abort", "activeSessionId":sessions[1]})).await;
+        let queued = request(&client, json!({"type":"send_message", "fromActiveSessionId":sessions[0],
+            "targetActiveSessionId":sessions[1], "message":"queued private report"})).await;
+        assert_eq!(queued["deliveryStatus"], "queued");
+        let roster = request(&client, json!({"type":"roster_subscribe"})).await;
+        let row = roster["roster"].as_array().unwrap().iter().find(|row| row["summary"]["activeSessionId"] == sessions[1]).unwrap();
+        let deliveries = row["summary"]["communicationActivity"]["deliveries"].as_array().unwrap();
+        assert_eq!(deliveries.len(), 2);
+        assert!(ids.iter().all(|id| deliveries.iter().any(|delivery| delivery["id"] == *id)));
+        client.close().await;
+    });
+    drop(daemon);
+    model.finish();
+}

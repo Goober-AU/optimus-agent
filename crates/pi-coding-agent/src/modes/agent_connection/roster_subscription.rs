@@ -1,6 +1,7 @@
 //! Connect the shared roster store to the interactive connection's accessory bar.
 
 use super::*;
+use std::sync::atomic::{AtomicU64, Ordering};
 use crate::modes::agents_view::native_host::NativeTransport;
 use crate::modes::agents_view::roster_store::{
     AgentsViewRosterStore, DaemonTransport, DaemonTransportClient as RosterClient,
@@ -15,6 +16,7 @@ pub(super) struct RosterSubscription {
     attach_lock: Arc<tokio::sync::Mutex<()>>,
     cancelled: tokio_util::sync::CancellationToken,
     initialized: Arc<Mutex<bool>>,
+    observation_epoch: Arc<AtomicU64>,
 }
 
 impl RosterSubscription {
@@ -27,17 +29,27 @@ impl RosterSubscription {
             attach_lock: Arc::new(tokio::sync::Mutex::new(())),
             cancelled: tokio_util::sync::CancellationToken::new(),
             initialized: Arc::new(Mutex::new(false)),
+            observation_epoch: Arc::new(AtomicU64::new(0)),
         }
     }
 
+    fn activity_supported(&self) -> bool {
+        self.transport.lock().unwrap().as_ref().is_some_and(|transport| {
+            activity_supported(transport.is_connected(), transport.hello().as_ref())
+        })
+    }
+
     async fn refresh(&self) {
-        let rows = self
+        let epoch = self.observation_epoch.load(Ordering::SeqCst);
+        let mut rows: Vec<Value> = self
             .store
             .summaries()
             .await
             .into_iter()
             .map(|row| serde_json::to_value(row).expect("roster row serializes"))
             .collect();
+        if epoch != self.observation_epoch.load(Ordering::SeqCst) { return; }
+        project_activity(&mut rows, self.activity_supported(), epoch);
         *self.summaries.lock().unwrap() = rows;
         let listeners = self.listeners.lock().unwrap().clone();
         for listener in listeners {
@@ -75,6 +87,7 @@ impl AgentConnectionRosterStore for RosterSubscription {
             }
             transport.wait_for_hello(3000).await?;
             *this.transport.lock().unwrap() = Some(transport.clone());
+            this.observation_epoch.fetch_add(1, Ordering::SeqCst);
             if !this
                 .store
                 .attach(RosterClient::new(transport.clone()))
@@ -115,6 +128,8 @@ impl AgentConnectionRosterStore for RosterSubscription {
                         let transport = store.transport.lock().unwrap().clone();
                         if let Some(transport) = transport {
                             if !transport.is_connected() {
+                                store.observation_epoch.fetch_add(1, Ordering::SeqCst);
+                                store.refresh().await;
                                 tokio::select! {
                                     _ = store.cancelled.cancelled() => break,
                                     _ = async {
@@ -145,7 +160,11 @@ impl AgentConnectionRosterStore for RosterSubscription {
         })
     }
     fn summaries(&self) -> Vec<Value> {
-        self.summaries.lock().unwrap().clone()
+        let mut rows = self.summaries.lock().unwrap().clone();
+        if !self.activity_supported() {
+            project_activity(&mut rows, false, self.observation_epoch.load(Ordering::SeqCst));
+        }
+        rows
     }
     fn dispose(&self) -> BoxFuture<()> {
         let this = self.clone();
@@ -159,5 +178,47 @@ impl AgentConnectionRosterStore for RosterSubscription {
             }
             this.listeners.lock().unwrap().clear();
         })
+    }
+}
+
+// Optional metadata must never turn an older daemon into a startup failure.
+fn activity_supported(connected: bool, hello: Option<&crate::modes::agents_view::roster_store::DaemonHello>) -> bool {
+    connected && hello.is_some_and(|hello| hello.schema_revision.is_some_and(|revision| revision >= 39)
+        && hello.server_capabilities.iter().any(|capability| capability == "agent_communication_activity"))
+}
+
+fn project_activity(rows: &mut [Value], supported: bool, epoch: u64) {
+    for row in rows {
+        if let Some(object) = row.as_object_mut() {
+            if !supported { object.remove("communicationActivity"); }
+            object.insert("communicationObservationEpoch".into(), epoch.into());
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::modes::agents_view::roster_store::DaemonHello;
+
+    #[test]
+    fn communication_metadata_degrades_with_old_daemons_missing_capabilities_and_disconnects() {
+        let mut hello = DaemonHello { schema_revision: Some(39), server_capabilities: vec!["agent_communication_activity".into()], ..Default::default() };
+        assert!(activity_supported(true, Some(&hello)));
+        assert!(!activity_supported(false, Some(&hello)));
+        hello.schema_revision = Some(38);
+        assert!(!activity_supported(true, Some(&hello)));
+        hello.schema_revision = Some(39);
+        hello.server_capabilities.clear();
+        assert!(!activity_supported(true, Some(&hello)));
+        assert!(!activity_supported(true, None));
+        let mut rows = vec![serde_json::json!({"sessionId":"p", "communicationActivity":{"deliveries":[]}})];
+        project_activity(&mut rows, true, 1);
+        assert!(rows[0].get("communicationActivity").is_some());
+        assert_eq!(rows[0]["communicationObservationEpoch"], 1);
+        project_activity(&mut rows, false, 2);
+        assert!(rows[0].get("communicationActivity").is_none());
+        assert_eq!(rows[0]["sessionId"], "p");
+        assert_eq!(rows[0]["communicationObservationEpoch"], 2);
     }
 }

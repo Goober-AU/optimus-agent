@@ -486,7 +486,12 @@ pub fn summary_for_active_session(
         last_heard_from_at: None,
         worker_state: None,
         worker_pid: None,
-        extra: HashMap::new(),
+        extra: HashMap::from([(
+            "communicationActivity".into(),
+            serde_json::to_value(crate::core::occ::activity::from_admitted_messages(
+                &session.messages, &session.session_id, &state.event_generation,
+            )).expect("communication metadata serializes"),
+        )]),
     }
 }
 
@@ -866,6 +871,34 @@ mod tests {
         state.summary_state.as_mut().unwrap().based_on_message_count = 1;
         assert!(!is_summary_current(&state));
         assert_eq!(active_activity_for_session(&state), SessionActivity::Idle);
+    }
+
+    #[test]
+    fn communication_metadata_survives_worker_roster_and_view_projection() {
+        use crate::core::agent_messages::{create_agent_session_message, AgentSessionMessagePayload, AgentSessionMessageSender, AgentSessionMessageEndpoint};
+        let mut runtime = super::super::active_session_state::AgentSessionRuntime::default();
+        runtime.session.session_id = "child".into();
+        runtime.session.messages.push(pi_agent_core::types::AgentMessage::Custom(create_agent_session_message(
+            &AgentSessionMessagePayload {
+                id: "delivery-1".into(), message: "OCC/1\nTASK=t\nKIND=RESULT\nSTATUS=done".into(),
+                from: Some(AgentSessionMessageSender { session_id: Some("parent".into()), ..Default::default() }),
+                target: AgentSessionMessageEndpoint { session_id: "child".into(), ..Default::default() },
+                ..Default::default()
+            }, 1000,
+        )));
+        let state = Arc::new(StdMutex::new(ActiveSessionState::new("active-child", runtime)));
+        let summary = summary_for_active_session(&state, None, false, false, false);
+        let wire = serde_json::to_value(summary.roster_view()).unwrap();
+        let view: crate::modes::agents_view::agents_view_state::SessionSummary = serde_json::from_value(wire.clone()).unwrap();
+        let final_row = serde_json::to_value(view).unwrap();
+        assert_eq!(final_row["communicationActivity"], wire["communicationActivity"]);
+        assert_eq!(final_row["communicationActivity"]["deliveries"][0]["kind"], "occ1");
+        assert!(final_row["communicationActivity"]["deliveries"][0].get("message").is_none());
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct LegacyRow { session_id: String }
+        let legacy: LegacyRow = serde_json::from_value(wire).unwrap();
+        assert_eq!(legacy.session_id, "child");
     }
 
     #[test]
