@@ -93,11 +93,13 @@ mod tests {
     #[test]
     fn occ_sessions_isolate_chats_resume_and_dynamically_inherit_for_existing_children() {
         let root = tempfile::tempdir().unwrap();
-        let a = session(root.path(), "a", None, 0);
-        let b = session(root.path(), "b", None, 0);
-        let child = session(root.path(), "child", Some(&a), 1);
-        let nested = session(root.path(), "nested", Some(&child), 2);
-        let fork = session(root.path(), "fork", Some(&a), 0);
+        let sessions = root.path().join("sessions");
+        fs::create_dir(&sessions).unwrap();
+        let a = session(&sessions, "a", None, 0);
+        let b = session(&sessions, "b", None, 0);
+        let child = session(&sessions, "child", Some(&a), 1);
+        let nested = session(&sessions, "nested", Some(&child), 2);
+        let fork = session(&sessions, "fork", Some(&a), 0);
         for file in [&a, &b, &child, &nested, &fork] { assert!(!load(file).unwrap()); }
         save(&a, true).unwrap();
         assert!(load(&a).unwrap()); // reopening reads the saved preference
@@ -113,15 +115,17 @@ mod tests {
         save(&a, false).unwrap();
         assert!(load(&b).unwrap());
         assert!(!load(&a).unwrap());
-        let new_chat = session(root.path(), "new", None, 0);
+        let new_chat = session(&sessions, "new", None, 0);
         assert!(!load(&new_chat).unwrap());
     }
 
     #[test]
     fn occ_sessions_bound_reads_fail_closed_and_support_empty_new_chats() {
         let root = tempfile::tempdir().unwrap();
-        let a = session(root.path(), "a", Some("b.jsonl"), 1);
-        let b = session(root.path(), "b", Some("a.jsonl"), 2);
+        let sessions = root.path().join("sessions");
+        fs::create_dir(&sessions).unwrap();
+        let a = session(&sessions, "a", Some("b.jsonl"), 1);
+        let b = session(&sessions, "b", Some("a.jsonl"), 2);
         assert!(load(&a).is_err());
         assert!(!enabled(Some(&a)));
         save(&b, true).unwrap();
@@ -131,7 +135,7 @@ mod tests {
         assert!(load(&a).is_err());
         fs::write(preference_path(&b), "x".repeat(4097)).unwrap();
         assert!(load(&b).is_err());
-        let empty = root.path().join("new.jsonl").to_str().unwrap().to_string();
+        let empty = sessions.join("new.jsonl").to_str().unwrap().to_string();
         assert!(!load(&empty).unwrap());
         save(&empty, true).unwrap();
         assert!(load(&empty).unwrap());
