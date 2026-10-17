@@ -101,6 +101,13 @@ pub mod evidence_kinds {
     pub const LINE_RANGE: &str = "lines";
     /// A prior agent finding; `locator` is the prior finding/message id.
     pub const PRIOR_FINDING: &str = "finding";
+    /// A file on disk; `locator` is a path. Covers references that are
+    /// not repository source files (use `src` for repo-relative paths):
+    /// reports, receipts and any absolute or workspace-relative path.
+    pub const FILE: &str = "file";
+    /// An agent session transcript; `locator` is the session file path or
+    /// session id the claim is grounded in.
+    pub const TRANSCRIPT: &str = "transcript";
 }
 
 /// Returns true for a known evidence kind.
@@ -115,6 +122,8 @@ pub fn is_known_evidence_kind(kind: &str) -> bool {
             | evidence_kinds::ARTIFACT_DIGEST
             | evidence_kinds::LINE_RANGE
             | evidence_kinds::PRIOR_FINDING
+            | evidence_kinds::FILE
+            | evidence_kinds::TRANSCRIPT
     )
 }
 
@@ -778,6 +787,36 @@ mod tests {
         });
         let err = message.validate().expect_err("dangling reference");
         assert!(matches!(err, ContractError::UnknownEvidence { .. }));
+    }
+
+    #[test]
+    fn file_and_transcript_evidence_kinds_are_accepted() {
+        // `file:` is what agents most naturally author for on-disk
+        // references (reports, receipts, absolute paths). Before these
+        // kinds were registered the whole contract was rejected, which
+        // silently kept such messages on OCC-1 under the OCC-2 transport.
+        for kind in ["file", "transcript"] {
+            let raw = Occ1Message::new()
+                .with("TASK", "t1")
+                .with("KIND", "EVIDENCE")
+                .with("STATUS", "done")
+                .with("E1", format!("{kind}:C:\\reports\\run.md"))
+                .with("EL1", "1-20");
+            let message =
+                AgentCommMessage::from_occ1(&raw).unwrap_or_else(|e| panic!("{kind}: {e}"));
+            assert_eq!(message.evidence[0].kind, kind);
+            assert_eq!(message.evidence[0].line_range, Some((1, 20)));
+            let back = message.to_occ1().expect("re-encode");
+            assert_eq!(back.get("E1").unwrap(), format!("{kind}:C:\\reports\\run.md"));
+        }
+        // Unknown kinds stay rejected: the allowlist is the contract.
+        let bogus = Occ1Message::new()
+            .with("TASK", "t1")
+            .with("KIND", "EVIDENCE")
+            .with("STATUS", "done")
+            .with("E1", "screenshot:C:\\pics\\a.png");
+        let err = AgentCommMessage::from_occ1(&bogus).expect_err("unknown kind");
+        assert!(matches!(err, ContractError::UnknownEvidenceKind(k) if k == "screenshot"));
     }
 
     #[test]

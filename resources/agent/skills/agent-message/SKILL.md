@@ -80,7 +80,14 @@ Rules:
   partially decoded.
 - Reference evidence (`E<n>=<kind>:<locator>` with optional `EL<n>` line
   range, `ED<n>` digest, `ER<n>` revision) instead of pasting file
-  contents.
+  contents. `<kind>` must be one of the fixed evidence kinds:
+  `src` (repo-relative source path), `commit` (SHA), `log` (test log),
+  `build` (build result), `tool` (tool receipt), `artifact` (digest),
+  `lines` (source line range), `finding` (prior finding id),
+  `file` (any other file path, absolute or workspace-relative),
+  `transcript` (session transcript path or id). Any other kind fails
+  contract validation and the message is sent as plain OCC-1 without
+  the OCC-2 transport wrap.
 - Sender identity stays daemon-derived; never put a `SENDER` field in
   outgoing text.
 
