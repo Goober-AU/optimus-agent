@@ -1400,7 +1400,12 @@ fn create_memory_extension_impl(
                         instructions: preparation.instructions.clone(),
                         global: Some(preparation.scope == "global"),
                         retry: Some(refinement_retry_policy(&settings_manager)),
-                        max_output_tokens: Some(memory.store.settings().max_extraction_tokens as f64),
+                        // Deliberately no `max_output_tokens` here: the planner
+                        // keeps its own default budget (min(REFINEMENT_MAX_OUTPUT_TOKENS,
+                        // model.max_tokens)). `max_extraction_tokens` governs memory
+                        // extraction only; reusing it here clamped refinement
+                        // planning to 4_096 tokens and truncated proposals whose
+                        // edit payloads alone exceed that.
                         ..Default::default()
                     },
                     headers: headers.clone(),
