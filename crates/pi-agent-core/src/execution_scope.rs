@@ -21,6 +21,10 @@ struct State {
     pending: usize,
     failed: bool,
     uncovered: bool,
+    // Sticky aggregates folded in from pruned stream receipts, so releasing
+    // inert entries never rewrites settlement history (see prune_settled).
+    unsupported_streams: bool,
+    failed_streams: bool,
     tasks: Vec<OwnedTask>,
     streams: Vec<StreamTaskReceipt>,
 }
@@ -92,6 +96,26 @@ impl ExecutionScope {
         state.streams.push(receipt);
         Ok(())
     }
+    /// Release entries that can no longer affect cancellation or settlement.
+    ///
+    /// A stream receipt without pending joins and a task whose terminal bit is
+    /// published are inert: cancelling, aborting or settling them again changes
+    /// nothing. Before an entry is dropped, its contribution to `status()` is
+    /// folded into the sticky `failed_streams`/`unsupported_streams` bits, so
+    /// pruning bounds growth without rewriting any observable outcome. Only
+    /// the authorized `reset_after_settlement` may clear those bits.
+    pub fn prune_settled(&self) {
+        let mut state = self.0.lock().unwrap();
+        state.tasks.retain(|task| !task.terminal.is_finished());
+        let mut retained = Vec::with_capacity(state.streams.len());
+        for receipt in std::mem::take(&mut state.streams) {
+            let status = receipt.status();
+            if status.failed_tasks > 0 { state.failed_streams = true; }
+            if !status.supported { state.unsupported_streams = true; }
+            if status.pending_tasks > 0 { retained.push(receipt); }
+        }
+        state.streams = retained;
+    }
     /// Cancellation fence is synchronous. Tools retain their cleanup futures.
     pub fn request_cancel(&self) {
         let mut state = self.0.lock().unwrap();
@@ -108,9 +132,11 @@ impl ExecutionScope {
         ExecutionStatus {
             fenced: state.fenced,
             tools_settled: state.fenced && terminal && !state.failed,
-            model_settled: state.fenced && terminal && !state.failed && statuses.iter().all(|s| s.settled),
-            supported: !state.uncovered && statuses.iter().all(|s| s.supported),
-            failed: state.failed || statuses.iter().any(|s| s.failed_tasks > 0),
+            model_settled: state.fenced && terminal && !state.failed && !state.failed_streams
+                && !state.unsupported_streams && statuses.iter().all(|s| s.settled),
+            supported: !state.uncovered && !state.unsupported_streams
+                && statuses.iter().all(|s| s.supported),
+            failed: state.failed || state.failed_streams || statuses.iter().any(|s| s.failed_tasks > 0),
         }
     }
     pub async fn settle(&self, timeout: std::time::Duration) -> ExecutionStatus {
@@ -152,9 +178,20 @@ impl ExecutionScope {
     }
 }
 
+/// Test-only seam: the live (retained) entry counts after pruning. Mirrors the
+/// count-probe pattern of the correlation registry (TEST-SPEC T16).
+#[cfg(test)]
+impl ExecutionScope {
+    pub(crate) fn live_entry_counts_for_tests(&self) -> (usize, usize) {
+        let state = self.0.lock().unwrap();
+        (state.streams.len(), state.tasks.len())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pi_ai::utils::event_stream::AssistantMessageEventStream;
     #[tokio::test]
     async fn detached_tool_cannot_be_mistaken_for_settlement() {
         let scope = ExecutionScope::default();
@@ -293,6 +330,68 @@ mod tests {
         assert!(done.tools_settled && done.model_settled);
         assert!(task.is_finished());
         assert_eq!(task.await.unwrap(), 37);
+    }
+
+    #[tokio::test]
+    async fn prune_settled_releases_terminal_tasks_and_inert_receipts() {
+        let scope = ExecutionScope::default();
+        let task = scope.spawn(async {}, false, true).unwrap();
+        task.await.unwrap();
+        scope.register_stream(StreamTaskReceipt::new_unsupported()).unwrap();
+        assert_eq!(scope.live_entry_counts_for_tests(), (1, 1));
+        scope.prune_settled();
+        assert_eq!(
+            scope.live_entry_counts_for_tests(),
+            (0, 0),
+            "a terminal task and a receipt without pending joins are inert and must be released"
+        );
+        // The pruned unsupported receipt keeps status truthful through the
+        // sticky bit instead of its (dropped) live entry.
+        assert!(!scope.status().supported);
+        // Pruning is bookkeeping, not authorization: admission and the fence
+        // behave exactly as before.
+        assert!(scope.spawn(async {}, false, true).is_ok());
+        scope.request_cancel();
+        assert!(scope.spawn(async {}, false, true).is_err());
+    }
+
+    #[tokio::test]
+    async fn prune_settled_keeps_unfinished_tasks_cancellable() {
+        let scope = ExecutionScope::default();
+        let (_release, gate) = tokio::sync::oneshot::channel::<()>();
+        let task = scope.spawn(async move { let _ = gate.await; }, true, true).unwrap();
+        scope.prune_settled();
+        assert_eq!(
+            scope.live_entry_counts_for_tests().1,
+            1,
+            "unfinished tasks must stay owned"
+        );
+        scope.request_cancel();
+        assert!(task.await.unwrap_err().is_cancelled());
+    }
+
+    #[tokio::test]
+    async fn prune_settled_keeps_receipts_that_own_pending_work() {
+        let scope = ExecutionScope::default();
+        let receipt = StreamTaskReceipt::new_unsupported();
+        receipt.scope(async move {
+            let stream = AssistantMessageEventStream::new();
+            stream.spawn(std::future::pending::<()>());
+        })
+        .await;
+        scope.register_stream(receipt).unwrap();
+        scope.prune_settled();
+        assert_eq!(
+            scope.live_entry_counts_for_tests().0,
+            1,
+            "a receipt with a pending join still owns cancellable work"
+        );
+        // The retained receipt keeps working: the scope can still cancel and
+        // settle the work it owns.
+        scope.request_cancel();
+        let settled = scope.settle(std::time::Duration::from_secs(1)).await;
+        assert!(settled.tools_settled);
+        assert!(!settled.supported, "the uncovered stream keeps the scope unsupported");
     }
 
     #[tokio::test]
