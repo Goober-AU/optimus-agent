@@ -559,10 +559,14 @@ Return JSON only:
 /// the trajectory slice), so a constant output cap silently truncates exactly the
 /// large multi-edit proposals that matter most. Math.min keeps small models honest.
 const REFINEMENT_MAX_OUTPUT_TOKENS: f64 = 32_000.0;
-/// Upper bound for the one-shot retry budget after a first attempt stops at
-/// `Length`: the retry doubles the first budget and never exceeds this cap.
+/// Ceiling for the one-shot retry budget after a first attempt stops at
+/// `Length`: the retry escalates straight to this cap (clamped by the
+/// model's own limit) instead of doubling the first budget.
 const REFINEMENT_RETRY_MAX_OUTPUT_TOKENS: f64 = 64_000.0;
 const AUTO_REFINE_REVIEW_MAX_OUTPUT_TOKENS: f64 = 4_096.0;
+/// Ceiling for the auto-refine review's one-shot `Length` retry. The review
+/// JSON is small, so 16k (not the planner's 64k) is the right headroom.
+const AUTO_REFINE_REVIEW_RETRY_MAX_OUTPUT_TOKENS: f64 = 16_000.0;
 
 /// Thinking level requested for the planner's own completions. The planner must
 /// return one JSON object, so reasoning-capable models get the least thinking
@@ -577,18 +581,32 @@ fn refinement_max_output_tokens(model: RefineModel) -> f64 {
     model.max_tokens.min(REFINEMENT_MAX_OUTPUT_TOKENS)
 }
 
-/// Doubled output budget for the retry after a `Length`-stopped first attempt.
-/// Clamped by the retry cap and by the model's own limit; callers must only
+/// Escalated output budget for the retry after a `Length`-stopped first
+/// attempt: the retry ceiling clamped by the model's own limit.
+///
+/// `max_output_tokens` is a cap, not a target: a larger cap costs nothing
+/// when the model finishes early, and once the first attempt stopped at
+/// `Length` its budget is proven too small. Doubling the first budget
+/// anchors the retry to whatever config clamped that first attempt (a live
+/// daemon saw 4_096 then 8_192 against a 262_144-token model, both
+/// truncated), so the retry goes straight to the ceiling and the first
+/// attempt's size is deliberately not an input. Callers must still only
 /// retry when this exceeds the first attempt's budget (otherwise the retry
 /// cannot buy more output and the typed truncation error stands).
-fn refinement_retry_output_tokens(first_attempt_tokens: f64, model: RefineModel) -> f64 {
-    (2.0 * first_attempt_tokens)
-        .min(REFINEMENT_RETRY_MAX_OUTPUT_TOKENS)
-        .min(model.max_tokens)
+fn refinement_retry_output_tokens(_first_attempt_tokens: f64, model: RefineModel) -> f64 {
+    REFINEMENT_RETRY_MAX_OUTPUT_TOKENS.min(model.max_tokens)
 }
 
 fn auto_refine_review_max_output_tokens(model: RefineModel) -> f64 {
     model.max_tokens.min(AUTO_REFINE_REVIEW_MAX_OUTPUT_TOKENS)
+}
+
+/// Escalated output budget for the auto-refine review's one `Length` retry:
+/// the review retry ceiling clamped by the model's own limit. The review JSON
+/// is small, so 16k (not the planner's 64k) is the right headroom. Callers
+/// must still only retry when this exceeds the first attempt's budget.
+fn auto_refine_review_retry_output_tokens(model: RefineModel) -> f64 {
+    AUTO_REFINE_REVIEW_RETRY_MAX_OUTPUT_TOKENS.min(model.max_tokens)
 }
 
 fn now() -> String {
@@ -2483,9 +2501,9 @@ fn call_completion(
 /// the shared `harness_state.json`.
 ///
 /// The planner retries once per run: a `Length`-stopped first attempt resends the
-/// same prompt with a doubled output budget, and malformed JSON gets one repair
-/// prompt. Every other failure keeps its typed error after the attempt that
-/// produced it.
+/// same prompt with an escalated output budget, and malformed JSON gets one
+/// repair prompt. Every other failure keeps its typed error after the attempt
+/// that produced it.
 pub async fn plan_refinement(
     request: PlanRefinementRequest<'_>,
 ) -> Result<RefinementPlan, RefinementFailureError> {
@@ -2571,11 +2589,12 @@ pub async fn plan_refinement(
     // dropped first attempt is no longer invisible (RF-001). Durations only.
     let mut attempt_durations_ms: Vec<u64> = Vec::new();
     let mut prompt = user_prompt.clone();
-    // A first attempt that stops at `Length` retries once with a doubled output
-    // budget (clamped by `REFINEMENT_RETRY_MAX_OUTPUT_TOKENS` and the model's own
-    // limit) instead of failing immediately: the JSON object is usually intact
-    // and only cut off by the exhausted budget. The retry resends the same
-    // planner prompt; a second `Length` keeps the typed truncation error.
+    // A first attempt that stops at `Length` retries once with an escalated
+    // output budget (`REFINEMENT_RETRY_MAX_OUTPUT_TOKENS` clamped by the
+    // model's own limit) instead of failing immediately: the JSON object is
+    // usually intact and only cut off by the exhausted budget. The retry
+    // resends the same planner prompt; a second `Length` keeps the typed
+    // truncation error.
     let mut attempt_max_tokens = max_tokens;
     for attempt in [1u8, 2u8] {
         let attempt_started = std::time::Instant::now();
@@ -2768,14 +2787,29 @@ pub async fn review_auto_refine(
     .join("\n\n");
     // Auto-refine review requires parseable JSON. `call_completion` requests
     // the least thinking level so reasoning-capable models use the final text
-    // budget for the JSON object.
-    let response = call_completion(
+    // budget for the JSON object. A `Length`-stopped review retries once with
+    // an escalated budget (the same one-retry-on-`Length` shape as the
+    // planner); a second `Length` keeps the typed truncation error.
+    let first_budget = auto_refine_review_max_output_tokens(request.model);
+    let mut response = call_completion(
         &request.complete,
         AUTO_REFINE_REVIEW_SYSTEM_PROMPT,
         &user_prompt,
-        auto_refine_review_max_output_tokens(request.model),
+        first_budget,
     )
     .await;
+    if response.stop_reason == StopReason::Length {
+        let retry_budget = auto_refine_review_retry_output_tokens(request.model);
+        if retry_budget > first_budget {
+            response = call_completion(
+                &request.complete,
+                AUTO_REFINE_REVIEW_SYSTEM_PROMPT,
+                &user_prompt,
+                retry_budget,
+            )
+            .await;
+        }
+    }
     if response.stop_reason == StopReason::Error {
         return Err(RefinementJsonError {
             message: format!(
@@ -4074,7 +4108,7 @@ mod tests {
     #[test]
     fn reports_an_exhausted_output_budget_instead_of_a_json_parse_error() {
         // The model limit (1000) already binds the first-attempt budget, so the
-        // doubled retry cannot buy more output and the typed truncation error
+        // escalated retry cannot buy more output and the typed truncation error
         // stands after a single call.
         let state = empty_harness_state();
         let runtime = tokio::runtime::Builder::new_current_thread()
@@ -4122,7 +4156,7 @@ mod tests {
     }
 
     #[test]
-    fn retries_a_length_stopped_first_attempt_with_a_doubled_budget() {
+    fn retries_a_length_stopped_first_attempt_with_an_escalated_budget() {
         let state = empty_harness_state();
         let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let calls_handle = calls.clone();
@@ -4160,8 +4194,8 @@ mod tests {
                                 error_message: None,
                             }
                         } else {
-                            // FIX A: the retry doubles the budget, capped by
-                            // REFINEMENT_RETRY_MAX_OUTPUT_TOKENS.
+                            // FIX A: the retry escalates straight to the
+                            // ceiling (capped by the model's own limit).
                             assert_eq!(request.max_tokens, 64_000.0);
                             AssistantMessage {
                                 content: vec![AssistantContent::Text {
@@ -4186,7 +4220,7 @@ mod tests {
     }
 
     #[test]
-    fn keeps_the_typed_truncation_error_when_the_doubled_retry_also_stops_at_length() {
+    fn keeps_the_typed_truncation_error_when_the_escalated_retry_also_stops_at_length() {
         let state = empty_harness_state();
         let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let calls_handle = calls.clone();
@@ -4239,13 +4273,13 @@ mod tests {
     }
 
     #[test]
-    fn caps_the_doubled_retry_budget_at_the_model_limit_and_skips_pointless_retries() {
+    fn caps_the_escalated_retry_budget_at_the_model_limit_and_skips_pointless_retries() {
         let state = empty_harness_state();
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .unwrap();
-        // A model limit below the retry cap clamps the doubled budget to the
+        // A model limit below the retry cap clamps the escalated budget to the
         // model limit instead of exceeding it.
         let budgets: Arc<std::sync::Mutex<Vec<f64>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
         let budgets_handle = budgets.clone();
@@ -4292,7 +4326,7 @@ mod tests {
         assert_eq!(
             budgets.lock().unwrap().as_slice(),
             &[32_000.0, 40_000.0],
-            "the doubled budget stops at the model limit"
+            "the escalated budget stops at the model limit"
         );
         // A model already at the first-attempt cap cannot buy more output, so
         // no retry runs and the typed truncation error stands.
@@ -4334,6 +4368,99 @@ mod tests {
             calls.load(std::sync::atomic::Ordering::SeqCst),
             1,
             "a retry that cannot raise the budget never runs"
+        );
+    }
+
+    #[test]
+    fn retry_budgets_escalate_to_the_ceiling_instead_of_doubling() {
+        // A config-clamped first attempt must not anchor the retry: the live
+        // daemon saw 4_096 (the session_before_refine hook reused the
+        // memory-extraction setting) and then 8_192, both truncated, against
+        // a 262_144-token model.
+        assert_eq!(
+            refinement_retry_output_tokens(4_096.0, RefineModel { max_tokens: 262_144.0 }),
+            64_000.0
+        );
+        // A model limit below the ceiling clamps the escalation itself.
+        assert_eq!(
+            refinement_retry_output_tokens(4_096.0, RefineModel { max_tokens: 5_000.0 }),
+            5_000.0
+        );
+        // The ceiling binds from the default first attempt too.
+        assert_eq!(
+            refinement_retry_output_tokens(32_000.0, RefineModel { max_tokens: 262_144.0 }),
+            64_000.0
+        );
+        // When the ceiling cannot exceed the first attempt the caller's guard
+        // skips the retry entirely (covered end to end above); the budget the
+        // function would hand back simply equals the first attempt.
+        assert_eq!(
+            refinement_retry_output_tokens(32_000.0, RefineModel { max_tokens: 32_000.0 }),
+            32_000.0
+        );
+    }
+
+    #[test]
+    fn retries_a_config_clamped_first_attempt_straight_to_the_retry_ceiling() {
+        // Regression shape of the live daemon failure: a small explicit
+        // `max_output_tokens` (the old hook passed the memory-extraction
+        // setting, 4_096) used to make the doubled retry (8_192) truncate
+        // too. The escalation now goes straight to
+        // min(REFINEMENT_RETRY_MAX_OUTPUT_TOKENS, model.max_tokens).
+        let state = empty_harness_state();
+        let budgets: Arc<std::sync::Mutex<Vec<f64>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let budgets_handle = budgets.clone();
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let plan = runtime
+            .block_on(plan_refinement(PlanRefinementRequest {
+                messages: &[],
+                state: &state,
+                history: &[],
+                model: RefineModel { max_tokens: 262_144.0 },
+                api_key: "test".to_string(),
+                options: RefineOptions {
+                    max_output_tokens: Some(4_096.0),
+                    ..Default::default()
+                },
+                headers: None,
+                thinking_level: None,
+                complete: Arc::new(move |request| {
+                    let budgets = budgets_handle.clone();
+                    Box::pin(async move {
+                        let truncated = {
+                            let mut budgets = budgets.lock().unwrap();
+                            budgets.push(request.max_tokens);
+                            budgets.len() == 1
+                        };
+                        AssistantMessage {
+                            content: vec![AssistantContent::Text {
+                                text: if truncated {
+                                    "{\"summary\": \"cut\"".to_string()
+                                } else {
+                                    "{\"summary\": \"recovered\", \"rationale\": \"r\", \"expectedOutcome\": \"o\", \"edits\": []}"
+                                        .to_string()
+                                },
+                            }],
+                            usage: AssistantUsage::default(),
+                            stop_reason: if truncated {
+                                StopReason::Length
+                            } else {
+                                StopReason::Stop
+                            },
+                            error_message: None,
+                        }
+                    })
+                }),
+            }))
+            .expect("plan");
+        assert_eq!(plan.proposal.summary, "recovered");
+        assert_eq!(
+            budgets.lock().unwrap().as_slice(),
+            &[4_096.0, 64_000.0],
+            "the clamped first attempt escalates straight to the retry ceiling"
         );
     }
 
@@ -4496,6 +4623,175 @@ mod tests {
             }))
             .expect_err("provider failure");
         assert_eq!(failure.message, "Auto-refine review failed: boom");
+    }
+
+    #[test]
+    fn retries_a_length_stopped_auto_refine_review_with_an_escalated_budget() {
+        // The review is single-shot JSON, but it gets the same
+        // one-retry-on-`Length` escalation as the planner: 4_096 first, then
+        // min(AUTO_REFINE_REVIEW_RETRY_MAX_OUTPUT_TOKENS, model.max_tokens).
+        let state = empty_harness_state();
+        let budgets: Arc<std::sync::Mutex<Vec<f64>>> = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let budgets_handle = budgets.clone();
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let review = runtime
+            .block_on(review_auto_refine(ReviewAutoRefineRequest {
+                messages: &[],
+                state: &state,
+                history: &[],
+                model: RefineModel { max_tokens: 262_144.0 },
+                api_key: "test".to_string(),
+                context: AutoRefineReviewContext {
+                    reason: AutoRefineReason::TurnInterval,
+                    turns_since_last_review: 2,
+                },
+                headers: None,
+                thinking_level: None,
+                retry: None,
+                complete: Arc::new(move |request| {
+                    let budgets = budgets_handle.clone();
+                    Box::pin(async move {
+                        let truncated = {
+                            let mut budgets = budgets.lock().unwrap();
+                            budgets.push(request.max_tokens);
+                            budgets.len() == 1
+                        };
+                        AssistantMessage {
+                            content: vec![AssistantContent::Text {
+                                text: if truncated {
+                                    "{\"shouldRefine\": tru".to_string()
+                                } else {
+                                    "{\"shouldRefine\": true, \"rationale\": \"useful\"}".to_string()
+                                },
+                            }],
+                            usage: AssistantUsage::default(),
+                            stop_reason: if truncated {
+                                StopReason::Length
+                            } else {
+                                StopReason::Stop
+                            },
+                            error_message: None,
+                        }
+                    })
+                }),
+            }))
+            .expect("review");
+        assert!(review.should_refine);
+        assert_eq!(review.rationale, "useful");
+        assert_eq!(review.instructions, None);
+        assert_eq!(
+            budgets.lock().unwrap().as_slice(),
+            &[4_096.0, 16_000.0],
+            "the Length-stopped review retried once with the escalated budget"
+        );
+    }
+
+    #[test]
+    fn keeps_the_typed_truncation_error_when_the_escalated_review_retry_also_stops_at_length() {
+        let state = empty_harness_state();
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let calls_handle = calls.clone();
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let failure = runtime
+            .block_on(review_auto_refine(ReviewAutoRefineRequest {
+                messages: &[],
+                state: &state,
+                history: &[],
+                model: RefineModel { max_tokens: 262_144.0 },
+                api_key: "test".to_string(),
+                context: AutoRefineReviewContext {
+                    reason: AutoRefineReason::Compact,
+                    turns_since_last_review: 1,
+                },
+                headers: None,
+                thinking_level: None,
+                retry: None,
+                complete: Arc::new(move |request| {
+                    let calls = calls_handle.clone();
+                    Box::pin(async move {
+                        let call = calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        assert_eq!(
+                            request.max_tokens,
+                            if call == 0 { 4_096.0 } else { 16_000.0 }
+                        );
+                        AssistantMessage {
+                            content: vec![AssistantContent::Text {
+                                text: "{\"shouldRefine\": tru".to_string(),
+                            }],
+                            usage: AssistantUsage::default(),
+                            stop_reason: StopReason::Length,
+                            error_message: None,
+                        }
+                    })
+                }),
+            }))
+            .expect_err("still truncated");
+        assert_eq!(
+            failure.message,
+            format!("Auto-refine review failed: {TRUNCATED_JSON_ERROR}")
+        );
+        assert_eq!(failure.category, RefinementJsonCategory::Truncated);
+        assert_eq!(
+            calls.load(std::sync::atomic::Ordering::SeqCst),
+            2,
+            "the review retry ran and its own Length stop is the terminal failure"
+        );
+    }
+
+    #[test]
+    fn skips_the_review_retry_when_the_escalation_cannot_raise_the_budget() {
+        // A model already at the review ceiling (4_096) cannot buy more
+        // output, so no retry runs and the typed truncation error stands.
+        let state = empty_harness_state();
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let calls_handle = calls.clone();
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let failure = runtime
+            .block_on(review_auto_refine(ReviewAutoRefineRequest {
+                messages: &[],
+                state: &state,
+                history: &[],
+                model: RefineModel { max_tokens: 4_096.0 },
+                api_key: "test".to_string(),
+                context: AutoRefineReviewContext {
+                    reason: AutoRefineReason::TurnInterval,
+                    turns_since_last_review: 2,
+                },
+                headers: None,
+                thinking_level: None,
+                retry: None,
+                complete: Arc::new(move |request| {
+                    let calls = calls_handle.clone();
+                    Box::pin(async move {
+                        calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        assert_eq!(request.max_tokens, 4_096.0);
+                        AssistantMessage {
+                            content: vec![AssistantContent::Text {
+                                text: "{\"shouldRefine\": tru".to_string(),
+                            }],
+                            usage: AssistantUsage::default(),
+                            stop_reason: StopReason::Length,
+                            error_message: None,
+                        }
+                    })
+                }),
+            }))
+            .expect_err("truncated");
+        assert_eq!(failure.category, RefinementJsonCategory::Truncated);
+        assert_eq!(
+            calls.load(std::sync::atomic::Ordering::SeqCst),
+            1,
+            "a review retry that cannot raise the budget never runs"
+        );
     }
 
     #[test]
