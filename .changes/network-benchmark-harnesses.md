@@ -1,0 +1,2 @@
+- Added offline benchmark harnesses for the network/IPC campaign: an agent-message IPC matrix bench (fresh vs persistent connections across message sizes, concurrency, topologies, and roster sizes), a provider transport bench (TTFT, throughput, concurrency, idle expiry, and error paths over a loopback HTTP/1.1 fixture), an SSE parse micro-bench, and a client-pool bench.
+- All harnesses are #[ignore]-gated, run against local fixtures with synthetic credentials only, and append raw results under research/network_latency/.

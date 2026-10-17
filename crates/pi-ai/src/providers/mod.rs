@@ -21,5 +21,9 @@ pub mod opencode_headers;
 pub mod register_builtins;
 pub(crate) mod responses_transport;
 pub mod shared_http;
+#[cfg(test)]
+pub mod provider_transport_bench;
+#[cfg(test)]
+pub mod sse_parse_bench;
 pub mod simple_options;
 pub mod transform_messages;
