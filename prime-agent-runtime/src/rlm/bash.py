@@ -166,11 +166,48 @@ class BashResult:
     duration: float
 
 
+def _dangling_utf8_prefix_length(data: bytes | bytearray) -> int:
+    """Length of a trailing incomplete UTF-8 sequence, 0 when the end is whole.
+
+    A partial sequence at the buffer end must not be decoded in place: with the
+    middle dropped, head and tail decode separately, and a split sequence would
+    surface as a replacement-character pair instead of the real character.
+    """
+    if not data:
+        return 0
+    end = len(data)
+    index = end - 1
+    while index >= 0 and (data[index] & 0xC0) == 0x80 and end - index < 4:
+        index -= 1
+    if index < 0 or (data[index] & 0xC0) == 0x80:
+        # A run of continuation bytes longer than any valid sequence: invalid
+        # input, left for errors="replace" to report.
+        return 0
+    lead = data[index]
+    if lead < 0x80:
+        expected = 1
+    elif lead < 0xE0:
+        expected = 2
+    elif lead < 0xF0:
+        expected = 3
+    elif lead < 0xF8:
+        expected = 4
+    else:
+        return 0
+    run = end - index
+    return run if run < expected else 0
+
+
 class _BoundedBuffer:
-    """First _HEAD_CAP bytes plus a rolling _TAIL_CAP-byte tail; the middle is dropped."""
+    """First _HEAD_CAP bytes plus a rolling _TAIL_CAP-byte tail; the middle is dropped.
+
+    Both cut points land on UTF-8 character boundaries so a dropped middle never
+    splits a multibyte character into two replacement characters.
+    """
 
     def __init__(self) -> None:
         self._head = bytearray()
+        self._head_sealed = False
         self._tail: deque[bytes] = deque()
         self._tail_size = 0
         self._dropped = 0
@@ -178,15 +215,44 @@ class _BoundedBuffer:
 
     def write(self, chunk: bytes) -> None:
         with self._lock:
-            if len(self._head) < _HEAD_CAP:
+            if not self._head_sealed:
+                if len(self._head) + len(chunk) <= _HEAD_CAP:
+                    # Everything fits; a trailing partial UTF-8 sequence simply
+                    # continues on the next write (nothing was split).
+                    self._head.extend(chunk)
+                    return
                 take = _HEAD_CAP - len(self._head)
+                # Never split a UTF-8 sequence at the head boundary: back the cut
+                # off to the sequence's lead byte so the whole character moves
+                # into the tail (and still counts in its byte budget).
+                while take > 0 and (chunk[take] & 0xC0) == 0x80:
+                    take -= 1
                 self._head.extend(chunk[:take])
                 chunk = chunk[take:]
-            if not chunk:
+                # The head is final from here on: later writes must append after
+                # the tail, never back into the head, or the byte order breaks.
+                self._head_sealed = True
+                if not chunk:
+                    return
+                # The head can still end mid-sequence when the cap landed exactly
+                # after a lead byte whose continuation arrives in this or a later
+                # chunk. Carry the dangling partial sequence into the tail so the
+                # head always decodes as whole characters (it rejoins the head
+                # when nothing is dropped; it belongs to the dropped middle
+                # otherwise).
+                dangling = _dangling_utf8_prefix_length(self._head)
+                if dangling:
+                    carry = bytes(self._head[-dangling:])
+                    del self._head[-dangling:]
+                    chunk = carry + chunk
+            elif not chunk:
                 return
             self._tail.append(chunk)
             self._tail_size += len(chunk)
-            # Trim the oldest chunk instead of dropping it whole so exactly _TAIL_CAP bytes stay.
+            # Trim the oldest chunk instead of dropping it whole so the tail keeps
+            # at most _TAIL_CAP bytes, cut at a character boundary: a partial
+            # sequence at the front of the trim window is dropped with the middle
+            # (its lead byte is already gone) instead of decoding as garbage.
             while self._tail_size > _TAIL_CAP:
                 excess = self._tail_size - _TAIL_CAP
                 oldest = self._tail[0]
@@ -194,10 +260,13 @@ class _BoundedBuffer:
                     self._tail.popleft()
                     self._tail_size -= len(oldest)
                     self._dropped += len(oldest)
-                else:
-                    self._tail[0] = oldest[excess:]
-                    self._tail_size -= excess
-                    self._dropped += excess
+                    continue
+                trim = excess
+                while trim < len(oldest) and (oldest[trim] & 0xC0) == 0x80:
+                    trim += 1
+                self._tail[0] = oldest[trim:]
+                self._tail_size -= trim
+                self._dropped += trim
 
     def size(self) -> int:
         with self._lock:
@@ -242,7 +311,10 @@ class BashHandle:
         self._reaped = False
         self._result: BashResult | None = None
         self._callbacks: list[Callable[[], None]] = []
-        self._reap_callback: Callable[[], None] | None = None
+        # Every concurrent _wait_reaped() awaiter gets its own wakeup: a single
+        # slot would let a late waiter clobber the completion notifier's
+        # registration, hanging it (and the bash.completed notice) forever.
+        self._reap_callbacks: list[Callable[[], None]] = []
         self._callback_lock = threading.Lock()
         # Serializes kill/reap so a pid fallback can never outlive the process handle.
         self._kill_lock = threading.Lock()
@@ -540,8 +612,9 @@ class BashHandle:
                 # Reaped: pid fallbacks are gone, so the handle may finally close.
                 cast("_winjob.JobProcess", self._proc).close()
         with self._callback_lock:
-            callback, self._reap_callback = self._reap_callback, None
-        if callback is not None:
+            callbacks = self._reap_callbacks
+            self._reap_callbacks = []
+        for callback in callbacks:
             callback()
         if delivered:
             _record_journal(self._pid, active=False)
@@ -717,13 +790,15 @@ class BashHandle:
         with self._callback_lock:
             if self._reaped:
                 return
-            self._reap_callback = wake
+            self._reap_callbacks.append(wake)
         try:
             await future
         finally:
             with self._callback_lock:
-                if self._reap_callback is wake:
-                    self._reap_callback = None
+                try:
+                    self._reap_callbacks.remove(wake)
+                except ValueError:
+                    pass  # already dispatched by _watch
 
     async def _wait(self) -> BashResult:
         # Asyncio-native wakeup: no executor thread is parked for the command's

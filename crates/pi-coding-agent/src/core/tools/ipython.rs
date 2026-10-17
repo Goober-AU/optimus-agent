@@ -2060,6 +2060,178 @@ mod tests {
         assert_eq!(execution.result.stdout, "ok");
     }
 
+    /// A UI context whose busy-kernel dialog always picks one choice.
+    fn busy_choice_context(choice: &'static str) -> ExtensionContext {
+        ExtensionContext {
+            has_ui: true,
+            cwd: "/tmp".to_string(),
+            ui: super::super::ExtensionUiContext {
+                select: Some(Arc::new(move |_title, _options, _opts| {
+                    Box::pin(async move { Some(choice.to_string()) })
+                })),
+                ..Default::default()
+            },
+        }
+    }
+
+    /// `KernelClient` that rejects the first execution with BusyAfterInterrupt
+    /// and succeeds afterwards, recording kill() calls.
+    struct BusyOnceKernelClient {
+        executions: std::sync::atomic::AtomicUsize,
+        kills: std::sync::atomic::AtomicUsize,
+    }
+
+    impl KernelClient for BusyOnceKernelClient {
+        fn is_running(&self) -> bool {
+            true
+        }
+        fn is_defunct(&self) -> bool {
+            false
+        }
+        fn start(&self, _options: KernelStartOptions) -> BoxFuture<'static, Result<(), KernelError>> {
+            Box::pin(async { Ok(()) })
+        }
+        fn execute(
+            &self,
+            code: &str,
+            signal: Option<AbortSignal>,
+            on_stream: Option<Arc<dyn Fn(&str, StreamName) + Send + Sync>>,
+        ) -> BoxFuture<'static, Result<ExecuteResult, KernelError>> {
+            if code == build_rlm_bootstrap_code(&[]) {
+                // Startup bootstrap must succeed for both kernel generations.
+                return StubKernelClient.execute(code, signal, on_stream);
+            }
+            let seen = self.executions.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            if seen == 0 {
+                return Box::pin(async { Err(KernelError::BusyAfterInterrupt) });
+            }
+            StubKernelClient.execute(code, signal, on_stream)
+        }
+        fn restore_state(&self) -> BoxFuture<'static, Result<Option<RestoreResult>, KernelError>> {
+            Box::pin(async { Ok(None) })
+        }
+        fn shutdown(&self, _snapshot: bool, _drain: bool) -> BoxFuture<'static, Result<(), KernelError>> {
+            Box::pin(async { Ok(()) })
+        }
+        fn kill(&self) -> BoxFuture<'static, Result<(), KernelError>> {
+            self.kills.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Box::pin(async { Ok(()) })
+        }
+        fn prune_oversized_variables(&self) -> BoxFuture<'static, Result<Option<PruneResult>, KernelError>> {
+            Box::pin(async { Ok(None) })
+        }
+        fn list_namespace_names(
+            &self,
+            _signal: Option<AbortSignal>,
+        ) -> BoxFuture<'static, Result<Option<Vec<String>>, KernelError>> {
+            Box::pin(async { Ok(None) })
+        }
+        fn shutdown_and_settle(
+            &self,
+            owner: &str,
+            timeout_ms: u64,
+        ) -> BoxFuture<'static, Result<crate::core::kernel::shared::KernelSettlement, KernelError>> {
+            StubKernelClient.shutdown_and_settle(owner, timeout_ms)
+        }
+    }
+
+    /// T7: BusyAfterInterrupt once, the UI selects kill, the provisioner
+    /// restarts the kernel and the retry succeeds - reporting
+    /// `kernel_restarted` so `execute_ipython` can prefix the notice.
+    #[tokio::test]
+    async fn busy_after_interrupt_with_kill_choice_restarts_and_reports_it() {
+        let client = Arc::new(BusyOnceKernelClient {
+            executions: std::sync::atomic::AtomicUsize::new(0),
+            kills: std::sync::atomic::AtomicUsize::new(0),
+        });
+        let provisioner = provisioner_with(client.clone());
+        let ctx = busy_choice_context(BUSY_KERNEL_KILL_CHOICE);
+        let execution = execute_with_busy_kernel_choice(
+            provisioner,
+            Arc::new(|_message: &str| {}),
+            "call-busy-kill",
+            "print(1)",
+            None,
+            Arc::new(|_chunk: &str, _name: StreamName| {}),
+            Arc::new(|_message: Option<&str>| {}),
+            None,
+            Some(&ctx),
+        )
+        .await
+        .expect("executed after restart");
+        assert_eq!(execution.result.stdout, "ok");
+        assert!(execution.kernel_restarted, "the kill path must set kernel_restarted");
+        assert_eq!(
+            client.kills.load(std::sync::atomic::Ordering::SeqCst),
+            1,
+            "the busy-kill path must kill the provisioner's kernel exactly once"
+        );
+        assert_eq!(
+            client.executions.load(std::sync::atomic::Ordering::SeqCst),
+            2,
+            "one busy rejection, then one successful retry"
+        );
+    }
+
+    /// T7 (tool level): the restart flag prefixes the KERNEL_RESTART_NOTICE
+    /// onto the assembled tool text and lands in the details.
+    #[tokio::test]
+    async fn execute_ipython_prefixes_restart_notice_after_busy_kill() {
+        let client = Arc::new(BusyOnceKernelClient {
+            executions: std::sync::atomic::AtomicUsize::new(0),
+            kills: std::sync::atomic::AtomicUsize::new(0),
+        });
+        let provisioner = provisioner_with(client.clone());
+        let ctx = busy_choice_context(BUSY_KERNEL_KILL_CHOICE);
+        let (content, details, is_error) = execute_ipython(
+            provisioner,
+            "call-busy-notice",
+            &IpythonToolInput {
+                code: "print(1)".to_string(),
+            },
+            None,
+            None,
+            None,
+            Some(&ctx),
+        )
+        .await
+        .expect("executed after restart");
+        let text = content[0].as_text().expect("text block");
+        assert!(text.starts_with(KERNEL_RESTART_NOTICE), "notice must prefix the text, got: {text}");
+        assert!(text.contains("\n\nok"), "the cell output follows the notice, got: {text}");
+        assert_eq!(details.kernel_restarted, Some(true));
+        assert_eq!(details.status.as_deref(), Some("ok"));
+        assert!(!is_error);
+    }
+
+    /// The wait choice keeps the same kernel (no kill, no restart flag) and
+    /// still retries the execution.
+    #[tokio::test]
+    async fn busy_after_interrupt_with_wait_choice_retries_without_restart() {
+        let client = Arc::new(BusyOnceKernelClient {
+            executions: std::sync::atomic::AtomicUsize::new(0),
+            kills: std::sync::atomic::AtomicUsize::new(0),
+        });
+        let provisioner = provisioner_with(client.clone());
+        let ctx = busy_choice_context(BUSY_KERNEL_WAIT_CHOICE);
+        let execution = execute_with_busy_kernel_choice(
+            provisioner,
+            Arc::new(|_message: &str| {}),
+            "call-busy-wait",
+            "print(1)",
+            None,
+            Arc::new(|_chunk: &str, _name: StreamName| {}),
+            Arc::new(|_message: Option<&str>| {}),
+            None,
+            Some(&ctx),
+        )
+        .await
+        .expect("executed after wait");
+        assert_eq!(execution.result.stdout, "ok");
+        assert!(!execution.kernel_restarted);
+        assert_eq!(client.kills.load(std::sync::atomic::Ordering::SeqCst), 0);
+    }
+
     fn provisioner_with(client: Arc<dyn KernelClient>) -> Arc<IpythonKernelProvisioner> {
         IpythonKernelProvisioner::new("/tmp", None, Arc::new(move |_options| client.clone()))
     }

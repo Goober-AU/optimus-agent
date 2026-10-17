@@ -150,6 +150,35 @@ fn as_string_array_field(value: Option<&Value>) -> Vec<String> {
     as_string_array(value)
 }
 
+/// Cap one error-event text field on the execution's output budget.
+///
+/// The peer runtime caps `evalue`/`traceback` text only as a best-effort
+/// measure; the model-visible bound is owned here, on the same
+/// [`DEFAULT_MAX_OUTPUT_CHARS`] budget as stdout/stderr/result, with the same
+/// truncation notice. Without it a peer sending a maximal frame could push a
+/// ~1 MB traceback into a tool result whose other parts are capped at 64 KiB.
+fn cap_error_text(text: &str, max_chars: usize) -> String {
+    if text.chars().count() > max_chars {
+        format!(
+            "{}\n[... output truncated at {max_chars} chars ...]",
+            truncate_chars(text, max_chars)
+        )
+    } else {
+        text.to_string()
+    }
+}
+
+/// Cap the joined traceback lines on the same budget, keeping the vector shape:
+/// an oversized traceback collapses to its truncated text plus notice.
+fn cap_error_traceback(lines: Vec<String>, max_chars: usize) -> Vec<String> {
+    let joined = lines.join("\n");
+    if joined.chars().count() > max_chars {
+        vec![cap_error_text(&joined, max_chars)]
+    } else {
+        lines
+    }
+}
+
 /// `truncate`: `text.slice(0, max)` measured in characters.
 fn truncate_chars(text: &str, max: usize) -> String {
     text.chars().take(max).collect()
@@ -2034,20 +2063,27 @@ impl KernelState {
                 guard.sent_agent_messages.push(message);
             }
         } else if kind == "error" {
-            let error = ExecError {
-                ename: event
-                    .get("ename")
-                    .and_then(|value| value.as_str())
-                    .unwrap_or("Error")
-                    .to_string(),
-                evalue: event
-                    .get("evalue")
-                    .and_then(|value| value.as_str())
-                    .unwrap_or("")
-                    .to_string(),
-                traceback: as_string_array_field(event.get("traceback")),
-            };
             let mut guard = execution.lock().unwrap();
+            let error = ExecError {
+                ename: cap_error_text(
+                    event
+                        .get("ename")
+                        .and_then(|value| value.as_str())
+                        .unwrap_or("Error"),
+                    guard.max_chars,
+                ),
+                evalue: cap_error_text(
+                    event
+                        .get("evalue")
+                        .and_then(|value| value.as_str())
+                        .unwrap_or(""),
+                    guard.max_chars,
+                ),
+                traceback: cap_error_traceback(
+                    as_string_array_field(event.get("traceback")),
+                    guard.max_chars,
+                ),
+            };
             guard.error = Some(error);
             guard.status = ExecuteStatus::Error;
         } else if kind == "done" {
@@ -4928,6 +4964,34 @@ for line in sys.stdin:
         assert_eq!(truncate_chars("ab\u{20AC}d", 3), "ab\u{20AC}");
         assert_eq!(tail_chars("ab\u{20AC}d", 2), "\u{20AC}d");
         assert_eq!(tail_chars("short", 10), "short");
+    }
+
+    #[test]
+    fn error_event_text_is_capped_on_the_output_budget() {
+        // The peer caps traceback/evalue only best-effort; the Rust side owns
+        // the model-visible bound on the same budget as stdout/stderr/result.
+        let max = DEFAULT_MAX_OUTPUT_CHARS;
+        assert_eq!(cap_error_text("small", max), "small");
+        assert_eq!(cap_error_text("", max), "");
+
+        let huge = "x".repeat(max + 1);
+        let capped = cap_error_text(&huge, max);
+        assert_eq!(capped.chars().count(), max + format!("\n[... output truncated at {max} chars ...]").chars().count());
+        assert!(capped.ends_with(&format!("[... output truncated at {max} chars ...]")));
+        // A multibyte cut keeps whole characters.
+        let euro = "\u{20AC}".repeat(max + 5);
+        let capped_euro = cap_error_text(&euro, max);
+        assert!(capped_euro.starts_with(&"\u{20AC}".repeat(max / 2)));
+        assert!(!capped_euro.contains('\u{FFFD}'));
+        assert!(capped_euro.ends_with(&format!("[... output truncated at {max} chars ...]")));
+
+        let lines = cap_error_traceback(vec!["line 1".to_string(), "line 2".to_string()], max);
+        assert_eq!(lines, vec!["line 1".to_string(), "line 2".to_string()]);
+        let joined_over = vec!["t".repeat(max + 10)];
+        let collapsed = cap_error_traceback(joined_over, max);
+        assert_eq!(collapsed.len(), 1);
+        assert!(collapsed[0].ends_with(&format!("[... output truncated at {max} chars ...]")));
+        assert!(collapsed[0].chars().count() < max + 100);
     }
 
     #[test]
