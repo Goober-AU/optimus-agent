@@ -92,8 +92,12 @@ impl Throughput {
             // Absolute snapshots replace prior totals; repeated roster pushes never add twice.
             if self.samples.get(&row.session_id).is_some_and(|previous| {
                 previous.generation == sample.generation
-                    && (previous.responses > sample.responses
-                        || previous.generation_ms > sample.generation_ms)
+                    && if previous.sequence > 0 || sample.sequence > 0 {
+                        previous.sequence > sample.sequence
+                    } else {
+                        previous.responses > sample.responses
+                            || previous.generation_ms > sample.generation_ms
+                    }
             }) {
                 continue;
             }
@@ -107,7 +111,7 @@ impl Throughput {
         let (tokens, ms) = self
             .samples
             .values()
-            .filter(|s| s.responses > 0 && s.generation_ms > 0.0)
+            .filter(|s| (s.responses > 0 || s.active) && s.generation_ms > 0.0)
             .fold((0.0, 0.0), |(tokens, ms), s| {
                 (tokens + s.output_tokens, ms + s.generation_ms)
             });
@@ -117,7 +121,16 @@ impl Throughput {
     pub(super) fn indicator(&self) -> String {
         let value = self
             .average()
-            .map(|rate| format!("{rate:.1}"))
+            .map(|rate| {
+                format!(
+                    "{}{rate:.1}",
+                    if self.samples.values().any(|s| s.estimated) {
+                        "~"
+                    } else {
+                        ""
+                    }
+                )
+            })
             .unwrap_or_else(|| "—".into());
         format!("\x1b[1;38;5;196mAVG TPS {value}\x1b[22;39m")
     }
@@ -141,6 +154,8 @@ mod tests {
     use serde_json::json;
     fn row(id: &str, parent: Option<&str>, tokens: f64, ms: f64) -> SessionSummary {
         SessionSummary {
+            lifecycle: "live".into(),
+            activity: "idle".into(),
             session_id: id.into(),
             active_session_id: Some(id.into()),
             parent_session_id: parent.map(str::to_string),
@@ -167,6 +182,41 @@ mod tests {
             ..Default::default()
         }
     }
+    #[test]
+    fn throughput_survives_actual_ui_roster_projection_and_streams_before_completion() {
+        use crate::modes::agents_view::agents_view_state::SessionSummary as UiSummary;
+        let mut row = row("a", None, 10.0, 1000.0);
+        row.extra.get_mut("generationThroughput").unwrap()["responses"] = json!(0);
+        row.extra.get_mut("generationThroughput").unwrap()["active"] = json!(true);
+        row.extra.get_mut("generationThroughput").unwrap()["estimated"] = json!(true);
+        row.extra.get_mut("generationThroughput").unwrap()["sequence"] = json!(1);
+        let project = |row: &SessionSummary| {
+            let wire = serde_json::to_value(row).unwrap();
+            let ui: UiSummary = serde_json::from_value(
+                crate::modes::agents_view::native_wire::normalize_browser_numbers(wire),
+            )
+            .unwrap();
+            serde_json::from_value::<SessionSummary>(serde_json::to_value(ui).unwrap()).unwrap()
+        };
+        let mut state = Throughput::default();
+        state.observe(&[project(&row)], &parent("a"));
+        assert_eq!(state.average(), Some(10.0));
+        assert!(state.indicator().contains("AVG TPS ~10.0"));
+        row.extra.get_mut("generationThroughput").unwrap()["outputTokens"] = json!(40.0);
+        row.extra.get_mut("generationThroughput").unwrap()["generationMs"] = json!(2000.0);
+        row.extra.get_mut("generationThroughput").unwrap()["sequence"] = json!(2);
+        state.observe(&[project(&row)], &parent("a"));
+        assert_eq!(state.average(), Some(20.0));
+        row.extra.get_mut("generationThroughput").unwrap()["active"] = json!(false);
+        row.extra.get_mut("generationThroughput").unwrap()["estimated"] = json!(false);
+        row.extra.get_mut("generationThroughput").unwrap()["responses"] = json!(1);
+        row.extra.get_mut("generationThroughput").unwrap()["outputTokens"] = json!(30.0);
+        row.extra.get_mut("generationThroughput").unwrap()["generationMs"] = json!(1500.0);
+        row.extra.get_mut("generationThroughput").unwrap()["sequence"] = json!(3);
+        state.observe(&[project(&row)], &parent("a"));
+        assert!(state.indicator().contains("AVG TPS 20.0"));
+    }
+
     #[test]
     fn throughput_weights_main_children_and_nested_children_and_deduplicates_roster() {
         let mut state = Throughput::default();

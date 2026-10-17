@@ -8827,6 +8827,13 @@ impl AgentDaemon {
                     }
                     return;
                 }
+                if event_type == "message_update" {
+                    let session_id = state.lock().expect("session state poisoned").runtime.session.session_id.clone();
+                    if crate::core::performance_monitor::throughput::publish_due(&session_id) {
+                        self.schedule_roster_flush();
+                    }
+                    return;
+                }
                 if !contains(&ROSTER_SESSION_EVENT_TRIGGERS, event_type) {
                     return;
                 }

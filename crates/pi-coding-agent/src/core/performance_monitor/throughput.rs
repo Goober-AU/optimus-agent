@@ -15,11 +15,18 @@ pub struct Snapshot {
     pub output_tokens: f64,
     pub generation_ms: f64,
     pub responses: u64,
+    #[serde(default)]
+    pub active: bool,
+    #[serde(default)]
+    pub estimated: bool,
+    #[serde(default)]
+    pub sequence: u64,
 }
 
 pub struct Counter {
     snapshot: Snapshot,
     seen: VecDeque<String>,
+    pending: Option<(String, f64, f64)>,
 }
 
 type Registry = Mutex<HashMap<String, Weak<Mutex<Counter>>>>;
@@ -35,6 +42,7 @@ pub fn register(session_id: &str) -> Arc<Mutex<Counter>> {
             ..Default::default()
         },
         seen: VecDeque::new(),
+        pending: None,
     }));
     let mut registry = registry().lock().unwrap_or_else(|e| e.into_inner());
     registry.retain(|_, entry| entry.strong_count() > 0);
@@ -49,15 +57,68 @@ pub fn snapshot(session_id: &str) -> Option<Snapshot> {
         .unwrap_or_else(|e| e.into_inner())
         .get(session_id)?
         .upgrade()?;
-    let snapshot = counter
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .snapshot
-        .clone();
+    let snapshot = counter.lock().unwrap_or_else(|e| e.into_inner()).current();
     Some(snapshot)
 }
 
+/// Bound worker roster broadcasts to four per second while deltas arrive.
+pub fn publish_due(session_id: &str) -> bool {
+    let counter = registry()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .get(session_id)
+        .and_then(Weak::upgrade);
+    let Some(counter) = counter else {
+        return false;
+    };
+    if counter
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .pending
+        .is_none()
+    {
+        return false;
+    }
+    // All sessions in this worker share the budget. Never hold the counter lock
+    // while acquiring this gate (or while the daemon composes its roster).
+    static LAST_PUBLISHED: Mutex<Option<std::time::Instant>> = Mutex::new(None);
+    let mut last = LAST_PUBLISHED.lock().unwrap_or_else(|e| e.into_inner());
+    let now = std::time::Instant::now();
+    if last.is_some_and(|last| {
+        now.saturating_duration_since(last) < std::time::Duration::from_millis(250)
+    }) {
+        return false;
+    }
+    *last = Some(now);
+    true
+}
+
 impl Counter {
+    fn current(&self) -> Snapshot {
+        let mut sample = self.snapshot.clone();
+        if let Some((_, tokens, ms)) = &self.pending {
+            sample.output_tokens += tokens;
+            sample.generation_ms += ms;
+            sample.active = true;
+            sample.estimated = true;
+        }
+        sample
+    }
+
+    pub fn progress(&mut self, id: &str, tokens: f64, ms: f64) {
+        if id.is_empty()
+            || !tokens.is_finite()
+            || tokens <= 0.0
+            || !ms.is_finite()
+            || ms <= 0.0
+            || self.seen.iter().any(|seen| seen == id)
+        {
+            return;
+        }
+        self.pending = Some((id.into(), tokens, ms));
+        self.snapshot.sequence = self.snapshot.sequence.saturating_add(1);
+    }
+
     pub fn record(&mut self, event: &PerformanceMetricEvent) {
         if event.operation != PerformanceMetricOperation::ProviderAttempt
             || !matches!(
@@ -70,6 +131,21 @@ impl Counter {
             )
         {
             return;
+        }
+        let Some(id) = event
+            .correlation
+            .as_ref()
+            .and_then(|c| c.provider_attempt_id.as_ref())
+        else {
+            return;
+        };
+        if self
+            .pending
+            .as_ref()
+            .is_some_and(|(pending, _, _)| pending == id)
+        {
+            self.pending = None;
+            self.snapshot.sequence = self.snapshot.sequence.saturating_add(1);
         }
         let Some(tokens) = event
             .usage
@@ -96,13 +172,6 @@ impl Counter {
         else {
             return;
         };
-        let Some(id) = event
-            .correlation
-            .as_ref()
-            .and_then(|c| c.provider_attempt_id.as_ref())
-        else {
-            return;
-        };
         if self.seen.contains(id) {
             return;
         }
@@ -118,6 +187,7 @@ impl Counter {
         self.snapshot.output_tokens = tokens;
         self.snapshot.generation_ms = ms;
         self.snapshot.responses = self.snapshot.responses.saturating_add(1);
+        self.snapshot.sequence = self.snapshot.sequence.saturating_add(1);
     }
 }
 
@@ -141,6 +211,32 @@ mod tests {
         });
         event.measurements = Some([(M::TotalMs, Some(ms))].into_iter().collect());
         event
+    }
+
+    #[test]
+    fn throughput_streaming_updates_replace_estimates_and_clear_on_failure() {
+        let counter = register("live-throughput-unit");
+        let mut counter = counter.lock().unwrap();
+        counter.progress("a", 10.0, 100.0);
+        let first = counter.current();
+        assert!(first.active && first.estimated);
+        assert_eq!(first.responses, 0);
+        counter.progress("a", 30.0, 200.0);
+        assert_eq!(counter.current().output_tokens, 30.0);
+        counter.record(&event("a", 25.0, 150.0));
+        let final_sample = counter.current();
+        assert!(!final_sample.active && !final_sample.estimated);
+        assert_eq!(final_sample.output_tokens, 25.0);
+        assert_eq!(final_sample.generation_ms, 150.0);
+        assert!(final_sample.sequence > first.sequence);
+        counter.progress("a", 40.0, 300.0); // late delta after terminal
+        assert_eq!(counter.current().output_tokens, 25.0);
+        counter.progress("b", 10.0, 100.0);
+        let mut failed = event("b", 0.0, 100.0);
+        failed.outcome = Some(PerformanceMetricOutcome::Cancelled);
+        counter.record(&failed);
+        assert!(!counter.current().active);
+        assert_eq!(counter.current().output_tokens, 25.0);
     }
 
     #[test]

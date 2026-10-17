@@ -1,0 +1,2 @@
+- Fixed AVG TPS remaining empty because the TUI roster projection discarded generation throughput metadata.
+- Changed AVG TPS to update during streaming for the current chat and its subagents, showing provisional character-based estimates with ~ and replacing them with final provider usage.

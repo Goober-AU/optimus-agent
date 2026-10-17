@@ -225,6 +225,9 @@ pub struct SessionSummary {
     /// Optional schema-39 metadata. Unknown activity versions must not break the roster.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub communication_activity: Option<Value>,
+    /// Preserve optional throughput through the UI roster projection.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub generation_throughput: Option<Value>,
 }
 
 impl SessionSummary {

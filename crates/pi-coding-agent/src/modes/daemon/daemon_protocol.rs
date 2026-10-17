@@ -83,10 +83,10 @@ pub const DAEMON_COMMAND_ENVELOPE_MIN_PROTOCOL_VERSION: u32 = 7;
 // clients can no longer write a preference the daemon never reads. The daemon
 // stops advertising occ2_communication (it described the pre-41 storage
 // semantics), so older clients see a visible warning instead of a silent no-op.
-// Revision 42 adds capability-gated generationThroughput roster metadata.
+// Revision 43 adds optional active/estimated/sequence streaming throughput fields.
 // Existing commands/events retain their compatibility floors; no startup dependency.
-pub const DAEMON_SCHEMA_REVISION: u32 = 42;
-pub const DAEMON_SCHEMA_ID: &str = "protocol-7-schema-42-generation-throughput";
+pub const DAEMON_SCHEMA_REVISION: u32 = 43;
+pub const DAEMON_SCHEMA_ID: &str = "protocol-7-schema-43-live-throughput";
 
 pub type DaemonProtocolName = String;
 pub type DaemonProtocolVersion = u32;
@@ -2160,7 +2160,7 @@ impl DaemonCommandCompatibility {
 
 /// `DAEMON_COMMAND_COMPATIBILITY`, verbatim from the TypeScript table
 /// (`satisfies Record<DaemonCommandName, DaemonCommandCompatibility>`).
-// Revision 42 adds no commands: generationThroughput is optional on existing
+// Revision 43 adds no commands: generationThroughput is optional on existing
 // list/roster responses, preserving old-client/new-daemon compatibility.
 pub fn daemon_command_compatibility(command: &str) -> DaemonCommandCompatibility {
     use DaemonServerCapability as Capability;
@@ -3124,7 +3124,7 @@ mod tests {
 
     #[test]
     fn keeps_the_advertised_schema_identity() {
-        assert_eq!(DAEMON_SCHEMA_ID, format!("protocol-{DAEMON_PROTOCOL_VERSION}-schema-{DAEMON_SCHEMA_REVISION}-generation-throughput"));
+        assert_eq!(DAEMON_SCHEMA_ID, format!("protocol-{DAEMON_PROTOCOL_VERSION}-schema-{DAEMON_SCHEMA_REVISION}-live-throughput"));
     }
 
     #[test]

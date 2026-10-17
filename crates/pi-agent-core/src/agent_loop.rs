@@ -1336,6 +1336,7 @@ async fn stream_assistant_response_inner(
         .stream_deadline
         .map(|stream_deadline| attempt_started + stream_deadline);
     let mut last_event_at = attempt_started;
+    let mut output_chars = 0u64;
 
     loop {
         // Checked before the select so a continuous event stream cannot starve
@@ -1420,6 +1421,25 @@ async fn stream_assistant_response_inner(
         if let AssistantMessageEvent::TextDelta { delta, .. } = &event {
             if !delta.is_empty() && request_metrics.first_visible_at.is_none() {
                 request_metrics.first_visible_at = metric_now(config);
+            }
+        }
+        // Providers normally publish usage only at completion. Count streamed
+        // text, reasoning and tool arguments incrementally for the live estimate.
+        if let Some(delta) = match &event {
+            AssistantMessageEvent::TextDelta { delta, .. }
+            | AssistantMessageEvent::ThinkingDelta { delta, .. }
+            | AssistantMessageEvent::ToolCallDelta { delta, .. } => Some(delta),
+            _ => None,
+        } {
+            output_chars = output_chars.saturating_add(delta.chars().count() as u64);
+            if let (Some(metrics), Some(id), Some(now)) =
+                (metrics.as_ref(), request_metrics.provider_attempt_id.as_deref(), metric_now(config)) {
+                let dispatch = observed.timestamps.lock().ok().and_then(|s| s.dispatch_edge_at);
+                if let Some(elapsed) = elapsed_metric_ms(dispatch, Some(now)) {
+                    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        metrics.recorder.generation_progress(id, output_chars as f64 / 4.0, elapsed);
+                    }));
+                }
             }
         }
         // The `message_update` event carries the whole event, and the `partial`
