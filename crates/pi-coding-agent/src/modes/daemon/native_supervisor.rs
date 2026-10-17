@@ -3137,6 +3137,53 @@ impl Supervisor {
                 });
                 return Ok(None);
             }
+            "get_state" => {
+                let requested = body.get("activeSessionId").and_then(Value::as_str).ok_or("Daemon command requires activeSessionId")?.to_string();
+                let (worker, active) = self.find(&public.identity(), &requested).await?;
+                body.insert("activeSessionId".into(), json!(active));
+                // TS serves get_state from the daemon's own in-memory state; the port
+                // hosts sessions in worker processes, so the summary crosses IPC. A
+                // saturated worker (streaming children, synchronous session-file reads)
+                // can miss the client's 30s deadline and wedge chat-open behind a
+                // request that will eventually succeed. Ask the worker first with a
+                // bounded wait - the heartbeats_list precedent - then answer from the
+                // supervisor's live roster view, the same summary data `list` serves
+                // and the roster never blocks on a busy worker to obtain. A worker
+                // that answers, answers authoritatively (success or failure).
+                let client = { worker.client.lock().unwrap().as_ref().cloned() };
+                let forwarded = match client.filter(|client| client.is_connected()) {
+                    Some(client) => match client.request_worker(body.clone(), 5_000).await {
+                        Ok(response) => Some(response),
+                        Err(_) => None,
+                    },
+                    None => None,
+                };
+                let mut response = match forwarded {
+                    Some(mut response) => {
+                        // The generic tail remaps a successful summary through
+                        // public_summary (sessionId present) so the supervisor stamps
+                        // workerState/workerPid/attachedClients; keep that exact shape
+                        // so one command never serves two summary shapes.
+                        if response.success {
+                            if let Some(data) = response.data.as_mut() {
+                                if data.get("sessionId").is_some() {
+                                    if let Some(summary) = serde_json::from_value::<RosterSessionSummary>(data.clone()).ok() {
+                                        *data = serde_json::to_value(self.public_summary(&worker, session_summary_from_roster_row(&summary, None, None, None))).unwrap_or(Value::Null);
+                                    }
+                                }
+                            }
+                        }
+                        response
+                    }
+                    None => {
+                        let summary = self.summary_for_active(&worker, &active).ok_or("Session worker has no summary")?;
+                        DaemonResponse::success(id.as_deref(), &kind, Some(serde_json::to_value(summary).unwrap_or(Value::Null)))
+                    }
+                };
+                response.id = id;
+                response.command = kind.clone();
+                return Ok(Some(response));
+            }
             "detach" => {
                 let active = body.get("activeSessionId").and_then(Value::as_str);
                 let targets = if let Some(active) = active { vec![active.to_string()] } else { public.subscriptions.lock().unwrap().iter().cloned().collect() };
