@@ -13,7 +13,8 @@ use super::{ExtensionContext, ToolDefinition};
 
 use super::edit_diff::{
     apply_edits_to_normalized_content, compute_edits_diff, detect_line_ending, generate_diff_string,
-    normalize_to_lf, restore_line_endings, strip_bom, Edit, EditDiffOutcome, AppliedEditsResult,
+    invalid_utf8_edit_error, normalize_to_lf, restore_line_endings, strip_bom, Edit,
+    EditDiffOutcome, AppliedEditsResult,
 };
 use super::file_mutation_queue::with_file_mutation_queue;
 use super::path_utils::resolve_to_cwd;
@@ -595,7 +596,14 @@ pub async fn execute_edit(
                 return Err("Operation aborted".to_string());
             }
 
-            let raw_content = String::from_utf8_lossy(&buffer).into_owned();
+            // Reject non-UTF-8 content: writing back lossily-decoded text would
+            // silently replace invalid bytes with U+FFFD (data corruption).
+            let raw_content = match String::from_utf8(buffer) {
+                Ok(content) => content,
+                Err(error) => {
+                    return Err(invalid_utf8_edit_error(&path, error.utf8_error()));
+                }
+            };
 
             // Strip BOM before matching. The model will not include an invisible BOM in oldText.
             let super::edit_diff::StripBomResult { bom, text: content } = strip_bom(&raw_content);
