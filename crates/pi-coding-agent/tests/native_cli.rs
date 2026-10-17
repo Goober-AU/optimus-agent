@@ -718,6 +718,25 @@ fn node_and_direct_tools_spawn_concurrent_native_children_and_receive_results() 
             let collected = collect["message"]["details"]["results"].as_array().unwrap();
             assert_eq!(collected.len(), 2);
             assert!(collected.iter().all(|r| r["settled"] == true && r["status"] == "done"), "{collected:?}");
+            let deadline = Instant::now() + Duration::from_secs(10);
+            loop {
+                let roster = request(&client, json!({"type":"roster_subscribe"})).await;
+                let rows = roster["roster"].as_array().unwrap();
+                let measured: Vec<_> = rows.iter().map(|row| &row["summary"])
+                    .filter(|row| row["activeSessionId"] == active || row["runtimeKind"] == "subagent")
+                    .filter(|row| row["generationThroughput"]["responses"].as_u64().unwrap_or(0) > 0).collect();
+                if measured.len() >= 3 {
+                    for row in measured {
+                        let sample = &row["generationThroughput"];
+                        assert!(sample["generationMs"].as_f64().unwrap() > 0.0);
+                        assert_eq!(sample["outputTokens"].as_f64().unwrap(), sample["responses"].as_u64().unwrap() as f64 * 4.0);
+                    }
+                    break;
+                }
+                assert!(Instant::now() < deadline, "parent and both children must publish throughput: {rows:?}");
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            }
+            assert!(!fixture.agent_dir.join("performance-metrics").exists(), "TPS must not turn on disk monitoring");
             client.close().await;
         });
         for name in ["alpha", "beta"] {

@@ -11,6 +11,8 @@ use pi_tui::tui::Focusable;
 mod jev_activity;
 #[path = "communication_activity.rs"]
 mod communication_activity;
+#[path = "generation_throughput.rs"]
+mod generation_throughput;
 
 #[derive(Default)]
 struct JevBarState {
@@ -54,6 +56,7 @@ pub(super) struct Bar {
     jev: Arc<Mutex<JevBarState>>,
     jev_task: RefCell<Option<tokio::task::JoinHandle<()>>>,
     communication: communication_activity::ActivityState,
+    throughput: generation_throughput::Throughput,
     pulse_task: Option<tokio::task::JoinHandle<()>>,
     pulse_deadline: Option<std::time::Instant>,
     render_send: RefCell<Option<mpsc::Sender<HostEvent>>>,
@@ -72,6 +75,7 @@ impl Bar {
             jev: Arc::new(Mutex::new(JevBarState::default())),
             jev_task: RefCell::new(None),
             communication: communication_activity::ActivityState::default(),
+            throughput: generation_throughput::Throughput::default(),
             pulse_task: None,
             pulse_deadline: None,
             render_send: RefCell::new(None),
@@ -192,7 +196,8 @@ impl Bar {
                 }));
             }
         }
-        self.line.set_communication_status(Some(self.communication.indicators(now)));
+        self.throughput.observe(&rows, &parent);
+        self.line.set_communication_status(Some(format!("{}  {}", self.communication.indicators(now), self.throughput.indicator())));
     }
 
     /// Returns true when the tray consumed input; all other input stays in chat.

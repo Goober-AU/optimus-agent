@@ -39,6 +39,12 @@ impl RosterSubscription {
         })
     }
 
+    fn throughput_supported(&self) -> bool {
+        self.transport.lock().unwrap().as_ref().is_some_and(|transport| {
+            throughput_supported(transport.is_connected(), transport.hello().as_ref())
+        })
+    }
+
     async fn refresh(&self) {
         let epoch = self.observation_epoch.load(Ordering::SeqCst);
         let mut rows: Vec<Value> = self
@@ -50,6 +56,7 @@ impl RosterSubscription {
             .collect();
         if epoch != self.observation_epoch.load(Ordering::SeqCst) { return; }
         project_activity(&mut rows, self.activity_supported(), epoch);
+        project_throughput(&mut rows, self.throughput_supported());
         *self.summaries.lock().unwrap() = rows;
         let listeners = self.listeners.lock().unwrap().clone();
         for listener in listeners {
@@ -164,6 +171,7 @@ impl AgentConnectionRosterStore for RosterSubscription {
         if !self.activity_supported() {
             project_activity(&mut rows, false, self.observation_epoch.load(Ordering::SeqCst));
         }
+        project_throughput(&mut rows, self.throughput_supported());
         rows
     }
     fn dispose(&self) -> BoxFuture<()> {
@@ -196,10 +204,40 @@ fn project_activity(rows: &mut [Value], supported: bool, epoch: u64) {
     }
 }
 
+fn throughput_supported(connected: bool, hello: Option<&crate::modes::agents_view::roster_store::DaemonHello>) -> bool {
+    connected && hello.is_some_and(|hello| hello.schema_revision.is_some_and(|revision| revision >= 42)
+        && hello.server_capabilities.iter().any(|capability| capability == "generation_throughput"))
+}
+
+fn project_throughput(rows: &mut [Value], supported: bool) {
+    if !supported {
+        for row in rows { if let Some(row) = row.as_object_mut() { row.remove("generationThroughput"); } }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::modes::agents_view::roster_store::DaemonHello;
+
+    #[test]
+    fn generation_throughput_requires_negotiation_and_degrades_on_disconnect() {
+        let mut hello = DaemonHello { schema_revision: Some(42), server_capabilities: vec!["generation_throughput".into()], ..Default::default() };
+        assert!(throughput_supported(true, Some(&hello)));
+        assert!(!throughput_supported(false, Some(&hello)));
+        hello.schema_revision = Some(41);
+        assert!(!throughput_supported(true, Some(&hello)));
+        hello.schema_revision = Some(42);
+        hello.server_capabilities.clear();
+        assert!(!throughput_supported(true, Some(&hello)));
+        assert!(!throughput_supported(true, None));
+        let mut rows = vec![serde_json::json!({"sessionId":"p", "generationThroughput":{"responses":1}})];
+        project_throughput(&mut rows, true);
+        assert!(rows[0].get("generationThroughput").is_some());
+        project_throughput(&mut rows, false);
+        assert!(rows[0].get("generationThroughput").is_none());
+        assert_eq!(rows[0]["sessionId"], "p");
+    }
 
     #[test]
     fn communication_metadata_degrades_with_old_daemons_missing_capabilities_and_disconnects() {

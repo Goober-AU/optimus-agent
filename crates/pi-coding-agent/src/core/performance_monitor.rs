@@ -1,5 +1,7 @@
 //! Live, profile-scoped control of the bounded local performance recorder.
 
+pub mod throughput;
+
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -112,6 +114,7 @@ impl PerformanceMonitor {
 
     pub fn recorder(&self, session_id: String) -> LivePerformanceMetricRecorder {
         LivePerformanceMetricRecorder {
+            throughput: throughput::register(&session_id),
             monitor: self.clone(), session_id, started: Instant::now(),
             recorder: Mutex::new(None),
         }
@@ -123,6 +126,7 @@ pub struct LivePerformanceMetricRecorder {
     session_id: String,
     started: Instant,
     recorder: Mutex<Option<LocalPerformanceMetricRecorder>>,
+    throughput: Arc<Mutex<throughput::Counter>>,
 }
 
 impl LivePerformanceMetricRecorder {
@@ -142,6 +146,7 @@ impl PerformanceMetricRecorder for LivePerformanceMetricRecorder {
         format!("{scope:?}-{}", uuid::Uuid::new_v4())
     }
     fn record(&self, event: PerformanceMetricEvent) {
+        self.throughput.lock().unwrap_or_else(|e| e.into_inner()).record(&event);
         if !self.monitor.enabled().unwrap_or(false) { return; }
         let mut recorder = self.recorder.lock().unwrap_or_else(|e| e.into_inner());
         let recorder = recorder.get_or_insert_with(|| LocalPerformanceMetricRecorder::new(

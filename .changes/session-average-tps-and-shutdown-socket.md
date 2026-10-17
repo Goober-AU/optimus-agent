@@ -1,0 +1,3 @@
+- Added a red AVG TPS indicator beside OCC2, measuring provider output tokens over request time for the current chat and its observed subagents, including nested descendants.
+- Added capability-gated, content-free generation throughput totals to roster metadata; monitoring logs do not need to be enabled.
+- Fixed shutdown --socket and --daemon-socket to target one daemon, with argument validation and confirmation preserved.
