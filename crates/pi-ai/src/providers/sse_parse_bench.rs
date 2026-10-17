@@ -7,7 +7,11 @@
 //!
 //! A/B: the pre-change readers are kept verbatim in `reference` and
 //! `responses_reference`; every fixture runs through both arms in the same
-//! binary, so the printed delta isolates the reader change alone.
+//! binary, so the printed delta isolates the reader change alone. The
+//! consumer hot path gets the same treatment in `consumer_reference`: the
+//! pre-change typed consumer (full-snapshot `partial_message` per event)
+//! runs against the live consumer, and byte-identity tests pin the event
+//! sequence (including partial snapshots) across the change.
 //!
 //! Run: cargo test -p pi-ai --release sse_parse_bench -- --ignored --nocapture
 
@@ -350,6 +354,48 @@ fn bench_all() {
 		println!("framing-only: {framing_mean:.0} ns/event");
 		println!("full:         {full_mean:.0} ns/event ({} events)", full.events);
 		println!("consumer delta (parse + event build + partial_message): {:.0} ns/event", full_mean - framing_mean);
+	}
+
+	println!("\n=== consumer hot-path A/B (typed parse + handle_typed_chunk + partial snapshot, no framing) ===");
+	println!("(events stay resident: every partial snapshot is the full message so far)");
+	let consumer_fixtures: Vec<(&str, Vec<u8>)> = vec![
+		("text 100B", text_fixture(&vec![100; 200])),
+		("text 1KB", text_fixture(&vec![1024; 200])),
+		("text 4KB", text_fixture(&vec![4096; 200])),
+		("reasoning-dense 100B", reasoning_fixture(200, 100)),
+		("reasoning-dense 1KB", reasoning_fixture(200, 1024)),
+		("tool-call-delta", tool_call_fixture(200)),
+	];
+	for (name, body) in &consumer_fixtures {
+		let payloads = fixture_payloads(body);
+		let old = bench_consumer_path::<OldConsumer>(&payloads, &model);
+		let new = bench_consumer_path::<NewConsumer>(&payloads, &model);
+		let old_mean = old.total_ns / old.events as f64;
+		let new_mean = new.total_ns / new.events as f64;
+		let (op50, op95, op99) = percentiles(old.per_event.clone());
+		let (p50, p95, p99) = percentiles(new.per_event.clone());
+		println!(
+			"{:<44} old {:>9.0} ns/ev  new {:>9.0} ns/ev  delta {:+6.1}%",
+			format!("{name} x{}", old.events),
+			old_mean,
+			new_mean,
+			(new_mean - old_mean) / old_mean * 100.0,
+		);
+		println!(
+			"    old p50 {op50:>8.0} p95 {op95:>8.0} p99 {op99:>8.0}  new p50 {p50:>8.0} p95 {p95:>8.0} p99 {p99:>8.0}"
+		);
+	}
+
+	println!("\n=== consumer decile growth probe (per-event ns by decile, per arm) ===");
+	{
+		let body = text_fixture(&vec![4096; 200]);
+		let payloads = fixture_payloads(&body);
+		decile_growth::<OldConsumer>(&payloads, &model, "old text 4KB x200");
+		decile_growth::<NewConsumer>(&payloads, &model, "new text 4KB x200");
+		let body = tool_call_fixture(200);
+		let payloads = fixture_payloads(&body);
+		decile_growth::<OldConsumer>(&payloads, &model, "old tool-call x200");
+		decile_growth::<NewConsumer>(&payloads, &model, "new tool-call x200");
 	}
 
 	println!("\nTotal bench time: {:.1}s", total_start.elapsed().as_secs_f32());
@@ -1079,4 +1125,1284 @@ fn responses_sse_bench() {
 		);
 	}
 	println!("\nTotal bench time: {:.1}s", total_start.elapsed().as_secs_f32());
+}
+
+// ---------------------------------------------------------------------------
+// Phase 5: consumer hot-path A/B (partial_message lane) + responses consumer bench
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Phase 5: consumer hot-path A/B (partial_message lane)
+// ---------------------------------------------------------------------------
+
+/// The pre-change consumer path, kept verbatim from the committed
+/// `openai_completions.rs` (the HEAD of this branch before the
+/// partial_message lane landed): typed parse, `handle_typed_chunk`, and the
+/// per-event full-snapshot `partial_message` clone. The live consumer must
+/// produce a byte-identical event sequence; only cost may change.
+// The module keeps the pre-change consumer VERBATIM (byte-for-byte from the
+// committed file), so parts of it (finish path, error fields) are not driven
+// by the bench loop; dead-code is expected and allowed to keep the reference
+// honest.
+#[allow(dead_code)]
+mod consumer_reference {
+	use std::collections::HashMap;
+
+	use indexmap::IndexMap;
+	use serde_json::{json, Map, Value};
+
+	use crate::models::{calculate_cost, CostOverrides};
+	use crate::providers::openai_completions::OpenAICompletionsOptions;
+	use crate::types::{
+		AssistantMessage, AssistantMessageEvent, ContentBlock, Model, TextContent, ThinkingContent, ToolCall,
+	};
+	use crate::utils::event_stream::AssistantMessageEventStream;
+	use crate::utils::json_parse::StreamingJsonAccumulator;
+
+/// JavaScript truthiness for the `if (x)` guards the TypeScript uses on raw JSON.
+fn js_truthy(value: &Value) -> bool {
+	match value {
+		Value::Null => false,
+		Value::Bool(value) => *value,
+		Value::Number(number) => number.as_f64().map(|value| value != 0.0).unwrap_or(true),
+		Value::String(value) => !value.is_empty(),
+		Value::Array(_) | Value::Object(_) => true,
+	}
+}
+
+
+const REASONING_DETAILS_SIGNATURE_TYPE: &str = "openai-completions.reasoning_details.v1";
+
+/// TS: `encodeReasoningDetails(details)`
+fn encode_reasoning_details(details: &[Map<String, Value>]) -> String {
+	let mut object = Map::new();
+	object.insert(
+		"type".to_string(),
+		Value::String(REASONING_DETAILS_SIGNATURE_TYPE.to_string()),
+	);
+	object.insert(
+		"details".to_string(),
+		Value::Array(details.iter().cloned().map(Value::Object).collect()),
+	);
+	Value::Object(object).to_string()
+}
+
+/// One `data:` SSE payload, borrowed from the payload buffer.
+///
+/// Field tolerances mirror the `Value` consumer exactly: wrong-typed fields
+/// read as absent, unknown fields are ignored, `null` is absent, and rare
+/// members (`usage`, `error`, `reasoning_details`) keep the `Value` DOM so it
+/// is only built when the member is present.
+#[derive(serde::Deserialize)]
+pub(crate) struct TypedChunk<'a> {
+	#[serde(borrow, default, deserialize_with = "crate::utils::typed_json::optional_borrowed_str")]
+	id: Option<&'a str>,
+	#[serde(borrow, default, deserialize_with = "crate::utils::typed_json::optional_borrowed_str")]
+	model: Option<&'a str>,
+	#[serde(default, deserialize_with = "crate::utils::typed_json::optional_value")]
+	usage: Option<Value>,
+	#[serde(default, deserialize_with = "crate::utils::typed_json::optional_value")]
+	error: Option<Value>,
+	#[serde(default)]
+	choices: Vec<TypedChoice<'a>>,
+}
+
+#[derive(serde::Deserialize)]
+struct TypedChoice<'a> {
+	#[serde(borrow, default, deserialize_with = "crate::utils::typed_json::truthy_lenient_string")]
+	finish_reason: Option<crate::utils::typed_json::TruthyLenientString<'a>>,
+	#[serde(default, deserialize_with = "crate::utils::typed_json::optional_value")]
+	usage: Option<Value>,
+	#[serde(default)]
+	delta: Option<TypedDelta<'a>>,
+}
+
+#[derive(serde::Deserialize)]
+struct TypedDelta<'a> {
+	#[serde(borrow, default, deserialize_with = "crate::utils::typed_json::optional_borrowed_str")]
+	content: Option<&'a str>,
+	#[serde(borrow, default, deserialize_with = "crate::utils::typed_json::optional_borrowed_str")]
+	reasoning_content: Option<&'a str>,
+	#[serde(borrow, default, deserialize_with = "crate::utils::typed_json::optional_borrowed_str")]
+	reasoning: Option<&'a str>,
+	#[serde(borrow, default, deserialize_with = "crate::utils::typed_json::optional_borrowed_str")]
+	reasoning_text: Option<&'a str>,
+	#[serde(default)]
+	tool_calls: Vec<TypedToolCall<'a>>,
+	#[serde(default, deserialize_with = "crate::utils::typed_json::optional_value")]
+	reasoning_details: Option<Value>,
+}
+
+#[derive(serde::Deserialize)]
+struct TypedToolCall<'a> {
+	#[serde(default, deserialize_with = "crate::utils::typed_json::optional_i64")]
+	index: Option<i64>,
+	#[serde(borrow, default, deserialize_with = "crate::utils::typed_json::optional_borrowed_str")]
+	id: Option<&'a str>,
+	#[serde(default)]
+	function: Option<TypedFunction<'a>>,
+}
+
+#[derive(serde::Deserialize)]
+struct TypedFunction<'a> {
+	#[serde(borrow, default, deserialize_with = "crate::utils::typed_json::optional_borrowed_str")]
+	name: Option<&'a str>,
+	#[serde(borrow, default, deserialize_with = "crate::utils::typed_json::optional_borrowed_str")]
+	arguments: Option<&'a str>,
+}
+
+/// Parse one payload with the typed shape; `None` routes to the `Value`
+/// fallback (not JSON, not an object, or any typed-shape mismatch, so a
+/// duplicate-key or exotic document keeps the exact old behavior).
+pub(crate) fn parse_typed_chunk(payload: &str) -> Option<TypedChunk<'_>> {
+	if !payload.trim_start().starts_with('{') {
+		return None;
+	}
+	serde_json::from_str(payload).ok()
+}
+
+
+/// TS: `parseChunkUsage(rawUsage, model, cacheWriteCost?)`
+pub(crate) fn parse_chunk_usage(raw_usage: &Value, model: &Model, cache_write_cost: Option<f64>) -> crate::types::Usage {
+	let prompt_tokens = raw_usage
+		.get("prompt_tokens")
+		.and_then(Value::as_f64)
+		.filter(|value| *value != 0.0)
+		.unwrap_or(0.0);
+	let prompt_tokens_details = raw_usage.get("prompt_tokens_details");
+	let reported_cached_tokens = prompt_tokens_details
+		.and_then(|details| details.get("cached_tokens"))
+		.and_then(Value::as_f64)
+		.or_else(|| raw_usage.get("prompt_cache_hit_tokens").and_then(Value::as_f64))
+		.unwrap_or(0.0);
+	let cache_write_tokens = prompt_tokens_details
+		.and_then(|details| details.get("cache_write_tokens"))
+		.and_then(Value::as_f64)
+		.filter(|value| *value != 0.0)
+		.unwrap_or(0.0);
+
+	// Normalize to pi-ai semantics:
+	// - cacheRead: hits from cache created by previous requests only
+	// - cacheWrite: tokens written to cache in this request
+	// Some OpenAI-compatible providers (observed on OpenRouter) report cached_tokens
+	// as (previous hits + current writes). In that case, remove cacheWrite from cacheRead.
+	let cache_read_tokens = if cache_write_tokens > 0.0 {
+		(reported_cached_tokens - cache_write_tokens).max(0.0)
+	} else {
+		reported_cached_tokens
+	};
+
+	let input = (prompt_tokens - cache_read_tokens - cache_write_tokens).max(0.0);
+	// OpenAI completion_tokens already includes reasoning_tokens.
+	let output_tokens = raw_usage
+		.get("completion_tokens")
+		.and_then(Value::as_f64)
+		.filter(|value| *value != 0.0)
+		.unwrap_or(0.0);
+	let mut usage = crate::types::Usage {
+		input,
+		output: output_tokens,
+		cache_read: cache_read_tokens,
+		cache_write: cache_write_tokens,
+		total_tokens: input + output_tokens + cache_read_tokens + cache_write_tokens,
+		cost: crate::types::UsageCost::zero(),
+	};
+	let overrides = cache_write_cost.map(|cache_write| CostOverrides {
+		cache_write: Some(cache_write),
+	});
+	calculate_cost(model, &mut usage, overrides.as_ref());
+	usage
+}
+
+
+/// TS: `mapStopReason(reason)` result.
+struct StopReasonResult {
+	stop_reason: String,
+	error_message: Option<String>,
+}
+
+/// TS: `mapStopReason(reason)`
+fn map_stop_reason(reason: Option<&Value>) -> StopReasonResult {
+	let Some(reason) = reason else {
+		return StopReasonResult {
+			stop_reason: "stop".to_string(),
+			error_message: None,
+		};
+	};
+	if reason.is_null() {
+		return StopReasonResult {
+			stop_reason: "stop".to_string(),
+			error_message: None,
+		};
+	}
+	let reason = match reason {
+		Value::String(reason) => reason.clone(),
+		other => other.to_string(),
+	};
+	match reason.as_str() {
+		"stop" | "end" => StopReasonResult {
+			stop_reason: "stop".to_string(),
+			error_message: None,
+		},
+		"length" => StopReasonResult {
+			stop_reason: "length".to_string(),
+			error_message: None,
+		},
+		"function_call" | "tool_calls" => StopReasonResult {
+			stop_reason: "toolUse".to_string(),
+			error_message: None,
+		},
+		"content_filter" => StopReasonResult {
+			stop_reason: "error".to_string(),
+			error_message: Some("Provider finish_reason: content_filter".to_string()),
+		},
+		"network_error" => StopReasonResult {
+			stop_reason: "error".to_string(),
+			error_message: Some("Provider finish_reason: network_error".to_string()),
+		},
+		_ => StopReasonResult {
+			stop_reason: "error".to_string(),
+			error_message: Some(format!("Provider finish_reason: {reason}")),
+		},
+	}
+}
+
+
+fn observe_chunk_usage(raw: &Value, model: &Model, options: Option<&OpenAICompletionsOptions>, stream: &AssistantMessageEventStream) {
+	let Some(observer) = options.and_then(|options| options.stream.on_usage_observation.as_ref()) else { return; };
+	let finite = |value: Option<&Value>| value.and_then(Value::as_f64).filter(|value| value.is_finite() && *value >= 0.0);
+	let observation = crate::types::ProviderUsageObservation {
+		input_tokens: Some(finite(raw.get("prompt_tokens"))),
+		cached_input_tokens: Some(finite(raw.get("prompt_tokens_details").and_then(|v| v.get("cached_tokens")))
+			.or_else(|| finite(raw.get("prompt_cache_hit_tokens")))),
+		output_tokens: Some(finite(raw.get("completion_tokens"))),
+		reasoning_tokens: Some(finite(raw.get("completion_tokens_details").and_then(|v| v.get("reasoning_tokens")))),
+		total_tokens: Some(finite(raw.get("total_tokens"))),
+		// Raw OpenAI-compatible wire totals, not pi-ai's normalized uncached input.
+		cached_input_included_in_input: Some(Some(true)),
+		reasoning_included_in_output: Some(Some(true)),
+	};
+	if let Ok(future) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| observer(observation, model))) {
+		// Monitoring stays off the output path, but its completion is owned.
+		stream.spawn(future);
+	}
+}
+
+
+/// TS: `interface StreamingToolCallBlock extends ToolCall { partialArgs?; streamIndex? }`
+#[derive(Debug, Clone, Default)]
+struct StreamingToolCallBlock {
+	tool_call: ToolCall,
+	partial_args: Option<StreamingJsonAccumulator>,
+	stream_index: Option<i64>,
+}
+
+/// TS: `type StreamingBlock = TextContent | ThinkingContent | StreamingToolCallBlock`
+#[derive(Debug, Clone)]
+enum StreamingBlock {
+	Text(TextContent),
+	Thinking(ThinkingContent),
+	ToolCall(StreamingToolCallBlock),
+}
+
+/// The streaming accumulator for one response: it mirrors the TypeScript closures
+/// (`finishBlock`, `ensureTextBlock`, `ensureThinkingBlock`, `ensureToolCallBlock`)
+/// and the `blocks` array that `output.content` aliases.
+pub(crate) struct StreamState {
+	blocks: Vec<StreamingBlock>,
+	text_block: Option<usize>,
+	thinking_block: Option<usize>,
+	tool_call_blocks_by_index: HashMap<i64, usize>,
+	tool_call_blocks_by_id: HashMap<String, usize>,
+	reasoning_details_by_index: HashMap<i64, Map<String, Value>>,
+	next_reasoning_details_index: i64,
+	reasoning_details_block: Option<usize>,
+}
+
+impl StreamState {
+	pub(crate) fn new() -> Self {
+		Self {
+			blocks: Vec::new(),
+			text_block: None,
+			thinking_block: None,
+			tool_call_blocks_by_index: HashMap::new(),
+			tool_call_blocks_by_id: HashMap::new(),
+			reasoning_details_by_index: HashMap::new(),
+			next_reasoning_details_index: 0,
+			reasoning_details_block: None,
+		}
+	}
+
+	/// `output.content` - the assistant message content the stream events carry.
+	fn content(&self) -> Vec<ContentBlock> {
+		self.blocks
+			.iter()
+			.map(|block| match block {
+				StreamingBlock::Text(text) => ContentBlock::Text(text.clone()),
+				StreamingBlock::Thinking(thinking) => ContentBlock::Thinking(thinking.clone()),
+				StreamingBlock::ToolCall(tool_call) => ContentBlock::ToolCall(tool_call.tool_call.clone()),
+			})
+			.collect()
+	}
+}
+
+
+/// The `partial: output` payload: `output.content` aliases the live `blocks` array.
+fn partial_message(output: &AssistantMessage, state: &StreamState) -> AssistantMessage {
+	let mut partial = output.clone();
+	partial.content = state.content();
+	partial
+}
+
+fn flush_tool_arguments(block: &mut StreamingToolCallBlock) {
+	if let Some(mut arguments) = block.partial_args.take() {
+		if let Some(parsed) = arguments.flush() {
+			block.tool_call.arguments = parsed.as_object().cloned().unwrap_or_default();
+		}
+	}
+	block.stream_index = None;
+}
+
+/// TS: `getContentIndex(block)`
+fn finish_block(
+	state: &mut StreamState,
+	content_index: usize,
+	output: &AssistantMessage,
+	stream: &AssistantMessageEventStream,
+) {
+	if let StreamingBlock::ToolCall(block) = &mut state.blocks[content_index] {
+		flush_tool_arguments(block);
+	}
+	let partial = partial_message(output, state);
+	match &mut state.blocks[content_index] {
+		StreamingBlock::Text(block) => {
+			let content = block.text.clone();
+			stream.push(AssistantMessageEvent::TextEnd {
+				content_index,
+				content,
+				partial,
+			});
+		}
+		StreamingBlock::Thinking(block) => {
+			let content = block.thinking.clone();
+			stream.push(AssistantMessageEvent::ThinkingEnd {
+				content_index,
+				content,
+				partial,
+			});
+		}
+		StreamingBlock::ToolCall(block) => {
+			let tool_call = block.tool_call.clone();
+			stream.push(AssistantMessageEvent::ToolCallEnd {
+				content_index,
+				tool_call,
+				partial,
+			});
+		}
+	}
+}
+
+/// TS: `ensureTextBlock()`
+fn ensure_text_block(
+	state: &mut StreamState,
+	output: &AssistantMessage,
+	stream: &AssistantMessageEventStream,
+) -> usize {
+	if state.text_block.is_none() {
+		state.blocks.push(StreamingBlock::Text(TextContent::new("")));
+		let index = state.blocks.len() - 1;
+		state.text_block = Some(index);
+		let partial = partial_message(output, state);
+		stream.push(AssistantMessageEvent::TextStart {
+			content_index: index,
+			partial,
+		});
+	}
+	state.text_block.expect("text block")
+}
+
+/// TS: `ensureThinkingBlock(thinkingSignature)`
+fn ensure_thinking_block(
+	state: &mut StreamState,
+	output: &AssistantMessage,
+	stream: &AssistantMessageEventStream,
+	thinking_signature: &str,
+) -> usize {
+	if state.thinking_block.is_none() {
+		let mut block = ThinkingContent::new("");
+		block.thinking_signature = Some(thinking_signature.to_string());
+		state.blocks.push(StreamingBlock::Thinking(block));
+		let index = state.blocks.len() - 1;
+		state.thinking_block = Some(index);
+		let partial = partial_message(output, state);
+		stream.push(AssistantMessageEvent::ThinkingStart {
+			content_index: index,
+			partial,
+		});
+	}
+	state.thinking_block.expect("thinking block")
+}
+
+
+/// `ensure_tool_call_block` for the borrowed tool-call shape. Same block
+/// bookkeeping, no `Value` lookups.
+fn ensure_typed_tool_call_block(
+	state: &mut StreamState,
+	output: &AssistantMessage,
+	stream: &AssistantMessageEventStream,
+	tool_call: &TypedToolCall<'_>,
+) -> usize {
+	let stream_index = tool_call.index;
+	let tool_call_id = tool_call.id.unwrap_or_default();
+	let tool_call_name = tool_call
+		.function
+		.as_ref()
+		.and_then(|function| function.name)
+		.unwrap_or_default();
+
+	let mut block_index = stream_index.and_then(|index| state.tool_call_blocks_by_index.get(&index).copied());
+	if block_index.is_none() && !tool_call_id.is_empty() {
+		block_index = state.tool_call_blocks_by_id.get(tool_call_id).copied();
+	}
+	let index = match block_index {
+		Some(index) => index,
+		None => {
+			let block = StreamingToolCallBlock {
+				tool_call: ToolCall::new(tool_call_id.to_string(), tool_call_name.to_string(), Map::new()),
+				partial_args: Some(StreamingJsonAccumulator::default()),
+				stream_index,
+			};
+			state.blocks.push(StreamingBlock::ToolCall(block));
+			let index = state.blocks.len() - 1;
+			if let Some(stream_index) = stream_index {
+				state.tool_call_blocks_by_index.insert(stream_index, index);
+			}
+			if !tool_call_id.is_empty() {
+				state.tool_call_blocks_by_id.insert(tool_call_id.to_string(), index);
+			}
+			let partial = partial_message(output, state);
+			stream.push(AssistantMessageEvent::ToolCallStart {
+				content_index: index,
+				partial,
+			});
+			index
+		}
+	};
+
+	let mut register_index: Option<i64> = None;
+	if let StreamingBlock::ToolCall(block) = &mut state.blocks[index] {
+		if let Some(stream_index) = stream_index {
+			if block.stream_index.is_none() {
+				block.stream_index = Some(stream_index);
+				register_index = Some(stream_index);
+			}
+		}
+	}
+	if let Some(stream_index) = register_index {
+		state.tool_call_blocks_by_index.insert(stream_index, index);
+	}
+	if !tool_call_id.is_empty() {
+		state.tool_call_blocks_by_id.insert(tool_call_id.to_string(), index);
+	}
+	index
+}
+
+
+/// The `reasoning_details` merge from the Value consumer, shared by both paths.
+fn handle_reasoning_details(
+	reasoning_details: &[Value],
+	state: &mut StreamState,
+	output: &mut AssistantMessage,
+	stream: &AssistantMessageEventStream,
+) {
+	for detail in reasoning_details {
+		let Some(detail_record) = detail.as_object() else {
+			continue;
+		};
+		let explicit_index = detail_record.get("index").and_then(Value::as_i64);
+		let index = explicit_index.unwrap_or(state.next_reasoning_details_index);
+		state.next_reasoning_details_index = state.next_reasoning_details_index.max(index + 1);
+		let previous_detail = state.reasoning_details_by_index.get(&index).cloned();
+		let mut merged_detail = previous_detail.clone().unwrap_or_default();
+		for (key, value) in detail_record {
+			merged_detail.insert(key.clone(), value.clone());
+		}
+		for field in ["text", "summary"] {
+			let previous_fragment = previous_detail
+				.as_ref()
+				.and_then(|detail| detail.get(field))
+				.and_then(Value::as_str);
+			let fragment = detail_record.get(field).and_then(Value::as_str);
+			if let (Some(previous_fragment), Some(fragment)) = (previous_fragment, fragment) {
+				merged_detail.insert(
+					field.to_string(),
+					Value::String(format!("{previous_fragment}{fragment}")),
+				);
+			}
+		}
+		state.reasoning_details_by_index.insert(index, merged_detail);
+		if detail_record.get("type").and_then(Value::as_str) == Some("reasoning.encrypted")
+			&& detail_record.get("id").and_then(Value::as_str).is_some()
+			&& detail_record.get("data").map(|data| !data.is_null()).unwrap_or(false)
+		{
+			let detail_id = detail_record.get("id").and_then(Value::as_str).unwrap_or_default();
+			let matching = state.blocks.iter_mut().find(|block| match block {
+				StreamingBlock::ToolCall(tool_call) => tool_call.tool_call.id == detail_id,
+				_ => false,
+			});
+			if let Some(StreamingBlock::ToolCall(tool_call)) = matching {
+				tool_call.tool_call.thought_signature = Some(Value::Object(detail_record.clone()).to_string());
+			}
+		}
+	}
+
+	if !state.reasoning_details_by_index.is_empty() {
+		let index = match state.reasoning_details_block {
+			Some(index) => index,
+			None => {
+				let mut block = ThinkingContent::new("");
+				block.redacted = Some(true);
+				state.blocks.push(StreamingBlock::Thinking(block));
+				let index = state.blocks.len() - 1;
+				state.reasoning_details_block = Some(index);
+				let partial = partial_message(output, state);
+				stream.push(AssistantMessageEvent::ThinkingStart {
+					content_index: index,
+					partial,
+				});
+				index
+			}
+		};
+		let mut indexes: Vec<i64> = state.reasoning_details_by_index.keys().copied().collect();
+		indexes.sort_unstable();
+		let details: Vec<Map<String, Value>> = indexes
+			.iter()
+			.filter_map(|index| state.reasoning_details_by_index.get(index).cloned())
+			.collect();
+		if let StreamingBlock::Thinking(block) = &mut state.blocks[index] {
+			block.thinking_signature = Some(encode_reasoning_details(&details));
+		}
+	}
+}
+
+
+/// The borrowed fast path for the common chunk shapes: same observable
+/// behavior as `handle_value_chunk`, no `Value` DOM for the hot fields.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn handle_typed_chunk(
+	typed: TypedChunk<'_>,
+	model: &Model,
+	options_ref: Option<&OpenAICompletionsOptions>,
+	output: &mut AssistantMessage,
+	state: &mut StreamState,
+	stream: &AssistantMessageEventStream,
+	cache_write_cost: Option<f64>,
+	response_headers: &IndexMap<String, String>,
+	finished: &mut bool,
+) -> Result<(), StreamError> {
+	if let Some(error) = typed.error.as_ref().filter(|error| js_truthy(error)) {
+		return Err(StreamError::in_stream_api_error(error, response_headers));
+	}
+	if output.response_id.as_deref().map(str::is_empty).unwrap_or(true) {
+		if let Some(id) = typed.id {
+			output.response_id = Some(id.to_string());
+		}
+	}
+	if let Some(chunk_model) = typed.model {
+		if !chunk_model.is_empty() && chunk_model != model.id {
+			if output.response_model.as_deref().map(str::is_empty).unwrap_or(true) {
+				output.response_model = Some(chunk_model.to_string());
+			}
+		}
+	}
+	let chunk_usage = typed.usage.as_ref().filter(|value| js_truthy(value));
+	if let Some(chunk_usage) = chunk_usage {
+		output.usage = parse_chunk_usage(chunk_usage, model, cache_write_cost);
+		observe_chunk_usage(chunk_usage, model, options_ref, stream);
+	}
+	// `choices.first()` matches the Value consumer; a non-object array element
+	// deserializes to a default-shaped choice whose field reads all yield
+	// `None`, like `choices[0]` on a non-object did.
+	let Some(choice) = typed.choices.first() else {
+		return Ok(());
+	};
+	if chunk_usage.is_none() {
+		if let Some(choice_usage) = choice.usage.as_ref().filter(|value| js_truthy(value)) {
+			output.usage = parse_chunk_usage(choice_usage, model, cache_write_cost);
+			observe_chunk_usage(choice_usage, model, options_ref, stream);
+		}
+	}
+	if let Some(finish_reason) = choice.finish_reason.as_ref().filter(|reason| reason.is_truthy()) {
+		*finished = true;
+		let reason_value = Value::String(finish_reason.as_str().to_string());
+		let finish_reason_result = map_stop_reason(Some(&reason_value));
+		output.stop_reason = finish_reason_result.stop_reason;
+		if let Some(error_message) = finish_reason_result.error_message {
+			output.error_message = Some(error_message);
+		}
+	}
+	let Some(delta) = choice.delta.as_ref() else {
+		return Ok(());
+	};
+	if let Some(content) = delta.content {
+		if !content.is_empty() {
+			let index = ensure_text_block(state, output, stream);
+			if let StreamingBlock::Text(block) = &mut state.blocks[index] {
+				block.text.push_str(content);
+			}
+			let partial = partial_message(output, state);
+			stream.push(AssistantMessageEvent::TextDelta {
+				content_index: index,
+				delta: content.to_string(),
+				partial,
+			});
+		}
+	}
+
+	// Some endpoints return reasoning in reasoning_content (llama.cpp),
+	// or reasoning (other openai compatible endpoints)
+	// Use the first non-empty reasoning field to avoid duplication
+	// (e.g., chutes.ai returns both reasoning_content and reasoning with same content)
+	let reasoning_fields = [
+		("reasoning_content", delta.reasoning_content),
+		("reasoning", delta.reasoning),
+		("reasoning_text", delta.reasoning_text),
+	];
+	if let Some((field_name, found_reasoning_field)) = reasoning_fields
+		.iter()
+		.find_map(|(name, field)| field.filter(|text| !text.is_empty()).map(|text| (*name, text)))
+	{
+		let index = ensure_thinking_block(state, output, stream, field_name);
+		if let StreamingBlock::Thinking(block) = &mut state.blocks[index] {
+			block.thinking.push_str(found_reasoning_field);
+		}
+		let partial = partial_message(output, state);
+		stream.push(AssistantMessageEvent::ThinkingDelta {
+			content_index: index,
+			delta: found_reasoning_field.to_string(),
+			partial,
+		});
+	}
+
+	for tool_call in &delta.tool_calls {
+		let index = ensure_typed_tool_call_block(state, output, stream, tool_call);
+		let tool_call_id = tool_call.id;
+		let tool_call_name = tool_call.function.as_ref().and_then(|function| function.name);
+		let mut register_id: Option<&str> = None;
+		if let StreamingBlock::ToolCall(block) = &mut state.blocks[index] {
+			if block.tool_call.id.is_empty() {
+				if let Some(tool_call_id) = tool_call_id {
+					block.tool_call.id = tool_call_id.to_string();
+					register_id = Some(tool_call_id);
+				}
+			}
+			if block.tool_call.name.is_empty() {
+				if let Some(tool_call_name) = tool_call_name {
+					block.tool_call.name = tool_call_name.to_string();
+				}
+			}
+		}
+		if let Some(register_id) = register_id {
+			state.tool_call_blocks_by_id.insert(register_id.to_string(), index);
+		}
+
+		let mut delta_text = String::new();
+		if let Some(arguments) = tool_call.function.as_ref().and_then(|function| function.arguments) {
+			delta_text = arguments.to_string();
+			if let StreamingBlock::ToolCall(block) = &mut state.blocks[index] {
+				let partial_args = block.partial_args.get_or_insert_with(StreamingJsonAccumulator::default);
+				if let Some(parsed) = partial_args.append(arguments) {
+					block.tool_call.arguments = parsed.as_object().cloned().unwrap_or_default();
+				}
+			}
+		}
+		let partial = partial_message(output, state);
+		stream.push(AssistantMessageEvent::ToolCallDelta {
+			content_index: index,
+			delta: delta_text,
+			partial,
+		});
+	}
+
+	if let Some(reasoning_details) = delta.reasoning_details.as_ref().and_then(Value::as_array) {
+		handle_reasoning_details(reasoning_details, state, output, stream);
+	}
+	Ok(())
+}
+
+
+/// A thrown provider/SDK error: `message` is what the TypeScript catch turns into
+/// `output.errorMessage`, `value` is the structured shape `recordStreamFailure`
+/// inspects.
+#[derive(Debug, Clone)]
+pub(crate) struct StreamError {
+	message: String,
+	value: Value,
+}
+
+impl StreamError {
+	/// TS SDK `APIError.makeMessage(status, error, message)` text.
+	fn api_error_message(status: Option<u16>, error: Option<&Value>, message: Option<&str>) -> String {
+		// `const msg = error?.message ? typeof error.message === 'string' ? error.message :
+		// JSON.stringify(error.message) : error ? JSON.stringify(error) : message;`
+		let msg = error
+			.and_then(|error| error.get("message"))
+			.filter(|value| js_truthy(value))
+			.map(|value| match value {
+				Value::String(text) => text.clone(),
+				other => other.to_string(),
+			})
+			.or_else(|| error.filter(|error| js_truthy(error)).map(|error| error.to_string()))
+			.or_else(|| message.map(str::to_string));
+		match (msg, status) {
+			(Some(msg), Some(status)) if !msg.is_empty() => format!("{status} {msg}"),
+			(_, Some(status)) => format!("{status} status code (no body)"),
+			(Some(msg), None) => msg,
+			(None, None) => "(no status code or body)".to_string(),
+		}
+	}
+
+
+	/// The `headers` property of a thrown SDK error (`Headers` -> record).
+	fn error_headers_value(headers: &IndexMap<String, String>) -> Value {
+		let mut header_map = Map::new();
+		for (name, header_value) in headers {
+			header_map.insert(name.clone(), Value::String(header_value.clone()));
+		}
+		Value::Object(header_map)
+	}
+
+
+	/// The SDK's in-stream error throw (`Stream.fromSSEResponse`):
+	/// `if (data && data.error) throw new APIError(undefined, data.error, undefined, response.headers);`
+	fn in_stream_api_error(error: &Value, headers: &IndexMap<String, String>) -> Self {
+		let text = Self::api_error_message(None, Some(error), None);
+		let mut value = json!({
+			"name": "Error",
+			"message": text.clone(),
+			"error": error.clone(),
+		});
+		if let Some(object) = value.as_object_mut() {
+			object.insert("headers".to_string(), Self::error_headers_value(headers));
+		}
+		Self { message: text, value }
+	}
+}
+
+}
+
+
+/// Consumer-agnostic interface: one arm is the verbatim pre-change consumer
+/// (`consumer_reference`), the other is the live production consumer. Both
+/// take the same pre-framed payload list, so the printed delta isolates the
+/// consumer change alone.
+trait ConsumerPath {
+	fn new_consumer() -> Self;
+	fn consume(
+		&mut self,
+		payload: &str,
+		model: &crate::types::Model,
+		output: &mut crate::types::AssistantMessage,
+		stream: &crate::utils::event_stream::AssistantMessageEventStream,
+		headers: &indexmap::IndexMap<String, String>,
+		finished: &mut bool,
+	) -> bool;
+}
+
+struct NewConsumer {
+	state: super::openai_completions::StreamState,
+}
+
+impl ConsumerPath for NewConsumer {
+	fn new_consumer() -> Self {
+		NewConsumer { state: super::openai_completions::StreamState::new() }
+	}
+
+	fn consume(
+		&mut self,
+		payload: &str,
+		model: &crate::types::Model,
+		output: &mut crate::types::AssistantMessage,
+		stream: &crate::utils::event_stream::AssistantMessageEventStream,
+		headers: &indexmap::IndexMap<String, String>,
+		finished: &mut bool,
+	) -> bool {
+		let Some(typed) = super::openai_completions::parse_typed_chunk(payload) else {
+			return false;
+		};
+		super::openai_completions::handle_typed_chunk(
+			typed,
+			model,
+			None::<&super::openai_completions::OpenAICompletionsOptions>,
+			output,
+			&mut self.state,
+			stream,
+			None,
+			headers,
+			finished,
+		)
+		.is_ok()
+	}
+}
+
+struct OldConsumer {
+	state: consumer_reference::StreamState,
+}
+
+impl ConsumerPath for OldConsumer {
+	fn new_consumer() -> Self {
+		OldConsumer { state: consumer_reference::StreamState::new() }
+	}
+
+	fn consume(
+		&mut self,
+		payload: &str,
+		model: &crate::types::Model,
+		output: &mut crate::types::AssistantMessage,
+		stream: &crate::utils::event_stream::AssistantMessageEventStream,
+		headers: &indexmap::IndexMap<String, String>,
+		finished: &mut bool,
+	) -> bool {
+		let Some(typed) = consumer_reference::parse_typed_chunk(payload) else {
+			return false;
+		};
+		consumer_reference::handle_typed_chunk(
+			typed,
+			model,
+			None::<&super::openai_completions::OpenAICompletionsOptions>,
+			output,
+			&mut self.state,
+			stream,
+			None,
+			headers,
+			finished,
+		)
+		.is_ok()
+	}
+}
+
+/// Payloads (pre-framed `data:` values, `[DONE]` excluded) for the consumer
+/// A/B: framing is out of scope, so the arms see identical input lists.
+fn fixture_payloads(body: &[u8]) -> Vec<String> {
+	let mut reader = SseLineReader::new();
+	let mut payloads = Vec::new();
+	let _ = reader.push(body, |payload| {
+		if !payload.starts_with("[DONE]") {
+			payloads.push(payload);
+		}
+		true
+	});
+	if let Some(payload) = reader.finish() {
+		if !payload.starts_with("[DONE]") {
+			payloads.push(payload);
+		}
+	}
+	payloads
+}
+
+/// Consumer A/B arm: typed parse + `handle_typed_chunk` (the partial snapshot
+/// hot path) over pre-framed payloads, no framing. The event stream is never
+/// drained, so each event (and its partial snapshot) stays resident; fixture
+/// counts are bounded for that reason.
+fn bench_consumer_path<P: ConsumerPath>(payloads: &[String], model: &crate::types::Model) -> Sample {
+	let run = |mut collect: Option<&mut Vec<f64>>| -> (f64, usize) {
+		let mut consumer = P::new_consumer();
+		let mut output = crate::types::AssistantMessage::new(
+			model.api.clone(),
+			model.provider.clone(),
+			model.id.clone(),
+			0,
+		);
+		output.usage = crate::types::Usage::zero();
+		let stream = crate::utils::event_stream::create_assistant_message_event_stream();
+		let stream = stream.producer_handle();
+		let headers: indexmap::IndexMap<String, String> = indexmap::IndexMap::new();
+		let mut finished = false;
+		let mut events = 0usize;
+		let start = Instant::now();
+		for payload in payloads {
+			let event_start = collect.is_some().then(Instant::now);
+			if consumer.consume(payload, model, &mut output, &stream, &headers, &mut finished) {
+				events += 1;
+			}
+			if let (Some(samples), Some(event_start)) = (collect.as_mut(), event_start) {
+				samples.push(event_start.elapsed().as_nanos() as f64);
+			}
+		}
+		(start.elapsed().as_nanos() as f64, events)
+	};
+	// Best of 3 clean passes (see `bench_framing`).
+	let (total_ns, events) = (0..3)
+		.map(|_| run(None))
+		.reduce(|best, next| if next.0 < best.0 { next } else { best })
+		.unwrap_or((0.0, 0));
+	let mut per_event = Vec::new();
+	let _ = run(Some(&mut per_event));
+	Sample { total_ns, events, per_event }
+}
+
+/// First/last-decile mean of per-event samples for one arm: the linear-in-text
+/// per-event growth that makes the total quadratic when every event clones the
+/// full snapshot.
+fn decile_growth<P: ConsumerPath>(payloads: &[String], model: &crate::types::Model, label: &str) {
+	let sample = bench_consumer_path::<P>(payloads, model);
+	let samples = sample.per_event;
+	if samples.len() >= 20 {
+		let decile = samples.len() / 10;
+		let first = samples[..decile].iter().sum::<f64>() / decile as f64;
+		let last = samples[samples.len() - decile..].iter().sum::<f64>() / decile as f64;
+		println!(
+			"{label:<24} first decile {first:>9.0} ns/event   last decile {last:>9.0} ns/event   growth {:.1}x",
+			last / first
+		);
+	}
+}
+
+
+// ---------------------------------------------------------------------------
+// Consumer byte-identity (partial_message lane)
+// ---------------------------------------------------------------------------
+
+/// Runs one arm's consumer over pre-framed payloads and returns every emitted
+/// event as serialized JSON with the message `timestamp` normalized (it is
+/// construction time, not consumer behavior) so both arms compare equal.
+async fn consumer_event_trace<P: ConsumerPath>(payloads: &[String], model: &crate::types::Model) -> Vec<String> {
+	let mut consumer = P::new_consumer();
+	let mut output = crate::types::AssistantMessage::new(
+		model.api.clone(),
+		model.provider.clone(),
+		model.id.clone(),
+		0,
+	);
+	output.usage = crate::types::Usage::zero();
+	let stream = crate::utils::event_stream::create_assistant_message_event_stream();
+	let producer = stream.producer_handle();
+	let headers: indexmap::IndexMap<String, String> = indexmap::IndexMap::new();
+	let mut finished = false;
+	for payload in payloads {
+		let _ = consumer.consume(payload, model, &mut output, &producer, &headers, &mut finished);
+	}
+	let mut trace = Vec::new();
+	// The consumer never ends its stream (the provider caller owns the
+	// terminal), so close it here before draining or `next()` waits forever.
+	stream.end(None);
+	while let Some(event) = stream.next().await {
+		let mut value = serde_json::to_value(&event).expect("event serializes");
+		normalize_partial_timestamps(&mut value);
+		trace.push(serde_json::to_string(&value).expect("event serializes"));
+	}
+	trace
+}
+
+/// Scrubs the construction `timestamp` from every embedded `AssistantMessage`
+/// (top-level `partial`, nested `message`/`error`) so both arms compare equal.
+fn normalize_partial_timestamps(value: &mut serde_json::Value) {
+	fn scrub(message: &mut serde_json::Value) {
+		if let Some(object) = message.as_object_mut() {
+			object.insert("timestamp".to_string(), serde_json::json!(0));
+		}
+	}
+	match value {
+		serde_json::Value::Object(object) => {
+			for key in ["partial", "message", "error"] {
+				if let Some(message) = object.get_mut(key) {
+					scrub(message);
+				}
+			}
+		}
+		_ => {}
+	}
+}
+
+#[tokio::test]
+async fn consumer_matches_reference_on_text_fixtures() {
+	let model = model();
+	for sizes in [vec![100; 24], vec![1024; 12]] {
+		let body = text_fixture(&sizes);
+		let payloads = fixture_payloads(&body);
+		let old = consumer_event_trace::<OldConsumer>(&payloads, &model).await;
+		let new = consumer_event_trace::<NewConsumer>(&payloads, &model).await;
+		assert_eq!(old.len(), new.len(), "event count diverged (text sizes {sizes:?})");
+		for (index, (old_event, new_event)) in old.iter().zip(new.iter()).enumerate() {
+			assert_eq!(old_event, new_event, "text sizes {sizes:?}: event #{index} diverged");
+		}
+		assert!(!old.is_empty(), "fixtures must emit events");
+	}
+}
+
+#[tokio::test]
+async fn consumer_matches_reference_on_reasoning_tool_and_mixed_fixtures() {
+	let model = model();
+	let cases: Vec<(&str, Vec<u8>)> = vec![
+		("reasoning-dense", reasoning_fixture(30, 64)),
+		("tool-call-delta", tool_call_fixture(30)),
+		(
+			"mixed",
+			{
+				let mut body = reasoning_fixture(3, 16);
+				body.extend_from_slice(&text_fixture(&vec![48; 5]));
+				body.extend_from_slice(&tool_call_fixture(6));
+				body
+			},
+		),
+	];
+	for (name, body) in cases {
+		let payloads = fixture_payloads(&body);
+		let old = consumer_event_trace::<OldConsumer>(&payloads, &model).await;
+		let new = consumer_event_trace::<NewConsumer>(&payloads, &model).await;
+		assert_eq!(old, new, "{name}: event sequence diverged");
+	}
+}
+
+#[tokio::test]
+async fn consumer_matches_reference_on_finish_reason_usage_and_done_tails() {
+	let model = model();
+	// finish_reason + usage tail (the chunk shapes after the deltas).
+	let mut body = text_fixture(&vec![32; 4]);
+	body.extend_from_slice(
+		b"data: {\"id\":\"chatcmpl-1\",\"model\":\"repro-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}
+
+",
+	);
+	body.extend_from_slice(
+		b"data: {\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5,\"total_tokens\":15},\"choices\":[]}
+
+",
+	);
+	let payloads = fixture_payloads(&body);
+	let old = consumer_event_trace::<OldConsumer>(&payloads, &model).await;
+	let new = consumer_event_trace::<NewConsumer>(&payloads, &model).await;
+	assert_eq!(old, new, "finish/usage tail diverged");
+	assert!(old.iter().any(|event| event.contains("\"text_delta\"")), "deltas must be present");
+}
+
+/// Text-delta events for the responses consumer bench: `output_item.added` +
+/// `content_part.added` + N x `output_text.delta` + item.done + completed.
+fn responses_consumer_events(count: usize, delta_size: usize) -> Vec<serde_json::Value> {
+	let mut events = vec![
+		serde_json::json!({ "type": "response.created", "response": { "id": "resp_bench" } }),
+		serde_json::json!({ "type": "response.output_item.added", "item": { "type": "message", "id": "msg_bench", "content": [] } }),
+		serde_json::json!({ "type": "response.content_part.added", "part": { "type": "output_text", "text": "" } }),
+	];
+	let text = "x".repeat(delta_size);
+	for _ in 0..count {
+		events.push(serde_json::json!({ "type": "response.output_text.delta", "delta": text }));
+	}
+	events.push(serde_json::json!({
+		"type": "response.output_item.done",
+		"item": { "type": "message", "id": "msg_bench", "phase": "final_answer",
+			"content": [{ "type": "output_text", "text": "" }] }
+	}));
+	events.push(serde_json::json!({
+		"type": "response.completed",
+		"response": { "id": "resp_bench", "status": "completed",
+			"usage": { "input_tokens": 5, "output_tokens": 3, "total_tokens": 8 } }
+	}));
+	events
+}
+
+/// Reasoning-dense variant: summary part + reasoning summary text deltas.
+fn responses_reasoning_events(count: usize, delta_size: usize) -> Vec<serde_json::Value> {
+	let mut events = vec![
+		serde_json::json!({ "type": "response.output_item.added", "item": { "type": "reasoning", "id": "rs_bench", "summary": [] } }),
+		serde_json::json!({ "type": "response.reasoning_summary_part.added", "part": { "type": "summary_text", "text": "" } }),
+	];
+	let text = "r".repeat(delta_size);
+	for _ in 0..count {
+		events.push(serde_json::json!({ "type": "response.reasoning_summary_text.delta", "delta": text }));
+	}
+	events.push(serde_json::json!({
+		"type": "response.output_item.done",
+		"item": { "type": "reasoning", "id": "rs_bench", "summary": [] }
+	}));
+	events.push(serde_json::json!({ "type": "response.completed", "response": { "status": "completed" } }));
+	events
+}
+
+/// Tool-call variant: function_call item + argument fragments.
+fn responses_tool_events(count: usize) -> Vec<serde_json::Value> {
+	let mut events = vec![serde_json::json!({
+		"type": "response.output_item.added",
+		"item": { "type": "function_call", "id": "fc_bench", "call_id": "call_bench", "name": "run", "arguments": "" }
+	})];
+	for i in 0..count {
+		let fragment = format!("{{\"field_{i}\":\"value {i}\",\"pad\":\"{}\"}}", "p".repeat(24));
+		events.push(serde_json::json!({
+			"type": "response.function_call_arguments.delta",
+			"delta": fragment
+		}));
+	}
+	events.push(serde_json::json!({
+		"type": "response.output_item.done",
+		"item": { "type": "function_call", "id": "fc_bench", "call_id": "call_bench", "name": "run", "arguments": "{}" }
+	}));
+	events.push(serde_json::json!({ "type": "response.completed", "response": { "status": "completed" } }));
+	events
+}
+
+fn responses_consumer_pass(
+	events: &[serde_json::Value],
+	model: &crate::types::Model,
+) -> (f64, usize, Vec<f64>) {
+	use super::openai_responses_shared::process_responses_stream;
+	use futures::stream::Stream;
+	use futures::task::{Context, Poll};
+
+	struct StampingStream {
+		events: std::collections::VecDeque<serde_json::Value>,
+		stamps: std::sync::Arc<std::sync::Mutex<Vec<Instant>>>,
+	}
+
+	impl Stream for StampingStream {
+		type Item = serde_json::Value;
+
+		fn poll_next(mut self: std::pin::Pin<&mut Self>, _context: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+			let this = self.as_mut().get_mut();
+			match this.events.pop_front() {
+				Some(event) => {
+					this.stamps.lock().unwrap().push(Instant::now());
+					Poll::Ready(Some(event))
+				}
+				None => Poll::Ready(None),
+			}
+		}
+	}
+
+	let stream = crate::utils::event_stream::create_assistant_message_event_stream();
+	let producer = stream.producer_handle();
+	let mut output = crate::types::AssistantMessage::new(
+		model.api.clone(),
+		model.provider.clone(),
+		model.id.clone(),
+		0,
+	);
+	output.usage = crate::types::Usage::zero();
+	let stamps = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+	let stamping = StampingStream { events: events.iter().cloned().collect(), stamps: stamps.clone() };
+	let start = Instant::now();
+	let result = futures::executor::block_on(process_responses_stream(
+		Box::pin(stamping),
+		&mut output,
+		&producer,
+		model,
+		None,
+	));
+	let total_ns = start.elapsed().as_nanos() as f64;
+	let _ = result;
+	let stamps = stamps.lock().unwrap().clone();
+	let count = stamps.len();
+	let mut per_event = Vec::with_capacity(count.saturating_sub(1));
+	for pair in stamps.windows(2) {
+		per_event.push(pair[1].duration_since(pair[0]).as_nanos() as f64);
+	}
+	(total_ns, count, per_event)
+}
+
+
+#[test]
+#[ignore = "micro-benchmark; run with --ignored --nocapture"]
+fn responses_consumer_bench() {
+	let total_start = Instant::now();
+	let model = crate::types::Model {
+		id: "repro-model".to_string(),
+		name: "Repro Model".to_string(),
+		api: "openai-responses".to_string(),
+		provider: "repro-provider".to_string(),
+		base_url: "http://127.0.0.1:1".to_string(),
+		reasoning: true,
+		input: vec![crate::types::InputModality::Text],
+		cost: crate::types::ModelCost::zero(),
+		context_window: 128_000.0,
+		max_tokens: 4096.0,
+		..Default::default()
+	};
+
+	println!("=== responses consumer hot path (process_responses_stream, events stay resident) ===");
+	let fixtures: Vec<(&str, Vec<serde_json::Value>)> = vec![
+		("text 100B x200", responses_consumer_events(200, 100)),
+		("text 1KB x200", responses_consumer_events(200, 1024)),
+		("text 4KB x200", responses_consumer_events(200, 4096)),
+		("reasoning-dense 1KB x200", responses_reasoning_events(200, 1024)),
+		("tool-call-delta x200", responses_tool_events(200)),
+	];
+	let mut samples_by_fixture: Vec<(&str, Vec<f64>)> = Vec::new();
+	for (name, events) in &fixtures {
+		let (total_ns, count, per_event) = responses_consumer_pass(events, &model);
+		let mean = total_ns / count as f64;
+		let (p50, p95, p99) = percentiles(per_event.clone());
+		println!(
+			"{name:<44} {count:>5} ev  mean {mean:>9.0} ns/ev  p50 {p50:>9.0} p95 {p95:>9.0} p99 {p99:>9.0}"
+		);
+		samples_by_fixture.push((name, per_event));
+	}
+
+	println!("\n=== responses consumer decile growth probe (per-event ns by decile) ===");
+	for (name, samples) in &samples_by_fixture {
+		if samples.len() >= 20 {
+			let decile = samples.len() / 10;
+			let first = samples[..decile].iter().sum::<f64>() / decile as f64;
+			let last = samples[samples.len() - decile..].iter().sum::<f64>() / decile as f64;
+			println!("{name:<44} first decile {first:>9.0} ns/event   last decile {last:>9.0} ns/event   growth {:.1}x", last / first);
+		}
+	}
+	println!("\nTotal bench time: {:.1}s", total_start.elapsed().as_secs_f32());
+}
+
+
+#[tokio::test]
+async fn responses_consumer_bench_fixtures_stream_expected_event_kinds() {
+	use super::openai_responses_shared::process_responses_stream;
+
+	let model = crate::types::Model {
+		id: "repro-model".to_string(),
+		name: "Repro Model".to_string(),
+		api: "openai-responses".to_string(),
+		provider: "repro-provider".to_string(),
+		base_url: "http://127.0.0.1:1".to_string(),
+		reasoning: true,
+		input: vec![crate::types::InputModality::Text],
+		cost: crate::types::ModelCost::zero(),
+		context_window: 128_000.0,
+		max_tokens: 4096.0,
+		..Default::default()
+	};
+	let stream = crate::utils::event_stream::create_assistant_message_event_stream();
+	let producer = stream.producer_handle();
+	let mut output = crate::types::AssistantMessage::new(
+		model.api.clone(),
+		model.provider.clone(),
+		model.id.clone(),
+		0,
+	);
+	output.usage = crate::types::Usage::zero();
+	let events = responses_consumer_events(8, 32);
+	process_responses_stream(
+		Box::pin(futures::stream::iter(events)),
+		&mut output,
+		&producer,
+		&model,
+		None,
+	)
+	.await
+	.unwrap();
+	let mut kinds = Vec::new();
+	stream.end(None);
+	while let Some(event) = stream.next().await {
+		kinds.push(crate::types::AssistantMessageEvent::event_type(&event).to_string());
+	}
+	assert_eq!(
+		kinds,
+		vec![
+			"text_start".to_string(),
+			"text_delta".to_string(),
+			"text_delta".to_string(),
+			"text_delta".to_string(),
+			"text_delta".to_string(),
+			"text_delta".to_string(),
+			"text_delta".to_string(),
+			"text_delta".to_string(),
+			"text_delta".to_string(),
+			"text_end".to_string(),
+		]
+	);
 }
