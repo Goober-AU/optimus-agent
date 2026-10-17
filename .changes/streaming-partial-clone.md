@@ -1,0 +1,3 @@
+- Removed the dead per-event `output.content` deep clone in the completions streaming consumer (`partial_message` now builds the partial field-wise, so only the live block snapshot is cloned per event instead of cloning the previous snapshot and discarding it).
+- Streamed tool-call arguments are moved out of the parsed JSON value instead of cloned (`partial_args.append`/`flush` results), removing the second per-event deep clone on tool-argument streams.
+- Added mid-stream partial-snapshot tests pinning the exact per-event `AssistantMessage` (blocks, usage, response id) for mixed reasoning/text/tool streams, so the clone elision cannot ship a stale snapshot.
