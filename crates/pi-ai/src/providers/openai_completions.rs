@@ -1310,7 +1310,7 @@ enum StreamingBlock {
 /// The streaming accumulator for one response: it mirrors the TypeScript closures
 /// (`finishBlock`, `ensureTextBlock`, `ensureThinkingBlock`, `ensureToolCallBlock`)
 /// and the `blocks` array that `output.content` aliases.
-struct StreamState {
+pub(crate) struct StreamState {
 	blocks: Vec<StreamingBlock>,
 	text_block: Option<usize>,
 	thinking_block: Option<usize>,
@@ -1322,7 +1322,7 @@ struct StreamState {
 }
 
 impl StreamState {
-	fn new() -> Self {
+	pub(crate) fn new() -> Self {
 		Self {
 			blocks: Vec::new(),
 			text_block: None,
@@ -1356,7 +1356,7 @@ impl StreamState {
 /// `output.errorMessage`, `value` is the structured shape `recordStreamFailure`
 /// inspects.
 #[derive(Debug, Clone)]
-struct StreamError {
+pub(crate) struct StreamError {
 	message: String,
 	value: Value,
 }
@@ -1528,7 +1528,7 @@ fn is_cancelled(signal: Option<&tokio_util::sync::CancellationToken>) -> bool {
 /// block-splitting reader there is no rescan from byte 0, no per-event drain,
 /// and no per-line String: lines are borrowed slices and `data:` values
 /// accumulate into one buffer that becomes the payload.
-struct SseLineReader {
+pub(crate) struct SseLineReader {
 	line: Vec<u8>,
 	data: Vec<u8>,
 	has_data: bool,
@@ -1536,7 +1536,7 @@ struct SseLineReader {
 }
 
 impl SseLineReader {
-	fn new() -> Self {
+	pub(crate) fn new() -> Self {
 		Self {
 			line: Vec::new(),
 			data: Vec::new(),
@@ -1549,19 +1549,24 @@ impl SseLineReader {
 	/// its terminating empty line is framed, so a burst chunk does not delay the
 	/// first event behind the framing of the whole chunk; a `false` return stops
 	/// the scan exactly where the previous reader returned.
-	fn push(&mut self, bytes: &[u8], mut on_payload: impl FnMut(String) -> bool) -> bool {
-		for &byte in bytes {
-			if byte == b'\n' {
-				let line = std::mem::take(&mut self.line);
-				if let Some(payload) = self.decode_line(&line) {
-					if !on_payload(payload) {
-						return false;
-					}
+	///
+	/// Lines are accumulated by span copy: `memchr`-style scanning is replaced by
+	/// the slice `split` over the chunk, so whole spans between newlines are
+	/// `extend`ed into the line buffer instead of being pushed byte by byte.
+	pub(crate) fn push(&mut self, bytes: &[u8], mut on_payload: impl FnMut(String) -> bool) -> bool {
+		let mut offset = 0;
+		while let Some(newline) = bytes[offset..].iter().position(|&byte| byte == b'\n') {
+			let end = offset + newline;
+			self.line.extend_from_slice(&bytes[offset..end]);
+			let line = std::mem::take(&mut self.line);
+			if let Some(payload) = self.decode_line(&line) {
+				if !on_payload(payload) {
+					return false;
 				}
-			} else {
-				self.line.push(byte);
 			}
+			offset = end + 1;
 		}
+		self.line.extend_from_slice(&bytes[offset..]);
 		true
 	}
 
@@ -1569,49 +1574,72 @@ impl SseLineReader {
 	/// has already been decoded, so only the pending event can still flush; an
 	/// unterminated tail line accumulates and is dropped, exactly like the
 	/// previous reader's tail split.
-	fn finish(&mut self) -> Option<String> {
+	pub(crate) fn finish(&mut self) -> Option<String> {
 		let line = std::mem::take(&mut self.line);
 		self.decode_line(&line)
 	}
 
 	/// One `SSEDecoder::decode` step over a borrowed line.
 	fn decode_line(&mut self, line: &[u8]) -> Option<String> {
-		let line = String::from_utf8_lossy(line);
-		let line = match line.strip_suffix('\r') {
+		// Strip one trailing CR (CRLF line endings) before UTF-8 validation so
+		// the borrowed slices never contain it.
+		let line = match line.strip_suffix(b"\r") {
 			Some(stripped) => stripped,
-			None => line.as_ref(),
+			None => line,
 		};
 		if line.is_empty() {
 			return self.flush();
 		}
-		if line.starts_with(':') {
+		if line[0] == b':' {
 			return None;
 		}
-		let (fieldname, value) = match line.find(':') {
+		let (fieldname, value) = match line.iter().position(|&byte| byte == b':') {
 			Some(index) => (&line[..index], &line[index + 1..]),
-			None => (line.as_ref(), ""),
+			None => (line, &[][..]),
 		};
-		let value = value.strip_prefix(' ').unwrap_or(value);
-		if fieldname == "event" {
+		let value = match value.strip_prefix(b" ") {
+			Some(stripped) => stripped,
+			None => value,
+		};
+		if fieldname == b"event" {
 			self.saw_event = true;
-		} else if fieldname == "data" {
-			if self.has_data {
-				self.data.push(b'\n');
+		} else if fieldname == b"data" {
+			// The value must be UTF-8 for `extend_from_slice` semantics to
+			// match the String-based reader: invalid bytes become U+FFFD there,
+			// so the same replacement is produced here on the lossy path.
+			match std::str::from_utf8(value) {
+				Ok(value) => {
+					if self.has_data {
+						self.data.push(b'\n');
+					}
+					self.data.extend_from_slice(value.as_bytes());
+					self.has_data = true;
+				}
+				Err(_) => {
+					let value = String::from_utf8_lossy(value);
+					if self.has_data {
+						self.data.push(b'\n');
+					}
+					self.data.extend_from_slice(value.as_bytes());
+					self.has_data = true;
+				}
 			}
-			self.data.extend_from_slice(value.as_bytes());
-			self.has_data = true;
 		}
 		None
 	}
 
 	/// The empty-line flush: `data` joins with `\n` like `Vec::join`, and an
-	/// `event`-only block still flushes an empty payload.
+	/// `event`-only block still flushes an empty payload. A valid-UTF-8 buffer
+	/// is converted in place (no copy); the lossy path matches the old reader.
 	fn flush(&mut self) -> Option<String> {
 		if !self.has_data && !self.saw_event {
 			return None;
 		}
-		let payload = String::from_utf8_lossy(&self.data).into_owned();
-		self.data.clear();
+		let data = std::mem::take(&mut self.data);
+		let payload = match String::from_utf8(data) {
+			Ok(payload) => payload,
+			Err(error) => String::from_utf8_lossy(error.as_bytes()).into_owned(),
+		};
 		self.has_data = false;
 		self.saw_event = false;
 		Some(payload)
@@ -1735,13 +1763,14 @@ fn forward_sse_payload(
 	// Parse only when the observer is attached (the consumer would otherwise
 	// parse the same bytes again) and never for the [DONE] sentinel, which the
 	// observation seam classifies before parsing.
-	let parsed = if observer.is_some() && !payload.starts_with("[DONE]") {
+	let done = payload.starts_with("[DONE]");
+	let parsed = if observer.is_some() && !done {
 		serde_json::from_str::<Value>(&payload).ok()
 	} else {
 		None
 	};
 	observe_sse_payload_parsed(observer, &payload, parsed.as_ref());
-	if payload.starts_with("[DONE]") {
+	if done {
 		let _ = sender.send(Ok(SsePayload::Done));
 		return false;
 	}
@@ -1933,7 +1962,7 @@ async fn post_chat_completions(
 /// members (`usage`, `error`, `reasoning_details`) keep the `Value` DOM so it
 /// is only built when the member is present.
 #[derive(serde::Deserialize)]
-struct TypedChunk<'a> {
+pub(crate) struct TypedChunk<'a> {
 	#[serde(borrow, default, deserialize_with = "crate::utils::typed_json::optional_borrowed_str")]
 	id: Option<&'a str>,
 	#[serde(borrow, default, deserialize_with = "crate::utils::typed_json::optional_borrowed_str")]
@@ -1994,7 +2023,7 @@ struct TypedFunction<'a> {
 /// Parse one payload with the typed shape; `None` routes to the `Value`
 /// fallback (not JSON, not an object, or any typed-shape mismatch, so a
 /// duplicate-key or exotic document keeps the exact old behavior).
-fn parse_typed_chunk(payload: &str) -> Option<TypedChunk<'_>> {
+pub(crate) fn parse_typed_chunk(payload: &str) -> Option<TypedChunk<'_>> {
 	if !payload.trim_start().starts_with('{') {
 		return None;
 	}
@@ -2250,7 +2279,7 @@ fn handle_value_chunk(
 /// The borrowed fast path for the common chunk shapes: same observable
 /// behavior as `handle_value_chunk`, no `Value` DOM for the hot fields.
 #[allow(clippy::too_many_arguments)]
-fn handle_typed_chunk(
+pub(crate) fn handle_typed_chunk(
 	typed: TypedChunk<'_>,
 	model: &Model,
 	options_ref: Option<&OpenAICompletionsOptions>,

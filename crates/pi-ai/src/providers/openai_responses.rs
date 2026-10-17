@@ -849,7 +849,8 @@ async fn api_error_from_response(response: reqwest::Response) -> ThrownValue {
 #[derive(Default)]
 pub struct SseBuffer {
     line: Vec<u8>,
-    data: Vec<String>,
+    data: Vec<u8>,
+    has_data: bool,
     skip_lf: bool,
     pub error: Option<String>,
 }
@@ -858,34 +859,66 @@ impl SseBuffer {
     /// Appends a chunk and returns the complete `data:` payloads it completed.
     pub fn push(&mut self, bytes: &[u8]) -> Vec<Value> {
         let mut events: Vec<Value> = Vec::new();
-        for &byte in bytes {
-            if self.skip_lf {
-                self.skip_lf = false;
-                if byte == b'\n' { continue; }
+        let mut offset = 0;
+        // A CR that ended the previous chunk swallows a leading LF before any
+        // other byte of this chunk (CRLF split across a chunk boundary). An
+        // EMPTY chunk consumes nothing: the flag must survive it, or the LF
+        // that starts the NEXT chunk would terminate an empty line instead.
+        if self.skip_lf && !bytes.is_empty() {
+            self.skip_lf = false;
+            if bytes.first() == Some(&b'\n') {
+                offset = 1;
             }
-            if byte != b'\r' && byte != b'\n' {
-                self.line.push(byte);
-                continue;
+        }
+        while let Some(end) = bytes[offset..].iter().position(|&byte| byte == b'\r' || byte == b'\n') {
+            let end = offset + end;
+            let terminator = bytes[end];
+            self.line.extend_from_slice(&bytes[offset..end]);
+            offset = end + 1;
+            // A CR immediately followed by LF is one terminator.
+            self.skip_lf = terminator == b'\r';
+            if self.skip_lf && offset < bytes.len() && bytes[offset] == b'\n' {
+                offset += 1;
             }
-            self.skip_lf = byte == b'\r';
-            // Decode only complete lines: a UTF-8 scalar can span body chunks.
-            if self.line.is_empty() {
-                let data = self.data.join("\n");
-                self.data.clear();
+            self.end_line(&mut events);
+        }
+        self.line.extend_from_slice(&bytes[offset..]);
+        events
+    }
+
+    /// One line terminator: an empty line joins the pending `data:` values and
+    /// parses them; a non-empty `data:` line appends to the accumulator.
+    fn end_line(&mut self, events: &mut Vec<Value>) {
+        if self.line.is_empty() {
+            let data = std::mem::take(&mut self.data);
+            let has_data = std::mem::replace(&mut self.has_data, false);
+            if has_data {
+                // Decode only complete lines: a UTF-8 scalar can span body chunks.
+                let data = match String::from_utf8(data) {
+                    Ok(data) => data,
+                    Err(error) => String::from_utf8_lossy(error.as_bytes()).into_owned(),
+                };
                 if !data.is_empty() && data.trim() != "[DONE]" {
                     if let Ok(parsed) = serde_json::from_str::<Value>(&data) {
                         events.push(parsed);
                     }
                 }
-            } else {
-                let line = String::from_utf8_lossy(&self.line);
-                if let Some(data) = line.strip_prefix("data:") {
-                    self.data.push(data.strip_prefix(' ').unwrap_or(data).to_string());
-                }
-                self.line.clear();
             }
+        } else {
+            // Strip one trailing CR that preceded this terminator is not
+            // needed here: CR is itself a terminator, so a line never ends
+            // with a CR in this reader.
+            let line = String::from_utf8_lossy(&self.line);
+            if let Some(data) = line.strip_prefix("data:") {
+                let data = data.strip_prefix(' ').unwrap_or(data);
+                if self.has_data {
+                    self.data.push(b'\n');
+                }
+                self.data.extend_from_slice(data.as_bytes());
+                self.has_data = true;
+            }
+            self.line.clear();
         }
-        events
     }
 }
 
