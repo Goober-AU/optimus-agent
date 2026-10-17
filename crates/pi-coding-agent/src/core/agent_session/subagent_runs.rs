@@ -181,10 +181,19 @@ impl AgentSession {
             Ok(Some(listed)) => listed,
             _ => return Occ2SendPolicy::disabled(),
         };
+        // The agent-message surface addresses peers by id or by session
+        // name (the roster resolves `receiver_name` selectors before the
+        // send seam runs), so the capability lookup must accept both:
+        // matching only the ids silently pinned every name-addressed send
+        // to OCC-1 even with a capable, opted-in peer.
         let Some(peer_entry) = listed
             .agents
             .iter()
-            .find(|agent| agent.active_session_id == target || agent.session_id == target)
+            .find(|agent| {
+                agent.active_session_id == target
+                    || agent.session_id == target
+                    || agent.session_name.as_deref() == Some(target)
+            })
         else {
             return Occ2SendPolicy::disabled();
         };
@@ -240,6 +249,103 @@ impl AgentSession {
             &speaker,
             true,
         )
+    }
+}
+
+/// One `on_session_published` application for a child run: makes the
+/// child addressable on the run row, arms the run's abort closure and
+/// resolves the publication deferred, then honors a cancellation or a
+/// retained stop that landed before publication.
+///
+/// The publish seam is invoked by both the runtime host (daemon-hosted
+/// children publish inside `create_rlm_subagent_runtime`,
+/// daemon_subagents.rs) and `execute_child_run` once the runtime returns,
+/// so the same session can reach this function twice. Re-entry with the
+/// already-published session is a no-op: a duplicate invocation must never
+/// double-fire the abort, double-request the retained stop or replace the
+/// armed abort. A different session (a host that re-created the child)
+/// still replaces the row's session exactly like the first publication.
+///
+/// Returns whether this application scheduled an abort of the child
+/// (a run cancelled before its session was published).
+fn apply_rlm_child_session_published(
+    parent: &Arc<AgentSession>,
+    run: &Arc<Mutex<RlmChildRun>>,
+    child: &Arc<AgentSession>,
+) -> bool {
+    {
+        let guard = run.lock().unwrap();
+        if guard
+            .session
+            .as_ref()
+            .is_some_and(|existing| Arc::ptr_eq(existing, child))
+        {
+            return false;
+        }
+    }
+    let weak_child = Arc::downgrade(child);
+    let abort: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
+        if let Some(child) = weak_child.upgrade() {
+            tokio::spawn(Box::pin(async move {
+                let _ = child.abort().await;
+            }));
+        }
+    });
+    let cancelled = {
+        let mut run = run.lock().unwrap();
+        run.session = Some(child.clone());
+        run.abort = abort.clone();
+        run.publication.resolve();
+        run.status == "cancelled"
+    };
+    let retained = parent
+        .retained_stop_ids
+        .lock()
+        .unwrap()
+        .get(&run.lock().unwrap().id)
+        .cloned();
+    if let Some(generation) = retained.as_deref() {
+        let id = run.lock().unwrap().id.clone();
+        child.request_retained_stop(&id, generation);
+    } else if cancelled {
+        abort();
+    }
+    cancelled && retained.is_none()
+}
+
+/// Terminal notices are the only durable record that a child finished,
+/// failed or was cancelled: losing one leaves the parent model to end its
+/// turn never learning the child's terminal state. A publication failure
+/// (an explicit-stop deferral racing a persistence error) was previously
+/// dropped after one attempt with only an eprintln. The ladder retries the
+/// identical notice a bounded number of times before giving up: the
+/// payload is never altered between attempts.
+const RLM_TERMINAL_NOTICE_PUBLISH_ATTEMPTS: usize = 3;
+/// Delay before the first retry; grows linearly per attempt.
+const RLM_TERMINAL_NOTICE_RETRY_DELAY_MS: u64 = 100;
+
+/// Publishes one terminal notice through `publish` with the bounded retry
+/// ladder above. `publish` is the session's `defer_rlm_terminal_notice`
+/// sink in production; tests inject a failing sink to observe the retry.
+async fn publish_rlm_terminal_notice_durable<F>(mut publish: F) -> Result<(), String>
+where
+    F: FnMut() -> pi_ai::types::BoxFuture<Result<(), String>>,
+{
+    let mut attempt = 0usize;
+    loop {
+        match publish().await {
+            Ok(()) => return Ok(()),
+            Err(error) => {
+                attempt += 1;
+                if attempt >= RLM_TERMINAL_NOTICE_PUBLISH_ATTEMPTS {
+                    return Err(error);
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(
+                    RLM_TERMINAL_NOTICE_RETRY_DELAY_MS * attempt as u64,
+                ))
+                .await;
+            }
+        }
     }
 }
 
@@ -476,29 +582,8 @@ impl AgentSession {
         let weak_parent = Arc::downgrade(self);
         options.on_session_published = Some(Arc::new(move |child| {
             if let Some(run) = weak_run.upgrade() {
-                let weak_child = Arc::downgrade(child);
-                let abort: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
-                    if let Some(child) = weak_child.upgrade() {
-                        tokio::spawn(Box::pin(async move {
-                            let _ = child.abort().await;
-                        }));
-                    }
-                });
-                let cancelled = {
-                    let mut run = run.lock().unwrap();
-                    run.session = Some(child.clone());
-                    run.abort = abort.clone();
-                    run.publication.resolve();
-                    run.status == "cancelled"
-                };
-                let retained = weak_parent.upgrade().and_then(|parent| {
-                    parent.retained_stop_ids.lock().unwrap().get(&run.lock().unwrap().id).cloned()
-                });
-                if let Some(generation) = retained {
-                    let id = run.lock().unwrap().id.clone();
-                    child.request_retained_stop(&id, &generation);
-                } else if cancelled {
-                    abort();
+                if let Some(parent) = weak_parent.upgrade() {
+                    apply_rlm_child_session_published(&parent, &run, child);
                 }
             }
         }));
@@ -576,10 +661,19 @@ impl AgentSession {
             let _ = pending.wait().await;
             return;
         }
-        match self.defer_rlm_terminal_notice(custom_notice(notice)).await {
+        let notice_message = custom_notice(notice);
+        match publish_rlm_terminal_notice_durable(|| {
+            let parent = self.clone();
+            let message = clone_custom_message(&notice_message);
+            Box::pin(async move { parent.defer_rlm_terminal_notice(message).await })
+        })
+        .await
+        {
             Ok(()) => pending.resolve(),
             Err(error) => {
-                eprintln!("Could not publish subagent deletion: {error}");
+                eprintln!(
+                    "Could not publish subagent deletion after {RLM_TERMINAL_NOTICE_PUBLISH_ATTEMPTS} attempts: {error}"
+                );
                 pending.reject(error);
             }
         }
@@ -871,8 +965,17 @@ impl AgentSession {
                     now_ms_i64(),
                 )
             };
-            if let Err(error) = self.defer_rlm_terminal_notice(custom_notice(notice)).await {
-                eprintln!("Could not publish subagent completion: {error}");
+            let notice_message = custom_notice(notice);
+            if let Err(error) = publish_rlm_terminal_notice_durable(|| {
+                let parent = self.clone();
+                let message = clone_custom_message(&notice_message);
+                Box::pin(async move { parent.defer_rlm_terminal_notice(message).await })
+            })
+            .await
+            {
+                eprintln!(
+                    "Could not publish subagent completion after {RLM_TERMINAL_NOTICE_PUBLISH_ATTEMPTS} attempts: {error}"
+                );
             }
         }
         if current.detached_deletion.is_some() {
@@ -1658,5 +1761,462 @@ mod rlm_child_activity_tests {
             .unwrap();
         assert_eq!(entry_serialized["activity_elapsed_ms"], json!(5.0));
         assert_eq!(entry_serialized["stalled_ms"], json!(6.0));
+    }
+}
+
+/// OCC-2 send-seam resolution, publish idempotency and terminal-notice
+/// durability tests (wave-2 fixes for the subagent comm audit W3).
+#[cfg(test)]
+mod rlm_child_comm_fix_tests {
+    use super::*;
+    use crate::core::agent_messages::{
+        AgentSessionMessageListResult, AgentSessionMessageSendInput, AgentSessionMessageReceipt,
+        AgentFamilyRosterResult,
+    };
+    use crate::core::occ::dialect::OccCapability;
+    use pi_agent_core::types::{
+        AgentEvent, AgentMessage, AgentState, ShouldStopAfterTurnContext, StreamFn,
+    };
+    use pi_ai::types::{Message, OnPayload, OnResponse};
+
+    type Listener =
+        Arc<dyn Fn(AgentEvent, Option<CancellationToken>) -> BoxFuture<()> + Send + Sync>;
+
+    /// Minimal scripted agent with a counted `abort`, so a double-abort is
+    /// observable (same shape as `rlm_child_activity_tests::ScriptedAgent`).
+    struct CountingAgent {
+        state: Mutex<AgentState>,
+        stream_fn: Mutex<StreamFn>,
+        aborts: Arc<AtomicU64>,
+    }
+
+    impl CountingAgent {
+        fn new() -> Arc<Self> {
+            Arc::new(Self {
+                state: Mutex::new(AgentState::default()),
+                stream_fn: Mutex::new(pi_agent_core::agent::default_stream_fn()),
+                aborts: Arc::new(AtomicU64::new(0)),
+            })
+        }
+    }
+
+    impl AgentHandle for CountingAgent {
+        fn state(&self) -> AgentState {
+            self.state.lock().unwrap().clone()
+        }
+
+        fn set_state(&self, state: AgentState) {
+            *self.state.lock().unwrap() = state;
+        }
+
+        fn subscribe(&self, _listener: Listener) -> Box<dyn Fn() + Send + Sync> {
+            Box::new(|| {})
+        }
+
+        fn set_before_tool_call(&self, _hook: BeforeToolCallHook) {}
+        fn set_after_tool_call(&self, _hook: AfterToolCallHook) {}
+        fn set_get_continuation_messages(&self, _hook: GetContinuationMessagesHook) {}
+        fn set_before_request(&self, _hook: BeforeRequestHook) {}
+        fn set_should_stop_before_turn(&self, _hook: Arc<dyn Fn() -> bool + Send + Sync>) {}
+        fn set_should_stop_after_turn(
+            &self,
+            _hook: Arc<
+                dyn Fn(ShouldStopAfterTurnContext) -> BoxFuture<bool> + Send + Sync,
+            >,
+        ) {
+        }
+
+        fn set_stream_fn(&self, stream_fn: StreamFn) {
+            *self.stream_fn.lock().unwrap() = stream_fn;
+        }
+
+        fn stream_fn(&self) -> StreamFn {
+            self.stream_fn.lock().unwrap().clone()
+        }
+
+        fn abort(&self) {
+            self.aborts.fetch_add(1, Ordering::SeqCst);
+        }
+
+        fn wait_for_idle(&self) -> BoxFuture<()> {
+            Box::pin(async {})
+        }
+
+        fn prompt(&self, _messages: Vec<AgentMessage>) -> BoxFuture<Result<(), String>> {
+            Box::pin(async { Err("counting agent does not run turns".to_string()) })
+        }
+
+        fn continue_(&self) -> BoxFuture<Result<(), AgentContinueError>> {
+            Box::pin(async { Ok(()) })
+        }
+
+        fn is_streaming(&self) -> bool {
+            self.state.lock().unwrap().is_streaming
+        }
+
+        fn has_queued_messages(&self) -> bool {
+            false
+        }
+
+        fn clear_all_queues(&self) {}
+
+        fn remove_queued_messages(
+            &self,
+            _predicate: Arc<dyn Fn(&AgentMessage) -> bool + Send + Sync>,
+        ) -> Vec<AgentMessage> {
+            Vec::new()
+        }
+
+        fn follow_up(&self, _message: AgentMessage) {}
+        fn set_follow_up_mode(&self, _mode: String) {}
+        fn set_steering_mode(&self, _mode: String) {}
+
+        fn set_convert_to_llm(
+            &self,
+            _convert: Arc<dyn Fn(Vec<AgentMessage>) -> BoxFuture<Vec<Message>> + Send + Sync>,
+        ) {
+        }
+
+        fn set_transform_context(
+            &self,
+            _transform: Arc<
+                dyn Fn(Vec<AgentMessage>, Option<CancellationToken>) -> BoxFuture<Vec<AgentMessage>>
+                    + Send
+                    + Sync,
+            >,
+        ) {
+        }
+
+        fn set_get_api_key(
+            &self,
+            _get_api_key: Arc<dyn Fn(String) -> BoxFuture<Option<String>> + Send + Sync>,
+        ) {
+        }
+
+        fn set_on_payload(&self, _hook: OnPayload) {}
+        fn set_on_response(&self, _hook: OnResponse) {}
+        fn set_tool_execution(&self, _mode: String) {}
+        fn performance_metrics(&self) -> Option<AgentLoopPerformanceMetrics> {
+            None
+        }
+        fn set_performance_metrics(&self, _metrics: Option<AgentLoopPerformanceMetrics>) {}
+        fn signal(&self) -> Option<CancellationToken> {
+            None
+        }
+    }
+
+    /// Builds one session around a scripted agent. `manager` decides whether
+    /// the session has a durable file (OCC-2 reads the preference from it).
+    fn comm_test_session(
+        agent: Arc<dyn AgentHandle>,
+        manager: crate::core::session_manager::SessionManager,
+        controller: Option<Arc<dyn crate::core::agent_messages::AgentSessionMessageController>>,
+    ) -> Arc<AgentSession> {
+        let cwd = std::env::temp_dir().to_string_lossy().to_string();
+        let settings = Arc::new(Mutex::new(
+            crate::core::settings_manager::SettingsManager::in_memory(
+                serde_json::json!({
+                    "autoRefine": {"enabled": false},
+                    "retry": {"enabled": false},
+                    "compaction": {"enabled": false},
+                    "telemetryEnabled": false,
+                    "agentTracesEnabled": false,
+                })
+                .as_object()
+                .unwrap()
+                .clone(),
+            ),
+        ));
+        let loader = Arc::new(crate::core::resource_loader::DefaultResourceLoader::new(
+            crate::core::resource_loader::DefaultResourceLoaderOptions {
+                cwd: cwd.clone(),
+                agent_dir: cwd.clone(),
+                settings_manager: Some(settings.clone()),
+                no_extensions: true,
+                no_skills: true,
+                no_prompt_templates: true,
+                no_themes: true,
+                no_context_files: true,
+                bundled_skills_dir: Some(None),
+                ..Default::default()
+            },
+        ));
+        AgentSession::new(AgentSessionConfig {
+            agent,
+            session_manager: Arc::new(Mutex::new(manager)),
+            settings_manager: settings,
+            service_tier_preference: None,
+            cwd: cwd.clone(),
+            agent_dir: Some(cwd.clone()),
+            scoped_models: None,
+            resource_loader: loader,
+            custom_tools: None,
+            model_registry: Arc::new(Mutex::new(
+                crate::core::model_registry::ModelRegistry::in_memory(
+                    crate::core::auth_storage::AuthStorage::in_memory(Default::default(), None),
+                ),
+            )),
+            initial_active_tool_names: None,
+            allowed_tool_names: None,
+            include_goals: Some(false),
+            agent_message_controller: controller,
+            agent_observe_controller: None,
+            include_compact_skill: Some(false),
+            rlm_heartbeat_controller: None,
+            mcp_manager: None,
+            base_tools_override: Some(Vec::new()),
+            extension_runner_ref: None,
+            session_start_event: None,
+            rlm_depth: Some(0),
+            rlm_max_depth: Some(2),
+            rlm_session_dir: None,
+            rlm_parent_node_id: None,
+            rlm_parent_agent: None,
+            semantic_parent_session_id: None,
+            semantic_spawned_by_request_id: None,
+            subagent_runtime_host: None,
+            autonomous: None,
+            prewarm_ipython_kernel: Some(false),
+            auto_refine_reviewer: None,
+            serialized_refine: None,
+            initial_goal: None,
+        })
+        .unwrap()
+    }
+
+    /// A file-backed session in a tempdir plus a controller that lists one
+    /// family peer: name "worker", ids "a1"/"s1", capability `sym-v1` here.
+    /// A real session file makes `occ2_enabled` resolve the default-on
+    /// preference exactly like production.
+    fn occ2_session_with_peer() -> Arc<AgentSession> {
+        let root = tempfile::tempdir().unwrap();
+        let cwd = root.path().join("workspace");
+        let sessions = root.path().join("sessions");
+        std::fs::create_dir_all(&cwd).unwrap();
+        std::fs::create_dir_all(&sessions).unwrap();
+        let cwd = cwd.to_string_lossy().into_owned();
+        let sessions = sessions.to_string_lossy().into_owned();
+        let mut manager = crate::core::session_manager::SessionManager::create(&cwd, Some(&sessions))
+            .unwrap();
+        manager.new_session(None).unwrap();
+        struct ListingController;
+        impl crate::core::agent_messages::AgentSessionMessageController for ListingController {
+            fn roster(
+                &self,
+            ) -> std::pin::Pin<
+                Box<dyn std::future::Future<Output = Result<AgentFamilyRosterResult, String>> + Send>,
+            > {
+                Box::pin(async { Err("not used by the policy seam".to_string()) })
+            }
+            fn await_pending_child_publication(
+                &self,
+                _selector: String,
+            ) -> std::pin::Pin<
+                Box<dyn std::future::Future<Output = Result<Option<String>, String>> + Send>,
+            > {
+                Box::pin(async { Ok(None) })
+            }
+            fn send_agent_message(
+                &self,
+                _input: AgentSessionMessageSendInput,
+            ) -> std::pin::Pin<
+                Box<
+                    dyn std::future::Future<
+                            Output = Result<AgentSessionMessageReceipt, String>,
+                        > + Send,
+                >,
+            > {
+                Box::pin(async { Err("not used by the policy seam".to_string()) })
+            }
+            fn list_agents(
+                &self,
+            ) -> pi_ai::types::BoxFuture<
+                Result<Option<AgentSessionMessageListResult>, String>,
+            > {
+                Box::pin(async {
+                    Ok(Some(AgentSessionMessageListResult {
+                        current: None,
+                        agents: vec![crate::core::agent_messages::AgentSessionMessageAgentSummary {
+                            active_session_id: "a1".into(),
+                            session_id: "s1".into(),
+                            session_name: Some("worker".into()),
+                            occ_capability: Some(OccCapability::here()),
+                            ..Default::default()
+                        }],
+                    }))
+                })
+            }
+        }
+        // Keep the tempdir alive for the session's lifetime: the session
+        // file must outlive the preference read inside the policy call.
+        let session = comm_test_session(
+            CountingAgent::new(),
+            manager,
+            Some(Arc::new(ListingController)),
+        );
+        std::mem::forget(root);
+        session
+    }
+
+    /// A >floor OCC-1 contract body, the shape a real negotiated send wraps.
+    fn big_occ1_body() -> String {
+        let mut message =
+            crate::core::occ::contract::AgentCommMessage::new("RESULT", "t", "done");
+        message.findings.push(crate::core::occ::contract::Finding {
+            id: "F1".into(),
+            statement: "x".repeat(400),
+            confidence: Some(0.9),
+            evidence: Vec::new(),
+        });
+        message
+            .to_occ1()
+            .expect("contract body encodes")
+            .encode()
+            .expect("OCC-1 body encodes")
+    }
+
+    /// Name-addressed sends must negotiate the same OCC-2 dialect as
+    /// id-addressed sends (BUG-1: the peer lookup only matched ids, so a
+    /// send that succeeded by session name silently stayed OCC-1).
+    #[tokio::test]
+    async fn occ2_send_policy_resolves_name_selected_peers() {
+        let session = occ2_session_with_peer();
+        let message = big_occ1_body();
+        assert!(message.chars().count() > 220, "the body must clear the floor");
+
+        let by_name = session.occ2_target_send_policy("worker", &message).await;
+        assert!(by_name.enabled, "a name-selected peer must negotiate");
+        assert_eq!(by_name.dialect, Some(("sym-v1".to_string(), 1)));
+
+        let by_active_id = session.occ2_target_send_policy("a1", &message).await;
+        assert!(by_active_id.enabled);
+        assert_eq!(by_active_id.dialect, Some(("sym-v1".to_string(), 1)));
+
+        let by_session_id = session.occ2_target_send_policy("s1", &message).await;
+        assert!(by_session_id.enabled);
+
+        // An unknown selector never negotiates, and the floor still holds.
+        let unknown = session.occ2_target_send_policy("nobody", &message).await;
+        assert!(!unknown.enabled);
+        let small = session
+            .occ2_target_send_policy("worker", "OCC/1\nTASK=t\nKIND=RESULT\nSTATUS=done")
+            .await;
+        assert!(!small.enabled, "a body under the floor stays OCC-1");
+    }
+
+    /// A daemon host publishes the child inside `create_rlm_subagent_runtime`
+    /// and `execute_child_run` publishes again with the same session: the
+    /// second application must be a no-op (no abort, no state churn).
+    #[tokio::test]
+    async fn publish_reentry_with_the_same_session_is_a_noop() {
+        let parent = comm_test_session(CountingAgent::new(), {
+            let cwd = std::env::temp_dir().to_string_lossy().to_string();
+            crate::core::session_manager::SessionManager::in_memory(Some(&cwd), Some(&cwd))
+                .unwrap()
+        }, None);
+        let child_agent = CountingAgent::new();
+        let aborts = child_agent.aborts.clone();
+        let child = comm_test_session(child_agent, {
+            let cwd = std::env::temp_dir().to_string_lossy().to_string();
+            crate::core::session_manager::SessionManager::in_memory(Some(&cwd), Some(&cwd))
+                .unwrap()
+        }, None);
+        let run = Arc::new(Mutex::new(empty_rlm_child_run("child")));
+
+        assert!(apply_rlm_child_session_published(&parent, &run, &child));
+        {
+            let guard = run.lock().unwrap();
+            assert!(guard.session.as_ref().is_some_and(|session| Arc::ptr_eq(session, &child)));
+            assert!(guard.publication.is_settled());
+        }
+
+        // Re-entry with the already-published session changes nothing and
+        // never schedules an abort for a live run.
+        assert!(!apply_rlm_child_session_published(&parent, &run, &child));
+        tokio::time::sleep(std::time::Duration::from_millis(150)).await;
+        assert_eq!(aborts.load(Ordering::SeqCst), 0, "no abort may fire");
+    }
+
+    /// A run cancelled between the host's publish and the executor's
+    /// re-entry must abort exactly once (the double-abort guard).
+    #[tokio::test]
+    async fn publish_reentry_after_cancel_does_not_double_abort() {
+        let parent = comm_test_session(CountingAgent::new(), {
+            let cwd = std::env::temp_dir().to_string_lossy().to_string();
+            crate::core::session_manager::SessionManager::in_memory(Some(&cwd), Some(&cwd))
+                .unwrap()
+        }, None);
+        let child_agent = CountingAgent::new();
+        let aborts = child_agent.aborts.clone();
+        let child = comm_test_session(child_agent, {
+            let cwd = std::env::temp_dir().to_string_lossy().to_string();
+            crate::core::session_manager::SessionManager::in_memory(Some(&cwd), Some(&cwd))
+                .unwrap()
+        }, None);
+        let run = Arc::new(Mutex::new(empty_rlm_child_run("child")));
+
+        // First publish with a live run: no abort.
+        apply_rlm_child_session_published(&parent, &run, &child);
+        // The run is cancelled after publication (parent orchestration).
+        run.lock().unwrap().status = "cancelled".into();
+
+        // The executor's re-entry must not re-fire the cancel abort...
+        assert!(!apply_rlm_child_session_published(&parent, &run, &child));
+
+        // ...but a cancelled-before-publish run still aborts exactly once.
+        let fresh = Arc::new(Mutex::new(empty_rlm_child_run("fresh")));
+        fresh.lock().unwrap().status = "cancelled".into();
+        assert!(apply_rlm_child_session_published(&parent, &fresh, &child));
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+        while aborts.load(Ordering::SeqCst) == 0 && std::time::Instant::now() < deadline {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+        assert_eq!(aborts.load(Ordering::SeqCst), 1, "exactly one abort");
+        // And a further re-entry stays at one.
+        assert!(!apply_rlm_child_session_published(&parent, &fresh, &child));
+        tokio::time::sleep(std::time::Duration::from_millis(150)).await;
+        assert_eq!(aborts.load(Ordering::SeqCst), 1, "no second abort may fire");
+    }
+
+    /// A failing terminal-notice sink is retried a bounded number of times
+    /// before the notice is abandoned (BUG-4: one eprintln only).
+    #[tokio::test]
+    async fn terminal_notice_publication_retries_then_succeeds() {
+        let attempts = Arc::new(AtomicU64::new(0));
+        let counting = attempts.clone();
+        let outcome = publish_rlm_terminal_notice_durable(move || {
+            let counting = counting.clone();
+            Box::pin(async move {
+                if counting.fetch_add(1, Ordering::SeqCst) < 2 {
+                    Err("transient persistence failure".to_string())
+                } else {
+                    Ok(())
+                }
+            })
+        })
+        .await;
+        assert_eq!(outcome, Ok(()));
+        assert_eq!(attempts.load(Ordering::SeqCst), 3, "two retries after the failure");
+    }
+
+    /// A permanently failing sink is abandoned after the bounded ladder,
+    /// with the last error surfaced to the caller.
+    #[tokio::test]
+    async fn terminal_notice_publication_gives_up_after_bounded_attempts() {
+        let attempts = Arc::new(AtomicU64::new(0));
+        let counting = attempts.clone();
+        let outcome = publish_rlm_terminal_notice_durable(move || {
+            let counting = counting.clone();
+            Box::pin(async move {
+                counting.fetch_add(1, Ordering::SeqCst);
+                Err("disk is gone".to_string())
+            })
+        })
+        .await;
+        assert_eq!(outcome, Err("disk is gone".to_string()));
+        assert_eq!(
+            attempts.load(Ordering::SeqCst),
+            RLM_TERMINAL_NOTICE_PUBLISH_ATTEMPTS as u64
+        );
     }
 }

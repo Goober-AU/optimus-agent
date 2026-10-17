@@ -372,3 +372,76 @@ async fn messaging_safety_supervisor_rejects_self_unknown_and_unrelated() {
     }
     assert!(target.commands.lock().unwrap().iter().all(|command| command["type"] != "worker_deliver_message"));
 }
+
+
+/// BUG-2 pin (audit W3, P1): family reach is enforced only when the caller
+/// supplies `agentOrigin: true`, while `fromActiveSessionId` attribution
+/// applies regardless. A client that omits `agentOrigin` but sets
+/// `fromActiveSessionId` can therefore deliver as any session it can see
+/// (the `visible()` owner filter still applies), targeting a session far
+/// outside that source's nuclear family.
+///
+/// This is INTENTIONAL parity with the TypeScript supervisor
+/// (`daemon-supervisor.ts`, PR #597 "narrow agent reach to the nuclear
+/// family", Finding 6: "document the accepted direct-socket trust boundary
+/// for agentOrigin without a source session"): `assertAgentFamilyReach`
+/// runs only under `source && command.agentOrigin === true`, and the
+/// trusted sender is built from the roster whenever `fromActiveSessionId`
+/// resolves. The direct socket-client boundary is the trust anchor for
+/// client-issued sends; the reach fence protects agent-originated sends.
+///
+/// This test pins BOTH sides of that boundary so neither regresses
+/// silently: a client send (no `agentOrigin`) reaches an unrelated
+/// depth-2 child with roster-built attribution, and the same send WITH
+/// `agentOrigin: true` is rejected by the family-reach fence.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn messaging_safety_supervisor_client_send_without_agent_origin_is_the_direct_socket_trust_boundary() {
+    let mut fixture = SupervisorFixture::new("messaging-safety-client-origin").await;
+    let _source = ScriptedWorker::new(&fixture, "source", 0, None).await;
+    let target = ScriptedWorker::new(&fixture, "unrelated-child", 2, Some("unrelated-parent")).await;
+
+    // Client-issued send: agentOrigin absent, fromActiveSessionId set.
+    // Current (TS-parity) behavior: the send is forwarded with the
+    // trusted sender built from the roster, without a reach check.
+    let client_send = fixture.send(json!({
+        "type":"send_message","id":"client-origin",
+        "fromActiveSessionId":"source",
+        "targetActiveSessionId":"unrelated-child",
+        "message":"client authoritative send",
+    })).await;
+    assert_eq!(client_send["success"], true, "{client_send}");
+    assert_eq!(client_send["data"]["from"]["activeSessionId"], "source", "{client_send}");
+    assert_eq!(client_send["data"]["from"]["sessionName"], "Name source", "{client_send}");
+    {
+        let commands = target.commands.lock().unwrap();
+        let delivered: Vec<&Value> = commands
+            .iter()
+            .filter(|command| command["type"] == "worker_deliver_message")
+            .collect();
+        assert_eq!(delivered.len(), 1, "the client send is forwarded once: {commands:?}");
+        assert_eq!(delivered[0]["sender"]["activeSessionId"], "source");
+        // The trusted sender is roster-built: a client-supplied spoof is ignored.
+        assert_eq!(delivered[0]["sender"]["sessionName"], "Name source");
+    }
+
+    // Agent-issued send to the same unrelated target: the reach fence
+    // rejects it before any forward.
+    let agent_send = fixture.send(json!({
+        "type":"send_message","id":"agent-origin",
+        "fromActiveSessionId":"source",
+        "targetActiveSessionId":"unrelated-child",
+        "message":"agent send must stay in the family",
+        "agentOrigin":true,
+    })).await;
+    assert_eq!(agent_send["success"], false, "{agent_send}");
+    assert!(
+        agent_send["error"].as_str().unwrap().contains("Agent reach is limited"),
+        "{agent_send}"
+    );
+    let commands = target.commands.lock().unwrap();
+    assert_eq!(
+        commands.iter().filter(|command| command["type"] == "worker_deliver_message").count(),
+        1,
+        "the rejected agent send must not be forwarded: {commands:?}"
+    );
+}
