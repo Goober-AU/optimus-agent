@@ -95,7 +95,11 @@ fn environment_from(read: impl Fn(&str) -> Option<std::ffi::OsString>) -> Enviro
 fn build(redirect: RedirectPolicy) -> Result<reqwest::Client, reqwest::Error> {
     let mut builder = reqwest::Client::builder();
     if redirect == RedirectPolicy::Count {
-        builder = builder.redirect(reqwest::redirect::Policy::none()).pool_max_idle_per_host(4);
+        // 32 matches the campaign's highest measured agent concurrency: hyper-util only
+        // drops idle connections at return-time, so a cap below concurrent streams forces
+        // reconnect churn in burst-gap patterns (measured: 340 accepts vs 32 at conc 32).
+        // The guarded pool itself stays bounded at MAX_CLIENTS; idle sockets cap at 32.
+        builder = builder.redirect(reqwest::redirect::Policy::none()).pool_max_idle_per_host(32);
     }
     // TLS verification and the default proxy/redirect rules are unchanged.
     builder.build()

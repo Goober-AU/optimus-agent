@@ -143,4 +143,291 @@ mod tests {
 		try_shared_client(ClientPolicy::Bedrock { force_http1: true, no_proxy: true }).unwrap();
 		try_shared_client(ClientPolicy::Kiro).unwrap();
 	}
+
+	// -----------------------------------------------------------------------
+	// Churn bench: `cargo test --package=pi-ai --release --lib tcp_pool_churn_bench
+	// -- --ignored --nocapture`
+	// -----------------------------------------------------------------------
+
+	use std::sync::atomic::{AtomicUsize, Ordering};
+	use std::time::Instant;
+
+	fn churn_percentile(sorted: &[u128], fraction: f64) -> u128 {
+		if sorted.is_empty() { return 0; }
+		let index = ((sorted.len() as f64 - 1.0) * fraction).round() as usize;
+		sorted[index.min(sorted.len() - 1)]
+	}
+
+	fn churn_latency_summary(mut samples: Vec<u128>) -> serde_json::Value {
+		samples.sort_unstable();
+		serde_json::json!({
+			"samples": samples.len(),
+			"p50_us": churn_percentile(&samples, 0.50),
+			"p95_us": churn_percentile(&samples, 0.95),
+			"p99_us": churn_percentile(&samples, 0.99),
+			"mean_us": if samples.is_empty() { 0 } else { samples.iter().sum::<u128>() / samples.len() as u128 },
+		})
+	}
+
+	/// Keep-alive HTTP/1.1 echo fixture counting TCP accepts, mirroring the
+	/// client-pool bench fixture in `openai_http_client_pool.rs`.
+	async fn churn_echo_fixture() -> (std::sync::Arc<AtomicUsize>, String, tokio::task::JoinHandle<()>) {
+		use tokio::io::{AsyncReadExt, AsyncWriteExt};
+		let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+		let address = listener.local_addr().unwrap().to_string();
+		let accepts = std::sync::Arc::new(AtomicUsize::new(0));
+		let counted = accepts.clone();
+		let server = tokio::spawn(async move {
+			loop {
+				let (mut socket, _) = match listener.accept().await {
+					Ok(accepted) => accepted,
+					Err(_) => return,
+				};
+				counted.fetch_add(1, Ordering::SeqCst);
+				tokio::spawn(async move {
+					let mut buffer = Vec::new();
+					let mut chunk = [0u8; 2048];
+					loop {
+						while !buffer.windows(4).any(|w| w == b"\r\n\r\n") {
+							match socket.read(&mut chunk).await {
+								Ok(0) | Err(_) => return,
+								Ok(n) => {
+									buffer.extend_from_slice(&chunk[..n]);
+									if buffer.len() > 16384 { return; }
+								}
+							}
+						}
+						buffer.clear();
+						if socket.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: keep-alive\r\n\r\nok").await.is_err() {
+							return;
+						}
+					}
+				});
+			}
+		});
+		(accepts, address, server)
+	}
+
+	/// The Count-policy build shape (redirectless) with a configurable idle cap
+	/// and switchable TCP keepalive.
+	fn churn_count_client(max_idle: Option<usize>, keepalive: bool) -> reqwest::Client {
+		let mut builder = reqwest::Client::builder().redirect(reqwest::redirect::Policy::none());
+		if let Some(max) = max_idle { builder = builder.pool_max_idle_per_host(max); }
+		if !keepalive {
+			builder = builder
+				.tcp_keepalive(None)
+				.tcp_keepalive_interval(None)
+				.tcp_keepalive_retries(None);
+		}
+		builder.build().unwrap()
+	}
+
+	#[derive(Clone, Copy)]
+	enum ChurnPattern {
+		/// Back-to-back requests per worker: the prior client-pool bench shape.
+		Steady,
+		/// One request per worker per wave, barrier-synchronized waves separated
+		/// by an idle gap: the per-turn count-request shape of the guarded pool.
+		BurstGap,
+	}
+
+	async fn churn_scenario(
+		client: &reqwest::Client,
+		pattern: ChurnPattern,
+		concurrency: usize,
+		quota: usize,
+		gap: Duration,
+	) -> serde_json::Value {
+		let (accepts, address, server) = churn_echo_fixture().await;
+		let url = format!("http://{address}/churn");
+		let latencies: std::sync::Arc<std::sync::Mutex<Vec<u128>>> =
+			std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+		let start_barrier = std::sync::Arc::new(tokio::sync::Barrier::new(concurrency));
+		let end_barrier = std::sync::Arc::new(tokio::sync::Barrier::new(concurrency));
+		let mut tasks = Vec::new();
+		for _ in 0..concurrency {
+			let client = client.clone();
+			let url = url.clone();
+			let latencies = latencies.clone();
+			let start_barrier = start_barrier.clone();
+			let end_barrier = end_barrier.clone();
+			tasks.push(tokio::spawn(async move {
+				for _ in 0..quota {
+					if let ChurnPattern::BurstGap = pattern {
+						start_barrier.wait().await;
+					}
+					let started = Instant::now();
+					let response = client.get(&url).timeout(Duration::from_secs(10)).send().await.unwrap();
+					assert_eq!(response.status(), reqwest::StatusCode::OK);
+					assert_eq!(response.text().await.unwrap(), "ok");
+					latencies.lock().unwrap().push(started.elapsed().as_micros());
+					if let ChurnPattern::BurstGap = pattern {
+						end_barrier.wait().await;
+						tokio::time::sleep(gap).await;
+					}
+				}
+			}));
+		}
+		let started = Instant::now();
+		for task in tasks { task.await.unwrap(); }
+		let elapsed = started.elapsed();
+		server.abort();
+		let _ = server.await;
+		let samples = std::sync::Arc::try_unwrap(latencies).unwrap().into_inner().unwrap();
+		let accepts = accepts.load(Ordering::SeqCst);
+		let requests = concurrency * quota;
+		serde_json::json!({
+			"requests": requests,
+			"tcp_accepts": accepts,
+			"accepts_per_request": accepts as f64 / requests as f64,
+			"wall_ms": elapsed.as_millis(),
+			"throughput_rps": requests as f64 / elapsed.as_secs_f64(),
+			"latency": churn_latency_summary(samples),
+		})
+	}
+
+	/// No policy may impose one total deadline on every request sharing the
+	/// client: `ClientBuilder` Debug prints `timeout` and `connect_timeout`
+	/// when set (reqwest async_impl/client.rs `fmt_fields`), so their absence
+	/// pins the header-only-wrapping invariant. Kiro's 15s `connect_timeout`
+	/// is intended and is the only allowed timeout field.
+	#[test]
+	fn no_policy_ever_sets_a_client_builder_total_timeout() {
+		for policy in [
+			ClientPolicy::Default,
+			ClientPolicy::RedirectNone,
+			ClientPolicy::Bedrock { force_http1: false, no_proxy: false },
+			ClientPolicy::Bedrock { force_http1: true, no_proxy: true },
+			ClientPolicy::Kiro,
+		] {
+			let debug = format!("{:?}", policy.builder());
+			let without_connect = debug.replace("connect_timeout", "");
+			assert!(
+				!without_connect.contains("timeout"),
+				"{debug} must not set a total request timeout"
+			);
+			assert!(
+				!without_connect.contains("tcp_nodelay: false"),
+				"{debug}: TCP_NODELAY must stay on (reqwest default)"
+			);
+		}
+		let kiro = format!("{:?}", ClientPolicy::Kiro.builder());
+		assert!(kiro.contains("connect_timeout"), "Kiro must keep its 15s connect_timeout");
+		for policy in [
+			ClientPolicy::Default,
+			ClientPolicy::RedirectNone,
+			ClientPolicy::Bedrock { force_http1: false, no_proxy: false },
+			ClientPolicy::Bedrock { force_http1: true, no_proxy: true },
+		] {
+			assert!(!format!("{:?}", policy.builder()).contains("connect_timeout"));
+		}
+	}
+
+	/// `ClientBuilder` Debug does not print `pool_idle_timeout` or
+	/// `pool_max_idle_per_host`, so the stated retention is pinned by the
+	/// constant the builder passes to `pool_idle_timeout`. The churn-free
+	/// behavior of the uncapped default is measured in the ignored bench.
+	#[test]
+	fn keepalive_retention_is_stated_and_testable() {
+		assert_eq!(POOL_IDLE_TIMEOUT, Duration::from_secs(90));
+	}
+
+	/// Equal policies share one client; distinct policies never do. Default and
+	/// RedirectNone against one fixture must open two connections, and a second
+	/// Default request must reuse the first (still two accepts). `reqwest::Client`
+	/// has no `PartialEq`, so identity is asserted through accept counts.
+	#[tokio::test]
+	async fn distinct_policies_do_not_share_pooled_connections() {
+		let (accepts, address, server) = churn_echo_fixture().await;
+		let url = format!("http://{address}/policy-split");
+		for policy in [ClientPolicy::Default, ClientPolicy::RedirectNone, ClientPolicy::Default] {
+			let response = shared_client(policy)
+				.get(&url)
+				.timeout(Duration::from_secs(5))
+				.send()
+				.await
+				.unwrap();
+			assert_eq!(response.status(), reqwest::StatusCode::OK);
+			assert_eq!(response.text().await.unwrap(), "ok");
+		}
+		server.abort();
+		let _ = server.await;
+		assert_eq!(accepts.load(Ordering::SeqCst), 2);
+	}
+
+	/// Real measurements for the idle-cap and TCP-keepalive audit. Ignored in the
+	/// default suite; writes research/network_latency/provider/results/tcp-pool-churn-bench.json.
+	#[ignore]
+	#[tokio::test]
+	async fn tcp_pool_churn_bench() {
+		const WAVES: usize = 12;
+		const GAP: Duration = Duration::from_millis(25);
+		const STEADY_REQUESTS: usize = 320;
+		let mut runs = Vec::new();
+		for repeat in 0..2 {
+			for (arm, max_idle) in [
+				("count_policy_max_idle_4", Some(4usize)),
+				("max_idle_32", Some(32usize)),
+				("no_max_idle_reqwest_default", None),
+			] {
+				let client = churn_count_client(max_idle, true);
+				for concurrency in [8usize, 16, 32] {
+					for (pattern_name, pattern) in [
+						("steady", ChurnPattern::Steady),
+						("burst_gap_25ms", ChurnPattern::BurstGap),
+					] {
+						let quota = if let ChurnPattern::Steady = pattern {
+							STEADY_REQUESTS / concurrency
+						} else {
+							WAVES
+						};
+						let scenario = churn_scenario(&client, pattern, concurrency, quota, GAP).await;
+						runs.push(serde_json::json!({
+							"repeat": repeat, "arm": arm, "pattern": pattern_name,
+							"concurrency": concurrency, "scenario": scenario,
+						}));
+					}
+				}
+			}
+			// The production shared client: no idle cap, reqwest keepalive defaults.
+			let shared = shared_client(ClientPolicy::Default);
+			for concurrency in [8usize, 16, 32] {
+				for (pattern_name, pattern) in [
+					("steady", ChurnPattern::Steady),
+					("burst_gap_25ms", ChurnPattern::BurstGap),
+			] {
+					let quota = if let ChurnPattern::Steady = pattern {
+						STEADY_REQUESTS / concurrency
+					} else {
+						WAVES
+					};
+					let scenario = churn_scenario(&shared, pattern, concurrency, quota, GAP).await;
+					runs.push(serde_json::json!({
+						"repeat": repeat, "arm": "shared_client_default_policy", "pattern": pattern_name,
+						"concurrency": concurrency, "scenario": scenario,
+				}));
+				}
+			}
+			// Keepalive fully off vs the reqwest default (on, 15s/15s/3): the
+			// per-connection cost is one setsockopt; no probe fires in-bench.
+			let off = churn_count_client(None, false);
+			for concurrency in [8usize, 16, 32] {
+				let quota = STEADY_REQUESTS / concurrency;
+			let scenario = churn_scenario(&off, ChurnPattern::Steady, concurrency, quota, GAP).await;
+				runs.push(serde_json::json!({
+					"repeat": repeat, "arm": "no_max_idle_keepalive_off", "pattern": "steady",
+					"concurrency": concurrency, "scenario": scenario,
+			}));
+			}
+		}
+		let report = serde_json::json!({
+			"note": "loopback keep-alive HTTP/1.1; measured under throttled gate (4 CPUs shared, -j 2, BelowNormal)",
+			"runs": runs,
+		});
+		let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+			.join("../../research/network_latency/provider/results");
+		std::fs::create_dir_all(&dir).unwrap();
+		std::fs::write(dir.join("tcp-pool-churn-bench.json"), serde_json::to_vec_pretty(&report).unwrap()).unwrap();
+		println!("{}", serde_json::to_string_pretty(&report).unwrap());
+	}
 }
