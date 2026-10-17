@@ -171,3 +171,64 @@ async fn core_supervisor_recovery_parking_preserves_replacement_descriptor() {
     assert!(Arc::ptr_eq(fixture.supervisor.workers.lock().unwrap().get("park-generation").unwrap(), &replacement));
     fixture.supervisor.stopped.cancel();
 }
+
+#[tokio::test]
+async fn core_supervisor_get_state_serves_roster_view_when_worker_cannot_answer() {
+    let mut fixture = SupervisorFixture::new("core-get-state-fallback").await;
+    // A READY worker with no connected client: the bounded worker forward is
+    // skipped exactly like the saturated case, where the client's 30s deadline
+    // used to wedge chat-open behind a request that would eventually succeed.
+    let worker = add_descriptor_only_worker(&fixture, "saturated", "saturated-active", "fixture-token", DAEMON_WORKER_LIFECYCLE_READY);
+    let summary = SessionSummary {
+        active_session_id: Some("saturated-active".into()),
+        id: "saturated-active".into(),
+        session_id: "saturated-root".into(),
+        session_name: Some("Saturated Chat".into()),
+        cwd: fixture.root.join("workspace").to_string_lossy().into_owned(),
+        lifecycle: "live".into(),
+        activity: "streaming".into(),
+        is_streaming: true,
+        ..Default::default()
+    };
+    fixture.supervisor.write_roster_entry(worker_roster_entry_from_summary(&summary.roster_view()), Some(&worker), None);
+    let response = fixture.send(json!({"type":"get_state","id":"gs-fallback","activeSessionId":"saturated-active"})).await;
+    assert_eq!(response["success"], true, "{response}");
+    assert_eq!(response["command"], "get_state");
+    assert_eq!(response["data"]["sessionId"], "saturated-root");
+    assert_eq!(response["data"]["sessionName"], "Saturated Chat");
+    assert_eq!(response["data"]["isStreaming"], true);
+    assert_eq!(response["data"]["workerState"], "recovering");
+    assert_eq!(response["data"]["workerPid"], std::process::id() as i64);
+    fixture.supervisor.stopped.cancel();
+}
+
+#[tokio::test]
+async fn core_supervisor_get_state_unknown_session_still_fails() {
+    let mut fixture = SupervisorFixture::new("core-get-state-unknown").await;
+    let response = fixture.send(json!({"type":"get_state","id":"gs-unknown","activeSessionId":"missing"})).await;
+    assert_eq!(response["success"], false, "{response}");
+}
+
+#[tokio::test]
+async fn core_supervisor_get_state_falls_back_when_worker_connection_is_dead() {
+    let mut fixture = SupervisorFixture::new("core-get-state-dead-client").await;
+    let worker = add_descriptor_only_worker(&fixture, "wedged", "wedged-active", "fixture-token", DAEMON_WORKER_LIFECYCLE_READY);
+    // A client object that never connected mirrors a worker whose socket died
+    // mid-flight: the stored client must not be trusted for the forward.
+    *worker.client.lock().unwrap() = Some(Arc::new(DaemonWorkerClient::new("unused-private-test-socket")));
+    let summary = SessionSummary {
+        active_session_id: Some("wedged-active".into()),
+        id: "wedged-active".into(),
+        session_id: "wedged-root".into(),
+        session_name: Some("Wedged Chat".into()),
+        cwd: fixture.root.join("workspace").to_string_lossy().into_owned(),
+        lifecycle: "live".into(),
+        activity: "idle".into(),
+        ..Default::default()
+    };
+    fixture.supervisor.write_roster_entry(worker_roster_entry_from_summary(&summary.roster_view()), Some(&worker), None);
+    let response = fixture.send(json!({"type":"get_state","id":"gs-dead-client","activeSessionId":"wedged-active"})).await;
+    assert_eq!(response["success"], true, "{response}");
+    assert_eq!(response["data"]["sessionId"], "wedged-root");
+    fixture.supervisor.stopped.cancel();
+}
