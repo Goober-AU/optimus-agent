@@ -2122,8 +2122,14 @@ mod rlm_child_comm_fix_tests {
                 .unwrap()
         }, None);
         let run = Arc::new(Mutex::new(empty_rlm_child_run("child")));
+        run.lock().unwrap().status = RLM_CHILD_AGENT_STATUS_RUNNING.to_string();
 
-        assert!(apply_rlm_child_session_published(&parent, &run, &child));
+        // The return value is "an abort was scheduled", so a live run's
+        // first publication applies without scheduling one (false).
+        assert!(
+            !apply_rlm_child_session_published(&parent, &run, &child),
+            "a live run's first publication schedules no abort"
+        );
         {
             let guard = run.lock().unwrap();
             assert!(guard.session.as_ref().is_some_and(|session| Arc::ptr_eq(session, &child)));
