@@ -1,0 +1,26 @@
+Local gateway leg (read-only probe), 2026-10-17 ~01:24Z
+
+$ curl -s -o /dev/null -w 'GET / => http_code=%{http_code} time_total=%{time_total}s content_type=%{content_type}' -m 2 http://127.0.0.1:43120/
+GET / => http_code=401 time_total=0.062163s content_type=application/json
+
+$ curl -s -o /dev/null -w 'GET /health => ...' -m 2 http://127.0.0.1:43120/health
+GET /health => http_code=401 time_total=0.002138s content_type=application/json
+
+$ curl -s -m 2 http://127.0.0.1:43120/health
+{"error":{"message":"Invalid local gateway credential","type":"authentication_error"}}
+
+$ curl -sI -m 2 http://127.0.0.1:43120/health
+HTTP/1.1 401 Unauthorized
+content-type: application/json
+content-length: 86
+Date: Sat, 17 Oct 2026 01:24:11 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+Two sequential transfers on one curl invocation (same client):
+probe1_code=401 num_connects=1 time=0.050501
+probe2_code=401 num_connects=0 time=0.002277   <- connection reused
+
+Conclusion: 127.0.0.1:43120 is a live plain-HTTP/1.1 endpoint (no TLS) speaking
+keep-alive with a 5s idle window; unauthenticated requests get 401 JSON in
+~2ms warm. No credentials were used or needed; the gateway was not modified.

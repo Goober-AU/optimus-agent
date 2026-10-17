@@ -1,0 +1,1 @@
+- Fixed release-mode test compilation of pi-coding-agent: the debug-only mock-hint assessment fixture helpers and their four tests are now cfg(debug_assertions)-gated inside the test module, so `cargo test --release --lib` builds again without changing any production behavior or debug-test coverage.

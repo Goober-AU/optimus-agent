@@ -1,0 +1,572 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.24
+   Compiling cfg-if v1.0.4
+   Compiling windows-link v0.2.1
+   Compiling memchr v2.8.3
+   Compiling getrandom v0.4.3
+   Compiling serde_core v1.0.229
+   Compiling find-msvc-tools v0.1.12
+   Compiling shlex v2.0.1
+   Compiling smallvec v1.15.2
+   Compiling windows-sys v0.61.2
+   Compiling pkg-config v0.3.34
+   Compiling pin-project-lite v0.2.17
+   Compiling bytes v1.12.1
+   Compiling parking_lot_core v0.9.12
+   Compiling scopeguard v1.2.0
+   Compiling version_check v0.9.5
+   Compiling stable_deref_trait v1.2.1
+   Compiling futures-core v0.3.34
+   Compiling lock_api v0.4.14
+   Compiling typenum v1.20.1
+   Compiling foldhash v0.2.0
+   Compiling jobserver v0.1.35
+   Compiling itoa v1.0.18
+   Compiling generic-array v0.14.7
+   Compiling futures-sink v0.3.34
+   Compiling slab v0.4.12
+   Compiling futures-io v0.3.34
+   Compiling cc v1.4.5
+   Compiling parking_lot v0.12.5
+   Compiling hashbrown v0.17.1
+   Compiling futures-channel v0.3.34
+   Compiling simd-adler32 v0.3.10
+   Compiling futures-task v0.3.34
+   Compiling equivalent v1.0.2
+   Compiling crc32fast v1.5.1
+   Compiling http v1.5.0
+   Compiling serde v1.0.229
+   Compiling adler2 v2.0.1
+   Compiling zerocopy v0.8.57
+   Compiling syn v3.0.5
+   Compiling syn v2.0.119
+   Compiling libc v0.2.189
+   Compiling crypto-common v0.1.7
+   Compiling litemap v0.8.3
+   Compiling writeable v0.6.4
+   Compiling block-buffer v0.10.4
+   Compiling miniz_oxide v0.9.1
+   Compiling rustversion v1.0.23
+   Compiling icu_normalizer_data v2.3.0
+   Compiling indexmap v2.14.2
+   Compiling icu_properties_data v2.3.0
+   Compiling once_cell v1.21.4
+   Compiling utf8_iter v1.0.4
+   Compiling subtle v2.6.1
+   Compiling crossbeam-utils v0.8.23
+   Compiling getrandom v0.3.4
+   Compiling httparse v1.10.1
+   Compiling digest v0.10.7
+   Compiling flate2 v1.1.10
+   Compiling bitflags v2.13.2
+   Compiling alloc-no-stdlib v2.0.4
+   Compiling crossbeam-epoch v0.9.21
+   Compiling native-tls v0.2.18
+   Compiling hashbrown v0.15.5
+   Compiling synstructure v0.13.2
+   Compiling socket2 v0.6.5
+   Compiling mio v1.2.3
+   Compiling fnv v1.0.7
+   Compiling percent-encoding v2.3.2
+   Compiling log v0.4.34
+   Compiling windows_x86_64_msvc v0.52.6
+   Compiling schannel v0.1.29
+   Compiling alloc-stdlib v0.2.4
+   Compiling tracing-core v0.1.36
+   Compiling zstd-sys v2.1.0+zstd.1.5.7
+   Compiling http-body v1.1.0
+   Compiling windows_x86_64_msvc v0.48.5
+   Compiling cpufeatures v0.2.17
+   Compiling crossbeam-deque v0.8.8
+   Compiling autocfg v1.5.1
+   Compiling winapi v0.3.9
+   Compiling zerovec-derive v0.11.6
+   Compiling displaydoc v0.2.7
+   Compiling zerofrom-derive v0.1.7
+   Compiling yoke-derive v0.8.2
+   Compiling tokio-macros v2.7.2
+   Compiling futures-macro v0.3.34
+   Compiling serde_derive v1.0.229
+   Compiling tracing-attributes v0.1.31
+   Compiling num-traits v0.2.19
+   Compiling ppv-lite86 v0.2.21
+   Compiling brotli-decompressor v5.0.3
+   Compiling tokio v1.53.1
+   Compiling thiserror v2.0.20
+   Compiling tower-service v0.3.3
+   Compiling futures-util v0.3.34
+   Compiling atomic-waker v1.1.2
+   Compiling try-lock v0.2.5
+   Compiling want v0.3.1
+   Compiling zerofrom v0.1.8
+   Compiling brotli v8.0.4
+   Compiling tracing v0.1.44
+   Compiling windows-targets v0.52.6
+   Compiling zeroize_derive v1.5.0
+   Compiling yoke v0.8.3
+   Compiling thiserror-impl v2.0.20
+   Compiling rand_core v0.9.5
+   Compiling form_urlencoded v1.2.2
+   Compiling zerovec v0.11.8
+   Compiling zerotrie v0.2.5
+   Compiling lzma-sys v0.1.20
+   Compiling bzip2-sys v0.1.13+1.0.8
+   Compiling aho-corasick v1.1.5
+   Compiling windows-result v0.4.1
+   Compiling tinystr v0.8.4
+   Compiling potential_utf v0.1.6
+   Compiling windows-strings v0.5.1
+   Compiling regex-syntax v0.8.11
+   Compiling compression-core v0.4.33
+   Compiling icu_locale_core v2.3.0
+   Compiling icu_collections v2.3.0
+   Compiling zmij v1.0.23
+   Compiling rayon-core v1.13.0
+   Compiling byteorder v1.5.0
+   Compiling zstd-safe v7.3.0
+   Compiling unicase v2.9.0
+   Compiling tokio-util v0.7.19
+   Compiling vcpkg v0.2.15
+   Compiling mime_guess v2.0.5
+   Compiling icu_provider v2.3.1
+   Compiling tokio-native-tls v0.3.1
+   Compiling compression-codecs v0.4.41
+   Compiling icu_properties v2.3.0
+   Compiling icu_normalizer v2.3.0
+   Compiling libsqlite3-sys v0.38.2
+   Compiling h2 v0.4.19
+   Compiling regex-automata v0.4.18
+   Compiling idna_adapter v1.2.2
+   Compiling windows-registry v0.6.1
+   Compiling idna v1.1.0
+   Compiling zeroize v1.9.0
+   Compiling hyper v1.11.1
+   Compiling rand_chacha v0.9.0
+   Compiling windows-targets v0.48.5
+   Compiling windows-result v0.1.2
+   Compiling windows-interface v0.57.0
+   Compiling windows-implement v0.57.0
+   Compiling multiversion-macros v0.9.0
+   Compiling encoding_rs v0.8.41
+   Compiling sha1 v0.10.7
+   Compiling http-body-util v0.1.5
+   Compiling winapi-util v0.1.11
+   Compiling inout v0.1.4
+   Compiling sync_wrapper v1.0.2
+   Compiling getrandom v0.2.17
+   Compiling serde_json v1.0.151
+   Compiling ryu v1.0.23
+   Compiling either v1.18.0
+   Compiling tower-layer v0.3.3
+   Compiling base64 v0.22.1
+   Compiling ntapi v0.4.3
+   Compiling crc-catalog v2.5.0
+   Compiling ipnet v2.12.2
+   Compiling crc v3.4.0
+   Compiling tower v0.5.3
+   Compiling rand_core v0.6.4
+   Compiling hyper-util v0.1.20
+   Compiling cipher v0.4.4
+   Compiling same-file v1.0.6
+   Compiling multiversion v0.9.0
+   Compiling windows-core v0.57.0
+   Compiling windows-sys v0.48.0
+   Compiling rand v0.9.5
+   Compiling url v2.5.8
+   Compiling async-compression v0.4.46
+   Compiling toml_datetime v0.6.11
+   Compiling serde_spanned v0.6.9
+   Compiling uuid v1.26.1
+   Compiling hmac v0.12.1
+   Compiling miniz_oxide v0.8.9
+   Compiling fdeflate v0.3.7
+   Compiling bstr v1.13.1
+   Compiling weezl v0.1.12
+   Compiling quick-error v2.0.1
+   Compiling core_detect v1.0.0
+   Compiling zune-core v0.5.3
+   Compiling deranged v0.5.8
+   Compiling mime v0.3.17
+   Compiling powerfmt v0.2.0
+   Compiling pxfm v0.1.30
+   Compiling byteorder-lite v0.1.0
+   Compiling anyhow v1.0.104
+   Compiling zip v2.4.2
+   Compiling bumpalo v3.20.3
+   Compiling pulldown-cmark v0.12.2
+   Compiling multiversion_no_op v1.0.0
+   Compiling utf-8 v0.7.6
+   Compiling data-encoding v2.11.1
+   Compiling winnow v0.7.15
+   Compiling color_quant v1.1.0
+   Compiling time-core v0.1.9
+   Compiling unicode-width v0.2.2
+   Compiling option-ext v0.2.0
+   Compiling simdutf8 v0.1.5
+   Compiling toml_write v0.1.2
+   Compiling num-conv v0.2.2
+   Compiling time v0.3.55
+   Compiling tungstenite v0.28.0
+   Compiling getopts v0.2.24
+   Compiling dirs-sys v0.4.1
+   Compiling gif v0.14.2
+   Compiling toml_edit v0.22.27
+   Compiling zopfli v0.8.3
+   Compiling image-webp v0.2.4
+   Compiling zune-jpeg v0.5.15
+   Compiling moxcms v0.8.1
+   Compiling png v0.18.1
+   Compiling globset v0.4.20
+   Compiling cfb v0.7.3
+   Compiling rayon v1.12.0
+   Compiling pbkdf2 v0.12.2
+   Compiling zstd v0.13.3
+   Compiling windows v0.57.0
+   Compiling tower-http v0.6.11
+   Compiling hyper-tls v0.6.0
+   Compiling walkdir v2.5.0
+   Compiling aes v0.8.4
+   Compiling bzip2 v0.5.2
+   Compiling lzma-rs v0.3.0
+   Compiling rand_chacha v0.3.1
+   Compiling serde_urlencoded v0.7.1
+   Compiling rustls-pki-types v1.15.1
+   Compiling futures-executor v0.3.34
+   Compiling crossterm_winapi v0.9.1
+   Compiling home v0.5.12
+   Compiling hashlink v0.12.2
+   Compiling pulldown-cmark-escape v0.11.0
+   Compiling unsafe-libyaml v0.2.11
+   Compiling bytemuck v1.25.2
+   Compiling constant_time_eq v0.3.1
+   Compiling deflate64 v0.1.12
+   Compiling winsafe v0.0.19
+   Compiling fallible-streaming-iterator v0.1.9
+   Compiling fastrand v2.5.0
+   Compiling fallible-iterator v0.3.0
+   Compiling image v0.25.10
+   Compiling tempfile v3.27.0
+   Compiling serde_yaml v0.9.34+deprecated
+   Compiling rusqlite v0.40.2
+   Compiling crossterm v0.28.1
+   Compiling which v6.0.3
+   Compiling reqwest v0.12.28
+   Compiling futures v0.3.34
+   Compiling rand v0.8.8
+   Compiling ignore v0.4.33
+   Compiling infer v0.19.0
+   Compiling toml v0.8.23
+   Compiling tokio-tungstenite v0.28.0
+   Compiling dirs v5.0.1
+   Compiling chrono v0.4.45
+   Compiling regex v1.13.1
+   Compiling async-trait v0.1.92
+   Compiling sha2 v0.10.9
+   Compiling xz2 v0.1.7
+   Compiling unicode-width v0.1.14
+   Compiling similar v2.7.0
+   Compiling sysinfo v0.32.1
+   Compiling pi-ai v0.1.34 (C:\Users\openclawuser\optimus-net-20261017\crates\pi-ai)
+warning: unused variable: `state`
+   --> crates\pi-ai\src\mcp\oauth.rs:658:17
+    |
+658 |             let state = state.clone();
+    |                 ^^^^^ help: if this is intentional, prefix it with an underscore: `_state`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:2018:6
+     |
+2018 |     let mut block_exists = index.is_some();
+     |         ----^^^^^^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: type `BlockMeta` is more private than the item `handle_content_block_start`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:1974:1
+     |
+1974 | / pub fn handle_content_block_start(
+1975 | |     content_block_index: usize,
+1976 | |     start: &Value,
+1977 | |     blocks: &mut Vec<BlockMeta>,
+1978 | |     output: &mut AssistantMessage,
+1979 | |     stream: &AssistantMessageEventStream,
+1980 | | ) {
+     | |_^ function `handle_content_block_start` is reachable at visibility `pub`
+     |
+note: but type `BlockMeta` is only usable at visibility `pub(self)`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:245:1
+     |
+ 245 | struct BlockMeta {
+     | ^^^^^^^^^^^^^^^^
+     = note: `#[warn(private_interfaces)]` on by default
+
+warning: type `BlockMeta` is more private than the item `handle_content_block_delta`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:2010:1
+     |
+2010 | / pub fn handle_content_block_delta(
+2011 | |     content_block_index: usize,
+2012 | |     delta: &Value,
+2013 | |     blocks: &mut Vec<BlockMeta>,
+2014 | |     output: &mut AssistantMessage,
+2015 | |     stream: &AssistantMessageEventStream,
+2016 | | ) {
+     | |_^ function `handle_content_block_delta` is reachable at visibility `pub`
+     |
+note: but type `BlockMeta` is only usable at visibility `pub(self)`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:245:1
+     |
+ 245 | struct BlockMeta {
+     | ^^^^^^^^^^^^^^^^
+
+warning: type `BlockMeta` is more private than the item `handle_content_block_stop`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:2142:1
+     |
+2142 | / pub fn handle_content_block_stop(
+2143 | |     content_block_index: usize,
+2144 | |     blocks: &mut Vec<BlockMeta>,
+2145 | |     output: &mut AssistantMessage,
+2146 | |     stream: &AssistantMessageEventStream,
+2147 | | ) {
+     | |_^ function `handle_content_block_stop` is reachable at visibility `pub`
+     |
+note: but type `BlockMeta` is only usable at visibility `pub(self)`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:245:1
+     |
+ 245 | struct BlockMeta {
+     | ^^^^^^^^^^^^^^^^
+
+warning: type `ResolvedCompat` is more private than the item `openai_completions::convert_messages`
+   --> crates\pi-ai\src\providers\openai_completions.rs:538:1
+    |
+538 | pub(crate) fn convert_messages(model: &Model, context: &Context, compat: &ResolvedCompat) -> Result<Vec<Value>, String> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function `openai_completions::convert_messages` is reachable at visibility `pub(crate)`
+    |
+note: but type `ResolvedCompat` is only usable at visibility `pub(self)`
+   --> crates\pi-ai\src\providers\openai_completions.rs:155:1
+    |
+155 | struct ResolvedCompat {
+    | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `message` is never used
+   --> crates\pi-ai\src\providers\anthropic.rs:487:5
+    |
+479 | impl AnthropicStreamError {
+    | ------------------------- method in this implementation
+...
+487 |     fn message(&self) -> String {
+    |        ^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `get` is never used
+    --> crates\pi-ai\src\providers\anthropic.rs:2351:5
+     |
+2338 | impl HeaderBag {
+     | -------------- method in this implementation
+...
+2351 |     fn get(&self, name: &str) -> Option<&str> {
+     |        ^^^
+
+warning: function `create_lazy_load_error_message` is never used
+   --> crates\pi-ai\src\providers\register_builtins.rs:259:4
+    |
+259 | fn create_lazy_load_error_message(model: &Model, error: &str) -> AssistantMessage {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `AssistantMessage`
+  --> crates\pi-ai\src\providers\provider_transport_bench.rs:30:5
+   |
+30 |     AssistantMessage, AssistantMessageEvent, Context, InputModality, Message, Model, ModelCost,
+   |     ^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> crates\pi-ai\src\providers\anthropic.rs:2925:7
+     |
+2925 |         let mut stream = std::pin::pin!(stream);
+     |             ----^^^^^^
+     |             |
+     |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> crates\pi-ai\src\providers\azure_openai_responses.rs:1170:7
+     |
+1170 |         let mut stream = stream_azure_openai_responses(&model, &context(), Some(options));
+     |             ----^^^^^^
+     |             |
+     |             help: remove this `mut`
+
+warning: unused variable: `end`
+    --> crates\pi-ai\src\providers\openai_completions.rs:3110:29
+     |
+3110 |                 if let Some(end) = request.windows(4).position(|w| w == b"\r\n\r\n") {
+     |                             ^^^ help: if this is intentional, prefix it with an underscore: `_end`
+
+warning: type `amazon_bedrock::BlockMeta` is more private than the item `amazon_bedrock::handle_content_block_start`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:1974:1
+     |
+1974 | / pub fn handle_content_block_start(
+1975 | |     content_block_index: usize,
+1976 | |     start: &Value,
+1977 | |     blocks: &mut Vec<BlockMeta>,
+1978 | |     output: &mut AssistantMessage,
+1979 | |     stream: &AssistantMessageEventStream,
+1980 | | ) {
+     | |_^ function `amazon_bedrock::handle_content_block_start` is reachable at visibility `pub`
+     |
+note: but type `amazon_bedrock::BlockMeta` is only usable at visibility `pub(self)`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:245:1
+     |
+ 245 | struct BlockMeta {
+     | ^^^^^^^^^^^^^^^^
+     = note: `#[warn(private_interfaces)]` on by default
+
+warning: type `amazon_bedrock::BlockMeta` is more private than the item `amazon_bedrock::handle_content_block_delta`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:2010:1
+     |
+2010 | / pub fn handle_content_block_delta(
+2011 | |     content_block_index: usize,
+2012 | |     delta: &Value,
+2013 | |     blocks: &mut Vec<BlockMeta>,
+2014 | |     output: &mut AssistantMessage,
+2015 | |     stream: &AssistantMessageEventStream,
+2016 | | ) {
+     | |_^ function `amazon_bedrock::handle_content_block_delta` is reachable at visibility `pub`
+     |
+note: but type `amazon_bedrock::BlockMeta` is only usable at visibility `pub(self)`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:245:1
+     |
+ 245 | struct BlockMeta {
+     | ^^^^^^^^^^^^^^^^
+
+warning: type `amazon_bedrock::BlockMeta` is more private than the item `amazon_bedrock::handle_content_block_stop`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:2142:1
+     |
+2142 | / pub fn handle_content_block_stop(
+2143 | |     content_block_index: usize,
+2144 | |     blocks: &mut Vec<BlockMeta>,
+2145 | |     output: &mut AssistantMessage,
+2146 | |     stream: &AssistantMessageEventStream,
+2147 | | ) {
+     | |_^ function `amazon_bedrock::handle_content_block_stop` is reachable at visibility `pub`
+     |
+note: but type `amazon_bedrock::BlockMeta` is only usable at visibility `pub(self)`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:245:1
+     |
+ 245 | struct BlockMeta {
+     | ^^^^^^^^^^^^^^^^
+
+warning: type `openai_completions::ResolvedCompat` is more private than the item `openai_completions::convert_messages`
+   --> crates\pi-ai\src\providers\openai_completions.rs:538:1
+    |
+538 | pub(crate) fn convert_messages(model: &Model, context: &Context, compat: &ResolvedCompat) -> Result<Vec<Value>, String> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function `openai_completions::convert_messages` is reachable at visibility `pub(crate)`
+    |
+note: but type `openai_completions::ResolvedCompat` is only usable at visibility `pub(self)`
+   --> crates\pi-ai\src\providers\openai_completions.rs:155:1
+    |
+155 | struct ResolvedCompat {
+    | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `seq`, `path`, `connected_ns`, and `request_read_ns` are never read
+  --> crates\pi-ai\src\providers\provider_transport_bench.rs:89:9
+   |
+88 | pub(crate) struct RequestTiming {
+   |                   ------------- fields in this struct
+89 |     pub seq: u64,
+   |         ^^^
+90 |     pub path: String,
+   |         ^^^^
+91 |     pub connected_ns: u64,
+   |         ^^^^^^^^^^^^
+92 |     pub request_read_ns: u64,
+   |         ^^^^^^^^^^^^^^^
+   |
+   = note: `RequestTiming` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `connections_accepted` and `requests_served` are never read
+   --> crates\pi-ai\src\providers\provider_transport_bench.rs:118:9
+    |
+117 | pub(crate) struct ServerSnapshot {
+    |                   -------------- fields in this struct
+118 |     pub connections_accepted: u64,
+    |         ^^^^^^^^^^^^^^^^^^^^
+119 |     pub requests_served: u64,
+    |         ^^^^^^^^^^^^^^^
+
+warning: method `timings` is never used
+   --> crates\pi-ai\src\providers\provider_transport_bench.rs:140:12
+    |
+123 | impl MockServer {
+    | --------------- method in this implementation
+...
+140 |     pub fn timings(&self) -> Vec<RequestTiming> {
+    |            ^^^^^^^
+
+warning: field `content_length` is never read
+   --> crates\pi-ai\src\providers\provider_transport_bench.rs:170:5
+    |
+168 | struct HttpRequest {
+    |        ----------- field in this struct
+169 |     path: String,
+170 |     content_length: usize,
+    |     ^^^^^^^^^^^^^^
+
+warning: `pi-ai` (lib) generated 9 warnings (run `cargo fix --lib -p pi-ai` to apply 2 suggestions)
+warning: unused import: `WebSocketLike`
+  --> crates\pi-ai\tests\codex_native_websocket.rs:11:25
+   |
+11 |     WebSocketEventType, WebSocketLike, WebSocketListener,
+   |                         ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `pi-ai` (test "codex_native_websocket") generated 1 warning
+warning: `pi-ai` (lib test) generated 14 warnings (2 duplicates) (run `cargo fix --lib -p pi-ai --tests` to apply 4 suggestions)
+    Finished `release` profile [optimized] target(s) in 5m 49s
+     Running unittests src\lib.rs (C:/Users/openclawuser/optimus-net-target-w5\release\deps\pi_ai-25ee42e8e2dcee38.exe)
+
+running 1 test
+test providers::provider_transport_bench::provider_transport_bench_idle_expiry has been running for over 60 seconds
+idle_expiry_after_95s_connections: 2
+test providers::provider_transport_bench::provider_transport_bench_idle_expiry ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 865 filtered out; finished in 95.01s
+
+     Running tests\codex_native_websocket.rs (C:/Users/openclawuser/optimus-net-target-w5\release\deps\codex_native_websocket-77d15223d4c31a6c.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+     Running tests\openai_speed_regressions.rs (C:/Users/openclawuser/optimus-net-target-w5\release\deps\openai_speed_regressions-eb0cccebf7ccfc8d.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests\responses_integer_limits.rs (C:/Users/openclawuser/optimus-net-target-w5\release\deps\responses_integer_limits-2ee68f8904a7fa1b.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests\subscription_models.rs (C:/Users/openclawuser/optimus-net-target-w5\release\deps\subscription_models-40454717c847c359.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
+     Running tests\vertex_gemma_thinking.rs (C:/Users/openclawuser/optimus-net-target-w5\release\deps\vertex_gemma_thinking-9e6f722da70873d2.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+

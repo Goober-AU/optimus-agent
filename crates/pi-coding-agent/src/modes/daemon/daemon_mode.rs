@@ -22,6 +22,11 @@ mod daemon_passivation_fence;
 
 #[path = "agent_message_transport.rs"]
 mod agent_message_transport;
+#[path = "agent_message_connection.rs"]
+mod agent_message_connection;
+#[cfg(test)]
+#[path = "agent_message_bench.rs"]
+mod agent_message_bench;
 
 // Owner parity-validation tests (T08: C-01, C-02, C-09, H-05). In-crate so they can
 // drive the private daemon seams (`AgentDaemon::handle_line`,

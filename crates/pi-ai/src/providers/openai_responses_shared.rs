@@ -605,12 +605,23 @@ fn push_content_part(item: &mut Value, part: Value) {
 }
 
 /// `lastPart.text += delta` (a missing text behaves like "").
+///
+/// The hot path: called once per streamed delta. Appends in place when the
+/// field is already a JSON string (O(delta), no clone of the accumulated
+/// text); a missing or non-string field falls back to one formatted insert.
 fn append_part_text(part: &mut Value, key: &str, delta: &str) {
     let Some(object) = part.as_object_mut() else {
         return;
     };
-    let current = object.get(key).and_then(Value::as_str).unwrap_or_default().to_string();
-    object.insert(key.to_string(), Value::String(format!("{}{}", current, delta)));
+    let in_place = matches!(object.get_mut(key), Some(Value::String(_)));
+    if !in_place {
+        let current = object.get(key).and_then(Value::as_str).unwrap_or_default().to_string();
+        object.insert(key.to_string(), Value::String(format!("{}{}", current, delta)));
+        return;
+    }
+    if let Some(Value::String(current)) = object.get_mut(key) {
+        current.push_str(delta);
+    }
 }
 
 /// The last element of an array field.
@@ -2073,6 +2084,199 @@ mod tests {
         }
         types
     }
+
+    /// Round-2 coverage helper: full events, not just types.
+    async fn collect_events(stream: &AssistantMessageEventStream) -> Vec<AssistantMessageEvent> {
+        let mut events = Vec::new();
+        while let Some(event) = stream.next().await {
+            events.push(event);
+        }
+        events
+    }
+
+    /// Round-2 coverage: partials accumulate blocks across items, in block order.
+    #[tokio::test]
+    async fn responses_partials_accumulate_blocks_across_items() {
+        let model = text_model();
+        let mut output = empty_output(&model);
+        let stream = AssistantMessageEventStream::new();
+        let events = vec![
+            json!({ "type": "response.created", "response": { "id": "resp_r2" } }),
+            json!({ "type": "response.output_item.added", "item": { "type": "reasoning", "id": "rs_1", "summary": [] } }),
+            json!({ "type": "response.reasoning_summary_part.added", "part": { "type": "summary_text", "text": "" } }),
+            json!({ "type": "response.reasoning_summary_text.delta", "delta": "th" }),
+            json!({ "type": "response.output_item.done", "item": { "type": "reasoning", "id": "rs_1", "summary": [{ "type": "summary_text", "text": "th" }] } }),
+            json!({ "type": "response.output_item.added", "item": { "type": "message", "id": "msg_1", "content": [] } }),
+            json!({ "type": "response.content_part.added", "part": { "type": "output_text", "text": "" } }),
+            json!({ "type": "response.output_text.delta", "delta": "He" }),
+            json!({ "type": "response.output_text.delta", "delta": "llo" }),
+            json!({ "type": "response.output_item.done", "item": { "type": "message", "id": "msg_1", "content": [{ "type": "output_text", "text": "Hello" }] } }),
+            json!({ "type": "response.output_item.added", "item": { "type": "function_call", "id": "fc_1", "call_id": "c1", "name": "bash", "arguments": "" } }),
+            json!({ "type": "response.function_call_arguments.delta", "delta": "{\"x\":" }),
+            json!({ "type": "response.function_call_arguments.delta", "delta": "1}" }),
+            json!({ "type": "response.output_item.done", "item": { "type": "function_call", "id": "fc_1", "call_id": "c1", "name": "bash", "arguments": "{\"x\":1}" } }),
+            json!({ "type": "response.completed", "response": { "status": "completed", "usage": { "input_tokens": 3, "output_tokens": 4, "total_tokens": 7 } } }),
+        ];
+        process_responses_stream(event_stream(events), &mut output, &stream, &model, None)
+            .await
+            .unwrap();
+        // The provider caller owns the terminal event/end; end the fixture
+        // stream so collect_events can drain it.
+        stream.end(Some(output.clone()));
+        let collected = collect_events(&stream).await;
+        // Text delta partials carry the finalized Thinking block (its signature
+        // was set by the reasoning item.done) plus the accumulating Text.
+        let expected_signature = stringify(&json!({
+            "type": "reasoning",
+            "id": "rs_1",
+            "summary": [{ "type": "summary_text", "text": "th" }]
+        }));
+        let text_deltas: Vec<&AssistantMessageEvent> = collected
+            .iter()
+            .filter(|event| matches!(event, AssistantMessageEvent::TextDelta { .. }))
+            .collect();
+        assert_eq!(text_deltas.len(), 2);
+        let partial_at = |index: usize| -> &AssistantMessage {
+            let AssistantMessageEvent::TextDelta { partial, .. } = text_deltas[index] else { panic!() };
+            partial
+        };
+        let first_partial = partial_at(0);
+        assert_eq!(first_partial.content[0].as_thinking().unwrap().thinking, "th");
+        assert_eq!(
+            first_partial.content[0].as_thinking().unwrap().thinking_signature.as_deref(),
+            Some(expected_signature.as_str())
+        );
+        assert_eq!(first_partial.content[1].as_text().unwrap().text, "He");
+        let second_partial = partial_at(1);
+        assert_eq!(second_partial.content[1].as_text().unwrap().text, "Hello");
+        // Second arguments.delta partial: [Thinking, Text, ToolCall {"x":1}].
+        let second_args_delta = collected
+            .iter()
+            .filter(|event| matches!(event, AssistantMessageEvent::ToolCallDelta { .. }))
+            .nth(1)
+            .expect("two arguments deltas");
+        let AssistantMessageEvent::ToolCallDelta { partial, .. } = second_args_delta else { panic!() };
+        assert_eq!(partial.content.len(), 3);
+        assert_eq!(partial.content[0].as_thinking().unwrap().thinking, "th");
+        assert_eq!(partial.content[1].as_text().unwrap().text, "Hello");
+        assert_eq!(partial.content[2].as_tool_call().unwrap().arguments.get("x"), Some(&json!(1)));
+        // Usage arrives at the terminal chunk only: the final output carries it.
+        assert_eq!(output.usage.input, 3.0);
+        assert_eq!(output.usage.output, 4.0);
+    }
+
+    /// Round-2 coverage: the next item's Start partial reflects the finalized
+    /// previous item (post output_item.done rewrite), not the delta state.
+    #[tokio::test]
+    async fn responses_partial_reflects_a_finalized_item_before_the_next_starts() {
+        let model = text_model();
+        let mut output = empty_output(&model);
+        let stream = AssistantMessageEventStream::new();
+        let events = vec![
+            json!({ "type": "response.created", "response": { "id": "resp_r2" } }),
+            json!({ "type": "response.output_item.added", "item": { "type": "reasoning", "id": "rs_1", "summary": [] } }),
+            json!({ "type": "response.reasoning_summary_part.added", "part": { "type": "summary_text", "text": "" } }),
+            json!({ "type": "response.reasoning_summary_text.delta", "delta": "partial-thought" }),
+            json!({
+                "type": "response.output_item.done",
+                "item": { "type": "reasoning", "id": "rs_1", "summary": [{ "type": "summary_text", "text": "finalized-thought" }] }
+            }),
+            json!({ "type": "response.output_item.added", "item": { "type": "message", "id": "msg_1", "content": [] } }),
+            json!({ "type": "response.content_part.added", "part": { "type": "output_text", "text": "" } }),
+            json!({ "type": "response.output_text.delta", "delta": "hi" }),
+            json!({ "type": "response.completed", "response": { "status": "completed" } }),
+        ];
+        process_responses_stream(event_stream(events), &mut output, &stream, &model, None)
+            .await
+            .unwrap();
+        // The provider caller owns the terminal event/end; end the fixture
+        // stream so collect_events can drain it.
+        stream.end(Some(output.clone()));
+        let collected = collect_events(&stream).await;
+        let text_start = collected
+            .iter()
+            .find(|event| matches!(event, AssistantMessageEvent::TextStart { .. }))
+            .expect("text start");
+        let AssistantMessageEvent::TextStart { partial, .. } = text_start else { panic!() };
+        let thinking = partial.content[0].as_thinking().expect("finalized thinking block");
+        assert_eq!(thinking.thinking, "finalized-thought", "TextStart must carry the post-done rewrite");
+        assert!(thinking.thinking_signature.is_some(), "item.done sets thinking_signature (stringified item)");
+        // And the ThinkingEnd that preceded it carried the finalized text too.
+        let thinking_end = collected
+            .iter()
+            .find(|event| matches!(event, AssistantMessageEvent::ThinkingEnd { .. }))
+            .expect("thinking end");
+        let AssistantMessageEvent::ThinkingEnd { content, .. } = thinking_end else { panic!() };
+        assert_eq!(content, "finalized-thought");
+    }
+
+    /// Round-2 coverage: the done-branch delta carries the full arguments in
+    /// the partial (delta-diff path 981-990).
+    #[tokio::test]
+    async fn responses_function_call_done_partial_carries_the_full_arguments() {
+        let model = text_model();
+        let mut output = empty_output(&model);
+        let stream = AssistantMessageEventStream::new();
+        let events = vec![
+            json!({ "type": "response.created", "response": { "id": "resp_r2" } }),
+            json!({ "type": "response.output_item.added", "item": { "type": "function_call", "id": "fc_1", "call_id": "c1", "name": "bash", "arguments": "" } }),
+            json!({ "type": "response.function_call_arguments.delta", "delta": "{\"x\":" }),
+            json!({ "type": "response.function_call_arguments.done", "arguments": "{\"x\":1,\"y\":2}" }),
+            json!({ "type": "response.output_item.done", "item": { "type": "function_call", "id": "fc_1", "call_id": "c1", "name": "bash", "arguments": "{\"x\":1,\"y\":2}" } }),
+            json!({ "type": "response.completed", "response": { "status": "completed" } }),
+        ];
+        process_responses_stream(event_stream(events), &mut output, &stream, &model, None)
+            .await
+            .unwrap();
+        // The provider caller owns the terminal event/end; end the fixture
+        // stream so collect_events can drain it.
+        stream.end(Some(output.clone()));
+        let collected = collect_events(&stream).await;
+        let done_delta = collected
+            .iter()
+            .filter(|event| matches!(event, AssistantMessageEvent::ToolCallDelta { .. }))
+            .last()
+            .expect("done-branch delta");
+        let AssistantMessageEvent::ToolCallDelta { delta, partial, .. } = done_delta else { panic!() };
+        assert_eq!(delta, "1,\"y\":2}");
+        let tool_call = partial.content[0].as_tool_call().expect("tool call block");
+        assert_eq!(tool_call.arguments.get("x"), Some(&json!(1)));
+        assert_eq!(tool_call.arguments.get("y"), Some(&json!(2)));
+    }
+
+    /// Round-2 coverage: the last pre-terminal partial content equals the
+    /// final output content (partials converge to the terminal message).
+    #[tokio::test]
+    async fn responses_multi_item_partial_content_matches_done_message() {
+        let model = text_model();
+        let mut output = empty_output(&model);
+        let stream = AssistantMessageEventStream::new();
+        let events = vec![
+            json!({ "type": "response.created", "response": { "id": "resp_r2" } }),
+            json!({ "type": "response.output_item.added", "item": { "type": "message", "id": "msg_1", "content": [] } }),
+            json!({ "type": "response.content_part.added", "part": { "type": "output_text", "text": "" } }),
+            json!({ "type": "response.output_text.delta", "delta": "answer" }),
+            json!({ "type": "response.output_item.done", "item": { "type": "message", "id": "msg_1", "content": [{ "type": "output_text", "text": "answer" }] } }),
+            json!({ "type": "response.completed", "response": { "status": "completed" } }),
+        ];
+        process_responses_stream(event_stream(events), &mut output, &stream, &model, None)
+            .await
+            .unwrap();
+        // The provider caller owns the terminal event/end; end the fixture
+        // stream so collect_events can drain it.
+        stream.end(Some(output.clone()));
+        let collected = collect_events(&stream).await;
+        let last_partial = collected
+            .iter()
+            .filter_map(|event| event.partial())
+            .last()
+            .expect("a pre-terminal partial");
+        assert_eq!(last_partial.content, output.content, "last partial must equal the final message content");
+        // The provider caller pushes Done from the live output afterwards; the
+        // consumer contract ends with partials converged (see
+        // text_stream_emits_start_delta_end_and_maps_usage for the Done path).
+    }
+
 
     #[tokio::test]
     async fn normalized_usage_cannot_have_negative_input_or_a_missing_total() {

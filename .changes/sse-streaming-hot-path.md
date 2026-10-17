@@ -1,0 +1,2 @@
+- Changed the OpenAI-completions SSE line reader to span-copy framing (slice scanning plus extend instead of per-byte pushes) and in-place UTF-8 payload flush, and changed the responses-path SseBuffer to accumulate `data:` bytes directly instead of allocating one String per line and joining them.
+- Payload sequences are byte-identical to the previous readers for text, reasoning-dense, tool-call, CRLF, split-UTF-8, and chunk-boundary fixtures; the [DONE] sentinel is checked once per event.
