@@ -2250,6 +2250,12 @@ impl Supervisor {
             rlm_depth: summary.rlm_depth.map(|depth| depth as f64),
             status: Some(self.family_catalog_entry(summary).status),
             rlm_child_id: summary.rlm_child_id.clone(),
+            // Advertise the dialect only when this chat's saved session resolves
+            // OCC-2 enabled: this listing is the only capability source for
+            // cross-worker sends, and omitting it silently pinned every
+            // supervisor-mediated peer to OCC-1.
+            occ_capability: crate::core::occ::session_settings::enabled(summary.session_file.as_deref())
+                .then_some(crate::core::occ::dialect::OccCapability::here()),
             ..Default::default()
         }
     }

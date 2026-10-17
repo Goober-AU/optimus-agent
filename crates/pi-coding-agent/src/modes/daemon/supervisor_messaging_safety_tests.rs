@@ -91,6 +91,18 @@ async fn nine_supervisor_snapshot_negotiation_preserves_legacy_clients_and_worke
 
 impl ScriptedWorker {
     async fn new(fixture: &SupervisorFixture, name: &str, depth: i64, parent: Option<&str>) -> Self {
+        Self::with_session_file(fixture, name, depth, parent, None).await
+    }
+
+    /// A scripted worker whose roster row carries a real saved session file,
+    /// so OCC session preferences resolve from disk exactly like production.
+    async fn with_session_file(
+        fixture: &SupervisorFixture,
+        name: &str,
+        depth: i64,
+        parent: Option<&str>,
+        session_file: Option<String>,
+    ) -> Self {
         let worker = add_descriptor_only_worker(fixture, name, name, &format!("token-{name}"), DAEMON_WORKER_LIFECYCLE_READY);
         let summary = SessionSummary {
             id: name.to_string(), active_session_id: Some(name.to_string()),
@@ -99,7 +111,7 @@ impl ScriptedWorker {
             rlm_depth: Some(depth), parent_session_id: parent.map(str::to_string),
             runtime_kind: Some(if depth == 0 { "top-level" } else { "subagent" }.to_string()),
             lifecycle: "resident".to_string(), activity: "idle".to_string(),
-            unfinished_action_count: Some(0), ..Default::default()
+            unfinished_action_count: Some(0), session_file, ..Default::default()
         };
         fixture.supervisor.write_roster_entry(worker_roster_entry_from_summary(&summary.roster_view()), Some(&worker), None);
         let commands = Arc::new(Mutex::new(Vec::new()));
@@ -154,6 +166,37 @@ async fn messaging_safety_supervisor_peer_catalog_authenticates_and_filters() {
         assert_eq!(response["success"], false, "{response}");
         assert_eq!(response["error"], "Worker authentication failed");
     }
+}
+
+/// The supervisor's `list_agent_peers` is the only capability source for
+/// cross-worker sends, so each peer's OCC capability must follow its saved
+/// session preference: the default `sym-v1` dialect when OCC-2 is enabled
+/// (the no-occ.json default), and nothing when the chat opted out.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn messaging_safety_supervisor_peer_listing_advertises_occ_capability() {
+    let mut fixture = SupervisorFixture::new("messaging-safety-occ-capability").await;
+    let _source = ScriptedWorker::new(&fixture, "source", 0, None).await;
+    // Real saved sessions on disk: one default-on (no occ.json), one with an
+    // explicit opt-out, persisted through the production preference save.
+    let sessions = fixture.root.join("sessions");
+    std::fs::create_dir_all(&sessions).unwrap();
+    let default_on = sessions.join("occ-default.jsonl").to_string_lossy().into_owned();
+    let opted_out = sessions.join("occ-off.jsonl").to_string_lossy().into_owned();
+    for file in [&default_on, &opted_out] {
+        std::fs::write(file, serde_json::json!({"rlmDepth": 0}).to_string() + "\n").unwrap();
+    }
+    crate::core::occ::session_settings::save(&opted_out, false).unwrap();
+    let _default_on = ScriptedWorker::with_session_file(&fixture, "occ-default", 0, None, Some(default_on)).await;
+    let _opted_out = ScriptedWorker::with_session_file(&fixture, "occ-off", 0, None, Some(opted_out)).await;
+    let response = fixture.send(json!({"type":"list_agent_peers","id":"occ-peers","workerToken":"token-source"})).await;
+    assert_eq!(response["success"], true, "{response}");
+    let peers = response["data"]["peers"].as_array().unwrap();
+    assert_eq!(peers.len(), 2, "{peers:?}");
+    let enabled = peers.iter().find(|peer| peer["activeSessionId"] == "occ-default").unwrap();
+    assert_eq!(enabled["occCapability"]["occ1"], json!(true), "{enabled:?}");
+    assert_eq!(enabled["occCapability"]["dialects"], json!({"sym-v1": [1]}), "{enabled:?}");
+    let disabled = peers.iter().find(|peer| peer["activeSessionId"] == "occ-off").unwrap();
+    assert!(disabled.get("occCapability").is_none(), "an opted-out chat must not advertise a dialect: {disabled:?}");
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
