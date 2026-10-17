@@ -115,8 +115,9 @@ async fn oversized_outputs_are_bounded_and_the_kernel_survives() {
         let result = execute(client, r#""y" * 2_000_000"#).await;
         assert_eq!(result.status, ExecuteStatus::Ok, "{:?}", result.error);
         let result_text = result.result.expect("trailing expression produces a result");
-        assert!(result_text.starts_with('"'));
-        assert!(result_text.starts_with(&format!("\"{}", "y".repeat(1024))));
+        // `repr` of a str without single quotes uses single quotes.
+        assert!(result_text.starts_with('\''));
+        assert!(result_text.starts_with(&format!("'{}", "y".repeat(1024))));
         assert_bounded(&result_text, "result");
 
         // 4. traceback and evalue: a huge error message must not push a ~1 MB

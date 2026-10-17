@@ -184,6 +184,30 @@ fn truncate_chars(text: &str, max: usize) -> String {
     text.chars().take(max).collect()
 }
 
+/// Append one peer stream frame to a capped stdout/stderr buffer. The peer
+/// chunks stream text into frames up to the same budget, so the frame that
+/// fills the buffer can land exactly at the cap without exceeding it; the
+/// frames after it are dropped here and that drop is itself a truncation.
+/// An exact overall fit with nothing dropped is not.
+fn append_capped_stream_text(
+    buffer: &mut String,
+    truncated: &mut bool,
+    text: &str,
+    max_chars: usize,
+) {
+    if buffer.chars().count() >= max_chars {
+        if !text.is_empty() {
+            *truncated = true;
+        }
+        return;
+    }
+    buffer.push_str(text);
+    if buffer.chars().count() > max_chars {
+        *buffer = truncate_chars(&buffer.clone(), max_chars);
+        *truncated = true;
+    }
+}
+
 /// The last `max` characters, `text.slice(-max)`.
 fn tail_chars(text: &str, max: usize) -> String {
     let count = text.chars().count();
@@ -1997,23 +2021,22 @@ impl KernelState {
                 .and_then(|value| value.as_str())
                 .unwrap_or("");
             let on_stream = {
-                let mut guard = execution.lock().unwrap();
+                let guard = &mut *execution.lock().unwrap();
+                let max_chars = guard.max_chars;
                 if kind == "stdout" {
-                    if guard.stdout.chars().count() < guard.max_chars {
-                        guard.stdout.push_str(text);
-                        if guard.stdout.chars().count() > guard.max_chars {
-                            let trimmed = truncate_chars(&guard.stdout.clone(), guard.max_chars);
-                            guard.stdout = trimmed;
-                            guard.stdout_truncated = true;
-                        }
-                    }
-                } else if guard.stderr.chars().count() < guard.max_chars {
-                    guard.stderr.push_str(text);
-                    if guard.stderr.chars().count() > guard.max_chars {
-                        let trimmed = truncate_chars(&guard.stderr.clone(), guard.max_chars);
-                        guard.stderr = trimmed;
-                        guard.stderr_truncated = true;
-                    }
+                    append_capped_stream_text(
+                        &mut guard.stdout,
+                        &mut guard.stdout_truncated,
+                        text,
+                        max_chars,
+                    );
+                } else {
+                    append_capped_stream_text(
+                        &mut guard.stderr,
+                        &mut guard.stderr_truncated,
+                        text,
+                        max_chars,
+                    );
                 }
                 guard.opts.on_stream.clone()
             };
@@ -4992,6 +5015,45 @@ for line in sys.stdin:
         assert_eq!(collapsed.len(), 1);
         assert!(collapsed[0].ends_with(&format!("[... output truncated at {max} chars ...]")));
         assert!(collapsed[0].chars().count() < max + 100);
+    }
+
+    #[test]
+    fn stream_frames_dropped_at_the_budget_set_the_truncation_flag() {
+        // The peer chunks stdout/stderr into frames up to the same budget, so
+        // the frame that fills the buffer lands exactly at the cap without
+        // exceeding it. Frames dropped after that point must still flag the
+        // truncation, or ~2 MB of output vanishes with no notice.
+        let max = DEFAULT_MAX_OUTPUT_CHARS;
+        let mut stdout = String::new();
+        let mut truncated = false;
+
+        // One frame exactly the size of the budget: not truncation yet.
+        append_capped_stream_text(&mut stdout, &mut truncated, &"x".repeat(max), max);
+        assert_eq!(stdout.chars().count(), max);
+        assert!(!truncated, "an exact overall fit is not truncation");
+
+        // The next peer frame is dropped: that drop is the truncation.
+        append_capped_stream_text(&mut stdout, &mut truncated, &"y".repeat(1024), max);
+        assert_eq!(stdout.chars().count(), max);
+        assert!(stdout.ends_with(&'x'.to_string().repeat(1024)));
+        assert!(truncated);
+        assert!(!stdout.contains('y'));
+
+        // A frame that pushes the buffer past the budget trims and flags.
+        let mut stderr = String::new();
+        let mut stderr_truncated = false;
+        append_capped_stream_text(&mut stderr, &mut stderr_truncated, &"e".repeat(max + 1), max);
+        assert_eq!(stderr.chars().count(), max);
+        assert!(stderr_truncated);
+
+        // Small frames under the budget accumulate untouched, and an empty
+        // frame at the cap does not flag anything by itself.
+        let mut small = String::new();
+        let mut small_truncated = false;
+        append_capped_stream_text(&mut small, &mut small_truncated, "ok", max);
+        append_capped_stream_text(&mut small, &mut small_truncated, "", max);
+        assert_eq!(small, "ok");
+        assert!(!small_truncated);
     }
 
     #[test]
