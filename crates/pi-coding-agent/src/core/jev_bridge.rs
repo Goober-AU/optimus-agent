@@ -3860,6 +3860,7 @@ mod full_jev_overlay_wiring_tests {
 
     include!("jev_bridge/tool_availability_tests.rs");
 
+    #[cfg(debug_assertions)]
     struct AssessmentFixture {
         core: Arc<JevBridgeCore>,
         session: String,
@@ -3868,6 +3869,7 @@ mod full_jev_overlay_wiring_tests {
         _lock: std::sync::MutexGuard<'static, ()>,
     }
 
+    #[cfg(debug_assertions)]
     impl Drop for AssessmentFixture {
         fn drop(&mut self) {
             debug_hint_fixture_reset();
@@ -3880,6 +3882,7 @@ mod full_jev_overlay_wiring_tests {
         }
     }
 
+    #[cfg(debug_assertions)]
     fn assessment_fixture() -> AssessmentFixture {
         let lock = env_lock().lock().unwrap_or_else(|poisoned| poisoned.into_inner());
         let dir = tempfile::tempdir().unwrap();
@@ -3903,6 +3906,7 @@ mod full_jev_overlay_wiring_tests {
         AssessmentFixture { core, session, dir, previous, _lock: lock }
     }
 
+    #[cfg(debug_assertions)]
     fn assessment_skill() -> Skill {
         Skill::Markdown(crate::core::skills::MarkdownSkill {
             base: crate::core::skills::BaseSkill {
@@ -3915,6 +3919,7 @@ mod full_jev_overlay_wiring_tests {
         })
     }
 
+    #[cfg(debug_assertions)]
     fn assessment_rows(fixture: &AssessmentFixture) -> Vec<pi_jev::correlate::AssessmentRecord> {
         let text = std::fs::read_to_string(fixture.dir.path().join("jev").join("records.jsonl")).unwrap();
         assert!(!text.contains("DO_NOT_RECORD_TASK_TEXT"));
@@ -3927,6 +3932,7 @@ mod full_jev_overlay_wiring_tests {
     }
 
     #[tokio::test]
+    #[cfg(debug_assertions)]
     async fn assessment_metrics_actual_dispatch_hint_install_and_nohint_clear_are_separate_from_state_rows() {
         let fixture = assessment_fixture();
         let notified = Arc::new(AtomicU64::new(0));
@@ -3969,6 +3975,7 @@ mod full_jev_overlay_wiring_tests {
     }
 
     #[tokio::test]
+    #[cfg(debug_assertions)]
     async fn assessment_metrics_stale_task_roster_model_policy_and_turn_never_render_old_hint() {
         for drift in ["task", "roster", "model", "policy", "turn"] {
             let fixture = assessment_fixture();
@@ -4007,6 +4014,7 @@ mod full_jev_overlay_wiring_tests {
     }
 
     #[tokio::test]
+    #[cfg(debug_assertions)]
     async fn assessment_metrics_empty_ineligible_and_cancelled_before_poll_do_not_claim_calls() {
         for case in ["empty", "ineligible", "cancelled"] {
             let fixture = assessment_fixture();
@@ -4034,6 +4042,7 @@ mod full_jev_overlay_wiring_tests {
     }
 
     #[tokio::test]
+    #[cfg(debug_assertions)]
     async fn assessment_metrics_cancel_drops_actual_call_and_preserves_unknown_attempts() {
         let fixture = assessment_fixture();
         let token = CancellationToken::new();
