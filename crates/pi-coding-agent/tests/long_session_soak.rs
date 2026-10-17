@@ -2659,6 +2659,15 @@ async fn session_slash_command_wedges_the_session_for_the_rest_of_its_life() {
         }),
     );
 
+    // The command's own `prompt` must settle, not just the follow-up: a timeout
+    // here is the wedge even if a later prompt somehow slipped through.
+    assert!(
+        command.is_ok(),
+        "DEFECT: `prompt(\"/goal status\")` never returned within 20s \
+         (measured {command_elapsed:?}) while the handler DID run (result row \
+         present: {ran})."
+    );
+
     assert!(
         !follow_up_wedged,
         "DEFECT: a session slash command wedged the session. `/goal status` never returned \
@@ -2667,6 +2676,101 @@ async fn session_slash_command_wedges_the_session_for_the_rest_of_its_life() {
          (wedged: {follow_up_wedged}) and the session never reached idle ({idle}). \
          Owners: crates/pi-coding-agent/src/core/agent_session.rs:7495-7497 (awaiting \
          prompt) and :9966-9969 (the goal session-command branch). Not fixed by this file."
+    );
+}
+
+/// Focused keep-green for the same session-command family through the
+/// PRINT-MODE submission path.
+///
+/// `run_print_mode` (`modes/print_mode.rs`) drives every prompt through
+/// `prompt_and_wait`, so a session command that never settles its ticket hangs
+/// the whole headless run - the wedge defect's print-mode face. This test runs
+/// the two status commands that mutate no state (`/goal status`,
+/// `/autonomous status`) through `prompt_and_wait` and requires the same three
+/// properties the wedge test pins for `prompt`: the call settles within a
+/// bound, the handler records its transcript rows, and a later normal prompt
+/// still works. The two commands record through different row kinds: `/goal`
+/// appends a `session_slash_command_result` row, `/autonomous` a durable
+/// `autonomous_status` custom message (`emit_autonomous_status`).
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn session_slash_commands_settle_prompt_and_wait_and_keep_the_session_usable() {
+    let soak = Soak::new("session-command-print-mode").await;
+    soak.provider
+        .set_responses(vec![FauxResponseStep::Message(next_reply(0))]);
+
+    // A normal turn first, so the commands run against a live transcript.
+    soak.turn("healthy turn before the print-mode commands")
+        .await;
+
+    for command in ["/goal status", "/autonomous status"] {
+        let settled = tokio::time::timeout(
+            Duration::from_secs(20),
+            soak.connection.prompt_and_wait(command, None),
+        )
+        .await;
+        let settled = settled.unwrap_or_else(|_| {
+            panic!("DEFECT: `prompt_and_wait({command})` never settled; print mode would hang")
+        });
+        settled.unwrap_or_else(|error| panic!("`prompt_and_wait({command})` rejected: {error}"));
+    }
+
+    // Both handlers ran and were recorded durably. They report through
+    // DIFFERENT row kinds, exactly as the ported handlers dictate:
+    // - `/goal status` sets `result_text`, so it appends a
+    //   `session_slash_command_result` row ("No active goal.").
+    // - `/autonomous status` reports through `emit_autonomous_status`, which
+    //   appends a durable `autonomous_status` custom message; the `autonomous`
+    //   arm of `execute_queued_session_command` sets no result text
+    //   (crates/pi-coding-agent/src/core/agent_session.rs).
+    let messages = soak.messages().await;
+    let custom_rows_of = |kind: &str| {
+        messages
+            .iter()
+            .filter(|message| match message {
+                AgentMessage::Custom(custom) => serde_json::to_value(custom)
+                    .ok()
+                    .and_then(|value| {
+                        value
+                            .get("customType")
+                            .and_then(|found| found.as_str())
+                            .map(|found| found == kind)
+                    })
+                    .unwrap_or(false),
+                _ => false,
+            })
+            .count()
+    };
+    assert_eq!(
+        custom_rows_of("session_slash_command"),
+        2,
+        "both print-mode commands must write their command rows"
+    );
+    assert_eq!(
+        custom_rows_of("session_slash_command_result"),
+        1,
+        "`/goal status` must write its result row"
+    );
+    assert_eq!(
+        custom_rows_of("autonomous_status"),
+        1,
+        "`/autonomous status` must write its durable status row"
+    );
+
+    // The session stays usable for a normal prompt after the commands.
+    soak.provider
+        .set_responses(vec![FauxResponseStep::Message(next_reply(1))]);
+    soak.turn("normal prompt after the print-mode commands")
+        .await;
+
+    record_metrics(
+        "session_command_print_mode",
+        serde_json::json!({
+            "commands_settled": 2,
+            "command_rows": custom_rows_of("session_slash_command"),
+            "goal_result_rows": custom_rows_of("session_slash_command_result"),
+            "autonomous_status_rows": custom_rows_of("autonomous_status"),
+            "final_message_count": soak.messages().await.len(),
+        }),
     );
 }
 
@@ -2832,6 +2936,143 @@ async fn interrupt_churn_preserves_queued_work() {
         delivered_after_abort, CYCLES,
         "queued work must still be delivered after the interrupt; only \
          {delivered_after_abort}/{CYCLES} cycles delivered it"
+    );
+}
+
+/// The queue-churn contract for the `steer()`/`followUp()` admission family.
+///
+/// `interrupt_churn_preserves_queued_work` above drives the interactive host's
+/// mid-run submission path (`prompt` with `streamingBehavior`), where the prompt
+/// path passes `queue_visible: Some(visible_queued)` explicitly. The daemon
+/// (`daemon_mode.rs` steer/follow_up RPCs), the RPC mode and the in-process
+/// connection's `steer`/`follow_up` members instead queue through
+/// `AgentSession::steer`/`follow_up` -> `queue_prepared_prompt` ->
+/// `create_prepared_turn_action`, which takes the `queueVisible` DEFAULT.
+///
+/// TypeScript defaults that flag TRUE (`agent-session.ts:6141`
+/// `queueVisible: options.queueVisible ?? true`), so a plain `requestAbort`
+/// (which cancels exactly the `!queue_visible` turns, `agent_session.rs`
+/// `request_abort_inner`) preserves those turns too. This test pins the same
+/// contract for the default-queueing family: queue through `steer`/`follow_up`
+/// mid-run, abort like Ctrl+C, and require the queued work to survive and be
+/// delivered after the next submit resumes the queue.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn abort_preserves_work_queued_through_steer_and_follow_up() {
+    let soak = Soak::with_rate("queue-churn-steer-api", 20_000.0).await;
+
+    // A long reply keeps the run alive across the queue/abort window.
+    let body = format!("STEER_API_BODY_").repeat(200);
+    soak.provider
+        .set_responses(vec![FauxResponseStep::Message(faux_assistant_message(
+            FauxAssistantContent::Text(body),
+            None,
+        ))]);
+    soak.prompt_spawned("steer api churn prompt");
+    soak.wait_for_streaming_snapshot(Duration::from_secs(30))
+        .await;
+
+    // The default-queueing family: `connection.steer`/`follow_up` map to
+    // `session.steer`/`session.follow_up` -> `queue_prepared_prompt`, the path
+    // whose `queue_visible` comes from the default under test.
+    let steering = "QUEUED_STEER_API";
+    soak.connection.steer(steering, None).await.expect("steer");
+    let follow = "QUEUED_FOLLOW_API";
+    soak.connection
+        .follow_up(follow, None)
+        .await
+        .expect("follow up");
+
+    let (queued_steering, queued_follow) = soak.queue_counts();
+    assert_eq!(
+        (queued_steering, queued_follow),
+        (1, 1),
+        "the steer/follow_up submissions must be queued before the abort"
+    );
+
+    // Ctrl+C semantics: `connection.abort()`, NOT `abort_and_clear_queue`.
+    soak.connection.abort().await.expect("abort");
+
+    // THE contract: the abort must not discard what was queued through the
+    // steer/follow_up admission family either.
+    let (after_steering, after_follow) = soak.queue_counts();
+    assert_eq!(
+        (after_steering, after_follow),
+        (1, 1),
+        "DEFECT: abort() discarded work queued through steer()/follow_up(). \
+         Cause: `queue_visible` defaults to false in `create_prepared_turn_action` \
+         (crates/pi-coding-agent/src/core/agent_session.rs) while TypeScript \
+         defaults it true (agent-session.ts:6141 \
+         `queueVisible: options.queueVisible ?? true`), and `request_abort` \
+         cancels `!queue_visible` turns."
+    );
+
+    // Draining resumes on the next submit, exactly like the interactive path.
+    let resume = tokio::time::timeout(
+        Duration::from_secs(30),
+        soak.queue_via_prompt("resume after steer api abort", "steer"),
+    )
+    .await;
+    assert!(
+        resume.is_ok(),
+        "the resume submit never returned after the abort"
+    );
+    let drained = tokio::time::timeout(Duration::from_secs(30), soak.wait_for_queue_to_drain())
+        .await
+        .unwrap_or(false);
+    assert!(
+        drained,
+        "the preserved steer/follow_up queue never drained after the resume submit"
+    );
+
+    // Delivery is asynchronous and lane-ordered: `select_first` drains the
+    // steering lane before the follow-up lane, so the drain poll above can
+    // observe an empty queue in the window between the follow-up action's
+    // SELECTION (it leaves the `queued` state) and its commit-time transcript
+    // append. Poll the transcript until BOTH queued texts appear (bounded);
+    // that is the actual delivery contract, not a single post-drain snapshot.
+    let deadline = Instant::now() + Duration::from_secs(30);
+    let delivered_text = loop {
+        let delivered_text = soak
+            .messages()
+            .await
+            .iter()
+            .map(assistant_or_user_text)
+            .collect::<Vec<_>>()
+            .join("\n");
+        if delivered_text.contains(steering) && delivered_text.contains(follow) {
+            break delivered_text;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "DEFECT: the preserved queue was not delivered after the interrupt; \
+             steer text delivered: {}, follow-up text delivered: {}",
+            delivered_text.contains(steering),
+            delivered_text.contains(follow),
+        );
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    };
+    assert!(
+        delivered_text.contains(steering),
+        "the steer-queued text must still be delivered after the interrupt"
+    );
+    assert!(
+        delivered_text.contains(follow),
+        "the follow-up-queued text must still be delivered after the interrupt"
+    );
+
+    // Leave the fixture clean.
+    soak.connection.clear_queue().await.expect("clear queue");
+    let (cleared_steering, cleared_follow) = soak.queue_counts();
+    assert_eq!((cleared_steering, cleared_follow), (0, 0));
+
+    record_metrics(
+        "queue_churn_steer_api",
+        serde_json::json!({
+            "queued_before_abort": [steering, follow],
+            "preserved_after_abort": after_steering + after_follow,
+            "delivered_after_abort": true,
+            "final_message_count": soak.messages().await.len(),
+        }),
     );
 }
 
