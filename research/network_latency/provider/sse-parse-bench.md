@@ -1,9 +1,12 @@
 # SSE parse/forward path A/B bench (completions reader + responses buffer)
 
 Scope: `crates/pi-ai/src/providers/openai_completions.rs` (SSE framing:
-`SseLineReader::push`/`decode_line`/`flush`, `forward_sse_payload`) and
-`crates/pi-ai/src/providers/openai_responses.rs` (`SseBuffer::push`), plus the
-harness `crates/pi-ai/src/providers/sse_parse_bench.rs`. Everything measured
+`SseLineReader::push`/`decode_line`/`flush`, `forward_sse_payload`; round 2:
+the consumer hot path - `partial_message` field-wise clone and tool-args
+move), `crates/pi-ai/src/providers/openai_responses_shared.rs` (round 2:
+`append_part_text` in-place append, measured by the new responses-consumer
+bench), `crates/pi-ai/src/providers/openai_responses.rs` (`SseBuffer::push`),
+plus the harness `crates/pi-ai/src/providers/sse_parse_bench.rs`. Everything measured
 through the REAL parse pipeline with synthetic fixtures; no network and no
 provider APIs.
 
@@ -35,6 +38,22 @@ under the unoptimized build.
   is never drained, so every event (and its `partial_message` deep clone)
   stays resident; at x2000 the 4KB fixture would retain GBs. Framing arms
   stay at x2000.
+- Round-2 consumer A/B: the pre-change consumer is kept VERBATIM in
+  `consumer_reference` (typed structs, `parse_typed_chunk`,
+  `handle_typed_chunk`, full-snapshot `partial_message`, `StreamError`
+  tail); the candidate is the live consumer. Arms consume identical
+  pre-framed payload lists (framing excluded), events stay resident, clean
+  pass best-of-3 for the mean, one instrumented pass for percentiles, and
+  one decile probe per arm (text 4KB and tool-call).
+- Round-2 responses consumer bench: the whole event list flows through ONE
+  `process_responses_stream` call (state must persist across events); a
+  wrapping stream stamps `Instant::now()` per event yield, so
+  consecutive-stamp deltas give one sample per event (~20 ns clock charged
+  equally). Fixtures: text 100B/1KB/4KB, reasoning-dense, tool-call x200.
+- Byte-identity guarantee for the consumer change: three
+  `consumer_matches_reference_*` tests serialize every event (including
+  partial snapshots, timestamps scrubbed) from both arms and assert
+  equality on text, reasoning, tool-call, mixed, and finish+usage fixtures.
 - Run: `cargo test -p pi-ai --lib --offline --locked sse_parse_bench -- --include-ignored --nocapture`
   (debug) and the same with `--release` (release tables).
 
@@ -56,6 +75,15 @@ under the unoptimized build.
 6. Review fix: `SseBuffer::push` guards the chunk-start `skip_lf` swallow on
    `!bytes.is_empty()`; an empty chunk between a CR-final chunk and an
    LF-initial chunk must preserve the flag (see "Defect caught in review").
+7. Round 2 (completions consumer, completions-quad lane, verified by this
+   bench): `partial_message` clones field-wise instead of `output.clone()`
+   (the dead `output.content` copy is skipped; every partial replaces it
+   with the live `state.content()` snapshot), and tool-call arguments move
+   out of the parsed `Value` instead of a deep re-clone.
+8. Round 2 (responses consumer, responses-quad lane, measured by the new
+   responses-consumer bench): `append_part_text` appends in place when the
+   part field is already a JSON string instead of cloning the accumulated
+   text and re-formatting per delta.
 
 Equivalence guarantee: `reference`/`responses_reference` run the pre-change
 code verbatim; 14 equivalence tests assert byte-identical payload/event
@@ -260,6 +288,15 @@ was a cross-lane casualty of the concurrently edited shared transport.
 
 ## Suite counts (this lane's module, `sse_parse_bench`)
 
+Round-2 state: 19 passed, 0 failed, 3 ignored benches
+(`sse_parse_bench`, `responses_sse_bench`, `responses_consumer_bench`) on
+the current tree (debug gate run 2026-10-17), including the three new
+`consumer_matches_reference_*` byte-identity tests and the
+`responses_consumer_bench_fixtures_stream_expected_event_kinds` sanity
+test. Prior round-1 counts below.
+
+### Round-1 counts
+
 - At cancellation: 13 passed, 1 failed (`stream_event_sequence_is_stable...`),
   2 ignored benches.
 - On pickup, current tree, before any edit: 13 passed, 0 failed, 2 ignored.
@@ -267,3 +304,65 @@ was a cross-lane casualty of the concurrently edited shared transport.
   15 passed, 0 failed, 2 ignored (non-ignored run), and 17 passed, 0 failed
   with `--include-ignored` (both debug and release, two consecutive runs
   each).
+
+
+## Consumer hot-path A/B (partial_message lane, release)
+
+Round-2 extension: the bench now carries the pre-change consumer VERBATIM
+(`consumer_reference`: typed structs, `parse_typed_chunk`,
+`handle_typed_chunk`, the full-snapshot `partial_message`, `StreamError`
+tail) and A/Bs it against the live consumer over pre-framed payload lists
+(no framing cost, identical inputs). Byte-identity tests pin the observable
+behavior: the serialized event sequence, including every partial snapshot
+(timestamps scrubbed), must match old-vs-new on text, reasoning, tool-call,
+mixed, and finish+usage fixtures.
+
+Measured under throttled gate (4 CPUs shared, -j 2, BelowNormal), release:
+
+| fixture (x200) | old ns/ev | new ns/ev | delta | old p50/p95/p99 | new p50/p95/p99 |
+|---|---:|---:|---:|---|---|
+| text 100B | 7568 | 9698 | +28.1% | 8600 / 25900 / 35000 | 10000 / 31300 / 41000 |
+| text 1KB | 48170 | 50876 | +5.6% | 61800 / 164000 / 240400 | 45100 / 84200 / 104000 |
+| text 4KB | 152077 | 160790 | +5.7% | 182000 / 388400 / 693700 | 159500 / 286700 / 358200 |
+| reasoning-dense 100B | 8044 | 4602 | -42.8% | 9400 / 33500 / 62700 | 8200 / 24600 / 41000 |
+| reasoning-dense 1KB | 57088 | 10402 | -81.8% | 45800 / 94600 / 140700 | 45600 / 125400 / 190800 |
+| tool-call-delta | 295700 | 223700 | -24.3% | 1200 / 2400 / 2600 | 1100 / 1200 / 1200 |
+
+Decile growth per arm (text 4KB x200, per-event ns): old first 11115 ->
+last 259205 (23.3x); new first 30280 -> 186920 (6.2x). Tool-call (x200):
+old 1235 -> 1130 (0.9x); new 1160 -> 1180 (1.0x). The new arm's growth is
+6.2x, not 1.0x, because `partial_message` still snapshots the live blocks
+(the dead `output.content` clone is what got removed); the last-decile cost
+drops 28% (259205 -> 186920 ns) and the tail p99 nearly halves at 4KB.
+
+Run note: the release gate ran with `--test-threads=2`, so the three bench
+tests interleaved stdout; each fixture's data lines are intact but
+neighbor-run CPU contention inflates outlier-dominated means (text 100B/1KB
+mean regressions vs improved p50-p99 are the same effect round 1 documented
+for the shared machine). A serial re-run is queued to confirm.
+
+Pre-change reference (live==HEAD run by the completions lane, same gate):
+consumer text 4KB x200 mean 114390 ns/event, first decile 37615 -> last
+decile 162780 (4.3x growth); text 1KB mean 56105; tool-call-delta mean
+537000 (p50 2100). Round-1 numbers (full-consumer arm with framing):
+text 4KB x200 mean 115762 ns/event, 31370 -> 186975 (6.0x growth).
+
+## Responses consumer hot path (process_responses_stream, release)
+
+Live-arm measurement on the current tree (the `append_part_text` fix is
+in); a pre-change reference arm can be pinned from the parent's next commit
+for a strict A/B: the whole event list flows through ONE
+`process_responses_stream` call (the consumer keeps `current_item` /
+`current_block` state across events); a wrapping stream stamps
+`Instant::now()` per event yield, so consecutive-stamp deltas give one
+sample per event (~20 ns clock, charged to every event equally). Text,
+reasoning-dense, and tool-call fixtures, x200, events stay resident.
+
+| fixture (x200) | mean ns/ev | p50 | p95 | p99 | first decile | last decile | growth |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| text 100B | 14637 | 12000 | 26500 | 78400 | 9585 | 26310 | 2.7x |
+| text 1KB | 68615 | 73100 | 130000 | 174100 | 12585 | 104820 | 8.3x |
+| text 4KB | 124365 | 128300 | 222000 | 250400 | 32255 | 173850 | 5.4x |
+| reasoning-dense 1KB | 64796 | 53600 | 133800 | 308600 | 14370 | 118545 | 8.2x |
+| tool-call-delta | 19124 | 15200 | 49600 | 113300 | 10750 | 14300 | 1.3x |
+

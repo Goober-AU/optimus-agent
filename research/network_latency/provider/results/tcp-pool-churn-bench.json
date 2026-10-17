@@ -1,0 +1,1085 @@
+{
+  "note": "loopback keep-alive HTTP/1.1; measured under throttled gate (4 CPUs shared, -j 2, BelowNormal)",
+  "runs": [
+    {
+      "repeat": 0,
+      "arm": "count_policy_max_idle_4",
+      "pattern": "steady",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.025,
+        "wall_ms": 18,
+        "throughput_rps": 17324.079387593796,
+        "latency": {
+          "samples": 320,
+          "p50_us": 375,
+          "p95_us": 451,
+          "p99_us": 2025,
+          "mean_us": 427
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "count_policy_max_idle_4",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 96,
+        "tcp_accepts": 52,
+        "accepts_per_request": 0.5416666666666666,
+        "wall_ms": 334,
+        "throughput_rps": 287.08700590382466,
+        "latency": {
+          "samples": 96,
+          "p50_us": 1460,
+          "p95_us": 1969,
+          "p99_us": 2032,
+          "mean_us": 1460
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "count_policy_max_idle_4",
+      "pattern": "steady",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.05,
+        "wall_ms": 33,
+        "throughput_rps": 9497.719063406179,
+        "latency": {
+          "samples": 320,
+          "p50_us": 1212,
+          "p95_us": 2403,
+          "p99_us": 8635,
+          "mean_us": 1543
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "count_policy_max_idle_4",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 192,
+        "tcp_accepts": 148,
+        "accepts_per_request": 0.7708333333333334,
+        "wall_ms": 382,
+        "throughput_rps": 502.40211008886234,
+        "latency": {
+          "samples": 192,
+          "p50_us": 3522,
+          "p95_us": 4862,
+          "p99_us": 6098,
+          "mean_us": 3577
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "count_policy_max_idle_4",
+      "pattern": "steady",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.1,
+        "wall_ms": 23,
+        "throughput_rps": 13476.464617963284,
+        "latency": {
+          "samples": 320,
+          "p50_us": 1453,
+          "p95_us": 6663,
+          "p99_us": 9080,
+          "mean_us": 1970
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "count_policy_max_idle_4",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 384,
+        "tcp_accepts": 340,
+        "accepts_per_request": 0.8854166666666666,
+        "wall_ms": 425,
+        "throughput_rps": 901.6522777990667,
+        "latency": {
+          "samples": 384,
+          "p50_us": 6328,
+          "p95_us": 8257,
+          "p99_us": 9184,
+          "mean_us": 6194
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "max_idle_32",
+      "pattern": "steady",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.025,
+        "wall_ms": 20,
+        "throughput_rps": 15272.27604638954,
+        "latency": {
+          "samples": 320,
+          "p50_us": 393,
+          "p95_us": 538,
+          "p99_us": 3146,
+          "mean_us": 473
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "max_idle_32",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 96,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 323,
+        "throughput_rps": 296.7005049471719,
+        "latency": {
+          "samples": 96,
+          "p50_us": 480,
+          "p95_us": 1531,
+          "p99_us": 2371,
+          "mean_us": 596
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "max_idle_32",
+      "pattern": "steady",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.05,
+        "wall_ms": 22,
+        "throughput_rps": 14430.665163472378,
+        "latency": {
+          "samples": 320,
+          "p50_us": 777,
+          "p95_us": 1528,
+          "p99_us": 4715,
+          "mean_us": 1012
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "max_idle_32",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 192,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 334,
+        "throughput_rps": 574.199768884593,
+        "latency": {
+          "samples": 192,
+          "p50_us": 780,
+          "p95_us": 2894,
+          "p99_us": 4400,
+          "mean_us": 990
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "max_idle_32",
+      "pattern": "steady",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.1,
+        "wall_ms": 27,
+        "throughput_rps": 11436.8222789298,
+        "latency": {
+          "samples": 320,
+          "p50_us": 2272,
+          "p95_us": 7305,
+          "p99_us": 9416,
+          "mean_us": 2471
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "max_idle_32",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 384,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 351,
+        "throughput_rps": 1092.6660482480352,
+        "latency": {
+          "samples": 384,
+          "p50_us": 1518,
+          "p95_us": 7307,
+          "p99_us": 9963,
+          "mean_us": 2115
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "no_max_idle_reqwest_default",
+      "pattern": "steady",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.025,
+        "wall_ms": 24,
+        "throughput_rps": 13039.084656257131,
+        "latency": {
+          "samples": 320,
+          "p50_us": 353,
+          "p95_us": 413,
+          "p99_us": 6714,
+          "mean_us": 517
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "no_max_idle_reqwest_default",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 96,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 321,
+        "throughput_rps": 298.8721312945273,
+        "latency": {
+          "samples": 96,
+          "p50_us": 473,
+          "p95_us": 1277,
+          "p99_us": 1895,
+          "mean_us": 571
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "no_max_idle_reqwest_default",
+      "pattern": "steady",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.05,
+        "wall_ms": 17,
+        "throughput_rps": 18025.224047902033,
+        "latency": {
+          "samples": 320,
+          "p50_us": 691,
+          "p95_us": 765,
+          "p99_us": 3818,
+          "mean_us": 811
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "no_max_idle_reqwest_default",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 192,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 334,
+        "throughput_rps": 573.2450416543136,
+        "latency": {
+          "samples": 192,
+          "p50_us": 832,
+          "p95_us": 2595,
+          "p99_us": 3968,
+          "mean_us": 1050
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "no_max_idle_reqwest_default",
+      "pattern": "steady",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.1,
+        "wall_ms": 22,
+        "throughput_rps": 14322.351372036504,
+        "latency": {
+          "samples": 320,
+          "p50_us": 1414,
+          "p95_us": 6237,
+          "p99_us": 8309,
+          "mean_us": 1929
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "no_max_idle_reqwest_default",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 384,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 350,
+        "throughput_rps": 1095.4021067092808,
+        "latency": {
+          "samples": 384,
+          "p50_us": 1973,
+          "p95_us": 5594,
+          "p99_us": 8093,
+          "mean_us": 2225
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "shared_client_default_policy",
+      "pattern": "steady",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.025,
+        "wall_ms": 30,
+        "throughput_rps": 10324.578950764664,
+        "latency": {
+          "samples": 320,
+          "p50_us": 362,
+          "p95_us": 658,
+          "p99_us": 10627,
+          "mean_us": 670
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "shared_client_default_policy",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 96,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 330,
+        "throughput_rps": 290.52111316796027,
+        "latency": {
+          "samples": 96,
+          "p50_us": 825,
+          "p95_us": 2757,
+          "p99_us": 2881,
+          "mean_us": 1043
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "shared_client_default_policy",
+      "pattern": "steady",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.05,
+        "wall_ms": 24,
+        "throughput_rps": 13316.687473990845,
+        "latency": {
+          "samples": 320,
+          "p50_us": 1164,
+          "p95_us": 1405,
+          "p99_us": 3976,
+          "mean_us": 1117
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "shared_client_default_policy",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 192,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 339,
+        "throughput_rps": 564.9280319937575,
+        "latency": {
+          "samples": 192,
+          "p50_us": 1216,
+          "p95_us": 3427,
+          "p99_us": 4296,
+          "mean_us": 1489
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "shared_client_default_policy",
+      "pattern": "steady",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.1,
+        "wall_ms": 29,
+        "throughput_rps": 10988.78457174646,
+        "latency": {
+          "samples": 320,
+          "p50_us": 1623,
+          "p95_us": 8051,
+          "p99_us": 10989,
+          "mean_us": 2489
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "shared_client_default_policy",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 384,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 353,
+        "throughput_rps": 1085.6977417486971,
+        "latency": {
+          "samples": 384,
+          "p50_us": 1656,
+          "p95_us": 7356,
+          "p99_us": 9841,
+          "mean_us": 2268
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "no_max_idle_keepalive_off",
+      "pattern": "steady",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.025,
+        "wall_ms": 17,
+        "throughput_rps": 18454.014901617033,
+        "latency": {
+          "samples": 320,
+          "p50_us": 348,
+          "p95_us": 461,
+          "p99_us": 2344,
+          "mean_us": 408
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "no_max_idle_keepalive_off",
+      "pattern": "steady",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.05,
+        "wall_ms": 18,
+        "throughput_rps": 17488.05893475861,
+        "latency": {
+          "samples": 320,
+          "p50_us": 697,
+          "p95_us": 972,
+          "p99_us": 3794,
+          "mean_us": 846
+        }
+      }
+    },
+    {
+      "repeat": 0,
+      "arm": "no_max_idle_keepalive_off",
+      "pattern": "steady",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.1,
+        "wall_ms": 22,
+        "throughput_rps": 14304.041338679468,
+        "latency": {
+          "samples": 320,
+          "p50_us": 1403,
+          "p95_us": 6889,
+          "p99_us": 8801,
+          "mean_us": 1949
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "count_policy_max_idle_4",
+      "pattern": "steady",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.025,
+        "wall_ms": 21,
+        "throughput_rps": 15186.24505853823,
+        "latency": {
+          "samples": 320,
+          "p50_us": 348,
+          "p95_us": 512,
+          "p99_us": 4723,
+          "mean_us": 470
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "count_policy_max_idle_4",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 96,
+        "tcp_accepts": 52,
+        "accepts_per_request": 0.5416666666666666,
+        "wall_ms": 336,
+        "throughput_rps": 285.50780239291225,
+        "latency": {
+          "samples": 96,
+          "p50_us": 1546,
+          "p95_us": 1964,
+          "p99_us": 2080,
+          "mean_us": 1531
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "count_policy_max_idle_4",
+      "pattern": "steady",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.05,
+        "wall_ms": 20,
+        "throughput_rps": 15548.019085193428,
+        "latency": {
+          "samples": 320,
+          "p50_us": 754,
+          "p95_us": 1210,
+          "p99_us": 4185,
+          "mean_us": 935
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "count_policy_max_idle_4",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 192,
+        "tcp_accepts": 148,
+        "accepts_per_request": 0.7708333333333334,
+        "wall_ms": 374,
+        "throughput_rps": 512.4281166104909,
+        "latency": {
+          "samples": 192,
+          "p50_us": 3046,
+          "p95_us": 4330,
+          "p99_us": 5201,
+          "mean_us": 3143
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "count_policy_max_idle_4",
+      "pattern": "steady",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.1,
+        "wall_ms": 22,
+        "throughput_rps": 13920.427357119865,
+        "latency": {
+          "samples": 320,
+          "p50_us": 1414,
+          "p95_us": 6184,
+          "p99_us": 8007,
+          "mean_us": 1973
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "count_policy_max_idle_4",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 384,
+        "tcp_accepts": 340,
+        "accepts_per_request": 0.8854166666666666,
+        "wall_ms": 419,
+        "throughput_rps": 914.9030560144631,
+        "latency": {
+          "samples": 384,
+          "p50_us": 5865,
+          "p95_us": 8188,
+          "p99_us": 8630,
+          "mean_us": 5780
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "max_idle_32",
+      "pattern": "steady",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.025,
+        "wall_ms": 20,
+        "throughput_rps": 15588.008924135109,
+        "latency": {
+          "samples": 320,
+          "p50_us": 365,
+          "p95_us": 606,
+          "p99_us": 3499,
+          "mean_us": 467
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "max_idle_32",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 96,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 326,
+        "throughput_rps": 294.0021719410452,
+        "latency": {
+          "samples": 96,
+          "p50_us": 468,
+          "p95_us": 3506,
+          "p99_us": 3537,
+          "mean_us": 823
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "max_idle_32",
+      "pattern": "steady",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.05,
+        "wall_ms": 18,
+        "throughput_rps": 16849.199663016007,
+        "latency": {
+          "samples": 320,
+          "p50_us": 703,
+          "p95_us": 1256,
+          "p99_us": 4111,
+          "mean_us": 864
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "max_idle_32",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 192,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 338,
+        "throughput_rps": 567.8957863907324,
+        "latency": {
+          "samples": 192,
+          "p50_us": 840,
+          "p95_us": 2651,
+          "p99_us": 4083,
+          "mean_us": 1091
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "max_idle_32",
+      "pattern": "steady",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.1,
+        "wall_ms": 26,
+        "throughput_rps": 12239.387112690332,
+        "latency": {
+          "samples": 320,
+          "p50_us": 1499,
+          "p95_us": 7911,
+          "p99_us": 9954,
+          "mean_us": 2295
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "max_idle_32",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 384,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 348,
+        "throughput_rps": 1101.4669014932908,
+        "latency": {
+          "samples": 384,
+          "p50_us": 1699,
+          "p95_us": 5846,
+          "p99_us": 8392,
+          "mean_us": 2097
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "no_max_idle_reqwest_default",
+      "pattern": "steady",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.025,
+        "wall_ms": 26,
+        "throughput_rps": 12017.831457424954,
+        "latency": {
+          "samples": 320,
+          "p50_us": 349,
+          "p95_us": 448,
+          "p99_us": 8299,
+          "mean_us": 557
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "no_max_idle_reqwest_default",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 96,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 327,
+        "throughput_rps": 293.47674563636764,
+        "latency": {
+          "samples": 96,
+          "p50_us": 511,
+          "p95_us": 1363,
+          "p99_us": 1995,
+          "mean_us": 611
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "no_max_idle_reqwest_default",
+      "pattern": "steady",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.05,
+        "wall_ms": 19,
+        "throughput_rps": 16182.375370424686,
+        "latency": {
+          "samples": 320,
+          "p50_us": 694,
+          "p95_us": 1229,
+          "p99_us": 4195,
+          "mean_us": 912
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "no_max_idle_reqwest_default",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 192,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 338,
+        "throughput_rps": 567.0647047409268,
+        "latency": {
+          "samples": 192,
+          "p50_us": 1037,
+          "p95_us": 3476,
+          "p99_us": 5126,
+          "mean_us": 1239
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "no_max_idle_reqwest_default",
+      "pattern": "steady",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.1,
+        "wall_ms": 21,
+        "throughput_rps": 14731.3372371377,
+        "latency": {
+          "samples": 320,
+          "p50_us": 1333,
+          "p95_us": 6624,
+          "p99_us": 8684,
+          "mean_us": 1874
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "no_max_idle_reqwest_default",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 384,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 347,
+        "throughput_rps": 1105.566324910396,
+        "latency": {
+          "samples": 384,
+          "p50_us": 1547,
+          "p95_us": 5105,
+          "p99_us": 7446,
+          "mean_us": 1876
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "shared_client_default_policy",
+      "pattern": "steady",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.025,
+        "wall_ms": 29,
+        "throughput_rps": 10667.448946256058,
+        "latency": {
+          "samples": 320,
+          "p50_us": 403,
+          "p95_us": 665,
+          "p99_us": 8468,
+          "mean_us": 645
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "shared_client_default_policy",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 96,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 324,
+        "throughput_rps": 295.46107161884044,
+        "latency": {
+          "samples": 96,
+          "p50_us": 429,
+          "p95_us": 1744,
+          "p99_us": 2417,
+          "mean_us": 594
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "shared_client_default_policy",
+      "pattern": "steady",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.05,
+        "wall_ms": 18,
+        "throughput_rps": 17455.148450582838,
+        "latency": {
+          "samples": 320,
+          "p50_us": 696,
+          "p95_us": 950,
+          "p99_us": 4064,
+          "mean_us": 833
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "shared_client_default_policy",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 192,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 330,
+        "throughput_rps": 580.5265980959938,
+        "latency": {
+          "samples": 192,
+          "p50_us": 751,
+          "p95_us": 2666,
+          "p99_us": 3878,
+          "mean_us": 966
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "shared_client_default_policy",
+      "pattern": "steady",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.1,
+        "wall_ms": 20,
+        "throughput_rps": 15405.42752468479,
+        "latency": {
+          "samples": 320,
+          "p50_us": 1345,
+          "p95_us": 5751,
+          "p99_us": 7711,
+          "mean_us": 1797
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "shared_client_default_policy",
+      "pattern": "burst_gap_25ms",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 384,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.08333333333333333,
+        "wall_ms": 349,
+        "throughput_rps": 1099.8614002782306,
+        "latency": {
+          "samples": 384,
+          "p50_us": 1876,
+          "p95_us": 4781,
+          "p99_us": 7079,
+          "mean_us": 2031
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "no_max_idle_keepalive_off",
+      "pattern": "steady",
+      "concurrency": 8,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.025,
+        "wall_ms": 16,
+        "throughput_rps": 19350.54725766463,
+        "latency": {
+          "samples": 320,
+          "p50_us": 347,
+          "p95_us": 423,
+          "p99_us": 1941,
+          "mean_us": 395
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "no_max_idle_keepalive_off",
+      "pattern": "steady",
+      "concurrency": 16,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 16,
+        "accepts_per_request": 0.05,
+        "wall_ms": 17,
+        "throughput_rps": 18194.016442842363,
+        "latency": {
+          "samples": 320,
+          "p50_us": 698,
+          "p95_us": 779,
+          "p99_us": 3801,
+          "mean_us": 813
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "arm": "no_max_idle_keepalive_off",
+      "pattern": "steady",
+      "concurrency": 32,
+      "scenario": {
+        "requests": 320,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.1,
+        "wall_ms": 20,
+        "throughput_rps": 15655.041167866071,
+        "latency": {
+          "samples": 320,
+          "p50_us": 1359,
+          "p95_us": 5396,
+          "p99_us": 7296,
+          "mean_us": 1774
+        }
+      }
+    }
+  ]
+}
