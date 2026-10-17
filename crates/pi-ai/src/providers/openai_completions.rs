@@ -6016,7 +6016,14 @@ mod partial_snapshot_tests {
 		// The terminal usage chunk must reach every later partial and the
 		// Done message: mid-stream deltas carry output 4, end events and Done
 		// carry the re-sent output 7.
-		for event in &events {
+		// `Start` is emitted before the first chunk is processed, so it cannot
+		// carry the terminal usage or the response id (pinned by the golden
+		// sequence itself); every later partial must carry both.
+		let AssistantMessageEvent::Start { partial: start_partial } = &events[0] else {
+			panic!("first event must be Start: {:?}", events[0]);
+		};
+		assert_eq!(start_partial.response_id, None);
+		for event in events.iter().skip(1) {
 			if let Some(partial) = event_partial(event) {
 				assert_eq!(partial.response_id.as_deref(), Some("chatcmpl-gold"));
 				assert_eq!(partial.usage.input, 11.0);
