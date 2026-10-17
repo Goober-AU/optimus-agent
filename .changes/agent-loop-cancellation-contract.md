@@ -1,0 +1,4 @@
+- Fixed sequential tool-batch cancellation leaving assistant tool calls without matching tool results: skipped calls now get the dedicated "Tool execution aborted" result, so cancelled runs keep a provider-valid context.
+- Fixed before-tool-call aborts recording the raw abort error text as tool-result history; they now use the same dedicated "Tool execution aborted" wording as mid-execution aborts.
+- Fixed per-agent execution-scope growth: finished stream receipts and terminal task handles are released at each request and run boundary, keeping cancellation and settlement work proportional to live work.
+- Fixed `Agent::continue_` accepting a custom-role tail whose conversion leaves no user or toolResult message: it is now rejected with a typed `NothingToContinue` error instead of sending an invalid request.

@@ -106,6 +106,46 @@ async fn execute_mcp_code(
     execution_result(result)
 }
 
+/// Validate `mcp_call_<server>` arguments against the tool schema before any
+/// kernel code is generated: `tool` must be a non-empty string and `arguments`
+/// must be a JSON object. Returns a typed error naming the invalid field
+/// instead of coercing to an empty tool name or null arguments, which would
+/// surface as a confusing kernel-side traceback.
+pub fn validate_mcp_call_arguments(params: &Value) -> Result<(String, Value), String> {
+    let tool = match params.get("tool") {
+        Some(Value::String(tool)) if !tool.is_empty() => tool.clone(),
+        Some(Value::String(_)) => {
+            return Err(r#"Invalid arguments: "tool" must be a non-empty string."#.to_string())
+        }
+        _ => {
+            return Err(r#"Invalid arguments: "tool" is required and must be a string."#.to_string())
+        }
+    };
+    let arguments = match params.get("arguments") {
+        Some(value @ Value::Object(_)) => value.clone(),
+        _ => {
+            return Err(
+                r#"Invalid arguments: "arguments" is required and must be a JSON object."#.to_string(),
+            )
+        }
+    };
+    Ok((tool, arguments))
+}
+
+/// Generate the Python source executed in the shared kernel for one
+/// `mcp_call_<server>` invocation. `tool` and `arguments` are embedded as JSON
+/// string literals so quotes, backslashes, and newlines survive the round trip
+/// through the Python source and `json.loads`.
+pub fn mcp_call_python_code(server_name: &str, tool: &str, arguments: &Value) -> String {
+    let server = serde_json::to_string(server_name).unwrap_or_else(|_| "\"\"".to_string());
+    let tool = serde_json::to_string(tool).unwrap_or_else(|_| "\"\"".to_string());
+    let arguments_json = serde_json::to_string(arguments).unwrap_or_else(|_| "{}".to_string());
+    let arguments = serde_json::to_string(&arguments_json).unwrap_or_else(|_| "\"\"".to_string());
+    format!(
+        "print(__import__(\"json\").dumps(await mcp.call_tool({server}, {tool}, __import__(\"json\").loads({arguments})), default=str))"
+    )
+}
+
 pub const ACP_MCP_SERVER_NAME_PATTERN_SOURCE: &str = r"^[A-Za-z0-9][A-Za-z0-9_-]{0,48}$";
 
 pub fn create_acp_mcp_tool_definitions(
@@ -162,7 +202,7 @@ pub fn create_acp_mcp_tool_definitions(
         });
 
         let call_provisioner = provisioner.clone();
-        let call_server_name = server_name.clone();
+        let call_server_name = server.name.clone();
         let call_list_tool_name = list_tool_name.clone();
         let call_execute: ToolExecuteFn<Value> = Arc::new(
             move |_tool_call_id: String,
@@ -173,18 +213,9 @@ pub fn create_acp_mcp_tool_definitions(
                 let provisioner = call_provisioner.clone();
                 let server_name = call_server_name.clone();
                 Box::pin(async move {
-                    let tool = params
-                        .get("tool")
-                        .and_then(|tool| tool.as_str())
-                        .unwrap_or_default()
-                        .to_string();
-                    let args = params.get("arguments").cloned().unwrap_or(Value::Null);
-                    let args_json = serde_json::to_string(&args).unwrap_or_else(|_| "{}".to_string());
-                    let code = format!(
-                        "print(__import__(\"json\").dumps(await mcp.call_tool({server_name}, {}, __import__(\"json\").loads({})), default=str))",
-                        serde_json::to_string(&tool).unwrap_or_else(|_| "\"\"".to_string()),
-                        serde_json::to_string(&args_json).unwrap_or_else(|_| "\"\"".to_string())
-                    );
+                    let (tool, arguments) = validate_mcp_call_arguments(&params)
+                        .map_err(anyhow::Error::msg)?;
+                    let code = mcp_call_python_code(&server_name, &tool, &arguments);
                     let (text, details) = execute_mcp_code(&provisioner, &code, signal)
                         .await
                         .map_err(anyhow::Error::msg)?;

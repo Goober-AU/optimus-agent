@@ -845,11 +845,21 @@ pub async fn compute_edits_diff(path: &str, edits: &[Edit], cwd: &str) -> EditDi
         });
     }
 
-    let raw_content = match tokio::fs::read_to_string(&absolute_path).await {
-        Ok(content) => content,
+    // Read bytes and validate UTF-8 here so the preview fails with exactly the
+    // same non-UTF-8 error as the executor instead of a raw io error string.
+    let buffer = match tokio::fs::read(&absolute_path).await {
+        Ok(buffer) => buffer,
         Err(error) => {
             return EditDiffOutcome::Error(EditDiffError {
                 error: error.to_string(),
+            })
+        }
+    };
+    let raw_content = match String::from_utf8(buffer) {
+        Ok(content) => content,
+        Err(error) => {
+            return EditDiffOutcome::Error(EditDiffError {
+                error: invalid_utf8_edit_error(path, error.utf8_error()),
             })
         }
     };
@@ -869,6 +879,16 @@ pub async fn compute_edits_diff(path: &str, edits: &[Edit], cwd: &str) -> EditDi
         }
         Err(error) => EditDiffOutcome::Error(EditDiffError { error }),
     }
+}
+
+/// Shared non-UTF-8 edit error used by both the preview and the executor so
+/// the two paths cannot diverge: editing a file that is not valid UTF-8 fails
+/// instead of rewriting lossily-decoded content with replacement characters.
+pub fn invalid_utf8_edit_error(path: &str, error: std::str::Utf8Error) -> String {
+    format!(
+        "Could not edit file: {path}. File content is not valid UTF-8 (invalid byte at offset {}). Convert the file to UTF-8 before editing.",
+        error.valid_up_to()
+    )
 }
 
 /// NodeJS error `code` property equivalent for the messages above.

@@ -717,8 +717,24 @@ impl Agent {
             });
         }
 
-        if last_message.role() == "custom" && self.run_queued_messages().await? {
-            return Ok(());
+        if last_message.role() == "custom" {
+            if self.run_queued_messages().await? {
+                return Ok(());
+            }
+            // A custom tail continues only through what the installed converter
+            // makes of it: the default converter drops custom messages, which
+            // would end the provider request at an arbitrary earlier role. The
+            // loop itself cannot detect this (convertToLlm runs once per turn,
+            // inside the request path), so the converted tail is validated
+            // before the run starts and a context that converts to nothing
+            // usable is rejected with a typed error instead of sent.
+            if !self.custom_tail_converts_to_continuable_role().await {
+                return Err(AgentContinueError {
+                    code: AgentContinueErrorCode::NothingToContinue,
+                    message: "Cannot continue from message role: custom (conversion leaves no user or toolResult tail)"
+                        .to_string(),
+                });
+            }
         }
 
         self.run_continuation()
@@ -787,6 +803,29 @@ impl Agent {
         }
 
         Ok(false)
+    }
+
+    /// Whether converting the current messages still leaves a `user` or
+    /// `toolResult` message at the end, the roles a provider accepts as the
+    /// last message of a request. Only needed for custom tails: every other
+    /// tail role is already known to convert to itself.
+    async fn custom_tail_converts_to_continuable_role(&self) -> bool {
+        let messages = {
+            let state = self
+                .state
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            state.messages.clone()
+        };
+        let converter = self
+            .convert_to_llm
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
+        converter(messages)
+            .await
+            .last()
+            .is_some_and(|message| matches!(message, Message::User(_) | Message::ToolResult(_)))
     }
 
     pub fn active_execution_generation(&self) -> Option<String> {
@@ -974,6 +1013,12 @@ impl Agent {
             run.settled.store(true, AtomicOrdering::SeqCst);
             run.idle.notify_waiters();
         }
+        // The finished run is the settlement point of the work it registered:
+        // release its terminal tasks and inert stream receipts so a long-lived
+        // Agent does not accumulate one receipt per request and one handle per
+        // tool call over its whole lifetime. Live (unfinished) entries stay
+        // owned; only `reset_after_settlement` may clear the sticky bits.
+        self.execution_scope.prune_settled();
     }
 
     /// `processEvents(event)` - reduces internal state, then awaits listeners.
@@ -1784,6 +1829,189 @@ mod tests {
             error.message,
             "Cannot continue from message role: assistant"
         );
+    }
+
+    fn custom_tail_message() -> AgentMessage {
+        AgentMessage::Custom(crate::types::CustomAgentMessage::Custom {
+            custom_type: "compaction_outcome".to_string(),
+            content: crate::types::CustomMessageContent::Text("skipped".to_string()),
+            display: false,
+            details: None,
+            timestamp: 1,
+        })
+    }
+
+    /// SB-4: a custom tail that the installed converter drops (the default one
+    /// does) must be rejected with a typed error, not continued into a provider
+    /// request whose visible context ends at an arbitrary earlier role.
+    #[test]
+    fn agent_continue_rejects_custom_tail_that_converts_to_no_continuable_role() {
+        let agent = test_agent();
+        // The default converter drops the custom message, leaving an assistant
+        // tail: the exact invalid-request shape the guard must refuse.
+        agent.update_state(|state| {
+            state.messages.push(AgentMessage::from(assistant("prior turn")));
+            state.messages.push(custom_tail_message());
+        });
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        let error = runtime.block_on(agent.continue_()).unwrap_err();
+        assert_eq!(error.code, AgentContinueErrorCode::NothingToContinue);
+        assert_eq!(
+            error.message,
+            "Cannot continue from message role: custom (conversion leaves no user or toolResult tail)"
+        );
+    }
+
+    /// Positive control: a custom tail whose conversion still ends at a user
+    /// message continues exactly as before (default converter, [user, custom]).
+    #[tokio::test]
+    async fn agent_continue_accepts_custom_tail_that_converts_to_a_valid_role() {
+        let provider = register_faux_provider(None);
+        provider.set_responses(vec![FauxResponseStep::Message(faux_assistant_message(
+            "continued".into(),
+            None,
+        ))]);
+        let agent = Agent::new(AgentOptions {
+            initial_state: Some(AgentState {
+                model: provider.get_model(),
+                ..Default::default()
+            }),
+            ..Default::default()
+        });
+        agent.update_state(|state| {
+            state.messages.push(AgentMessage::from(UserMessage {
+                role: "user".to_string(),
+                content: UserContent::Text("original question".to_string()),
+                provider_context: None,
+                timestamp: 1,
+            }));
+            state.messages.push(custom_tail_message());
+        });
+        agent.continue_().await.unwrap();
+        let state = agent.state();
+        assert_eq!(
+            state
+                .messages
+                .iter()
+                .map(AgentMessage::role)
+                .collect::<Vec<_>>(),
+            vec!["user", "custom", "assistant"],
+            "the continuation must have run from the converted user tail"
+        );
+        provider.unregister();
+    }
+
+    /// Positive control: a custom converter that maps custom messages to user
+    /// messages keeps custom-tail continuations working.
+    #[tokio::test]
+    async fn agent_continue_accepts_custom_tail_through_a_custom_converter() {
+        let provider = register_faux_provider(None);
+        provider.set_responses(vec![FauxResponseStep::Message(faux_assistant_message(
+            "continued".into(),
+            None,
+        ))]);
+        let agent = Agent::new(AgentOptions {
+            initial_state: Some(AgentState {
+                model: provider.get_model(),
+                ..Default::default()
+            }),
+            convert_to_llm: Some(Arc::new(|messages: Vec<AgentMessage>| {
+                Box::pin(async move {
+                    messages
+                        .into_iter()
+                        .filter_map(|message| match message {
+                            AgentMessage::Message(Message::User(user)) => Some(Message::User(user)),
+                            AgentMessage::Custom(_) => Some(Message::User(UserMessage {
+                                role: "user".to_string(),
+                                content: UserContent::Text("custom content".to_string()),
+                                provider_context: None,
+                                timestamp: 1,
+                            })),
+                            _ => None,
+                        })
+                        .collect::<Vec<Message>>()
+                })
+            })),
+            ..Default::default()
+        });
+        agent.update_state(|state| {
+            state.messages.push(AgentMessage::from(assistant("prior turn")));
+            state.messages.push(custom_tail_message());
+        });
+        agent.continue_().await.unwrap();
+        let state = agent.state();
+        assert_eq!(
+            state
+                .messages
+                .iter()
+                .map(AgentMessage::role)
+                .collect::<Vec<_>>(),
+            vec!["assistant", "custom", "assistant"],
+            "a converter that keeps a valid tail must still continue"
+        );
+        provider.unregister();
+    }
+
+    /// SB-2: the per-Agent execution scope must not accumulate one stream
+    /// receipt per provider request and one task handle per tool call for the
+    /// Agent's whole lifetime; each finished run releases its settled entries.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn execution_scope_entries_stay_bounded_across_runs() {
+        let provider = register_faux_provider(None);
+        let agent = Agent::new(AgentOptions {
+            initial_state: Some(AgentState {
+                model: provider.get_model(),
+                tools: Some(vec![crate::types::AgentTool {
+                    name: "echo".to_string(),
+                    description: "Echo tool".to_string(),
+                    parameters: json!({"type": "object", "properties": {}}),
+                    label: "Echo".to_string(),
+                    prepare_arguments: None,
+                    execute: Arc::new(|_, _, _, _| {
+                        Box::pin(async {
+                            Ok(AgentToolResult::new(
+                                vec![crate::types::ContentBlock::text("echoed")],
+                                json!({}),
+                            ))
+                        })
+                    }),
+                    execution_mode: Some(ToolExecutionMode::Sequential),
+                }]),
+                ..Default::default()
+            }),
+            ..Default::default()
+        });
+        const RUNS: usize = 8;
+        for _ in 0..RUNS {
+            provider.set_responses(vec![
+                FauxResponseStep::Message(faux_assistant_message(
+                    pi_ai::types::ContentBlock::ToolCall(pi_ai::types::ToolCall::new(
+                        "echo-1",
+                        "echo",
+                        serde_json::Map::new(),
+                    ))
+                    .into(),
+                    Some(FauxAssistantMessageOptions {
+                        stop_reason: Some("toolUse".to_string()),
+                        ..Default::default()
+                    }),
+                )),
+                FauxResponseStep::Message(faux_assistant_message("done".into(), None)),
+            ]);
+            agent
+                .prompt(PromptInput::Text {
+                    input: "echo something".to_string(),
+                    images: Vec::new(),
+                })
+                .await
+                .unwrap();
+        }
+        let (streams, tasks) = agent.execution_scope.live_entry_counts_for_tests();
+        assert!(
+            streams + tasks <= 2,
+            "after {RUNS} runs the scope must retain only live entries, not one per              request/tool; observed streams={streams} tasks={tasks}"
+        );
+        provider.unregister();
     }
 
     async fn assert_async_stop_hook(first_stop: Option<bool>) {

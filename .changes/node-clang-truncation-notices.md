@@ -1,0 +1,3 @@
+- Fixed the Node worker's 64 KiB output budget drifting for non-ASCII output: clips are now byte-exact, never split multibyte characters or surrogate pairs (which previously produced invalid protocol JSON), and an exact 64 KiB output is no longer falsely reported as truncated.
+- Fixed silently truncated Node tool results: cells whose combined streams plus result exceed 64 KiB now append a visible truncation marker, as do worker-side result clips.
+- Fixed the Clang-Repl tool reporting a false "[output truncated at 64 KiB]" notice for output that exactly fills the limit; the notice now also names the stream(s) that were actually truncated (stdout and/or stderr).

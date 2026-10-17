@@ -1,0 +1,1 @@
+- Fixed Ctrl+C dropping work queued through the steer/followUp admission family (daemon steer/follow_up RPCs, RPC mode, and in-process connections): prepared turns now default to queue-visible like the TypeScript (`queueVisible ?? true`), so a plain abort preserves them and the next submit drains the queue.

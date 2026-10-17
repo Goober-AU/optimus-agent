@@ -1,9 +1,19 @@
 //! Validate the native command registry and dispatch owners without the removed
 //! TypeScript reference tree. Handler presence is not a runtime behavior test;
 //! individual commands retain their focused native tests.
+//!
+//! The suite guards three registry-side contracts:
+//! - every registry command and alias, submitted with an argument, resolves
+//!   through the registry and has a native dispatch owner (or is a session
+//!   command that is prompted verbatim);
+//! - every registry command and alias is equally dispatchable in its bare,
+//!   argument-less form;
+//! - the hardcoded no-argument gate in `native_host.rs` only lists registry
+//!   commands the registry says do not take a required argument.
 use pi_coding_agent::core::slash_commands::{
-    builtin_slash_commands, is_builtin_slash_command_name, parse_session_slash_command,
-    parse_slash_command, resolve_builtin_slash_command_name, resolve_leading_builtin_slash_command,
+    builtin_slash_commands, builtin_slash_command_takes_argument, is_builtin_slash_command_name,
+    parse_session_slash_command, parse_slash_command, resolve_builtin_slash_command_name,
+    resolve_leading_builtin_slash_command,
 };
 use std::collections::BTreeSet;
 
@@ -36,6 +46,7 @@ const COMMANDS: &[&str] = &[
     "monitor",
     "name",
     "new",
+    "occ",
     "quit",
     "refine",
     "reload",
@@ -83,6 +94,34 @@ fn has_owner(name: &str, source: &str) -> bool {
         "login" => source.contains("if name == \"login\""),
         _ => handler_arms(source).contains(name),
     }
+}
+
+/// The hardcoded no-argument gate in `native_host.rs`
+/// (`no_argument_builtin_slash_command`): built-ins whose TypeScript arm is
+/// reached only by the bare form, because an argument makes the submission
+/// fall through the local chain to the model. `debug` is the documented
+/// non-registry special case.
+fn no_argument_gate_names(source: &str) -> BTreeSet<String> {
+    let start = source
+        .find("fn no_argument_builtin_slash_command(")
+        .expect("native no-argument gate");
+    let end = source[start..]
+        .find("\n}")
+        .expect("gate closing brace")
+        + start;
+    source[start..end]
+        .lines()
+        .map(str::trim)
+        // Arms are written as `"name"` or `| "name"` lines.
+        .filter_map(|line| {
+            line.strip_prefix('|')
+                .map(str::trim_start)
+                .unwrap_or(line)
+                .strip_prefix('"')
+                .and_then(|rest| rest.split('"').next())
+        })
+        .map(str::to_string)
+        .collect()
 }
 
 #[test]
@@ -146,6 +185,71 @@ fn every_native_command_and_alias_has_a_dispatch_owner() {
     }
 }
 
+/// The registry-side equivalent of the native-host classification guards: every
+/// registry command, in every typed form (canonical and alias), must stay
+/// dispatchable when submitted bare, without an argument. Session commands must
+/// be prompted to the session in their bare form; local built-ins must keep a
+/// dispatch owner for the bare form the no-argument gate sends down the local
+/// handler chain.
+#[test]
+fn every_registry_command_is_dispatchable_without_arguments() {
+    for command in builtin_slash_commands() {
+        let mut forms = vec![command.name.clone()];
+        forms.extend(command.aliases.clone().unwrap_or_default());
+        for name in forms {
+            let bare = format!("/{name}");
+            let parsed = parse_slash_command(&bare).expect("bare command parses");
+            assert_eq!(parsed.name, name);
+            assert_eq!(parsed.args, "");
+            let leading = resolve_leading_builtin_slash_command(&bare)
+                .expect("bare command resolves through the registry");
+            assert_eq!(leading.name, command.name);
+            assert_eq!(leading.args, "");
+            assert_eq!(leading.original_name, name);
+            assert_eq!(leading.is_alias, name != command.name);
+            if command.execution.as_deref() == Some("session") {
+                let session = parse_session_slash_command(&bare)
+                    .expect("bare session command is prompted to the session");
+                assert_eq!(session.name, command.name);
+                assert_eq!(session.args, "");
+            } else {
+                assert!(parse_session_slash_command(&bare).is_none());
+                assert!(
+                    has_owner(&command.name, HOST),
+                    "No native dispatch owner for the bare /{name} form"
+                );
+            }
+        }
+    }
+}
+
+/// Registry-side guard for the dispatch-table drift the audit pinned in
+/// `native_host.rs`: every name the hardcoded no-argument gate accepts must be
+/// a registry command the registry says does NOT require an argument, so the
+/// gate can never silently divert an argument-taking command to the model
+/// path. The reverse direction (no-argument registry commands missing from
+/// the gate, such as `stats` or `heartbeats`) is a native_host.rs gap that is
+/// routed separately; this file only pins the registry side of the contract.
+#[test]
+fn native_no_argument_gate_stays_within_registry_metadata() {
+    let gate = no_argument_gate_names(HOST);
+    assert!(!gate.is_empty(), "the gate must list its commands");
+    assert!(gate.contains("debug"), "the gate special-cases /debug");
+    for name in &gate {
+        if name == "debug" {
+            continue;
+        }
+        assert!(
+            is_builtin_slash_command_name(name),
+            "no-argument gate lists /{name}, which is not a registry command"
+        );
+        assert!(
+            !builtin_slash_command_takes_argument(name),
+            "no-argument gate lists /{name}, which the registry says takes an argument"
+        );
+    }
+}
+
 #[test]
 fn missing_handlers_are_detected_in_direct_grouped_and_input_dispatch() {
     assert!(has_owner("settings", HOST));
@@ -164,4 +268,23 @@ fn missing_handlers_are_detected_in_direct_grouped_and_input_dispatch() {
     );
     assert!(!has_owner("hotkeys", &missing));
     assert!(has_owner("context", &missing));
+}
+
+#[test]
+fn no_argument_gate_extraction_detects_renamed_and_removed_entries() {
+    let gate = no_argument_gate_names(HOST);
+    assert!(gate.contains("settings"));
+    assert!(gate.contains("debug"));
+    let renamed = HOST.replace(
+        "\"settings\"\n            | \"scoped-models\"",
+        "\"missing-settings\"\n            | \"scoped-models\"",
+    );
+    let renamed_gate = no_argument_gate_names(&renamed);
+    assert!(!renamed_gate.contains("settings"));
+    assert!(renamed_gate.contains("missing-settings"));
+    assert!(renamed_gate.contains("scoped-models"));
+    let removed = HOST.replace("\n            | \"debug\"", "");
+    let removed_gate = no_argument_gate_names(&removed);
+    assert!(!removed_gate.contains("debug"));
+    assert!(removed_gate.contains("reload"));
 }

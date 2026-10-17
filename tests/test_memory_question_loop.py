@@ -361,6 +361,127 @@ class TestTypeBCacheKey:
 
 
 # --------------------------------------------------------------------------
+# newest memory settings (SB-07: recallFusion / recallBm25 / persona / lmev2)
+# --------------------------------------------------------------------------
+
+class TestNewMemorySettings:
+    """The controller must drive every settings key memory_bench.rs supports."""
+
+    def env_spec(self):
+        return {"env_id": "lp_18", "family": "locomo_plus",
+                "sessions": [{"session_id": "s1", "events": [{"text": "hi"}]}],
+                "ground_truth_refs": [], "notes": {"a": 1}}
+
+    def settings(self, **over):
+        base = {"importInstructions": "imp v1", "maxExtractionTokens": 32000,
+                "maxImportChunkChars": 15000, "memoryLearning": False}
+        base.update(over)
+        return base
+
+    def test_merge_settings_accepts_the_new_memory_keys(self):
+        merged = mql.merge_settings(
+            {"recallOn": True, "memoryLearning": False},
+            {"recallFusion": "rrf", "recallBm25": True, "personaLayer": True,
+             "personaSnapshotChars": 1200, "lmev2SpanVerify": True})
+        assert merged["recallFusion"] == "rrf"
+        assert merged["recallBm25"] is True
+        assert merged["personaLayer"] is True
+        assert merged["personaSnapshotChars"] == 1200
+        assert merged["lmev2SpanVerify"] is True
+
+    def test_merge_settings_rejects_keys_the_driver_does_not_support(self):
+        # personaSupersession exists in the store's MemorySettings but has no
+        # memory_bench ManifestSettings field: whitelisting it would let the
+        # driver silently ignore the key instead of applying it.
+        with pytest.raises(mql.ControllerError, match="unknown manifest settings keys"):
+            mql.merge_settings({}, {"personaSupersession": True})
+        with pytest.raises(mql.ControllerError, match="unknown manifest settings keys"):
+            mql.merge_settings({}, {"notARealKey": 1})
+
+    def test_merge_settings_validates_new_key_values(self):
+        for bad in ({"recallFusion": "rrf2"}, {"recallFusion": 1},
+                    {"recallFusion": "RRF"},
+                    {"recallBm25": "yes"}, {"personaLayer": 1},
+                    {"lmev2SpanVerify": "true"},
+                    {"personaSnapshotChars": 100}, {"personaSnapshotChars": 9999},
+                    {"personaSnapshotChars": True}, {"personaSnapshotChars": "1200"}):
+            with pytest.raises(mql.ControllerError):
+                mql.merge_settings(self.settings(), bad)
+
+    def test_merge_settings_validates_values_inherited_from_the_base(self):
+        for bad_base in ({"recallFusion": "bogus"}, {"personaSnapshotChars": 4001},
+                         {"personaLayer": "on"}):
+            with pytest.raises(mql.ControllerError):
+                mql.merge_settings(dict(self.settings(), **bad_base), None)
+
+    def test_null_new_key_values_keep_the_driver_default(self):
+        merged = mql.merge_settings(self.settings(), {"recallFusion": None,
+                                                       "personaSnapshotChars": None})
+        assert merged["recallFusion"] is None
+        assert merged["personaSnapshotChars"] is None
+
+    def test_settings_changed_keys_classifies_the_new_keys(self):
+        write_keys, read_keys = mql.settings_changed_keys({}, {
+            "recallFusion": "rrf", "recallBm25": True, "lmev2SpanVerify": True,
+            "personaLayer": True, "personaSnapshotChars": 1200,
+            "maxExtractionTokens": 999,
+        })
+        # personaLayer/personaSnapshotChars are write-time passes executed at
+        # import-apply; fusion/bm25 act at recall time and span verification
+        # only runs before the question prompt is assembled.
+        assert write_keys == {"personaLayer", "personaSnapshotChars", "maxExtractionTokens"}
+        assert read_keys == {"recallFusion", "recallBm25", "lmev2SpanVerify"}
+
+    def test_typeb_cache_key_includes_the_persona_keys(self):
+        key = mql.typeb_cache_key(self.env_spec(), self.settings(), mql.MODEL)
+        assert (mql.typeb_cache_key(self.env_spec(),
+                                    self.settings(personaLayer=True), mql.MODEL) != key)
+        assert (mql.typeb_cache_key(self.env_spec(),
+                                    self.settings(personaSnapshotChars=1200), mql.MODEL) != key)
+
+    def test_typeb_cache_key_excludes_the_read_time_new_keys(self):
+        key = mql.typeb_cache_key(self.env_spec(), self.settings(), mql.MODEL)
+        assert (mql.typeb_cache_key(
+            self.env_spec(),
+            self.settings(recallFusion="rrf", recallBm25=True, lmev2SpanVerify=True),
+            mql.MODEL) == key)
+
+    def test_type_a_manifest_carries_the_new_read_time_settings(self, world):
+        settings_file = os.path.join(world["root"], "over_rrf.json")
+        with open(settings_file, "w", encoding="utf-8") as h:
+            json.dump({"recallFusion": "rrf", "recallBm25": True}, h)
+        rc = run_cli(world, "lp_18", settings=settings_file, env={"EVAL_SCORE": "1.0"})
+        assert rc == mql.EXIT_OK
+        attempt = mql.find_entry(load_ledger(world), "lp_18")["attempts"][0]
+        assert attempt["mode"] == "typeA"  # read-time keys reuse the baseline store
+        manifest = json.load(open(attempt["manifest"], encoding="utf-8"))
+        assert manifest["settings"]["recallFusion"] == "rrf"
+        assert manifest["settings"]["recallBm25"] is True
+        assert manifest["settings"]["skipIngest"] is True
+
+    def test_persona_write_time_override_forces_type_b(self, world):
+        settings_file = os.path.join(world["root"], "over_persona.json")
+        with open(settings_file, "w", encoding="utf-8") as h:
+            json.dump({"personaLayer": True, "personaSnapshotChars": 1200}, h)
+        make_env_file(world["root"])
+        rc = run_cli(world, "lp_18", settings=settings_file, env={"EVAL_SCORE": "1.0"})
+        assert rc == mql.EXIT_OK
+        attempt = mql.find_entry(load_ledger(world), "lp_18")["attempts"][0]
+        assert attempt["mode"] == "typeB"
+        manifest = json.load(open(attempt["manifest"], encoding="utf-8"))
+        assert manifest["settings"]["personaLayer"] is True
+        assert manifest["settings"]["personaSnapshotChars"] == 1200
+        assert manifest["settings"]["skipIngest"] is False
+
+    def test_type_a_rejects_persona_write_time_overrides(self, world):
+        settings_file = os.path.join(world["root"], "over_persona_a.json")
+        with open(settings_file, "w", encoding="utf-8") as h:
+            json.dump({"personaLayer": True}, h)
+        rc = run_cli(world, "lp_18", settings=settings_file, mode="typeA")
+        assert rc == mql.EXIT_CONTROLLER
+
+
+# --------------------------------------------------------------------------
 # ledger append / next / resume
 # --------------------------------------------------------------------------
 

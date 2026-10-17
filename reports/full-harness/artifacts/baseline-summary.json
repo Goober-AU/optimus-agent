@@ -1,0 +1,6 @@
+{
+  "build_check": "PASS (4m38s, warnings pre-existing)",
+  "cargo_lib": "1 FAIL: pi-ai partial_snapshots_match_a_golden_multi_block_event_sequence (panics: left None right Some(chatcmpl-gold) at openai_completions.rs:6021) \u2014 reproduces in isolation, NOT load-related",
+  "python_root": "9/9 files PASS",
+  "python_runtime": "31/32 PASS; test_repl.py 2 failures (bash activity group-reap x2 + startup 667ms>500ms) \u2014 PASS in isolation under quiet CPU; load-induced flake class"
+}

@@ -12,6 +12,8 @@ use tokio_util::sync::CancellationToken;
 
 const WORKER: &str = include_str!("node_worker.cjs");
 const LIMIT: usize = 64 * 1024;
+const STREAM_NOTICE: &str = "\n[Node output truncated at 64 KiB]\n";
+const RESULT_NOTICE: &str = "\n[Node result truncated at 64 KiB]\n";
 
 #[derive(Default)]
 pub struct NodeRuntime {
@@ -105,7 +107,10 @@ impl NodeRuntime {
     }
     pub async fn dispose(&self) {
         self.shutdown.cancel();
-        if let Some(mut process) = self.process.lock().await.take() {
+        // Bind first: holding the lock across `stop()` would stall any executor
+        // waiting on the mutex for the whole teardown window.
+        let process = self.process.lock().await.take();
+        if let Some(mut process) = process {
             process.stop().await;
         }
     }
@@ -141,6 +146,7 @@ impl NodeRuntime {
             None => NodeProcess::spawn(cwd)?,
         };
         let mut output = String::new();
+        let mut truncated = false;
         let work = async {
             if fresh {
                 let hello = process.message().await?;
@@ -171,7 +177,7 @@ impl NodeRuntime {
                     return Err("Unexpected Node workspace response".into());
                 }
                 if let Some(text) = message["output"].as_str() {
-                    append_bounded(&mut output, text);
+                    truncated |= append_bounded(&mut output, text);
                     if last_update.elapsed() >= Duration::from_millis(100) {
                         if let Some(update) = &on_update {
                             update(result(&output, false));
@@ -184,8 +190,9 @@ impl NodeRuntime {
                         if !output.is_empty() && !output.ends_with('\n') {
                             output.push('\n');
                         }
-                        append_bounded(&mut output, text);
+                        truncated |= append_bounded(&mut output, text);
                     }
+                    note_truncation(&mut output, truncated);
                     return Ok(result(&output, message["error"] == true));
                 }
             }
@@ -202,6 +209,7 @@ impl NodeRuntime {
                 Ok(result)
             }
             Err(error) => {
+                note_truncation(&mut output, truncated);
                 process.stop().await;
                 Err(format!("{output}\n{error}. Node workspace reset; previous JavaScript variables are no longer available."))
             }
@@ -209,13 +217,25 @@ impl NodeRuntime {
     }
 }
 
-fn append_bounded(output: &mut String, text: &str) {
+/// Appends `text` capped at `LIMIT` bytes on a char boundary, returning
+/// whether any bytes of `text` were dropped.
+fn append_bounded(output: &mut String, text: &str) -> bool {
     let remaining = LIMIT.saturating_sub(output.len());
     let mut end = text.len().min(remaining);
     while !text.is_char_boundary(end) {
         end -= 1;
     }
     output.push_str(&text[..end]);
+    end < text.len()
+}
+
+/// The Rust-side cap is silent on its own, so make it visible: one marker
+/// after the capped text, unless the worker already announced its own.
+fn note_truncation(output: &mut String, truncated: bool) {
+    if truncated && !output.contains(STREAM_NOTICE.trim()) && !output.contains(RESULT_NOTICE.trim())
+    {
+        output.push_str(STREAM_NOTICE);
+    }
 }
 fn result(output: &str, error: bool) -> AgentToolResult {
     let mut value = AgentToolResult::new(
@@ -248,5 +268,58 @@ pub fn create_node_tool_definition(cwd: &str, runtime: Arc<NodeRuntime>) -> Tool
             })
         }),
         ..Default::default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn append_bounded_keeps_the_limit_and_reports_drops() {
+        let mut output = String::new();
+        assert!(!append_bounded(&mut output, "hello"));
+        assert_eq!(output, "hello");
+        // Fill to the cap: an exact fit is not a drop.
+        let fill = "x".repeat(LIMIT - output.len());
+        assert!(!append_bounded(&mut output, &fill));
+        assert_eq!(output.len(), LIMIT);
+        // Anything past the cap is dropped and reported.
+        assert!(append_bounded(&mut output, "more"));
+        assert_eq!(output.len(), LIMIT);
+    }
+
+    #[test]
+    fn append_bounded_backs_off_to_char_boundaries() {
+        let mut output = String::new();
+        let fill = "x".repeat(LIMIT - 1);
+        assert!(!append_bounded(&mut output, &fill));
+        // One byte of budget left: a multibyte character cannot fit and must
+        // not be split into invalid UTF-8.
+        assert!(append_bounded(&mut output, "é"));
+        assert!(output.ends_with('x'));
+        assert_eq!(output.len(), LIMIT - 1);
+    }
+
+    #[test]
+    fn note_truncation_appends_one_marker_and_deduplicates_worker_notices() {
+        let mut output = String::from("x".repeat(LIMIT));
+        note_truncation(&mut output, true);
+        assert!(output.ends_with(STREAM_NOTICE));
+        // A second call must not stack another marker.
+        note_truncation(&mut output, true);
+        assert_eq!(output.matches(STREAM_NOTICE).count(), 1);
+        // The worker already announced its own truncation: stay silent.
+        let mut announced = format!("x{}", STREAM_NOTICE);
+        note_truncation(&mut announced, true);
+        assert_eq!(announced.matches(STREAM_NOTICE).count(), 1);
+        let mut announced = format!("x{}", RESULT_NOTICE);
+        note_truncation(&mut announced, true);
+        assert_eq!(announced.matches(STREAM_NOTICE).count(), 0);
+        assert_eq!(announced.matches(RESULT_NOTICE).count(), 1);
+        // No drops: no notice at all.
+        let mut clean = String::from("fine");
+        note_truncation(&mut clean, false);
+        assert_eq!(clean, "fine");
     }
 }

@@ -1,0 +1,4 @@
+- Fixed a failed session import leaving a frozen accepted proposal that made every retry fail with "Exact duplicate" after a competing import landed the same content; a failed apply now drops the persisted proposal so the retry re-runs the build-time skip filters.
+- Fixed a corrupt `memory/host-id.json` permanently bricking memory: the corrupt bytes are now quarantined aside (content-addressed, like session recovery copies) and a fresh host identity is minted, leaving project memories intact.
+- Fixed invalid global or project memory settings files being silently ignored; the fallback to defaults is now recorded as a warn diagnostic in the agent log.
+- Fixed recall rendering a stored source span at 200 characters without any marker; the cut now carries an explicit `[truncated; inspect source]` marker like the other truncations.

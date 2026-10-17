@@ -70,6 +70,14 @@ fn content_entry_types() -> &'static HashSet<&'static str> {
 struct WriteFileAtomicOptions {
     /// `mode?` - applied exactly (umask-masked bits are re-applied).
     mode: Option<u32>,
+    /// `fsync?` - flush the temp file to storage before the rename, the
+    /// durability half of `writeFileAtomicSync` the port previously dropped.
+    /// The session manager's own rewrites stay `false` (a blanket fsync per
+    /// rewrite would tax every persist); the RLM delivery boundary gets its
+    /// durability from its own append -> drain -> fsync sequence
+    /// (`record_rlm_delivery_sync` contract below), so no caller here needs
+    /// it - the option is honored so the field stops promising what the
+    /// write never did.
     fsync: bool,
 }
 
@@ -82,7 +90,15 @@ fn write_file_atomic_sync(
 ) -> Result<(), String> {
     let temp_path = format!("{path}.{}.{}.tmp", std::process::id(), uuid::Uuid::new_v4());
     let result = (|| -> Result<(), String> {
-        std::fs::write(&temp_path, data.as_bytes()).map_err(|error| error.to_string())?;
+        let mut file = std::fs::File::create(&temp_path).map_err(|error| error.to_string())?;
+        use std::io::Write;
+        file.write_all(data.as_bytes()).map_err(|error| error.to_string())?;
+        if options.fsync {
+            file.sync_all().map_err(|error| error.to_string())?;
+        }
+        // Release the handle before the rename so Windows never sees the
+        // source as an open file.
+        drop(file);
         if let Some(mode) = options.mode {
             set_file_mode(&temp_path, mode);
         }
@@ -3682,6 +3698,49 @@ impl SessionManager {
         Ok(manager)
     }
 
+    /// Audit G1/S1: an existing, non-empty file that yields no loadable
+    /// entries (a torn FIRST line from a crash mid-header-write, a corrupted
+    /// head, or header-less content) is about to be reset in place. Keep the
+    /// damaged bytes recoverable: rename them to
+    /// `<file>.corrupt-<timestamp>[-<n>]` beside the fresh session that
+    /// replaces them, instead of destructively overwriting the only copy.
+    /// A quarantine failure must fail the open - the alternative is the
+    /// data loss this exists to prevent.
+    fn quarantine_unloadable_session_file(session_file: &str) -> Result<String, String> {
+        // The same physical file `rewrite_file` is about to replace (it
+        // renames onto the realpath), so a symlinked session path moves its
+        // target, not the link.
+        let session_file = &realpath_if_present_sync(session_file);
+        let timestamp = chrono::Utc::now().format("%Y%m%dT%H%M%S%3fZ");
+        let base = format!("{session_file}.corrupt-{timestamp}");
+        for attempt in 0..100u32 {
+            let candidate = if attempt == 0 {
+                base.clone()
+            } else {
+                format!("{base}-{attempt}")
+            };
+            if Path::new(&candidate).exists() {
+                continue;
+            }
+            match std::fs::rename(session_file, &candidate) {
+                Ok(()) => {
+                    eprintln!(
+                        "Quarantined an unloadable session file to {candidate}: {session_file} has no valid session header"
+                    );
+                    return Ok(candidate);
+                }
+                Err(error) => {
+                    return Err(format!(
+                        "Session file {session_file} could not be read as a session and could not be quarantined: {error}"
+                    ));
+                }
+            }
+        }
+        Err(format!(
+            "Session file {session_file} could not be read as a session and no quarantine name was available"
+        ))
+    }
+
     /// Switch to a different session file (used for resume and branching).
     /// preloadedEntries must be loadEntriesFromFile(sessionFile) for the same path; it
     /// lets the async daemon path skip the synchronous re-read.
@@ -3730,6 +3789,17 @@ impl SessionManager {
                 self.new_session(None)?;
                 self.session_file = Some(explicit_path.clone());
                 self.retarget_write_buffer(&explicit_path);
+                // Only a non-empty unloadable file carries user bytes worth
+                // keeping; an empty (or vanished) file has nothing to
+                // quarantine. In-memory managers never rewrite the target,
+                // so they must not move it either. Quarantine after
+                // new_session succeeded (its failure must leave the original
+                // path untouched) and before the rewrite replaces it.
+                if self.persist
+                    && std::fs::metadata(&explicit_path).map(|metadata| metadata.len() > 0).unwrap_or(false)
+                {
+                    Self::quarantine_unloadable_session_file(&explicit_path)?;
+                }
                 self.rewrite_file()?;
                 self.flushed = true;
                 return Ok(());
@@ -5412,6 +5482,65 @@ impl SessionManager {
         )
     }
 
+    /// Write a fork target: the fresh header, then every source entry with
+    /// the source's git_state entries dropped and children re-linked around
+    /// them. Checked per line so a write failure surfaces to `fork_from`.
+    fn write_fork_target<W: std::io::Write>(
+        writer: &mut W,
+        new_header: &SessionHeader,
+        source_entries: &[FileEntry],
+    ) -> Result<(), String> {
+        writeln!(
+            writer,
+            "{}",
+            serde_json::to_string(new_header).unwrap_or_default()
+        )
+        .map_err(|error| format!("Failed to write the fork header: {error}"))?;
+
+        // Drop the source's git_state entries (re-linking children): they describe the source repo,
+        // so the fork would otherwise report the source's git instead of its own target context.
+        let mut dropped_parent: BTreeMap<String, Option<String>> = BTreeMap::new();
+        for entry in source_entries {
+            if entry_type(entry) == "git_state" {
+                dropped_parent.insert(entry_id(entry), entry_parent_id(entry));
+            }
+        }
+        let live_parent = |parent_id: Option<String>| -> Option<String> {
+            let mut pid = parent_id;
+            let mut visited = HashSet::new();
+            while let Some(current) = pid.clone() {
+                if !visited.insert(current.clone()) { return None; }
+                if !dropped_parent.contains_key(&current) {
+                    return Some(current);
+                }
+                pid = dropped_parent.get(&current).cloned().flatten();
+            }
+            None
+        };
+        for entry in source_entries {
+            if is_session_header(entry) || entry_type(entry) == "git_state" {
+                continue;
+            }
+            let parent_id = live_parent(entry_parent_id(entry));
+            let out = if parent_id == entry_parent_id(entry) {
+                entry.clone()
+            } else {
+                let mut relinked = entry.clone();
+                relinked.insert(
+                    "parentId".to_string(),
+                    match parent_id {
+                        Some(parent) => Value::String(parent),
+                        None => Value::Null,
+                    },
+                );
+                relinked
+            };
+            writeln!(writer, "{}", serialize_session_file_entry(&out))
+                .map_err(|error| format!("Failed to write a forked entry: {error}"))?;
+        }
+        Ok(())
+    }
+
     pub fn fork_from(
         source_path: &str,
         target_cwd: &str,
@@ -5460,66 +5589,22 @@ impl SessionManager {
             rlm_depth: Some(resolve_session_rlm_depth(&source_header, source_path)),
             git: capture_git_context(target_cwd),
         };
+        // Audit S4: every write is checked - a full disk or permission error
+        // must fail the fork instead of leaving a truncated target that a
+        // later open would silently "repair" (drop the torn tail).
         {
-            use std::io::Write;
             let mut file = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
                 .open(&new_session_file)
                 .map_err(|error| error.to_string())?;
-            let _ = writeln!(
-                file,
-                "{}",
-                serde_json::to_string(&new_header).unwrap_or_default()
-            );
-        }
-
-        // Drop the source's git_state entries (re-linking children): they describe the source repo,
-        // so the fork would otherwise report the source's git instead of its own target context.
-        let mut dropped_parent: BTreeMap<String, Option<String>> = BTreeMap::new();
-        for entry in &source_entries {
-            if entry_type(entry) == "git_state" {
-                dropped_parent.insert(entry_id(entry), entry_parent_id(entry));
-            }
-        }
-        let live_parent = |parent_id: Option<String>| -> Option<String> {
-            let mut pid = parent_id;
-            let mut visited = HashSet::new();
-            while let Some(current) = pid.clone() {
-                if !visited.insert(current.clone()) { return None; }
-                if !dropped_parent.contains_key(&current) {
-                    return Some(current);
-                }
-                pid = dropped_parent.get(&current).cloned().flatten();
-            }
-            None
-        };
-        {
-            use std::io::Write;
-            let mut file = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&new_session_file)
-                .map_err(|error| error.to_string())?;
-            for entry in &source_entries {
-                if is_session_header(entry) || entry_type(entry) == "git_state" {
-                    continue;
-                }
-                let parent_id = live_parent(entry_parent_id(entry));
-                let out = if parent_id == entry_parent_id(entry) {
-                    entry.clone()
-                } else {
-                    let mut relinked = entry.clone();
-                    relinked.insert(
-                        "parentId".to_string(),
-                        match parent_id {
-                            Some(parent) => Value::String(parent),
-                            None => Value::Null,
-                        },
-                    );
-                    relinked
-                };
-                let _ = writeln!(file, "{}", serialize_session_file_entry(&out));
+            if let Err(error) = Self::write_fork_target(&mut file, &new_header, &source_entries) {
+                drop(file);
+                // Never leave the partial fork behind: its contents are
+                // recoverable from the source, and an orphaned truncated
+                // file is invisible data loss.
+                let _ = std::fs::remove_file(&new_session_file);
+                return Err(error);
             }
         }
 
@@ -6780,5 +6865,139 @@ mod tests {
         assert_eq!(manager.get_cwd(), "/work");
         assert!(manager.get_session_file().is_none());
         assert!(manager.get_load_observation().is_none());
+    }
+
+    /// Audit S2/G4: the private atomic writer's `fsync` option must flush the
+    /// temp file before the rename instead of silently accepting and ignoring
+    /// it. The observable contract: both fsync settings land the exact bytes,
+    /// replace atomically, leave no temp residue, and run `before_rename`
+    /// against a temp file that already holds the final content.
+    #[test]
+    fn write_file_atomic_sync_honors_the_fsync_option() {
+        let dir = temp_dir();
+        let target = dir.join("atomic.jsonl").to_string_lossy().into_owned();
+        for fsync in [true, false] {
+            write_file_atomic_sync(
+                &target,
+                &format!("content-{fsync}\n"),
+                WriteFileAtomicOptions { mode: None, fsync },
+                None,
+            )
+            .unwrap_or_else(|error| panic!("fsync={fsync} write failed: {error}"));
+            assert_eq!(
+                std::fs::read_to_string(&target).unwrap(),
+                format!("content-{fsync}\n"),
+                "fsync={fsync} must land the exact bytes"
+            );
+        }
+        let observed: std::cell::RefCell<Option<String>> = std::cell::RefCell::new(None);
+        write_file_atomic_sync(
+            &target,
+            "with-gate\n",
+            WriteFileAtomicOptions { mode: None, fsync: true },
+            Some(&|temp_path| {
+                *observed.borrow_mut() = Some(
+                    std::fs::read_to_string(temp_path)
+                        .unwrap_or_else(|error| panic!("temp vanished before the gate: {error}")),
+                );
+                Ok(())
+            }),
+        )
+        .unwrap();
+        assert_eq!(
+            observed.into_inner().as_deref(),
+            Some("with-gate\n"),
+            "the gate sees the flushed temp content before the rename"
+        );
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "with-gate\n");
+        let residue: Vec<String> = std::fs::read_dir(&dir)
+            .unwrap()
+            .filter_map(|entry| entry.ok())
+            .map(|entry| entry.file_name().to_string_lossy().into_owned())
+            .filter(|name| name.ends_with(".tmp"))
+            .collect();
+        assert!(residue.is_empty(), "no temp files remain: {residue:?}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A writer with a byte budget that records everything that landed: the
+    /// mid-fork disk-full stand-in for audit S4/G6. It fails once the budget
+    /// is exhausted, exactly like a full disk, and keeps the bytes that were
+    /// accepted so the test can pin what a partial fork would have contained.
+    struct ShortWriter {
+        bytes_left: usize,
+        written: Vec<u8>,
+    }
+    impl std::io::Write for ShortWriter {
+        fn write(&mut self, buffer: &[u8]) -> std::io::Result<usize> {
+            if buffer.len() > self.bytes_left {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::WriteZero,
+                    "simulated disk full",
+                ));
+            }
+            self.bytes_left -= buffer.len();
+            self.written.extend_from_slice(buffer);
+            Ok(buffer.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    /// Audit S4/G6: `fork_from` writes the header and every source entry with
+    /// checked writes; a failing write must surface as an error instead of
+    /// leaving a truncated target that a later open silently "repairs".
+    #[test]
+    fn write_fork_target_propagates_write_failures_instead_of_swallowing_them() {
+        let header = SessionHeader {
+            type_: "session".to_string(),
+            version: Some(CURRENT_SESSION_VERSION),
+            id: "fork-target".to_string(),
+            timestamp: iso_now(),
+            cwd: "/work".to_string(),
+            parent_session: None,
+            rlm_depth: Some(0),
+            git: None,
+        };
+        let entries: Vec<FileEntry> = (0..3)
+            .map(|index| {
+                let mut entry = FileEntry::new();
+                entry.insert("type".to_string(), Value::String("message".to_string()));
+                entry.insert("id".to_string(), Value::String(format!("m{index}")));
+                entry
+            })
+            .collect();
+        let header_line =
+            format!("{}\n", serde_json::to_string(&header).unwrap_or_default());
+        let expected = format!(
+            "{}{}",
+            header_line,
+            entries
+                .iter()
+                .map(|entry| format!("{}\n", serialize_session_file_entry(entry)))
+                .collect::<String>()
+        );
+
+        // Budget exactly the header line: the header lands, the first entry
+        // write fails, and the failure must reach the caller.
+        let mut short = ShortWriter { bytes_left: header_line.len(), written: Vec::new() };
+        let error = SessionManager::write_fork_target(&mut short, &header, &entries)
+            .expect_err("a failed entry write must surface");
+        assert!(error.contains("forked entry"), "the error names the failed stage: {error}");
+        assert_eq!(short.written, header_line.as_bytes(), "only the completed header landed");
+
+        // One byte short of the header: even the header write fails.
+        let mut shorter = ShortWriter { bytes_left: header_line.len() - 1, written: Vec::new() };
+        let error = SessionManager::write_fork_target(&mut shorter, &header, &entries)
+            .expect_err("a failed header write must surface");
+        assert!(error.contains("fork header"), "the error names the failed stage: {error}");
+
+        // Enough budget: the header and every entry land, nothing more.
+        let mut enough = ShortWriter { bytes_left: expected.len(), written: Vec::new() };
+        SessionManager::write_fork_target(&mut enough, &header, &entries)
+            .expect("a healthy writer completes the fork");
+        assert_eq!(enough.written, expected.as_bytes(), "the fork is header plus every entry");
+        assert_eq!(enough.bytes_left, 0, "the writer consumed exactly the fork bytes");
     }
 }

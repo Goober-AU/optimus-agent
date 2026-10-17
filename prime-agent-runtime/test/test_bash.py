@@ -196,6 +196,23 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn("400000", result.output)
         self.assertIn("bytes dropped", result.output)
 
+    async def test_multibyte_output_survives_both_caps_end_to_end(self):
+        # S-6 end to end: multi-byte UTF-8 flowing through the real pump and
+        # both buffer caps must surface as whole characters at every cut
+        # point, never as replacement-character halves.
+        python = Path(sys.executable).as_posix()
+        code = (
+            "import sys; sys.stdout.write('a'*%d + '\\u00e9' + 'm'*%d + '\\u20ac')"
+            % (bash_module._HEAD_CAP, bash_module._TAIL_CAP + 2048)
+        )
+        result = await bash(f'{python} -c "{code}"')
+        self.assertEqual(result.exit_code, 0)
+        output = result.output
+        self.assertNotIn("\ufffd", output)
+        self.assertTrue(output.startswith("a" * bash_module._HEAD_CAP))
+        self.assertIn("bytes dropped", output)
+        self.assertTrue(output.endswith("\u20ac"))
+
     async def test_env_prefix_and_journal(self):
         # Windows AV/indexers can briefly hold the just-fsynced journal file,
         # failing scratch-dir teardown after every assertion already passed.
@@ -390,6 +407,102 @@ class BashTest(unittest.IsolatedAsyncioTestCase):
         text = buffer.text()
         self.assertTrue(text.endswith("b" * 1000))
         self.assertIn("a" * 1000 + "b" * 1000, text)
+
+    def test_buffer_head_cap_never_splits_a_multibyte_character(self):
+        # The audit's S-6 head case: output where the 512 KiB head boundary
+        # falls in the middle of a multi-byte UTF-8 character, with enough
+        # follow-on output that the middle is dropped and head and tail
+        # decode separately. The character must survive whole (it belongs to
+        # the retained tail) instead of surfacing as two U+FFFD halves.
+        for character in ["\u00e9", "\u20ac", "\U0001F600"]:  # 2, 3, 4 bytes
+            with self.subTest(character=character):
+                buffer = bash_module._BoundedBuffer()
+                prefix = "a" * (bash_module._HEAD_CAP - 1)
+                buffer.write(prefix.encode())
+                # The head has room for exactly one more byte, so the boundary
+                # lands inside the first character of this chunk.
+                buffer.write(character.encode() + b"m" * (bash_module._TAIL_CAP + 16))
+                text = buffer.text()
+                self.assertNotIn("\ufffd", text)
+                self.assertTrue(text.startswith(prefix))
+                # The head backed off to a character boundary: the retained
+                # head region is exactly the ASCII prefix, with no broken
+                # character half at its end.
+                head_part = text.split("\n... [", 1)[0]
+                self.assertEqual(head_part, prefix)
+
+    def test_buffer_head_boundary_char_survives_when_tail_keeps_it(self):
+        # When the head cap backs off mid-character, the whole character goes
+        # to the tail; if the tail never trims past it, it must appear intact
+        # right after the drop marker.
+        buffer = bash_module._BoundedBuffer()
+        prefix = "a" * (bash_module._HEAD_CAP - 2)
+        buffer.write(prefix.encode())
+        buffer.write("\u00e9z".encode() + b"m" * 8)
+        text = buffer.text()
+        self.assertEqual(text, prefix + "\u00e9z" + "m" * 8)
+
+    def test_buffer_dangling_head_sequence_carried_into_tail_in_order(self):
+        # The cap lands exactly after a lead byte whose continuation arrives
+        # in a later write: the partial sequence is carried into the tail and
+        # later writes append after it, never back into the head.
+        buffer = bash_module._BoundedBuffer()
+        prefix = "a" * (bash_module._HEAD_CAP - 1)
+        buffer.write(prefix.encode())
+        buffer.write(b"\xc3")  # fills the head to the cap, sequence incomplete
+        buffer.write(b"\xa9BC")  # seals the head, carries the lead byte
+        buffer.write(b"DE")  # must land after BC, not between the head and é
+        text = buffer.text()
+        self.assertEqual(text, prefix + "\u00e9BCDE")
+
+    def test_buffer_no_drop_reattaches_split_sequence(self):
+        # Without a dropped middle, head and tail decode together, so even a
+        # boundary-split sequence must reassemble to the original bytes.
+        buffer = bash_module._BoundedBuffer()
+        prefix = "a" * (bash_module._HEAD_CAP - 1)
+        buffer.write(prefix.encode())
+        buffer.write("\u00e9tail".encode())
+        self.assertEqual(buffer.text(), prefix + "\u00e9tail")
+
+    def test_buffer_tail_trim_cuts_on_character_boundary(self):
+        # The audit's S-6 tail case: trimming the oldest tail bytes must skip
+        # forward over continuation bytes, so the retained tail starts at a
+        # lead byte instead of decoding a broken half character.
+        buffer = bash_module._BoundedBuffer()
+        buffer.write(b"x" * bash_module._HEAD_CAP)
+        payload = "\u00e9".encode() * (bash_module._TAIL_CAP // 2 + 4)
+        buffer.write(payload)
+        self.assertGreater(buffer._dropped, 0)
+        text = buffer.text()
+        self.assertNotIn("\ufffd", text)
+        tail_part = text.rsplit("] ...\n", 1)[-1]
+        self.assertTrue(tail_part.endswith("\u00e9"))
+        # Every retained tail character is whole: even count of é bytes.
+        self.assertEqual(len(tail_part.encode()) % 2, 0)
+
+    def test_buffer_ascii_path_unchanged_by_boundary_fix(self):
+        # ASCII output must keep the exact original retention shape: the head
+        # keeps exactly _HEAD_CAP bytes and the tail exactly _TAIL_CAP bytes.
+        buffer = bash_module._BoundedBuffer()
+        buffer.write(b"h" * bash_module._HEAD_CAP)
+        buffer.write(b"a" * (bash_module._TAIL_CAP + 5))
+        self.assertEqual(len(buffer._head), bash_module._HEAD_CAP)
+        self.assertEqual(buffer._tail_size, bash_module._TAIL_CAP)
+        text = buffer.text()
+        self.assertIn("\n... [5 bytes dropped] ...\n", text)
+        self.assertTrue(text.startswith("h" * bash_module._HEAD_CAP))
+        self.assertTrue(text.endswith("a" * bash_module._TAIL_CAP))
+
+    async def test_wait_reaped_supports_concurrent_waiters(self):
+        # The completion notifier always parks on _wait_reaped(); a cell (or
+        # any other awaiter) calling it concurrently must not clobber the
+        # notifier's registration. With a single callback slot the first
+        # waiter hung forever and the bash.completed notice never fired.
+        handle = bash("sleep 2")
+        first = asyncio.ensure_future(handle._wait_reaped())
+        second = asyncio.ensure_future(handle._wait_reaped())
+        await asyncio.wait_for(asyncio.gather(first, second), 10)
+        self.assertTrue(handle._reaped)
 
     async def test_running_reflects_group_liveness(self):
         if not bash_module._IS_POSIX:

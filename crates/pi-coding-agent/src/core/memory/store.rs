@@ -9,7 +9,9 @@ use crate::core::refinement::refinement::{
     apply_refinement_proposal, ApplyRefinementOptions, HarnessRefinementEvent, HarnessScope,
     HarnessState, RefinementEdit, RefinementProposal, RefinementResult,
 };
-use crate::utils::atomic_file::{write_file_atomic_sync, WriteFileAtomicOptions};
+use crate::utils::atomic_file::{
+    write_bytes_atomic_sync, write_file_atomic_sync, WriteFileAtomicOptions,
+};
 
 use super::evidence::{hash, MemoryOrigin, MemorySource};
 use super::project::ProjectIdentity;
@@ -296,6 +298,67 @@ pub fn empty_document(project_id: &str) -> MemoryDocument {
     }
 }
 
+/// What `memory/host-id.json` currently holds.
+enum HostIdFile {
+    /// A well-formed UUID identity.
+    Valid(String),
+    /// Nothing minted yet.
+    Missing,
+    /// Readable bytes that are not a valid host identity. The bytes ride along
+    /// so the quarantine can preserve them exactly.
+    Corrupt(Vec<u8>),
+}
+
+fn read_host_id_file(host_path: &Path) -> Result<HostIdFile, String> {
+    let raw = match std::fs::read(host_path) {
+        Ok(raw) => raw,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(HostIdFile::Missing)
+        }
+        // Unreadable bytes are never quarantined or replaced, matching the
+        // harness-state discipline: resolve permissions instead of guessing.
+        Err(error) => {
+            return Err(format!("Could not read the memory host identity: {error}"))
+        }
+    };
+    let valid = serde_json::from_slice::<Value>(&raw)
+        .ok()
+        .and_then(|value| record(&value).ok())
+        .and_then(|map| {
+            map.get("id")
+                .and_then(Value::as_str)
+                .filter(|id| regex::Regex::new(r"^[a-f0-9-]{36}$").unwrap().is_match(id))
+                .map(str::to_string)
+        });
+    Ok(match valid {
+        Some(id) => HostIdFile::Valid(id),
+        None => HostIdFile::Corrupt(raw),
+    })
+}
+
+/// `host-id.corrupt-<content-hash>.json` beside the identity file, mirroring the
+/// harness-state recovery copies: content-addressed, so quarantining the same
+/// corrupt bytes twice writes one file and the bytes survive verbatim.
+fn quarantine_host_id_file(root: &Path, raw: &[u8]) -> Result<String, String> {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(raw);
+    let digest = format!("{:x}", hasher.finalize());
+    let backup = root.join(format!("host-id.corrupt-{}.json", &digest[..16]));
+    write_bytes_atomic_sync(
+        &backup.to_string_lossy(),
+        raw,
+        WriteFileAtomicOptions {
+            mode: Some(0o600),
+            fsync: true,
+            fsync_dir: true,
+            ..Default::default()
+        },
+    )
+    .map_err(|error| format!("Could not quarantine the corrupt host identity: {error}"))?;
+    Ok(backup.to_string_lossy().to_string())
+}
+
 pub fn record(value: &Value) -> Result<JsonMap, String> {
     match value {
         Value::Object(map) => Ok(map.clone()),
@@ -560,34 +623,48 @@ impl MemoryStore {
         let root = Path::new(agent_dir).join("memory");
         std::fs::create_dir_all(&root).map_err(|error| error.to_string())?;
         let host_path = root.join("host-id.json");
-        if !host_path.exists() {
-            let _lock = super::acquire_lock_sync(
-                &root.to_string_lossy(),
-                super::MemoryLockRetries {
-                    stale_ms: 10_000,
-                    retries: 0,
-                    min_timeout_ms: 0,
-                    max_timeout_ms: 0,
-                },
-            )?;
-            if !host_path.exists() {
-                write_json(
-                    &host_path.to_string_lossy(),
-                    &serde_json::json!({"id": uuid::Uuid::new_v4().to_string()}),
+        let host_id = match read_host_id_file(&host_path)? {
+            HostIdFile::Valid(host_id) => host_id,
+            HostIdFile::Missing | HostIdFile::Corrupt(_) => {
+                let _lock = super::acquire_lock_sync(
+                    &root.to_string_lossy(),
+                    super::MemoryLockRetries {
+                        stale_ms: 10_000,
+                        retries: 0,
+                        min_timeout_ms: 0,
+                        max_timeout_ms: 0,
+                    },
                 )?;
+                // Re-check under the lock: a concurrent first construction may
+                // have minted (or already quarantined and re-minted) meanwhile.
+                match read_host_id_file(&host_path)? {
+                    HostIdFile::Valid(host_id) => host_id,
+                    HostIdFile::Missing => {
+                        let host_id = uuid::Uuid::new_v4().to_string();
+                        write_json(
+                            &host_path.to_string_lossy(),
+                            &serde_json::json!({"id": host_id}),
+                        )?;
+                        host_id
+                    }
+                    HostIdFile::Corrupt(raw) => {
+                        // A corrupt host identity must not brick every future
+                        // store construction: quarantine the bytes aside (like
+                        // the session files do), then mint a fresh identity.
+                        // Project memory data stays intact; only the host id
+                        // is replaced, and the quarantined copy preserves the
+                        // old one for manual recovery of host-scoped facts.
+                        quarantine_host_id_file(&root, &raw)?;
+                        let host_id = uuid::Uuid::new_v4().to_string();
+                        write_json(
+                            &host_path.to_string_lossy(),
+                            &serde_json::json!({"id": host_id}),
+                        )?;
+                        host_id
+                    }
+                }
             }
-        }
-        let host = record(&read_json(&host_path.to_string_lossy())?)?;
-        let host_id = host
-            .get("id")
-            .and_then(Value::as_str)
-            .filter(|value| {
-                regex::Regex::new(r"^[a-f0-9-]{36}$")
-                    .unwrap()
-                    .is_match(value)
-            })
-            .ok_or_else(|| "Invalid memory host identity".to_string())?
-            .to_string();
+        };
         Ok(MemoryStore {
             agent_dir: agent_dir.to_string(),
             project,
@@ -606,12 +683,27 @@ impl MemoryStore {
     }
 
     pub fn settings(&self) -> MemorySettings {
+        let log = pi_ai::log::get_logger("coding-agent.memory-store");
+        let warn_ignored = |scope: &str, what: &str, path: &str, error: &str| {
+            log.warn(
+                &format!("Ignoring the {what} of the {scope} memory settings; affected keys stay at their defaults"),
+                Some(serde_json::Map::from_iter([
+                    ("scope".to_string(), Value::String(scope.to_string())),
+                    ("path".to_string(), Value::String(path.to_string())),
+                    ("error".to_string(), Value::String(error.to_string())),
+                ])),
+            );
+        };
         let global_file = Path::new(&self.agent_dir).join("settings.json");
         let global = if global_file.exists() {
-            read_json(&global_file.to_string_lossy())
-                .ok()
-                .and_then(|value| record(&value).ok())
-                .unwrap_or_default()
+            let path = global_file.to_string_lossy().to_string();
+            match read_json(&path).and_then(|value| record(&value)) {
+                Ok(map) => map,
+                Err(error) => {
+                    warn_ignored("global", "unreadable file", &path, &error);
+                    JsonMap::new()
+                }
+            }
         } else {
             JsonMap::new()
         };
@@ -621,16 +713,21 @@ impl MemoryStore {
             .get("memory")
             .cloned()
             .unwrap_or(Value::Object(JsonMap::new()));
-        apply_settings(
-            &mut settings,
-            &validate_settings(&global_memory).unwrap_or_default(),
-        );
+        match validate_settings(&global_memory) {
+            Ok(patch) => apply_settings(&mut settings, &patch),
+            Err(error) => {
+                let path = global_file.to_string_lossy().to_string();
+                warn_ignored("global", "invalid content", &path, &error);
+            }
+        }
         if local_file.exists() {
-            if let Ok(value) = read_json(&local_file.to_string_lossy()) {
-                apply_settings(
-                    &mut settings,
-                    &validate_settings(&value).unwrap_or_default(),
-                );
+            let path = local_file.to_string_lossy().to_string();
+            match read_json(&path) {
+                Ok(value) => match validate_settings(&value) {
+                    Ok(patch) => apply_settings(&mut settings, &patch),
+                    Err(error) => warn_ignored("project", "invalid content", &path, &error),
+                },
+                Err(error) => warn_ignored("project", "unreadable file", &path, &error),
             }
         }
         settings

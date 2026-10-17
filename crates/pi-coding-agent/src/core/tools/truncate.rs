@@ -204,12 +204,23 @@ pub fn truncate_tail(content: &str, options: TruncationOptions) -> TruncationRes
 
         if output_bytes_count + line_bytes > max_bytes {
             truncated_by = TruncatedBy::Bytes;
-            // Trailing blanks must not defeat the oversized-line rescue; keep as many as the budget allows.
-            if output_lines_arr.iter().all(|collected| collected.is_empty()) {
-                let kept_blanks = output_lines_arr.len().min(max_bytes.saturating_sub(1));
+            // Trailing blanks must not defeat the oversized-line rescue; keep as
+            // many as the budget allows. CRLF content yields "\r" blank lines, so
+            // blankness and cost are measured on actual bytes instead of assuming
+            // empty LF-separated lines (each kept blank costs its own bytes plus
+            // the one "\n" separator the rejoin inserts before it).
+            if output_lines_arr.iter().all(|collected| is_blank_line(collected)) {
+                let mut kept_blanks = output_lines_arr.len();
+                let mut blanks_cost: usize =
+                    output_lines_arr.iter().map(|blank| 1 + byte_length(blank)).sum();
+                while kept_blanks > 0 && blanks_cost + 1 > max_bytes {
+                    kept_blanks -= 1;
+                    blanks_cost -= 1 + byte_length(output_lines_arr[kept_blanks]);
+                }
                 output_lines_arr.truncate(kept_blanks);
-                let truncated_line = truncate_string_to_bytes_from_end(line, max_bytes - kept_blanks);
-                output_bytes_count = byte_length(&truncated_line) + kept_blanks;
+                let truncated_line =
+                    truncate_string_to_bytes_from_end(line, max_bytes.saturating_sub(blanks_cost));
+                output_bytes_count = byte_length(&truncated_line) + blanks_cost;
                 partial_line = Some(truncated_line);
                 last_line_partial = true;
             }
@@ -246,6 +257,11 @@ pub fn truncate_tail(content: &str, options: TruncationOptions) -> TruncationRes
         max_lines,
         max_bytes,
     }
+}
+
+/// A line that renders empty: `""` from LF content or `"\r"` from CRLF content.
+fn is_blank_line(line: &str) -> bool {
+    line.is_empty() || line == "\r"
 }
 
 /// Truncate a string to fit within a byte limit (from the end).

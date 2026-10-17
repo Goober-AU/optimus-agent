@@ -10806,7 +10806,11 @@ impl AgentSession {
                 .execution_policy
                 .clone()
                 .unwrap_or_else(|| self.turn_execution_policy("directPrompt", None)),
-            queue_visible: options.queue_visible.unwrap_or(false),
+            // TS agent-session.ts:6141 `queueVisible: options.queueVisible ?? true`:
+            // a prepared turn is queue-visible unless its caller explicitly opts
+            // out, so `requestAbort` (which cancels only `!queueVisible` turns)
+            // preserves queued steer/followUp work exactly like the TypeScript.
+            queue_visible: options.queue_visible.unwrap_or(true),
             accepted_agent_message: options.accepted_agent_message.unwrap_or(false),
             accepted_before_completion: options.accepted_before_completion.unwrap_or(false),
             capture_run_messages: None,

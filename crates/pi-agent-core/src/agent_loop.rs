@@ -36,6 +36,12 @@ pub type AgentEventSink = Arc<dyn Fn(AgentEvent) -> BoxFuture<'static, anyhow::R
 
 pub const ABORT_ERROR_MESSAGE: &str = "Request was aborted";
 
+/// The dedicated tool-result wording for a tool call that cancellation stopped,
+/// whether mid-execution, mid-before-hook, or before it started. Distinct from
+/// [`ABORT_ERROR_MESSAGE`] (the provider-request abort): a raw anyhow display
+/// of an aborted future must not become tool-result history text.
+pub const TOOL_EXECUTION_ABORTED_MESSAGE: &str = "Tool execution aborted";
+
 /// `const EMPTY_USAGE`.
 pub fn empty_usage() -> Usage {
     Usage::zero()
@@ -1314,6 +1320,11 @@ async fn stream_assistant_response_inner(
     let invocation = receipt.clone();
     let producer_signal = provider_config.stream.signal.clone();
     if let Some(scope) = &config.execution_scope {
+        // Registering the next request is the natural settlement point of the
+        // previous one: release its terminal tasks and inert receipts first so
+        // cancellation and status stay proportional to live work instead of
+        // growing with every request the Agent ever made.
+        scope.prune_settled();
         scope.register_stream(receipt.clone()).map_err(anyhow::Error::msg)?;
     }
     let future = async move {
@@ -1693,6 +1704,35 @@ async fn execute_tool_calls_sequential(
         }
     }
 
+    // Cancellation ends the batch before every call has a result. The assistant
+    // message in context already lists every tool call, so a run that stops
+    // here would persist an assistant message whose calls have no matching
+    // tool results, and a later continue() would send that invalid history to
+    // the provider. Synthesize the same dedicated abort result the parallel
+    // path produces for every unanswered call. These calls never started, so
+    // no tool_execution_start/end pair is emitted for them; the tool-result
+    // message events still flow so every context observer sees the answers.
+    if signal.map(|signal| signal.is_cancelled()).unwrap_or(false) {
+        for tool_call in tool_calls {
+            if messages
+                .iter()
+                .any(|message| message.tool_call_id == tool_call.id)
+            {
+                continue;
+            }
+            let finalized = FinalizedToolCallOutcome {
+                tool_call: tool_call.clone(),
+                result: create_error_tool_result(TOOL_EXECUTION_ABORTED_MESSAGE),
+                is_error: true,
+            };
+            record_tool_performance_metric(config, assistant_message, &finalized, None, signal);
+            let tool_result_message = create_tool_result_message(&finalized, now_ms());
+            emit_tool_result_message(&tool_result_message, emit).await?;
+            finalized_calls.push(finalized);
+            messages.push(tool_result_message);
+        }
+    }
+
     Ok(ExecutedToolCallBatch {
         messages,
         terminate: should_terminate_tool_batch(&finalized_calls),
@@ -2000,8 +2040,19 @@ async fn prepare_tool_call(
         {
             Ok(result) => result,
             Err(error) => {
+                // An abort mid-hook must leave the same dedicated abort wording
+                // in history as an abort mid-execution, not the raw anyhow
+                // display of the aborted hook future.
+                let message = if signal
+                    .map(|signal| signal.is_cancelled())
+                    .unwrap_or(false)
+                {
+                    TOOL_EXECUTION_ABORTED_MESSAGE.to_string()
+                } else {
+                    format!("{error}")
+                };
                 return PreparedToolCallOrImmediate::Immediate(ImmediateToolCallOutcome {
-                    result: create_error_tool_result(&format!("{error}")),
+                    result: create_error_tool_result(&message),
                     is_error: true,
                 });
             }
@@ -2177,7 +2228,7 @@ async fn execute_prepared_tool_call(
         }
         Err(error) => {
             let message = if signal.map(|signal| signal.is_cancelled()).unwrap_or(false) {
-                "Tool execution aborted".to_string()
+                TOOL_EXECUTION_ABORTED_MESSAGE.to_string()
             } else {
                 format!("{error}")
             };
@@ -3690,6 +3741,30 @@ mod tests {
         message
     }
 
+    /// The first text block of a tool-result message, if any.
+    fn tool_result_text(message: &ToolResultMessage) -> Option<&str> {
+        message.content.first().and_then(|block| match block {
+            ImageOrTextContent::Text(text) => Some(text.text.as_str()),
+            ImageOrTextContent::Image(_) => None,
+        })
+    }
+
+    fn assistant_with_tool_calls(calls: &[(&str, &str)]) -> AssistantMessage {
+        let mut message = AssistantMessage::new("openai-responses", "openai", "gpt-test", 1);
+        message.stop_reason = pi_ai::types::STOP_REASON_TOOL_USE.to_string();
+        for &(id, name) in calls {
+            message.content.push(ContentBlock::ToolCall(ToolCall::new(
+                id,
+                name,
+                match json!({}) {
+                    Value::Object(map) => map,
+                    _ => unreachable!(),
+                },
+            )));
+        }
+        message
+    }
+
     #[test]
     fn abort_error_message_matches_typescript() {
         assert_eq!(ABORT_ERROR_MESSAGE, "Request was aborted");
@@ -3932,6 +4007,187 @@ mod tests {
     fn tool_execution_mode_sequential_forces_sequential_batches() {
         let config = AgentLoopConfig::new(Model::new("unknown", "unknown", "unknown", "unknown", ""));
         assert_eq!(config.resolved_tool_execution(), ToolExecutionMode::Parallel);
+    }
+
+    /// SB-1: cancelling a sequential tool batch must still answer every tool
+    /// call the assistant message issued. The calls that never ran get the same
+    /// dedicated abort result the parallel path produces, so the persisted
+    /// context never ends with an assistant message whose calls have no
+    /// matching tool results.
+    #[tokio::test]
+    async fn sequential_batch_cancellation_answers_every_tool_call() {
+        let signal = CancellationToken::new();
+        let tool = AgentTool {
+            name: "sequential-cancel".to_string(),
+            description: "returns normally; the run is cancelled after its result".to_string(),
+            parameters: json!({"type": "object", "properties": {}}),
+            label: "Sequential cancel".to_string(),
+            prepare_arguments: None,
+            execute: Arc::new(|_, _, _, _| {
+                Box::pin(async {
+                    Ok(AgentToolResult::new(
+                        vec![AgentContentBlock::text("first finished")],
+                        json!({}),
+                    ))
+                })
+            }),
+            execution_mode: Some(ToolExecutionMode::Sequential),
+        };
+        let mut context = AgentContext {
+            system_prompt: String::new(),
+            messages: Vec::new(),
+            tools: Some(vec![tool]),
+        };
+        let assistant = assistant_with_tool_calls(&[
+            ("call-1", "sequential-cancel"),
+            ("call-2", "sequential-cancel"),
+            ("call-3", "sequential-cancel"),
+        ]);
+        let config = AgentLoopConfig::new(Model::new("unknown", "unknown", "unknown", "unknown", ""));
+        // Cancel exactly between the first call's completion and the second
+        // call's start: the first result keeps its own text, the skipped calls
+        // must be answered with the dedicated abort result.
+        let cancel = signal.clone();
+        let emit: AgentEventSink = Arc::new(move |event| {
+            let cancel = cancel.clone();
+            Box::pin(async move {
+                if let AgentEvent::ToolExecutionEnd { tool_call_id, .. } = &event {
+                    if tool_call_id == "call-1" {
+                        cancel.cancel();
+                    }
+                }
+                Ok(())
+            })
+        });
+        let batch = execute_tool_calls_sequential(
+            &mut context,
+            &assistant,
+            &message_tool_calls(&assistant),
+            &config,
+            Some(&signal),
+            &emit,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(
+            batch
+                .messages
+                .iter()
+                .map(|message| message.tool_call_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["call-1", "call-2", "call-3"],
+            "every tool call id must have exactly one result in assistant source order"
+        );
+        assert_eq!(tool_result_text(&batch.messages[0]), Some("first finished"));
+        assert!(!batch.messages[0].is_error, "the call that ran still reports its own result");
+        for skipped in &batch.messages[1..] {
+            assert_eq!(
+                tool_result_text(skipped),
+                Some(TOOL_EXECUTION_ABORTED_MESSAGE),
+                "a skipped call must carry the dedicated abort wording"
+            );
+            assert!(skipped.is_error);
+        }
+        assert!(!batch.terminate, "a cancelled batch never reports terminal");
+    }
+
+    /// SB-3: an abort during the before_tool_call hook must leave the dedicated
+    /// abort wording in history, not the raw display of the aborted future.
+    #[tokio::test]
+    async fn before_tool_call_abort_yields_dedicated_abort_result_text() {
+        let tool = AgentTool {
+            name: "hook-abort".to_string(),
+            description: "never runs: the hook aborts first".to_string(),
+            parameters: json!({"type": "object", "properties": {}}),
+            label: "Hook abort".to_string(),
+            prepare_arguments: None,
+            execute: Arc::new(|_, _, _, _| {
+                Box::pin(async { Ok(AgentToolResult::new(Vec::new(), json!({}))) })
+            }),
+            execution_mode: None,
+        };
+        let context = AgentContext {
+            system_prompt: String::new(),
+            messages: Vec::new(),
+            tools: Some(vec![tool]),
+        };
+        let assistant = assistant_with_tool_call("call-1", "hook-abort");
+        let mut config = AgentLoopConfig::new(Model::new("unknown", "unknown", "unknown", "unknown", ""));
+        config.before_tool_call = Some(Arc::new(|_, hook_signal| {
+            Box::pin(async move {
+                if let Some(signal) = hook_signal {
+                    signal.cancel();
+                }
+                // Stay pending so the abort race, not the hook, resolves the future.
+                std::future::pending::<()>().await;
+                unreachable!("the aborted hook future must never resolve")
+            })
+        }));
+        let signal = CancellationToken::new();
+        let tool_calls = message_tool_calls(&assistant);
+        let preparation =
+            prepare_tool_call(&context, &assistant, &tool_calls[0], &config, Some(&signal))
+                .await;
+        match preparation {
+            PreparedToolCallOrImmediate::Immediate(immediate) => {
+                assert_eq!(
+                    immediate
+                        .result
+                        .content
+                        .first()
+                        .and_then(AgentContentBlock::as_text),
+                    Some(TOOL_EXECUTION_ABORTED_MESSAGE)
+                );
+                assert!(immediate.is_error);
+            }
+            PreparedToolCallOrImmediate::Prepared(_) => {
+                panic!("an aborted before-hook must become an immediate result");
+            }
+        }
+    }
+
+    /// Negative control for SB-3: a genuine (non-abort) hook failure keeps its
+    /// own error display as the tool-result text.
+    #[tokio::test]
+    async fn before_tool_call_failure_keeps_the_hook_error_text() {
+        let tool = AgentTool {
+            name: "hook-failure".to_string(),
+            description: "never runs: the hook fails first".to_string(),
+            parameters: json!({"type": "object", "properties": {}}),
+            label: "Hook failure".to_string(),
+            prepare_arguments: None,
+            execute: Arc::new(|_, _, _, _| {
+                Box::pin(async { Ok(AgentToolResult::new(Vec::new(), json!({}))) })
+            }),
+            execution_mode: None,
+        };
+        let context = AgentContext {
+            system_prompt: String::new(),
+            messages: Vec::new(),
+            tools: Some(vec![tool]),
+        };
+        let assistant = assistant_with_tool_call("call-1", "hook-failure");
+        let mut config = AgentLoopConfig::new(Model::new("unknown", "unknown", "unknown", "unknown", ""));
+        config.before_tool_call = Some(Arc::new(|_, _| {
+            Box::pin(async { Err(anyhow::anyhow!("hook exploded")) })
+        }));
+        let tool_calls = message_tool_calls(&assistant);
+        let preparation =
+            prepare_tool_call(&context, &assistant, &tool_calls[0], &config, None)
+                .await;
+        match preparation {
+            PreparedToolCallOrImmediate::Immediate(immediate) => {
+                assert_eq!(
+                    immediate.result.content.first().and_then(AgentContentBlock::as_text),
+                    Some("hook exploded")
+                );
+                assert!(immediate.is_error);
+            }
+            PreparedToolCallOrImmediate::Prepared(_) => {
+                panic!("a failed before-hook must become an immediate result");
+            }
+        }
     }
 }
 

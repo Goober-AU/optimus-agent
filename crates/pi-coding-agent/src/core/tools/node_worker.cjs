@@ -16,15 +16,50 @@
   const emit = (value) => write(JSON.stringify(value) + '\n');
   const cells = new AsyncLocalStorage();
   const limit = 64 * 1024;
+  const streamNotice = '\n[Node output truncated at 64 KiB]\n';
+  const resultNotice = '\n[Node result truncated at 64 KiB]\n';
+  // The budget counts UTF-8 bytes, so every clip must operate on the encoded
+  // buffer and back off to a sequence boundary; slicing the string itself
+  // counts UTF-16 code units and can split a surrogate pair.
+  const asUtf8 = (chunk) => {
+    if (typeof chunk === 'string') return Buffer.from(chunk, 'utf8');
+    if (Buffer.isBuffer(chunk)) return chunk;
+    if (chunk && chunk.buffer instanceof ArrayBuffer && typeof chunk.byteLength === 'number') {
+      return Buffer.from(chunk.buffer, chunk.byteOffset ?? 0, chunk.byteLength);
+    }
+    return Buffer.from(String(chunk), 'utf8');
+  };
+  const clipBytes = (buffer, budget) => {
+    let end = Math.min(buffer.length, budget);
+    while (end > 0 && (buffer[end] & 0xc0) === 0x80) end -= 1;
+    return end;
+  };
+  const clipText = (text) => {
+    const buffer = asUtf8(text);
+    const end = clipBytes(buffer, limit);
+    const clipped = buffer.subarray(0, end).toString('utf8');
+    return end < buffer.length ? clipped + resultNotice : clipped;
+  };
   for (const stream of [process.stdout, process.stderr]) {
     stream.write = (chunk, encoding, callback) => {
       const cell = cells.getStore();
-      if (cell && !cell.done && cell.bytes < limit) {
-        const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk);
-        const clipped = text.slice(0, limit - cell.bytes);
-        cell.bytes += Buffer.byteLength(clipped);
-        emit({ id: cell.id, output: clipped });
-        if (cell.bytes >= limit) emit({ id: cell.id, output: '\n[Node output truncated at 64 KiB]\n' });
+      if (cell && !cell.done) {
+        const buffer = asUtf8(chunk);
+        let dropped;
+        if (cell.bytes < limit) {
+          const end = clipBytes(buffer, limit - cell.bytes);
+          cell.bytes += end;
+          emit({ id: cell.id, output: buffer.subarray(0, end).toString('utf8') });
+          dropped = end < buffer.length;
+        } else {
+          dropped = buffer.length > 0;
+        }
+        // Announce the first dropped byte only: an output that exactly fills
+        // the budget has not been truncated.
+        if (dropped && !cell.truncated) {
+          cell.truncated = true;
+          emit({ id: cell.id, output: streamNotice });
+        }
       }
       const cb = typeof encoding === 'function' ? encoding : callback;
       if (cb) queueMicrotask(cb);
@@ -44,7 +79,7 @@
   input.on('line', (line) => {
     queue = queue.then(async () => {
       const request = JSON.parse(line);
-      const cell = { id: request.id, bytes: 0, done: false };
+      const cell = { id: request.id, bytes: 0, done: false, truncated: false };
       await cells.run(cell, async () => {
         try {
           const response = await post('Runtime.evaluate', {
@@ -64,9 +99,9 @@
               text = response.result.unserializableValue ?? inspect(response.result.value, { colors: false, maxStringLength: 8192 });
             }
           }
-          emit({ id: request.id, done: true, error: !!response.exceptionDetails, result: text.slice(0, limit) });
+          emit({ id: request.id, done: true, error: !!response.exceptionDetails, result: clipText(text) });
         } catch (error) {
-          emit({ id: request.id, done: true, error: true, result: String(error).slice(0, limit) });
+          emit({ id: request.id, done: true, error: true, result: clipText(String(error)) });
         } finally {
           cell.done = true;
           await post('Runtime.releaseObjectGroup', { objectGroup: 'optimus-cell' });

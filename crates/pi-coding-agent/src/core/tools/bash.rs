@@ -6,9 +6,12 @@ use pi_agent_core::types::{AgentTool, AgentToolResult, AgentToolUpdateCallback};
 use pi_agent_core::types::ContentBlock as AgentContentBlock;
 // `core/tools/bash.ts:9-15` imports `getShellConfig`, `getShellEnv` and
 // `killProcessTree` from `utils/shell.js`; use the same owners here.
+#[cfg(windows)]
+use crate::utils::child_process::{spawn_kernel, KernelJob, KernelProcess, SpawnOptions};
+#[cfg(not(windows))]
+use crate::utils::shell::kill_process_tree;
 use crate::utils::shell::{
-    get_shell_config, get_shell_env, kill_process_tree, track_detached_child_pid,
-    untrack_detached_child_pid,
+    get_shell_config, get_shell_env, track_detached_child_pid, untrack_detached_child_pid,
 };
 use serde_json::Value;
 use tokio_util::sync::CancellationToken;
@@ -100,19 +103,59 @@ pub struct LocalBashOperations {
 
 // Tool futures can be dropped by the agent's cancellation race before their
 // own select observes the token. Keep process/reader cleanup owned by RAII too.
-struct BashChild(tokio::process::Child);
+//
+// Windows: the shell is created suspended inside a kill-on-close kernel job
+// (`spawn_kernel`, the containment node.rs/clang.rs use), so timeout, abort
+// and a dropped future terminate every descendant, including ones a
+// `taskkill /T` tree walk cannot reach because an intermediate parent
+// already exited.
+struct BashChild {
+    #[cfg(windows)]
+    child: KernelProcess,
+    #[cfg(not(windows))]
+    child: tokio::process::Child,
+    /// Windows: set when the containment handle was handed to the detached
+    /// registry; Drop must not terminate what the call deliberately left
+    /// running.
+    #[cfg(windows)]
+    released: bool,
+}
 impl std::ops::Deref for BashChild {
+    #[cfg(windows)]
+    type Target = KernelProcess;
+    #[cfg(not(windows))]
     type Target = tokio::process::Child;
-    fn deref(&self) -> &Self::Target { &self.0 }
+    fn deref(&self) -> &Self::Target { &self.child }
 }
 impl std::ops::DerefMut for BashChild {
-    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
+    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.child }
 }
+
+/// Windows: job handles for shells that settled while a background descendant
+/// still runs. Keeping the handle open preserves the TS background contract
+/// (the descendant outlives the call); the kill-on-close limit fires when the
+/// agent process exits and the last handle closes. Entries whose members all
+/// exited are pruned on insert.
+#[cfg(windows)]
+fn detached_live_jobs() -> &'static std::sync::Mutex<Vec<std::sync::Arc<KernelJob>>> {
+    static JOBS: std::sync::Mutex<Vec<std::sync::Arc<KernelJob>>> = std::sync::Mutex::new(Vec::new());
+    &JOBS
+}
+
 impl Drop for BashChild {
     fn drop(&mut self) {
-        if let Some(pid) = self.0.id() {
+        #[cfg(windows)]
+        if !self.released {
+            // Terminate, then let the owned handles close: kill-on-close
+            // reaps anything the terminate call missed.
+            let _ = self.child.containment.terminate();
+        }
+        #[cfg(not(windows))]
+        if let Some(pid) = self.child.id() {
             kill_process_tree(pid as i32);
-            let _ = self.0.start_kill();
+            let _ = self.child.start_kill();
+        }
+        if let Some(pid) = self.child.id() {
             untrack_detached_child_pid(pid as i32);
         }
     }
@@ -148,28 +191,62 @@ impl BashOperations for LocalBashOperations {
                 ));
             }
 
-            let mut command_builder = tokio::process::Command::new(&shell);
-            for arg in &args {
-                command_builder.arg(arg);
-            }
-            command_builder.arg(&command);
-            command_builder.current_dir(&cwd);
-            command_builder.stdin(std::process::Stdio::null());
-            command_builder.stdout(std::process::Stdio::piped());
-            command_builder.stderr(std::process::Stdio::piped());
-            command_builder.env_clear();
-            for (key, value) in options.env.clone().unwrap_or_else(get_shell_env) {
-                command_builder.env(key, value);
-            }
-            #[cfg(windows)]
-            command_builder.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
-            #[cfg(unix)]
-            command_builder.process_group(0);
+            let child_env = options.env.clone().unwrap_or_else(get_shell_env);
 
-            let mut child = match command_builder.spawn() {
-                Ok(child) => BashChild(child),
-                Err(error) => return Err(error.to_string()),
+            #[cfg(windows)]
+            let mut child = {
+                // Job containment while the process is still suspended: no
+                // descendant can escape, and one TerminateJobObject at
+                // timeout/abort/drop reaches every member (P1-1). The
+                // environment is replaced wholesale to mirror the `env_clear`
+                // plus explicit env of the tokio path.
+                let mut argv = args.clone();
+                argv.push(command.clone());
+                match spawn_kernel(
+                    &shell,
+                    &argv,
+                    SpawnOptions {
+                        cwd: Some(cwd.clone()),
+                        detached: true,
+                        env: Some(child_env),
+                        replace_env: true,
+                        stdin_piped: true,
+                        capture_stdout: true,
+                        capture_stderr: true,
+                        ..Default::default()
+                    },
+                ) {
+                    Ok(child) => BashChild { child, released: false },
+                    Err(error) => return Err(error.to_string()),
+                }
             };
+            #[cfg(not(windows))]
+            let mut child = {
+                let mut command_builder = tokio::process::Command::new(&shell);
+                for arg in &args {
+                    command_builder.arg(arg);
+                }
+                command_builder.arg(&command);
+                command_builder.current_dir(&cwd);
+                command_builder.stdin(std::process::Stdio::null());
+                command_builder.stdout(std::process::Stdio::piped());
+                command_builder.stderr(std::process::Stdio::piped());
+                command_builder.env_clear();
+                for (key, value) in child_env {
+                    command_builder.env(key, value);
+                }
+                command_builder.process_group(0);
+
+                match command_builder.spawn() {
+                    Ok(child) => BashChild { child },
+                    Err(error) => return Err(error.to_string()),
+                }
+            };
+
+            // spawn_kernel always pipes stdin (its native contract); closing
+            // the write end hands the shell the same immediate EOF the null
+            // stdio of the tokio path provides.
+            drop(child.stdin.take());
 
             // TS bash.ts:80: `if (child.pid) trackDetachedChildPid(child.pid);`
             let tracked_child_pid = child.id().map(|pid| pid as i32);
@@ -196,6 +273,7 @@ impl BashOperations for LocalBashOperations {
             let mut aborted = false;
             // `wait` holds a mutable borrow of `child` for as long as it lives, so
             // the pid is captured before the wait starts.
+            #[cfg(not(windows))]
             let child_pid = child.id();
             let result = {
                 let wait = child.wait();
@@ -239,6 +317,15 @@ impl BashOperations for LocalBashOperations {
             };
 
             if result.is_none() {
+                #[cfg(windows)]
+                {
+                    // One TerminateJobObject reaches every member, including
+                    // descendants whose intermediate parents already exited (a
+                    // `taskkill /T` tree walk cannot pass through a dead
+                    // parent).
+                    let _ = child.containment.terminate();
+                }
+                #[cfg(not(windows))]
                 if let Some(pid) = child_pid {
                     // `utils/shell.ts killProcessTree(pid: number)`.
                     kill_process_tree(pid as i32);
@@ -248,6 +335,18 @@ impl BashOperations for LocalBashOperations {
             // Shell exit does not imply EOF: a background descendant may still
             // hold either pipe. Never wait without a bound after exit or kill.
             if result.is_none() {
+                #[cfg(windows)]
+                {
+                    // Settle the whole job (root exited AND no member left),
+                    // not just the root handle.
+                    let _ = child
+                        .containment
+                        .wait_settled(
+                            tokio::time::Instant::now() + std::time::Duration::from_secs(3),
+                        )
+                        .await;
+                }
+                #[cfg(not(windows))]
                 let _ = child.start_kill();
                 let _ = tokio::time::timeout(std::time::Duration::from_secs(3), child.wait()).await;
             }
@@ -276,6 +375,27 @@ impl BashOperations for LocalBashOperations {
             }
             if timed_out {
                 return Err(format!("timeout:{}", options.timeout.unwrap_or(0.0)));
+            }
+
+            // Windows: the shell settled normally while a background
+            // descendant still runs - the TS background contract says that
+            // descendant outlives the call. Hand the containment handle to the
+            // detached registry so kill-on-close stays armed for process
+            // teardown instead of firing now. A probe failure fails closed:
+            // the job terminates with the call.
+            #[cfg(windows)]
+            if matches!(result, Some(Ok(_))) {
+                let members_left = child
+                    .containment
+                    .probe()
+                    .map(|(_, active_processes_empty)| !active_processes_empty)
+                    .unwrap_or(false);
+                if members_left {
+                    let mut jobs = detached_live_jobs().lock().expect("detached jobs");
+                    jobs.retain(|job| job.probe().map(|(_, empty)| !empty).unwrap_or(false));
+                    jobs.push(std::sync::Arc::clone(&child.containment));
+                    child.released = true;
+                }
             }
 
             match result {

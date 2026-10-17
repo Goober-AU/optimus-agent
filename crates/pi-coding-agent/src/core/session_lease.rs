@@ -520,29 +520,44 @@ fn now_millis() -> u64 {
         .unwrap_or(0)
 }
 
-/// Release handle for the guard directory; mirrors proper-lockfile's release().
+/// Release handle for the guard directory; mirrors proper-lockfile's
+/// release(), including its compromise check: the mtime observed at
+/// acquisition identifies the exact directory this holder created, so a
+/// release that sees a different (or missing) guard knows a stale-window
+/// successor owns it now and must not remove it.
 struct LeaseGuard {
     path: PathBuf,
-    compromised: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    acquired_modified: Option<u64>,
 }
 
 impl LeaseGuard {
+    fn acquire(path: PathBuf) -> LeaseGuard {
+        LeaseGuard {
+            acquired_modified: modified_millis(&path),
+            path,
+        }
+    }
+
     fn release(&self) {
         let _ = std::fs::remove_dir_all(&self.path);
+    }
+
+    /// proper-lockfile's unlock check: `true` when the guard directory is no
+    /// longer the one this holder created (removed and/or recreated by a
+    /// concurrent acquirer after LEASE_GUARD_STALE_MS).
+    fn is_compromised(&self) -> bool {
+        match modified_millis(&self.path) {
+            Some(current) => Some(current) != self.acquired_modified,
+            None => true,
+        }
     }
 }
 
 fn acquire_lease_guard(directory: &str) -> Result<LeaseGuard, String> {
     let guard_path = PathBuf::from(format!("{directory}.guard"));
-    let compromised = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     for attempt in 0..LEASE_GUARD_ATTEMPTS {
         match std::fs::create_dir(&guard_path) {
-            Ok(()) => {
-                return Ok(LeaseGuard {
-                    path: guard_path,
-                    compromised,
-                })
-            }
+            Ok(()) => return Ok(LeaseGuard::acquire(guard_path)),
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {
                 // Stale guard: proper-lockfile removes a lock older than `stale` ms.
                 if let Some(modified) = modified_millis(&guard_path) {
@@ -572,36 +587,28 @@ fn with_lease_guard<T>(directory: &str, action: impl FnOnce() -> T) -> Result<T,
 fn try_with_lease_guard<T>(directory: &str, action: impl FnOnce() -> T) -> Result<T, String> {
     let path = PathBuf::from(format!("{directory}.guard"));
     std::fs::create_dir(&path).map_err(|error| error.to_string())?;
-    let guard = LeaseGuard {
-        path,
-        compromised: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
-    };
+    let guard = LeaseGuard::acquire(path);
     with_acquired_lease_guard(directory, guard, action)
 }
 
+/// Run `action` under the guard, then release it unless a concurrent acquirer
+/// took it over through the stale window. The acquisition itself stays
+/// serialized by the candidate -> lock rename; the compromise check only
+/// stops this holder from removing a successor's guard (which would admit a
+/// third acquirer while the second still runs). A compromised guard is left
+/// for its current owner to release, and the action's own result stands -
+/// failing `acquire_session_lease` after its rename succeeded would leak the
+/// lease it just created.
 fn with_acquired_lease_guard<T>(
-    directory: &str,
+    _directory: &str,
     guard: LeaseGuard,
     action: impl FnOnce() -> T,
 ) -> Result<T, String> {
-    let assert_guard_held = || -> Result<(), String> {
-        if guard.compromised.load(std::sync::atomic::Ordering::SeqCst) {
-            return Err(format!("Session lease guard was compromised: {directory}"));
-        }
-        Ok(())
-    };
-    let result = (|| -> Result<T, String> {
-        assert_guard_held()?;
-        let value = action();
-        assert_guard_held()?;
-        Ok(value)
-    })();
-    if guard.compromised.load(std::sync::atomic::Ordering::SeqCst) {
-        // The compromised guard no longer owns a lock that can be safely released.
-    } else {
+    let value = action();
+    if !guard.is_compromised() {
         guard.release();
     }
-    result
+    Ok(value)
 }
 
 // ---------------------------------------------------------------------------
@@ -1275,6 +1282,40 @@ mod tests {
             assert!(directory.is_dir());
             assert!(guard.is_dir(), "another writer's guard must not be removed");
         }
+    }
+
+    #[test]
+    fn guard_release_never_removes_a_successor_guard_after_a_stale_takeover() {
+        let temp = tempfile::tempdir().unwrap();
+        let directory = temp.path().join("lease.lock").to_string_lossy().into_owned();
+        let guard_path = PathBuf::from(format!("{directory}.guard"));
+        let outcome = with_lease_guard(&directory, || {
+            // A concurrent acquirer judges this guard stale
+            // (> LEASE_GUARD_STALE_MS), removes it and creates its own while
+            // the first holder's action still runs.
+            std::fs::remove_dir_all(&guard_path).unwrap();
+            // Separate the two creations by more than any filesystem
+            // timestamp granularity so the takeover is always observable.
+            sleep_ms(20);
+            std::fs::create_dir(&guard_path).unwrap();
+            "action-completed"
+        });
+        assert_eq!(outcome.unwrap(), "action-completed");
+        assert!(
+            guard_path.is_dir(),
+            "release must not remove a successor's guard after a stale takeover"
+        );
+        std::fs::remove_dir_all(&guard_path).unwrap();
+    }
+
+    #[test]
+    fn guard_release_still_removes_the_guard_it_owns() {
+        let temp = tempfile::tempdir().unwrap();
+        let directory = temp.path().join("lease.lock").to_string_lossy().into_owned();
+        let guard_path = PathBuf::from(format!("{directory}.guard"));
+        let outcome = with_lease_guard(&directory, || "ran");
+        assert_eq!(outcome.unwrap(), "ran");
+        assert!(!guard_path.exists(), "an uncompromised guard is released");
     }
 
     #[cfg(windows)]

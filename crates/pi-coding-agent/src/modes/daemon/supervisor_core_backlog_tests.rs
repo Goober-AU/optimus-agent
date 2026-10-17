@@ -1,6 +1,7 @@
 //! Offline regressions for CORE-003 and CORE-005. No real worker is launched.
 use super::*;
 use super::daemon_supervisor_parity_tests::{add_descriptor_only_worker, SupervisorFixture};
+use crate::modes::daemon::daemon_worker_client::{encode_private_frame, PrivateFrameDecoder};
 use crate::modes::daemon::worker_recovery_journal::{WorkerRecoveryJournal, WorkerRecoveryRecordInput};
 
 fn stopped_worker(fixture: &SupervisorFixture, id: &str) -> Arc<Worker> {
@@ -230,5 +231,205 @@ async fn core_supervisor_get_state_falls_back_when_worker_connection_is_dead() {
     let response = fixture.send(json!({"type":"get_state","id":"gs-dead-client","activeSessionId":"wedged-active"})).await;
     assert_eq!(response["success"], true, "{response}");
     assert_eq!(response["data"]["sessionId"], "wedged-root");
+    fixture.supervisor.stopped.cancel();
+}
+
+// ---------------------------------------------------------------------------
+// Audit S5/G2 (PR #168): get_state roster-fallback fidelity. The fallback
+// fires exactly when the worker cannot answer (saturation, dead socket), so
+// its queue placeholder must never read as an authoritative "no queued
+// work", and a worker that DOES answer must keep its authoritative
+// sessionActions through the supervisor's remap.
+// ---------------------------------------------------------------------------
+
+/// A scripted worker owning a real private socket: the supervisor sees a
+/// connected client it can forward `get_state` to, and the script decides
+/// whether that forward is answered or left to time out (saturation).
+struct GetStateWorker {
+    worker: Arc<Worker>,
+    _client: Arc<DaemonWorkerClient>,
+    commands: Arc<Mutex<Vec<Value>>>,
+    task: tokio::task::JoinHandle<()>,
+}
+
+impl Drop for GetStateWorker {
+    fn drop(&mut self) {
+        if let Some(client) = self.worker.client.lock().unwrap().as_ref() {
+            client.close_now();
+        }
+        self.task.abort();
+    }
+}
+
+async fn serve_get_state<S: AsyncRead + AsyncWrite + Unpin>(
+    mut socket: S,
+    answer: Value,
+    saturate: bool,
+    commands: Arc<Mutex<Vec<Value>>>,
+) {
+    let mut decoder = PrivateFrameDecoder::new();
+    let mut buffer = [0u8; 8192];
+    loop {
+        let count = match socket.read(&mut buffer).await {
+            Ok(0) => return,
+            Ok(count) => count,
+            Err(_) => return,
+        };
+        for frame in decoder.push(&buffer[..count]).unwrap() {
+            let command: Value = serde_json::from_slice(&frame.payload).unwrap();
+            commands.lock().unwrap().push(command.clone());
+            if command["type"].as_str() != Some("get_state") {
+                let response = json!({"type":"response","id":command["id"],"command":command["type"],"success":true,"data":null});
+                let frame = encode_private_frame(
+                    &json!({"kind":"outbound","outboundType":"response","requestId":command["id"],"payloadEncoding":"jsonl"}),
+                    response.to_string().as_bytes(),
+                ).unwrap();
+                socket.write_all(&frame).await.unwrap();
+                continue;
+            }
+            if saturate {
+                // The saturated worker: the request is accepted and never
+                // answered, so the supervisor's bounded 5s forward fails.
+                continue;
+            }
+            let response = json!({"type":"response","id":command["id"],"command":"get_state","success":true,"data":answer});
+            let frame = encode_private_frame(
+                &json!({"kind":"outbound","outboundType":"response","requestId":command["id"],"payloadEncoding":"jsonl"}),
+                response.to_string().as_bytes(),
+            ).unwrap();
+            socket.write_all(&frame).await.unwrap();
+        }
+    }
+}
+
+async fn get_state_worker(fixture: &SupervisorFixture, name: &str, answer: Value, saturate: bool) -> GetStateWorker {
+    let worker = add_descriptor_only_worker(fixture, name, name, &format!("token-{name}"), DAEMON_WORKER_LIFECYCLE_READY);
+    let summary = SessionSummary {
+        active_session_id: Some(name.to_string()),
+        id: name.to_string(),
+        session_id: format!("session-{name}"),
+        session_name: Some(format!("Name {name}")),
+        cwd: fixture.root.join("workspace").to_string_lossy().into_owned(),
+        lifecycle: "resident".to_string(),
+        activity: "streaming".to_string(),
+        is_streaming: true,
+        message_count: 4,
+        ..Default::default()
+    };
+    fixture.supervisor.write_roster_entry(worker_roster_entry_from_summary(&summary.roster_view()), Some(&worker), None);
+    let commands = Arc::new(Mutex::new(Vec::new()));
+    let captured = Arc::clone(&commands);
+    let answer_for_task = answer.clone();
+    #[cfg(windows)]
+    let (socket, task) = {
+        let socket = format!(r"\\.\pipe\optimus-getstate-worker-{}", uuid::Uuid::new_v4());
+        let server = tokio::net::windows::named_pipe::ServerOptions::new().first_pipe_instance(true).create(&socket).unwrap();
+        let task = tokio::spawn(async move {
+            server.connect().await.unwrap();
+            serve_get_state(server, answer_for_task, saturate, captured).await;
+        });
+        (socket, task)
+    };
+    #[cfg(unix)]
+    let (socket, task) = {
+        let socket = fixture.root.join(format!("{name}.sock")).to_string_lossy().into_owned();
+        let server = tokio::net::UnixListener::bind(&socket).unwrap();
+        let task = tokio::spawn(async move {
+            let (stream, _) = server.accept().await.unwrap();
+            serve_get_state(stream, answer_for_task, saturate, captured).await;
+        });
+        (socket, task)
+    };
+    let client = Arc::new(DaemonWorkerClient::new(&socket));
+    client.connect(1_000).await.unwrap();
+    worker.descriptor.lock().unwrap().socket_path = socket;
+    *worker.client.lock().unwrap() = Some(Arc::clone(&client));
+    GetStateWorker { worker, _client: client, commands, task }
+}
+
+/// The worker answered with real queued steering: the supervisor's remap must
+/// keep the authoritative sessionActions instead of zeroing them.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn core_supervisor_get_state_forward_preserves_worker_session_actions() {
+    let mut fixture = SupervisorFixture::new("core-get-state-authoritative").await;
+    let answer = json!({
+        "id": "queued-chat",
+        "lifecycle": "resident",
+        "activity": "streaming",
+        "isSessionActive": true,
+        "activeSessionId": "queued-chat",
+        "sessionId": "session-queued-chat",
+        "sessionName": "Queued Chat",
+        "cwd": fixture.root.join("workspace").to_string_lossy(),
+        "isStreaming": true,
+        "isCompacting": false,
+        "attachedClients": 1,
+        "messageCount": 9,
+        "sessionActions": {
+            "queuedCount": 2,
+            "steering": ["turn left"],
+            "followUps": [{"text": "then summarize"}],
+        },
+    });
+    let worker = get_state_worker(&fixture, "queued-chat", answer, false).await;
+    let response = fixture.send(json!({"type":"get_state","id":"gs-authoritative","activeSessionId":"queued-chat"})).await;
+    assert_eq!(response["success"], true, "{response}");
+    assert_eq!(response["data"]["sessionId"], "session-queued-chat");
+    assert_eq!(response["data"]["sessionActions"]["queuedCount"], 2, "{response}");
+    assert_eq!(response["data"]["sessionActions"]["steering"], json!(["turn left"]), "{response}");
+    assert_eq!(response["data"]["sessionActions"]["followUps"], json!([{"text": "then summarize"}]), "{response}");
+    assert!(response["data"].get("stale").is_none(), "an authoritative answer is never marked stale: {response}");
+    assert!(response["data"].get("fallback").is_none(), "an authoritative answer carries no fallback marker: {response}");
+    assert_eq!(worker.commands.lock().unwrap().len(), 1, "the worker answered exactly one get_state");
+    fixture.supervisor.stopped.cancel();
+}
+
+/// The saturated worker accepted the forward but never answered: after the
+/// bounded 5s wait the supervisor serves the roster view, explicitly marked
+/// stale, with the zeroed queue placeholder kept for shape parity.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn core_supervisor_get_state_saturated_fallback_is_marked_stale() {
+    let mut fixture = SupervisorFixture::new("core-get-state-saturated").await;
+    let answer = json!({"sessionId": "session-saturated"});
+    let worker = get_state_worker(&fixture, "saturated-chat", answer, true).await;
+    let started = std::time::Instant::now();
+    let response = fixture.send(json!({"type":"get_state","id":"gs-saturated","activeSessionId":"saturated-chat"})).await;
+    // The bounded forward must actually expire (5s) before the fallback runs.
+    assert!(started.elapsed() >= Duration::from_millis(4_500), "the saturated forward did not wait its bound: {:?}", started.elapsed());
+    assert_eq!(response["success"], true, "{response}");
+    assert_eq!(response["data"]["sessionId"], "session-saturated-chat");
+    assert_eq!(response["data"]["stale"], true, "the roster fallback must be explicitly stale: {response}");
+    assert_eq!(response["data"]["fallback"], "roster", "{response}");
+    assert_eq!(response["data"]["sessionActions"]["queuedCount"], 0, "the placeholder keeps the summary shape: {response}");
+    assert_eq!(response["data"]["sessionActions"]["steering"], json!([]), "{response}");
+    assert_eq!(response["data"]["sessionActions"]["followUps"], json!([]), "{response}");
+    let commands = worker.commands.lock().unwrap();
+    assert_eq!(commands.len(), 1, "the saturated worker received the forward: {commands:?}");
+    assert_eq!(commands[0]["type"], "get_state");
+    fixture.supervisor.stopped.cancel();
+}
+
+/// A worker with no live client skips the forward entirely; its roster
+/// fallback carries the same explicit stale marking.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn core_supervisor_get_state_disconnected_fallback_is_marked_stale() {
+    let mut fixture = SupervisorFixture::new("core-get-state-disconnected").await;
+    let worker = add_descriptor_only_worker(&fixture, "offline", "offline", "offline-token", DAEMON_WORKER_LIFECYCLE_READY);
+    let summary = SessionSummary {
+        active_session_id: Some("offline".into()),
+        id: "offline".into(),
+        session_id: "session-offline".into(),
+        session_name: Some("Offline Chat".into()),
+        cwd: fixture.root.join("workspace").to_string_lossy().into_owned(),
+        lifecycle: "live".into(),
+        activity: "idle".into(),
+        ..Default::default()
+    };
+    fixture.supervisor.write_roster_entry(worker_roster_entry_from_summary(&summary.roster_view()), Some(&worker), None);
+    let response = fixture.send(json!({"type":"get_state","id":"gs-offline","activeSessionId":"offline"})).await;
+    assert_eq!(response["success"], true, "{response}");
+    assert_eq!(response["data"]["sessionId"], "session-offline");
+    assert_eq!(response["data"]["stale"], true, "the roster fallback must be explicitly stale: {response}");
+    assert_eq!(response["data"]["fallback"], "roster", "{response}");
     fixture.supervisor.stopped.cancel();
 }
