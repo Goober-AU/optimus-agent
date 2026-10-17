@@ -79,13 +79,14 @@ pub const COMMAND_SPECS: &[CommandSpec] = &[
     },
     CommandSpec {
         path: &["shutdown"],
-        usage: "shutdown [--force] [--json]",
+        usage: "shutdown [--socket <path>] [--force] [--json]",
         summary: "Stop every agent and background service",
         description: Some(
-            "Without --force, an interactive confirmation is required. --force also kills unresponsive workers.",
+            "Without --force, an interactive confirmation is required. --socket targets only the selected daemon; without it, all background services are stopped.",
         ),
         options: Some(&[
-            "--force  Skip confirmation and kill unresponsive processes",
+            "--socket <path>  Stop only this daemon (--daemon-socket is an alias)",
+            "--force  Skip confirmation and force worker shutdown",
             "--json   Print JSON",
         ]),
         examples: None,

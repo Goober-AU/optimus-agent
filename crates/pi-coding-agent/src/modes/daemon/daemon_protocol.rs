@@ -83,8 +83,10 @@ pub const DAEMON_COMMAND_ENVELOPE_MIN_PROTOCOL_VERSION: u32 = 7;
 // clients can no longer write a preference the daemon never reads. The daemon
 // stops advertising occ2_communication (it described the pre-41 storage
 // semantics), so older clients see a visible warning instead of a silent no-op.
-pub const DAEMON_SCHEMA_REVISION: u32 = 41;
-pub const DAEMON_SCHEMA_ID: &str = "protocol-7-schema-41-occ-session-preferences";
+// Revision 42 adds capability-gated generationThroughput roster metadata.
+// Existing commands/events retain their compatibility floors; no startup dependency.
+pub const DAEMON_SCHEMA_REVISION: u32 = 42;
+pub const DAEMON_SCHEMA_ID: &str = "protocol-7-schema-42-generation-throughput";
 
 pub type DaemonProtocolName = String;
 pub type DaemonProtocolVersion = u32;
@@ -180,6 +182,8 @@ pub enum DaemonServerCapability {
     /// Daemon-owned per-chat OCC-2 preference get/set (occ_get_preferences /
     /// occ_set_preferences). Clients must check before sending them.
     OccSessionPreferences,
+    /// Optional own-session provider output/timing totals on roster rows.
+    GenerationThroughput,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -230,7 +234,7 @@ pub const DAEMON_SUPPORTED_CLIENT_CAPABILITIES: [DaemonClientCapability; 7] = [
 /// `DAEMON_DEFAULT_SERVER_CAPABILITIES`: the supported client list plus the
 /// server-only surfaces. `direct_peer_transport` and `agent_roster` are
 /// deliberately absent, exactly as in the TypeScript.
-pub const DAEMON_DEFAULT_SERVER_CAPABILITIES: [DaemonServerCapability; 31] = [
+pub const DAEMON_DEFAULT_SERVER_CAPABILITIES: [DaemonServerCapability; 32] = [
     DaemonServerCapability::AttachSnapshot,
     DaemonServerCapability::EventSequence,
     DaemonServerCapability::ExtensionUi,
@@ -262,6 +266,7 @@ pub const DAEMON_DEFAULT_SERVER_CAPABILITIES: [DaemonServerCapability; 31] = [
     DaemonServerCapability::ClangExecutionMode,
     DaemonServerCapability::AgentCommunicationActivity,
     DaemonServerCapability::OccSessionPreferences,
+    DaemonServerCapability::GenerationThroughput,
 ];
 
 /// `{ dev: number; ino: number }` on the peer transport ticket.
@@ -2155,6 +2160,8 @@ impl DaemonCommandCompatibility {
 
 /// `DAEMON_COMMAND_COMPATIBILITY`, verbatim from the TypeScript table
 /// (`satisfies Record<DaemonCommandName, DaemonCommandCompatibility>`).
+// Revision 42 adds no commands: generationThroughput is optional on existing
+// list/roster responses, preserving old-client/new-daemon compatibility.
 pub fn daemon_command_compatibility(command: &str) -> DaemonCommandCompatibility {
     use DaemonServerCapability as Capability;
     match command {
@@ -2802,7 +2809,8 @@ pub fn daemon_outbound_compatibility(outbound: &'static str) -> DaemonCommandCom
     use DaemonServerCapability as Capability;
     match outbound {
         "heartbeats_changed" => DaemonCommandCompatibility::capability(Capability::HeartbeatCatalog),
-        // communicationActivity is additive metadata, not a new event requirement.
+        // communicationActivity and generationThroughput are additive metadata,
+        // not new event requirements; consumers negotiate their capabilities.
         "roster_update" => DaemonCommandCompatibility::capability(Capability::AgentRoster),
         // Jev feature/usage metadata, including revision 37 memory, is additive; no new startup or event requirement.
         "response" | "extension_ui_request" => DaemonCommandCompatibility::legacy(),
@@ -3116,7 +3124,7 @@ mod tests {
 
     #[test]
     fn keeps_the_advertised_schema_identity() {
-        assert_eq!(DAEMON_SCHEMA_ID, format!("protocol-{DAEMON_PROTOCOL_VERSION}-schema-{DAEMON_SCHEMA_REVISION}-occ-session-preferences"));
+        assert_eq!(DAEMON_SCHEMA_ID, format!("protocol-{DAEMON_PROTOCOL_VERSION}-schema-{DAEMON_SCHEMA_REVISION}-generation-throughput"));
     }
 
     #[test]
@@ -3137,6 +3145,27 @@ mod tests {
         );
         assert!(DAEMON_DEFAULT_SERVER_CAPABILITIES.contains(&DaemonServerCapability::HeartbeatCatalog));
         assert!(DAEMON_DEFAULT_SERVER_CAPABILITIES.contains(&DaemonServerCapability::HeartbeatManagement));
+    }
+
+    #[test]
+    fn generation_throughput_keeps_legacy_roster_and_startup_compatible() {
+        assert!(DAEMON_DEFAULT_SERVER_CAPABILITIES.contains(&DaemonServerCapability::GenerationThroughput));
+        let older = DaemonCompatibilityHello { protocol: daemon_protocol_info(), schema_revision: Some(41),
+            server_capabilities: Some(vec![DaemonServerCapability::AgentRoster]) };
+        for command in ["attach", "list", "roster_subscribe"] {
+            assert!(meets_daemon_command_compatibility(&older, &daemon_command_compatibility(command)));
+        }
+        assert!(meets_daemon_command_compatibility(&older, &daemon_outbound_compatibility("roster_update")));
+        let old_shape = serde_json::json!({"id":"p", "sessionId":"p", "lifecycle":"live", "activity":"idle",
+            "isSessionActive":true, "cwd":"/tmp", "isStreaming":false, "isCompacting":false,
+            "attachedClients":1, "messageCount":1});
+        let old: SessionSummary = serde_json::from_value(old_shape.clone()).unwrap();
+        assert!(!old.extra.contains_key("generationThroughput"));
+        let mut new_shape = old_shape;
+        new_shape["generationThroughput"] = serde_json::json!({"generation":"g", "outputTokens":100, "generationMs":2000, "responses":1});
+        let new: SessionSummary = serde_json::from_value(new_shape).unwrap();
+        assert_eq!(old.session_id, new.session_id);
+        assert_eq!(new.roster_view().extra["generationThroughput"]["outputTokens"], 100);
     }
 
     #[test]

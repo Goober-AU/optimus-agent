@@ -486,12 +486,20 @@ pub fn summary_for_active_session(
         last_heard_from_at: None,
         worker_state: None,
         worker_pid: None,
-        extra: HashMap::from([(
-            "communicationActivity".into(),
-            serde_json::to_value(crate::core::occ::activity::from_admitted_messages(
-                &session.messages, &session.session_id, &state.event_generation,
-            )).expect("communication metadata serializes"),
-        )]),
+        extra: {
+            let mut extra = HashMap::from([(
+                "communicationActivity".into(),
+                serde_json::to_value(crate::core::occ::activity::from_admitted_messages(
+                    &session.messages, &session.session_id, &state.event_generation,
+                )).expect("communication metadata serializes"),
+            )]);
+            if let Some(snapshot) = crate::core::performance_monitor::throughput::snapshot(&session.session_id) {
+                if let Ok(value) = serde_json::to_value(snapshot) {
+                    extra.insert("generationThroughput".into(), value);
+                }
+            }
+            extra
+        },
     }
 }
 

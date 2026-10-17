@@ -38,8 +38,8 @@ use serde_json::{json, Value};
 
 #[test]
 fn revision_41_advertises_daemon_owned_occ_session_preferences() {
-    assert_eq!(DAEMON_SCHEMA_REVISION, 41);
-    assert_eq!(DAEMON_SCHEMA_ID, "protocol-7-schema-41-occ-session-preferences");
+    assert_eq!(DAEMON_SCHEMA_REVISION, 42);
+    assert_eq!(DAEMON_SCHEMA_ID, "protocol-7-schema-42-generation-throughput");
     assert!(DAEMON_DEFAULT_SERVER_CAPABILITIES.contains(&DaemonServerCapability::OccSessionPreferences));
     // The pre-41 capability described global-settings storage semantics, so it
     // is no longer advertised; the variant stays for parsing old hellos.
@@ -104,7 +104,7 @@ fn hello_frames_distinguish_the_storage_semantics_across_versions() {
             .collect::<Vec<_>>(),
     }))
     .expect("current daemon_hello frame parses");
-    assert_eq!(current.schema_revision, Some(41));
+    assert_eq!(current.schema_revision, Some(42));
     assert!(current.supports("occ_session_preferences"));
     assert!(!current.supports("occ2_communication"));
 }
@@ -521,7 +521,7 @@ fn daemon_owns_occ_preferences_across_chats_failures_and_restart() {
     let client = Arc::new(DaemonClient::create(&fixture.socket));
     client.connect(1000).await.unwrap();
     let hello = client.wait_for_hello(1000).await.unwrap();
-    assert_eq!(hello.schema_revision, Some(41), "the shipped daemon must advertise revision 41");
+    assert_eq!(hello.schema_revision, Some(42), "the shipped daemon must advertise revision 42");
     assert!(hello.supports("occ_session_preferences"));
     assert!(!hello.supports("occ2_communication"), "the pre-41 capability must not be advertised");
 

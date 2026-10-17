@@ -5,6 +5,9 @@
 //! other CLI modules use (`DaemonCommandIo` in cli/daemon-command.ts). Every
 //! callback mirrors exactly one Node call the TypeScript makes.
 
+#[path = "shutdown_options.rs"]
+mod shutdown_options;
+
 use indexmap::IndexSet;
 
 use crate::cli::args::{parse_args, INTERNAL_RUNTIME_COMMAND_MARKER};
@@ -231,13 +234,14 @@ async fn run_public_command(
 /// `normalizeLeadingDaemonSocketOption(args)`.
 fn normalize_leading_daemon_socket_option(args: &[String]) -> Vec<String> {
     let option = args.first();
-    if option.map(String::as_str) != Some("--daemon-socket") {
+    if !matches!(option.map(String::as_str), Some("--daemon-socket" | "--socket")) {
         return args.to_vec();
     }
     let socket_path = args.get(1);
     let command = args.get(2);
     if socket_path.is_none()
-        || !(command.map(String::as_str) == Some("stop") || command.map(String::as_str) == Some("rename"))
+        || !(command.map(String::as_str) == Some("stop") || command.map(String::as_str) == Some("rename")
+            || command.map(String::as_str) == Some("shutdown"))
     {
         return args.to_vec();
     }
@@ -390,12 +394,24 @@ async fn run_doctor(args: &[String], io: &PublicCommandIo<'_>) -> Result<PublicC
 
 /// `runShutdown(args)`.
 async fn run_shutdown(args: &[String], io: &PublicCommandIo<'_>) -> Result<PublicCommandResult, String> {
-    let options = match parse_boolean_options(args, &["--force", "--json"], "shutdown", io) {
-        Some(options) => options,
-        None => return Ok(HANDLED),
-    };
+    let options = shutdown_options::parse(args)?;
+    if let Some(socket) = options.socket {
+        if !options.force {
+            if options.json || io.stdin_is_tty != Some(true) {
+                return Err("Targeted shutdown requires confirmation in an interactive terminal. Use --force to skip confirmation.".into());
+            }
+            if !(io.prompt_yes_no)(&format!("Stop the daemon at {socket}? Its active work will be interrupted.")) {
+                (io.log)("Shutdown cancelled.");
+                return Ok(HANDLED);
+            }
+        }
+        let mut forwarded = vec!["--socket".to_string(), socket];
+        if options.force { forwarded.push("--force".into()); }
+        if options.json { forwarded.push("--json".into()); }
+        return run_internal_agent_command("shutdown", &forwarded, io).await;
+    }
     let ps_io = daemon_ps_io(io);
-    run_shutdown_all(options.contains("--json"), options.contains("--force"), &ps_io).await?;
+    run_shutdown_all(options.json, options.force, &ps_io).await?;
     Ok(HANDLED)
 }
 
@@ -1014,6 +1030,19 @@ mod tests {
             normalize_leading_daemon_socket_option(&strings(&["--daemon-socket"])),
             strings(&["--daemon-socket"])
         );
+    }
+
+    #[test]
+    fn shutdown_socket_routing_normalizes_leading_flags_without_execution() {
+        for flag in ["--socket", "--daemon-socket"] {
+            assert_eq!(normalize_leading_daemon_socket_option(&strings(&[flag, "/tmp/d.sock", "shutdown", "--force"])),
+                strings(&["shutdown", "--force", flag, "/tmp/d.sock"]));
+        }
+        let (harness, result) = run(&["shutdown", "--socket", "/never-contacted.sock"]);
+        assert!(result.handled);
+        assert!(harness.errors().iter().any(|line| line.contains("requires confirmation")));
+        let (harness, _) = run(&["shutdown", "--socket"]);
+        assert!(harness.errors().iter().any(|line| line.contains("requires a socket path")));
     }
 
     #[test]
