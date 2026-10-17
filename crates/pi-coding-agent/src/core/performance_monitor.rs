@@ -145,6 +145,9 @@ impl PerformanceMetricRecorder for LivePerformanceMetricRecorder {
     fn next_id(&self, scope: PerformanceMetricIdScope) -> String {
         format!("{scope:?}-{}", uuid::Uuid::new_v4())
     }
+    fn generation_progress(&self, attempt_id: &str, output_tokens: f64, elapsed_ms: f64) {
+        self.throughput.lock().unwrap_or_else(|e| e.into_inner()).progress(attempt_id, output_tokens, elapsed_ms);
+    }
     fn record(&self, event: PerformanceMetricEvent) {
         self.throughput.lock().unwrap_or_else(|e| e.into_inner()).record(&event);
         if !self.monitor.enabled().unwrap_or(false) { return; }

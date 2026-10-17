@@ -518,6 +518,8 @@ pub trait PerformanceMetricRecorder: Send + Sync {
     fn monotonic_now(&self) -> f64;
     fn next_id(&self, scope: PerformanceMetricIdScope) -> String;
     fn record(&self, event: PerformanceMetricEvent);
+    /// Content-free cumulative streaming estimate; optional and never persisted.
+    fn generation_progress(&self, _attempt_id: &str, _output_tokens: f64, _elapsed_ms: f64) {}
     fn flush(&self);
     fn close(&self);
 }

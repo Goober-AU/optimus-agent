@@ -136,6 +136,22 @@ fn serve_completion(mut stream: TcpStream, respond: fn(&Value) -> (Value, &'stat
             .map_err(|error| error.to_string())?;
         return Ok(body);
     }
+    if delta["content"] == "LIVE_TPS_FIXTURE" {
+        write!(stream, "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n")
+            .map_err(|error| error.to_string())?;
+        for _ in 0..16 {
+            let chunk = json!({"id":"fixture-live","object":"chat.completion.chunk","created":1,"model":"fixture-model",
+                "choices":[{"index":0,"delta":{"role":"assistant","content":"streamed tokens "},"finish_reason":null}]});
+            write!(stream, "data: {chunk}\n\n").map_err(|error| error.to_string())?;
+            stream.flush().map_err(|error| error.to_string())?;
+            thread::sleep(Duration::from_millis(250));
+        }
+        let end = json!({"id":"fixture-live","object":"chat.completion.chunk","created":1,"model":"fixture-model",
+            "choices":[{"index":0,"delta":{},"finish_reason":"stop"}],
+            "usage":{"prompt_tokens":10,"completion_tokens":37,"total_tokens":47}});
+        write!(stream, "data: {end}\n\ndata: [DONE]\n\n").map_err(|error| error.to_string())?;
+        return Ok(body);
+    }
     let text = json!({"id":"fixture-1","object":"chat.completion.chunk","created":1,"model":"fixture-model","choices":[{"index":0,"delta":delta,"finish_reason":null}]});
     let end = json!({"id":"fixture-1","object":"chat.completion.chunk","created":1,"model":"fixture-model","choices":[{"index":0,"delta":{},"finish_reason":finish}],"usage":{"prompt_tokens":10,"completion_tokens":4,"total_tokens":14}});
     let response = format!("data: {text}\n\ndata: {end}\n\ndata: [DONE]\n\n");
@@ -892,6 +908,74 @@ fn communication_activity_reaches_the_supervisor_roster_after_real_delivery() {
         assert!(ids.iter().all(|id| deliveries.iter().any(|delivery| delivery["id"] == *id)));
         client.close().await;
     });
+    drop(daemon);
+    model.finish();
+}
+
+#[test]
+fn throughput_reaches_ui_roster_repeatedly_before_stream_finishes() {
+    let mut model = LocalModel::with_response(|_| (json!({"role":"assistant", "content":"LIVE_TPS_FIXTURE"}), "stop"));
+    let fixture = PrivateCli::new(&format!("http://{}/v1", model.address));
+    let mut daemon = OwnedDaemon {
+        process: fixture.spawn("live-tps-daemon", &["--mode", "daemon", "--offline"]),
+        socket: fixture.socket.clone(),
+    };
+    wait_for_daemon(&mut daemon);
+    tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+        let client = DaemonClient::create(&fixture.socket);
+        client.connect(1000).await.unwrap();
+        client.wait_for_hello(1000).await.unwrap();
+        async fn request(client: &Arc<DaemonClient>, body: Value) -> Value {
+            let response = client.request(body.as_object().unwrap().clone(), Some(15_000), Default::default()).await.unwrap();
+            assert!(response.success, "{:?}", response.error);
+            response.data.unwrap_or(Value::Null)
+        }
+        let created = request(&client, json!({"type":"create", "config":{
+            "cwd":fixture.workspace, "agentDir":fixture.agent_dir, "sessionDir":fixture.root.path().join("sessions"),
+            "provider":"local-cli-fixture", "model":"fixture-model", "noSkills":true, "noExtensions":true
+        }})).await;
+        let active = created.get("activeSessionId").or_else(|| created.get("id")).unwrap().as_str().unwrap().to_string();
+        request(&client, json!({"type":"prompt_and_wait","activeSessionId":active,"message":"/mode direct"})).await;
+        let prompt_client = DaemonClient::create(&fixture.socket);
+        prompt_client.connect(1000).await.unwrap();
+        prompt_client.wait_for_hello(1000).await.unwrap();
+        let prompt_active = active.clone();
+        let prompt = tokio::spawn(async move {
+            let result = request(&prompt_client, json!({"type":"prompt_and_wait","activeSessionId":prompt_active,"message":"Stream the fixture."})).await;
+            prompt_client.close().await;
+            result
+        });
+        let deadline = Instant::now() + Duration::from_secs(15);
+        let mut live_counts = Vec::new();
+        loop {
+            let roster = request(&client, json!({"type":"roster_subscribe"})).await;
+            if let Some(row) = roster["roster"].as_array().unwrap().iter().map(|row| &row["summary"])
+                .find(|row| row["activeSessionId"] == active) {
+                // Exercise the same intermediate serde projection that dropped this field.
+                let ui: pi_coding_agent::modes::agents_view::agents_view_state::SessionSummary = serde_json::from_value(
+                    pi_coding_agent::modes::agents_view::native_wire::normalize_browser_numbers(row.clone())).unwrap();
+                let sample = ui.generation_throughput.unwrap_or(Value::Null);
+                if sample["active"] == true && !prompt.is_finished() {
+                    assert_eq!(sample["responses"], 0);
+                    assert_eq!(sample["estimated"], true);
+                    assert!(sample["generationMs"].as_f64().unwrap() > 0.0);
+                    let count = sample["outputTokens"].as_f64().unwrap();
+                    if live_counts.last() != Some(&count) { live_counts.push(count); }
+                } else if sample["responses"] == 1 {
+                    assert_eq!(sample["outputTokens"], 37.0, "provider usage replaces the estimate");
+                    assert_eq!(sample["estimated"], false);
+                    break;
+                }
+            }
+            assert!(Instant::now() < deadline, "no final throughput sample; live counts: {live_counts:?}");
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+        assert!(live_counts.len() >= 3, "expected repeated live updates: {live_counts:?}");
+        assert!(live_counts.windows(2).all(|pair| pair[1] > pair[0]));
+        prompt.await.unwrap();
+        client.close().await;
+    });
+    assert!(!fixture.agent_dir.join("performance-metrics").exists());
     drop(daemon);
     model.finish();
 }
