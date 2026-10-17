@@ -1,8 +1,16 @@
 //! Source intent, schema-1 delivery receipts, and retry integrity without a model.
-use pi_coding_agent::core::memory::evidence::hash;
+use std::path::Path;
+use std::sync::{Arc, Mutex};
+
+use pi_coding_agent::core::memory::evidence::{hash, Evidence};
+use pi_coding_agent::core::memory::jobs::{ExtractionResult, ImportJobStatus, MemoryExtractor};
+use pi_coding_agent::core::memory::project::ProjectIdentity;
+use pi_coding_agent::core::memory::search::{recall_memory, MemoryFreshness, MemoryHit, MemoryScope};
 use pi_coding_agent::core::memory::service::MemoryService;
-use pi_coding_agent::core::memory::store::{empty_document, ApplyOptions};
-use pi_coding_agent::core::refinement::refinement::normalize_refinement_proposal;
+use pi_coding_agent::core::memory::store::{
+    default_memory_settings, empty_document, ApplyOptions, MemoryStore,
+};
+use pi_coding_agent::core::refinement::refinement::{normalize_refinement_proposal, HarnessEntry};
 use serde_json::{json, Value};
 use tempfile::TempDir;
 
@@ -587,4 +595,338 @@ async fn omitted_store_sources_keep_import_style_per_edit_evidence_and_legacy_re
     );
     assert_eq!(fixture.bytes(), before);
     assert_eq!(fixture.service.store.read().unwrap().memory.revision, 1);
+}
+
+// ---------------------------------------------------------------------------
+// Wave-2 fix coverage: import-apply recovery (SB-02), corrupt host identity
+// (SB-03), settings diagnostics (SB-08), and recall span truncation (SB-04).
+// ---------------------------------------------------------------------------
+
+fn write_session(root: &Path, name: &str, content: &str) -> String {
+    std::fs::create_dir_all(root).unwrap();
+    let path = root.join(name);
+    let line = json!({
+        "type": "message", "id": "row_1",
+        "message": {"role": "user", "content": content, "timestamp": 1}
+    });
+    std::fs::write(&path, line.to_string()).unwrap();
+    path.to_string_lossy().to_string()
+}
+
+fn create_extractor(id: &str, content: &str) -> MemoryExtractor {
+    let id = id.to_string();
+    let content = content.to_string();
+    Arc::new(move |_records: Vec<Evidence>| {
+        let id = id.clone();
+        let content = content.clone();
+        Box::pin(async move {
+            Ok(ExtractionResult {
+                proposal: normalize_refinement_proposal(&json!({
+                    "summary": "Import", "rationale": "Synthetic fixture",
+                    "expectedOutcome": "Recover selected knowledge",
+                    "edits": [{"action": "create", "kind": "memory", "id": id,
+                        "title": "Shared topic", "content": content}]
+                })),
+                input: 1.0,
+                output: 1.0,
+            })
+        })
+    })
+}
+
+fn apply_options(event_id: &str, expected_revision: i64) -> ApplyOptions {
+    ApplyOptions {
+        event_id: event_id.to_string(),
+        expected_revision,
+        sources: None,
+        host: false,
+        automatic: false,
+        replace_metadata: false,
+    }
+}
+
+#[tokio::test]
+async fn import_apply_recovers_after_a_revision_bump_and_a_competing_import() {
+    let root = tempfile::tempdir().unwrap();
+    let project = root.path().join("project");
+    std::fs::create_dir_all(&project).unwrap();
+    let service = MemoryService::new(
+        &project.to_string_lossy(),
+        &root.path().join("agent").to_string_lossy(),
+        None,
+    )
+    .unwrap();
+    let store = service.store.clone();
+    let jobs = service.jobs.clone();
+
+    // An unrelated memory seeds the store at revision 1.
+    let seed = normalize_refinement_proposal(&json!({
+        "summary": "Seed", "rationale": "Synthetic fixture",
+        "expectedOutcome": "o",
+        "edits": [{"action": "create", "kind": "memory", "id": "seed_note",
+            "title": "Seed", "content": "Unrelated seed content"}]
+    }));
+    store
+        .apply(&seed, apply_options("seed_event_1", 0))
+        .await
+        .unwrap();
+    assert_eq!(store.read().unwrap().memory.revision, 1);
+
+    // Two imports whose extractors emit the same content under different ids.
+    const SHARED: &str = "Shared deployment checklist for the release";
+    let source_a = write_session(&root.path().join("sources-a"), "session.jsonl", "alpha session");
+    let source_b = write_session(&root.path().join("sources-b"), "session.jsonl", "beta session");
+    let job_a = jobs.prepare(&source_a).await.unwrap();
+    let job_b = jobs.prepare(&source_b).await.unwrap();
+    assert_ne!(job_a.id, job_b.id);
+    jobs.run(&job_a.id, create_extractor("alpha_note", SHARED), None)
+        .await
+        .unwrap();
+    jobs.run(&job_b.id, create_extractor("beta_note", SHARED), None)
+        .await
+        .unwrap();
+    assert_eq!(jobs.get(&job_b.id).unwrap().status, ImportJobStatus::Preview);
+
+    // The first apply of the second import fails on a stale revision after its
+    // accepted proposal was built and persisted.
+    let stale = jobs.apply(&job_b.id, 0).await.unwrap_err();
+    assert_eq!(
+        stale,
+        "Memory changed; review current revision before applying"
+    );
+    // The failure must not freeze the persisted proposal: retrying has to be
+    // able to re-run the build-time skip filters against current state.
+    let persisted = jobs.get(&job_b.id).unwrap();
+    assert_eq!(persisted.status, ImportJobStatus::Preview);
+    assert!(persisted.accepted_proposal.is_none());
+
+    // The competing import lands the shared content under its own id.
+    jobs.apply(&job_a.id, 1).await.unwrap();
+    let doc = store.read().unwrap();
+    assert_eq!(doc.entries["memory"]["alpha_note"].content, SHARED);
+    assert_eq!(doc.memory.revision, 2);
+
+    // Retrying the poisoned import re-reconciles instead of failing forever
+    // with "Exact duplicate": the build-time filter skips the landed content.
+    let retried = jobs.apply(&job_b.id, 2).await.unwrap();
+    assert_eq!(retried.status, ImportJobStatus::Applied);
+    let doc = store.read().unwrap();
+    assert!(doc.entries["memory"].get("beta_note").is_none());
+    assert_eq!(doc.entries["memory"]["alpha_note"].content, SHARED);
+    assert_eq!(doc.memory.revision, 3);
+
+    // The store-level duplicate guard still rejects a genuinely duplicate
+    // create that reaches it under a different id.
+    let duplicate = normalize_refinement_proposal(&json!({
+        "summary": "Duplicate", "rationale": "Synthetic fixture",
+        "expectedOutcome": "o",
+        "edits": [{"action": "create", "kind": "memory", "id": "gamma_note",
+            "title": "Gamma", "content": SHARED}]
+    }));
+    let error = store
+        .apply(&duplicate, apply_options("duplicate_event_1", 3))
+        .await
+        .unwrap_err();
+    assert_eq!(error, "Exact duplicate: alpha_note");
+}
+
+#[tokio::test]
+async fn corrupt_host_id_is_quarantined_and_reminted_without_losing_memories() {
+    let root = tempfile::tempdir().unwrap();
+    let agent_dir = root.path().join("agent");
+    let project_dir = root.path().join("project");
+    std::fs::create_dir_all(&project_dir).unwrap();
+    let identity = |id: &str| ProjectIdentity {
+        id: id.to_string(),
+        root: project_dir.to_string_lossy().to_string(),
+        aliases: Vec::new(),
+    };
+    let store = MemoryStore::new(&agent_dir.to_string_lossy(), identity("project_recovery"))
+        .expect("initial store");
+    let original_host_id = store.host_id.clone();
+    let survivor = normalize_refinement_proposal(&json!({
+        "summary": "Survivor", "rationale": "Synthetic fixture",
+        "expectedOutcome": "o",
+        "edits": [{"action": "create", "kind": "memory", "id": "survivor",
+            "title": "Survivor", "content": "Memory that must survive host-id recovery"}]
+    }));
+    store
+        .apply(&survivor, apply_options("survivor_event_1", 0))
+        .await
+        .unwrap();
+    drop(store);
+
+    let memory_dir = agent_dir.join("memory");
+    let host_path = memory_dir.join("host-id.json");
+    let quarantined = || -> Vec<std::fs::DirEntry> {
+        std::fs::read_dir(&memory_dir)
+            .unwrap()
+            .flatten()
+            .filter(|entry| {
+                entry
+                    .file_name()
+                    .to_string_lossy()
+                    .starts_with("host-id.corrupt-")
+            })
+            .collect()
+    };
+
+    // A corrupt (unparseable) host identity used to brick every construction.
+    let garbage = b"not a valid host identity".to_vec();
+    std::fs::write(&host_path, &garbage).unwrap();
+    let recovered = MemoryStore::new(&agent_dir.to_string_lossy(), identity("project_recovery"))
+        .expect("recovers from garbage bytes");
+    assert_ne!(recovered.host_id, original_host_id);
+    let backups = quarantined();
+    assert_eq!(backups.len(), 1, "the corrupt bytes are preserved aside");
+    assert_eq!(std::fs::read(backups[0].path()).unwrap(), garbage);
+    let active: Value =
+        serde_json::from_slice(&std::fs::read(&host_path).unwrap()).unwrap();
+    assert_eq!(active["id"], json!(recovered.host_id));
+    assert_eq!(
+        recovered.read().unwrap().entries["memory"]["survivor"].content,
+        "Memory that must survive host-id recovery"
+    );
+
+    // A parseable file with a non-UUID id is corrupt too, and a second
+    // corruption quarantines under its own content address.
+    let bad_uuid = br#"{"id": "definitely-not-a-uuid"}"#.to_vec();
+    std::fs::write(&host_path, &bad_uuid).unwrap();
+    let reminted = MemoryStore::new(&agent_dir.to_string_lossy(), identity("project_recovery"))
+        .expect("recovers from an invalid identity");
+    assert_ne!(reminted.host_id, recovered.host_id);
+    let backups = quarantined();
+    assert_eq!(backups.len(), 2, "each corruption is quarantined once");
+    let contents: Vec<Vec<u8>> = backups
+        .iter()
+        .map(|entry| std::fs::read(entry.path()).unwrap())
+        .collect();
+    assert!(contents.contains(&garbage));
+    assert!(contents.contains(&bad_uuid));
+
+    // A clean reconstruction reuses the re-minted identity and stays stable.
+    let stable = MemoryStore::new(&agent_dir.to_string_lossy(), identity("project_recovery"))
+        .unwrap();
+    assert_eq!(stable.host_id, reminted.host_id);
+    assert_eq!(quarantined().len(), 2);
+    assert_eq!(
+        stable.read().unwrap().entries["memory"]["survivor"].content,
+        "Memory that must survive host-id recovery"
+    );
+}
+
+#[test]
+fn invalid_memory_settings_fall_back_to_defaults_and_are_logged() {
+    let captured: Arc<Mutex<Vec<Value>>> = Arc::new(Mutex::new(Vec::new()));
+    let sink_target = captured.clone();
+    pi_ai::log::set_log_sink(Some(Box::new(move |entry| {
+        sink_target.lock().unwrap().push(entry.clone());
+    })));
+
+    let root = tempfile::tempdir().unwrap();
+    let agent_dir = root.path().join("agent");
+    let project_dir = root.path().join("project");
+    std::fs::create_dir_all(&project_dir).unwrap();
+    let store = MemoryStore::new(
+        &agent_dir.to_string_lossy(),
+        ProjectIdentity {
+            id: "project_settings".to_string(),
+            root: project_dir.to_string_lossy().to_string(),
+            aliases: Vec::new(),
+        },
+    )
+    .unwrap();
+
+    // Global file: valid JSON, out-of-range memory value.
+    std::fs::write(
+        &agent_dir.join("settings.json"),
+        r#"{"memory": {"maxRecallEntries": 9999}}"#,
+    )
+    .unwrap();
+    // Local file: unparseable JSON.
+    std::fs::create_dir_all(&store.dir).unwrap();
+    std::fs::write(Path::new(&store.dir).join("settings.json"), "{oops").unwrap();
+
+    // The load still succeeds with the affected keys at their defaults.
+    let settings = store.settings();
+    let defaults = default_memory_settings();
+    assert_eq!(settings.max_recall_entries, defaults.max_recall_entries);
+    assert_eq!(settings.max_recall_chars, defaults.max_recall_chars);
+    assert_eq!(settings.recall, defaults.recall);
+
+    // Both silent fallbacks are recorded as diagnostics.
+    let entries = captured.lock().unwrap().clone();
+    let messages: Vec<String> = entries
+        .iter()
+        .filter(|entry| entry["component"] == json!("coding-agent.memory-store"))
+        .map(|entry| entry["msg"].as_str().unwrap_or_default().to_string())
+        .collect();
+    assert!(
+        messages
+            .iter()
+            .any(|msg| msg.contains("invalid content of the global memory settings")),
+        "global invalid-value fallback is logged: {messages:?}"
+    );
+    assert!(
+        messages
+            .iter()
+            .any(|msg| msg.contains("unreadable file of the project memory settings")),
+        "local unparseable fallback is logged: {messages:?}"
+    );
+    let details: Vec<&Value> = entries
+        .iter()
+        .filter(|entry| entry["component"] == json!("coding-agent.memory-store"))
+        .collect();
+    assert!(details
+        .iter()
+        .any(|entry| entry["error"].as_str().unwrap_or_default().contains("Invalid maxRecallEntries")));
+
+    pi_ai::log::set_log_sink(None);
+}
+
+#[test]
+fn recall_source_span_truncation_is_marked() {
+    let settings = default_memory_settings();
+    let hit = |span: &str| {
+        let entry: HarnessEntry = serde_json::from_value(json!({
+            "id": "move", "kind": "memory", "title": "Relocation",
+            "content": "We relocated to a new place.", "path": "general",
+            "reference": {}, "arguments": {},
+            "metadata": {"sourceSpan": span},
+            "source": "refine", "created_at": "2026-01-01T00:00:00.000Z",
+            "updated_at": "2026-01-01T00:00:00.000Z", "version": 1
+        }))
+        .unwrap();
+        MemoryHit {
+            id: "move".to_string(),
+            scope: MemoryScope::Global,
+            entry,
+            score: 1.0,
+            matched: vec!["relocated".to_string()],
+            freshness: MemoryFreshness::Current,
+            sources: Vec::new(),
+        }
+    };
+
+    // A 400-char stored span renders 200 chars plus an explicit marker.
+    let long = "k".repeat(400);
+    let recall = recall_memory(std::slice::from_ref(&hit(&long)), &settings, None);
+    let start = recall.text.find("Source: ").expect("rendered source span");
+    let rendered = &recall.text[start..];
+    assert_eq!(
+        rendered,
+        &format!(
+            "Source: {} [truncated; inspect source]",
+            "k".repeat(200)
+        ),
+        "the cut is exactly 200 chars and carries the marker"
+    );
+
+    // A span that fits is rendered verbatim without any marker.
+    let short = "short verbatim turn";
+    let recall = recall_memory(std::slice::from_ref(&hit(short)), &settings, None);
+    let start = recall.text.find("Source: ").expect("rendered source span");
+    let rendered = &recall.text[start..];
+    assert_eq!(rendered, "Source: short verbatim turn");
+    assert!(!recall.text.contains("[truncated; inspect source]"));
 }

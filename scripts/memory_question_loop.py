@@ -157,19 +157,25 @@ def normalize_judge_profile(value: str) -> str:
     return "default"
 
 
-# manifest settings that change the INGESTED STORE (type-B cache-key inputs)
+# manifest settings that change the INGESTED STORE (type-B cache-key inputs).
+# personaLayer/personaSnapshotChars regenerate the persona snapshot at
+# import-apply time, so a warm type-B cache is only valid when they match.
 INGEST_AFFECTING_KEYS = (
     "importInstructions", "maxExtractionTokens", "maxImportChunkChars",
     "recallProspectiveIndex", "recallSourceSpans", "lme2ProcedureNotes",
     "captureAxtreeMaxChars", "evidenceTimestamps", "memoryLearning",
+    "personaLayer", "personaSnapshotChars",
 )
-# settings that only affect the read/answer path (never in the type-B key)
+# settings that only affect the read/answer path (never in the type-B key).
+# recallFusion/recallBm25 act at recall time; lmev2SpanVerify runs before the
+# question prompt is assembled and never writes the store.
 READ_AFFECTING_KEYS = (
     "recallOn", "recallQueryDistillation", "recallRerank", "recallRerankCandidates",
     "recallRerankWithContent", "recallRerankContentChars",
     "recallQueryExtract", "recallQueryStemming", "recallQueryExpansion", "recallQueryExpansionDraws",
     "maxRecallChars", "maxRecallEntries", "answerInstruction", "answerMaxTokens",
     "answerThinkingLevel", "questionTimeoutS", "disableTools", "autoRefine",
+    "recallFusion", "recallBm25", "lmev2SpanVerify",
 )
 
 EXIT_OK, EXIT_CONTROLLER, EXIT_INCORRECT, EXIT_FLAGGED = 0, 2, 3, 4
@@ -583,7 +589,34 @@ def resolve_base_settings(entry: dict, manifest_dirs, base_settings_file: str | 
         f"{entry.get('source_run')})")
 
 
+def validate_memory_settings_values(settings: dict) -> None:
+    """Fail fast on invalid values for the newer memory settings.
+
+    Types and ranges mirror the driver's ManifestSettings and the store's
+    validate_settings limits (crates/pi-coding-agent/src/core/memory/store.rs).
+    The store silently reverts an invalid settings.json value to its default,
+    so an invalid override must stop here instead of quietly not applying.
+    """
+    fusion = settings.get("recallFusion")
+    if fusion is not None and not (isinstance(fusion, str) and fusion in ("off", "rrf")):
+        raise ControllerError('recallFusion must be "off" or "rrf"')
+    for key in ("recallBm25", "personaLayer", "lmev2SpanVerify"):
+        if settings.get(key) is not None and not isinstance(settings[key], bool):
+            raise ControllerError(f"{key} must be a boolean")
+    chars = settings.get("personaSnapshotChars")
+    if chars is not None and (isinstance(chars, bool) or not isinstance(chars, int)
+                              or not 512 <= chars <= 4000):
+        raise ControllerError("personaSnapshotChars must be an integer in 512..4000")
+
+
 def merge_settings(base: dict, overrides: dict | None) -> dict:
+    """Merge manifest settings overrides over the baseline block.
+
+    The whitelist is the driver's ManifestSettings vocabulary (memory_bench.rs)
+    plus the controller-only keys. The store-level personaSupersession pass is
+    deliberately NOT accepted: the driver has no such manifest field, so the
+    key would be silently ignored instead of applied.
+    """
     settings = dict(base)
     settings.pop("__source_manifest__", None)
     if overrides:
@@ -595,6 +628,7 @@ def merge_settings(base: dict, overrides: dict | None) -> dict:
         if unknown:
             raise ControllerError(f"unknown manifest settings keys: {sorted(unknown)}")
         settings.update(overrides)
+    validate_memory_settings_values(settings)
     return settings
 
 

@@ -572,7 +572,8 @@ impl MemoryJobs {
             )?;
         }
         let proposal = job.accepted_proposal.clone().unwrap();
-        self.store
+        if let Err(error) = self
+            .store
             .apply(
                 &proposal,
                 super::store::ApplyOptions {
@@ -584,7 +585,26 @@ impl MemoryJobs {
                     replace_metadata: false,
                 },
             )
-            .await?;
+            .await
+        {
+            // A failed apply leaves the persisted accepted proposal stale: its
+            // build-time skip filters ran against an older store, so a competing
+            // import landing the same content in between would make every retry
+            // fail forever with "Exact duplicate". Drop the persisted proposal
+            // so the next apply rebuilds it from the chunks against current
+            // state. Crash retries of a successful apply are unaffected: the
+            // store replays the event receipt (Ok) before this branch runs.
+            job.accepted_proposal = None;
+            if let Err(drop_error) = write_json(
+                &self.path(id)?,
+                &serde_json::to_value(&job).map_err(|error| error.to_string())?,
+            ) {
+                return Err(format!(
+                    "{error}; clearing the accepted proposal for retry also failed: {drop_error}"
+                ));
+            }
+            return Err(error);
+        }
         job.status = ImportJobStatus::Applied;
         write_json(
             &self.path(id)?,

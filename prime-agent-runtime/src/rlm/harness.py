@@ -35,6 +35,10 @@ _DEFAULT_HARNESS_DIR_NAME = "harness"
 # Recovery copies of unparsable state live beside the state file, named by content
 # hash so a repeat quarantine of identical bytes is idempotent.
 _CORRUPT_STATE_PREFIX = "harness_state.corrupt-"
+# Fragments load() refuses to parse (malformed entries, refinement events, or
+# non-object containers) are preserved beside the state file before a rewrite
+# deletes them, named by the dropped payload's content hash for idempotence.
+_DROPPED_STATE_PREFIX = "harness_state.dropped-"
 # Transient Windows rename retries, mirroring WIN32_RENAME_ATTEMPTS in
 # crates/pi-coding-agent/src/utils/atomic_file.rs.
 _WIN32_RENAME_ATTEMPTS = 5
@@ -306,6 +310,9 @@ class HarnessState:
         # The bytes we actually read, not the mtime of a later filesystem probe.
         self._loaded_generation: str | None = None
         self._needs_reload = False
+        # On-disk fragments the last load() refused to parse; quarantined by
+        # the next save instead of being silently deleted from the store.
+        self._dropped: list[dict[str, Any]] = []
         self.load()
 
     def _ensure_local_writable(self) -> None:
@@ -387,6 +394,8 @@ class HarnessState:
 
     def load(self) -> "HarnessState":
         self._needs_reload = False
+        # The dropped-fragment list always describes the data being loaded now.
+        self._dropped = []
         if self.file_path is None:
             self._loaded_mtime = None
             self._loaded_generation = None
@@ -423,64 +432,96 @@ class HarnessState:
 
         entries: dict[HarnessKind, dict[str, HarnessEntry]] = {kind: {} for kind in _KINDS}
         raw_entries = data.get("entries", {})
-        if isinstance(raw_entries, dict):
-            for kind in _KINDS:
-                raw_kind_entries = raw_entries.get(kind, {})
-                if not isinstance(raw_kind_entries, dict):
+        if not isinstance(raw_entries, dict):
+            self._record_dropped("entries", raw_entries)
+            raw_entries = {}
+        for kind in raw_entries:
+            if kind not in _KINDS:
+                # Unknown kind buckets are never read; remember them so the
+                # next save cannot delete them silently.
+                self._record_dropped(f"kind:{kind}", raw_entries[kind])
+        for kind in _KINDS:
+            raw_kind_entries = raw_entries.get(kind, {})
+            if not isinstance(raw_kind_entries, dict):
+                self._record_dropped(f"kind:{kind}", raw_kind_entries)
+                continue
+            for entry_id, raw_entry in raw_kind_entries.items():
+                if not isinstance(raw_entry, dict):
+                    self._record_dropped(f"entry:{kind}:{entry_id}", raw_entry)
                     continue
-                for entry_id, raw_entry in raw_kind_entries.items():
-                    if isinstance(raw_entry, dict):
-                        entry_data = {key: value for key, value in raw_entry.items() if key in _ENTRY_FIELDS}
-                        entry_data["id"] = str(entry_id)
-                        entry_data["kind"] = kind
-                        if not isinstance(entry_data.get("title"), str) or not isinstance(
-                            entry_data.get("content"), str
-                        ):
-                            continue
-                        if not isinstance(entry_data.get("path"), str):
-                            entry_data["path"] = "general"
-                        if entry_data.get("scope") not in ("local", "global"):
-                            entry_data["scope"] = self.scope
-                        if not isinstance(entry_data.get("source"), str):
-                            entry_data["source"] = "agent"
-                        version = entry_data.get("version", 1)
-                        if isinstance(version, str):
-                            try:
-                                version = int(version)
-                            except ValueError:
-                                version = 1
-                        if not isinstance(version, int):
-                            version = 1
-                        entry_data["version"] = version
-                        if not isinstance(entry_data.get("reference"), dict):
-                            entry_data["reference"] = {}
-                        if not isinstance(entry_data.get("arguments"), dict):
-                            entry_data["arguments"] = {}
-                        if not isinstance(entry_data.get("metadata"), dict):
-                            entry_data["metadata"] = {}
-                        entries[kind][str(entry_id)] = HarnessEntry(**entry_data)
+                entry_data = {key: value for key, value in raw_entry.items() if key in _ENTRY_FIELDS}
+                entry_data["id"] = str(entry_id)
+                entry_data["kind"] = kind
+                if not isinstance(entry_data.get("title"), str) or not isinstance(
+                    entry_data.get("content"), str
+                ):
+                    # Malformed entries stay unloaded, but their raw form is
+                    # remembered so the next save quarantines them instead of
+                    # persisting a silent deletion.
+                    self._record_dropped(f"entry:{kind}:{entry_id}", raw_entry)
+                    continue
+                if not isinstance(entry_data.get("path"), str):
+                    entry_data["path"] = "general"
+                if entry_data.get("scope") not in ("local", "global"):
+                    entry_data["scope"] = self.scope
+                if not isinstance(entry_data.get("source"), str):
+                    entry_data["source"] = "agent"
+                version = entry_data.get("version", 1)
+                if isinstance(version, str):
+                    try:
+                        version = int(version)
+                    except ValueError:
+                        version = 1
+                if not isinstance(version, int):
+                    version = 1
+                entry_data["version"] = version
+                if not isinstance(entry_data.get("reference"), dict):
+                    entry_data["reference"] = {}
+                if not isinstance(entry_data.get("arguments"), dict):
+                    entry_data["arguments"] = {}
+                if not isinstance(entry_data.get("metadata"), dict):
+                    entry_data["metadata"] = {}
+                entries[kind][str(entry_id)] = HarnessEntry(**entry_data)
         self.entries = entries
 
         self.refinements = []
         raw_refinements = data.get("refinements", [])
-        if isinstance(raw_refinements, list):
-            for raw_event in raw_refinements:
-                if isinstance(raw_event, dict):
-                    event_data = {key: value for key, value in raw_event.items() if key in _REFINEMENT_FIELDS}
-                    if not isinstance(event_data.get("id"), str) or not isinstance(
-                        event_data.get("trigger"), str
-                    ):
-                        continue
-                    changes = event_data.get("changes")
-                    if isinstance(changes, str):
-                        event_data["changes"] = [changes]
-                    elif isinstance(changes, list):
-                        event_data["changes"] = [str(change) for change in changes]
-                    elif not isinstance(changes, list):
-                        continue
-                    self.refinements.append(RefinementEvent(**event_data))
+        if not isinstance(raw_refinements, list):
+            self._record_dropped("refinements", raw_refinements)
+            raw_refinements = []
+        for index, raw_event in enumerate(raw_refinements):
+            if not isinstance(raw_event, dict):
+                self._record_dropped(f"refinement:{index}", raw_event)
+                continue
+            event_data = {key: value for key, value in raw_event.items() if key in _REFINEMENT_FIELDS}
+            if not isinstance(event_data.get("id"), str) or not isinstance(
+                event_data.get("trigger"), str
+            ):
+                self._record_dropped(f"refinement:{index}", raw_event)
+                continue
+            changes = event_data.get("changes")
+            if isinstance(changes, str):
+                event_data["changes"] = [changes]
+            elif isinstance(changes, list):
+                event_data["changes"] = [str(change) for change in changes]
+            elif not isinstance(changes, list):
+                self._record_dropped(f"refinement:{index}", raw_event)
+                continue
+            self.refinements.append(RefinementEvent(**event_data))
         self._loaded_mtime = mtime
         return self
+
+    def _record_dropped(self, where: str, raw: Any) -> None:
+        """Remember an on-disk fragment load() refuses to parse.
+
+        Only truthy fragments are recorded: null, empty, or false placeholders
+        carry no recoverable data, so rewriting them away loses nothing.
+        Unknown keys inside otherwise-valid entries are deliberately not
+        recorded; pruning them is the forward-compatibility contract for
+        mixed-version writers, not data loss.
+        """
+        if raw:
+            self._dropped.append({"where": where, "raw": raw})
 
     def _global_target(self, global_: bool, extra: dict[str, Any] | None = None) -> "HarnessState | None":
         if not _resolve_global_flag(global_, extra):
@@ -554,6 +595,8 @@ class HarnessState:
             )
         if status == "corrupt":
             self._quarantine_corrupt_state()
+        if self._dropped:
+            self._quarantine_dropped_fragments()
         self.file_path.parent.mkdir(parents=True, exist_ok=True)
         data = {
             "schema": 1,
@@ -595,6 +638,9 @@ class HarnessState:
         written = serialized.replace("\n", os.linesep).encode("utf-8")
         self._loaded_generation = hashlib.sha256(written).hexdigest()
         self._needs_reload = False
+        # The rewrite persisted the reduced view; the dropped fragments are
+        # already preserved in the quarantine side file.
+        self._dropped = []
         return self
 
     def _quarantine_corrupt_state(self) -> Path | None:
@@ -625,6 +671,41 @@ class HarnessState:
             descriptor = os.open(temp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             with os.fdopen(descriptor, "wb") as f:
                 f.write(raw)
+                f.flush()
+                os.fsync(f.fileno())
+            _replace_with_retry(temp_path, backup_path)
+        finally:
+            temp_path.unlink(missing_ok=True)
+        return backup_path
+
+    def _quarantine_dropped_fragments(self) -> Path | None:
+        """Preserve load-time-dropped fragments before the rewrite deletes them.
+
+        load() refuses malformed entries, refinement events, and non-object
+        containers instead of parsing them; without this side file the next
+        save would persist their deletion silently. The copy is content
+        addressed, so quarantining the same dropped payload twice is
+        idempotent. A write failure raises, so the state rewrite never
+        proceeds without the copy.
+        """
+        if self.file_path is None:
+            return None
+        payload = {
+            "schema": "harness-state-dropped/1",
+            "state_file": self.file_path.name,
+            "dropped": self._dropped,
+        }
+        serialized = json.dumps(payload, indent=2, ensure_ascii=False)
+        digest = hashlib.sha256(serialized.encode("utf-8")).hexdigest()[:16]
+        backup_path = self.file_path.with_name(f"{_DROPPED_STATE_PREFIX}{digest}.json")
+        # Atomic, unconditional rewrite through temp + fsync + the bounded
+        # rename retry, mirroring _quarantine_corrupt_state: a torn partial
+        # copy must never be pinned as the preserved fragment set.
+        temp_path = backup_path.with_name(f"{backup_path.name}.{os.getpid()}.{uuid4().hex}.tmp")
+        try:
+            descriptor = os.open(temp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(descriptor, "w", encoding="utf-8") as f:
+                f.write(serialized)
                 f.flush()
                 os.fsync(f.fileno())
             _replace_with_retry(temp_path, backup_path)

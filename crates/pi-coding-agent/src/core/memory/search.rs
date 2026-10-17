@@ -1133,7 +1133,17 @@ pub fn recall_memory(
             .get("sourceSpan")
             .and_then(Value::as_str)
             .filter(|span| !span.trim().is_empty())
-            .map(|span| format!("\nSource: {}", span.chars().take(200).collect::<String>()));
+            .map(|span| {
+                let rendered: String = span.chars().take(200).collect();
+                // The stored span keeps up to 400 chars while the recall
+                // render caps it tighter; mark the cut like the other
+                // truncations so dropped wording is never silent.
+                if span.chars().count() > 200 {
+                    format!("\nSource: {rendered} [truncated; inspect source]")
+                } else {
+                    format!("\nSource: {rendered}")
+                }
+            });
         let source_chars = source_line
             .as_ref()
             .map(|line| line.chars().count() as i64)
@@ -1470,12 +1480,16 @@ mod tests {
         let settings = crate::core::memory::store::default_memory_settings();
         let recall = recall_memory(&hits, &settings, Some(&store.project.root));
         // The span rides along after the content on its own line, capped at
-        // 200 chars of span text.
+        // 200 chars of span text plus an explicit truncation marker.
         let start = recall.text.find("Source: ").expect("rendered source span");
         assert!(recall.text[..start].ends_with("We relocated to a new place.\n"));
         let rendered = &recall.text[start..];
         assert!(rendered.starts_with("Source: kumquat kumquat"));
-        assert!(rendered.chars().count() <= "Source: ".chars().count() + 200);
+        assert!(rendered.contains("[truncated; inspect source]"));
+        assert!(
+            rendered.chars().count()
+                <= "Source: ".chars().count() + 200 + " [truncated; inspect source]".chars().count()
+        );
         assert!(recall.text.contains("\nSource: "));
         // The cap actually dropped span content: a 640-char span cannot fit.
         assert!(rendered.chars().count() < "Source: ".chars().count() + 640);

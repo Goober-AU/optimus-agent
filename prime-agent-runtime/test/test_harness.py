@@ -540,6 +540,178 @@ class HarnessStateTest(unittest.TestCase):
                 os.lstat = original_lstat  # type: ignore[assignment]
             self.assertEqual(state_path.read_bytes(), original_bytes)
 
+    def test_malformed_entry_load_quarantines_instead_of_deleting(self) -> None:
+        # SB-01: an entry whose title/content is not a string must survive a
+        # load+save cycle somewhere on disk; the state file alone must not
+        # silently shrink.
+        with tempfile.TemporaryDirectory() as temp_dir:
+            state_path = Path(temp_dir) / "harness_state.json"
+            good = {
+                "id": "good", "kind": "memory", "title": "Good", "content": "fine",
+                "created_at": "2026-01-01T00:00:00+00:00",
+                "updated_at": "2026-01-01T00:00:00+00:00",
+            }
+            bad = {
+                "id": "bad", "kind": "memory", "title": "Bad", "content": 123,
+                "created_at": "2026-01-01T00:00:00+00:00",
+                "updated_at": "2026-01-01T00:00:00+00:00",
+            }
+            state_path.write_text(
+                json.dumps(
+                    {"schema": 1, "entries": {"memory": {"good": good, "bad": bad}}, "refinements": []}
+                ),
+                encoding="utf-8",
+            )
+
+            state = HarnessState(state_path)
+            self.assertIsNone(state.get("memory", "bad"))
+            state.create_memory("New", "Written while a malformed sibling exists.", id="new")
+
+            reloaded = HarnessState(state_path)
+            self.assertEqual(sorted(reloaded.entries["memory"]), ["good", "new"])
+            dropped = sorted(Path(temp_dir).glob("harness_state.dropped-*.json"))
+            self.assertEqual(len(dropped), 1, [path.name for path in dropped])
+            payload = json.loads(dropped[0].read_text(encoding="utf-8"))
+            self.assertEqual(payload["schema"], "harness-state-dropped/1")
+            self.assertEqual(payload["state_file"], "harness_state.json")
+            self.assertEqual(payload["dropped"], [{"where": "entry:memory:bad", "raw": bad}])
+            # Nothing was lost: every entry that was on disk is still on disk,
+            # either parsed in the state file or preserved in the quarantine.
+            preserved = set(reloaded.entries["memory"]) | {
+                fragment["raw"]["id"] for fragment in payload["dropped"]
+            }
+            self.assertEqual(preserved, {"good", "bad", "new"})
+
+    def test_malformed_refinement_event_is_quarantined(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            state_path = Path(temp_dir) / "harness_state.json"
+            state_path.write_text(
+                json.dumps(
+                    {
+                        "schema": 1,
+                        "entries": {},
+                        "refinements": [
+                            {"id": "refine_ok", "trigger": "fine", "changes": ["a"]},
+                            {"id": 123, "trigger": "id is not a string", "changes": ["b"]},
+                            "not even an object",
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            state = HarnessState(state_path)
+            self.assertEqual([event.id for event in state.refinements], ["refine_ok"])
+            state.create_memory("New", "Saved over malformed refinements.", id="new")
+
+            dropped = sorted(Path(temp_dir).glob("harness_state.dropped-*.json"))
+            self.assertEqual(len(dropped), 1)
+            payload = json.loads(dropped[0].read_text(encoding="utf-8"))
+            self.assertEqual(
+                payload["dropped"],
+                [
+                    {"where": "refinement:1", "raw": {"id": 123, "trigger": "id is not a string", "changes": ["b"]}},
+                    {"where": "refinement:2", "raw": "not even an object"},
+                ],
+            )
+            reloaded = HarnessState(state_path)
+            self.assertEqual([event.id for event in reloaded.refinements], ["refine_ok"])
+            self.assertIsNotNone(reloaded.get("memory", "new"))
+
+    def test_non_object_entry_and_unknown_kind_bucket_are_quarantined(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            state_path = Path(temp_dir) / "harness_state.json"
+            ghost = {
+                "id": "ghost", "kind": "tool", "title": "Ghost", "content": "unknown kind",
+                "created_at": "2026-01-01T00:00:00+00:00",
+                "updated_at": "2026-01-01T00:00:00+00:00",
+            }
+            state_path.write_text(
+                json.dumps(
+                    {
+                        "schema": 1,
+                        "entries": {
+                            "memory": {"stray": "just a string where an object belongs"},
+                            "tool": {"ghost": ghost},
+                        },
+                        "refinements": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            state = HarnessState(state_path)
+            self.assertEqual(state.list(), [])
+            state.create_memory("New", "Saved over structural oddities.", id="new")
+
+            dropped = sorted(Path(temp_dir).glob("harness_state.dropped-*.json"))
+            self.assertEqual(len(dropped), 1)
+            payload = json.loads(dropped[0].read_text(encoding="utf-8"))
+            self.assertEqual(
+                payload["dropped"],
+                [
+                    {"where": "kind:tool", "raw": {"ghost": ghost}},
+                    {"where": "entry:memory:stray", "raw": "just a string where an object belongs"},
+                ],
+            )
+            reloaded = HarnessState(state_path)
+            self.assertEqual(sorted(reloaded.entries["memory"]), ["new"])
+
+    def test_dropped_fragment_quarantine_is_idempotent(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            state_path = Path(temp_dir) / "harness_state.json"
+            bad = {"id": "bad", "kind": "memory", "title": "Bad", "content": 123}
+            original = json.dumps(
+                {"schema": 1, "entries": {"memory": {"bad": bad}}, "refinements": []}
+            )
+
+            state_path.write_text(original, encoding="utf-8")
+            HarnessState(state_path).create_memory("First", "First rewrite.", id="first")
+            self.assertEqual(len(list(Path(temp_dir).glob("harness_state.dropped-*.json"))), 1)
+
+            # The same malformed bytes arrive again: the content-addressed name
+            # keeps the recovery copy from piling up.
+            state_path.write_text(original, encoding="utf-8")
+            HarnessState(state_path).create_memory("Second", "Second rewrite.", id="second")
+            dropped = sorted(Path(temp_dir).glob("harness_state.dropped-*.json"))
+            self.assertEqual(len(dropped), 1)
+            payload = json.loads(dropped[0].read_text(encoding="utf-8"))
+            self.assertEqual(payload["dropped"], [{"where": "entry:memory:bad", "raw": bad}])
+
+    def test_healthy_state_writes_no_dropped_quarantine(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            state_path = Path(temp_dir) / "harness_state.json"
+            state = HarnessState(state_path)
+            state.create_memory("First", "Healthy.", id="first")
+            state.update_memory("first", "First", "Updated.")
+            state.delete_memory("first")
+
+            self.assertEqual(list(Path(temp_dir).glob("harness_state.dropped-*.json")), [])
+            self.assertEqual(list(Path(temp_dir).glob("harness_state.corrupt-*.json")), [])
+
+    def test_save_fails_when_dropped_quarantine_cannot_be_written(self) -> None:
+        # If the dropped fragments cannot be preserved, the rewrite must not
+        # proceed: the malformed entry stays on disk instead of being deleted.
+        with tempfile.TemporaryDirectory() as temp_dir:
+            state_path = Path(temp_dir) / "harness_state.json"
+            good = {"id": "good", "kind": "memory", "title": "Good", "content": "fine"}
+            bad = {"id": "bad", "kind": "memory", "title": "Bad", "content": 123}
+            original = json.dumps(
+                {"schema": 1, "entries": {"memory": {"good": good, "bad": bad}}, "refinements": []}
+            )
+            state_path.write_text(original, encoding="utf-8")
+
+            state = HarnessState(state_path)
+            with mock.patch.object(
+                HarnessState,
+                "_quarantine_dropped_fragments",
+                side_effect=OSError("disk full"),
+            ):
+                with self.assertRaisesRegex(OSError, "disk full"):
+                    state.create_memory("Blocked", "Must not delete the malformed entry.", id="blocked")
+            self.assertEqual(state_path.read_text(encoding="utf-8"), original)
+            self.assertEqual(list(Path(temp_dir).glob("harness_state.dropped-*.json")), [])
+
     def test_missing_state_file_is_not_treated_as_corrupt(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             state_path = Path(temp_dir) / "harness_state.json"
