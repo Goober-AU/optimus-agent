@@ -2832,6 +2832,24 @@ mod tests {
     }
 
     #[test]
+    fn occ2_wrap_accepts_file_evidence_kind() {
+        // Regression: agents author `E1=file:<path>` for on-disk references
+        // far more often than `E1=src:<repo path>`. The evidence-kind
+        // allowlist rejected `file`, so the strict contract decode failed
+        // and the wrap silently passed the whole body through as OCC-1.
+        let body = "OCC/1\nTASK=occ2-wrap-verify\nKIND=RESULT\nSTATUS=done\nF1=transport verification probe fired at parent request from a fresh child on the current build\nF2=parent will inspect the delivery record for the occ2Delivery kind field in its own session transcript\nF3=body authored as a complete OCC-1 contract with task kind status findings and evidence\nE1=file:C:\\Users\\openclawuser\\profile\\tmp\\probe.md\nEL1=1-20\nNEXT=parent inspects the received payload header and reports whether native OCC-2 wrapping engaged\n";
+        let dual = wrap_outgoing_body(body, &enabled_policy());
+        assert!(dual.starts_with("OCC/2 D=sym-v1@1 C="), "must wrap");
+        assert!(dual.contains("\n#FALLBACK-OCC1\n"), "sentinel section");
+        let registry = DialectRegistry::with_sym_v1();
+        let decoded = crate::core::occ::occ2::decode(&dual, &registry).expect("strict decode");
+        assert_eq!(decoded.evidence[0].kind, "file");
+        // Unknown evidence kinds are still not contracts: no wrap.
+        let bogus = body.replace("E1=file:", "E1=screenshot:");
+        assert_eq!(wrap_outgoing_body(&bogus, &enabled_policy()), bogus);
+    }
+
+    #[test]
     fn occ2_wrap_leaves_plain_english_and_deltas_unchanged() {
         // Plain English never parses as an OCC-1 contract message.
         assert_eq!(wrap_outgoing_body("plain english body", &enabled_policy()), "plain english body");
