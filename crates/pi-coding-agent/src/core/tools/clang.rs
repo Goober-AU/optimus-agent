@@ -86,6 +86,44 @@ fn reader(
     })
 }
 
+/// One clang-repl output stream accumulated until the cell's end-of-cell
+/// marker is observed. `pending` holds bytes that may still turn out to be
+/// part of the marker; `output` is the retained content, capped at `LIMIT`.
+#[derive(Default)]
+struct StreamBuffer {
+    pending: Vec<u8>,
+    output: Vec<u8>,
+    truncated: bool,
+    done: bool,
+}
+
+impl StreamBuffer {
+    /// Feed one process chunk. Content before the marker is retained (capped
+    /// at `LIMIT` bytes, flagging real drops); the marker itself and anything
+    /// after it are not part of this cell.
+    fn push(&mut self, chunk: &[u8], marker: &[u8]) {
+        if self.done {
+            return;
+        }
+        self.pending.extend_from_slice(chunk);
+        let found = self
+            .pending
+            .windows(marker.len())
+            .position(|window| window == marker);
+        let count = found.unwrap_or(self.pending.len().saturating_sub(marker.len()));
+        let retain = count.min(LIMIT.saturating_sub(self.output.len()));
+        if retain < count {
+            self.truncated = true;
+        }
+        self.output.extend_from_slice(&self.pending[..retain]);
+        self.pending.drain(..count);
+        if found.is_some() {
+            self.pending.clear();
+            self.done = true;
+        }
+    }
+}
+
 impl ClangProcess {
     fn spawn(cwd: &str) -> Result<Self, String> {
         let source = tempfile::Builder::new()
@@ -152,11 +190,9 @@ impl ClangProcess {
             .await
             .map_err(|e| e.to_string())?;
         self.input.flush().await.map_err(|e| e.to_string())?;
-        let mut pending = [Vec::new(), Vec::new()];
-        let mut done = [false; 2];
-        let mut outputs = [Vec::new(), Vec::new()];
+        let mut streams = [StreamBuffer::default(), StreamBuffer::default()];
         let mut last_update = tokio::time::Instant::now();
-        while !done.iter().all(|v| *v) {
+        while streams.iter().any(|s| !s.done) {
             let (stream, bytes) = self
                 .output
                 .recv()
@@ -165,32 +201,18 @@ impl ClangProcess {
             if bytes.is_empty() {
                 return Err(format!(
                     "Clang-Repl exited before completing the cell. {}",
-                    String::from_utf8_lossy(&outputs[1])
+                    String::from_utf8_lossy(&streams[1].output)
                 ));
             }
-            if done[stream] {
-                continue;
-            }
-            pending[stream].extend(bytes);
-            let found = pending[stream]
-                .windows(marker.len())
-                .position(|window| window == marker.as_bytes());
-            let count = found.unwrap_or_else(|| pending[stream].len().saturating_sub(marker.len()));
-            let retain = count.min(LIMIT.saturating_sub(outputs[stream].len()));
-            outputs[stream].extend_from_slice(&pending[stream][..retain]);
-            pending[stream].drain(..count);
-            if found.is_some() {
-                pending[stream].clear();
-                done[stream] = true;
-            }
+            streams[stream].push(&bytes, marker.as_bytes());
             if last_update.elapsed() >= Duration::from_millis(100) {
                 if let Some(update) = &on_update {
-                    update(cell_result(&outputs, cwd));
+                    update(cell_result(&streams, cwd));
                 }
                 last_update = tokio::time::Instant::now();
             }
         }
-        Ok(cell_result(&outputs, cwd))
+        Ok(cell_result(&streams, cwd))
     }
 }
 
@@ -203,12 +225,21 @@ impl Drop for ClangProcess {
     }
 }
 
-fn cell_result(output: &[Vec<u8>; 2], cwd: &str) -> AgentToolResult {
-    let stdout = String::from_utf8_lossy(&output[0]);
-    let stderr = String::from_utf8_lossy(&output[1]);
+fn cell_result(streams: &[StreamBuffer; 2], cwd: &str) -> AgentToolResult {
+    let stdout = String::from_utf8_lossy(&streams[0].output);
+    let stderr = String::from_utf8_lossy(&streams[1].output);
     let mut text = format!("{stdout}{stderr}");
-    if output.iter().any(|s| s.len() == LIMIT) {
-        text.push_str("\n[Clang-Repl output truncated at 64 KiB per stream]");
+    let truncated: Vec<&str> = streams
+        .iter()
+        .enumerate()
+        .filter(|(_, stream)| stream.truncated)
+        .map(|(index, _)| if index == 0 { "stdout" } else { "stderr" })
+        .collect();
+    if !truncated.is_empty() {
+        text.push_str(&format!(
+            "\n[Clang-Repl {} truncated at 64 KiB per stream]",
+            truncated.join(" and ")
+        ));
     }
     if text.trim().is_empty() {
         text = "(no output)".into();
@@ -238,7 +269,10 @@ impl ClangRuntime {
 
     pub async fn dispose(&self) {
         self.shutdown.cancel();
-        if let Some(mut process) = self.process.lock().await.take() {
+        // Bind first: holding the lock across `stop()` would stall any executor
+        // waiting on the mutex for the whole teardown window.
+        let process = self.process.lock().await.take();
+        if let Some(mut process) = process {
             process.stop().await;
         }
     }
@@ -306,5 +340,138 @@ pub fn create_clang_tool(cwd: &str, runtime: Arc<ClangRuntime>) -> ToolDefinitio
             })
         }),
         ..Default::default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const MARKER: &[u8] = b"\nOPTIMUS_CLANG_DONE_deadbeef\n";
+
+    fn filled(len: usize) -> Vec<u8> {
+        vec![b'x'; len]
+    }
+
+    #[test]
+    fn marker_split_across_chunks_completes_the_stream() {
+        let mut stream = StreamBuffer::default();
+        stream.push(b"hello", MARKER);
+        // The marker arrives split mid-sequence; only the tail is content-free.
+        stream.push(&MARKER[..9], MARKER);
+        stream.push(&MARKER[9..], MARKER);
+        assert_eq!(stream.output, b"hello");
+        assert!(stream.done);
+        assert!(!stream.truncated);
+        // Anything after the marker belongs to later activity, not this cell.
+        stream.push(b"late", MARKER);
+        assert_eq!(stream.output, b"hello");
+    }
+
+    #[test]
+    fn exact_limit_output_is_not_flagged_truncated() {
+        let mut stream = StreamBuffer::default();
+        stream.push(&filled(LIMIT), MARKER);
+        stream.push(MARKER, MARKER);
+        assert_eq!(stream.output.len(), LIMIT);
+        assert!(stream.done);
+        assert!(!stream.truncated, "exactly 64 KiB fits without truncation");
+    }
+
+    #[test]
+    fn output_beyond_limit_caps_and_flags_truncation() {
+        let mut stream = StreamBuffer::default();
+        stream.push(&filled(LIMIT + 1), MARKER);
+        stream.push(MARKER, MARKER);
+        assert_eq!(stream.output.len(), LIMIT);
+        assert!(stream.done);
+        assert!(stream.truncated, "one byte over the cap must be flagged");
+    }
+
+    #[test]
+    fn truncation_across_many_chunks_is_detected_once_content_capped() {
+        let mut stream = StreamBuffer::default();
+        let chunk = filled(4096);
+        for _ in 0..(LIMIT / 4096 + 2) {
+            stream.push(&chunk, MARKER);
+        }
+        stream.push(MARKER, MARKER);
+        assert_eq!(stream.output.len(), LIMIT);
+        assert!(stream.truncated);
+        // The holdback window keeps a marker-sized tail in `pending`: content
+        // that could still turn out to be a marker prefix must not leak into
+        // the output before the marker completes.
+        let mut partial = StreamBuffer::default();
+        partial.push(b"content", MARKER);
+        partial.push(b"\nOPTIMUS_CLANG", MARKER);
+        assert!(partial.output.is_empty());
+        assert!(!partial.done);
+    }
+
+    fn buffers(stdout: usize, stderr: usize) -> [StreamBuffer; 2] {
+        let mut streams = [StreamBuffer::default(), StreamBuffer::default()];
+        streams[0].output = filled(stdout);
+        streams[1].output = filled(stderr);
+        streams
+    }
+
+    fn text_of(streams: &[StreamBuffer; 2]) -> String {
+        cell_result(streams, "/cwd").content[0]
+            .as_text()
+            .expect("text block")
+            .to_owned()
+    }
+
+    #[test]
+    fn cell_result_notice_names_only_the_truncated_streams() {
+        let mut streams = buffers(LIMIT, 16);
+        streams[0].truncated = true;
+        let text = text_of(&streams);
+        assert!(text.contains("[Clang-Repl stdout truncated at 64 KiB per stream]"));
+        assert!(!text.contains("stderr"));
+
+        let mut streams = buffers(16, LIMIT);
+        streams[1].truncated = true;
+        let text = text_of(&streams);
+        assert!(text.contains("[Clang-Repl stderr truncated at 64 KiB per stream]"));
+        assert!(!text.contains("stdout"));
+    }
+
+    #[test]
+    fn cell_result_notice_names_both_streams_when_both_truncated() {
+        let mut streams = buffers(LIMIT, LIMIT);
+        streams[0].truncated = true;
+        streams[1].truncated = true;
+        let text = text_of(&streams);
+        assert!(text.contains("[Clang-Repl stdout and stderr truncated at 64 KiB per stream]"));
+    }
+
+    #[test]
+    fn cell_result_exact_limit_without_drops_has_no_notice() {
+        // Regression: `len() == LIMIT` used to be mistaken for truncation.
+        let streams = buffers(LIMIT, LIMIT);
+        let text = text_of(&streams);
+        assert!(!text.contains("truncated"), "text was: {text}");
+    }
+
+    #[test]
+    fn cell_result_marks_stderr_diagnostics_as_errors() {
+        let mut streams = buffers(0, 0);
+        streams[1].output = b"file.cpp:1:2: error: boom\n".to_vec();
+        let result = cell_result(&streams, "/cwd");
+        assert_eq!(result.is_error, Some(true));
+
+        let mut streams = buffers(0, 0);
+        streams[1].output = b"Parsing failed\n".to_vec();
+        assert_eq!(cell_result(&streams, "/cwd").is_error, Some(true));
+
+        let streams = buffers(4, 4);
+        assert_eq!(cell_result(&streams, "/cwd").is_error, Some(false));
+    }
+
+    #[test]
+    fn cell_result_empty_output_reports_no_output() {
+        let streams = buffers(0, 0);
+        assert_eq!(text_of(&streams), "(no output)");
     }
 }
