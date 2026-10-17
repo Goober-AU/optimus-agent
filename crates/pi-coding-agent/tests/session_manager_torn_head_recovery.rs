@@ -169,11 +169,21 @@ fn torn_first_line_quarantines_the_damaged_bytes_and_opens_a_usable_session() {
         .expect("reopen the recovered session");
     let reloaded = load_entries_from_file(&file.to_string_lossy());
     assert_eq!(reloaded.len(), 2, "header plus the appended message");
+    // `get_entries` excludes the session header (see its filter), so the
+    // reopened transcript is exactly the one appended message.
+    let recovered = reopened.get_entries();
     assert_eq!(
-        reopened.get_entries().len(),
-        2,
+        recovered.len(),
+        1,
         "the reopened manager sees the recovered transcript"
     );
+    assert!(
+        serde_json::to_string(&recovered[0])
+            .unwrap_or_default()
+            .contains("after the recovery"),
+        "the recovered entry is the appended message, not a stale one"
+    );
+    assert_eq!(reopened.get_entry_count(), 1, "entry count matches without cloning");
 
     // A second open of the now-valid file must not quarantine again.
     drop(reopened);
