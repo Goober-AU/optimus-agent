@@ -281,6 +281,7 @@ impl PrivateCli {
             stderr,
         }
     }
+
 }
 
 struct OwnedChild {
@@ -482,7 +483,7 @@ async fn request(client: &Arc<DaemonClient>, body: Value) -> Value {
         )
         .await
         .unwrap();
-    assert!(response.success, "{:?}", response.error);
+    assert!(response.success, "{:?} for {body}", response.error);
     response.data.unwrap_or(Value::Null)
 }
 
@@ -496,26 +497,44 @@ fn session_rows(session_file: &str) -> Vec<Value> {
 }
 
 /// Delivered agent-message details in one session file, in delivery order.
+/// A delivered agent message persists as a flat `custom_message` entry
+/// (`append_custom_message_entry`: `type`, `customType`, `content`,
+/// `details`), not as a nested role message.
 fn delivered_rows(rows: &[Value]) -> Vec<Value> {
     rows.iter()
-        .filter(|row| row["message"]["customType"] == "agent_message")
-        .map(|row| row["message"]["details"].clone())
+        .filter(|row| row["type"] == "custom_message" && row["customType"] == "agent_message")
+        .map(|row| row["details"].clone())
         .collect()
+}
+
+/// The last rows of a session file, for delivery-timeout diagnostics.
+fn transcript_tail(session_file: &str) -> String {
+    let text = fs::read_to_string(session_file)
+        .unwrap_or_else(|error| format!("<unreadable: {error}>"));
+    let lines: Vec<&str> = text.lines().collect();
+    let start = lines.len().saturating_sub(12);
+    lines[start..].join("\n")
 }
 
 /// Waits until the target session holds more delivered agent messages than
 /// `before`, then returns the newly delivered details.
-async fn wait_for_new_delivery(target_file: &str, before: usize) -> Value {
+async fn wait_for_new_delivery(
+    sender_file: &str,
+    target_file: &str,
+    before: usize,
+) -> Value {
     let deadline = Instant::now() + Duration::from_secs(30);
     loop {
         let delivered = delivered_rows(&session_rows(target_file));
         if delivered.len() > before {
             return delivered.last().unwrap().clone();
         }
-        assert!(
-            Instant::now() < deadline,
-            "delivery missing from {target_file}: {delivered:?}"
-        );
+        if Instant::now() >= deadline {
+            panic!(
+                "delivery missing from {target_file}: {delivered:?}\n--- sender transcript tail: {}",
+                transcript_tail(sender_file),
+            );
+        }
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
 }
@@ -540,7 +559,6 @@ fn assert_symbolic_delivery(delivered: &Value) {
         delivered["occ2Delivery"]["kind"], "symbolic",
         "the receiver must decode the symbolic section: {delivered:?}"
     );
-    assert_eq!(delivered["fromRelationship"], "sibling");
 }
 
 /// Asserts one delivered row is byte-identical OCC-1 with no OCC-2 attempt.
@@ -560,16 +578,22 @@ fn assert_occ1_delivery(delivered: &Value) {
 async fn send_report_and_await_delivery(
     client: &Arc<DaemonClient>,
     sender: &str,
+    sender_file: &str,
     target_file: &str,
 ) -> Value {
     let before = delivered_rows(&session_rows(target_file)).len();
     request(
         client,
         json!({"type":"prompt_and_wait","activeSessionId":sender,
-            "message":format!("OCC2_E2E_SEND_{}: deliver the report to your sibling occ-target.", uuid::Uuid::new_v4().simple())}),
+            "message":format!("OCC2_E2E_SEND_{}: deliver the report to your sibling occ-target.", uuid::Uuid::new_v4().simple()),
+            // Steer keeps `resume_if_idle` true so a session reopened after a
+            // daemon shutdown (whose close path persists an explicit stop)
+            // resumes admission for this fresh prompt, exactly like the
+            // TypeScript daemon's `command.streamingBehavior !== undefined`.
+            "streamingBehavior":"steer"}),
     )
     .await;
-    wait_for_new_delivery(target_file, before).await
+    wait_for_new_delivery(sender_file, target_file, before).await
 }
 
 // ---------------------------------------------------------------------------
@@ -623,20 +647,27 @@ fn occ2_e2e_negotiated_send_encodes_decodes_and_records() {
             .await["sessionFile"].as_str().unwrap().to_string();
         assert!(session_settings::load(&sender_file).unwrap(), "file-backed sessions default to OCC-2 on");
         assert!(session_settings::load(&target_file).unwrap());
-
         // Negotiated send: model turn -> ipython kernel -> agent_message.send
         // host request -> S1 policy -> dual OCC-2 wire -> daemon delivery.
-        let delivered = send_report_and_await_delivery(&client, &sender, &target_file).await;
+        let delivered = send_report_and_await_delivery(&client, &sender, &sender_file, &target_file).await;
         assert_symbolic_delivery(&delivered);
         let sender_rows = session_rows(&sender_file);
-        assert!(
-            sender_rows
-                .iter()
-                .any(|row| row["message"]["role"] == "toolResult"
-                    && row["message"]["isError"] == false
-                    && row["message"].to_string().contains("OCC2_E2E_SENT")),
-            "the kernel send must succeed and print its marker: {sender_rows:?}"
-        );
+        let send_result = sender_rows
+            .iter()
+            .find(|row| row["message"]["role"] == "toolResult"
+                && row["message"]["isError"] == false
+                && row["message"].to_string().contains("OCC2_E2E_SENT"))
+            .expect("the kernel send must succeed and print its marker");
+        // The kernel records the resolved receiver role with the sent message;
+        // the delivered details carry no fromRelationship across the worker
+        // hop (the target worker rebuilds the payload with fromState null,
+        // matching the TypeScript supervisor's forward shape).
+        let sent = send_result["message"]["details"]["sentAgentMessages"]
+            .as_array()
+            .and_then(|messages| messages.first())
+            .expect("the tool result records the sent message");
+        assert_eq!(sent["receiverRole"], "sibling", "{sent:?}");
+        assert_eq!(sent["deliveryStatus"], "delivered", "{sent:?}");
         // A successful symbolic decode never writes a strike for the pair.
         assert!(
             !occ2_strike_ledger_path(&sender_file).exists(),
@@ -676,7 +707,7 @@ fn occ2_e2e_negotiated_send_encodes_decodes_and_records() {
         // Opted-out peer: the persisted listener preference forces OCC-1.
         session_settings::save(&target_file, false).unwrap();
         assert!(!session_settings::load(&target_file).unwrap());
-        let delivered = send_report_and_await_delivery(&client, &sender, &target_file).await;
+        let delivered = send_report_and_await_delivery(&client, &sender, &sender_file, &target_file).await;
         assert_occ1_delivery(&delivered);
 
         client.close().await;
@@ -730,13 +761,12 @@ fn occ2_e2e_negotiation_inputs_survive_daemon_restart() {
             .await["sessionFile"].as_str().unwrap().to_string();
         assert!(session_settings::load(&sender_file).unwrap());
         assert!(session_settings::load(&target_file).unwrap());
-
         // Before the restart: one negotiated, symbolic delivery.
-        let delivered = send_report_and_await_delivery(&client, &sender, &target_file).await;
+        let delivered = send_report_and_await_delivery(&client, &sender, &sender_file, &target_file).await;
         assert_symbolic_delivery(&delivered);
         // Then opt the listener out: the next send is plain OCC-1.
         session_settings::save(&target_file, false).unwrap();
-        let delivered = send_report_and_await_delivery(&client, &sender, &target_file).await;
+        let delivered = send_report_and_await_delivery(&client, &sender, &sender_file, &target_file).await;
         assert_occ1_delivery(&delivered);
         client.close().await;
         (sender_file, target_file)
@@ -768,14 +798,22 @@ fn occ2_e2e_negotiation_inputs_survive_daemon_restart() {
             !session_settings::load(&target_file).unwrap(),
             "the opt-out must persist across the daemon restart"
         );
+        // A daemon shutdown persists an explicit stop in every session file
+        // (the close path runs request_abort); a fresh human admission must
+        // resume the reopened target, exactly like a user reopening the chat.
+        // Agent deliveries alone cannot revoke the stop: they would defer to
+        // the deferred-agent-report journal instead of reaching the model.
+        request(&client, json!({"type":"prompt_and_wait","activeSessionId":target,
+            "message":"OCC2_E2E_TARGET_RESUME: acknowledge and stay ready.",
+            "streamingBehavior":"steer"})).await;
 
         // The persisted preference still forces OCC-1 after the restart.
-        let delivered = send_report_and_await_delivery(&client, &sender, &target_file).await;
+        let delivered = send_report_and_await_delivery(&client, &sender, &sender_file, &target_file).await;
         assert_occ1_delivery(&delivered);
 
         // Re-enabling the listener renegotiates sym-v1 on the next send.
         session_settings::save(&target_file, true).unwrap();
-        let delivered = send_report_and_await_delivery(&client, &sender, &target_file).await;
+        let delivered = send_report_and_await_delivery(&client, &sender, &sender_file, &target_file).await;
         assert_symbolic_delivery(&delivered);
         client.close().await;
     });
