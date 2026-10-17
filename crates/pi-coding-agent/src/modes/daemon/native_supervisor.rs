@@ -3177,7 +3177,22 @@ impl Supervisor {
                     }
                     None => {
                         let summary = self.summary_for_active(&worker, &active).ok_or("Session worker has no summary")?;
-                        DaemonResponse::success(id.as_deref(), &kind, Some(serde_json::to_value(summary).unwrap_or(Value::Null)))
+                        let mut data = serde_json::to_value(summary).unwrap_or(Value::Null);
+                        // Audit S5/G2: this is the roster view, not an
+                        // authoritative worker answer, and the supervisor holds
+                        // no queue state of its own (roster rows drop
+                        // sessionActions; steering/follow-ups live only in the
+                        // worker's session action store). Say so with additive
+                        // wire fields instead of letting the zeroed
+                        // sessionActions placeholder read as "no queued work"
+                        // during saturation - exactly when this fallback fires.
+                        // Backward compatible: consumers read known fields and
+                        // ignore extras (SessionSummary keeps them in `extra`).
+                        if let Some(object) = data.as_object_mut() {
+                            object.insert("stale".into(), json!(true));
+                            object.insert("fallback".into(), json!("roster"));
+                        }
+                        DaemonResponse::success(id.as_deref(), &kind, Some(data))
                     }
                 };
                 response.id = id;
@@ -3596,6 +3611,12 @@ impl ServedRowKey for SessionSummary {
 /// `sessionSummaryFromRosterEntry(entry)`: the slim roster row widened to the
 /// daemon `SessionSummary`. `statusLabel`/`lastHeardFromAt` are written only when
 /// the row carries them, exactly like the TypeScript's conditional spreads.
+/// A row that already carries `sessionActions` (a worker's live response
+/// remapped through the generic tail, not a slim roster row) keeps them: the
+/// zeroed placeholder exists only because roster rows drop queue state, and
+/// clobbering an authoritative answer's queues with zeros would report an
+/// empty queue for a session that has steering/follow-ups pending
+/// (audit S5/G2).
 fn session_summary_from_roster_row(
     summary: &RosterSessionSummary,
     status: Option<AgentRosterStatus>,
@@ -3604,7 +3625,9 @@ fn session_summary_from_roster_row(
 ) -> SessionSummary {
     let mut value = serde_json::to_value(summary).unwrap_or(Value::Null);
     if let Some(object) = value.as_object_mut() {
-        object.insert("sessionActions".into(), json!({"queuedCount": 0, "steering": [], "followUps": []}));
+        if summary.session_actions.is_none() {
+            object.insert("sessionActions".into(), json!({"queuedCount": 0, "steering": [], "followUps": []}));
+        }
         if let Some(status) = status { object.insert("rosterStatus".into(), json!(status.as_str())); }
         if let Some(label) = status_label { object.insert("statusLabel".into(), json!(label)); }
         if let Some(last_heard_from_at) = last_heard_from_at { object.insert("lastHeardFromAt".into(), json!(last_heard_from_at)); }
