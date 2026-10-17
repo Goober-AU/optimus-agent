@@ -1,0 +1,4 @@
+- Fixed the RPC bash executor corrupting multibyte UTF-8 characters split across pipe chunks; output, streamed chunks and spill files now decode through a streaming decoder and a stream that ends mid-sequence flushes to a single replacement.
+- Fixed a late cancellation token flipping an already completed bash executor result to `cancelled` and discarding its real exit code.
+- Fixed the Windows bash tool spawning shells without job containment: timeout, abort and dropped futures now terminate the whole process tree (including descendants a `taskkill /T` tree walk cannot reach), while a normally settled background descendant still outlives the call and is reaped at process teardown via the kill-on-close job.
+- Added Windows lifecycle tests for the bash tool (timeout tree kill, background-child settle notice, stdin EOF, dropped-future RAII kill) and executor tests for split UTF-8 reassembly, spill-file integrity and the cancellation race.
