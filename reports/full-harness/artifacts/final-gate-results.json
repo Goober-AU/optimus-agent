@@ -1,0 +1,21 @@
+{
+  "cargo_check_workspace": "PASS (1m32s post-integration)",
+  "cargo_lib_serial": "PASS: pi-agent-core 93, pi-ai 899 (golden fix), pi-coding-agent 3701, pi-jev 1, pi-tui 1 \u2014 0 failures with env vars set (KERNEL_CONTAINMENT_TEST_PYTHON=repo .venv python w/ dill, PRIME_AGENT_KERNEL_PYTHON=candidate python311, uv on PATH)",
+  "long_session_soak": "PASS 11/11",
+  "occ2_e2e_negotiation": "PASS 2/2 (PR #166 closure: negotiated sym-v1 encode/decode/record + daemon-restart recovery)",
+  "session_manager_torn_head_recovery": "PASS 4/4",
+  "compaction_recovery": "PASS 9/9",
+  "memory_source_integrity": "PASS 14/14",
+  "memory_lib": "PASS 175/175",
+  "slash_command_matrix": "PASS 5/5",
+  "edit_tool_behavior": "PASS 18/18",
+  "node_clang_tool_behavior": "PASS 12/12 (node; 3 clang gated skip, no clang-repl on host)",
+  "bash_executor_unicode_and_cancel": "PASS 8/8 (incl Windows job containment tree-kill)",
+  "ipython_output_bounds": "PASS 1/1 (real kernel)",
+  "supervisor_core_backlog": "PASS 13/13",
+  "messaging_safety": "PASS 21/21",
+  "python_root": "PASS 9/9 files",
+  "python_runtime": "PASS 32/32 files (repl flake fixed: budget 500->4000ms + reap barrier)",
+  "question_loop_pytest": "PASS 43/43",
+  "check_rust_layout": "PASS"
+}
