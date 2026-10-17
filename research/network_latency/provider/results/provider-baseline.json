@@ -1,0 +1,376 @@
+{
+  "schema": "provider-transport-baseline/1",
+  "measured_at": "2026-10-17T01:30:00Z",
+  "environment": {
+    "os": "Windows (git-bash), loopback 127.0.0.1",
+    "rust": "stable-x86_64-pc-windows-msvc (rustc 1.98.1 reported by toolchain)",
+    "profile": "cargo test --release",
+    "branch": "improve/network-ipc-performance @ 6423654c1",
+    "worktree": "C:/Users/openclawuser/optimus-net-20261017",
+    "harness": "crates/pi-ai/src/providers/provider_transport_bench.rs",
+    "raw_logs": [
+      "results/run-release-final.txt",
+      "results/run-release-all.txt",
+      "results/run-full.txt"
+    ],
+    "machine_note": "Shared box; four sibling agents were compiling/running concurrently, so tail percentiles (p95/p99/max) include external CPU/IO load. Medians are stable across runs."
+  },
+  "coverage": {
+    "real_production_path": "stream_openai_completions (openai_completions.rs:2890) driven end-to-end through request building, post_chat_completions transport, SSE reader, event stream",
+    "observer_seam": "OnStreamObservation phases generation_serialize_start/returned, generation_send_start, generation_headers_complete, raw_event, text, terminal",
+    "not_covered": [
+      "post_chat_completions is private; could not be called directly (no edits to teammate files)",
+      "http_client_pool::acquire is pub(super) inside openai_completions; not reachable from this module; fresh-client cost measured as reqwest::Client::builder().build(), which is exactly what acquire returns for RedirectPolicy::Generation",
+      "TLS and HTTP/2 legs blocked offline: reqwest default features include http2+native-tls but no local TLS fixture is possible without new deps (no rcgen in tree) and no direct h2 dependency is declared for pi-ai; a self-signed cert would also need machine trust-store changes (out of scope)"
+    ]
+  },
+  "a_connection_reuse_proof": {
+    "shared_client_ClientPolicy_Default": {
+      "requests": 20,
+      "tcp_accepts": 1,
+      "result": "one pooled connection serves all requests"
+    },
+    "fresh_client_per_request": {
+      "requests": 20,
+      "tcp_accepts": 20,
+      "result": "one accept per request"
+    },
+    "source": "provider_transport_bench_connection_reuse_proof"
+  },
+  "b_client_acquisition_cost": {
+    "pool_hit_shared_client": {
+      "samples": 1000,
+      "p50_ms": 0.0001,
+      "p95_ms": 0.0001,
+      "p99_ms": 0.0001,
+      "mean_ms": 6.620000000000086e-05,
+      "min_ms": 0.0,
+      "max_ms": 0.0002
+    },
+    "fresh_reqwest_client_build": {
+      "samples": 1000,
+      "p50_ms": 0.0236,
+      "p95_ms": 0.0307,
+      "p99_ms": 0.0466,
+      "mean_ms": 0.02877649999999999,
+      "min_ms": 0.0182,
+      "max_ms": 4.2637
+    },
+    "pool_mean_us": 0.066,
+    "fresh_mean_us": 28.776,
+    "speedup_mean": "fresh build is ~435x the pooled lookup on this run"
+  },
+  "c_ttft": {
+    "request_to_headers_ms": {
+      "samples": 40,
+      "p50_ms": 0.5669,
+      "p95_ms": 0.727,
+      "p99_ms": 1566.7636,
+      "mean_ms": 39.74896,
+      "min_ms": 0.4724,
+      "max_ms": 1566.7636
+    },
+    "request_to_first_text_event_ms": {
+      "samples": 40,
+      "p50_ms": 0.6412,
+      "p95_ms": 1.4501,
+      "p99_ms": 1567.1003,
+      "mean_ms": 39.85426,
+      "min_ms": 0.521,
+      "max_ms": 1567.1003
+    },
+    "headers_to_first_event_ms": {
+      "samples": 40,
+      "p50_ms": 0.0632,
+      "p95_ms": 0.1117,
+      "p99_ms": 1.2596,
+      "mean_ms": 0.10529999999999999,
+      "min_ms": 0.0474,
+      "max_ms": 1.2596
+    },
+    "request_to_done_ms_50chunks_20ms_interval": {
+      "samples": 40,
+      "p50_ms": 1242.5173,
+      "p95_ms": 1516.6062,
+      "p99_ms": 2719.0963,
+      "mean_ms": 1304.032605,
+      "min_ms": 1071.2503,
+      "max_ms": 2719.0963
+    },
+    "delayed_headers_fixture_120ms_observed_ms": {
+      "samples": 10,
+      "p50_ms": 131.811,
+      "p95_ms": 138.0771,
+      "p99_ms": 138.0771,
+      "mean_ms": 128.52925,
+      "min_ms": 121.7597,
+      "max_ms": 138.0771
+    },
+    "delayed_first_byte_fixture_120ms_observed_ms": {
+      "samples": 10,
+      "p50_ms": 121.9513,
+      "p95_ms": 147.6333,
+      "p99_ms": 147.6333,
+      "mean_ms": 128.97996,
+      "min_ms": 120.6637,
+      "max_ms": 147.6333
+    },
+    "method": "single-process wall clock (SystemTime ns); client phase timestamps from OnStreamObservation, first-event and done from consumer event loop; server in the same process; no cross-process subtraction"
+  },
+  "d_stream_throughput": {
+    "chunk_1024b": {
+      "chunks": 200,
+      "payload_bytes_total": 204800,
+      "mean_bps": 648620,
+      "total_ms": {
+        "samples": 10,
+        "p50_ms": 292.3589,
+        "p95_ms": 1263.5514,
+        "p99_ms": 1263.5514,
+        "mean_ms": 388.83018999999996,
+        "min_ms": 283.5456,
+        "max_ms": 1263.5514
+      },
+      "first_inter_event_ms": {
+        "samples": 10,
+        "p50_ms": 0.9103,
+        "p95_ms": 2.3705,
+        "p99_ms": 2.3705,
+        "mean_ms": 1.03419,
+        "min_ms": 0.0382,
+        "max_ms": 2.3705
+      }
+    },
+    "chunk_4096b": {
+      "chunks": 200,
+      "payload_bytes_total": 819200,
+      "mean_bps": 2686972,
+      "total_ms": {
+        "samples": 10,
+        "p50_ms": 292.3387,
+        "p95_ms": 364.73,
+        "p99_ms": 364.73,
+        "mean_ms": 307.87471999999997,
+        "min_ms": 279.5002,
+        "max_ms": 364.73
+      },
+      "first_inter_event_ms": {
+        "samples": 10,
+        "p50_ms": 0.9882,
+        "p95_ms": 1.7235,
+        "p99_ms": 1.7235,
+        "mean_ms": 0.9177299999999999,
+        "min_ms": 0.0499,
+        "max_ms": 1.7235
+      }
+    },
+    "large_body_4mb": {
+      "total_ms": {
+        "samples": 10,
+        "p50_ms": 82.2405,
+        "p95_ms": 186.8484,
+        "p99_ms": 186.8484,
+        "mean_ms": 78.76218,
+        "min_ms": 15.4949,
+        "max_ms": 186.8484
+      },
+      "mean_bps": 78101016,
+      "connections": 1
+    },
+    "note": "per-event pipeline cost ~1.0ms p50 regardless of chunk size; bytes-per-second therefore scales with chunk size (4KB chunks are ~4.1x the throughput of 1KB chunks)"
+  },
+  "e_concurrency": {
+    "requests_per_level": 32,
+    "gating": "tokio Semaphore(level) so level 1 is strictly sequential",
+    "levels": {
+      "1": {
+        "ttft_ms": {
+          "samples": 32,
+          "p50_ms": 0.4655,
+          "p95_ms": 0.6951,
+          "p99_ms": 2.6315,
+          "mean_ms": 0.569753125,
+          "min_ms": 0.3886,
+          "max_ms": 2.6315
+        },
+        "total_ms": {
+          "samples": 32,
+          "p50_ms": 122.8289,
+          "p95_ms": 124.8162,
+          "p99_ms": 152.3282,
+          "mean_ms": 123.58071874999999,
+          "min_ms": 119.4936,
+          "max_ms": 152.3282
+        },
+        "failures": 0,
+        "connections": 1,
+        "requests": 32,
+        "new_connections": 1
+      },
+      "2": {
+        "ttft_ms": {
+          "samples": 32,
+          "p50_ms": 0.4654,
+          "p95_ms": 0.5614,
+          "p99_ms": 0.9631,
+          "mean_ms": 0.482221875,
+          "min_ms": 0.3382,
+          "max_ms": 0.9631
+        },
+        "total_ms": {
+          "samples": 32,
+          "p50_ms": 125.9714,
+          "p95_ms": 183.3504,
+          "p99_ms": 222.7196,
+          "mean_ms": 142.142146875,
+          "min_ms": 118.7891,
+          "max_ms": 222.7196
+        },
+        "failures": 0,
+        "connections": 2,
+        "requests": 64,
+        "new_connections": 1
+      },
+      "4": {
+        "ttft_ms": {
+          "samples": 32,
+          "p50_ms": 0.4514,
+          "p95_ms": 0.6038,
+          "p99_ms": 1.3975,
+          "mean_ms": 0.50906875,
+          "min_ms": 0.3207,
+          "max_ms": 1.3975
+        },
+        "total_ms": {
+          "samples": 32,
+          "p50_ms": 125.0219,
+          "p95_ms": 253.0175,
+          "p99_ms": 301.9254,
+          "mean_ms": 156.347325,
+          "min_ms": 118.0127,
+          "max_ms": 301.9254
+        },
+        "failures": 0,
+        "connections": 4,
+        "requests": 96,
+        "new_connections": 2
+      },
+      "8": {
+        "ttft_ms": {
+          "samples": 32,
+          "p50_ms": 0.4707,
+          "p95_ms": 1.1407,
+          "p99_ms": 30.9343,
+          "mean_ms": 1.49306875,
+          "min_ms": 0.3613,
+          "max_ms": 30.9343
+        },
+        "total_ms": {
+          "samples": 32,
+          "p50_ms": 161.592,
+          "p95_ms": 227.0937,
+          "p99_ms": 253.5994,
+          "mean_ms": 168.06730937499998,
+          "min_ms": 117.735,
+          "max_ms": 253.5994
+        },
+        "failures": 0,
+        "connections": 8,
+        "requests": 128,
+        "new_connections": 4
+      },
+      "16": {
+        "ttft_ms": {
+          "samples": 32,
+          "p50_ms": 1.4424,
+          "p95_ms": 32.4191,
+          "p99_ms": 58.8806,
+          "mean_ms": 8.033725,
+          "min_ms": 0.3814,
+          "max_ms": 58.8806
+        },
+        "total_ms": {
+          "samples": 32,
+          "p50_ms": 187.7287,
+          "p95_ms": 243.9806,
+          "p99_ms": 289.1863,
+          "mean_ms": 186.279859375,
+          "min_ms": 139.8282,
+          "max_ms": 289.1863
+        },
+        "failures": 0,
+        "connections": 16,
+        "requests": 160,
+        "new_connections": 8
+      },
+      "32": {
+        "ttft_ms": {
+          "samples": 32,
+          "p50_ms": 3.0981,
+          "p95_ms": 23.5675,
+          "p99_ms": 25.6035,
+          "mean_ms": 5.501653125,
+          "min_ms": 2.5464,
+          "max_ms": 25.6035
+        },
+        "total_ms": {
+          "samples": 32,
+          "p50_ms": 145.0287,
+          "p95_ms": 169.4661,
+          "p99_ms": 175.3328,
+          "mean_ms": 148.289375,
+          "min_ms": 134.4764,
+          "max_ms": 175.3328
+        },
+        "failures": 0,
+        "connections": 32,
+        "requests": 192,
+        "new_connections": 16
+      }
+    }
+  },
+  "f_idle_expiry": {
+    "pool_idle_timeout_s": 90,
+    "sleep_s": 95,
+    "accepts_after_second_request": 2,
+    "result": "the pooled idle connection is dropped at 90s; the second request reconnects (accept count 2)"
+  },
+  "g_error_paths": {
+    "http_429_ms": {
+      "samples": 20,
+      "p50_ms": 0.3695,
+      "p95_ms": 357.1826,
+      "p99_ms": 1289.8034,
+      "mean_ms": 82.701605,
+      "min_ms": 0.321,
+      "max_ms": 1289.8034
+    },
+    "http_500_ms": {
+      "samples": 20,
+      "p50_ms": 0.352,
+      "p95_ms": 0.3957,
+      "p99_ms": 0.4338,
+      "mean_ms": 0.35370499999999994,
+      "min_ms": 0.3073,
+      "max_ms": 0.4338
+    },
+    "mid_stream_disconnect_ms": "{\"samples\":20,\"p50_ms\":46.5335,\"p95_ms\":48.6673,\"p99_ms\":49.1876,\"mean_ms\":46.433175,\"min_ms\":45.0342,\"max_ms\":49.1876} runs_with_partial_events=20/20",
+    "partial_events_preserved_runs": "20/20",
+    "cancel_after_first_event_ms": "{\"samples\":20,\"p50_ms\":0.7708,\"p95_ms\":1.1248,\"p99_ms\":1.2338,\"mean_ms\":0.811965,\"min_ms\":0.6784,\"max_ms\":1.2338} cancelled_after_first=20/20"
+  },
+  "gateway_leg": {
+    "endpoint": "http://127.0.0.1:43120",
+    "probe_get_root": {
+      "http_code": 401,
+      "time_total_s": 0.062
+    },
+    "probe_get_health": {
+      "http_code": 401,
+      "time_total_s": 0.002
+    },
+    "protocol": "plain HTTP/1.1 (no TLS)",
+    "keep_alive": "Connection: keep-alive, Keep-Alive: timeout=5",
+    "connection_reuse": "second sequential curl request on one client reused the connection (num_connects=0 on the second transfer)",
+    "body_without_credentials": "{\"error\":{\"message\":\"Invalid local gateway credential\",\"type\":\"authentication_error\"}}"
+  }
+}

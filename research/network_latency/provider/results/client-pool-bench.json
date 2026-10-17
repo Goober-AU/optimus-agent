@@ -1,0 +1,112 @@
+{
+  "build_count_policy": {
+    "samples": 1000,
+    "p50_us": 25500,
+    "p95_us": 31100,
+    "p99_us": 47300,
+    "mean_us": 59818
+  },
+  "acquire_pool_hit": {
+    "samples": 1000,
+    "p50_us": 5100,
+    "p95_us": 5500,
+    "p99_us": 7700,
+    "mean_us": 5508
+  },
+  "end_to_end": {
+    "fresh_client_per_request": {
+      "1": {
+        "requests": 320,
+        "concurrency": 1,
+        "tcp_accepts": 320,
+        "accepts_per_request": 1.0,
+        "wall_ms": 326,
+        "throughput_rps": 980.4618465528187,
+        "latency": {
+          "samples": 320,
+          "p50_us": 579,
+          "p95_us": 1011,
+          "p99_us": 13174,
+          "mean_us": 1018
+        }
+      },
+      "8": {
+        "requests": 320,
+        "concurrency": 8,
+        "tcp_accepts": 320,
+        "accepts_per_request": 1.0,
+        "wall_ms": 245,
+        "throughput_rps": 1302.0536641417675,
+        "latency": {
+          "samples": 320,
+          "p50_us": 4323,
+          "p95_us": 16423,
+          "p99_us": 33673,
+          "mean_us": 6109
+        }
+      },
+      "32": {
+        "requests": 320,
+        "concurrency": 32,
+        "tcp_accepts": 320,
+        "accepts_per_request": 1.0,
+        "wall_ms": 229,
+        "throughput_rps": 1393.2876625248289,
+        "latency": {
+          "samples": 320,
+          "p50_us": 19306,
+          "p95_us": 33309,
+          "p99_us": 33899,
+          "mean_us": 22364
+        }
+      }
+    },
+    "pooled_client": {
+      "1": {
+        "requests": 320,
+        "concurrency": 1,
+        "tcp_accepts": 1,
+        "accepts_per_request": 0.003125,
+        "wall_ms": 44,
+        "throughput_rps": 7144.643303683064,
+        "latency": {
+          "samples": 320,
+          "p50_us": 134,
+          "p95_us": 170,
+          "p99_us": 268,
+          "mean_us": 136
+        }
+      },
+      "8": {
+        "requests": 320,
+        "concurrency": 8,
+        "tcp_accepts": 8,
+        "accepts_per_request": 0.025,
+        "wall_ms": 33,
+        "throughput_rps": 9650.966755435455,
+        "latency": {
+          "samples": 320,
+          "p50_us": 750,
+          "p95_us": 919,
+          "p99_us": 2622,
+          "mean_us": 792
+        }
+      },
+      "32": {
+        "requests": 320,
+        "concurrency": 32,
+        "tcp_accepts": 32,
+        "accepts_per_request": 0.1,
+        "wall_ms": 41,
+        "throughput_rps": 7683.589773142012,
+        "latency": {
+          "samples": 320,
+          "p50_us": 2870,
+          "p95_us": 10420,
+          "p99_us": 13252,
+          "mean_us": 3600
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,105 @@
+//! Existing supervisor RPCs used by worker-side agent messaging.
+
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
+
+use serde_json::{json, Value};
+
+use crate::core::agent_messages::{
+    AgentSessionMessageAgentSummary, AgentSessionMessageReceipt,
+    DELIVERY_STATUS_DELIVERED, DELIVERY_STATUS_QUEUED,
+};
+use crate::modes::daemon::daemon_client::DaemonClient;
+use crate::modes::daemon::daemon_errors::deserialize_daemon_error;
+
+pub(super) async fn list_peers(
+    socket_path: &str,
+    worker_token: &str,
+) -> Vec<AgentSessionMessageAgentSummary> {
+    let client = Arc::new(DaemonClient::new(socket_path));
+    let result = async {
+        client.connect(1_000).await.map_err(|error| error.to_string())?;
+        client.wait_for_hello(1_000).await.map_err(|error| error.to_string())?;
+        // request() checks the existing schema-revision compatibility gate.
+        let response = client.request(
+            json!({"type": "list_agent_peers", "workerToken": worker_token})
+                .as_object().expect("command object").clone(),
+            Some(5_000),
+            Default::default(),
+        ).await.map_err(|error| error.to_string())?;
+        if !response.success {
+            return Err(deserialize_daemon_error(&response).to_string());
+        }
+        serde_json::from_value::<Vec<AgentSessionMessageAgentSummary>>(
+            response.data.and_then(|data| data.get("peers").cloned()).unwrap_or(Value::Null),
+        ).map_err(|error| error.to_string())
+    }.await;
+    client.close().await;
+    // Discovery is optional; an older or temporarily unavailable supervisor must
+    // not prevent local child messaging or session startup.
+    result.unwrap_or_default()
+}
+
+pub(super) async fn send_message(
+    socket_path: &str,
+    from_active_session_id: &str,
+    target_selector: &str,
+    message: &str,
+    shutting_down: &AtomicBool,
+) -> Result<AgentSessionMessageReceipt, String> {
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(30);
+    let mut last_error = format!("Unknown active session: {target_selector}");
+    let client = loop {
+        if shutting_down.load(Ordering::SeqCst) {
+            return Err("Daemon is shutting down".to_string());
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(last_error);
+        }
+        let candidate = Arc::new(DaemonClient::new(socket_path));
+        let connected = async {
+            candidate.connect(1_000).await?;
+            candidate.wait_for_hello(1_000).await?;
+            Ok::<_, crate::modes::daemon::daemon_client::DaemonClientError>(())
+        }.await;
+        match connected {
+            Ok(()) => break candidate,
+            Err(error) => {
+                last_error = error.to_string();
+                candidate.close().await;
+            }
+        }
+        tokio::time::sleep(Duration::from_millis(250)).await;
+    };
+    // Retry connections only. A sent message is never replayed after a lost
+    // response: it may already have been accepted by the other worker.
+    let response = client.request(
+        json!({
+            "type": "send_message",
+            "fromActiveSessionId": from_active_session_id,
+            "targetActiveSessionId": target_selector,
+            "message": message,
+            "agentOrigin": true,
+        }).as_object().expect("command object").clone(),
+        Some(30_000),
+        Default::default(),
+    ).await;
+    client.close().await;
+    let response = response.map_err(|error| error.to_string())?;
+    if !response.success {
+        return Err(deserialize_daemon_error(&response).to_string());
+    }
+    let receipt: AgentSessionMessageReceipt = serde_json::from_value(
+        response.data.unwrap_or(Value::Null),
+    ).map_err(|_| "Supervisor returned an invalid agent-message receipt".to_string())?;
+    if !matches!(receipt.delivery_status.as_str(), DELIVERY_STATUS_DELIVERED | DELIVERY_STATUS_QUEUED) {
+        return Err("Supervisor returned an invalid agent-message receipt".to_string());
+    }
+    Ok(receipt)
+}
+
+#[cfg(test)]
+mod messaging_safety_tests {
+    use super::*;
+    use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};

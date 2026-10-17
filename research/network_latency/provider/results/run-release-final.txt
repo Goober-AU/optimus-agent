@@ -1,0 +1,391 @@
+warning: unused variable: `state`
+   --> crates\pi-ai\src\mcp\oauth.rs:658:17
+    |
+658 |             let state = state.clone();
+    |                 ^^^^^ help: if this is intentional, prefix it with an underscore: `_state`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:2018:6
+     |
+2018 |     let mut block_exists = index.is_some();
+     |         ----^^^^^^^^^^^^
+     |         |
+     |         help: remove this `mut`
+     |
+     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: type `BlockMeta` is more private than the item `handle_content_block_start`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:1974:1
+     |
+1974 | / pub fn handle_content_block_start(
+1975 | |     content_block_index: usize,
+1976 | |     start: &Value,
+1977 | |     blocks: &mut Vec<BlockMeta>,
+1978 | |     output: &mut AssistantMessage,
+1979 | |     stream: &AssistantMessageEventStream,
+1980 | | ) {
+     | |_^ function `handle_content_block_start` is reachable at visibility `pub`
+     |
+note: but type `BlockMeta` is only usable at visibility `pub(self)`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:245:1
+     |
+ 245 | struct BlockMeta {
+     | ^^^^^^^^^^^^^^^^
+     = note: `#[warn(private_interfaces)]` on by default
+
+warning: type `BlockMeta` is more private than the item `handle_content_block_delta`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:2010:1
+     |
+2010 | / pub fn handle_content_block_delta(
+2011 | |     content_block_index: usize,
+2012 | |     delta: &Value,
+2013 | |     blocks: &mut Vec<BlockMeta>,
+2014 | |     output: &mut AssistantMessage,
+2015 | |     stream: &AssistantMessageEventStream,
+2016 | | ) {
+     | |_^ function `handle_content_block_delta` is reachable at visibility `pub`
+     |
+note: but type `BlockMeta` is only usable at visibility `pub(self)`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:245:1
+     |
+ 245 | struct BlockMeta {
+     | ^^^^^^^^^^^^^^^^
+
+warning: type `BlockMeta` is more private than the item `handle_content_block_stop`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:2142:1
+     |
+2142 | / pub fn handle_content_block_stop(
+2143 | |     content_block_index: usize,
+2144 | |     blocks: &mut Vec<BlockMeta>,
+2145 | |     output: &mut AssistantMessage,
+2146 | |     stream: &AssistantMessageEventStream,
+2147 | | ) {
+     | |_^ function `handle_content_block_stop` is reachable at visibility `pub`
+     |
+note: but type `BlockMeta` is only usable at visibility `pub(self)`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:245:1
+     |
+ 245 | struct BlockMeta {
+     | ^^^^^^^^^^^^^^^^
+
+warning: type `ResolvedCompat` is more private than the item `openai_completions::convert_messages`
+   --> crates\pi-ai\src\providers\openai_completions.rs:538:1
+    |
+538 | pub(crate) fn convert_messages(model: &Model, context: &Context, compat: &ResolvedCompat) -> Result<Vec<Value>, String> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function `openai_completions::convert_messages` is reachable at visibility `pub(crate)`
+    |
+note: but type `ResolvedCompat` is only usable at visibility `pub(self)`
+   --> crates\pi-ai\src\providers\openai_completions.rs:155:1
+    |
+155 | struct ResolvedCompat {
+    | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `message` is never used
+   --> crates\pi-ai\src\providers\anthropic.rs:487:5
+    |
+479 | impl AnthropicStreamError {
+    | ------------------------- method in this implementation
+...
+487 |     fn message(&self) -> String {
+    |        ^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `get` is never used
+    --> crates\pi-ai\src\providers\anthropic.rs:2351:5
+     |
+2338 | impl HeaderBag {
+     | -------------- method in this implementation
+...
+2351 |     fn get(&self, name: &str) -> Option<&str> {
+     |        ^^^
+
+warning: function `create_lazy_load_error_message` is never used
+   --> crates\pi-ai\src\providers\register_builtins.rs:259:4
+    |
+259 | fn create_lazy_load_error_message(model: &Model, error: &str) -> AssistantMessage {
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+   Compiling pi-ai v0.1.34 (C:\Users\openclawuser\optimus-net-20261017\crates\pi-ai)
+warning: `pi-ai` (lib) generated 9 warnings (run `cargo fix --lib -p pi-ai` to apply 2 suggestions)
+warning: unused import: `WebSocketLike`
+  --> crates\pi-ai\tests\codex_native_websocket.rs:11:25
+   |
+11 |     WebSocketEventType, WebSocketLike, WebSocketListener,
+   |                         ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `pi-ai` (test "codex_native_websocket") generated 1 warning
+warning: variable does not need to be mutable
+    --> crates\pi-ai\src\providers\anthropic.rs:2925:7
+     |
+2925 |         let mut stream = std::pin::pin!(stream);
+     |             ----^^^^^^
+     |             |
+     |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+    --> crates\pi-ai\src\providers\azure_openai_responses.rs:1170:7
+     |
+1170 |         let mut stream = stream_azure_openai_responses(&model, &context(), Some(options));
+     |             ----^^^^^^
+     |             |
+     |             help: remove this `mut`
+
+warning: unused variable: `end`
+    --> crates\pi-ai\src\providers\openai_completions.rs:3139:29
+     |
+3139 |                 if let Some(end) = request.windows(4).position(|w| w == b"\r\n\r\n") {
+     |                             ^^^ help: if this is intentional, prefix it with an underscore: `_end`
+
+warning: type `amazon_bedrock::BlockMeta` is more private than the item `amazon_bedrock::handle_content_block_start`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:1974:1
+     |
+1974 | / pub fn handle_content_block_start(
+1975 | |     content_block_index: usize,
+1976 | |     start: &Value,
+1977 | |     blocks: &mut Vec<BlockMeta>,
+1978 | |     output: &mut AssistantMessage,
+1979 | |     stream: &AssistantMessageEventStream,
+1980 | | ) {
+     | |_^ function `amazon_bedrock::handle_content_block_start` is reachable at visibility `pub`
+     |
+note: but type `amazon_bedrock::BlockMeta` is only usable at visibility `pub(self)`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:245:1
+     |
+ 245 | struct BlockMeta {
+     | ^^^^^^^^^^^^^^^^
+     = note: `#[warn(private_interfaces)]` on by default
+
+warning: type `amazon_bedrock::BlockMeta` is more private than the item `amazon_bedrock::handle_content_block_delta`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:2010:1
+     |
+2010 | / pub fn handle_content_block_delta(
+2011 | |     content_block_index: usize,
+2012 | |     delta: &Value,
+2013 | |     blocks: &mut Vec<BlockMeta>,
+2014 | |     output: &mut AssistantMessage,
+2015 | |     stream: &AssistantMessageEventStream,
+2016 | | ) {
+     | |_^ function `amazon_bedrock::handle_content_block_delta` is reachable at visibility `pub`
+     |
+note: but type `amazon_bedrock::BlockMeta` is only usable at visibility `pub(self)`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:245:1
+     |
+ 245 | struct BlockMeta {
+     | ^^^^^^^^^^^^^^^^
+
+warning: type `amazon_bedrock::BlockMeta` is more private than the item `amazon_bedrock::handle_content_block_stop`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:2142:1
+     |
+2142 | / pub fn handle_content_block_stop(
+2143 | |     content_block_index: usize,
+2144 | |     blocks: &mut Vec<BlockMeta>,
+2145 | |     output: &mut AssistantMessage,
+2146 | |     stream: &AssistantMessageEventStream,
+2147 | | ) {
+     | |_^ function `amazon_bedrock::handle_content_block_stop` is reachable at visibility `pub`
+     |
+note: but type `amazon_bedrock::BlockMeta` is only usable at visibility `pub(self)`
+    --> crates\pi-ai\src\providers\amazon_bedrock.rs:245:1
+     |
+ 245 | struct BlockMeta {
+     | ^^^^^^^^^^^^^^^^
+
+warning: type `openai_completions::ResolvedCompat` is more private than the item `openai_completions::convert_messages`
+   --> crates\pi-ai\src\providers\openai_completions.rs:538:1
+    |
+538 | pub(crate) fn convert_messages(model: &Model, context: &Context, compat: &ResolvedCompat) -> Result<Vec<Value>, String> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ function `openai_completions::convert_messages` is reachable at visibility `pub(crate)`
+    |
+note: but type `openai_completions::ResolvedCompat` is only usable at visibility `pub(self)`
+   --> crates\pi-ai\src\providers\openai_completions.rs:155:1
+    |
+155 | struct ResolvedCompat {
+    | ^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `seq`, `path`, `connected_ns`, and `request_read_ns` are never read
+  --> crates\pi-ai\src\providers\provider_transport_bench.rs:89:9
+   |
+88 | pub(crate) struct RequestTiming {
+   |                   ------------- fields in this struct
+89 |     pub seq: u64,
+   |         ^^^
+90 |     pub path: String,
+   |         ^^^^
+91 |     pub connected_ns: u64,
+   |         ^^^^^^^^^^^^
+92 |     pub request_read_ns: u64,
+   |         ^^^^^^^^^^^^^^^
+   |
+   = note: `RequestTiming` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: fields `connections_accepted` and `requests_served` are never read
+   --> crates\pi-ai\src\providers\provider_transport_bench.rs:118:9
+    |
+117 | pub(crate) struct ServerSnapshot {
+    |                   -------------- fields in this struct
+118 |     pub connections_accepted: u64,
+    |         ^^^^^^^^^^^^^^^^^^^^
+119 |     pub requests_served: u64,
+    |         ^^^^^^^^^^^^^^^
+
+warning: method `timings` is never used
+   --> crates\pi-ai\src\providers\provider_transport_bench.rs:140:12
+    |
+123 | impl MockServer {
+    | --------------- method in this implementation
+...
+140 |     pub fn timings(&self) -> Vec<RequestTiming> {
+    |            ^^^^^^^
+
+warning: field `content_length` is never read
+   --> crates\pi-ai\src\providers\provider_transport_bench.rs:170:5
+    |
+168 | struct HttpRequest {
+    |        ----------- field in this struct
+169 |     path: String,
+170 |     content_length: usize,
+    |     ^^^^^^^^^^^^^^
+
+warning: `pi-ai` (lib test) generated 13 warnings (2 duplicates) (run `cargo fix --lib -p pi-ai --tests` to apply 3 suggestions)
+    Finished `release` profile [optimized] target(s) in 3m 28s
+     Running unittests src\lib.rs (C:/Users/openclawuser/optimus-net-target-w5\release\deps\pi_ai-25ee42e8e2dcee38.exe)
+
+running 9 tests
+pool_hit_acquisition: {"samples":1000,"p50_ms":0.0001,"p95_ms":0.0001,"p99_ms":0.0001,"mean_ms":0.00006620000000000086,"min_ms":0.0,"max_ms":0.0002}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:53.991Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+fresh_build_acquisition: {"samples":1000,"p50_ms":0.0236,"p95_ms":0.0307,"p99_ms":0.0466,"mean_ms":0.02877649999999999,"min_ms":0.0182,"max_ms":4.2637}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:54.066Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:54.692Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.328Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.329Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.329Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.330Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.330Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.331Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.331Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.331Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.332Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.332Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.333Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.333Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.333Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.334Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.334Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.334Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.335Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"rate_limit","providerErrorType":"rate_limit_error","status":429,"message":"429 rate limited","cause":"{\"name\":\"Error\",\"message\":\"429 rate limited\",\"status\":429,\"error\":{\"message\":\"rate limited\",\"type\":\"rate_limit_error\"},\"headers\":{\"content-type\":\"application/json\",\"retry-after\":\"1\",\"content-length\":\"62\"}}","ts":"2026-10-17T01:43:55.335Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+pool_mean_us=0.066 fresh_mean_us=28.776
+large_4mb_total_ms: {"samples":10,"p50_ms":82.2405,"p95_ms":186.8484,"p99_ms":186.8484,"mean_ms":78.76218,"min_ms":15.4949,"max_ms":186.8484}
+large_4mb_mean_bps: 78101016
+error_429_ms: {"samples":20,"p50_ms":0.3695,"p95_ms":357.1826,"p99_ms":1289.8034,"mean_ms":82.701605,"min_ms":0.321,"max_ms":1289.8034}
+test providers::provider_transport_bench::provider_transport_bench_fixture_shapes ... ok
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.338Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.338Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.339Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.339Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.339Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.340Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.340Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.340Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.341Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.341Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.342Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.342Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.342Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.343Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.343Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.343Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.344Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.344Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.344Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"server_error","providerErrorType":"server_error","status":500,"message":"500 server error","cause":"{\"name\":\"Error\",\"message\":\"500 server error\",\"status\":500,\"error\":{\"message\":\"server error\",\"type\":\"server_error\"},\"headers\":{\"content-type\":\"application/json\",\"content-length\":\"58\"}}","ts":"2026-10-17T01:43:55.345Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+error_500_ms: {"samples":20,"p50_ms":0.352,"p95_ms":0.3957,"p99_ms":0.4338,"mean_ms":0.35370499999999994,"min_ms":0.3073,"max_ms":0.4338}
+test providers::provider_transport_bench::provider_transport_bench_large_body ... ok
+test providers::provider_transport_bench::provider_transport_bench_connection_reuse_proof ... ok
+test providers::provider_transport_bench::provider_transport_bench_client_acquisition_cost ... ok
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:55.392Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:55.437Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:55.484Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:55.530Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:55.577Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:55.623Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:55.672Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:55.719Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:55.765Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:55.813Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:55.860Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:55.905Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:55.950Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:55.997Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:56.043Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:56.090Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:56.136Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:56.182Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:56.229Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+{"provider":"bench-fixture","model":"bench-model","api":"openai-completions","kind":"malformed_response","providerErrorType":"malformed_response","message":"Completions stream ended before finish_reason or [DONE]","cause":"{\"name\":\"Error\",\"message\":\"Completions stream ended before finish_reason or [DONE]\",\"error\":{\"type\":\"malformed_response\",\"message\":\"Completions stream ended before finish_reason or [DONE]\"}}","ts":"2026-10-17T01:43:56.274Z","level":"error","component":"ai.provider","msg":"provider stream failure"}
+error_disconnect_ms: {"samples":20,"p50_ms":46.5335,"p95_ms":48.6673,"p99_ms":49.1876,"mean_ms":46.433175,"min_ms":45.0342,"max_ms":49.1876} runs_with_partial_events=20/20
+error_cancel_after_first_event_ms: {"samples":20,"p50_ms":0.7708,"p95_ms":1.1248,"p99_ms":1.2338,"mean_ms":0.811965,"min_ms":0.6784,"max_ms":1.2338} cancelled_after_first=20/20
+test providers::provider_transport_bench::provider_transport_bench_error_paths ... ok
+throughput_chunk_1024b_total_ms: {"samples":10,"p50_ms":292.3589,"p95_ms":1263.5514,"p99_ms":1263.5514,"mean_ms":388.83018999999996,"min_ms":283.5456,"max_ms":1263.5514}
+throughput_chunk_1024b_first_inter_event_ms: {"samples":10,"p50_ms":0.9103,"p95_ms":2.3705,"p99_ms":2.3705,"mean_ms":1.03419,"min_ms":0.0382,"max_ms":2.3705}
+throughput_chunk_1024b: mean_bps=648620 payload_bytes_total=204800 mean_total_ms=388.8
+concurrency_1: ttft_ms={"samples":32,"p50_ms":0.4655,"p95_ms":0.6951,"p99_ms":2.6315,"mean_ms":0.569753125,"min_ms":0.3886,"max_ms":2.6315} total_ms={"samples":32,"p50_ms":122.8289,"p95_ms":124.8162,"p99_ms":152.3282,"mean_ms":123.58071874999999,"min_ms":119.4936,"max_ms":152.3282} failures=0 connections=1 requests=32 new_connections=1
+concurrency_2: ttft_ms={"samples":32,"p50_ms":0.4654,"p95_ms":0.5614,"p99_ms":0.9631,"mean_ms":0.482221875,"min_ms":0.3382,"max_ms":0.9631} total_ms={"samples":32,"p50_ms":125.9714,"p95_ms":183.3504,"p99_ms":222.7196,"mean_ms":142.142146875,"min_ms":118.7891,"max_ms":222.7196} failures=0 connections=2 requests=64 new_connections=1
+throughput_chunk_4096b_total_ms: {"samples":10,"p50_ms":292.3387,"p95_ms":364.73,"p99_ms":364.73,"mean_ms":307.87471999999997,"min_ms":279.5002,"max_ms":364.73}
+throughput_chunk_4096b_first_inter_event_ms: {"samples":10,"p50_ms":0.9882,"p95_ms":1.7235,"p99_ms":1.7235,"mean_ms":0.9177299999999999,"min_ms":0.0499,"max_ms":1.7235}
+throughput_chunk_4096b: mean_bps=2686972 payload_bytes_total=819200 mean_total_ms=307.9
+test providers::provider_transport_bench::provider_transport_bench_stream_throughput ... ok
+concurrency_4: ttft_ms={"samples":32,"p50_ms":0.4514,"p95_ms":0.6038,"p99_ms":1.3975,"mean_ms":0.50906875,"min_ms":0.3207,"max_ms":1.3975} total_ms={"samples":32,"p50_ms":125.0219,"p95_ms":253.0175,"p99_ms":301.9254,"mean_ms":156.347325,"min_ms":118.0127,"max_ms":301.9254} failures=0 connections=4 requests=96 new_connections=2
+concurrency_8: ttft_ms={"samples":32,"p50_ms":0.4707,"p95_ms":1.1407,"p99_ms":30.9343,"mean_ms":1.49306875,"min_ms":0.3613,"max_ms":30.9343} total_ms={"samples":32,"p50_ms":161.592,"p95_ms":227.0937,"p99_ms":253.5994,"mean_ms":168.06730937499998,"min_ms":117.735,"max_ms":253.5994} failures=0 connections=8 requests=128 new_connections=4
+concurrency_16: ttft_ms={"samples":32,"p50_ms":1.4424,"p95_ms":32.4191,"p99_ms":58.8806,"mean_ms":8.033725,"min_ms":0.3814,"max_ms":58.8806} total_ms={"samples":32,"p50_ms":187.7287,"p95_ms":243.9806,"p99_ms":289.1863,"mean_ms":186.279859375,"min_ms":139.8282,"max_ms":289.1863} failures=0 connections=16 requests=160 new_connections=8
+concurrency_32: ttft_ms={"samples":32,"p50_ms":3.0981,"p95_ms":23.5675,"p99_ms":25.6035,"mean_ms":5.501653125,"min_ms":2.5464,"max_ms":25.6035} total_ms={"samples":32,"p50_ms":145.0287,"p95_ms":169.4661,"p99_ms":175.3328,"mean_ms":148.289375,"min_ms":134.4764,"max_ms":175.3328} failures=0 connections=32 requests=192 new_connections=16
+test providers::provider_transport_bench::provider_transport_bench_concurrency ... ok
+ttft_headers_ms: {"samples":40,"p50_ms":0.5669,"p95_ms":0.727,"p99_ms":1566.7636,"mean_ms":39.74896,"min_ms":0.4724,"max_ms":1566.7636}
+ttft_first_chunk_ms: {"samples":40,"p50_ms":0.6412,"p95_ms":1.4501,"p99_ms":1567.1003,"mean_ms":39.85426,"min_ms":0.521,"max_ms":1567.1003}
+ttft_headers_to_first_event_ms: {"samples":40,"p50_ms":0.0632,"p95_ms":0.1117,"p99_ms":1.2596,"mean_ms":0.10529999999999999,"min_ms":0.0474,"max_ms":1.2596}
+ttft_total_ms: {"samples":40,"p50_ms":1242.5173,"p95_ms":1516.6062,"p99_ms":2719.0963,"mean_ms":1304.032605,"min_ms":1071.2503,"max_ms":2719.0963}
+delayed_headers_observed_ms: {"samples":10,"p50_ms":131.811,"p95_ms":138.0771,"p99_ms":138.0771,"mean_ms":128.52925,"min_ms":121.7597,"max_ms":138.0771}
+delayed_first_byte_observed_ms: {"samples":10,"p50_ms":121.9513,"p95_ms":147.6333,"p99_ms":147.6333,"mean_ms":128.97996,"min_ms":120.6637,"max_ms":147.6333}
+test providers::provider_transport_bench::provider_transport_bench_ttft ... ok
+test providers::provider_transport_bench::provider_transport_bench_idle_expiry has been running for over 60 seconds
+idle_expiry_after_95s_connections: 2
+test providers::provider_transport_bench::provider_transport_bench_idle_expiry ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 877 filtered out; finished in 96.84s
+
+     Running tests\codex_native_websocket.rs (C:/Users/openclawuser/optimus-net-target-w5\release\deps\codex_native_websocket-77d15223d4c31a6c.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+     Running tests\openai_speed_regressions.rs (C:/Users/openclawuser/optimus-net-target-w5\release\deps\openai_speed_regressions-eb0cccebf7ccfc8d.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
+     Running tests\responses_integer_limits.rs (C:/Users/openclawuser/optimus-net-target-w5\release\deps\responses_integer_limits-2ee68f8904a7fa1b.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests\subscription_models.rs (C:/Users/openclawuser/optimus-net-target-w5\release\deps\subscription_models-40454717c847c359.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.00s
+
+     Running tests\vertex_gemma_thinking.rs (C:/Users/openclawuser/optimus-net-target-w5\release\deps\vertex_gemma_thinking-9e6f722da70873d2.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+
