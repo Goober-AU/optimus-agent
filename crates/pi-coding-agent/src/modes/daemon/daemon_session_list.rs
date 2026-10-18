@@ -495,7 +495,7 @@ pub fn summary_for_active_session(
             )]);
             if let Some(snapshot) = crate::core::performance_monitor::throughput::snapshot(&session.session_id) {
                 if let Ok(value) = serde_json::to_value(snapshot) {
-                    extra.insert("generationThroughput".into(), value);
+                    extra.insert("streamingThroughput".into(), value);
                 }
             }
             extra

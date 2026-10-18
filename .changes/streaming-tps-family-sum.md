@@ -1,0 +1,1 @@
+- Fixed the TPS meter to exclude initial response waits and trailing cleanup, and to sum each chat and subagent streaming average instead of pooling request durations.

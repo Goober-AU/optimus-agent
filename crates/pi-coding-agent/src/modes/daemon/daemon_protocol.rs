@@ -85,8 +85,11 @@ pub const DAEMON_COMMAND_ENVELOPE_MIN_PROTOCOL_VERSION: u32 = 7;
 // semantics), so older clients see a visible warning instead of a silent no-op.
 // Revision 43 adds optional active/estimated/sequence streaming throughput fields.
 // Existing commands/events retain their compatibility floors; no startup dependency.
-pub const DAEMON_SCHEMA_REVISION: u32 = 43;
-pub const DAEMON_SCHEMA_ID: &str = "protocol-7-schema-43-live-throughput";
+// Revision 44 replaces optional generationThroughput with streamingThroughput.
+// The streaming_throughput capability gates post-first-delta streamingMs metadata;
+// legacy generation_throughput is parse-only and is never treated as streaming.
+pub const DAEMON_SCHEMA_REVISION: u32 = 44;
+pub const DAEMON_SCHEMA_ID: &str = "protocol-7-schema-44-streaming-throughput";
 
 pub type DaemonProtocolName = String;
 pub type DaemonProtocolVersion = u32;
@@ -182,8 +185,10 @@ pub enum DaemonServerCapability {
     /// Daemon-owned per-chat OCC-2 preference get/set (occ_get_preferences /
     /// occ_set_preferences). Clients must check before sending them.
     OccSessionPreferences,
-    /// Optional own-session provider output/timing totals on roster rows.
+    /// Kept only so pre-44 hello frames parse; never advertised or used as streaming metadata.
     GenerationThroughput,
+    /// Optional own-session output tokens and post-first-delta streaming time on roster rows.
+    StreamingThroughput,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -266,7 +271,7 @@ pub const DAEMON_DEFAULT_SERVER_CAPABILITIES: [DaemonServerCapability; 32] = [
     DaemonServerCapability::ClangExecutionMode,
     DaemonServerCapability::AgentCommunicationActivity,
     DaemonServerCapability::OccSessionPreferences,
-    DaemonServerCapability::GenerationThroughput,
+    DaemonServerCapability::StreamingThroughput,
 ];
 
 /// `{ dev: number; ino: number }` on the peer transport ticket.
@@ -2160,8 +2165,9 @@ impl DaemonCommandCompatibility {
 
 /// `DAEMON_COMMAND_COMPATIBILITY`, verbatim from the TypeScript table
 /// (`satisfies Record<DaemonCommandName, DaemonCommandCompatibility>`).
-// Revision 43 adds no commands: generationThroughput is optional on existing
-// list/roster responses, preserving old-client/new-daemon compatibility.
+// Revision 44 adds no commands: streamingThroughput is optional on existing
+// list/roster responses. Only consumers of this metadata need streaming_throughput;
+// list, attach and roster startup retain their existing compatibility floors.
 pub fn daemon_command_compatibility(command: &str) -> DaemonCommandCompatibility {
     use DaemonServerCapability as Capability;
     match command {
@@ -2191,13 +2197,15 @@ pub fn daemon_command_compatibility(command: &str) -> DaemonCommandCompatibility
             DaemonCommandCompatibility::gated(19, Capability::SessionInputPause)
         }
         "heartbeats_list" => DaemonCommandCompatibility::capability(Capability::HeartbeatCatalog),
-        // Schema-39 activity is optional; legacy roster requests keep their existing gate.
+        // Schema-39 activity and schema-44 streaming metadata are optional;
+        // legacy roster requests keep their existing gate.
         "roster_subscribe" | "roster_unsubscribe" => {
             DaemonCommandCompatibility::capability(Capability::AgentRoster)
         }
         "heartbeat_manage" => DaemonCommandCompatibility::capability(Capability::HeartbeatManagement),
         "get_rlm_max_depth_status" | "set_rlm_max_depth" => DaemonCommandCompatibility::revision(11),
-        "get_session_tree" => DaemonCommandCompatibility::legacy(),
+        // Schema-44 streaming metadata does not add a startup or list requirement.
+        "list" | "attach" | "reattach" | "get_state" | "get_session_tree" => DaemonCommandCompatibility::legacy(),
         // Legacy Jev control remains available without the expansion capability.
         // The free-JSON mode field has an additional gate in daemon_jev_mode_compatibility.
         "jev_get_settings" | "jev_set_session_mode" => {
@@ -2809,11 +2817,11 @@ pub fn daemon_outbound_compatibility(outbound: &'static str) -> DaemonCommandCom
     use DaemonServerCapability as Capability;
     match outbound {
         "heartbeats_changed" => DaemonCommandCompatibility::capability(Capability::HeartbeatCatalog),
-        // communicationActivity and generationThroughput are additive metadata,
-        // not new event requirements; consumers negotiate their capabilities.
+        // communicationActivity and schema-44 streamingThroughput are optional
+        // metadata, not new event requirements; consumers negotiate each capability.
         "roster_update" => DaemonCommandCompatibility::capability(Capability::AgentRoster),
         // Jev feature/usage metadata, including revision 37 memory, is additive; no new startup or event requirement.
-        "response" | "extension_ui_request" => DaemonCommandCompatibility::legacy(),
+        "response" | "session_attached" | "session_resynced" | "extension_ui_request" => DaemonCommandCompatibility::legacy(),
         _ => DaemonCommandCompatibility::legacy(),
     }
 }
@@ -3124,7 +3132,7 @@ mod tests {
 
     #[test]
     fn keeps_the_advertised_schema_identity() {
-        assert_eq!(DAEMON_SCHEMA_ID, format!("protocol-{DAEMON_PROTOCOL_VERSION}-schema-{DAEMON_SCHEMA_REVISION}-live-throughput"));
+        assert_eq!(DAEMON_SCHEMA_ID, format!("protocol-{DAEMON_PROTOCOL_VERSION}-schema-{DAEMON_SCHEMA_REVISION}-streaming-throughput"));
     }
 
     #[test]
@@ -3148,24 +3156,82 @@ mod tests {
     }
 
     #[test]
-    fn generation_throughput_keeps_legacy_roster_and_startup_compatible() {
-        assert!(DAEMON_DEFAULT_SERVER_CAPABILITIES.contains(&DaemonServerCapability::GenerationThroughput));
-        let older = DaemonCompatibilityHello { protocol: daemon_protocol_info(), schema_revision: Some(41),
-            server_capabilities: Some(vec![DaemonServerCapability::AgentRoster]) };
-        for command in ["attach", "list", "roster_subscribe"] {
+    fn streaming_throughput_keeps_new_client_old_daemon_startup_compatible() {
+        let old_hello = serde_json::json!({
+            "type":"daemon_hello", "socketPath":"old-daemon", "clientId":"client",
+            "protocol":daemon_protocol_info(), "schemaRevision":43,
+            "serverCapabilities":["agent_roster", "generation_throughput"]
+        });
+        let parsed: DaemonOutbound = serde_json::from_value(old_hello.clone()).unwrap();
+        let DaemonOutbound::DaemonHello { server_capabilities, .. } = parsed else { panic!("hello expected") };
+        assert!(server_capabilities.contains(&DaemonServerCapability::GenerationThroughput));
+        assert!(!server_capabilities.contains(&DaemonServerCapability::StreamingThroughput));
+        let older: DaemonCompatibilityHello = serde_json::from_value(old_hello).unwrap();
+        let streaming = DaemonCommandCompatibility::gated(44, DaemonServerCapability::StreamingThroughput);
+        assert!(!meets_daemon_command_compatibility(&older, &streaming));
+        for command in ["create", "attach", "reattach", "list", "get_state", "roster_subscribe"] {
             assert!(meets_daemon_command_compatibility(&older, &daemon_command_compatibility(command)));
         }
-        assert!(meets_daemon_command_compatibility(&older, &daemon_outbound_compatibility("roster_update")));
-        let old_shape = serde_json::json!({"id":"p", "sessionId":"p", "lifecycle":"live", "activity":"idle",
+        for event in ["daemon_hello", "response", "session_attached", "session_resynced", "roster_update"] {
+            assert!(meets_daemon_command_compatibility(&older, &daemon_outbound_compatibility(event)));
+        }
+        let mut old_shape = serde_json::json!({"id":"p", "sessionId":"p", "lifecycle":"live", "activity":"idle",
             "isSessionActive":true, "cwd":"/tmp", "isStreaming":false, "isCompacting":false,
             "attachedClients":1, "messageCount":1});
         let old: SessionSummary = serde_json::from_value(old_shape.clone()).unwrap();
-        assert!(!old.extra.contains_key("generationThroughput"));
-        let mut new_shape = old_shape;
-        new_shape["generationThroughput"] = serde_json::json!({"generation":"g", "outputTokens":100, "generationMs":2000, "responses":1});
-        let new: SessionSummary = serde_json::from_value(new_shape).unwrap();
-        assert_eq!(old.session_id, new.session_id);
-        assert_eq!(new.roster_view().extra["generationThroughput"]["outputTokens"], 100);
+        assert!(!old.extra.contains_key("streamingThroughput"));
+        old_shape["generationThroughput"] = serde_json::json!({"generation":"g", "outputTokens":100, "generationMs":2000, "responses":1});
+        let legacy: SessionSummary = serde_json::from_value(old_shape).unwrap();
+        assert!(!legacy.roster_view().extra.contains_key("streamingThroughput"));
+    }
+
+    #[test]
+    fn streaming_throughput_keeps_old_client_new_daemon_compatible() {
+        assert!(DAEMON_DEFAULT_SERVER_CAPABILITIES.contains(&DaemonServerCapability::StreamingThroughput));
+        assert!(!DAEMON_DEFAULT_SERVER_CAPABILITIES.contains(&DaemonServerCapability::GenerationThroughput));
+        let supervisor = super::super::daemon_supervisor::supervisor_server_capabilities();
+        assert!(supervisor.iter().any(|capability| capability == "streaming_throughput"));
+        assert!(!supervisor.iter().any(|capability| capability == "generation_throughput"));
+        let current = DaemonCompatibilityHello {
+            protocol: daemon_protocol_info(), schema_revision: Some(DAEMON_SCHEMA_REVISION),
+            server_capabilities: Some(DAEMON_DEFAULT_SERVER_CAPABILITIES.into_iter().chain([DaemonServerCapability::AgentRoster]).collect()),
+        };
+        assert!(meets_daemon_command_compatibility(&current,
+            &DaemonCommandCompatibility::gated(44, DaemonServerCapability::StreamingThroughput)));
+        for command in ["create", "attach", "reattach", "list", "get_state", "roster_subscribe"] {
+            assert!(meets_daemon_command_compatibility(&current, &daemon_command_compatibility(command)));
+        }
+        for event in ["daemon_hello", "response", "session_attached", "session_resynced", "roster_update"] {
+            assert!(meets_daemon_command_compatibility(&current, &daemon_outbound_compatibility(event)));
+        }
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct LegacyHello { protocol: DaemonProtocolInfo, server_capabilities: Vec<String> }
+        let hello: LegacyHello = serde_json::from_value(serde_json::to_value(&current).unwrap()).unwrap();
+        assert_eq!(hello.protocol.version, 7);
+        assert!(hello.server_capabilities.iter().any(|capability| capability == "streaming_throughput"));
+        assert!(!hello.server_capabilities.iter().any(|capability| capability == "generation_throughput"));
+
+        let mut summary = SessionSummary { id: "p".into(), session_id: "p".into(), ..Default::default() };
+        summary.extra.insert("streamingThroughput".into(), serde_json::json!({
+            "generation":"g", "outputTokens":100, "streamingMs":1000, "responses":1,
+            "active":false, "estimated":false, "sequence":3
+        }));
+        let wire = serde_json::to_value(summary.roster_view()).unwrap();
+        assert!(wire.get("generationThroughput").is_none());
+        assert!(wire["streamingThroughput"].get("generationMs").is_none());
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct LegacyRow {
+            session_id: String,
+            #[serde(default)]
+            generation_throughput: Option<Value>,
+        }
+        let legacy: LegacyRow = serde_json::from_value(wire.clone()).unwrap();
+        assert_eq!(legacy.session_id, "p");
+        assert!(legacy.generation_throughput.is_none());
+        let current: SessionSummary = serde_json::from_value(wire).unwrap();
+        assert_eq!(current.extra["streamingThroughput"]["streamingMs"], 1000);
     }
 
     #[test]

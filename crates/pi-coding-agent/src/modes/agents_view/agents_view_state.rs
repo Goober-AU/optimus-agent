@@ -225,9 +225,9 @@ pub struct SessionSummary {
     /// Optional schema-39 metadata. Unknown activity versions must not break the roster.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub communication_activity: Option<Value>,
-    /// Preserve optional throughput through the UI roster projection.
+    /// Preserve streaming-only throughput; legacy request-inclusive metadata is ignored.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub generation_throughput: Option<Value>,
+    pub streaming_throughput: Option<Value>,
 }
 
 impl SessionSummary {
@@ -2221,6 +2221,23 @@ mod tests {
         let back: SessionSummary = serde_json::from_value(value).unwrap();
         assert_eq!(back.session_id, "s-1");
         assert_eq!(back.active_session_id, None);
+    }
+
+    #[test]
+    fn session_summary_preserves_streaming_throughput_without_reinterpreting_legacy() {
+        let metadata = json!({"generation":"g", "outputTokens":300, "streamingMs":1000, "responses":1});
+        let summary: SessionSummary = serde_json::from_value(json!({
+            "sessionId":"a", "streamingThroughput":metadata,
+            "generationThroughput":{"generation":"old", "outputTokens":999, "generationMs":1},
+        })).unwrap();
+        let projected = serde_json::to_value(&summary).unwrap();
+        assert_eq!(projected["streamingThroughput"], metadata);
+        assert!(projected.get("generationThroughput").is_none());
+        let legacy: SessionSummary = serde_json::from_value(json!({
+            "sessionId":"a", "generationThroughput":{"generation":"old", "outputTokens":999, "generationMs":1},
+        })).unwrap();
+        assert!(legacy.streaming_throughput.is_none());
+        assert!(serde_json::to_value(legacy).unwrap().get("streamingThroughput").is_none());
     }
 
     #[test]

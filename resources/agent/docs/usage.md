@@ -17,6 +17,31 @@ The interface has four main areas:
 
 The editor can be replaced temporarily by built-in UI such as `/settings` or by custom extension UI.
 
+### Streaming speed
+
+`STREAM TPS` shows client-observed output streaming speed. Each agent averages
+its output tokens over the time from its first to its last nonempty output
+chunk. The initial response wait, tool execution, idle time, and trailing
+usage/response cleanup are excluded. Text, reasoning, and tool-call arguments
+all count as output; provider-reported output usage is counted once.
+
+A parent chat adds its own streaming average and each observed descendant's
+own streaming average exactly once. For example, ten contributing agents at
+300 TPS show 3,000 TPS, not 300 TPS. Each agent keeps its own duration-weighted
+average; different request lengths do not turn the family total into a pooled
+average. Completed observed agents remain in the total. If an agent disappears
+or stops before its estimate is finalized, only its last observed completed
+average is retained. This is a sum of agent averages, not a measurement of
+simultaneous server throughput.
+
+A `~` prefix marks live estimates based on streamed characters. Completed
+responses replace those estimates with provider token counts. Missing usage,
+single-chunk output, and zero-duration samples cannot establish a final speed;
+an unsupported or unmeasurable value is shown as `—`, not as zero. The meter
+resets with the underlying live session's counters and does not reconstruct
+speed from saved conversation text. Network buffering can affect these client
+measurements; they are not direct GPU decode measurements.
+
 ### Editor Features
 
 | Feature | How |

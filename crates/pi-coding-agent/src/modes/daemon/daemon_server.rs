@@ -237,6 +237,10 @@ mod tests {
         tokio::io::AsyncBufReadExt::read_line(&mut lines, &mut line).await.unwrap();
         let hello: Value = serde_json::from_str(&line).unwrap();
         assert_eq!(hello["type"], "daemon_hello");
+        assert_eq!(hello["schemaRevision"], 44);
+        let capabilities = hello["serverCapabilities"].as_array().unwrap();
+        assert!(capabilities.iter().any(|capability| capability == "streaming_throughput"));
+        assert!(!capabilities.iter().any(|capability| capability == "generation_throughput"));
         output.write_all(b"{\"type\":\"does_not_exist\",\"id\":\"request-1\"}\n").await.unwrap();
         line.clear();
         tokio::io::AsyncBufReadExt::read_line(&mut lines, &mut line).await.unwrap();
@@ -285,7 +289,11 @@ mod tests {
             if let Some(frame) = frames.into_iter().next() { break frame; }
         };
         assert_eq!(hello.header["kind"], "outbound");
-        assert_eq!(serde_json::from_slice::<Value>(&hello.payload).unwrap()["type"], "daemon_hello");
+        let hello: Value = serde_json::from_slice(&hello.payload).unwrap();
+        assert_eq!(hello["type"], "daemon_hello");
+        let capabilities = hello["serverCapabilities"].as_array().unwrap();
+        assert!(capabilities.iter().any(|capability| capability == "streaming_throughput"));
+        assert!(!capabilities.iter().any(|capability| capability == "generation_throughput"));
         let command = encode_private_frame(&serde_json::json!({"kind":"command","requestId":"auth-1","commandType":"worker_auth"}), b"{\"type\":\"worker_auth\",\"id\":\"auth-1\",\"token\":\"wrong\"}").unwrap();
         peer.write_all(&command).await.unwrap();
         let response = loop {

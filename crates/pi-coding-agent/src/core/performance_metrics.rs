@@ -72,7 +72,7 @@ const COMPONENTS: [PerformanceMetricComponent; 8] = [
 ];
 
 /// `MEASUREMENTS`.
-const MEASUREMENTS: [PerformanceMetricMeasurement; 64] = [
+const MEASUREMENTS: [PerformanceMetricMeasurement; 65] = [
     PerformanceMetricMeasurement::TotalMs,
     PerformanceMetricMeasurement::WaitMs,
     PerformanceMetricMeasurement::DispatchToResponseHeadersMs,
@@ -84,6 +84,7 @@ const MEASUREMENTS: [PerformanceMetricMeasurement; 64] = [
     PerformanceMetricMeasurement::DispatchToFirstToolMs,
     PerformanceMetricMeasurement::DispatchToFirstTextMs,
     PerformanceMetricMeasurement::DispatchToNetworkTerminalMs,
+    PerformanceMetricMeasurement::StreamingMs,
     PerformanceMetricMeasurement::LocalDrainMs,
     PerformanceMetricMeasurement::TransportWebsocket,
     PerformanceMetricMeasurement::LocalGatewayWaitMs,
@@ -1419,6 +1420,27 @@ mod tests {
             // no sleep or subsequent async IO may finish a detached file write.
             assert_eq!(std::fs::read_to_string(&path).unwrap(), expected);
         }
+    }
+
+    #[tokio::test]
+    async fn streaming_metrics_survive_recorder_serialization_including_explicit_null() {
+        let io = Arc::new(MemoryFileIo::new());
+        let recorder = create_recorder(Arc::clone(&io), LocalPerformanceMetricRecorderOptions::default());
+        for (id, value) in [("measured", Some(125.5)), ("unavailable", None)] {
+            let mut event = sample_event(id);
+            event.operation = PerformanceMetricOperation::ProviderAttempt;
+            event.correlation.as_mut().unwrap().provider_attempt_id = Some(id.into());
+            event.measurements.as_mut().unwrap().insert(PerformanceMetricMeasurement::StreamingMs, value);
+            recorder.record(event);
+        }
+        recorder.record(sample_event("absent"));
+        recorder.flush().await;
+        let records = parse_records(&io);
+        assert_eq!(records.len(), 3);
+        assert_eq!(records[0]["measurements"].get("streaming_ms"), Some(&serde_json::json!(125.5)));
+        assert_eq!(records[1]["measurements"].get("streaming_ms"), Some(&Value::Null));
+        assert_eq!(records[2]["measurements"].get("streaming_ms"), None);
+        recorder.close().await;
     }
 
     #[tokio::test]

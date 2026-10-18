@@ -13,7 +13,8 @@ use serde::{Deserialize, Serialize};
 pub struct Snapshot {
     pub generation: String,
     pub output_tokens: f64,
-    pub generation_ms: f64,
+    /// Sum of measured first-to-last nonempty delta intervals. Never dispatch time.
+    pub streaming_ms: f64,
     pub responses: u64,
     #[serde(default)]
     pub active: bool,
@@ -98,20 +99,41 @@ impl Counter {
         let mut sample = self.snapshot.clone();
         if let Some((_, tokens, ms)) = &self.pending {
             sample.output_tokens += tokens;
-            sample.generation_ms += ms;
+            sample.streaming_ms += ms;
             sample.active = true;
             sample.estimated = true;
         }
         sample
     }
 
+    fn clear_pending(&mut self) {
+        if self.pending.take().is_some() {
+            self.snapshot.sequence = self.snapshot.sequence.saturating_add(1);
+        }
+    }
+
     pub fn progress(&mut self, id: &str, tokens: f64, ms: f64) {
-        if id.is_empty()
-            || !tokens.is_finite()
+        if id.is_empty() || self.seen.iter().any(|seen| seen == id) {
+            return;
+        }
+        if !tokens.is_finite()
             || tokens <= 0.0
             || !ms.is_finite()
             || ms <= 0.0
-            || self.seen.iter().any(|seen| seen == id)
+            || !(self.snapshot.output_tokens + tokens).is_finite()
+            || !(self.snapshot.streaming_ms + ms).is_finite()
+        {
+            // The first delta has no interval; an invalid later clock also
+            // invalidates a previous live estimate. Never invent a denominator.
+            self.clear_pending();
+            return;
+        }
+        if self
+            .pending
+            .as_ref()
+            .is_some_and(|(pending, old_tokens, old_ms)| {
+                pending == id && *old_tokens == tokens && *old_ms == ms
+            })
         {
             return;
         }
@@ -120,32 +142,45 @@ impl Counter {
     }
 
     pub fn record(&mut self, event: &PerformanceMetricEvent) {
-        if event.operation != PerformanceMetricOperation::ProviderAttempt
-            || !matches!(
-                event.outcome,
-                Some(
-                    PerformanceMetricOutcome::Success
-                        | PerformanceMetricOutcome::Failure
-                        | PerformanceMetricOutcome::Cancelled
-                )
-            )
-        {
+        if event.operation != PerformanceMetricOperation::ProviderAttempt {
             return;
         }
+        let Some(outcome) = event.outcome else {
+            return;
+        };
         let Some(id) = event
             .correlation
             .as_ref()
             .and_then(|c| c.provider_attempt_id.as_ref())
+            .filter(|id| !id.is_empty())
         else {
             return;
         };
+        if self.seen.contains(id) {
+            return;
+        }
+        if outcome == PerformanceMetricOutcome::Started {
+            if self
+                .pending
+                .as_ref()
+                .is_some_and(|(pending, _, _)| pending != id)
+            {
+                self.clear_pending();
+            }
+            return;
+        }
         if self
             .pending
             .as_ref()
             .is_some_and(|(pending, _, _)| pending == id)
         {
-            self.pending = None;
-            self.snapshot.sequence = self.snapshot.sequence.saturating_add(1);
+            self.clear_pending();
+        }
+        // Remember every terminal, including missing usage/timing, so late
+        // progress cannot resurrect its discarded estimate.
+        self.seen.push_back(id.clone());
+        if self.seen.len() > 256 {
+            self.seen.pop_front();
         }
         let Some(tokens) = event
             .usage
@@ -156,36 +191,24 @@ impl Counter {
         else {
             return;
         };
-        // Provider dispatch-to-terminal duration includes response latency, but
-        // excludes tool execution, idle time and queue/pre-dispatch wait.
+        // No fallback: dispatch, first-token latency, and terminal drain are
+        // not streaming time. Provider output totals already include reasoning
+        // when the provider defines them that way; never add it again here.
         let Some(ms) = event
             .measurements
             .as_ref()
-            .and_then(|values| {
-                values
-                    .get(&M::DispatchToNetworkTerminalMs)
-                    .copied()
-                    .flatten()
-                    .or_else(|| values.get(&M::TotalMs).copied().flatten())
-            })
+            .and_then(|values| values.get(&M::StreamingMs).copied().flatten())
             .filter(|n| n.is_finite() && *n > 0.0)
         else {
             return;
         };
-        if self.seen.contains(id) {
-            return;
-        }
         let tokens = self.snapshot.output_tokens + tokens;
-        let ms = self.snapshot.generation_ms + ms;
+        let ms = self.snapshot.streaming_ms + ms;
         if !tokens.is_finite() || !ms.is_finite() {
             return;
         }
-        self.seen.push_back(id.clone());
-        if self.seen.len() > 256 {
-            self.seen.pop_front();
-        }
         self.snapshot.output_tokens = tokens;
-        self.snapshot.generation_ms = ms;
+        self.snapshot.streaming_ms = ms;
         self.snapshot.responses = self.snapshot.responses.saturating_add(1);
         self.snapshot.sequence = self.snapshot.sequence.saturating_add(1);
     }
@@ -209,7 +232,7 @@ mod tests {
             output_tokens: Some(tokens),
             ..PerformanceMetricUsageV1::provider_unavailable()
         });
-        event.measurements = Some([(M::TotalMs, Some(ms))].into_iter().collect());
+        event.measurements = Some([(M::StreamingMs, Some(ms))].into_iter().collect());
         event
     }
 
@@ -227,7 +250,7 @@ mod tests {
         let final_sample = counter.current();
         assert!(!final_sample.active && !final_sample.estimated);
         assert_eq!(final_sample.output_tokens, 25.0);
-        assert_eq!(final_sample.generation_ms, 150.0);
+        assert_eq!(final_sample.streaming_ms, 150.0);
         assert!(final_sample.sequence > first.sequence);
         counter.progress("a", 40.0, 300.0); // late delta after terminal
         assert_eq!(counter.current().output_tokens, 25.0);
@@ -263,14 +286,14 @@ mod tests {
         }
         assert_eq!(counter.snapshot.responses, 1);
         assert_eq!(counter.snapshot.output_tokens, 100.0);
-        assert_eq!(counter.snapshot.generation_ms, 2000.0);
-        let mut next = event("c", 50.0, 2000.0);
+        assert_eq!(counter.snapshot.streaming_ms, 2000.0);
+        let mut next = event("c", 50.0, 1000.0);
         next.measurements
             .as_mut()
             .unwrap()
-            .insert(M::DispatchToNetworkTerminalMs, Some(1000.0));
+            .insert(M::DispatchToNetworkTerminalMs, Some(9000.0));
         counter.record(&next);
-        assert_eq!(counter.snapshot.generation_ms, 3000.0);
+        assert_eq!(counter.snapshot.streaming_ms, 3000.0);
         assert_eq!(counter.snapshot.output_tokens, 150.0);
     }
 
@@ -304,11 +327,180 @@ mod tests {
         let row = crate::modes::daemon::daemon_session_list::summary_for_active_session(
             &state, None, false, false, false,
         );
-        assert_eq!(row.extra["generationThroughput"]["outputTokens"], 80.0);
-        assert_eq!(row.extra["generationThroughput"]["generationMs"], 2000.0);
+        assert_eq!(row.extra["streamingThroughput"]["outputTokens"], 80.0);
+        assert_eq!(row.extra["streamingThroughput"]["streamingMs"], 2000.0);
         assert_eq!(
-            row.roster_view().extra["generationThroughput"]["responses"],
+            row.roster_view().extra["streamingThroughput"]["responses"],
             1
         );
+    }
+
+    #[test]
+    fn throughput_never_falls_back_to_dispatch_or_total_duration() {
+        let counter = register("throughput-no-fallback");
+        let mut counter = counter.lock().unwrap();
+        for (index, value) in [
+            None,
+            Some(0.0),
+            Some(-1.0),
+            Some(f64::NAN),
+            Some(f64::INFINITY),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let mut sample = event(&format!("invalid-{index}"), 100.0, 500.0);
+            let measurements = sample.measurements.as_mut().unwrap();
+            measurements.insert(M::StreamingMs, value);
+            measurements.insert(M::TotalMs, Some(10000.0));
+            measurements.insert(M::DispatchToNetworkTerminalMs, Some(9000.0));
+            counter.record(&sample);
+        }
+        let mut missing = event("missing-streaming", 100.0, 500.0);
+        missing.measurements = Some(
+            [
+                (M::TotalMs, Some(10000.0)),
+                (M::DispatchToNetworkTerminalMs, Some(9000.0)),
+            ]
+            .into_iter()
+            .collect(),
+        );
+        counter.record(&missing);
+        assert_eq!(counter.current().responses, 0);
+        assert_eq!(counter.current().output_tokens, 0.0);
+        assert_eq!(counter.current().streaming_ms, 0.0);
+    }
+
+    #[test]
+    fn throughput_all_terminals_clear_estimates_and_reject_late_progress_without_usage() {
+        let counter = register("throughput-all-terminals");
+        let mut counter = counter.lock().unwrap();
+        for (index, outcome) in [
+            PerformanceMetricOutcome::Success,
+            PerformanceMetricOutcome::Failure,
+            PerformanceMetricOutcome::Cancelled,
+            PerformanceMetricOutcome::Unavailable,
+            PerformanceMetricOutcome::Timeout,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let id = format!("terminal-{index}");
+            counter.progress(&id, 20.0, 500.0);
+            let live_sequence = counter.current().sequence;
+            let mut terminal = event(&id, 0.0, 500.0);
+            terminal.outcome = Some(outcome);
+            terminal.usage = None;
+            counter.record(&terminal);
+            let sample = counter.current();
+            assert!(!sample.active && !sample.estimated);
+            assert!(sample.sequence > live_sequence);
+            assert_eq!(sample.output_tokens, 0.0);
+            assert_eq!(sample.streaming_ms, 0.0);
+            counter.progress(&id, 40.0, 1000.0);
+            counter.record(&event(&id, 40.0, 1000.0));
+            assert_eq!(counter.current().sequence, sample.sequence);
+            assert_eq!(counter.current().responses, 0, "terminal cannot be revived");
+        }
+    }
+
+    #[test]
+    fn throughput_invalid_usage_and_timing_never_preserve_or_restore_estimates() {
+        let counter = register("throughput-invalid-terminal");
+        let mut counter = counter.lock().unwrap();
+        let mut no_usage = event("no-output-usage", 1.0, 500.0);
+        no_usage.usage.as_mut().unwrap().output_tokens = None;
+        let mut estimated = event("estimated-source", 1.0, 500.0);
+        estimated.usage.as_mut().unwrap().source = "estimated".into();
+        let mut no_timing = event("no-timing", 1.0, 500.0);
+        no_timing.measurements = None;
+        for invalid in [
+            no_usage,
+            estimated,
+            no_timing,
+            event("zero-duration", 1.0, 0.0),
+        ] {
+            let id = invalid
+                .correlation
+                .as_ref()
+                .unwrap()
+                .provider_attempt_id
+                .as_ref()
+                .unwrap();
+            counter.progress(id, 5.0, 100.0);
+            counter.record(&invalid);
+            counter.progress(id, 10.0, 200.0);
+            assert!(!counter.current().active);
+            assert!(!counter.current().estimated);
+            assert_eq!(counter.current().responses, 0);
+        }
+    }
+
+    #[test]
+    fn throughput_sums_tokens_and_streaming_intervals_without_double_counting_reasoning() {
+        let counter = register("throughput-weighted-totals");
+        let mut counter = counter.lock().unwrap();
+        let mut first = event("first", 100.0, 1000.0);
+        let usage = first.usage.as_mut().unwrap();
+        usage.reasoning_tokens = Some(60.0);
+        usage.reasoning_included_in_output = Some(true);
+        counter.record(&first);
+        let mut second = event("second", 100.0, 9000.0);
+        second.outcome = Some(PerformanceMetricOutcome::Cancelled);
+        counter.progress("second", 200.0, 8000.0);
+        counter.record(&second);
+        counter.record(&second);
+        assert!(!counter.current().active);
+        assert_eq!(counter.current().responses, 2);
+        assert_eq!(counter.current().output_tokens, 200.0);
+        assert_eq!(counter.current().streaming_ms, 10000.0);
+        assert_eq!(
+            1000.0 * counter.current().output_tokens / counter.current().streaming_ms,
+            20.0
+        );
+    }
+
+    #[test]
+    fn throughput_first_chunk_invalid_clock_and_retry_cannot_keep_old_estimates() {
+        let counter = register("throughput-retry-estimate");
+        let mut counter = counter.lock().unwrap();
+        counter.progress("a", 2.0, 0.0);
+        assert!(!counter.current().active);
+        counter.progress("a", 4.0, 500.0);
+        let sequence = counter.current().sequence;
+        counter.progress("a", 4.0, 500.0);
+        assert_eq!(
+            counter.current().sequence,
+            sequence,
+            "duplicate progress is not a revision"
+        );
+        counter.progress("a", 8.0, f64::NAN);
+        assert!(!counter.current().active);
+        assert!(counter.current().sequence > sequence);
+        counter.progress("a", 8.0, 700.0);
+        counter.progress("b", 1.0, 0.0);
+        assert!(
+            !counter.current().active,
+            "new attempt's first chunk clears stale pending data"
+        );
+        counter.progress("b", 2.0, 250.0);
+        let mut started = event("c", 0.0, 0.0);
+        started.outcome = Some(PerformanceMetricOutcome::Started);
+        counter.record(&started);
+        assert!(!counter.current().active);
+        counter.progress("c", 3.0, 500.0);
+        assert_eq!(counter.current().output_tokens, 3.0);
+        assert_eq!(counter.current().streaming_ms, 500.0);
+    }
+
+    #[test]
+    fn throughput_snapshot_uses_streaming_wire_field_only() {
+        let snapshot = Snapshot {
+            streaming_ms: 500.0,
+            ..Default::default()
+        };
+        let json = serde_json::to_value(snapshot).unwrap();
+        assert_eq!(json["streamingMs"], 500.0);
+        assert!(json.get("generationMs").is_none());
     }
 }
