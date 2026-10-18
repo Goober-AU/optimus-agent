@@ -23,7 +23,7 @@ use std::time::Duration;
 use pi_coding_agent::core::kernel::repl_manager::{new_repl_kernel_manager, ReplKernelManager};
 use pi_coding_agent::core::kernel::shared::{
     ExecuteOptions, ExecuteResult, ExecuteStatus, KernelClient, KernelManagerOptions,
-    KernelShutdownOptions,
+    KernelShutdownOptions, KernelSnapshotConfig,
 };
 
 /// `shared::DEFAULT_MAX_OUTPUT_CHARS`.
@@ -58,6 +58,14 @@ fn kernel(root: &Path) -> OwnedKernel {
         cwd: Some(root_string.to_string()),
         env: Some(env),
         session_id: Some("private-ipython-output-bounds".into()),
+        snapshot: Some(KernelSnapshotConfig {
+            path: pi_coding_agent::core::kernel::state_snapshot::snapshot_path_in(&root_string),
+            manifest_path: pi_coding_agent::core::kernel::state_snapshot::manifest_path_in(&root_string),
+            cas_root_path: Some(pi_coding_agent::core::kernel::state_snapshot::cas_snapshot_root_in(
+                &root_string,
+            )),
+            ..Default::default()
+        }),
         stderr_log_path: Some(root.join("kernel.stderr.log").to_string_lossy().into_owned()),
         ..Default::default()
     }))
@@ -160,4 +168,61 @@ print("tagged-output")"#,
     })
     .await
     .expect("bounded-output kernel round trip exceeded the deadline");
+}
+
+/// Latency smoke test that reports the round-2 kernel numbers the campaign
+/// asks for (cold bootstrap, warm no-op cell, checkpoint write). It asserts
+/// only generous upper bounds so a loaded host cannot make it flaky; the real
+/// values are printed for the report.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn kernel_bootstrap_and_warm_cell_latency_are_reported() {
+    use std::time::Instant;
+    tokio::time::timeout(Duration::from_secs(240), async {
+        let root = tempfile::Builder::new().prefix("optimus-ipython-latency-").tempdir().unwrap();
+        let owned = kernel(&root.path().join("state"));
+        let client = std::sync::Arc::clone(&owned.0);
+
+        let cold = Instant::now();
+        let result = execute(&client, "1 + 1")
+            .await;
+        assert_eq!(result.status, ExecuteStatus::Ok, "{:?}", result.error);
+        let cold_ms = cold.elapsed().as_secs_f64() * 1000.0;
+        eprintln!("kernel cold cell (spawn + first result): {cold_ms:.0} ms");
+
+        let mut warm = Vec::new();
+        for _ in 0..5 {
+            let started = Instant::now();
+            let result = execute(&client, "pass").await;
+            assert_eq!(result.status, ExecuteStatus::Ok, "{:?}", result.error);
+            warm.push(started.elapsed().as_secs_f64() * 1000.0);
+        }
+        warm.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let median = warm[warm.len() / 2];
+        eprintln!(
+            "kernel warm no-op cell: median {median:.1} ms (min {:.1}, max {:.1})",
+            warm[0],
+            warm[warm.len() - 1]
+        );
+        assert!(
+            median < 5_000.0,
+            "a warm no-op cell must not take seconds: {median:.1} ms"
+        );
+
+        let started = Instant::now();
+        let snapshot = std::sync::Arc::clone(&client)
+            .snapshot_state()
+            .await
+            .expect("checkpoint write");
+        let snapshot_ms = started.elapsed().as_secs_f64() * 1000.0;
+        eprintln!(
+            "kernel checkpoint write: {snapshot_ms:.1} ms (saved: {}, bytes: {})",
+            snapshot.saved.len(),
+            snapshot.bytes
+        );
+        assert!(snapshot.bytes > 0, "a checkpoint payload must be written");
+
+        stop(&client).await;
+    })
+    .await
+    .expect("kernel latency round trip exceeded the deadline");
 }
