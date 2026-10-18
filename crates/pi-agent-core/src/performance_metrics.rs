@@ -168,6 +168,9 @@ pub enum PerformanceMetricMeasurement {
     DispatchToFirstToolMs,
     DispatchToFirstTextMs,
     DispatchToNetworkTerminalMs,
+    /// First to last nonempty generated delta observed by the client. Excludes
+    /// initial latency and terminal drain; unavailable for a single delta.
+    StreamingMs,
     LocalDrainMs,
     TransportWebsocket,
     LocalGatewayWaitMs,
@@ -240,6 +243,7 @@ impl PerformanceMetricMeasurement {
             PerformanceMetricMeasurement::DispatchToFirstToolMs => "dispatch_to_first_tool_ms",
             PerformanceMetricMeasurement::DispatchToFirstTextMs => "dispatch_to_first_text_ms",
             PerformanceMetricMeasurement::DispatchToNetworkTerminalMs => "dispatch_to_network_terminal_ms",
+            PerformanceMetricMeasurement::StreamingMs => "streaming_ms",
             PerformanceMetricMeasurement::LocalDrainMs => "local_drain_ms",
             PerformanceMetricMeasurement::TransportWebsocket => "transport_websocket",
             PerformanceMetricMeasurement::LocalGatewayWaitMs => "local_gateway_wait_ms",
@@ -518,7 +522,9 @@ pub trait PerformanceMetricRecorder: Send + Sync {
     fn monotonic_now(&self) -> f64;
     fn next_id(&self, scope: PerformanceMetricIdScope) -> String;
     fn record(&self, event: PerformanceMetricEvent);
-    /// Content-free cumulative streaming estimate; optional and never persisted.
+    /// Content-free cumulative char/4 estimate; optional and never persisted.
+    /// Elapsed time covers first to last nonempty generated delta, not dispatch.
+    /// Zero or invalid elapsed time means unavailable and clears a live estimate.
     fn generation_progress(&self, _attempt_id: &str, _output_tokens: f64, _elapsed_ms: f64) {}
     fn flush(&self);
     fn close(&self);
@@ -1137,6 +1143,16 @@ mod tests {
         assert_eq!(cancelled.class, PerformanceMetricErrorClass::Cancelled);
         assert_eq!(cancelled.http_status, None);
         assert_eq!(cancelled.message, None);
+    }
+
+    #[test]
+    fn streaming_measurement_uses_its_own_wire_name() {
+        let measurement = PerformanceMetricMeasurement::StreamingMs;
+        assert_eq!(measurement.as_str(), "streaming_ms");
+        assert_eq!(serde_json::to_string(&measurement).unwrap(), r#""streaming_ms""#);
+        assert_eq!(serde_json::from_str::<PerformanceMetricMeasurement>(r#""streaming_ms""#).unwrap(), measurement);
+        let measurements: PerformanceMetricMeasurements = [(measurement, None)].into_iter().collect();
+        assert_eq!(serde_json::to_value(measurements).unwrap(), serde_json::json!({"streaming_ms": null}));
     }
 
     #[test]

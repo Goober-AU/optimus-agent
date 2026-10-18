@@ -205,13 +205,17 @@ fn project_activity(rows: &mut [Value], supported: bool, epoch: u64) {
 }
 
 fn throughput_supported(connected: bool, hello: Option<&crate::modes::agents_view::roster_store::DaemonHello>) -> bool {
-    connected && hello.is_some_and(|hello| hello.schema_revision.is_some_and(|revision| revision >= 42)
-        && hello.server_capabilities.iter().any(|capability| capability == "generation_throughput"))
+    connected && hello.is_some_and(|hello| hello.schema_revision.is_some_and(|revision| revision >= 44)
+        && hello.server_capabilities.iter().any(|capability| capability == "streaming_throughput"))
 }
 
 fn project_throughput(rows: &mut [Value], supported: bool) {
-    if !supported {
-        for row in rows { if let Some(row) = row.as_object_mut() { row.remove("generationThroughput"); } }
+    for row in rows {
+        if let Some(row) = row.as_object_mut() {
+            // Legacy request-duration totals must never become streaming-rate input.
+            row.remove("generationThroughput");
+            if !supported { row.remove("streamingThroughput"); }
+        }
     }
 }
 
@@ -221,22 +225,46 @@ mod tests {
     use crate::modes::agents_view::roster_store::DaemonHello;
 
     #[test]
-    fn generation_throughput_requires_negotiation_and_degrades_on_disconnect() {
-        let mut hello = DaemonHello { schema_revision: Some(42), server_capabilities: vec!["generation_throughput".into()], ..Default::default() };
+    fn streaming_throughput_requires_negotiation_and_degrades_on_disconnect() {
+        let mut hello = DaemonHello { schema_revision: Some(44), server_capabilities: vec!["streaming_throughput".into()], ..Default::default() };
         assert!(throughput_supported(true, Some(&hello)));
         assert!(!throughput_supported(false, Some(&hello)));
-        hello.schema_revision = Some(41);
+        hello.schema_revision = Some(43);
         assert!(!throughput_supported(true, Some(&hello)));
-        hello.schema_revision = Some(42);
+        hello.schema_revision = None;
+        assert!(!throughput_supported(true, Some(&hello)));
+        hello.schema_revision = Some(44);
         hello.server_capabilities.clear();
         assert!(!throughput_supported(true, Some(&hello)));
         assert!(!throughput_supported(true, None));
-        let mut rows = vec![serde_json::json!({"sessionId":"p", "generationThroughput":{"responses":1}})];
+        let mut rows = vec![serde_json::json!({
+            "sessionId":"p", "streamingThroughput":{"streamingMs":1000, "outputTokens":100, "responses":1},
+            "generationThroughput":{"generationMs":2000, "outputTokens":100, "responses":1}
+        })];
         project_throughput(&mut rows, true);
-        assert!(rows[0].get("generationThroughput").is_some());
-        project_throughput(&mut rows, false);
+        assert!(rows[0].get("streamingThroughput").is_some());
         assert!(rows[0].get("generationThroughput").is_none());
+        project_throughput(&mut rows, false);
+        assert!(rows[0].get("streamingThroughput").is_none());
         assert_eq!(rows[0]["sessionId"], "p");
+    }
+
+    #[test]
+    fn new_client_never_projects_legacy_throughput_as_streaming() {
+        for revision in [None, Some(42), Some(43), Some(44)] {
+            let hello = DaemonHello { schema_revision: revision, server_capabilities: vec!["generation_throughput".into()], ..Default::default() };
+            let supported = throughput_supported(true, Some(&hello));
+            assert!(!supported);
+            let mut rows = vec![serde_json::json!({
+                "sessionId":"old", "generationThroughput":{"generationMs":2000, "responses":1},
+                "streamingThroughput":{"streamingMs":1000, "responses":1}
+            })];
+            project_throughput(&mut rows, supported);
+            assert_eq!(rows, vec![serde_json::json!({"sessionId":"old"})]);
+        }
+        let mut rows = vec![serde_json::json!({"sessionId":"old", "generationThroughput":{"generationMs":2000}})];
+        project_throughput(&mut rows, true);
+        assert_eq!(rows, vec![serde_json::json!({"sessionId":"old"})]);
     }
 
     #[test]

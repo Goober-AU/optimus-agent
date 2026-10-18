@@ -67,6 +67,7 @@ struct RequestMetricState {
     first_tool_at: Option<f64>,
     first_text_at: Option<f64>,
     network_terminal_at: Option<f64>,
+    streaming: StreamingMetricState,
     transport_websocket: Option<f64>,
     /// A WebSocket transport reports its own socket send acknowledgement through the
     /// same `onResponse` callback, with no server response yet. The edge is measured,
@@ -82,6 +83,53 @@ struct RequestMetricState {
     defer_logical_request_terminal: bool,
     provider_usage: Option<PerformanceMetricUsageV1>,
     finished: bool,
+}
+
+/// Attempt-local client observation, not a server-side decode clock. The
+/// buffered first chunk's generation time and unstreamed hidden reasoning
+/// cannot be recovered. A single chunk has no measurable interval, even when
+/// the provider reports token usage.
+#[derive(Debug, Clone, Default)]
+struct StreamingMetricState {
+    first_at: Option<f64>,
+    last_at: Option<f64>,
+    invalid_clock: bool,
+    output_chars: u64,
+}
+
+impl StreamingMetricState {
+    fn observe(&mut self, delta: &str, now: Option<f64>) {
+        if delta.is_empty() {
+            return;
+        }
+        self.output_chars = self.output_chars.saturating_add(delta.chars().count() as u64);
+        let Some(now) = now.filter(|now| now.is_finite()) else {
+            self.invalid_clock = true;
+            return;
+        };
+        if self.last_at.is_some_and(|last| now < last) {
+            self.invalid_clock = true;
+        }
+        self.first_at.get_or_insert(now);
+        self.last_at = Some(now);
+    }
+
+    fn elapsed_ms(&self) -> Option<f64> {
+        if self.invalid_clock {
+            return None;
+        }
+        elapsed_metric_ms(self.first_at, self.last_at)
+            .filter(|elapsed| elapsed.is_finite() && *elapsed > 0.0)
+    }
+}
+
+fn generated_delta(event: &AssistantMessageEvent) -> Option<&str> {
+    match event {
+        AssistantMessageEvent::TextDelta { delta, .. }
+        | AssistantMessageEvent::ThinkingDelta { delta, .. }
+        | AssistantMessageEvent::ToolCallDelta { delta, .. } if !delta.is_empty() => Some(delta),
+        _ => None,
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1347,7 +1395,6 @@ async fn stream_assistant_response_inner(
         .stream_deadline
         .map(|stream_deadline| attempt_started + stream_deadline);
     let mut last_event_at = attempt_started;
-    let mut output_chars = 0u64;
 
     loop {
         // Checked before the select so a continuous event stream cannot starve
@@ -1434,23 +1481,20 @@ async fn stream_assistant_response_inner(
                 request_metrics.first_visible_at = metric_now(config);
             }
         }
-        // Providers normally publish usage only at completion. Count streamed
-        // text, reasoning and tool arguments incrementally for the live estimate.
-        if let Some(delta) = match &event {
-            AssistantMessageEvent::TextDelta { delta, .. }
-            | AssistantMessageEvent::ThinkingDelta { delta, .. }
-            | AssistantMessageEvent::ToolCallDelta { delta, .. } => Some(delta),
-            _ => None,
-        } {
-            output_chars = output_chars.saturating_add(delta.chars().count() as u64);
-            if let (Some(metrics), Some(id), Some(now)) =
-                (metrics.as_ref(), request_metrics.provider_attempt_id.as_deref(), metric_now(config)) {
-                let dispatch = observed.timestamps.lock().ok().and_then(|s| s.dispatch_edge_at);
-                if let Some(elapsed) = elapsed_metric_ms(dispatch, Some(now)) {
-                    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                        metrics.recorder.generation_progress(id, output_chars as f64 / 4.0, elapsed);
-                    }));
-                }
+        // Only nonempty generated deltas advance the streaming clock. Empty
+        // events, usage, and terminal drain cannot lengthen this interval.
+        if let Some(delta) = generated_delta(&event) {
+            request_metrics.streaming.observe(delta, metric_now(config));
+            if let (Some(metrics), Some(id)) =
+                (metrics.as_ref(), request_metrics.provider_attempt_id.as_deref()) {
+                let streaming = &request_metrics.streaming;
+                let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    metrics.recorder.generation_progress(
+                        id,
+                        streaming.output_chars as f64 / 4.0,
+                        streaming.elapsed_ms().unwrap_or(0.0),
+                    );
+                }));
             }
         }
         // The `message_update` event carries the whole event, and the `partial`
@@ -2752,6 +2796,10 @@ fn finish_request_metrics(
         (PerformanceMetricMeasurement::DispatchToFirstTextMs, request_metrics.first_text_at),
         (PerformanceMetricMeasurement::DispatchToNetworkTerminalMs, request_metrics.network_terminal_at),
     ] { attempt_measurements.insert(measurement, elapsed_metric_ms(request_metrics.dispatch_edge_at, end)); }
+    attempt_measurements.insert(
+        PerformanceMetricMeasurement::StreamingMs,
+        request_metrics.streaming.elapsed_ms(),
+    );
     attempt_measurements.insert(PerformanceMetricMeasurement::LocalDrainMs,
         elapsed_metric_ms(request_metrics.network_terminal_at, finished_at));
     attempt_measurements.insert(PerformanceMetricMeasurement::TransportWebsocket, request_metrics.transport_websocket);
@@ -3156,6 +3204,10 @@ mod rlm_t16_tests {
 #[cfg(test)]
 #[path = "tool_abort_cleanup_tests.rs"]
 mod tool_abort_cleanup_tests;
+
+#[cfg(test)]
+#[path = "streaming_metrics_tests.rs"]
+mod streaming_metrics_tests;
 
 #[cfg(test)]
 mod tests {

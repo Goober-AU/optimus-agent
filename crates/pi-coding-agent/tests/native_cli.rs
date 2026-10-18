@@ -738,18 +738,23 @@ fn node_and_direct_tools_spawn_concurrent_native_children_and_receive_results() 
             loop {
                 let roster = request(&client, json!({"type":"roster_subscribe"})).await;
                 let rows = roster["roster"].as_array().unwrap();
-                let measured: Vec<_> = rows.iter().map(|row| &row["summary"])
+                let observed: Vec<_> = rows.iter().map(|row| &row["summary"])
                     .filter(|row| row["activeSessionId"] == active || row["runtimeKind"] == "subagent")
-                    .filter(|row| row["generationThroughput"]["responses"].as_u64().unwrap_or(0) > 0).collect();
-                if measured.len() >= 3 {
-                    for row in measured {
-                        let sample = &row["generationThroughput"];
-                        assert!(sample["generationMs"].as_f64().unwrap() > 0.0);
-                        assert_eq!(sample["outputTokens"].as_f64().unwrap(), sample["responses"].as_u64().unwrap() as f64 * 4.0);
+                    .filter(|row| row["streamingThroughput"]["generation"].is_string()).collect();
+                if observed.len() >= 3 {
+                    for row in observed {
+                        let sample = &row["streamingThroughput"];
+                        // Every response in this fixture has one content delta.
+                        // Published counters must not invent a streaming interval
+                        // from request latency or final provider usage.
+                        assert_eq!(sample["streamingMs"].as_f64().unwrap(), 0.0);
+                        assert_eq!(sample["outputTokens"].as_f64().unwrap(), 0.0);
+                        assert_eq!(sample["responses"].as_u64().unwrap(), 0);
+                        assert!(row.get("generationThroughput").is_none());
                     }
                     break;
                 }
-                assert!(Instant::now() < deadline, "parent and both children must publish throughput: {rows:?}");
+                assert!(Instant::now() < deadline, "parent and both children must publish streaming counters: {rows:?}");
                 tokio::time::sleep(Duration::from_millis(100)).await;
             }
             assert!(!fixture.agent_dir.join("performance-metrics").exists(), "TPS must not turn on disk monitoring");
@@ -924,7 +929,9 @@ fn throughput_reaches_ui_roster_repeatedly_before_stream_finishes() {
     tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
         let client = DaemonClient::create(&fixture.socket);
         client.connect(1000).await.unwrap();
-        client.wait_for_hello(1000).await.unwrap();
+        let hello = client.wait_for_hello(1000).await.unwrap();
+        assert!(hello.supports("streaming_throughput"));
+        assert!(!hello.supports("generation_throughput"));
         async fn request(client: &Arc<DaemonClient>, body: Value) -> Value {
             let response = client.request(body.as_object().unwrap().clone(), Some(15_000), Default::default()).await.unwrap();
             assert!(response.success, "{:?}", response.error);
@@ -954,11 +961,11 @@ fn throughput_reaches_ui_roster_repeatedly_before_stream_finishes() {
                 // Exercise the same intermediate serde projection that dropped this field.
                 let ui: pi_coding_agent::modes::agents_view::agents_view_state::SessionSummary = serde_json::from_value(
                     pi_coding_agent::modes::agents_view::native_wire::normalize_browser_numbers(row.clone())).unwrap();
-                let sample = ui.generation_throughput.unwrap_or(Value::Null);
+                let sample = ui.streaming_throughput.unwrap_or(Value::Null);
                 if sample["active"] == true && !prompt.is_finished() {
                     assert_eq!(sample["responses"], 0);
                     assert_eq!(sample["estimated"], true);
-                    assert!(sample["generationMs"].as_f64().unwrap() > 0.0);
+                    assert!(sample["streamingMs"].as_f64().unwrap() > 0.0);
                     let count = sample["outputTokens"].as_f64().unwrap();
                     if live_counts.last() != Some(&count) { live_counts.push(count); }
                 } else if sample["responses"] == 1 {

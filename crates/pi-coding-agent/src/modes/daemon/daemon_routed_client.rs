@@ -160,11 +160,12 @@ impl DaemonRoutedClient {
     }
 
     pub fn supports_server_capability(&self, capability: &str) -> bool {
-        self.supervisor.supports_server_capability(capability)
-            || self
-                .direct_client()
-                .map(|direct| direct.supports_server_capability(capability))
-                .unwrap_or(false)
+        routed_server_capability_supported(
+            capability,
+            self.supervisor.is_connected(),
+            self.supervisor.supports_server_capability(capability),
+            self.direct_client().is_some_and(|direct| direct.supports_server_capability(capability)),
+        )
     }
 
     pub async fn wait_for_hello(&self, timeout_ms: u64) -> DaemonClientResult<DaemonHello> {
@@ -422,6 +423,20 @@ impl DaemonRoutedClient {
     }
 }
 
+fn routed_server_capability_supported(
+    capability: &str,
+    supervisor_connected: bool,
+    supervisor_supported: bool,
+    direct_supported: bool,
+) -> bool {
+    // Roster metadata comes from the control plane, never the direct worker.
+    if capability == "streaming_throughput" {
+        supervisor_connected && supervisor_supported
+    } else {
+        supervisor_supported || direct_supported
+    }
+}
+
 impl DaemonTransportClient for DaemonRoutedClient {
     fn hello(&self) -> Option<DaemonHello> { DaemonRoutedClient::hello(self) }
     fn is_connected(&self) -> bool { DaemonRoutedClient::is_connected(self) }
@@ -616,7 +631,9 @@ mod tests {
         }
 
         fn supports_server_capability(&self, capability: &str) -> bool {
-            self.capability && capability == "direct_peer_transport"
+            (self.capability && capability == "direct_peer_transport")
+                || self.hello.lock().expect("hello poisoned").as_ref()
+                    .is_some_and(|hello| hello.server_capabilities.iter().any(|value| value == capability))
         }
 
         fn on_message(&self, _listener: DaemonClientMessageListener) -> Box<dyn Fn() + Send + Sync> {
@@ -695,6 +712,29 @@ mod tests {
             control.message,
             "Daemon control-plane transport failed: boom"
         );
+    }
+
+    #[test]
+    fn streaming_throughput_never_uses_new_worker_capability_for_old_supervisor() {
+        assert!(!routed_server_capability_supported("streaming_throughput", true, false, true));
+        assert!(!routed_server_capability_supported("streaming_throughput", false, true, true));
+        assert!(routed_server_capability_supported("streaming_throughput", true, true, false));
+        assert!(routed_server_capability_supported("model_catalog", true, false, true));
+    }
+
+    #[tokio::test]
+    async fn streaming_throughput_depends_on_connected_control_plane() {
+        let supervisor = FakeSupervisor::new(true, true);
+        let direct = Arc::new(DaemonWorkerClient::new("/definitely/missing/worker.sock"));
+        let routed = DaemonRoutedClient::new(supervisor.clone(), direct);
+        assert!(!routed.supports_server_capability("streaming_throughput"));
+        supervisor.hello.lock().unwrap().as_mut().unwrap().server_capabilities = vec!["generation_throughput".into()];
+        assert!(!routed.supports_server_capability("streaming_throughput"));
+        supervisor.hello.lock().unwrap().as_mut().unwrap().server_capabilities = vec!["streaming_throughput".into()];
+        assert!(routed.supports_server_capability("streaming_throughput"));
+        supervisor.connected.store(false, Ordering::SeqCst);
+        assert!(!routed.supports_server_capability("streaming_throughput"));
+        assert!(routed.supports_server_capability("direct_peer_transport"), "unrelated capability routing is unchanged");
     }
 
     #[tokio::test]
