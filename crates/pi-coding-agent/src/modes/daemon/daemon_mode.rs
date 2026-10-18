@@ -16862,11 +16862,7 @@ impl AgentSessionMessageController for DaemonAgentMessageController {
             // Peer capability and the canonical listener session id
             // from the same listing the send handler resolves with.
             let listed = daemon.create_agent_message_list_result(&current, None).await;
-            let Some(peer_entry) = listed
-                .agents
-                .iter()
-                .find(|agent| agent.active_session_id == target || agent.session_id == target)
-            else {
+            let Some(peer_entry) = occ2_peer_entry(&listed.agents, &target) else {
                 return Occ2SendPolicy::disabled();
             };
             let peer = peer_entry.occ_capability.clone();
@@ -16907,6 +16903,25 @@ impl DaemonAgentRlmHeartbeatController {
         (self.get_current_state)()
             .unwrap_or_else(|| panic!("RLM heartbeat state is not ready for this session yet"))
     }
+}
+
+/// The OCC-2 peer lookup for the daemon-bridged send seam.
+///
+/// The agent-message surface resolves a receiver by session name, active
+/// session id or persistent session id (`handle_agent_message_send` matches
+/// the family roster entry against all three), so negotiation must accept the
+/// same three forms. Matching only the two ids left every name-addressed send
+/// on OCC-1 even when both sides advertised `sym-v1` - the same defect round 1
+/// fixed for the in-process seam, surviving on the daemon-bridged one.
+fn occ2_peer_entry<'a>(
+    agents: &'a [AgentSessionMessageAgentSummary],
+    target: &str,
+) -> Option<&'a AgentSessionMessageAgentSummary> {
+    agents.iter().find(|agent| {
+        agent.active_session_id == target
+            || agent.session_id == target
+            || agent.session_name.as_deref() == Some(target)
+    })
 }
 
 impl crate::core::cron_jobs::AgentRlmHeartbeatController for DaemonAgentRlmHeartbeatController {
@@ -18747,5 +18762,40 @@ mod agent_observe_parity_tests {
         );
         assert!(agent.get("lastStopReason").is_none());
         assert!(agent.get("terminalStatus").is_none());
+    }
+}
+
+#[cfg(test)]
+mod occ2_peer_selection_tests {
+    use super::*;
+
+    fn summary(active: &str, session: &str, name: Option<&str>) -> AgentSessionMessageAgentSummary {
+        AgentSessionMessageAgentSummary {
+            active_session_id: active.to_string(),
+            session_id: session.to_string(),
+            session_name: name.map(str::to_string),
+            occ_capability: Some(OccCapability::here()),
+            ..AgentSessionMessageAgentSummary::default()
+        }
+    }
+
+    /// A name-addressed send is resolved by `handle_agent_message_send` and then
+    /// negotiated here, so the peer lookup has to accept exactly the selectors
+    /// the send surface accepts. An id-only lookup silently pinned every named
+    /// send to OCC-1 (round 1 fixed the in-process twin of this).
+    #[test]
+    fn peer_lookup_accepts_the_selectors_the_send_surface_resolves() {
+        let agents = vec![
+            summary("a1", "s1", Some("worker")),
+            summary("a2", "s2", None),
+        ];
+        assert_eq!(occ2_peer_entry(&agents, "a1").unwrap().session_id, "s1");
+        assert_eq!(occ2_peer_entry(&agents, "s1").unwrap().active_session_id, "a1");
+        assert_eq!(occ2_peer_entry(&agents, "worker").unwrap().session_id, "s1");
+        assert_eq!(occ2_peer_entry(&agents, "s2").unwrap().active_session_id, "a2");
+        assert!(occ2_peer_entry(&agents, "nobody").is_none());
+        // A nameless peer is never matched by name, and an empty name is not a
+        // selector.
+        assert!(occ2_peer_entry(&agents, "").is_none());
     }
 }
