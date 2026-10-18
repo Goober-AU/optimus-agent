@@ -1,0 +1,69 @@
+ssssss....................................................................E.E..E...................................................................................................................................................................................................ssss...
+======================================================================
+ERROR: test_all_four_converters_and_full_manifests_are_portable (test_memory_bench_portability.MemoryBenchPortabilityTests.test_all_four_converters_and_full_manifests_are_portable)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\openclawuser\optimus-fh2-baseline\tests\test_memory_bench_portability.py", line 113, in test_all_four_converters_and_full_manifests_are_portable
+    output = self.convert()
+             ^^^^^^^^^^^^^^
+  File "C:\Users\openclawuser\optimus-fh2-baseline\tests\test_memory_bench_portability.py", line 78, in convert
+    self.cli("bench.converters.run_converters", "--data-root", FIXTURES / "raw",
+  File "C:\Users\openclawuser\optimus-fh2-baseline\tests\test_memory_bench_portability.py", line 52, in cli
+    result = subprocess.run(
+             ^^^^^^^^^^^^^^^
+  File "C:\Users\openclawuser\AppData\Roaming\uv\python\cpython-3.11.15-windows-x86_64-none\Lib\subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\openclawuser\AppData\Roaming\uv\python\cpython-3.11.15-windows-x86_64-none\Lib\subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\openclawuser\AppData\Roaming\uv\python\cpython-3.11.15-windows-x86_64-none\Lib\subprocess.py", line 1630, in _communicate
+    raise TimeoutExpired(self.args, orig_timeout)
+subprocess.TimeoutExpired: Command '['C:\\Users\\openclawuser\\optimus-update-preparation-20260920-004938\\candidate\\python311\\Scripts\\python.exe', '-B', '-m', 'bench.converters.run_converters', '--data-root', 'C:\\Users\\openclawuser\\optimus-fh2-baseline\\bench\\fixtures\\raw', '--out-dir', 'C:\\Users\\openclawuser\\Optimus-Assistant\\profile\\tmp\\memory-bench-portable-j3jnpb97\\common with spaces', '--full']' timed out after 30 seconds
+
+======================================================================
+ERROR: test_attribution_legacy_optin_has_no_failure_stage_or_overlap_inference (test_memory_bench_portability.MemoryBenchPortabilityTests.test_attribution_legacy_optin_has_no_failure_stage_or_overlap_inference)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\openclawuser\optimus-fh2-baseline\tests\test_memory_bench_portability.py", line 600, in test_attribution_legacy_optin_has_no_failure_stage_or_overlap_inference
+    args, scores, questions, files = self.bound_case()
+                                     ^^^^^^^^^^^^^^^^^
+  File "C:\Users\openclawuser\optimus-fh2-baseline\tests\test_memory_bench_portability.py", line 468, in bound_case
+    self.cli("bench.eval.evaluate", "--run", run, "--bench", "locomo", "--variant", "base",
+  File "C:\Users\openclawuser\optimus-fh2-baseline\tests\test_memory_bench_portability.py", line 52, in cli
+    result = subprocess.run(
+             ^^^^^^^^^^^^^^^
+  File "C:\Users\openclawuser\AppData\Roaming\uv\python\cpython-3.11.15-windows-x86_64-none\Lib\subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\openclawuser\AppData\Roaming\uv\python\cpython-3.11.15-windows-x86_64-none\Lib\subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\openclawuser\AppData\Roaming\uv\python\cpython-3.11.15-windows-x86_64-none\Lib\subprocess.py", line 1630, in _communicate
+    raise TimeoutExpired(self.args, orig_timeout)
+subprocess.TimeoutExpired: Command '['C:\\Users\\openclawuser\\optimus-update-preparation-20260920-004938\\candidate\\python311\\Scripts\\python.exe', '-B', '-m', 'bench.eval.evaluate', '--run', 'C:\\Users\\openclawuser\\Optimus-Assistant\\profile\\tmp\\memory-bench-portable-02xisva5\\binding-run.jsonl', '--bench', 'locomo', '--variant', 'base', '--dedup', 'last', '--qs-dir', 'C:\\Users\\openclawuser\\Optimus-Assistant\\profile\\tmp\\memory-bench-portable-02xisva5\\binding-common\\locomo', '--out', 'C:\\Users\\openclawuser\\Optimus-Assistant\\profile\\tmp\\memory-bench-portable-02xisva5\\binding-scores.json']' timed out after 30 seconds
+
+======================================================================
+ERROR: test_cli_help_does_not_read_config (test_memory_bench_portability.MemoryBenchPortabilityTests.test_cli_help_does_not_read_config) (module='bench.eval.evaluate')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\openclawuser\optimus-fh2-baseline\tests\test_memory_bench_portability.py", line 110, in test_cli_help_does_not_read_config
+    self.assertIn("usage:", self.cli(module, "--help", env=env).stdout)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\openclawuser\optimus-fh2-baseline\tests\test_memory_bench_portability.py", line 52, in cli
+    result = subprocess.run(
+             ^^^^^^^^^^^^^^^
+  File "C:\Users\openclawuser\AppData\Roaming\uv\python\cpython-3.11.15-windows-x86_64-none\Lib\subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\openclawuser\AppData\Roaming\uv\python\cpython-3.11.15-windows-x86_64-none\Lib\subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\openclawuser\AppData\Roaming\uv\python\cpython-3.11.15-windows-x86_64-none\Lib\subprocess.py", line 1630, in _communicate
+    raise TimeoutExpired(self.args, orig_timeout)
+subprocess.TimeoutExpired: Command '['C:\\Users\\openclawuser\\optimus-update-preparation-20260920-004938\\candidate\\python311\\Scripts\\python.exe', '-B', '-m', 'bench.eval.evaluate', '--help']' timed out after 30 seconds
+
+----------------------------------------------------------------------
+Ran 282 tests in 729.843s
+
+FAILED (errors=3, skipped=10)

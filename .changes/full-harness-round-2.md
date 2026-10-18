@@ -1,0 +1,9 @@
+- Fixed: a provider stream that ends with a terminal error or abort now answers every tool call it already streamed, so history never keeps an assistant tool call without a matching tool result and the next turn is protocol-valid.
+- Fixed: a tool call stopped by cancellation before it started now records the dedicated tool-abort wording instead of the provider request abort display.
+- Fixed: `memory restore` can now recover a damaged authoritative store. The damaged bytes are quarantined before the backup is applied instead of failing closed forever.
+- Fixed: `memory configure` no longer drops every other key of a project settings file that stopped parsing. The previous bytes are quarantined and reported.
+- Fixed: memory apply aborts on a serialization failure instead of writing a `null` document over the authoritative store.
+- Fixed: OCC-2 negotiation in daemon mode now resolves a receiver by session name, active session id and persistent session id, matching the send surface, so a name-addressed peer negotiates instead of silently staying on OCC-1.
+- Fixed: a bash tool call with a JSON timeout above `u64::MAX` seconds is clamped instead of panicking inside `Duration::from_secs`.
+- Fixed: a Node cell that leaves a timer, listener or floating promise which throws no longer kills the workspace. The error is reported as a bounded notice on the next result and the cell stays successful, so JavaScript bindings survive.
+- Fixed: `process.exit` in the Node tool is reported as `Node workspace exited with status N` instead of being labelled an oversized response.
