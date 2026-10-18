@@ -411,7 +411,9 @@ impl Component for SubagentSummaryLine {
         ));
         if communication_below {
             if let Some(status) = &self.communication_status {
-                let text = truncate_to_width(&format!(" {status}"), inner, "…", false);
+                // Keep optional padding from displacing status text that fits.
+                let inset = if visible_width(status) < inner as usize { " " } else { "" };
+                let text = truncate_to_width(&format!("{inset}{status}"), inner, "…", false);
                 let padding = " ".repeat((inner as usize).saturating_sub(visible_width(&text)));
                 let content = format!("{text}{padding}");
                 let content = if self.focused { theme().bg("selectedBg", &content) } else { content };
@@ -464,11 +466,11 @@ mod tests {
         line.set_always_visible(true);
         line.set_communication_status(Some("\x1b[1;38;5;39mTXT ●  OCC1 ○\x1b[22;39m".into()));
         line.set_right_status(Some(RightStatus { full: "Jev active · 12 req".into(), compact: "Jev 12 req".into(), minimal: "Jev".into() }));
-        for width in [2, 5, 15, 16, 40, 80, 120] {
+        for width in [2, 5, 14, 15, 16, 40, 80, 120] {
             let lines = line.render(width as f64);
             assert!(lines.iter().all(|row| visible_width(row) <= width));
             let text = pi_tui::utils::strip_ansi(&lines.join("\n"));
-            if width >= 16 { assert!(text.contains("TXT ●  OCC1 ○")); }
+            assert_eq!(text.contains("TXT ●  OCC1 ○"), width >= 15);
             if width >= 40 { assert!(text.contains("Jev")); }
             if width >= 80 { assert!(text.contains("0 running") && text.contains("0 idle") && text.contains("0 inactive")); }
             assert!(!text.contains("SYM") && !text.contains("LAT"));
@@ -485,20 +487,46 @@ mod tests {
         line.set_always_visible(true);
         line.set_communication_status(Some("\x1b[1;38;5;39mTXT ●  OCC1 ○  OCC2 ●\x1b[22;39m".into()));
         line.set_right_status(Some(RightStatus { full: "Jev active · 12 req".into(), compact: "Jev 12 req".into(), minimal: "Jev".into() }));
-        for width in [2, 5, 15, 22, 24, 40, 80, 120] {
+        for width in [2, 5, 15, 22, 23, 24, 40, 80, 120] {
             let lines = line.render(width as f64);
             assert!(lines.iter().all(|row| visible_width(row) <= width));
             let text = pi_tui::utils::strip_ansi(&lines.join("\n"));
-            // "TXT ●  OCC1 ○  OCC2 ●" is 21 visible columns; with the leading
-            // space the below-line needs inner = width - 2 >= 22, so the
-            // full string appears from width 24 up and is truncated below.
-            if width >= 24 {
+            // The 21-column status needs two border columns. Optional padding
+            // must not truncate it when it fits exactly at width 23.
+            if width >= 23 {
                 assert!(text.contains("TXT ●  OCC1 ○  OCC2 ●"));
             } else {
                 assert!(!text.contains("TXT ●  OCC1 ○  OCC2 ●"));
             }
             if width >= 40 { assert!(text.contains("Jev")); }
             assert!(!text.contains("LAT"));
+        }
+    }
+
+    #[test]
+    fn streaming_status_preserves_exact_fit_text_and_color_with_jev() {
+        crate::modes::interactive::theme::theme::init_theme(Some("dark"), false);
+        let mut line = SubagentSummaryLine::default();
+        line.set_always_visible(true);
+        line.set_communication_status(Some(
+            "TXT ○  OCC1 ○  OCC2 ○  \x1b[1;38;5;196mSTREAM TPS 50.0\x1b[22;39m".into(),
+        ));
+        line.set_right_status(Some(RightStatus {
+            full: "Jev active".into(), compact: "Jev on".into(), minimal: "Jev".into(),
+        }));
+        for focused in [false, true] {
+            line.set_focused(focused);
+            for width in [39, 40, 41, 80, 120] {
+                let rows = line.render(width as f64);
+                assert!(rows.iter().all(|row| visible_width(row) <= width));
+                let rendered = rows.join("\n");
+                let plain = pi_tui::utils::strip_ansi(&rendered);
+                assert_eq!(plain.contains("TXT ○  OCC1 ○  OCC2 ○  STREAM TPS 50.0"), width >= 40);
+                assert!(plain.contains("Jev"));
+                if width >= 40 {
+                    assert!(rendered.contains("\x1b[1;38;5;196mSTREAM TPS 50.0"));
+                }
+            }
         }
     }
 
