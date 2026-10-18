@@ -930,3 +930,124 @@ fn recall_source_span_truncation_is_marked() {
     assert_eq!(rendered, "Source: short verbatim turn");
     assert!(!recall.text.contains("[truncated; inspect source]"));
 }
+
+// ---------------------------------------------------------------------------
+// Storage integrity: a failed authoritative write must never destroy data
+// ---------------------------------------------------------------------------
+
+/// Windows only: the authoritative write replaces the destination with a
+/// rename, and NTFS refuses to replace a destination that carries the
+/// read-only attribute. On Unix the rename only needs a writable parent
+/// directory, so this injection cannot fail the write there; the portable
+/// twin below covers the rejection paths instead.
+#[cfg(windows)]
+fn make_readonly(path: &str, readonly: bool) {
+    let mut permissions = std::fs::metadata(path).expect("store metadata").permissions();
+    permissions.set_readonly(readonly);
+    std::fs::set_permissions(path, permissions).expect("store permissions");
+}
+
+#[cfg(windows)]
+#[tokio::test]
+async fn failed_authoritative_write_keeps_the_previous_store_intact() {
+    let fixture = Fixture::new();
+    fixture.seed().await;
+    let before = fixture.bytes();
+    let revision = fixture.service.store.read().unwrap().memory.revision;
+    assert_eq!(revision, 1);
+
+    // Deny the atomic rename its destination: the write must fail closed.
+    let store_path = fixture.service.store.path.clone();
+    make_readonly(&store_path, true);
+    let error = fixture
+        .apply(&apply_payload(
+            "blocked_write",
+            revision,
+            "update",
+            "Changed content",
+            Some(json!([source("updated")])),
+        ))
+        .await
+        .expect_err("a read-only store cannot be replaced");
+    assert!(!error.is_empty(), "the failure is reported, not swallowed");
+    make_readonly(&store_path, false);
+
+    // The previous valid state is still the authoritative one, byte for byte.
+    assert_eq!(fixture.bytes(), before);
+    let document = fixture.service.store.read().expect("store still validates");
+    assert_eq!(document.memory.revision, revision);
+    assert_eq!(document.entries["memory"]["note"].content, "Original content");
+    assert!(!document.memory.events.contains_key("blocked_write"));
+
+    // The failed operation left nothing wedged: the same edit applies after
+    // the destination is writable again.
+    let applied = fixture
+        .apply(&apply_payload(
+            "blocked_write",
+            revision,
+            "update",
+            "Changed content",
+            Some(json!([source("updated")])),
+        ))
+        .await
+        .expect("retry applies");
+    assert_eq!(applied["appliedEdits"][0]["applied"], json!(true));
+    let document = fixture.service.store.read().expect("store validates");
+    assert_eq!(document.memory.revision, revision + 1);
+    assert_eq!(document.entries["memory"]["note"].content, "Changed content");
+}
+
+/// Portable twin of the read-only injection: an apply that is rejected before
+/// the write must leave the authoritative bytes untouched, and the next valid
+/// apply must still succeed at the same revision.
+#[tokio::test]
+async fn rejected_apply_leaves_the_authoritative_bytes_untouched() {
+    let fixture = Fixture::new();
+    fixture.seed().await;
+    let before = fixture.bytes();
+    let revision = fixture.service.store.read().unwrap().memory.revision;
+    assert_eq!(revision, 1, "the seed apply is the only committed revision");
+
+    // A stale revision is rejected before anything is written.
+    let stale = fixture
+        .apply(&apply_payload(
+            "stale_write",
+            revision - 1,
+            "update",
+            "Changed content",
+            Some(json!([source("updated")])),
+        ))
+        .await
+        .expect_err("a stale revision is rejected");
+    assert_eq!(stale, "Memory changed; review current revision before applying");
+    assert_eq!(fixture.bytes(), before, "a rejected apply must not touch the store");
+
+    // An invalid memory id is rejected before anything is written.
+    let mut invalid = apply_payload("invalid_id", revision, "update", "Other content", None);
+    invalid["proposal"]["edits"][0]["id"] = json!("bad id with spaces");
+    let error = fixture.apply(&invalid).await.expect_err("an invalid id is rejected");
+    assert_eq!(error, "Invalid memory ID");
+    assert_eq!(fixture.bytes(), before, "a rejected edit must not touch the store");
+
+    // Nothing was wedged: the store still applies a valid edit at the same
+    // revision, and the rejected event ids left no receipts behind.
+    let document = fixture.service.store.read().expect("store still validates");
+    assert_eq!(document.memory.revision, revision);
+    assert!(!document.memory.events.contains_key("stale_write"));
+    assert!(!document.memory.events.contains_key("invalid_id"));
+    let applied = fixture
+        .apply(&apply_payload(
+            "valid_write",
+            revision,
+            "update",
+            "Changed content",
+            Some(json!([source("updated")])),
+        ))
+        .await
+        .expect("a valid apply still works");
+    assert_eq!(applied["appliedEdits"][0]["applied"], json!(true));
+    assert_eq!(
+        fixture.service.store.read().unwrap().memory.revision,
+        revision + 1
+    );
+}
