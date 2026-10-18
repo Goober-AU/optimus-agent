@@ -82,4 +82,4 @@ timing flake, not a regression.
 
 Commits are grouped by area: agent loop, memory, bash, node, daemon, then tests, then docs.
 Reports: `reports/full-harness-r2/{FINAL-REPORT,FEATURE-COVERAGE-MATRIX,BUG-LEDGER,PERFORMANCE-SCORECARD,EXPERIMENT-LEDGER,REGRESSION-GATES}.md`,
-with per-gate evidence summaries in `reports/full-harness-r2/artifacts/summary/`.
+with per-gate evidence summaries in `reports/full-harness-r2/artifacts/summary/*.txt`.

@@ -1,0 +1,44 @@
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3753 filtered out; finished in 0.09s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3753 filtered out; finished in 0.00s
+failures:
+---- cli::native_owned_worker::tests::authenticated_owner_connection_observes_disconnect stdout ----
+---- core::agent_session::post_compaction_continuation_tests::cancel_clears_scheduled_messages_and_releases_waiters stdout ----
+---- core::agent_session::retained_stop_tests::retained_stop_real_python_tool_and_contained_descendant_settle_together stdout ----
+---- core::kernel::repl_manager::tests::kernel_settlement_keeps_failed_start_generation stdout ----
+---- core::kernel::repl_manager::tests::kernel_settlement_normal_protocol_and_prompt_stubborn_stop stdout ----
+---- core::kernel::repl_manager::tests::kernel_settlement_preserves_graceful_shutdown_timeout stdout ----
+---- core::kernel::repl_manager::tests::kernel_settlement_start_stop_race_retains_all_generations stdout ----
+---- core::kernel::repl_manager::tests::kernel_settlement_stops_one_session_not_the_other stdout ----
+---- core::memory::store::tests::restore_recovers_a_truncated_store_without_salvaging_garbage stdout ----
+---- modes::interactive::interactive_mode::native_host::native_subagents::generation_throughput::tests::throughput_red_indicator_follows_occ2_and_fits_narrow_terminals stdout ----
+---- utils::child_process::kernel_job::containment_tests::native_job_breakaway_cannot_escape_outer_membership stdout ----
+---- utils::child_process::kernel_job::containment_tests::native_job_exact_argv_env_and_protocol_pipes stdout ----
+---- utils::child_process::kernel_job::containment_tests::native_job_failed_query_and_termination_are_errors stdout ----
+---- utils::child_process::kernel_job::containment_tests::native_job_immediate_detached_grandchild_survives_root_but_not_job stdout ----
+---- utils::child_process::kernel_job::containment_tests::native_job_manager_style_full_environment_spawns_and_settles stdout ----
+---- utils::child_process::kernel_job::containment_tests::native_job_nested_runtime_bash_and_worker_job stdout ----
+---- utils::child_process::kernel_job::containment_tests::native_job_only_stdio_handles_are_inherited stdout ----
+---- utils::child_process::kernel_job::containment_tests::native_job_spawn_failure_is_closed_and_no_target_runs stdout ----
+---- utils::child_process::kernel_job::containment_tests::native_job_stubborn_root_timeout_is_not_settled stdout ----
+failures:
+    cli::native_owned_worker::tests::authenticated_owner_connection_observes_disconnect
+    core::agent_session::post_compaction_continuation_tests::cancel_clears_scheduled_messages_and_releases_waiters
+    core::agent_session::retained_stop_tests::retained_stop_real_python_tool_and_contained_descendant_settle_together
+    core::kernel::repl_manager::tests::kernel_settlement_keeps_failed_start_generation
+    core::kernel::repl_manager::tests::kernel_settlement_normal_protocol_and_prompt_stubborn_stop
+    core::kernel::repl_manager::tests::kernel_settlement_preserves_graceful_shutdown_timeout
+    core::kernel::repl_manager::tests::kernel_settlement_start_stop_race_retains_all_generations
+    core::kernel::repl_manager::tests::kernel_settlement_stops_one_session_not_the_other
+    core::memory::store::tests::restore_recovers_a_truncated_store_without_salvaging_garbage
+    modes::interactive::interactive_mode::native_host::native_subagents::generation_throughput::tests::throughput_red_indicator_follows_occ2_and_fits_narrow_terminals
+    utils::child_process::kernel_job::containment_tests::native_job_breakaway_cannot_escape_outer_membership
+    utils::child_process::kernel_job::containment_tests::native_job_exact_argv_env_and_protocol_pipes
+    utils::child_process::kernel_job::containment_tests::native_job_failed_query_and_termination_are_errors
+    utils::child_process::kernel_job::containment_tests::native_job_immediate_detached_grandchild_survives_root_but_not_job
+    utils::child_process::kernel_job::containment_tests::native_job_manager_style_full_environment_spawns_and_settles
+    utils::child_process::kernel_job::containment_tests::native_job_nested_runtime_bash_and_worker_job
+    utils::child_process::kernel_job::containment_tests::native_job_only_stdio_handles_are_inherited
+    utils::child_process::kernel_job::containment_tests::native_job_spawn_failure_is_closed_and_no_target_runs
+    utils::child_process::kernel_job::containment_tests::native_job_stubborn_root_timeout_is_not_settled
+test result: FAILED. 3725 passed; 19 failed; 10 ignored; 0 measured; 0 filtered out; finished in 713.80s
+error: test failed, to rerun pass `-p pi-coding-agent --lib`

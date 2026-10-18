@@ -2,7 +2,8 @@
 
 All jobs ran through the single build queue (`fh2q.py`): one at a time, `CARGO_BUILD_JOBS=2`,
 `-j 2`, `--test-threads=1`, BelowNormal priority, CPU affinity 0-3, hard timeout per job.
-Raw logs: `artifacts/logs/`. Every result below is a real run on this host, not an estimate.
+Raw logs stay outside the tree (they are `*.log`, which this repository ignores);
+the result lines and failure names of every run are committed under `artifacts/summary/*.txt`. Every result below is a real run on this host, not an estimate.
 
 | Gate | Command | Result |
 |---|---|---|

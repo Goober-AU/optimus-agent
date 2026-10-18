@@ -1,0 +1,8 @@
+failures:
+---- scenario_c_multi_subagent_coding_collects_and_validates stdout ----
+---- scenario_d_children_exchange_occ_messages_and_parent_receives_results stdout ----
+---- scenario_i_subagent_failure_keeps_partial_results_honest stdout ----
+---- scenario_j_saturated_worker_reopen_stays_responsive_and_stale_is_marked stdout ----
+failures:
+test result: FAILED. 0 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 84.21s
+error: test failed, to rerun pass `-p pi-coding-agent --test scenario_mult_agent`

@@ -1,0 +1,6 @@
+failures:
+---- core::tools::node::tests::background_notices_are_bounded_and_never_fail_the_cell stdout ----
+failures:
+    core::tools::node::tests::background_notices_are_bounded_and_never_fail_the_cell
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 3753 filtered out; finished in 0.00s
+error: test failed, to rerun pass `-p pi-coding-agent --lib`

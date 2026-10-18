@@ -1,0 +1,6 @@
+failures:
+---- scheduler::settlement_tests::retain_waits_for_actual_sink_and_leaves_other_session_running stdout ----
+failures:
+    scheduler::settlement_tests::retain_waits_for_actual_sink_and_leaves_other_session_running
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 97 filtered out; finished in 2.01s
+error: test failed, to rerun pass `-p pi-jev --lib`
