@@ -1,0 +1,11 @@
+test result: ok. 103 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.28s
+test result: ok. 899 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 112.50s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3756 filtered out; finished in 0.09s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3756 filtered out; finished in 0.00s
+test result: ok. 3747 passed; 0 failed; 10 ignored; 0 measured; 0 filtered out; finished in 627.06s
+failures:
+---- scheduler::settlement_tests::retain_waits_for_actual_sink_and_leaves_other_session_running stdout ----
+failures:
+    scheduler::settlement_tests::retain_waits_for_actual_sink_and_leaves_other_session_running
+test result: FAILED. 97 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.83s
+error: test failed, to rerun pass `-p pi-jev --lib`

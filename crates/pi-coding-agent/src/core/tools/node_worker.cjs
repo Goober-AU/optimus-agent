@@ -14,6 +14,32 @@
     session.post(method, params, (error, result) => error ? reject(error) : resolve(result)));
   const write = process.stdout.write.bind(process.stdout);
   const emit = (value) => write(JSON.stringify(value) + '\n');
+
+  // Work that a cell leaves running (a timer, a listener, a floating promise)
+  // can throw long after that cell reported `done`. Node's default handling of
+  // an uncaught exception terminates the whole worker, which silently discards
+  // every binding of the session. Report such an error as a background notice
+  // instead: the Rust side renders it on the next result, and the workspace
+  // keeps its bindings and keeps serving cells. The notice is written through
+  // the original `write`, so it is never attributed to whatever cell is running.
+  const noticeLimit = 2000;
+  const describeError = (value) => {
+    if (value instanceof Error && typeof value.stack === 'string') return value.stack;
+    if (typeof value === 'string') return value;
+    try {
+      return inspect(value, { colors: false, depth: 4, maxStringLength: noticeLimit, getters: false });
+    } catch {
+      return String(value);
+    }
+  };
+  const backgroundNotice = (kind, value) => {
+    let message = describeError(value);
+    if (message.length > noticeLimit) message = `${message.slice(0, noticeLimit)}...(truncated)`;
+    emit({ event: 'workspace-notice', kind, message });
+  };
+  process.on('uncaughtException', (error) => backgroundNotice('uncaughtException', error));
+  process.on('unhandledRejection', (reason) => backgroundNotice('unhandledRejection', reason));
+
   const cells = new AsyncLocalStorage();
   const limit = 64 * 1024;
   const streamNotice = '\n[Node output truncated at 64 KiB]\n';

@@ -822,7 +822,10 @@ mod tests {
         for width in [2, 5, 20, 40, 80, 120] {
             let lines = line.render(width as f64);
             assert!(lines.iter().all(|line| visible_width(line) <= width));
-            if width >= 40 {
+            // PR #174 renamed "AVG TPS " to "STREAM TPS " (+3 visible columns), so the
+            // full below-line needs inner >= visible+1, i.e. width >= 41. The documented
+            // rule lives in subagent_summary_line.rs.
+            if width >= 41 {
                 assert!(strip_ansi(&lines.join("\n")).contains("OCC2 ○  STREAM TPS 50.0"));
                 assert!(lines.join("\n").contains("\x1b[1;38;5;196mSTREAM TPS 50.0"));
             }

@@ -950,11 +950,30 @@ async fn run_loop(
             if message.stop_reason == pi_ai::types::STOP_REASON_ERROR
                 || message.stop_reason == pi_ai::types::STOP_REASON_ABORTED
             {
+                // A terminal failure or abort can still carry tool calls the
+                // model already streamed (the transport died after the
+                // tool-call block, or the run was stopped there). Those calls
+                // never ran, so answer each one here. Without this the
+                // persisted history keeps an assistant tool call with no
+                // matching tool result, and the next request is
+                // protocol-invalid.
+                let tool_results = answer_unexecuted_tool_calls(
+                    &message,
+                    &[],
+                    config,
+                    signal.as_ref(),
+                    emit,
+                )
+                .await?;
+                for result in &tool_results {
+                    current_context.messages.push(AgentMessage::from(result.clone()));
+                    new_messages.push(AgentMessage::from(result.clone()));
+                }
                 emit_event(
                     emit,
                     AgentEvent::TurnEnd {
                         message: AgentMessage::from(message.clone()),
-                        tool_results: Vec::new(),
+                        tool_results,
                     },
                 )
                 .await?;
@@ -1753,34 +1772,63 @@ async fn execute_tool_calls_sequential(
     // here would persist an assistant message whose calls have no matching
     // tool results, and a later continue() would send that invalid history to
     // the provider. Synthesize the same dedicated abort result the parallel
-    // path produces for every unanswered call. These calls never started, so
-    // no tool_execution_start/end pair is emitted for them; the tool-result
-    // message events still flow so every context observer sees the answers.
+    // path produces for every unanswered call.
     if signal.map(|signal| signal.is_cancelled()).unwrap_or(false) {
-        for tool_call in tool_calls {
-            if messages
-                .iter()
-                .any(|message| message.tool_call_id == tool_call.id)
-            {
-                continue;
-            }
-            let finalized = FinalizedToolCallOutcome {
-                tool_call: tool_call.clone(),
-                result: create_error_tool_result(TOOL_EXECUTION_ABORTED_MESSAGE),
-                is_error: true,
-            };
-            record_tool_performance_metric(config, assistant_message, &finalized, None, signal);
-            let tool_result_message = create_tool_result_message(&finalized, now_ms());
-            emit_tool_result_message(&tool_result_message, emit).await?;
-            finalized_calls.push(finalized);
-            messages.push(tool_result_message);
-        }
+        let synthesized = answer_unexecuted_tool_calls(
+            assistant_message,
+            &messages,
+            config,
+            signal,
+            emit,
+        )
+        .await?;
+        messages.extend(synthesized);
     }
 
     Ok(ExecutedToolCallBatch {
         messages,
         terminate: should_terminate_tool_batch(&finalized_calls),
     })
+}
+
+/// Answer tool calls that will never execute, so the persisted context always
+/// pairs every assistant tool call with exactly one tool result. Two paths
+/// need it: a cancelled sequential batch stops before its remaining calls, and
+/// a provider terminal `error`/`aborted` can still carry the calls the model
+/// already streamed.
+///
+/// The wording is the dedicated abort text ([`TOOL_EXECUTION_ABORTED_MESSAGE`]),
+/// never the provider-request abort display. These calls never started, so no
+/// `tool_execution_start`/`tool_execution_end` pair is emitted for them; the
+/// tool-result message events still flow so every context observer sees the
+/// answers. Error results never request batch termination, so dropping them
+/// from `finalized_calls` cannot change `should_terminate_tool_batch`.
+async fn answer_unexecuted_tool_calls(
+    assistant_message: &AssistantMessage,
+    already_answered: &[ToolResultMessage],
+    config: &AgentLoopConfig,
+    signal: Option<&CancellationToken>,
+    emit: &AgentEventSink,
+) -> anyhow::Result<Vec<ToolResultMessage>> {
+    let mut messages = Vec::new();
+    for tool_call in message_tool_calls(assistant_message) {
+        if already_answered
+            .iter()
+            .any(|message| message.tool_call_id == tool_call.id)
+        {
+            continue;
+        }
+        let finalized = FinalizedToolCallOutcome {
+            tool_call,
+            result: create_error_tool_result(TOOL_EXECUTION_ABORTED_MESSAGE),
+            is_error: true,
+        };
+        record_tool_performance_metric(config, assistant_message, &finalized, None, signal);
+        let tool_result_message = create_tool_result_message(&finalized, now_ms());
+        emit_tool_result_message(&tool_result_message, emit).await?;
+        messages.push(tool_result_message);
+    }
+    Ok(messages)
 }
 
 async fn execute_tool_calls_parallel(
@@ -2131,9 +2179,12 @@ async fn execute_prepared_tool_call(
     // and the task handle is retained for the join below.
     let accepting_updates = Arc::new(AtomicBool::new(true));
 
-    if let Err(error) = throw_if_aborted(signal) {
+    // A call that cancellation stopped before it started must leave the same
+    // dedicated tool-result wording as one stopped mid-flight. The raw abort
+    // display of the provider request is not tool-result history text.
+    if throw_if_aborted(signal).is_err() {
         return ExecutedToolCallOutcome {
-            result: create_error_tool_result(&format!("{error}")),
+            result: create_error_tool_result(TOOL_EXECUTION_ABORTED_MESSAGE),
             is_error: true,
         };
     }
@@ -4238,6 +4289,562 @@ mod tests {
             }
             PreparedToolCallOrImmediate::Prepared(_) => {
                 panic!("a failed before-hook must become an immediate result");
+            }
+        }
+    }
+
+    // ----- Round-2 core-loop contract: a tool call that never runs still needs
+    // ----- exactly one result, including on terminal provider failure.
+
+    fn contract_model() -> Model {
+        Model::new(
+            "contract-model",
+            "Contract Model",
+            "openai-completions",
+            "openai",
+            "https://example.test",
+        )
+    }
+
+    fn prompt_message() -> AgentMessage {
+        AgentMessage::from(pi_ai::types::UserMessage {
+            role: "user".to_string(),
+            content: pi_ai::types::UserContent::Text("go".to_string()),
+            provider_context: None,
+            timestamp: 1,
+        })
+    }
+
+    struct CollectedRun {
+        new_messages: Vec<AgentMessage>,
+        events: Vec<AgentEvent>,
+    }
+
+    /// Drives the real `agent_loop` entry point to completion and returns the
+    /// agent-end message list plus every emitted event.
+    async fn collect_run(
+        context: AgentContext,
+        config: AgentLoopConfig,
+        signal: Option<CancellationToken>,
+        stream_fn: StreamFn,
+    ) -> CollectedRun {
+        let stream = agent_loop(vec![prompt_message()], context, config, signal, Some(stream_fn));
+        let mut events: Vec<AgentEvent> = Vec::new();
+        let mut new_messages: Vec<AgentMessage> = Vec::new();
+        while let Some(event) = stream.next().await {
+            if let AgentEvent::AgentEnd { messages } = &event {
+                new_messages = messages.clone();
+            }
+            events.push(event);
+        }
+        CollectedRun {
+            new_messages,
+            events,
+        }
+    }
+
+    /// (tool call ids the assistant issued, tool call ids that got a result).
+    fn tool_call_ids(messages: &[AgentMessage]) -> (Vec<String>, Vec<String>) {
+        let mut issued = Vec::new();
+        let mut answered = Vec::new();
+        for message in messages {
+            match message {
+                AgentMessage::Message(Message::Assistant(assistant)) => {
+                    for block in &assistant.content {
+                        if let Some(call) = block.as_tool_call() {
+                            issued.push(call.id.clone());
+                        }
+                    }
+                }
+                AgentMessage::Message(Message::ToolResult(result)) => {
+                    answered.push(result.tool_call_id.clone());
+                }
+                _ => {}
+            }
+        }
+        (issued, answered)
+    }
+
+    fn tool_result_messages(messages: &[AgentMessage]) -> Vec<&ToolResultMessage> {
+        messages
+            .iter()
+            .filter_map(|message| match message {
+                AgentMessage::Message(Message::ToolResult(result)) => Some(result),
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// A provider stream that finishes one tool call and then reports a
+    /// terminal `error`/`aborted`, like a connection that dies after the
+    /// tool-call block: the call is in history but nothing ever ran it.
+    fn tool_call_then_terminal_stream_fn(stop_reason: &'static str) -> StreamFn {
+        Arc::new(move |model, _context, _options| {
+            let api = model.api.clone();
+            let provider = model.provider.clone();
+            let model_id = model.id.clone();
+            let handle = pi_ai::utils::event_stream::AssistantMessageEventStream::new();
+            let producer = handle.producer_handle();
+            let producer_task = producer.clone();
+            producer_task.spawn(async move {
+                let mut partial = AssistantMessage::new(api, provider, model_id, 1);
+                producer.push(AssistantMessageEvent::Start {
+                    partial: partial.clone(),
+                });
+                let tool_call = ToolCall::new("call-1", "never-runs", Map::new());
+                partial
+                    .content
+                    .push(ContentBlock::ToolCall(ToolCall::new(
+                        tool_call.id.clone(),
+                        tool_call.name.clone(),
+                        tool_call.arguments.clone(),
+                    )));
+                producer.push(AssistantMessageEvent::ToolCallStart {
+                    content_index: 0,
+                    partial: partial.clone(),
+                });
+                producer.push(AssistantMessageEvent::ToolCallEnd {
+                    content_index: 0,
+                    tool_call,
+                    partial: partial.clone(),
+                });
+                let mut terminal = partial;
+                terminal.stop_reason = stop_reason.to_string();
+                terminal.error_message = Some("provider stream failed".to_string());
+                producer.push(AssistantMessageEvent::Error {
+                    reason: stop_reason.to_string(),
+                    error: terminal,
+                });
+            });
+            Box::pin(async move { handle })
+        })
+    }
+
+    /// A stream that immediately completes with `message`.
+    fn completed_message_stream_fn(message: AssistantMessage) -> StreamFn {
+        Arc::new(move |_model, _context, _options| {
+            let handle = pi_ai::utils::event_stream::AssistantMessageEventStream::new();
+            let producer = handle.producer_handle();
+            let message = message.clone();
+            let producer_task = producer.clone();
+            producer_task.spawn(async move {
+                producer.push(AssistantMessageEvent::Done {
+                    reason: message.stop_reason.clone(),
+                    message,
+                });
+            });
+            Box::pin(async move { handle })
+        })
+    }
+
+    /// A tool that records whether its body ever ran.
+    fn contract_tool(name: &'static str, ran: Arc<AtomicBool>) -> AgentTool {
+        AgentTool {
+            name: name.to_string(),
+            description: "records whether it ever ran".to_string(),
+            parameters: json!({"type": "object", "properties": {}}),
+            label: "Contract tool".to_string(),
+            prepare_arguments: None,
+            execute: Arc::new(move |_, _, _, _| {
+                let ran = ran.clone();
+                Box::pin(async move {
+                    ran.store(true, Ordering::SeqCst);
+                    Ok(AgentToolResult::new(
+                        vec![AgentContentBlock::text("ran")],
+                        json!({}),
+                    ))
+                })
+            }),
+            execution_mode: None,
+        }
+    }
+
+    /// CORE-R2-1: a provider terminal `error`/`aborted` may still carry a tool
+    /// call the model already streamed. The call never runs, so the run must
+    /// answer it; otherwise the persisted history keeps an assistant tool call
+    /// with no matching tool result and the next request is protocol-invalid.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn terminal_error_and_abort_answer_every_tool_call() {
+        for stop_reason in [
+            pi_ai::types::STOP_REASON_ERROR,
+            pi_ai::types::STOP_REASON_ABORTED,
+        ] {
+            let ran = Arc::new(AtomicBool::new(false));
+            let context = AgentContext {
+                system_prompt: String::new(),
+                messages: Vec::new(),
+                tools: Some(vec![contract_tool("never-runs", ran.clone())]),
+            };
+            let run = collect_run(
+                context,
+                AgentLoopConfig::new(contract_model()),
+                None,
+                tool_call_then_terminal_stream_fn(stop_reason),
+            )
+            .await;
+
+            let (issued, answered) = tool_call_ids(&run.new_messages);
+            assert_eq!(
+                issued,
+                vec!["call-1".to_string()],
+                "the terminal {stop_reason} message carries the streamed tool call"
+            );
+            assert_eq!(
+                answered, issued,
+                "a terminal {stop_reason} must answer every tool call it carries"
+            );
+            assert!(
+                !ran.load(Ordering::SeqCst),
+                "a terminal {stop_reason} must never execute a tool"
+            );
+            let results = tool_result_messages(&run.new_messages);
+            assert_eq!(results.len(), 1);
+            assert_eq!(
+                tool_result_text(results[0]),
+                Some(TOOL_EXECUTION_ABORTED_MESSAGE)
+            );
+            assert!(results[0].is_error);
+            assert_eq!(
+                run.new_messages.last().map(AgentMessage::role),
+                Some("toolResult"),
+                "history must end at the tool result so a later continue() is valid"
+            );
+            let turn_results = run.events.iter().find_map(|event| match event {
+                AgentEvent::TurnEnd { tool_results, .. } => Some(tool_results.len()),
+                _ => None,
+            });
+            assert_eq!(
+                turn_results,
+                Some(1),
+                "the turn must report the synthesized answer to its observers"
+            );
+        }
+    }
+
+    /// CORE-R2-2: cancellation that lands after the batch admission check but
+    /// before the tool starts must still leave the dedicated abort wording.
+    /// Here the before-hook cancels the run and returns normally, so the tool's
+    /// own abort pre-check answers the call.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn cancellation_before_tool_start_uses_the_dedicated_abort_wording() {
+        let ran = Arc::new(AtomicBool::new(false));
+        let mut config = AgentLoopConfig::new(contract_model());
+        config.before_tool_call = Some(Arc::new(|_, hook_signal| {
+            Box::pin(async move {
+                if let Some(signal) = hook_signal {
+                    signal.cancel();
+                }
+                Ok(None)
+            })
+        }));
+        let context = AgentContext {
+            system_prompt: String::new(),
+            messages: Vec::new(),
+            tools: Some(vec![contract_tool("precheck-abort", ran.clone())]),
+        };
+        let run = collect_run(
+            context,
+            config,
+            Some(CancellationToken::new()),
+            completed_message_stream_fn(assistant_with_tool_calls(&[("call-1", "precheck-abort")])),
+        )
+        .await;
+
+        assert!(
+            !ran.load(Ordering::SeqCst),
+            "the tool body must not run after the cancellation"
+        );
+        let (issued, answered) = tool_call_ids(&run.new_messages);
+        assert_eq!(answered, issued, "the cancelled call must still be answered");
+        let results = tool_result_messages(&run.new_messages);
+        assert_eq!(results.len(), 1);
+        assert_eq!(
+            tool_result_text(results[0]),
+            Some(TOOL_EXECUTION_ABORTED_MESSAGE),
+            "a call stopped before it started must use the dedicated abort wording, not the provider-request abort text"
+        );
+        assert!(results[0].is_error);
+    }
+
+    /// CORE-R2-V1 (verification, not a fix): the whole sequence
+    /// user request -> model response -> tool call -> tool execution ->
+    /// tool result -> continuation -> final answer, asserted as the real
+    /// emitted event order.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn full_turn_sequence_emits_request_response_tool_result_and_final_answer() {
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let stream_fn: StreamFn = {
+            let calls = calls.clone();
+            Arc::new(move |_model, _context, _options| {
+                let index = calls.fetch_add(1, Ordering::SeqCst);
+                let message = if index == 0 {
+                    assistant_with_tool_calls(&[("call-1", "echo")])
+                } else {
+                    let mut message =
+                        AssistantMessage::new("openai-completions", "openai", "contract-model", 2);
+                    message.stop_reason = pi_ai::types::STOP_REASON_STOP.to_string();
+                    message.content = vec![ContentBlock::Text(TextContent::new("final answer"))];
+                    message
+                };
+                let handle = pi_ai::utils::event_stream::AssistantMessageEventStream::new();
+                let producer = handle.producer_handle();
+                let producer_task = producer.clone();
+                producer_task.spawn(async move {
+                    producer.push(AssistantMessageEvent::Done {
+                        reason: message.stop_reason.clone(),
+                        message,
+                    });
+                });
+                Box::pin(async move { handle })
+            })
+        };
+        let ran = Arc::new(AtomicBool::new(false));
+        let context = AgentContext {
+            system_prompt: String::new(),
+            messages: Vec::new(),
+            tools: Some(vec![contract_tool("echo", ran.clone())]),
+        };
+        let run = collect_run(
+            context,
+            AgentLoopConfig::new(contract_model()),
+            None,
+            stream_fn,
+        )
+        .await;
+
+        let shape: Vec<&'static str> = run
+            .events
+            .iter()
+            .map(|event| match event {
+                AgentEvent::AgentStart => "agent_start",
+                AgentEvent::AgentEnd { .. } => "agent_end",
+                AgentEvent::TurnStart => "turn_start",
+                AgentEvent::TurnEnd { .. } => "turn_end",
+                AgentEvent::MessageStart { message } => match message.role() {
+                    "user" => "user_start",
+                    "assistant" => "assistant_start",
+                    _ => "tool_result_start",
+                },
+                AgentEvent::MessageEnd { message } => match message.role() {
+                    "user" => "user_end",
+                    "assistant" => "assistant_end",
+                    _ => "tool_result_end",
+                },
+                AgentEvent::MessageUpdate { .. } => "message_update",
+                AgentEvent::ToolExecutionStart { .. } => "tool_start",
+                AgentEvent::ToolExecutionEnd { .. } => "tool_end",
+                AgentEvent::ToolExecutionUpdate { .. } => "tool_update",
+            })
+            .collect();
+        assert_eq!(
+            shape,
+            vec![
+                "agent_start",
+                "turn_start",
+                "user_start",
+                "user_end",
+                "assistant_start",
+                "assistant_end",
+                "tool_start",
+                "tool_end",
+                "tool_result_start",
+                "tool_result_end",
+                "turn_end",
+                "turn_start",
+                "assistant_start",
+                "assistant_end",
+                "turn_end",
+                "agent_end",
+            ],
+            "the loop must emit request, response, tool execution, tool result, continuation and final answer in order"
+        );
+        assert!(ran.load(Ordering::SeqCst), "the tool must run exactly once");
+        assert_eq!(calls.load(Ordering::SeqCst), 2, "one request per turn");
+        assert_eq!(
+            run.new_messages.len(),
+            4,
+            "prompt, assistant tool call, tool result, assistant answer"
+        );
+        let (issued, answered) = tool_call_ids(&run.new_messages);
+        assert_eq!(issued, vec!["call-1".to_string()]);
+        assert_eq!(answered, issued);
+        assert_eq!(
+            run.new_messages.last().and_then(|message| match message {
+                AgentMessage::Message(Message::Assistant(assistant)) => assistant
+                    .content
+                    .first()
+                    .and_then(|block| match block {
+                        ContentBlock::Text(text) => Some(text.text.as_str()),
+                        _ => None,
+                    }),
+                _ => None,
+            }),
+            Some("final answer")
+        );
+    }
+
+    /// CORE-R2-1 (recovery half): the context a terminal failure leaves behind
+    /// must be continuable, and the continuation must not re-run the aborted
+    /// tool. Before the fix the tail was an assistant message, so
+    /// `agent_loop_continue` refused it and a later `continue()` could only
+    /// send an invalid request.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn terminal_error_leaves_a_context_that_can_continue_without_rerunning_tools() {
+        let ran = Arc::new(AtomicBool::new(false));
+        let tools = vec![contract_tool("never-runs", ran.clone())];
+        let run = collect_run(
+            AgentContext {
+                system_prompt: String::new(),
+                messages: Vec::new(),
+                tools: Some(tools.clone()),
+            },
+            AgentLoopConfig::new(contract_model()),
+            None,
+            tool_call_then_terminal_stream_fn(pi_ai::types::STOP_REASON_ERROR),
+        )
+        .await;
+        assert_eq!(
+            run.new_messages.last().map(AgentMessage::role),
+            Some("toolResult")
+        );
+
+        let events: Arc<Mutex<Vec<AgentEvent>>> = Arc::new(Mutex::new(Vec::new()));
+        let emit: AgentEventSink = {
+            let events = events.clone();
+            Arc::new(move |event| {
+                let events = events.clone();
+                Box::pin(async move {
+                    events.lock().unwrap().push(event);
+                    Ok(())
+                })
+            })
+        };
+        let continuation = run_agent_loop_continue(
+            AgentContext {
+                system_prompt: String::new(),
+                messages: run.new_messages.clone(),
+                tools: Some(tools),
+            },
+            AgentLoopConfig::new(contract_model()),
+            emit,
+            None,
+            Some(completed_message_stream_fn({
+                let mut message =
+                    AssistantMessage::new("openai-completions", "openai", "contract-model", 3);
+                message.stop_reason = pi_ai::types::STOP_REASON_STOP.to_string();
+                message.content = vec![ContentBlock::Text(TextContent::new("recovered"))];
+                message
+            })),
+        )
+        .await
+        .expect("a terminal failure must leave a continuable context");
+        assert_eq!(
+            continuation.last().map(AgentMessage::role),
+            Some("assistant")
+        );
+        assert!(
+            !ran.load(Ordering::SeqCst),
+            "continuing must not re-run a tool call the failed turn already answered"
+        );
+    }
+
+    /// Measurement only (never part of the default suite): per-tool dispatch
+    /// overhead through the real batch entry point, including its event fan-out.
+    /// `cargo test -p pi-agent-core --lib -- measure_tool_dispatch_overhead --ignored --nocapture`
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    #[ignore = "measurement only"]
+    async fn measure_tool_dispatch_overhead() {
+        async fn measure(
+            mode: ToolExecutionMode,
+            count: usize,
+            rounds: usize,
+        ) -> (std::time::Duration, usize) {
+            let noop = AgentTool {
+                name: "noop".to_string(),
+                description: "no-op".to_string(),
+                parameters: json!({"type": "object", "properties": {}}),
+                label: "No-op".to_string(),
+                prepare_arguments: None,
+                execute: Arc::new(|_, _, _, _| {
+                    Box::pin(async {
+                        Ok(AgentToolResult::new(
+                            vec![AgentContentBlock::text("ok")],
+                            json!({}),
+                        ))
+                    })
+                }),
+                execution_mode: None,
+            };
+            let ids: Vec<String> = (0..count).map(|index| format!("call-{index}")).collect();
+            let borrowed: Vec<(&str, &str)> = ids.iter().map(|id| (id.as_str(), "noop")).collect();
+            let message = assistant_with_tool_calls(&borrowed);
+            let mut config = AgentLoopConfig::new(contract_model());
+            config.tool_execution = Some(mode);
+            let emitted = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+            let emit: AgentEventSink = {
+                let emitted = emitted.clone();
+                Arc::new(move |_| {
+                    let emitted = emitted.clone();
+                    Box::pin(async move {
+                        emitted.fetch_add(1, Ordering::SeqCst);
+                        Ok(())
+                    })
+                })
+            };
+            let mut run_once = |measured: bool| {
+                let noop = noop.clone();
+                let message = message.clone();
+                let config = config.clone();
+                let emit = emit.clone();
+                async move {
+                    let mut context = AgentContext {
+                        system_prompt: String::new(),
+                        messages: Vec::new(),
+                        tools: Some(vec![noop]),
+                    };
+                    let batch = execute_tool_calls(&mut context, &message, &config, None, &emit)
+                        .await
+                        .expect("the batch must not fail");
+                    assert_eq!(batch.messages.len(), count);
+                    if measured {
+                        std::time::Instant::now()
+                    } else {
+                        std::time::Instant::now()
+                    }
+                }
+            };
+            // Warm up: schema validator cache, allocator, runtime workers.
+            for _ in 0..5 {
+                let _ = run_once(false).await;
+            }
+            emitted.store(0, Ordering::SeqCst);
+            let total = std::time::Instant::now();
+            for _ in 0..rounds {
+                let _ = run_once(true).await;
+            }
+            let elapsed = total.elapsed() / rounds as u32;
+            (elapsed, emitted.load(Ordering::SeqCst) / rounds)
+        }
+        let mut previous: Option<(usize, f64)> = None;
+        for mode in [ToolExecutionMode::Parallel, ToolExecutionMode::Sequential] {
+            let label = match mode {
+                ToolExecutionMode::Parallel => "parallel",
+                ToolExecutionMode::Sequential => "sequential",
+            };
+            previous = None;
+            for count in [1usize, 2, 4, 8, 16] {
+                let (elapsed, events) = measure(mode, count, 200).await;
+                let per_turn_us = elapsed.as_secs_f64() * 1e6;
+                let per_tool_us = per_turn_us / count as f64;
+                let marginal = previous
+                    .map(|(previous_count, previous_us)| {
+                        (per_turn_us - previous_us) / (count - previous_count) as f64
+                    })
+                    .unwrap_or(f64::NAN);
+                println!(
+                    "MEASURE {label:>10} {count:>2} tools: {per_turn_us:>8.1} us/batch {per_tool_us:>7.1} us/tool marginal {marginal:>7.1} us/tool events/batch {events}"
+                );
+                previous = Some((count, per_turn_us));
             }
         }
     }

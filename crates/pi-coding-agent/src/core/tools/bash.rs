@@ -39,6 +39,25 @@ pub struct BashToolInput {
     pub timeout: Option<f64>,
 }
 
+/// Sanity ceiling for a model-supplied timeout, in seconds (one week).
+///
+/// `std::time::Duration::from_secs_f64` panics on a value that overflows
+/// `Duration`, and a JSON number can overflow: `1e400` parses as +inf and a
+/// large finite value such as `1e300` is far beyond any representable
+/// `Duration`. The executor therefore arms only a finite, clamped value and
+/// treats a non-finite one as "no timeout"; the rendered call shows the clamped
+/// value, so the user reads the timeout that will actually fire. Zero and
+/// negative values keep the TypeScript truthiness behaviour: no timeout.
+pub const MAX_TIMEOUT_SECONDS: f64 = 7.0 * 24.0 * 60.0 * 60.0;
+
+/// The timeout that will actually be armed, or `None` for "no timeout".
+fn effective_timeout_seconds(seconds: f64) -> Option<f64> {
+    if !seconds.is_finite() || seconds <= 0.0 {
+        return None;
+    }
+    Some(seconds.min(MAX_TIMEOUT_SECONDS))
+}
+
 #[derive(Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct BashToolDetails {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -280,15 +299,21 @@ impl BashOperations for LocalBashOperations {
                 tokio::pin!(wait);
 
                 let signal = options.signal.clone();
-                let timeout = options.timeout;
+                // A model-supplied timeout can overflow (`1e300`) or be
+                // non-finite (`1e400` parses as inf); `Duration::from_secs_f64`
+                // panics on both, so only the clamped, convertible value is armed.
+                let timeout = options
+                    .timeout
+                    .and_then(effective_timeout_seconds)
+                    .and_then(|seconds| std::time::Duration::try_from_secs_f64(seconds).ok());
                 loop {
                     let deadline = async {
                         match timeout {
-                            Some(seconds) if seconds > 0.0 => {
-                                tokio::time::sleep(std::time::Duration::from_secs_f64(seconds)).await;
+                            Some(duration) => {
+                                tokio::time::sleep(duration).await;
                                 "timeout"
                             }
-                            _ => {
+                            None => {
                                 futures::future::pending::<&'static str>().await
                             }
                         }
@@ -374,7 +399,12 @@ impl BashOperations for LocalBashOperations {
                 return Err("aborted".to_string());
             }
             if timed_out {
-                return Err(format!("timeout:{}", options.timeout.unwrap_or(0.0)));
+                // Report the armed (clamped) value, never the impossible request.
+                let armed = options
+                    .timeout
+                    .and_then(effective_timeout_seconds)
+                    .unwrap_or(0.0);
+                return Err(format!("timeout:{armed}"));
             }
 
             // Windows: the shell settled normally while a background
@@ -505,12 +535,12 @@ pub fn format_bash_call(args: Option<&BashToolInput>, theme: &dyn ToolTheme) -> 
     let command = str_value(command_value.as_ref());
     let timeout = args.and_then(|args| args.timeout);
     // `core/tools/bash.ts:180` gates on JS truthiness: `timeout ? ... : ""`, so
-    // `timeout: 0` renders just the command. `NaN` is falsy in JS too.
-    let timeout_suffix = match timeout {
-        Some(timeout) if timeout != 0.0 && !timeout.is_nan() => {
-            theme.fg("muted", &format!(" (timeout {timeout}s)"))
-        }
-        _ => String::new(),
+    // `timeout: 0` renders just the command. `NaN` is falsy in JS too. A clamped
+    // timeout renders the value that will actually be armed, and a non-finite
+    // one means "no timeout" and renders nothing.
+    let timeout_suffix = match timeout.and_then(effective_timeout_seconds) {
+        Some(effective) => theme.fg("muted", &format!(" (timeout {effective}s)")),
+        None => String::new(),
     };
     let command_display = match command {
         None => invalid_arg_text(theme),
@@ -1487,5 +1517,587 @@ exit 7
             .find(|child| child.contains("Full output: /tmp/full.log"))
             .expect("warning row");
         assert!(warning.contains("Truncated: showing 2 of 10 lines"));
+    }
+
+    // Goals 1, 10 and 11 of the bash slice: drive the REAL shell path
+    // (`execute_bash` -> `LocalBashOperations` -> shell -> pipes -> accumulator
+    // -> spill) instead of a fake backend, so shell resolution, spawn, pump,
+    // truncation, spill, timeout and cancellation are exercised end to end.
+    mod real_paths {
+        use super::super::{
+            create_local_bash_operations, execute_bash, format_bash_call, BashOperations,
+            BashSpawnContext, BashSpawnHook, BashToolInput,
+        };
+        use super::*;
+        use crate::core::tools::render_utils::PlainTheme;
+        use std::time::{Duration, Instant};
+
+        fn local_operations() -> Arc<dyn BashOperations> {
+            create_local_bash_operations(None)
+        }
+
+        fn forward(path: &std::path::Path) -> String {
+            path.to_string_lossy().replace('\\', "/")
+        }
+
+        fn input(command: impl Into<String>, timeout: Option<f64>) -> BashToolInput {
+            BashToolInput { command: command.into(), timeout }
+        }
+
+        /// Shell text that prints the shell's own OS pid so a kill can be
+        /// verified against the real process instead of a proxy.
+        fn shell_pid_expression() -> &'static str {
+            if cfg!(windows) {
+                "read -r prime_w < /proc/self/winpid; printf '%s\\n' \"$prime_w\""
+            } else {
+                "printf '%s\\n' \"$$\""
+            }
+        }
+
+        #[cfg(windows)]
+        fn process_alive(pid: i32) -> bool {
+            use windows_sys::Win32::Foundation::CloseHandle;
+            use windows_sys::Win32::System::Threading::{
+                GetExitCodeProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+            };
+            const STILL_ACTIVE: u32 = 259;
+            unsafe {
+                let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid as u32);
+                if handle.is_null() {
+                    return false;
+                }
+                let mut exit_code: u32 = 0;
+                let ok = GetExitCodeProcess(handle, &mut exit_code) != 0;
+                CloseHandle(handle);
+                ok && exit_code == STILL_ACTIVE
+            }
+        }
+
+        #[cfg(not(windows))]
+        fn process_alive(pid: i32) -> bool {
+            unsafe { libc::kill(pid, 0) == 0 }
+        }
+
+        fn read_pid_file(path: &std::path::Path) -> i32 {
+            let started = Instant::now();
+            loop {
+                if let Ok(text) = std::fs::read_to_string(path) {
+                    if let Ok(pid) = text.trim().parse::<i32>() {
+                        return pid;
+                    }
+                }
+                assert!(
+                    started.elapsed() < Duration::from_secs(15),
+                    "pid file never became readable: {}",
+                    path.display()
+                );
+                std::thread::sleep(Duration::from_millis(25));
+            }
+        }
+
+        fn wait_process_gone(pid: i32, deadline: Duration) -> bool {
+            let started = Instant::now();
+            while started.elapsed() < deadline {
+                if !process_alive(pid) {
+                    return true;
+                }
+                std::thread::sleep(Duration::from_millis(50));
+            }
+            !process_alive(pid)
+        }
+
+        // Simple command, cwd, quoted paths with spaces and a unicode
+        // directory: the shell must run IN the requested cwd and resolve the
+        // quoted relative path there.
+        #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+        async fn real_command_runs_in_a_unicode_cwd_with_spaces() {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let spaced = dir.path().join("dir with space").join("unicode-\u{fc}nicode");
+            std::fs::create_dir_all(&spaced).expect("nested cwd");
+            std::fs::write(spaced.join("note file.txt"), "quoted payload\n").expect("note");
+
+            let (text, details) = execute_bash(
+                &forward(&spaced),
+                local_operations(),
+                None,
+                None,
+                &input("pwd; cat 'note file.txt'", Some(60.0)),
+                None,
+                None,
+            )
+            .await
+            .expect("real shell executed");
+
+            assert!(text.contains("quoted payload"), "output: {text}");
+            assert!(
+                text.contains("dir with space"),
+                "the command must run in the requested cwd, not the test cwd: {text}"
+            );
+            assert!(details.is_none());
+        }
+
+        // Exit 0, exit non-zero, stderr capture and a missing executable.
+        #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+        async fn real_exit_codes_and_stdout_stderr_are_reported() {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let cwd = dir.path().to_string_lossy().to_string();
+
+            let (text, _) = execute_bash(
+                &cwd,
+                local_operations(),
+                None,
+                None,
+                &input("printf 'to-out\\n'; printf 'to-err\\n' 1>&2; exit 0", Some(60.0)),
+                None,
+                None,
+            )
+            .await
+            .expect("exit 0 is success");
+            assert!(text.contains("to-out"), "stdout missing: {text}");
+            assert!(text.contains("to-err"), "stderr missing: {text}");
+
+            let error = execute_bash(
+                &cwd,
+                local_operations(),
+                None,
+                None,
+                &input("printf 'partial\\n'; exit 3", Some(60.0)),
+                None,
+                None,
+            )
+            .await
+            .expect_err("a non-zero exit must be an error");
+            assert!(error.contains("partial"), "output must survive the error: {error}");
+            assert!(error.ends_with("Command exited with code 3"), "{error}");
+
+            let error = execute_bash(
+                &cwd,
+                local_operations(),
+                None,
+                None,
+                &input("pi_no_such_command_9c1f", Some(60.0)),
+                None,
+                None,
+            )
+            .await
+            .expect_err("a missing executable must be an error");
+            assert!(error.contains("Command exited with code 127"), "{error}");
+            assert!(
+                error.contains("pi_no_such_command_9c1f"),
+                "the shell diagnostic must reach the caller: {error}"
+            );
+        }
+
+        // Empty output reports the parity placeholder, not an empty string.
+        #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+        async fn real_empty_output_reports_no_output() {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let (text, details) = execute_bash(
+                &dir.path().to_string_lossy().to_string(),
+                local_operations(),
+                None,
+                None,
+                &input("true", Some(60.0)),
+                None,
+                None,
+            )
+            .await
+            .expect("executed");
+            assert_eq!(text, "(no output)");
+            assert!(details.is_none());
+        }
+
+        // Unicode through the real pipe, including a multibyte character that
+        // lands on the 8 KiB pump read boundary.
+        #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+        async fn real_unicode_output_survives_the_pipe() {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let (text, _) = execute_bash(
+                &dir.path().to_string_lossy().to_string(),
+                local_operations(),
+                None,
+                None,
+                &input(r#"printf 'h\xc3\xa9llo \xcf\x80 \xf0\x9f\xa6\x80\n'"#, Some(60.0)),
+                None,
+                None,
+            )
+            .await
+            .expect("executed");
+            assert_eq!(text, "h\u{e9}llo \u{3c0} \u{1f980}\n");
+            assert!(!text.contains('\u{FFFD}'), "unicode corrupted: {text:?}");
+
+            // 8191 filler bytes then a 2-byte character: the 8192-byte pump
+            // buffer can split that character across two reads.
+            let (text, _) = execute_bash(
+                &dir.path().to_string_lossy().to_string(),
+                local_operations(),
+                None,
+                None,
+                &input(
+                    "head -c 8191 /dev/zero | tr '\\0' x; printf '\\xc3\\xa9'",
+                    Some(60.0),
+                ),
+                None,
+                None,
+            )
+            .await
+            .expect("executed");
+            assert!(!text.contains('\u{FFFD}'), "split character corrupted");
+            assert!(text.ends_with('\u{e9}'), "trailing character lost");
+            assert_eq!(text.len(), 8191 + '\u{e9}'.len_utf8());
+        }
+
+        // Binary output must not panic the decoder and must stay printable.
+        #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+        async fn real_binary_output_does_not_break_the_stream() {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let (text, _) = execute_bash(
+                &dir.path().to_string_lossy().to_string(),
+                local_operations(),
+                None,
+                None,
+                &input(r#"printf 'a\377\376b'"#, Some(60.0)),
+                None,
+                None,
+            )
+            .await
+            .expect("executed");
+            assert!(text.starts_with('a'), "{text:?}");
+            assert!(text.ends_with("b\n") || text.ends_with('b'), "{text:?}");
+            assert_eq!(text.matches('\u{FFFD}').count(), 2, "{text:?}");
+        }
+
+        // Environment overrides reach the child through the spawn hook.
+        #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+        async fn real_env_overrides_reach_the_command() {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let hook: BashSpawnHook = Arc::new(|mut context: BashSpawnContext| {
+                context
+                    .env
+                    .push(("PI_BASH_ENV_TEST".to_string(), "value-42".to_string()));
+                context
+            });
+            let (text, _) = execute_bash(
+                &dir.path().to_string_lossy().to_string(),
+                local_operations(),
+                None,
+                Some(&hook),
+                &input("printf '%s' \"$PI_BASH_ENV_TEST\"", Some(60.0)),
+                None,
+                None,
+            )
+            .await
+            .expect("executed");
+            assert_eq!(text, "value-42");
+        }
+
+        // Fault injection: a cwd that exists but is a FILE cannot be entered.
+        // The call must reject promptly instead of hanging or succeeding.
+        #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+        async fn real_cwd_that_is_a_file_rejects_promptly() {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let file = dir.path().join("not-a-directory.txt");
+            std::fs::write(&file, "x").expect("file");
+            let started = Instant::now();
+            let error = execute_bash(
+                &file.to_string_lossy().to_string(),
+                local_operations(),
+                None,
+                None,
+                &input("printf 'must-not-run'", Some(60.0)),
+                None,
+                None,
+            )
+            .await
+            .expect_err("a file is not a working directory");
+            assert!(
+                started.elapsed() < Duration::from_secs(20),
+                "the spawn failure must not hang: {error}"
+            );
+            assert!(!error.contains("must-not-run"), "{error}");
+        }
+
+        // Timeout: partial output is kept, the call is bounded, and the shell
+        // process is gone afterwards (no leaked process).
+        #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+        async fn real_timeout_keeps_partial_output_and_kills_the_shell() {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let pid_file = dir.path().join("shell.pid");
+            let command = format!(
+                "{} > '{}' ; printf 'before-timeout\\n'; sleep 30",
+                shell_pid_expression(),
+                forward(&pid_file)
+            );
+            let started = Instant::now();
+            let error = execute_bash(
+                &dir.path().to_string_lossy().to_string(),
+                local_operations(),
+                None,
+                None,
+                &input(command, Some(2.0)),
+                None,
+                None,
+            )
+            .await
+            .expect_err("the timeout must error");
+            assert!(
+                error.ends_with("Command timed out after 2 seconds"),
+                "{error}"
+            );
+            assert!(
+                started.elapsed() >= Duration::from_secs(1),
+                "a normal 2 s timeout must actually wait, fired after {:?}",
+                started.elapsed()
+            );
+            assert!(error.contains("before-timeout"), "partial output lost: {error}");
+            assert!(
+                started.elapsed() < Duration::from_secs(25),
+                "the killed call must stay bounded, took {:?}",
+                started.elapsed()
+            );
+            let pid = read_pid_file(&pid_file);
+            assert!(
+                wait_process_gone(pid, Duration::from_secs(10)),
+                "shell pid {pid} survived the timeout kill"
+            );
+        }
+
+        // Cancellation: an aborted token reports "Command aborted", keeps the
+        // output produced so far, and reaps the shell process.
+        #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+        async fn real_cancellation_keeps_partial_output_and_kills_the_shell() {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let pid_file = dir.path().join("shell.pid");
+            let command = format!(
+                "{} > '{}' ; printf 'before-cancel\\n'; sleep 30",
+                shell_pid_expression(),
+                forward(&pid_file)
+            );
+            let token = CancellationToken::new();
+            let signal = token.clone();
+            tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_millis(500)).await;
+                signal.cancel();
+            });
+            let started = Instant::now();
+            let error = execute_bash(
+                &dir.path().to_string_lossy().to_string(),
+                local_operations(),
+                None,
+                None,
+                &input(command, None),
+                Some(token),
+                None,
+            )
+            .await
+            .expect_err("cancellation must error");
+            assert!(error.ends_with("Command aborted"), "{error}");
+            assert!(error.contains("before-cancel"), "partial output lost: {error}");
+            assert!(
+                started.elapsed() < Duration::from_secs(25),
+                "the cancelled call must stay bounded, took {:?}",
+                started.elapsed()
+            );
+            let pid = read_pid_file(&pid_file);
+            assert!(
+                wait_process_gone(pid, Duration::from_secs(10)),
+                "shell pid {pid} survived the cancelled call"
+            );
+        }
+
+        // Very large output: the visible text is truncated with the count
+        // notice, and the spill file holds EVERY line, head included.
+        #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+        async fn real_large_output_truncates_and_spills_the_whole_stream() {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let (text, details) = execute_bash(
+                &dir.path().to_string_lossy().to_string(),
+                local_operations(),
+                None,
+                None,
+                &input(
+                    "awk 'BEGIN { for (i = 1; i <= 3000; i++) printf \"line%04d-abcdefghij\\n\", i }'",
+                    Some(60.0),
+                ),
+                None,
+                None,
+            )
+            .await
+            .expect("executed");
+
+            let details = details.expect("truncation details");
+            let truncation = details.truncation.expect("truncation");
+            assert!(truncation.truncated);
+            // Parity with the TypeScript `output.split("\n").length`: the
+            // terminal newline counts as an extra (empty) line.
+            assert_eq!(truncation.total_lines, 3001);
+            assert!(text.contains("[Showing lines "), "{text}");
+            assert!(text.contains(" of 3001"), "the true line count must be reported: {text}");
+            assert!(!text.contains("line0001-"), "the head must be hidden: {text}");
+            assert!(text.contains("line3000-abcdefghij"), "the tail must be shown");
+
+            let path = details.full_output_path.expect("spill path");
+            let spilled = std::fs::read_to_string(&path).expect("spilled bytes");
+            let lines: Vec<&str> = spilled.lines().collect();
+            assert_eq!(lines.len(), 3000, "the spill must hold every line");
+            assert_eq!(lines.first().copied(), Some("line0001-abcdefghij"));
+            assert_eq!(lines.last().copied(), Some("line3000-abcdefghij"));
+            let _ = std::fs::remove_file(path);
+        }
+
+        // Concurrent calls must not interleave or cross-contaminate output.
+        #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+        async fn real_concurrent_calls_keep_their_own_output() {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let cwd = dir.path().to_string_lossy().to_string();
+            let futures = (0..3).map(|index| {
+                let cwd = cwd.clone();
+                async move {
+                    let token = format!("pi-concurrent-{index}");
+                    let command = format!(
+                        "sleep 0.1; printf '%s\\n' '{token}-alpha'; printf '%s\\n' '{token}-beta'"
+                    );
+                    let (text, _) = execute_bash(
+                        &cwd,
+                        local_operations(),
+                        None,
+                        None,
+                        &input(command, Some(60.0)),
+                        None,
+                        None,
+                    )
+                    .await
+                    .expect("concurrent call executed");
+                    (token, text)
+                }
+            });
+            for (token, text) in futures::future::join_all(futures).await {
+                assert_eq!(text, format!("{token}-alpha\n{token}-beta\n"));
+                for other in 0..3 {
+                    let foreign = format!("pi-concurrent-{other}");
+                    if foreign != token {
+                        assert!(!text.contains(&foreign), "cross-talk: {text}");
+                    }
+                }
+            }
+        }
+
+        // A pipeline runs through the real shell and its output arrives.
+        #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+        async fn real_pipeline_streams_output() {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let (text, _) = execute_bash(
+                &dir.path().to_string_lossy().to_string(),
+                local_operations(),
+                None,
+                None,
+                &input("printf 'piped\\n' | cat | cat", Some(60.0)),
+                None,
+                None,
+            )
+            .await
+            .expect("executed");
+            assert_eq!(text, "piped\n");
+        }
+
+        // Byte-limit truncation boundary: one very long line is cut by BYTES
+        // with the partial-line notice, and the spill still holds all of it.
+        #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+        async fn real_byte_limit_truncation_keeps_the_line_tail() {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let (text, details) = execute_bash(
+                &dir.path().to_string_lossy().to_string(),
+                local_operations(),
+                None,
+                None,
+                &input("head -c 120000 /dev/zero | tr '\\0' 'a'", Some(60.0)),
+                None,
+                None,
+            )
+            .await
+            .expect("executed");
+
+            let details = details.expect("truncation details");
+            let truncation = details.truncation.expect("truncation");
+            assert!(truncation.truncated);
+            assert_eq!(truncation.total_bytes, 120000);
+            assert!(
+                truncation.last_line_partial,
+                "a cut in the middle of a line must be reported as partial"
+            );
+            assert!(text.contains("[Showing last "), "{text}");
+            assert!(text.contains(" of line 1 ("), "byte-limit notice missing: {text}");
+
+            let path = details.full_output_path.expect("spill path");
+            let spilled = std::fs::read(&path).expect("spilled bytes");
+            assert_eq!(spilled.len(), 120000, "the spill must hold the whole stream");
+            assert!(spilled.iter().all(|byte| *byte == b'a'));
+            let _ = std::fs::remove_file(path);
+        }
+
+        // A model-facing JSON number can be absurdly large. `Duration::
+        // from_secs_f64` panics on overflow, so the executor must treat an
+        // unconvertible timeout as "no timeout" instead of taking the call down.
+        #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+        async fn real_absurd_timeout_values_do_not_panic() {
+            let dir = tempfile::tempdir().expect("temp dir");
+            let cwd = dir.path().to_string_lossy().to_string();
+            for timeout in [1e300_f64, f64::INFINITY, f64::NAN, -5.0, 0.0] {
+                let (text, _) = execute_bash(
+                    &cwd,
+                    local_operations(),
+                    None,
+                    None,
+                    &input("printf 'ran'", Some(timeout)),
+                    None,
+                    None,
+                )
+                .await
+                .unwrap_or_else(|error| panic!("timeout {timeout} rejected the call: {error}"));
+                assert_eq!(text, "ran", "timeout {timeout} broke the command");
+            }
+        }
+
+        // Parent policy: a non-finite timeout is "no timeout"; a finite value
+        // above the ceiling is clamped AND the rendered call shows the
+        // effective value, so the user is never told a number that cannot fire.
+        #[test]
+        fn absurd_timeouts_render_the_effective_value() {
+            let render = |timeout: Option<f64>| {
+                let args = BashToolInput {
+                    command: "echo hi".to_string(),
+                    timeout,
+                };
+                format_bash_call(Some(&args), &PlainTheme)
+            };
+            assert!(render(Some(1e300)).contains("(timeout 604800s)"), "{}", render(Some(1e300)));
+            assert!(render(Some(f64::MAX)).contains("(timeout 604800s)"));
+            assert!(!render(Some(f64::INFINITY)).contains("timeout"));
+            assert!(!render(Some(f64::NAN)).contains("timeout"));
+            assert!(!render(Some(-5.0)).contains("timeout"));
+            assert!(!render(Some(0.0)).contains("timeout"));
+            assert!(render(Some(2.0)).contains("(timeout 2s)"));
+        }
+
+        // `serde_json` is the real entry point for a model tool call: an
+        // out-of-range float must never arrive as a finite timeout.
+        #[test]
+        fn a_json_timeout_overflow_never_becomes_finite() {
+            match serde_json::from_str::<serde_json::Value>(
+                r#"{"command":"echo hi","timeout":1e400}"#,
+            ) {
+                Ok(params) => {
+                    let parsed = params.get("timeout").and_then(serde_json::Value::as_f64);
+                    assert!(
+                        parsed.map(|value| !value.is_finite()).unwrap_or(true),
+                        "1e400 must not become a finite timeout: {parsed:?}"
+                    );
+                }
+                Err(_) => {
+                    // Rejecting the document outright is equally safe: no
+                    // finite 1e400 timeout can reach the executor.
+                }
+            }
+        }
     }
 }

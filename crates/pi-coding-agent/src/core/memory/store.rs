@@ -782,10 +782,20 @@ impl MemoryStore {
         self.exclusive(|| {
             let path = Path::new(&self.dir).join("settings.json");
             let mut merged = if path.exists() {
-                read_json(&path.to_string_lossy())
-                    .ok()
-                    .and_then(|value| record(&value).ok())
-                    .unwrap_or_default()
+                let path_text = path.to_string_lossy().to_string();
+                match read_json(&path_text) {
+                    Ok(value) => match record(&value) {
+                        Ok(map) => map,
+                        Err(error) => {
+                            self.quarantine_settings_file(&path_text, &error)?;
+                            JsonMap::new()
+                        }
+                    },
+                    Err(error) => {
+                        self.quarantine_settings_file(&path_text, &error)?;
+                        JsonMap::new()
+                    }
+                }
             } else {
                 JsonMap::new()
             };
@@ -818,6 +828,102 @@ impl MemoryStore {
         Ok(id)
     }
 
+    /// Recovery support for [`MemoryStore::restore`]: preserve the bytes of an
+    /// authoritative store that no longer validates, then return the parts of
+    /// it that can still be trusted (the revision and the delivery receipts).
+    ///
+    /// The quarantine copy is content-addressed and fail-closed: if it cannot
+    /// be written, the restore aborts before the damaged file is replaced, so
+    /// no evidence is ever dropped silently.
+    fn salvage_damaged_state(&self, read_error: &str) -> Result<MemoryDocument, String> {
+        let raw = std::fs::read(&self.path).map_err(|error| {
+            format!("Could not read the current memory before restoring ({error}): {read_error}")
+        })?;
+        let quarantine = self.quarantine_state_file(&raw)?;
+        let log = pi_ai::log::get_logger("coding-agent.memory-store");
+        log.warn(
+            "Restoring a damaged memory store from a backup; the damaged bytes were preserved",
+            Some(serde_json::Map::from_iter([
+                ("path".to_string(), Value::String(self.path.clone())),
+                ("quarantine".to_string(), Value::String(quarantine)),
+                ("error".to_string(), Value::String(read_error.to_string())),
+            ])),
+        );
+        let mut salvaged = empty_document(&self.project.id);
+        // Best-effort: a truncated or non-JSON file simply salvages nothing,
+        // and the restore still advances from revision 0.
+        if let Ok(value) = serde_json::from_slice::<Value>(&raw) {
+            if let Some(metadata) = value.get("memory") {
+                if let Some(revision) = safe_integer(metadata.get("revision")) {
+                    if revision >= 0 {
+                        salvaged.memory.revision = revision;
+                    }
+                }
+                if let Some(Value::Object(events)) = metadata.get("events") {
+                    for (key, value) in events {
+                        if let Some(fingerprint) = value.as_str() {
+                            salvaged
+                                .memory
+                                .events
+                                .insert(key.clone(), fingerprint.to_string());
+                        }
+                    }
+                }
+            }
+        }
+        Ok(salvaged)
+    }
+
+    /// `<stem>.corrupt-<content-hash>.json` beside the store, mirroring the
+    /// host-identity and harness-state recovery copies: quarantining the same
+    /// bytes twice writes one file and the bytes survive verbatim.
+    fn quarantine_beside(&self, stem: &str, raw: &[u8]) -> Result<String, String> {
+        use sha2::{Digest, Sha256};
+        let mut hasher = Sha256::new();
+        hasher.update(raw);
+        let digest = format!("{:x}", hasher.finalize());
+        let backup = Path::new(&self.dir).join(format!("{stem}.corrupt-{}.json", &digest[..16]));
+        write_bytes_atomic_sync(
+            &backup.to_string_lossy(),
+            raw,
+            WriteFileAtomicOptions {
+                mode: Some(0o600),
+                fsync: true,
+                fsync_dir: true,
+                ..Default::default()
+            },
+        )
+        .map_err(|error| {
+            format!("Could not quarantine the damaged memory store before restoring: {error}")
+        })?;
+        Ok(backup.to_string_lossy().to_string())
+    }
+
+    fn quarantine_state_file(&self, raw: &[u8]) -> Result<String, String> {
+        self.quarantine_beside("harness_state", raw)
+    }
+
+    /// A settings file that no longer parses must not be silently replaced by
+    /// the next `configure` patch: that would drop every key it carried (the
+    /// recall/learning flags, the limits) with no trace. Keep the bytes in a
+    /// content-addressed copy and log the recovery location, then let the
+    /// patch write a fresh file.
+    fn quarantine_settings_file(&self, path: &str, error: &str) -> Result<String, String> {
+        let raw = std::fs::read(path).map_err(|read_error| {
+            format!("Could not read the invalid memory settings at {path}: {read_error}")
+        })?;
+        let quarantine = self.quarantine_beside("settings", &raw)?;
+        pi_ai::log::get_logger("coding-agent.memory-store").warn(
+            "Replacing an invalid project memory settings file; the previous bytes were preserved",
+            Some(serde_json::Map::from_iter([
+                ("path".to_string(), Value::String(path.to_string())),
+                ("quarantine".to_string(), Value::String(quarantine.clone())),
+                ("error".to_string(), Value::String(error.to_string())),
+            ])),
+        );
+        Ok(quarantine)
+    }
+
     pub async fn restore(&self, id: &str) -> Result<i64, String> {
         if !regex::Regex::new(r"^backup_\d+_[a-f0-9]{16}$")
             .unwrap()
@@ -839,8 +945,20 @@ impl MemoryStore {
                 return Err("Backup checksum mismatch".to_string());
             }
             let mut restored = validate_document(&state, &self.project.id)?;
-            let current = self.read()?;
-            self.backup(Some(current.clone()))?;
+            let current = match self.read() {
+                Ok(current) => {
+                    // A healthy store gets a normal pre-restore backup.
+                    self.backup(Some(current.clone()))?;
+                    current
+                }
+                // Restore is the documented recovery path for a damaged store,
+                // so a corrupt authoritative file must not block it. The
+                // damaged bytes are quarantined first (content-addressed, like
+                // the host identity), and only the fields that are still
+                // readable are salvaged: failing closed here would leave an
+                // operator with backups they can never apply.
+                Err(error) => self.salvage_damaged_state(&error)?,
+            };
             restored.memory.revision = current.memory.revision + 1;
             // Preserve delivery receipts so restoring old content cannot replay already committed jobs.
             for (key, value) in &current.memory.events {
@@ -848,7 +966,8 @@ impl MemoryStore {
             }
             write_json(
                 &self.path,
-                &serde_json::to_value(&restored).unwrap_or(Value::Null),
+                &serde_json::to_value(&restored)
+                    .map_err(|error| format!("Could not serialize the restored memory: {error}"))?,
             )?;
             Ok(restored.memory.revision)
         })
@@ -1086,9 +1205,13 @@ impl MemoryStore {
                 .insert(options.event_id.clone(), fingerprint);
             candidate.memory.history.push(applied.clone());
             self.backup(Some(doc))?;
+            // Never fall back to `null` here: a serialization failure must
+            // abort the apply with the previous state still authoritative
+            // instead of replacing the store with an empty document.
             write_json(
                 &self.path,
-                &serde_json::to_value(&candidate).unwrap_or(Value::Null),
+                &serde_json::to_value(&candidate)
+                    .map_err(|error| format!("Could not serialize the memory state: {error}"))?,
             )?;
             Ok(applied)
         })
@@ -1573,6 +1696,194 @@ mod tests {
             .block_on(store.restore("nope"))
             .expect_err("invalid id");
         assert_eq!(error, "Invalid backup ID");
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    fn corrupted_copies(store: &MemoryStore) -> Vec<(String, Vec<u8>)> {
+        let mut found: Vec<(String, Vec<u8>)> = std::fs::read_dir(&store.dir)
+            .map(|entries| {
+                entries
+                    .flatten()
+                    .filter(|entry| {
+                        entry
+                            .file_name()
+                            .to_string_lossy()
+                            .starts_with("harness_state.corrupt-")
+                    })
+                    .map(|entry| {
+                        let path = entry.path();
+                        (
+                            path.to_string_lossy().to_string(),
+                            std::fs::read(&path).unwrap(),
+                        )
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        found.sort();
+        found
+    }
+
+    #[test]
+    fn restore_recovers_a_damaged_authoritative_store_and_keeps_its_bytes() {
+        let (store, root) = fixture();
+        let runtime = runtime();
+        runtime
+            .block_on(store.apply(
+                &proposal("one", "Content one"),
+                ApplyOptions {
+                    event_id: "op_one".to_string(),
+                    expected_revision: 0,
+                    ..Default::default()
+                },
+            ))
+            .expect("apply");
+        // The receipt this apply recorded, captured before the damage so the
+        // recovery can be compared against the real fingerprint.
+        let receipt = store.read().unwrap().memory.events["op_one"].clone();
+        let backup = store.backup(None).expect("backup");
+        // A store that no longer validates (schema drift) but still parses: the
+        // revision and the delivery receipts are salvageable. Both are set to
+        // values that exist nowhere else, so a recovery that ignored the
+        // damaged bytes could not reproduce them.
+        let mut damaged = serde_json::to_value(store.read().unwrap()).unwrap();
+        damaged["schema"] = serde_json::json!(2);
+        damaged["memory"]["revision"] = serde_json::json!(5);
+        damaged["memory"]["events"]["salvaged_only"] = serde_json::json!("fingerprint");
+        std::fs::create_dir_all(&store.dir).unwrap();
+        write_json(&store.path, &damaged).unwrap();
+        let damaged_bytes = std::fs::read(&store.path).unwrap();
+        assert_eq!(store.read().unwrap_err(), "Invalid project memory snapshot");
+        let revision = runtime
+            .block_on(store.restore(&backup))
+            .expect("restore must recover a damaged store");
+        // Salvaged revision 5 -> restored revision 6, not backup revision + 1.
+        assert_eq!(revision, 6);
+        let document = store.read().expect("restored store validates");
+        assert_eq!(document.entries["memory"]["one"].content, "Content one");
+        assert_eq!(document.memory.revision, 6);
+        // Receipts carry over from both sides: the backup's own receipt and the
+        // ones salvaged from the damaged bytes.
+        assert_eq!(
+            document.memory.events.get("op_one").map(String::as_str),
+            Some(receipt.as_str())
+        );
+        assert_eq!(
+            document.memory.events.get("salvaged_only").map(String::as_str),
+            Some("fingerprint")
+        );
+        let kept = corrupted_copies(&store);
+        assert_eq!(kept.len(), 1, "one content-addressed quarantine copy");
+        assert_eq!(kept[0].1, damaged_bytes);
+        // The recovered store is usable: the next operation applies at the
+        // recovered revision instead of failing on a stale number.
+        runtime
+            .block_on(store.apply(
+                &proposal("two", "Content two"),
+                ApplyOptions {
+                    event_id: "op_two".to_string(),
+                    expected_revision: revision,
+                    ..Default::default()
+                },
+            ))
+            .expect("apply after a restore recovery");
+        let document = store.read().expect("store validates after the next apply");
+        assert_eq!(document.memory.revision, revision + 1);
+        assert_eq!(document.entries["memory"]["two"].content, "Content two");
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn restore_recovers_a_truncated_store_without_salvaging_garbage() {
+        let (store, root) = fixture();
+        let runtime = runtime();
+        runtime
+            .block_on(store.apply(
+                &proposal("one", "Content one"),
+                ApplyOptions {
+                    event_id: "op_one".to_string(),
+                    expected_revision: 0,
+                    ..Default::default()
+                },
+            ))
+            .expect("apply");
+        let receipt = store.read().unwrap().memory.events["op_one"].clone();
+        let backup = store.backup(None).expect("backup");
+        std::fs::create_dir_all(&store.dir).unwrap();
+        // An interrupted write leaves unparseable bytes behind. They still
+        // claim a revision and a receipt, so a recovery that salvaged garbage
+        // from a broken file would be visible below.
+        let truncated = concat!(
+            r#"{"schema": 1, "memory": {"revision": 7, "#,
+            r#""events": {"fabricated": "x"}, "history": [{"id": "op_one""#
+        )
+        .as_bytes()
+        .to_vec();
+        std::fs::write(&store.path, &truncated).unwrap();
+        assert!(store.read().is_err());
+        let revision = runtime
+            .block_on(store.restore(&backup))
+            .expect("restore must recover an unparseable store");
+        // Nothing was salvageable: the restore advances from revision 0, so it
+        // lands on the backup's own revision rather than the claimed 7 -> 8.
+        assert_eq!(revision, 1);
+        let document = store.read().expect("restored store validates");
+        assert_eq!(document.entries["memory"]["one"].content, "Content one");
+        // Only the backup's own receipt survives; no receipt is invented and
+        // the broken file's claim is not trusted.
+        assert_eq!(
+            document.memory.events.keys().map(String::as_str).collect::<Vec<_>>(),
+            vec!["op_one"]
+        );
+        assert_eq!(
+            document.memory.events.get("op_one").map(String::as_str),
+            Some(receipt.as_str())
+        );
+        assert!(!document.memory.events.contains_key("fabricated"));
+        let kept = corrupted_copies(&store);
+        assert_eq!(kept.len(), 1);
+        assert_eq!(kept[0].1, truncated);
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn restore_recovers_a_non_utf8_store_and_keeps_its_bytes_verbatim() {
+        let (store, root) = fixture();
+        let runtime = runtime();
+        runtime
+            .block_on(store.apply(
+                &proposal("one", "Content one"),
+                ApplyOptions {
+                    event_id: "op_one".to_string(),
+                    expected_revision: 0,
+                    ..Default::default()
+                },
+            ))
+            .expect("apply");
+        let backup = store.backup(None).expect("backup");
+        std::fs::create_dir_all(&store.dir).unwrap();
+        // Bytes that are not valid UTF-8 at all: reading them as text fails, so
+        // the quarantine copy has to be written from the raw bytes or the only
+        // surviving copy of the damage would be lost.
+        let damaged: Vec<u8> = vec![
+            0xff, 0xfe, 0x00, b'{', b'"', b's', b'c', b'h', b'e', b'm', b'a', 0x80,
+        ];
+        std::fs::write(&store.path, &damaged).unwrap();
+        assert!(store.read().is_err());
+        let revision = runtime
+            .block_on(store.restore(&backup))
+            .expect("restore must recover a non-UTF-8 store");
+        assert_eq!(revision, 1);
+        let document = store.read().expect("restored store validates");
+        assert_eq!(document.entries["memory"]["one"].content, "Content one");
+        assert_eq!(
+            document.memory.events.keys().map(String::as_str).collect::<Vec<_>>(),
+            vec!["op_one"],
+            "nothing is salvaged from bytes that do not parse"
+        );
+        let kept = corrupted_copies(&store);
+        assert_eq!(kept.len(), 1, "one content-addressed quarantine copy");
+        assert_eq!(kept[0].1, damaged, "the quarantine copy keeps the exact bytes");
         std::fs::remove_dir_all(&root).ok();
     }
 
@@ -2069,6 +2380,65 @@ mod tests {
             .block_on(store.configure(&serde_json::json!({"maxRecallEntries": 100})))
             .expect_err("invalid limit");
         assert_eq!(error, "Invalid maxRecallEntries");
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    fn settings_corrupt_copies(store: &MemoryStore) -> Vec<PathBuf> {
+        std::fs::read_dir(&store.dir)
+            .map(|entries| {
+                entries
+                    .flatten()
+                    .filter(|entry| {
+                        entry
+                            .file_name()
+                            .to_string_lossy()
+                            .starts_with("settings.corrupt-")
+                    })
+                    .map(|entry| entry.path())
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    #[test]
+    fn configure_quarantines_settings_that_are_valid_json_but_not_an_object() {
+        let (store, root) = fixture();
+        let runtime = runtime();
+        std::fs::create_dir_all(&store.dir).unwrap();
+        let settings_path = Path::new(&store.dir).join("settings.json");
+        // Parseable, but not an object: the merge base cannot come from it, and
+        // replacing it must not lose the bytes either.
+        let invalid = b"[1, 2, 3]".to_vec();
+        std::fs::write(&settings_path, &invalid).unwrap();
+        let settings = runtime
+            .block_on(store.configure(&serde_json::json!({"recallRerankCandidates": 7})))
+            .expect("configure still works");
+        assert_eq!(settings.recall_rerank_candidates, 7);
+        let kept = settings_corrupt_copies(&store);
+        assert_eq!(kept.len(), 1, "the non-object bytes were preserved");
+        assert_eq!(std::fs::read(&kept[0]).unwrap(), invalid);
+        let written = read_json(&settings_path.to_string_lossy()).unwrap();
+        assert_eq!(written["recallRerankCandidates"], serde_json::json!(7));
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn configure_preserves_an_invalid_settings_file_before_replacing_it() {
+        let (store, root) = fixture();
+        let runtime = runtime();
+        std::fs::create_dir_all(&store.dir).unwrap();
+        let settings_path = Path::new(&store.dir).join("settings.json");
+        let invalid = b"{\"recall\": false, \"recallRerank\": tru".to_vec();
+        std::fs::write(&settings_path, &invalid).unwrap();
+        let settings = runtime
+            .block_on(store.configure(&serde_json::json!({"recallRerankCandidates": 42})))
+            .expect("configure still works");
+        assert_eq!(settings.recall_rerank_candidates, 42);
+        let kept = settings_corrupt_copies(&store);
+        assert_eq!(kept.len(), 1, "the unparseable bytes were preserved");
+        assert_eq!(std::fs::read(&kept[0]).unwrap(), invalid);
+        let written = read_json(&settings_path.to_string_lossy()).unwrap();
+        assert_eq!(written["recallRerankCandidates"], serde_json::json!(42));
         std::fs::remove_dir_all(&root).ok();
     }
 
