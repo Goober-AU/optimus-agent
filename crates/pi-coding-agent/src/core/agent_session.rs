@@ -17929,19 +17929,22 @@ impl AgentSession {
         // the model-tool-output policy plus the session scope, then image blocking.
         // The `blockImages` half is not reproducible here because
         // `block_images_in_message` is private to `core/sdk.rs`.
-        let (policy, scope) = {
+        // Persist listeners read settings while holding the session manager.
+        // Release settings before taking that manager to avoid the reverse order.
+        let policy = {
             let settings = self.settings_manager.lock().unwrap();
-            let manager = self.session_manager.lock().unwrap();
-            let policy = crate::core::model_tool_output_policy::resolve_model_tool_output_policy(
+            crate::core::model_tool_output_policy::resolve_model_tool_output_policy(
                 Some(&settings.get_model_tool_output_policy()),
-            );
-            let scope = manager
+            )
+        };
+        let scope = {
+            let manager = self.session_manager.lock().unwrap();
+            manager
                 .get_session_artifact_dir()
                 .map(|dir| ModelToolOutputScope {
                     session_id: manager.get_session_id(),
                     session_artifact_dir: dir,
-                });
-            (policy, scope)
+                })
         };
         let converted = crate::core::messages::convert_to_llm(
             &transformed,
@@ -19443,6 +19446,10 @@ impl AgentSession {
 #[cfg(test)]
 mod post_compaction_continuation_tests {
     use super::*;
+
+    mod compaction_persist_lock_tests {
+        include!("agent_session/compaction_persist_lock_tests.rs");
+    }
     use pi_agent_core::types::{
         AgentEvent, AgentMessage, AgentState, CustomAgentMessage, ShouldStopAfterTurnContext,
         StreamFn,

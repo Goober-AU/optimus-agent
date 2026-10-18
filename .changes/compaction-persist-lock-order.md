@@ -1,0 +1,1 @@
+- Fixed automatic compaction freezing a session and its subagents when concurrent transcript persistence checks trace-sharing settings.
