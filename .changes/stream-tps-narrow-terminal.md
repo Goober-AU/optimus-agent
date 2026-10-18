@@ -1,0 +1,1 @@
+- Fixed the agents status row dropping the end of STREAM TPS in a 40-column terminal when optional left padding consumed the last available column.
