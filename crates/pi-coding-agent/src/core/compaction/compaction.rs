@@ -2934,10 +2934,16 @@ pub async fn compact_with_metrics(
                         provider_checkpoint: Some(remote.checkpoint),
                         deadline_fallback: None,
                         task_state: None,
-                        // W15: native server-side compaction produces no
-                        // model-written summary, so there is no typed
-                        // artefact to protect or verify (v1 parity).
-                        typed_state: None,
+                        // D28: the server-side summary replaces only the
+                        // conversation text. The typed ledger this episode
+                        // merged (the previous durable chain plus the
+                        // leaving window) persists unchanged so the durable
+                        // chain survives the native boundary. No
+                        // model-written summary was produced locally, so
+                        // there is nothing to verify: the same carry-through
+                        // semantics as the deadline fallback in
+                        // `deadline_truncation_result`.
+                        typed_state: typed_state.clone(),
                         typed_verification: None,
                     }),
                 });
