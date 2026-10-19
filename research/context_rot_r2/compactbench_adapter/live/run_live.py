@@ -52,7 +52,11 @@ _cbp._REGISTRY[GlmLiveProvider.key] = GlmLiveProvider
 
 WORKTREE = HERE.parents[3]
 ADAPTER_DIR = HERE.parent
-BENCHMARKS = Path("C:/Users/openclawuser/optimus-context-rot-refs/compactbench/benchmarks/public")
+# The CompactBench checkout is machine-local, so the benchmarks directory
+# comes from the environment only (ROT2_COMPACTBENCH_BENCHMARKS, checked in
+# main): point it at `<compactbench-checkout>/benchmarks/public`.
+BENCHMARKS_ENV = "ROT2_COMPACTBENCH_BENCHMARKS"
+BENCHMARKS = Path(os.environ.get(BENCHMARKS_ENV, ""))
 RESULTS = HERE / "results"
 RAW = HERE / "raw"
 
@@ -333,9 +337,17 @@ def main() -> None:
     args = parser.parse_args()
     RESULTS.mkdir(exist_ok=True)
     RAW.mkdir(exist_ok=True)
-    os.environ.setdefault(
-        "HARNESS", "C:/Users/openclawuser/rot2-w26-target/debug/compaction-harness.exe"
-    )
+    if not str(BENCHMARKS).strip() or not BENCHMARKS.is_dir():
+        raise SystemExit(
+            f"set {BENCHMARKS_ENV} to <compactbench-checkout>/benchmarks/public; "
+            "there is no machine default"
+        )
+    if not os.environ.get("HARNESS", "").strip():
+        raise SystemExit(
+            "set HARNESS to the compaction-harness binary built from this "
+            "worktree (cargo build -p pi-coding-agent --bin compaction-harness); "
+            "there is no machine default"
+        )
     os.environ.setdefault("ROT2_RESERVE_TOKENS", "4000")
     os.environ.setdefault("ROT2_HARNESS_TIMEOUT_S", "1800")
     if args.phase == "smoke":

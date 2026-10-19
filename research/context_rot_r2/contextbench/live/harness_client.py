@@ -7,9 +7,12 @@ dir). The binary writes one JSONL line per HTTP request into
 `ROT2_LIVE_CALL_LOG_DIR`; this client collects those lines after the
 subprocess exits and attributes them to the cycle.
 
-Credentials are resolved once from the two PowerShell helpers and are
-passed to the child environment only; they are never logged, printed or
-written to any artifact.
+Credentials are resolved once from the two PowerShell helper scripts named
+by the environment (`ROT2_GLM_RESOLVER_SCRIPT` for the bearer token,
+`ROT2_POMERIUM_RESOLVER_SCRIPT` for the Pomerium JWT; no defaults - a
+fresh checkout has no credential store, so the client fails closed until
+both are set) and are passed to the child environment only; they are
+never logged, printed or written to any artifact.
 """
 
 import json
@@ -17,14 +20,11 @@ import os
 import subprocess
 from typing import Dict, List, Optional, Tuple
 
-CRED_BEARER_SCRIPT = (
-    "C:/Users/openclawuser/Optimus-Assistant/profile/agent/skill-state/"
-    "dgx-k3-login/glm53-resolvers/cd5ef6501b924449917676c6ddb998a8.ps1"
-)
-CRED_POMERIUM_SCRIPT = (
-    "C:/Users/openclawuser/optimus-rust-test-20260915/profile/agent/"
-    "credentials/Get-K3PomeriumJwt.ps1"
-)
+# Credential-resolver script paths are machine-local, so they come from the
+# environment only (see the module docstring): the client refuses to run
+# without them instead of defaulting into a private credential store.
+ROT2_GLM_RESOLVER_SCRIPT_ENV = "ROT2_GLM_RESOLVER_SCRIPT"
+ROT2_POMERIUM_RESOLVER_SCRIPT_ENV = "ROT2_POMERIUM_RESOLVER_SCRIPT"
 
 DEFAULT_BASE_URL = (
     "https://a8349d0f-f602-991e-52c5-963eb2f2e949-in-docker-k3.apps."
@@ -50,9 +50,23 @@ def _run_ps1(path: str) -> str:
     return token
 
 
+def _resolver_script(env_name: str) -> str:
+    """The resolver script path for `env_name`; fails closed when unset."""
+    path = os.environ.get(env_name, "").strip()
+    if not path:
+        raise RuntimeError(
+            f"set {env_name} to the credential-resolver PowerShell script "
+            "(a helper that writes the token to stdout)"
+        )
+    return path
+
+
 def resolve_credentials() -> Tuple[str, str]:
     """(bearer, pomerium) - resolved fresh, never stored or printed."""
-    return _run_ps1(CRED_BEARER_SCRIPT), _run_ps1(CRED_POMERIUM_SCRIPT)
+    return (
+        _run_ps1(_resolver_script(ROT2_GLM_RESOLVER_SCRIPT_ENV)),
+        _run_ps1(_resolver_script(ROT2_POMERIUM_RESOLVER_SCRIPT_ENV)),
+    )
 
 
 def cycle_request(

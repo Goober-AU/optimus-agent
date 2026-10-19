@@ -201,7 +201,24 @@ This run only *consumes* that mirror (`harness.evaluate_task`,
 `summarize_arm`, `compare_arms`); no metric formula was reimplemented
 here.
 
-## 8. Limitations
+## 8. Driver environment (reproduction)
+
+`harness_client.py` reads every machine-local input from the environment
+and fails closed when one is missing; no hard-coded path survives in the
+code. The recorded run resolved its credentials from two private
+PowerShell helpers on the machine that ran W27 (their output is never
+logged, printed or written to an artifact - section 5):
+
+| variable | meaning |
+| --- | --- |
+| `ROT2_GLM_RESOLVER_SCRIPT` | PowerShell helper that writes the GLM bearer token to stdout |
+| `ROT2_POMERIUM_RESOLVER_SCRIPT` | PowerShell helper that writes the K3 Pomerium JWT to stdout |
+| `ROT2_LIVE_*` (`ROT2_LIVE_BASE_URL`, `ROT2_LIVE_API_KEY`, `ROT2_LIVE_POMERIUM`, `ROT2_LIVE_MODEL`, `ROT2_LIVE_CALL_LOG_DIR`, `ROT2_LIVE_HTTP_TIMEOUT_S`, `ROT2_LIVE_MAX_TOKENS_START`) | the live-endpoint wiring the client passes to the harness binary's child environment |
+
+The endpoint URL, model and ladder settings of the recorded run are in
+section 1.
+
+## 9. Limitations
 
 - No repository checkouts: byte-span and symbol granularities stay
   unavailable, predicted paths are unfiltered, and the exploration is

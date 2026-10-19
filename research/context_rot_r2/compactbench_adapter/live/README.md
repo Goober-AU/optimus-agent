@@ -68,7 +68,10 @@ is untouched.
 
 ## 2. Run configuration
 
-See `run-config.json` for the frozen record. Summary:
+See `run-config.json` for the frozen record (recorded artifact: its
+`harness.binary`, `env.HARNESS` and `isolated_target_dir` fields carry the
+machine-local build paths of the machine that ran W26; they document what
+ran, they are not inputs a fresh checkout can reuse). Summary:
 
 | parameter | value |
 | --- | --- |
@@ -238,7 +241,8 @@ Reading:
 
 | path | content |
 | --- | --- |
-| `run-config.json` | frozen run configuration, endpoint, ladders, budget, incident record |
+| `run-config.json` | frozen run configuration, endpoint, ladders, budget, incident record (the harness-binary and env paths it records are the machine-local ones used by the recorded run; a fresh checkout sets its own - see the run-config note in section 2) |
+| `run_live.py` env vars | `ROT2_COMPACTBENCH_BENCHMARKS` = `<compactbench-checkout>/benchmarks/public` (required, no default; the recorded run used `C:/Users/openclawuser/optimus-context-rot-refs/compactbench`), `HARNESS` = the compaction-harness binary built from the worktree (required), plus the `ROT2_LIVE_*` set for the live endpoint |
 | `run_live.py` | driver: PONG verify, per-arm runs, budget ledger, Amendment-1 decision, mock baseline |
 | `glm_provider.py` | `GlmLiveProvider` - task/eval HTTP provider (ladder, backoff, call log) |
 | `optimus_compactor_live.py` | live wrapper for the W12 adapter (flips `_SUMMARIZER_MODE`) |
