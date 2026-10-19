@@ -145,17 +145,25 @@ pub fn collect_entries_for_branch_summary(
     }
 }
 
+/// True when the entry is a `toolResult` message entry.
+fn is_tool_result_entry(entry: Option<&SessionEntry>) -> bool {
+    matches!(
+        entry,
+        Some(SessionEntry::Message { message, .. }) if message.role() == "toolResult"
+    )
+}
+
 /// Extract AgentMessage from a session entry.
 /// Similar to getMessageFromEntry in compaction.ts but also handles compaction entries.
+///
+/// Tool results are part of the conversation a branch summary must represent
+/// (D10): like the main compaction path's `get_message_from_entry`, they are
+/// kept as messages. `serialize_conversation` renders each result paired with
+/// its assistant tool call and applies the same evidence-aware excerpt policy
+/// (`truncate_for_summary`) the main path uses for tool output.
 fn get_message_from_entry(entry: &SessionEntry) -> Option<AgentMessage> {
     match entry {
-        SessionEntry::Message { message, .. } => {
-            // Tool-result context remains attached to its assistant tool call.
-            if message.role() == "toolResult" {
-                return None;
-            }
-            Some(message.clone())
-        }
+        SessionEntry::Message { message, .. } => Some(message.clone()),
         SessionEntry::CustomMessage {
             custom_type,
             content,
@@ -209,6 +217,13 @@ fn get_message_from_entry(entry: &SessionEntry) -> Option<AgentMessage> {
 ///
 /// Walks entries from NEWEST to OLDEST, adding messages until we hit the token budget.
 /// This ensures we keep the most recent context when the branch is too long.
+///
+/// The kept window never starts at a tool result: when the budget would break
+/// at an assistant message whose tool result is already kept, the assistant
+/// message is included anyway so the result renders paired with its call. This
+/// mirrors the main compaction path's cut-point rule ("never cut at tool
+/// results; a cut at an assistant message keeps the tool results that follow
+/// it").
 ///
 /// Also collects file operations from:
 /// - Tool calls in assistant messages
@@ -272,6 +287,15 @@ pub fn prepare_branch_entries(entries: &[SessionEntry], token_budget: f64) -> Br
                     messages.insert(0, message);
                     total_tokens += tokens;
                 }
+                break;
+            }
+            // A path entry's successor is its child, so an over-budget entry
+            // directly followed by a tool result is that result's assistant
+            // tool call. Keep it so the already-kept result does not render
+            // as "(call outside excerpt)" (D10 pairing; see fn doc).
+            if is_tool_result_entry(entries.get(index + 1)) {
+                messages.insert(0, message);
+                total_tokens += tokens;
             }
             break;
         }
@@ -560,7 +584,7 @@ mod tests {
     }
 
     #[test]
-    fn prepare_branch_entries_skips_tool_results_and_harness_digests() {
+    fn prepare_branch_entries_includes_tool_results_and_skips_harness_digests() {
         let entries = vec![
             message_entry("user", None, "user", 1),
             message_entry("assistant", Some("user"), "assistant", 2),
@@ -585,10 +609,80 @@ mod tests {
             },
         ];
         let prepared = prepare_branch_entries(&entries, 0.0);
-        assert_eq!(prepared.messages.len(), 3);
+        // The tool result is summarizer input now (D10); only the harness
+        // digest stays excluded.
+        assert_eq!(prepared.messages.len(), 4);
         assert_eq!(prepared.messages[0].role(), "user");
-        assert_eq!(prepared.messages[2].role(), "custom");
+        assert_eq!(prepared.messages[1].role(), "assistant");
+        assert_eq!(prepared.messages[2].role(), "toolResult");
+        assert_eq!(prepared.messages[3].role(), "custom");
         assert!(prepared.total_tokens > 0.0);
+    }
+
+    #[test]
+    fn prepare_branch_entries_keeps_the_assistant_call_of_a_kept_tool_result() {
+        let call = SessionEntry::Message {
+            id: "call".to_string(),
+            parent_id: None,
+            message: AgentMessage::Message(Message::Assistant(AssistantMessage {
+                content: vec![
+                    ContentBlock::Text(TextContent::new("running the tests now".repeat(20))),
+                    ContentBlock::ToolCall(ToolCall::new("call-1", "bash", {
+                        let mut arguments = serde_json::Map::new();
+                        arguments.insert("command".to_string(), serde_json::json!("cargo test"));
+                        arguments
+                    })),
+                ],
+                timestamp: 1,
+                ..Default::default()
+            })),
+        };
+        let result = SessionEntry::Message {
+            id: "result".to_string(),
+            parent_id: Some("call".to_string()),
+            message: AgentMessage::Message(Message::ToolResult(pi_ai::types::ToolResultMessage::new(
+                "call-1",
+                "bash",
+                vec![pi_ai::types::ImageOrTextContent::Text(TextContent::new(
+                    "test result: FAILED. 1 passed; 1 failed",
+                ))],
+                true,
+                2,
+            ))),
+        };
+        let newer = SessionEntry::Message {
+            id: "newer".to_string(),
+            parent_id: Some("result".to_string()),
+            message: AgentMessage::Message(Message::User(pi_ai::types::UserMessage::new(
+                pi_ai::types::UserContent::Text("next turn".to_string()),
+                3,
+            ))),
+        };
+        // The newest user turn (~3 tokens) and the tool result (~10 tokens)
+        // fit in a budget of 20; the assistant call (~110 tokens) does not.
+        // The pairing rule must keep the call with its already-kept result.
+        let entries = vec![call, result, newer.clone()];
+        let prepared = prepare_branch_entries(&entries, 20.0);
+        assert_eq!(prepared.messages.len(), 3, "all three kept: {prepared:?}");
+        assert_eq!(prepared.messages[0].role(), "assistant");
+        assert_eq!(prepared.messages[1].role(), "toolResult");
+        assert_eq!(prepared.messages[2].role(), "user");
+
+        // Without a kept tool result behind it, an over-budget message is
+        // dropped as before: a big user turn over the same budget keeps only
+        // the newest message.
+        let big_old_turn = SessionEntry::Message {
+            id: "old".to_string(),
+            parent_id: None,
+            message: AgentMessage::Message(Message::User(pi_ai::types::UserMessage::new(
+                pi_ai::types::UserContent::Text("old turn ".repeat(50)),
+                0,
+            ))),
+        };
+        let entries = vec![big_old_turn, newer];
+        let prepared = prepare_branch_entries(&entries, 20.0);
+        assert_eq!(prepared.messages.len(), 1);
+        assert_eq!(prepared.messages[0].role(), "user");
     }
 
     #[test]
