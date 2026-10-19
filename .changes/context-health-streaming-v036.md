@@ -1,0 +1,3 @@
+- Added an explicit green/amber/red context-health badge directly beside Streaming TPS in classic and neon layouts, retaining the shared context/compaction score and adapting Claude HUD's MIT-licensed 70%/85% pressure thresholds.
+- Added truthful unknown and compacting badge states, responsive TPS/health labels, and documentation of the heuristic's limits and upstream attribution.
+- Changed the native application, resources, and Python runtime version to 0.1.36.
