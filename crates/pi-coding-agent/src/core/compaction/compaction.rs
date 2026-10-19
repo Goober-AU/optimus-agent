@@ -2404,6 +2404,32 @@ fn validate_summary(response: &AssistantMessage, text: &str, format: SummaryForm
     if text.trim().is_empty() {
         return Err("Summarization returned an empty summary".to_string());
     }
+    let required: &[&str] = match format {
+        SummaryFormat::Conversation => CONVERSATION_SUMMARY_SECTIONS,
+        SummaryFormat::TurnPrefix => &["Original Request", "Early Progress", "Context for Suffix"],
+    };
+    if !summary_sections_complete(text, required) {
+        return Err(fail("missing, empty or incomplete handoff sections"));
+    }
+    Ok(())
+}
+
+/// The conversation-format section headings `validate_summary` and the
+/// extension-summary guard both require.
+const CONVERSATION_SUMMARY_SECTIONS: &[&str] = &[
+    "Goal",
+    "Constraints & Preferences",
+    "Progress",
+    "Key Decisions",
+    "Next Steps",
+    "Critical Context",
+];
+
+/// The structural half of `validate_summary`: strip one outer code fence,
+/// then require every section heading to appear with a non-empty body and no
+/// fence left open. Shared with `validate_extension_compaction_summary` so
+/// the model path and the extension path enforce the same handoff shape.
+fn summary_sections_complete(text: &str, required: &[&str]) -> bool {
     let text = text.trim();
     let text = text.split_once('\n').and_then(|(opening, body)| {
         if matches!(opening.trim(), "```" | "```md" | "```markdown") {
@@ -2412,10 +2438,6 @@ fn validate_summary(response: &AssistantMessage, text: &str, format: SummaryForm
             None
         }
     }).unwrap_or(text);
-    let required: &[&str] = match format {
-        SummaryFormat::Conversation => &["Goal", "Constraints & Preferences", "Progress", "Key Decisions", "Next Steps", "Critical Context"],
-        SummaryFormat::TurnPrefix => &["Original Request", "Early Progress", "Context for Suffix"],
-    };
     let mut seen = vec![false; required.len()];
     let mut bodies = vec![false; required.len()];
     let mut current = None;
@@ -2447,7 +2469,26 @@ fn validate_summary(response: &AssistantMessage, text: &str, format: SummaryForm
             }
         }
     }
-    if seen.iter().any(|seen| !seen) || bodies.iter().any(|body| !body) || fence.is_some() {
+    seen.iter().all(|seen| *seen) && bodies.iter().all(|body| *body) && fence.is_none()
+}
+
+/// D6: guard for an extension-supplied compaction summary. The
+/// `session_before_compact` hook path replaces the model's own summary with
+/// extension output, which previously bypassed `validate_summary` entirely:
+/// a hook returning an empty or file-inventory-only summary (stripped to an
+/// empty string) deleted the prefix it was supposed to summarize. The guard
+/// enforces the same structural handoff `validate_summary` enforces on model
+/// output; on failure the caller keeps the prior context instead of
+/// appending the replacement.
+pub fn validate_extension_compaction_summary(summary: &str) -> Result<(), String> {
+    let fail = |reason: &str| {
+        format!("Extension compaction returned an unusable handoff ({reason}); existing conversation preserved. The extension-supplied summary was not applied.")
+    };
+    let prose = strip_file_operations(summary);
+    if prose.trim().is_empty() {
+        return Err(fail("empty or file-inventory-only summary"));
+    }
+    if !summary_sections_complete(&prose, CONVERSATION_SUMMARY_SECTIONS) {
         return Err(fail("missing, empty or incomplete handoff sections"));
     }
     Ok(())

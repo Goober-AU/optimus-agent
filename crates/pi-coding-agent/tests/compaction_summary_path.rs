@@ -126,3 +126,46 @@ fn a_no_op_skip_leaves_the_next_real_compaction_boundaries_intact() {
     assert_eq!(preparation.first_kept_entry_id, "new-1");
     assert!(!preparation.messages_to_summarize.is_empty());
 }
+
+// ---------------------------------------------------------------------------
+// D6: extension compaction bypasses summary validation
+// ---------------------------------------------------------------------------
+
+/// D6 regression: the `session_before_compact` hook path supplies a summary
+/// that replaces the model's own handoff. It must clear the same structural
+/// guard `validate_summary` enforces: an empty, file-inventory-only or
+/// unsectioned summary must be refused so the prior context is kept instead
+/// of being replaced by an empty prefix.
+#[test]
+fn extension_summary_guard_rejects_empty_files_only_and_unsectioned_summaries() {
+    use pi_coding_agent::core::compaction::compaction::validate_extension_compaction_summary;
+
+    for rejected in [
+        "",
+        "   ",
+        "\n\n<read-files>\nsrc/a.rs\n</read-files>\n\n<modified-files>\nsrc/b.rs\n</modified-files>",
+        "Plain prose without sections.",
+        "## Goal\nOnly a goal.",
+        "## Goal\nGoal.\n## Constraints & Preferences\nNone.\n## Progress\nDone.\n## Key Decisions\nWait.\n## Next Steps\nReview.\n## Critical Context\n",
+        &format!("```\nUnfenced body only.\n```"),
+    ] {
+        let error = validate_extension_compaction_summary(rejected)
+            .err()
+            .unwrap_or_else(|| panic!("accepted an unusable extension summary: {rejected:?}"));
+        assert!(
+            error.contains("existing conversation preserved"),
+            "the refusal must state the prior context is kept: {error}"
+        );
+        assert!(
+            error.contains("Extension compaction returned an unusable handoff"),
+            "{error}"
+        );
+    }
+
+    // A sectioned handoff clears the guard, including fenced and
+    // inventory-carrying variants.
+    assert!(validate_extension_compaction_summary(SUMMARY).is_ok());
+    assert!(validate_extension_compaction_summary(&format!("```markdown\n{SUMMARY}\n```")).is_ok());
+    let with_files = format!("{SUMMARY}\n\n<read-files>\nsrc/a.rs\n</read-files>");
+    assert!(validate_extension_compaction_summary(&with_files).is_ok());
+}
