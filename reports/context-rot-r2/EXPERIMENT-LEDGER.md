@@ -56,17 +56,13 @@ run the real Rust pipeline (`prepare_compaction` -> `compact` ->
   taskState retained constraint+decision, lost evidence. Superseded by R2-E1
   (same mechanism, larger probe set).
 
-## NOT EXECUTED (updated at the W34 refresh)
+## NOT EXECUTED (updated at the W34 refresh, again at W49)
 
 Executed since this list was first written: the live-model arms (R2-E2 base+hard
-below, R2-E3, R2-E3ADV), the offline re-measure R2-E2-RM, the CompactBench
-practice suites (W12 mock, W26 live) and the ContextBench live practice run (W27)
-— sections below. Still not executed:
+below, R2-E3, R2-E3ADV, R2-E5 typed), the offline re-measure R2-E2-RM, the
+CompactBench practice suites (W12 mock, W26 live) and the ContextBench live
+practice run (W27) — sections below. Still not executed:
 
-- the live TYPED arm (R2-E5, the decisive H-r2-3 measurement): `--arm typed` in
-  the E3 orchestrator is a stub (exit 2, never a silent substitution),
-  `arm_settings` in `tests/rot2_multicycle.rs` maps only `default`/`taskState`,
-  and worker W29 has no commits over the integration head at this writing.
 - any official / leaderboard-comparable number: every CompactBench run is
   CUSTOM-OPTIMUS (public practice suites, custom adapter, scorer 2.0.0; the W26
   live run is 8 of 20 starter cases per arm, one live draw per case); every
@@ -74,6 +70,9 @@ practice suites (W12 mock, W26 live) and the ContextBench live practice run (W27
   retention trajectories, patch_success UNAVAILABLE).
 - ContextBench repository checkouts, free-form agent trajectories and the holdout
   run (the W10 blockers, unchanged).
+- a full post-fix re-run of R2-E5 after the D21-D29 wave: only the E3ADV C1
+  cell was re-run live for D29 (`621dc462f`); the TASK-E halt that D24's fix
+  targets has no post-fix live confirmation.
 - re-running the iteration-1 retrieval surfaces on a second model: the r2 live
   family ran on GLM 5.3, but the iteration-1 surfaces themselves were not re-run.
 
@@ -363,3 +362,109 @@ Integrated as `2fbb14f33` (worker branch `rot2/w24-remeasure`, worker commit 19a
   integration defects bound its current availability (D24 id instability under restatement-merge;
   D29 token-overlap pairing), and the E3ADV structural fix is NOT yet achieved.
 - Budget: 123 + 21 = 144 new wire calls (within the 250/80 caps).
+- Post-wave note (W49): both integration defects this run surfaced are fixed —
+  D24 by `891702c32` (W37) and D29 by `4315f4154` (W41, live-confirmed
+  `621dc462f`) — see DEFECT-WAVE-2 below. A full post-fix re-run of this
+  benchmark was NOT executed; only the E3ADV C1 cell was re-run live.
+
+## DEFECT-WAVE-2 — the typed-state red team and the D21-D29 fix wave (verified W49)
+
+- Status: EXECUTED. Red team `f7bc6306c` (W35); fixes D21 `a9035ce8a` (W32),
+  D25 `a3997b5d6` (W36), D23+D24 `891702c32` (W37), D22+D26+D27 `51c9a6a59`
+  (W38), D28 `1e6e5ff9d` (W39), D29 `4315f4154` (W41); every number in the
+  battery below is this worker's own re-run in the worktree
+  `optimus-rot2-w49-wavereport` at the integration tip `71e770c5e` (103
+  commits over base `6000d6bc1`), 2026-10-19.
+- Category: PRODUCTION-PATH (offline unit/integration): the suites drive the
+  real `prepare_compaction` -> `compact` -> `append_compaction` ->
+  `SessionManager` restore pipeline in-process — `rot2_native_typed_chain`
+  offline through a dual-mode fixture API (deterministic text summarizer plus
+  a registered compact handler with `supports_compaction`) — or the
+  typed-state module directly. No model calls.
+
+### The red team (W35, `f7bc6306c`)
+
+One adversarial test per attack surface against the typed (v2)
+protected-state integration: role-gate poisoning via tool output, starved
+hot-state budgets, the repair bound, three-cycle supersession merges,
+v1/typed details interop, env precedence and the W27 ledger-population
+concern (`crates/pi-coding-agent/tests/rot2_typed_adversarial.rs`, 1 151
+lines at introduction). Eight tests pinned the guarantees that hold. Six
+failed red-first and became BUG-LEDGER D22-D27, each `#[ignore]`d with its
+D-number as the reason and runnable red with `-- --ignored`; D28 was
+code-cited in the same pass (no offline fixture was reachable within the
+worker's file map). With D21 (the render cap, found by R2-E2-RM) and D29
+(token-overlap pairing, found by R2-E5 part 3) the wave's scope was D21-D29:
+
+| id | red finding |
+| --- | --- |
+| D21 | CONSTRAINTS_CAP=12 could omit the correction carriers from the rendered ACTIVE list while their stale targets stayed visible as SUPERSEDED replacement texts (R2-E2-RM hard corpus: 26 active constraints, cap 12, the four corrections cap-omitted) |
+| D22 | `record_line` matched the `UserCorrection \| CurrentTask` kind arm before the `status == Superseded` arm, so a superseded correction or task rendered `(supersedes [X])` with X = the record that retired it — the retirement direction inverted in the render the summarizer copies |
+| D23 | a bracketed ticket-style token in user text (`[JX-4f1c2a]`, also entry-shaped `[issue42]`) collided with the verifier's reference grammar: the obedient verbatim copy failed verification with an unresolved reference the bounded repair cannot fix |
+| D24 | `reconcile` recomputed every record id from the current text, so a tool-derived record whose text a restatement replaced churned its id at the next merge (`RS-920746` -> `RS-1cdf29`), stranding the `[id]` references earlier summaries carry — the R2-E5 part-2 TASK-E halt mechanism |
+| D25 | `RecordScope` was decorative (`scope()` assigned, never read): Step-scoped PENDING_ACTIONs accumulated CURRENT across merges, were `required_present` in every later summary and re-appended unbudgeted by the repair — unbounded ledger and summary growth ending in a permanent unsafe-allocation failure |
+| D26 | a `details.typedState` payload that failed strict deserialization was silently dropped through `.ok()`, losing every durable record below the boundary with no trace |
+| D27 | `is_heading_line` treated any all-caps line as a heading, so an all-caps line claiming verified material evaded the fabricated-claim check |
+| D28 | the native arm of `compact_with_metrics` returned `typed_state: None`: one native provider compaction silently dropped the typed durable chain the episode had merged from the persisted entry |
+| D29 | the typed supersession pairing was token-overlap-based: the zero-overlap E3ADV C1 correction scored 0, the stale decision stayed CURRENT at every cycle and no SUPERSEDED section ever rendered |
+
+### The fixes (integrated shas; worker-branch shas in parentheses)
+
+| defect | fix | mechanism |
+| --- | --- | --- |
+| D21 | `a9035ce8a` (W32) | `render_ledger` orders every capped section through `prioritize_corrections`: correction carriers always render ahead of the non-correction items and the cap applies to the remaining slots; the dropped-count line states how many corrections were protected; a section without corrections is byte-identical to the previous plain head-take. Guards: `rot2_render_cap` (7 tests); offline replay `0b824f358` |
+| D25 | `a3997b5d6` (W36; worker `a6da817e3`) | `merge` is the step boundary: a Step-scoped record carried from a summarized window retires unless the new window restates it; retired record/entry ids move to the bounded `retired_refs` (512) so `[id]`/`[@entry]` references the previous summary still quotes stay resolvable; defense-in-depth `MAX_DURABLE_RECORDS` = 512 with the dropped count rendered (the D21 idiom) |
+| D23+D24 | `891702c32` (W37; worker `8bc0811fb`) | the verifier's reference grammar matches exactly what the renderer emits (kind prefix plus six lowercase hex; `@` sigil for entries; a bracketed token the ledger itself quotes inside a record's text is exempt as verbatim source material); identity is assigned at first sight and `merge` only fills empty ids — the text is a version, not the identity |
+| D22+D26+D27 | `51c9a6a59` (W38) | render direction depends on status (CURRENT renders `supersedes [target]`; Superseded renders `superseded by [retiring]`); `parse_typed_state` salvages per record (positional fields repaired in place, unrecoverable slots counted, diagnostics surfaced as `details.typedVerification.malformedPriorLedger` with droppedRecords/repairedFields); heading detection requires structural shape (markdown/bold prefix or an exact `SECTION_TITLE_LINES` match) |
+| D28 | `1e6e5ff9d` (W39; worker `d41c74c83`) | the native arm persists the ledger it received unchanged (deadline-fallback carry-through semantics, no typedVerification record); new suite `rot2_native_typed_chain.rs` drives the real pipeline offline with the dual-mode fixture API |
+| D29 | `4315f4154` (W41; worker `e616a3126`) + `e71c21563` (test helper) | two marked retire paths: token (non-correction kinds outrank corrections as targets, so a later correction retires its stale decision instead of swallowing the previous correction) and provenance (the most recent prior CURRENT decision, when the correction is the only un-retired correction introduced since it and no other decision intervened); both paired records carry `retire_path`, rendered as a pairing annotation |
+
+D29 verification: offline mirror port and C1 cell `f932b746e`; live
+confirmation `621dc462f` (the E3ADV C1 typed cell re-run on live GLM 5.3,
+22 wire calls of a 25 budget, temperature 0, ladder 8192->65536: every probe
+correct 3/3 strict at every cycle plus baseline, the stale decision retired
+at every cycle with the replaced-by link and retirePath provenance,
+SUPERSEDED rendered at cycles 1-4).
+
+Wave support: `c5136ce50` repaired the D25/D23 verify-merge brace damage;
+`7bec70f09` re-pointed the multicycle typed-arm smoke at the step boundary
+and filed D30; `fa3634b7a` (W42) dropped the four campaign-introduced
+warnings; `03ba7abfa` (W42) is the pre-PR reviewer-simulation audit;
+`71e770c5e` deduped the D22-D29 BUG-LEDGER rows after the merges.
+
+### The verification battery (this worker's run, `71e770c5e`, 2026-10-19)
+
+| suite | command | result |
+| --- | --- | --- |
+| adversarial red-team | `--test rot2_typed_adversarial` | 23 passed, 0 failed, 0 ignored (0.30 s) |
+| typed integration | `--test rot2_typed_integration` | 9 passed, 0 failed, 0 ignored (0.29 s) |
+| native typed chain (D28) | `--test rot2_native_typed_chain` | 2 passed, 0 failed, 0 ignored (0.25 s) |
+| multicycle adapter | `--test rot2_multicycle` | 5 passed, 0 failed, 1 ignored (0.76 s) |
+| render cap (D21) | `--test rot2_render_cap` | 7 passed, 0 failed, 0 ignored (0.05 s) |
+| v1 ledger fixes (W11) | `--test rot2_ledger_fixes` | 7 passed, 0 failed, 0 ignored (0.03 s) |
+| typed_state units | `--lib typed_state` | 74 passed, 0 failed, 3 845 filtered out (2.88 s) |
+| compaction module units | `--lib core::compaction` | 160 passed, 0 failed, 3 759 filtered out (2.34 s) |
+
+The ignored `rot2_multicycle` test is the research adapter
+(`rot2_production_multicycle`, `ROT2_SCENARIO`/`ROT2_RESULT` env). The six
+formerly-`#[ignore]`d D22-D27 defect tests are un-ignored and green; no
+defect-`#[ignore]` remains in the adversarial suite. Spot checks because the
+wave touched `compaction.rs` (D26 salvage, D28 native carry):
+`compaction_summary_path` 8 passed, 0 failed (0.01 s);
+`compaction_parity_suite` 14 passed, 0 failed (8.32 s; the W43 T05.4 fixture
+re-pin `31ce39b84` holds at this tip).
+
+### Open after the wave
+
+- D30 (filed `7bec70f09`): a decision stated in USER text falls through the
+  classifier to LowPriorityEpisode (Step scope) and is retired at the first
+  merge, while the same sentence from the assistant classifies as
+  VerifiedDecision (Task scope) and survives — the multicycle typed-arm smoke
+  decides via the assistant entry to stay green.
+- the W41 cycle-5 budget-overflow caveat (`621dc462f`): the tier-8 history
+  line drops to the fixed 800-token hot budget in the E3ADV C1 cell; budgets
+  and caps were out of D29's scope.
+- both are assigned to W46 (`rot2/w46-d30`), in flight at this writing with
+  no commits over the integration head `71e770c5e`.
+- a full post-fix R2-E5 live re-run was NOT executed: only the D29 C1 cell
+  was re-run live (`621dc462f`).

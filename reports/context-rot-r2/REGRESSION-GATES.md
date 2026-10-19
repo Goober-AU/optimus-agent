@@ -220,3 +220,49 @@ extra suite outside the gate list, broken by the integrated D5 no-op fix
 in the way D5's own guards describe (section 6); it needs a fixture
 update, not a code revert. The tip adds four warnings over base, all in
 campaign test and harness files.
+
+## 10. Wave-2 gate pass (W49): the D21-D29 fix-wave battery at `71e770c5e`
+
+The W25 record above stands at its recorded SHAs. The D21-D29 fix wave then
+moved the integration tip to `71e770c5e` (103 commits over base
+`6000d6bc1`; source deltas over `29f1f0c92`: `core/compaction/compaction.rs` and
+`core/compaction/typed_state.rs` (the wave's fixes), the harness bin's
+warning cleanup, the `rot2_multicycle` typed-arm smoke re-pointing
+(`7bec70f09`), the new `rot2_native_typed_chain` suite, the
+`rot2_typed_adversarial` wave tests, and the W43 `compaction_parity_suite`
+fixture re-pin `31ce39b84`; the four warnings of
+section 7 were dropped by `fa3634b7a`, W42). This worker re-ran the wave
+battery in `C:/Users/openclawuser/optimus-rot2-w49-wavereport` (branch
+`rot2/w49-wavereport`, clean tree at run time; this pass's report edits were
+made after the runs), 2026-10-19, rustc 1.98.1 (48a229cea 2026-09-01) / cargo 1.98.1
+(797e8a9bc 2026-08-05), ISOLATED target `C:/Users/openclawuser/rot2-w49-target`
+(fresh full `cargo test -p pi-coding-agent --no-run` build):
+
+| suite | result | notes |
+| --- | --- | --- |
+| `rot2_typed_adversarial` | 23 passed, 0 failed, 0 ignored (0.30 s) | 8 passed + 6 ignored at the W25 pass -> 23/0/0: the six defect tests are un-ignored and green, plus the wave's new pins |
+| `rot2_typed_integration` | 9 passed, 0 failed, 0 ignored (0.29 s) | unchanged count, re-run after the wave's `compaction.rs` deltas |
+| `rot2_native_typed_chain` | 2 passed, 0 failed, 0 ignored (0.25 s) | the new D28 suite (`1e6e5ff9d`) |
+| `rot2_multicycle` | 5 passed, 0 failed, 1 ignored (0.76 s) | same shape as the W25 run; the ignored test is the research adapter |
+| `rot2_render_cap` | 7 passed, 0 failed, 0 ignored (0.05 s) | the D21 guards, unchanged count |
+| `rot2_ledger_fixes` | 7 passed, 0 failed, 0 ignored (0.03 s) | the W11 guards, unchanged count |
+| `--lib typed_state` | 74 passed, 0 failed, 3 845 filtered out (2.88 s) | 60 at `f7bc6306c` -> 74 after the wave |
+| `--lib core::compaction` | 160 passed, 0 failed, 3 759 filtered out (2.34 s) | 146 at `f7bc6306c` -> 160 after the wave |
+
+Spot checks (the wave touched `compaction.rs`): `compaction_summary_path`
+8 passed, 0 failed (0.01 s); `compaction_parity_suite` 14 passed, 0 failed
+(8.32 s) — the W43 T05.4 fixture re-pin holds at this tip, so section 6's
+one real failure is resolved in-tree.
+
+Not re-run in this pass: the other `compaction_*` suites and the wider
+`--lib compaction` filter (W25's sections 2-3 record stands at `f7bc6306c`;
+the wave's library deltas are confined to `compaction.rs`/`typed_state.rs`
+and are covered by the battery plus the two spot checks), the offline
+Python research suites (W25's section 4 record), and the live entry points
+(committed data; no new live calls from a gate pass).
+
+Verdict: the wave-2 battery is green at `71e770c5e` — zero failures, and no
+defect-`#[ignore]` is left in the adversarial suite. The typed mode's known
+open items after the wave are D30 and the cycle-5 budget-overflow caveat,
+both assigned to W46 (`rot2/w46-d30`, no commits over this head at this
+writing).
