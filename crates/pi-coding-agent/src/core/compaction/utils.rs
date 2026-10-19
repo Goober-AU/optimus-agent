@@ -124,8 +124,26 @@ pub fn strip_file_operations(summary: &str) -> String {
 /// Maximum characters for a tool result in serialized summaries.
 const TOOL_RESULT_MAX_CHARS: usize = 2000;
 
+/// Lines that carry checkable evidence in tool output: a failure, a compiler error, a
+/// test total, a source position, or a non-zero exit status. The excerpt keeps these
+/// even when they sit in the middle of a long log, which the head/tail window drops.
+static EVIDENCE_LINE_RE: once_cell::sync::Lazy<regex::Regex> = once_cell::sync::Lazy::new(|| {
+    regex::Regex::new(concat!(
+        r"(?i)(test result:|tests? (failed|passed)|FAILED|panicked at|assertion .* failed",
+        r"|error(\[E\d+\])?:|^\s*-->|^\s*\d+ \|",
+        r"|exit (code|status)\b|Traceback \(most recent call last\))",
+    ))
+    .unwrap()
+});
+
 /// Truncate text to a maximum character length for summarization.
-/// Keeps both the beginning and the error-heavy tail inside the same budget.
+///
+/// Keeps the beginning and the tail, and additionally keeps evidence-bearing lines that
+/// sit in the elided middle (compiler errors, test totals, failures, source positions).
+/// Every elision is marked with its character count, and the marker states how many
+/// middle evidence lines were kept and how many more than the budget allowed were left
+/// out. Text with no middle evidence lines is returned exactly as the head/tail rule
+/// produced it, so ordinary output is byte-identical to the historical behaviour.
 fn truncate_for_summary(text: &str, max_chars: usize) -> String {
     // `String::chars` counts UTF-16-independent scalar values; the TypeScript
     // `slice` counts UTF-16 code units. Plain ASCII/Unicode text matches.
@@ -146,9 +164,81 @@ fn truncate_for_summary(text: &str, max_chars: usize) -> String {
     let elided = total_chars - head_chars - tail_chars;
     let head = &text[..char_boundary_after(text, head_chars)];
     let tail = &text[char_boundary_before(text, tail_chars)..];
-    format!("{head}\n\n[... {elided} characters truncated; first {head_chars} and last {tail_chars} kept ...]\n\n{tail}")
-}
+    let plain = format!("{head}\n\n[... {elided} characters truncated; first {head_chars} and last {tail_chars} kept ...]\n\n{tail}");
 
+    // Evidence recovery: reserve at most a third of the head window for the strongest
+    // middle lines, and shrink the head to pay for it.
+    let evidence_budget = head_chars / 3;
+    if evidence_budget < 80 {
+        return plain;
+    }
+    let head_slice_end = char_boundary_after(text, head_chars);
+    let tail_slice_start = char_boundary_before(text, tail_chars);
+    if head_slice_end >= tail_slice_start {
+        return plain;
+    }
+    let middle = &text[head_slice_end..tail_slice_start];
+    let mut evidence: Vec<&str> = Vec::new();
+    let mut seen = std::collections::BTreeSet::new();
+    let lines: Vec<&str> = middle.split('\n').collect();
+    for (index, line) in lines.iter().enumerate() {
+        let trimmed = line.trim_end();
+        if trimmed.trim().is_empty() || !EVIDENCE_LINE_RE.is_match(trimmed) {
+            continue;
+        }
+        // The failing test name and the source position usually sit on the indented
+        // lines that follow an evidence line, sometimes behind a `failures:` header.
+        let mut group: Vec<&str> = vec![trimmed];
+        for follow in lines.iter().skip(index + 1).take(4) {
+            let follow = follow.trim_end();
+            if follow.trim().is_empty() {
+                break;
+            }
+            if follow.starts_with(' ') || follow.starts_with('\t') || follow.ends_with(':') {
+                group.push(follow);
+            } else {
+                break;
+            }
+        }
+        for candidate in group {
+            if !seen.insert(candidate.trim()) {
+                continue;
+            }
+            evidence.push(candidate);
+        }
+    }
+    if evidence.is_empty() {
+        return plain;
+    }
+    let trimmed_head_chars = head_chars - evidence_budget;
+    let head = &text[..char_boundary_after(text, trimmed_head_chars)];
+    let mut block = String::new();
+    let mut used = 0usize;
+    let mut kept = 0usize;
+    for line in &evidence {
+        let line_chars = line.chars().count() + 1;
+        if used + line_chars > evidence_budget {
+            break;
+        }
+        used += line_chars;
+        block.push_str(line);
+        block.push('\n');
+        kept += 1;
+    }
+    if kept == 0 {
+        return plain;
+    }
+    let omitted_evidence = evidence.len() - kept;
+    let elided_now = total_chars - trimmed_head_chars - tail_chars - used;
+    let more = if omitted_evidence == 0 {
+        String::new()
+    } else {
+        format!(" and {omitted_evidence} further evidence line(s) beyond the excerpt budget")
+    };
+    format!(
+        "{head}\n\n[... {elided_now} characters truncated; {kept} evidence line(s) from the omitted middle kept{more} ...]\n\n{block}\n[... end of evidence excerpt ...]\n\n{tail}"
+    )
+}
 /// Byte offset where the first `count` chars end.
 fn char_boundary_after(text: &str, count: usize) -> usize {
     if count == 0 {
@@ -631,6 +721,78 @@ mod tests {
                 );
             }
         }
+    }
+
+
+    #[test]
+    fn truncate_for_summary_keeps_middle_evidence_that_head_and_tail_drop() {
+        // A failure line sits deep inside a long log. The head/tail window cannot see it.
+        let mut log = String::new();
+        for index in 0..400 {
+            log.push_str(&format!("INFO [worker-1] entry={index} op=append ok\n"));
+        }
+        log.push_str("error[E0382]: borrow of moved value: `entries`\n");
+        log.push_str("test result: FAILED. 4782 passed; 3 failed\n");
+        for index in 0..400 {
+            log.push_str(&format!("INFO [worker-2] entry={index} op=flush ok\n"));
+        }
+        let excerpt = truncate_for_summary(&log, TOOL_RESULT_MAX_CHARS);
+        assert!(excerpt.contains("error[E0382]"), "compiler error lost: {excerpt}");
+        assert!(excerpt.contains("test result: FAILED"), "test result lost: {excerpt}");
+        assert!(excerpt.contains("evidence line(s) from the omitted middle kept"));
+        assert!(
+            excerpt.chars().count() <= TOOL_RESULT_MAX_CHARS + 400,
+            "excerpt grew past its budget: {} chars",
+            excerpt.chars().count()
+        );
+    }
+
+    #[test]
+    fn truncate_for_summary_keeps_the_failing_test_name_after_a_failures_header() {
+        let mut log = String::new();
+        for index in 0..300 {
+            log.push_str(&format!("INFO [worker-1] entry={index} op=append ok\n"));
+        }
+        log.push_str("test result: FAILED. 4782 passed; 3 failed; 7 ignored\n");
+        log.push_str("failures:\n    session_manager::tests::restores_after_compaction\n");
+        for index in 0..300 {
+            log.push_str(&format!("INFO [worker-2] entry={index} op=flush ok\n"));
+        }
+        let excerpt = truncate_for_summary(&log, TOOL_RESULT_MAX_CHARS);
+        assert!(excerpt.contains("restores_after_compaction"), "failing test name lost: {excerpt}");
+        assert!(excerpt.contains("4782 passed"), "test totals lost: {excerpt}");
+    }
+
+    #[test]
+    fn truncate_for_summary_is_unchanged_without_middle_evidence() {
+        // Ordinary output keeps the exact historical head/tail rendering.
+        let plain = format!("{}{}{}", "a".repeat(4000), "b".repeat(4000), "c".repeat(4000));
+        let excerpt = truncate_for_summary(&plain, TOOL_RESULT_MAX_CHARS);
+        assert!(excerpt.contains("characters truncated; first"));
+        assert!(!excerpt.contains("evidence line(s)"));
+        assert_eq!(excerpt.matches("characters truncated").count(), 1);
+    }
+
+    #[test]
+    fn truncate_for_summary_counts_evidence_lines_it_could_not_keep() {
+        let mut log = String::new();
+        for index in 0..40 {
+            log.push_str(&format!("panicked at src/core/session_manager.rs:{index}:9 assertion failed\n"));
+        }
+        log.push_str(&"z".repeat(4000));
+        let excerpt = truncate_for_summary(&log, TOOL_RESULT_MAX_CHARS);
+        assert!(excerpt.contains("further evidence line(s) beyond the excerpt budget"), "{excerpt}");
+    }
+
+    #[test]
+    fn truncate_for_summary_never_splits_a_character_with_evidence() {
+        let mut log = String::new();
+        log.push_str(&"\u{754c}".repeat(3000));
+        log.push_str("\nerror: unsupported operand\n");
+        log.push_str(&"\u{0436}".repeat(3000));
+        let excerpt = truncate_for_summary(&log, TOOL_RESULT_MAX_CHARS);
+        assert!(excerpt.contains("error: unsupported operand"));
+        assert!(excerpt.chars().all(|c| c != '\u{fffd}'));
     }
 
     #[test]
