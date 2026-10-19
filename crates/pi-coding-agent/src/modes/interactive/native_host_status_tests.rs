@@ -187,10 +187,10 @@ fn heartbeat_neon_and_classic_painted_footer_keeps_status_beside_context() {
                     .unwrap_or_else(|| panic!("missing usage {style}/{width}: {frame:?}"));
                 assert!(footer.contains("HB"), "{style}/{width}: {footer}");
                 assert!(footer.trim_end().ends_with(expected), "{footer}");
-                // The count sits left of the indicator and is the first part to
-                // go: kept at 80+ columns, dropped at 36 and below.
+                // This fixture also shows navigation, hints and heartbeat status.
+                // Only its 120-column row has room for the optional count.
                 let count = footer.contains("Compactions: 0");
-                assert_eq!(count, width >= 80, "{style}/{width}: {footer}");
+                assert_eq!(count, width >= 120, "{style}/{width}: {footer}");
                 // In neon the count precedes the meter, so the meter stays glued
                 // to the reading it measures.
                 if style == "neon" && width >= 100 {
