@@ -7,6 +7,9 @@ run the real Rust pipeline (`prepare_compaction` -> `compact` ->
 
 ## R2-E1 — multicycle retention, default vs taskState (deterministic lossy summarizer)
 
+- Category: FIXTURE — deterministic lossy summarizer, zero model calls, executed
+  on the production path (the `rot2_multicycle.rs` Rust adapter; Python only
+  orchestrates).
 - Status: EXECUTED (r2 research harness, scenario and experiment committed in
   `3eeed6f3f`; artifacts `research/context_rot_r2/runs/r2-e1-multicycle.{scenario,result,score}.json`).
 - date: 2026-10-19
@@ -49,6 +52,7 @@ run the real Rust pipeline (`prepare_compaction` -> `compact` ->
 
 ## R2-E0 — adapter smoke (d4-drift, 3 probes, 5 cycles)
 
+- Category: FIXTURE (offline adapter smoke, no model calls).
 - Status: EXECUTED (early adapter smoke inside the r2 research harness,
   `3eeed6f3f`; superseded by R2-E1 and kept for the record — the committed
   run artifacts are R2-E1's).
@@ -56,7 +60,7 @@ run the real Rust pipeline (`prepare_compaction` -> `compact` ->
   taskState retained constraint+decision, lost evidence. Superseded by R2-E1
   (same mechanism, larger probe set).
 
-## NOT EXECUTED (updated at the W34 refresh, again at W49)
+## NOT EXECUTED (updated at the W34 refresh, again at W49 and W60)
 
 Executed since this list was first written: the live-model arms (R2-E2 base+hard
 below, R2-E3, R2-E3ADV, R2-E5 typed), the offline re-measure R2-E2-RM, the
@@ -64,6 +68,7 @@ typed-arm re-measure R2-E5-RM (W47: the E1 fixture on the integrated tip plus
 the two affected live cells), the CompactBench practice suites (W12 mock, W26
 live) and the ContextBench live practice run (W27) — sections below. Still not
 executed:
+712791dd8 (docs(context-rot): verify the experiment ledger against the artifacts (W60))
 - any official / leaderboard-comparable number: every CompactBench run is
   CUSTOM-OPTIMUS (public practice suites, custom adapter, scorer 2.0.0; the W26
   live run is 8 of 20 starter cases per arm, one live draw per case); every
@@ -74,11 +79,14 @@ executed:
 - the unaffected E5 live cells re-run post-fix (e3 tasks A/C: E5-RM re-ran the
   affected cells only; A/C scored 5/5 in the committed run and are id-stable
   there, e5/README.md Finding 2).
+712791dd8 (docs(context-rot): verify the experiment ledger against the artifacts (W60))
 - re-running the iteration-1 retrieval surfaces on a second model: the r2 live
   family ran on GLM 5.3, but the iteration-1 surfaces themselves were not re-run.
 
 ## E-INC — incremental/selective compaction experiments (W9, offline, production path)
 
+- Category: FIXTURE — deterministic lossy summarizer, zero model calls, over the
+  real Rust pipeline (16 adapter runs in `incremental/runs/`).
 - Status: EXECUTED (variant driver and offline tests `0229dee3a`, adapter runs and
   per-experiment analysis `91ac4b2cb`; artifacts
   `research/context_rot_r2/incremental/results/e-inc{1,2a,2b,2c,3}.json` and
@@ -112,6 +120,8 @@ executed:
 
 ## R2-E2 — LIVE-MODEL multicycle (real GLM 5.3 as summarizer and probe answerer, W7)
 
+- Category: LIVE-MODEL (glm-5.3, temperature 0, as summarizer and probe answerer;
+  the W7 Python mirror of the production compaction path per cycle).
 - Status: EXECUTED (live driver and Python mirror committed in `fb089ee6e`;
   artifacts `research/context_rot_r2/live/` — `results.json`, `raw-calls.jsonl`,
   `r2-e2-{multicycle,hard}.*`, README; the corpus was later replayed offline
@@ -142,7 +152,8 @@ executed:
 ### Finding 3 (operational): GLM 5.3 reasoning tokens bill against max_tokens
 - 8k-32k reasoning tokens per taskState compaction; the production 8192 budget +
   single 2x retry fails validate_summary on 3 of 5 base cycles; a bounded ladder to
-  65536 completes all cycles. taskState summarizer latency up to 137.8 s; default ~2k.
+  65536 completes all cycles. taskState summarizer latency up to 137.8 s; default-arm
+  requests stay cheap (~2k reasoning tokens).
 
 ### Consequences
 - the v1 ledger is WORSE THAN NOTHING on corrections (it can invert user intent while
@@ -223,9 +234,10 @@ executed:
 
 ## R2-E2-RM — offline re-measure: post-W11 v1 ledger on the R2-E2 live corpus (W24)
 
-- PRODUCTION-PATH-MIRROR: a Python port of the CURRENT Rust ledger (w11_port.py, commit
-  1754a3e1b: content-derived ids + correction-safe supersession) replayed over the committed
-  W7 corpus (raw-calls.jsonl). Not the binary. No model calls.
+- Category: OFFLINE-REPLAY + PRODUCTION-PATH-MIRROR — a Python port of the CURRENT
+  Rust ledger (w11_port.py, porting the W11 fix `1754a3e1b`: content-derived ids +
+  correction-safe supersession) replayed over the committed W7 corpus (raw-calls.jsonl).
+  Not the binary. No model calls.
 - Fixture gate PASS: the pre-W11 mirror replay byte-matched every corpus summarizer request
   (5 cycles x 2 arms x 2 scenarios + ladder retries) and reproduced every cycle field of the
   committed results.json (entry ids, cut points, summary lengths, ledger item counts, final
@@ -278,7 +290,7 @@ Integrated as `2fbb14f33` (worker branch `rot2/w24-remeasure`, worker commit 19a
   task/eval model (in-process provider registration in the stock runner); 4 custom
   arms, 3 drift cycles, delta-append, scorer 2.0.0; 676 HTTP requests of a 768
   ceiling; one fixed-and-resumed provider incident (a `length` finish re-rolled the
-  same 2048 rung instead of advancing the ladder; ~130 extra requests, no invalid
+  same 2048 rung instead of advancing the ladder; ~128 extra requests, no invalid
   answers recorded).
 - Result (overall / drift_res / constraint_ret / contradiction / compression):
   task-state 0.6844 / 0.990 / 0.800 / 0.094 / 0.67x; echo-first-n 0.6531 / 0.833 /
@@ -333,8 +345,14 @@ Integrated as `2fbb14f33` (worker branch `rot2/w24-remeasure`, worker commit 19a
 
 ## R2-E5 — the typed-arm benchmark (fixture + live GLM 5.3)
 
-- Status: EXECUTED (branch rot2/w29-typedarm; commits 4f2e6935e, bf0ba53f6, 89e8f7273;
-  artifacts research/context_rot_r2/live/e5/).
+- Status: EXECUTED (branch rot2/w29-typedarm; commits 4f2e6935e, bf0ba53f6, 89e8f7273,
+  integrated as 08f16adf0, fe6b6d966, 59832805f; artifacts research/context_rot_r2/live/e5/).
+- Pre-registration evidence: the predictions live in e5/README.md ("written BEFORE the
+  runs; not edited after"). The worker branch committed README and results together
+  (89e8f7273, 17:56 UTC, after the 17:21-17:24 UTC live calls), so the pre-call writing
+  is the README's own attestation, not commit-provable; the pre-registration text is
+  byte-identical from 89e8f7273 to HEAD. R2-E3ADV's `5c18dab81` is the commit-proven
+  pre-registration in this campaign; see also R2-E5-RM below.
 - Part 1 (PRODUCTION-PATH, offline adapter, E1 19-probe x 5 cycles, all three arms one pass):
   default 0/19, taskState v1 14/19, typed 15/19 at the pre-D25 implementation (W29, committed
   E5); 13/19 on the integrated tip (W46/W47 re-measurements: the D25 step boundary correctly
@@ -381,6 +399,7 @@ Integrated as `2fbb14f33` (worker branch `rot2/w24-remeasure`, worker commit 19a
   benchmark was NOT executed at that writing; R2-E5-RM (W47, below) has since
   re-measured the affected cells on the fixed tree (fixture 13/19, TASK-E no
   halt, C1 SUPERSEDED at every cycle).
+712791dd8 (docs(context-rot): verify the experiment ledger against the artifacts (W60))
 
 ## DEFECT-WAVE-2 — the typed-state red team and the D21-D29 fix wave (verified W49)
 
@@ -486,10 +505,15 @@ re-pin `31ce39b84` holds at this tip).
 - a full post-fix R2-E5 live re-run was NOT executed at that writing: only
   the D29 C1 cell was re-run live (`621dc462f`); R2-E5-RM (W47, below) has
   since re-measured the affected cells on the fixed tree.
-
-
+712791dd8 (docs(context-rot): verify the experiment ledger against the artifacts (W60))
 
 ## R2-E5-RM — typed-arm re-run on the fixed implementation (fixture + live)
+
+- Status: EXECUTED (branch `rot2/w47-e5rm` at integration tip `71e770c5e`; mirror
+  port `0bd183a5e` (integrated `6ce030e59`), offline cells `8ebc8155b`, README with
+  the Part 2 pre-registrations `83ae4fb32`, live cells + this section `0f60ee761`).
+- Categories: Part 1 PRODUCTION-PATH-MIRROR (offline, deterministic); Part 2
+  LIVE-MODEL (glm-5.3).
 
 Branch `rot2/w47-e5rm` (integration tip 71e770c5e). The committed R2-E5
 results measured the W15 typed implementation before D24 (stable ids) and
@@ -528,8 +552,11 @@ selftests (14+15) stay green.
     strands exactly two refs ([VT-25d467], [@d09cc350]) — the
     restatement-absorbed tests_01 record, recorded as a defect candidate
     (no tombstone for absorbed ids; distinct from D24/D25).
-- Part 2 (LIVE-MODEL, GLM 5.3, 46 wire calls of the <= 120 budget,
-  pre-registrations in the rm/README written before the calls):
+- Part 2 (LIVE-MODEL, GLM 5.3, 46 wire calls of the <= 120 budget;
+  pre-registrations in the rm/README, which states they were written before
+  the 21:44-21:52 UTC calls — the README commit `83ae4fb32` landed after
+  them, so the ordering is attested by the README and the run_live.py
+  docstring, not by commit timestamps):
   - TASK-E typed: **5/5 cycles, no halt** (was: halt at cycle 2). The
     verifier passed every cycle (cycles 1-2 via the deterministic
     missing-item repair; 0 unresolved refs anywhere; was 5/3/3/3 at E5).
@@ -550,3 +577,28 @@ selftests (14+15) stay green.
   arm's fixture score on the tip is 13/19 (D25 trades the two
   step-scoped constraint episodes for a smaller, budget-stable ledger);
   the absorbed-record stranding is the one open defect candidate.
+
+## EVIDENCE INDEX
+
+One row per experiment family (re-measures folded into their family row).
+Classes follow this ledger's taxonomy; FINAL-REPORT's overview table splits
+the offline families further (SYNTHETIC-DIAGNOSTIC / PRODUCTION-PATH).
+Artifacts are under `research/context_rot_r2/`; reports are files under
+`reports/context-rot-r2/`. W60 verification pass: every sha below resolves
+(`git cat-file -e`), every artifact path exists on disk, and the quoted
+counts/scores match the artifacts.
+
+| family | class | artifacts (`research/context_rot_r2/`) | commits | reports citing it |
+| --- | --- | --- | --- | --- |
+| R2-E1 (+ R2-E0 smoke) | FIXTURE | `runs/r2-e1-multicycle.{scenario,result,score}.json` | `3eeed6f3f` | BASELINE, COMPATION-CORRECTNESS, CONTEXT-HEALTH-CALIBRATION, FINAL-REPORT, KNOWLEDGE-TRIAGE-REPRODUCTION, MULTICYCLE-DRIFT, PR-BODY |
+| E-INC (1, 2a-2c, 3) | FIXTURE | `incremental/results/e-inc{1,2a,2b,2c,3}.json`, `incremental/runs/` (16 runs) | `0229dee3a`, `91ac4b2cb` | BASELINE, FINAL-REPORT, MULTICYCLE-DRIFT, PR-BODY |
+| R2-E2 (+ R2-E2-RM) | LIVE-MODEL (+ OFFLINE-REPLAY / PRODUCTION-PATH-MIRROR re-measure) | `live/` (`results.json`, `raw-calls.jsonl`, `r2-e2-multicycle.*`, `r2-e2-hard.*`, README); re-measure `live/remeasure/` | run `fb089ee6e`; re-measure: ported fix `1754a3e1b`, worker `19add7970`, integrated `2fbb14f33`, D21 render replay `0b824f358` | BASELINE, BUG-LEDGER, CODING-TASK-RESULTS, COMPATION-CORRECTNESS, CONTEXT-HEALTH-CALIBRATION, FINAL-REPORT, MULTICYCLE-DRIFT, PR-BODY, REGRESSION-GATES, RETRIEVAL-SCORECARD, REVIEW-AUDIT |
+| R2-E3 | LIVE-MODEL | `live/e3/` (`results.json`, `raw-calls.jsonl`, `README.md`, `r2-e3-task-{a,c,e,h,f}.scenario.json`) | `d8e318f81`, `346f6c4f3`, `c5107fc31` | BASELINE, CODING-TASK-RESULTS, CONTEXT-HEALTH-CALIBRATION, CONTEXTBENCH-RESULTS, FINAL-REPORT, MULTICYCLE-DRIFT, PR-BODY, REGRESSION-GATES, RETRIEVAL-SCORECARD |
+| R2-E3ADV | LIVE-MODEL | `live/e3adv/` (`results.json`, `raw-calls.jsonl`, `README.md`, `r2-e3adv-c{1,2,3}.scenario.json`) | pre-registration `5c18dab81` (worker) / `76eefbf9f` (integrated), results `754bb75a1` | BASELINE, CONTEXT-HEALTH-CALIBRATION, FINAL-REPORT, MULTICYCLE-DRIFT, PR-BODY, REGRESSION-GATES, RETRIEVAL-SCORECARD |
+| R2-E5 (+ R2-E5-RM) | PRODUCTION-PATH fixture (Part 1) + LIVE-MODEL (Parts 2-3); RM: PRODUCTION-PATH-MIRROR + LIVE-MODEL | `live/e5/` (`adapter/`, `live/`, `live-d29/`, README); re-run `live/e5/rm/` | worker `4f2e6935e`, `bf0ba53f6`, `89e8f7273` (integrated `08f16adf0`, `fe6b6d966`, `59832805f`); D29 cell `f932b746e` + `621dc462f`; re-run `0bd183a5e`/`6ce030e59`, `8ebc8155b`, `83ae4fb32`, `0f60ee761` | BASELINE, BUG-LEDGER, CODING-TASK-RESULTS, COMPATION-CORRECTNESS, FINAL-REPORT, PR-BODY, REGRESSION-GATES |
+| W26 live CompactBench | CUSTOM-OPTIMUS + LIVE-MODEL | `compactbench_adapter/live/` (`run-config.json`, `results/`, `raw-calls.jsonl`, `aggregate.json`, `amend1-decision.json`) | `6ea85dc10`, `4b8f2165f` | BASELINE, CODING-TASK-RESULTS, COMPACTBENCH-RESULTS, CONTEXT-HEALTH-CALIBRATION, FINAL-REPORT, MULTICYCLE-DRIFT, PR-BODY, REGRESSION-GATES, RETRIEVAL-SCORECARD, REVIEW-AUDIT |
+| W27 live ContextBench | CUSTOM-OPTIMUS + LIVE-MODEL | `contextbench/live/` (`run_config.json`, `results.json`, `raw-calls.jsonl`, README) | `da38b1edf`, `3e5880dd5`, `963ca577a`, `32a430f08` | BASELINE, CODING-TASK-RESULTS, CONTEXT-HEALTH-CALIBRATION, CONTEXTBENCH-RESULTS, FINAL-REPORT, MULTICYCLE-DRIFT, PR-BODY, REGRESSION-GATES, RETRIEVAL-SCORECARD |
+
+The DEFECT-WAVE-2 section above carries its own commit and battery tables
+(red team `f7bc6306c`; fixes D21-D29; battery at `71e770c5e`; cited by
+BUG-LEDGER, PR-BODY and REGRESSION-GATES section 10).
