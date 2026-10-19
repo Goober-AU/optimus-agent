@@ -19343,6 +19343,7 @@ impl AgentSession {
             summary_budget_mode: Some(resolved.summary_budget_mode.clone()),
             trigger_threshold: resolved.trigger_threshold,
             deadline_ms: resolved.deadline_ms,
+            task_state: Some(resolved.task_state.clone()),
         }
     }
 

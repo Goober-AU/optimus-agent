@@ -37,6 +37,7 @@ async fn summarize(message: AssistantMessage, split: bool) -> Result<String, Str
         retained_state_anchor: None, previous_summary: None,
         file_ops: create_file_ops(),
         settings: default_compaction_settings(),
+        task_state: None,
     };
     let mut model = Model::new("fixture", "fixture", "faux", "faux", "https://fixture.invalid");
     model.context_window = 1_000_000.0;

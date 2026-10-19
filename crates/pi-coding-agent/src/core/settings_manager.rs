@@ -95,6 +95,9 @@ pub struct CompactionSettings {
     /// B4: compaction trigger threshold, fraction of the context limit in (0, 1].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trigger_threshold: Option<f64>,
+    /// Context-rot campaign: protected task-state ledger mode, `"off"` (default) or `"prompt"`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub task_state: Option<String>,
     /// A7: episode deadline for the model-driven summary phase, in ms. 0 disables.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deadline_ms: Option<f64>,
@@ -342,6 +345,8 @@ pub struct ResolvedCompactionSettings {
     pub summary_budget_mode: String,
     /// B4: explicit trigger threshold (fraction of the context limit), `None` = current behavior.
     pub trigger_threshold: Option<f64>,
+    /// Context-rot campaign: `"off"` (default) or `"prompt"`.
+    pub task_state: String,
     /// A7: episode deadline for the model-driven summary phase, in ms. 0 disables.
     pub deadline_ms: f64,
     /// A7: automatic-retry pacing.
@@ -2043,6 +2048,21 @@ impl SettingsManager {
         "legacy".to_string()
     }
 
+    /// Context-rot campaign: protected task-state ledger mode. Explicit
+    /// setting wins, then `PRIME_AGENT_COMPACTION_TASK_STATE`, then `"off"`.
+    pub fn get_compaction_task_state(&self) -> String {
+        let configured = nested_string(&self.settings, keys::COMPACTION, "taskState");
+        match configured.as_deref() {
+            Some("prompt") => return "prompt".to_string(),
+            Some(_) => return "off".to_string(),
+            None => {}
+        }
+        if env_flag("PRIME_AGENT_COMPACTION_TASK_STATE").as_deref() == Some("prompt") {
+            return "prompt".to_string();
+        }
+        "off".to_string()
+    }
+
     /// B4: explicit compaction trigger threshold, a fraction of the context
     /// limit in (0, 1]. Explicit setting wins, then
     /// `PRIME_AGENT_COMPACTION_TRIGGER_THRESHOLD`, then `None` (current
@@ -2132,6 +2152,7 @@ impl SettingsManager {
             prompt: self.get_compaction_prompt(),
             summary_budget_mode: self.get_compaction_summary_budget_mode(),
             trigger_threshold: self.get_compaction_trigger_threshold(),
+            task_state: self.get_compaction_task_state(),
             deadline_ms: self.get_compaction_deadline_ms(),
             retry: self.get_compaction_retry_settings(),
         }

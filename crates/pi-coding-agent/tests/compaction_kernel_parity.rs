@@ -875,6 +875,7 @@ fn should_compact_boundary_table_pins_the_inclusive_threshold() {
             summary_budget_mode: Some(SUMMARY_BUDGET_MODE_LEGACY.to_string()),
             trigger_threshold: None,
             deadline_ms: 0.0,
+            task_state: None,
         };
         assert_eq!(
             should_compact(context_tokens, context_window, &settings),
@@ -973,6 +974,7 @@ fn should_compact_for_model_boundary_table_pins_both_caps() {
         summary_budget_mode: Some(SUMMARY_BUDGET_MODE_LEGACY.to_string()),
         trigger_threshold: None,
         deadline_ms: 0.0,
+        task_state: None,
     };
     disabled.enabled = false;
     assert!(!should_compact_for_model(900_000.0, &azure_gpt, &disabled));
