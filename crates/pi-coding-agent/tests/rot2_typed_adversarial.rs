@@ -8,11 +8,14 @@
 //! `#[ignore]` note naming the entry, so the suite stays green while the
 //! integrator routes the fixes. Run them red with `cargo test -- --ignored`.
 //!
-//! W37 fixed D23 (ticket-token grammar collision; the D23 red test was
-//! un-ignored as `bracketed_ticket_ids_in_user_text_verify_cleanly`) and D24
-//! (tool-state id churn across merges; un-ignored as
-//! `evolving_tool_state_records_keep_a_stable_id_across_merges`), and added
-//! the compounding three-cycle pin. D22, D25, D26 and D27 remain ignored.
+//! W36-W41 fixed the red findings: D25 (step boundary and durable cap,
+//! `a3997b5d6`), D23/D24 (reference grammar, stable ids, `891702c32`),
+//! D22/D26/D27 (`51c9a6a59`), D28 (native carry-through, `1e6e5ff9d`,
+//! pinned in `tests/rot2_native_typed_chain.rs`) and D29 (provenance
+//! pairing, `4315f9154`); every red test was un-ignored by its fix. The
+//! known open gap is D30 (an unprefixed decision in plain user text
+//! classifies as step-scoped low-priority material and retires at the
+//! first merge).
 //!
 //! No network: the summarizer is a deterministic fixture registered through
 //! `register_api_provider_simple`, mirroring rot2_typed_integration.rs. All
@@ -1279,35 +1282,44 @@ async fn malformed_prior_ledger_flag_surfaces_in_details_typed_verification() {
 
 /// An explicit `taskState: "off"` setting wins over
 /// `PRIME_AGENT_COMPACTION_TASK_STATE=typed`; the environment only applies
-/// when the setting is unset. Pinned against the real environment variable
-/// (the kernel falls back to it when the environment argument is None).
+/// when the setting is unset. The precedence is exercised through the
+/// explicit `environment` parameter, never through `std::env::set_var`
+/// (a failed assertion between set and remove would otherwise leave the
+/// variable set for every sibling test in this binary). The one readback
+/// covers the `None` fallback to the real process variable and only
+/// asserts when the host has not exported it.
 #[test]
 fn explicit_off_setting_wins_over_the_typed_environment_variable() {
-    std::env::set_var(TASK_STATE_ENV, TASK_STATE_MODE_TYPED);
     assert_eq!(
-        resolve_task_state_mode(Some(TASK_STATE_MODE_OFF), None),
+        resolve_task_state_mode(Some(TASK_STATE_MODE_OFF), Some(TASK_STATE_MODE_TYPED)),
         TASK_STATE_MODE_OFF,
         "the explicit setting must win over the environment"
     );
     assert_eq!(
-        resolve_task_state_mode(Some(TASK_STATE_MODE_PROMPT), None),
+        resolve_task_state_mode(Some(TASK_STATE_MODE_PROMPT), Some(TASK_STATE_MODE_TYPED)),
         TASK_STATE_MODE_PROMPT
     );
     assert_eq!(
-        resolve_task_state_mode(Some(TASK_STATE_MODE_TYPED), None),
+        resolve_task_state_mode(Some(TASK_STATE_MODE_TYPED), Some(TASK_STATE_MODE_PROMPT)),
         TASK_STATE_MODE_TYPED
     );
     assert_eq!(
-        resolve_task_state_mode(None, None),
+        resolve_task_state_mode(None, Some(TASK_STATE_MODE_TYPED)),
         TASK_STATE_MODE_TYPED,
         "the environment applies only when the setting is unset"
     );
-    std::env::remove_var(TASK_STATE_ENV);
     assert_eq!(
-        resolve_task_state_mode(None, None),
+        resolve_task_state_mode(None, Some("not-a-mode")),
         TASK_STATE_MODE_OFF,
-        "with no setting and no environment the mode is off"
+        "an unrecognized environment value fails safe to off"
     );
+    if std::env::var(TASK_STATE_ENV).is_err() {
+        assert_eq!(
+            resolve_task_state_mode(None, None),
+            TASK_STATE_MODE_OFF,
+            "with no setting and no environment the mode is off"
+        );
+    }
 }
 
 // ---------------------------------------------------------------------------
