@@ -62,15 +62,25 @@ does four things:
    mechanisms on the live corpus offline (R2-E2-RM); and therefore the
    shipped default (`taskState = "off"`) stays correct until the typed arm
    clears its measurement and red-team bars - R2-E5 has since landed
-   (15/19 offline vs 14/19 control, live A/C clean; see the typed-mode
-   section and the red-team wave disclosure) and the default still stays
-   `"off"` pending cross-model and longer-session evidence.
+   (15/19 offline vs 14/19 control at the pre-D25 implementation, W29,
+   committed E5; 13/19 on the integrated tip, the W46/W47 re-measurements -
+   the D25 step boundary correctly retires two Step-scoped episode-classified
+   probes; decisions 4/4, evidence 1/4, supersession 2/2 unchanged; verifier
+   5/5 both; live A/C clean; see the typed-mode section and the red-team
+   wave disclosure) and the default still stays `"off"` pending cross-model
+   and longer-session evidence.
 =======
    mechanisms on the live corpus offline (R2-E2-RM); and the typed arm has now
-   been measured end to end (R2-E5: 15/19 on the E1 fixture vs v1's 14/19,
-   live parity on the e3 tasks that ran, two integration defects found and
-   since fixed - D24, D29), so the shipped default (`taskState = "off"`)
-   stays correct pending the E5 re-measure (E5-RM, W47, in flight).
+   been measured end to end (R2-E5: 15/19 on the E1 fixture vs v1's 14/19 at
+   the pre-D25 implementation, W29, committed E5; 13/19 on the integrated
+   tip, W46/W47 re-measurements - the D25 step boundary correctly retires
+   two Step-scoped episode-classified probes; decisions 4/4, evidence 1/4,
+   supersession 2/2 unchanged; verifier 5/5 both; live parity on the e3
+   tasks that ran, two integration defects found and since fixed - D24,
+   D29), so the shipped default (`taskState = "off"`) stays correct: the
+   E5 re-measure (E5-RM, W47) has landed and resolved both live findings
+   (TASK-E 5/5 cycles, no halt; SUPERSEDED rendered at every cycle in the
+   C1 cell) while holding the tip fixture at 13/19.
 >>>>>>> 78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 
 ## Defect -> fix -> test (evidence table)
@@ -119,7 +129,8 @@ summarized in "What is NOT claimed" below and carried in full by
 | harness F1/F4/F5: the harness binary forked a session per invocation, read 0 tokens, lost appends on error paths | `49f473d8d` (`continue_recent` session persistence, chars/4 usage anchors, flush-on-append) | `probe_harness_behavior.py` + the 13 adapter checks (`research/context_rot_r2/compactbench_adapter/`) |
 
 Status at the current integration head `34c27c07d` (W50 consistency note;
-`BUG-LEDGER.md` is the source of truth): D18 (`8c558dd7b`), D19 (`4769f42f4`)
+`BUG-LEDGER.md` is the source of truth; the W46/W47 landings noted below are
+later than that head): D18 (`8c558dd7b`), D19 (`4769f42f4`)
 and D21 (`a9035ce8a`) are fixed with regression guards since this body was
 written, D20 is pinned by a contract test (`e44faff08`) with its residue
 outside `agent_session.rs` verified open, and the W35 adversarial red-team
@@ -127,16 +138,22 @@ against the typed mode found eight more defects (D22-D29) that are all fixed
 (W36-W41; D29 live-verified on the E3ADV C1 cell). Still open: D7 (deferred),
 D12 (partial - soft-fence residual), the D20 residue, D10's "never retry"
 sub-item, the v1 render's keyword-less capture gap W9-F1 (typed v2 removes it
-by classifying on role), and the D30 classifier gap (user-stated decisions
-classify as LowPriorityEpisode and retire at the first merge; the W46 fix is
-in flight). The `rot2/w16-supersession` branch never carried unique commits
+by classifying on role), and the post-wave findings D31-D33 (the D30
+classifier gap is fixed, W46 `10e2b36e6`: user-stated decisions classify as
+VERIFIED_DECISION with Task scope; the W41 cycle-5 budget caveat is
+accepted-and-pinned, `d00ff2067`). The `rot2/w16-supersession` branch never carried unique commits
 and holds nothing in flight; what this PR claims for the v1 ledger is exactly
 the W11 fixes the offline re-measure validated (below), with the supersession
 mechanism itself replaced by typed v2's provenance-based pairing (D29). The
-typed-arm end-to-end measurement (R2-E5) has run: 15/19 on the E1 fixture
-(v1 14/19, default 0/19), live parity on the e3 tasks that ran, TASK-E
-halted pre-fix (D24), and the E3ADV C1 cell found the token-overlap pairing
-gap (D29) - both fixed since; the re-measure (E5-RM, W47) is in flight.
+typed-arm end-to-end measurement (R2-E5) has run: 15/19 on the E1 fixture at
+the pre-D25 implementation (W29, committed E5; v1 14/19, default 0/19) and
+13/19 on the integrated tip (W46/W47 re-measurements: the D25 step boundary
+correctly retires two Step-scoped episode-classified probes; decisions 4/4,
+evidence 1/4, supersession 2/2 unchanged; verifier 5/5 both), live parity
+on the e3 tasks that ran, TASK-E halted pre-fix (D24), and the E3ADV C1 cell
+found the token-overlap pairing gap (D29) - both fixed since and resolved
+live by the re-measure (E5-RM, W47: TASK-E 5/5 cycles no halt, SUPERSEDED
+rendered at every cycle).
 >>>>>>> 78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 
 ## The typed-state v2 mode (opt-in, wired)
@@ -471,22 +488,35 @@ max_tokens ladder climbs, 0 error calls.
 - RepoQA, SWE-bench and Terminal-Bench: not executed in this campaign.
 <<<<<<< HEAD
 - The typed-arm measurement exists (R2-E5, `59832805f`: offline three-arm
-  adapter suite typed 15/19 vs taskState v1 14/19 vs default 0/19, live
-  TASK-A/C 5/5 with zero verifier repairs, E3ADV C1 correct 5/5) but it is
-  single-model, practice-scale and, on the decisive adversarial cell, only
-  correct after the D29 provenance pairing fix; TASK-E live still halts
-  compaction at cycle 2 on unresolved verifier references. The default stays
-  `"off"` pending cross-model and longer-session evidence (D30 and the
-  cycle-5 budget caveat open).
+  adapter suite typed 15/19 vs taskState v1 14/19 vs default 0/19 at the
+  pre-D25 implementation, W29, committed E5 - 13/19 on the integrated tip,
+  the W46/W47 re-measurements: the D25 step boundary correctly retires two
+  Step-scoped episode-classified probes; decisions 4/4, evidence 1/4,
+  supersession 2/2 unchanged; verifier 5/5 both; live TASK-A/C 5/5 with
+  zero verifier repairs, E3ADV C1 correct 5/5) but it is single-model,
+  practice-scale and, on the decisive adversarial cell, only correct
+  after the D29 provenance pairing fix; TASK-E halted live at cycle 2
+  pre-fix (D24) and completes 5/5 cycles on the integrated tip (E5-RM,
+  W47). The default stays `"off"` pending cross-model and longer-session
+  evidence (the post-wave findings D31-D33 open).
 =======
-- No typed-arm confirmation beyond R2-E5. The typed arm has been measured once
-  (R2-E5: 15/19 on the E1 fixture, live parity on the e3 tasks that ran), but
-  that run predates the D24/D29 fixes it forced, its TASK-E cell halted at
-  cycle 2 (the D24 availability bug, since fixed), and it did not fully meet
-  the pre-registered bar (EXPERIMENT-LEDGER: control B at 14/19 with evidence
-  and subagent retained, at comparable or lower token cost - the run holds
-  evidence at 1/4, subagent 0/1 by design, +886 mean request chars over v1).
-  The default stays `"off"` pending the re-measure (E5-RM, W47, in flight).
+- No typed-arm confirmation beyond R2-E5 and its re-measure. The typed arm
+  has been measured once pre-fix (R2-E5: 15/19 on the E1 fixture at the
+  pre-D25 implementation, W29, committed E5; live parity on the e3 tasks that
+  ran) and re-measured on the integrated tip (E5-RM, W47: 13/19 - the D25
+  step boundary correctly retires two Step-scoped episode-classified probes;
+  decisions 4/4, evidence 1/4, supersession 2/2 unchanged; verifier 5/5
+  both), but the first run predates the D24/D29 fixes it forced, its TASK-E
+  cell halted at cycle 2 (the D24 availability bug) and it did not fully
+  meet the pre-registered bar (EXPERIMENT-LEDGER: control B at 14/19 with
+  evidence and subagent retained, at comparable or lower token cost - the
+  run holds evidence at 1/4, subagent 0/1 by design, +886 mean request
+  chars over v1). The re-measure resolved both live findings (TASK-E 5/5
+  cycles, no halt; SUPERSEDED rendered at every cycle in the C1 cell) but
+  holds the tip fixture below control B (the two-probe delta is the D25
+  step boundary retiring Step-scoped episode-classified probes - episodes
+  by classifier design, not a regression), so the default stays `"off"`
+  pending cross-model and longer-session evidence.
 >>>>>>> 78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 - The W11 ledger fix is validated offline on the live corpus (R2-E2-RM), not
   by a fresh live run; the model-dependent prediction (live corrections
