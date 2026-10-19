@@ -1,0 +1,246 @@
+{
+  "scenario": "r2-w9-inc-a",
+  "arms": [
+    {
+      "arm": "default",
+      "cycles": [
+        {
+          "cycle": 0,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "480fc7a6",
+          "summarizedEntries": 21,
+          "retainedEntries": 2,
+          "summaryChars": 738,
+          "summarizerRequestChars": 11986,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": [
+            "q-constraint-0"
+          ]
+        },
+        {
+          "cycle": 1,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "cb1bb7fa",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 1236,
+          "summarizerRequestChars": 15085,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": []
+        },
+        {
+          "cycle": 2,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "fb4b96ab",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 1236,
+          "summarizerRequestChars": 15583,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": []
+        },
+        {
+          "cycle": 3,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "8516bd4b",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 1236,
+          "summarizerRequestChars": 15583,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": []
+        },
+        {
+          "cycle": 4,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "27385cef",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 1236,
+          "summarizerRequestChars": 15583,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": []
+        },
+        {
+          "cycle": 5,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "7dfe4e85",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 1236,
+          "summarizerRequestChars": 15583,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": []
+        },
+        {
+          "cycle": 6,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "fc6d5768",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 1236,
+          "summarizerRequestChars": 15583,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": []
+        },
+        {
+          "cycle": 7,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "47ba1f68",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 1236,
+          "summarizerRequestChars": 15583,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": []
+        }
+      ],
+      "probes": [
+        {
+          "id": "q-constraint-0",
+          "anchor": "R2-CONS-81651ee3",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-1",
+          "anchor": "R2-CONS-f949cbec",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-2",
+          "anchor": "R2-CONS-f8d397f9",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-3",
+          "anchor": "R2-CONS-711c09f7",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-4",
+          "anchor": "R2-CONS-425a6ead",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-5",
+          "anchor": "R2-CONS-93057a3c",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-6",
+          "anchor": "R2-CONS-344f494c",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-7",
+          "anchor": "R2-CONS-2716c09d",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-decision-0",
+          "anchor": "R2-DECI-72b9f4b9",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-decision-1",
+          "anchor": "R2-DECI-9ad8613a",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-decision-2",
+          "anchor": "R2-DECI-7d87dd22",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-decision-3",
+          "anchor": "R2-DECI-4c906815",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-0",
+          "anchor": "R2-EVID-8b9046db",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-1",
+          "anchor": "R2-EVID-2ec7fc56",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-2",
+          "anchor": "R2-EVID-51d1d8d4",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-3",
+          "anchor": "R2-EVID-966dc109",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-correction-0",
+          "anchor": "R2-CORR-b80518c9",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-correction-1",
+          "anchor": "R2-CORR-f2a8ddf5",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-subagent",
+          "anchor": "evidence/reviewer-1.json",
+          "retained": false,
+          "foundIn": []
+        }
+      ],
+      "finalContextMessages": [
+        "## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- None retained by the protected block.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- None recorded by the protected block.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prior summary) ## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- None retained by the protected block.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- None recorded by the protected block.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prio...\n(lossy excerpt) [User]: status update 6.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (6). / [User]: status update 7.1: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (7).",
+        "status update 7.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. ",
+        "Noted; continuing (7)."
+      ],
+      "finalSummary": "## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- None retained by the protected block.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- None recorded by the protected block.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prior summary) ## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- None retained by the protected block.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- None recorded by the protected block.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prio...\n(lossy excerpt) [User]: status update 6.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (6). / [User]: status update 7.1: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (7)."
+    }
+  ]
+}

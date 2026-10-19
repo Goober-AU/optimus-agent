@@ -1,0 +1,418 @@
+{
+  "scenario": "r2-w9-inc-a",
+  "arms": [
+    {
+      "arm": "default",
+      "cycles": [
+        {
+          "cycle": 0,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "e1f1d59b",
+          "summarizedEntries": 21,
+          "retainedEntries": 2,
+          "summaryChars": 738,
+          "summarizerRequestChars": 11986,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": [
+            "q-constraint-0"
+          ]
+        },
+        {
+          "cycle": 1,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "3b4c9502",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 1236,
+          "summarizerRequestChars": 15085,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": []
+        },
+        {
+          "cycle": 2,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "e3fd2147",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 1236,
+          "summarizerRequestChars": 15583,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": []
+        }
+      ],
+      "probes": [
+        {
+          "id": "q-constraint-0",
+          "anchor": "R2-CONS-81651ee3",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-1",
+          "anchor": "R2-CONS-f949cbec",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-2",
+          "anchor": "R2-CONS-f8d397f9",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-3",
+          "anchor": "R2-CONS-711c09f7",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-4",
+          "anchor": "R2-CONS-425a6ead",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-5",
+          "anchor": "R2-CONS-93057a3c",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-6",
+          "anchor": "R2-CONS-344f494c",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-7",
+          "anchor": "R2-CONS-2716c09d",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-decision-0",
+          "anchor": "R2-DECI-72b9f4b9",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-decision-1",
+          "anchor": "R2-DECI-9ad8613a",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-decision-2",
+          "anchor": "R2-DECI-7d87dd22",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-decision-3",
+          "anchor": "R2-DECI-4c906815",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-0",
+          "anchor": "R2-EVID-8b9046db",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-1",
+          "anchor": "R2-EVID-2ec7fc56",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-2",
+          "anchor": "R2-EVID-51d1d8d4",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-3",
+          "anchor": "R2-EVID-966dc109",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-correction-0",
+          "anchor": "R2-CORR-b80518c9",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-correction-1",
+          "anchor": "R2-CORR-f2a8ddf5",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-subagent",
+          "anchor": "evidence/reviewer-1.json",
+          "retained": false,
+          "foundIn": []
+        }
+      ],
+      "finalContextMessages": [
+        "## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- None retained by the protected block.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- None recorded by the protected block.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prior summary) ## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- None retained by the protected block.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- None recorded by the protected block.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prio...\n(lossy excerpt) [User]: status update 1.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (1). / [User]: status update 2.1: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (2).",
+        "status update 2.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. ",
+        "Noted; continuing (2)."
+      ],
+      "finalSummary": "## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- None retained by the protected block.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- None recorded by the protected block.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prior summary) ## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- None retained by the protected block.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- None recorded by the protected block.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prio...\n(lossy excerpt) [User]: status update 1.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (1). / [User]: status update 2.1: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (2)."
+    },
+    {
+      "arm": "taskState",
+      "cycles": [
+        {
+          "cycle": 0,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "3722e8db",
+          "summarizedEntries": 21,
+          "retainedEntries": 2,
+          "summaryChars": 2348,
+          "summarizerRequestChars": 14355,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": true,
+          "ledgerItems": "22",
+          "anchorsPresent": [
+            "q-constraint-0",
+            "q-constraint-1",
+            "q-constraint-2",
+            "q-constraint-3",
+            "q-constraint-4",
+            "q-constraint-5",
+            "q-constraint-6",
+            "q-constraint-7",
+            "q-decision-0",
+            "q-decision-1",
+            "q-decision-2",
+            "q-decision-3",
+            "q-correction-0",
+            "q-correction-1"
+          ]
+        },
+        {
+          "cycle": 1,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "17ecc5c9",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 2846,
+          "summarizerRequestChars": 19064,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": true,
+          "ledgerItems": "22",
+          "anchorsPresent": [
+            "q-constraint-0",
+            "q-constraint-1",
+            "q-constraint-2",
+            "q-constraint-3",
+            "q-constraint-4",
+            "q-constraint-5",
+            "q-constraint-6",
+            "q-constraint-7",
+            "q-decision-0",
+            "q-decision-1",
+            "q-decision-2",
+            "q-decision-3",
+            "q-correction-0",
+            "q-correction-1"
+          ]
+        },
+        {
+          "cycle": 2,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "a5c477d9",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 2846,
+          "summarizerRequestChars": 19562,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": true,
+          "ledgerItems": "22",
+          "anchorsPresent": [
+            "q-constraint-0",
+            "q-constraint-1",
+            "q-constraint-2",
+            "q-constraint-3",
+            "q-constraint-4",
+            "q-constraint-5",
+            "q-constraint-6",
+            "q-constraint-7",
+            "q-decision-0",
+            "q-decision-1",
+            "q-decision-2",
+            "q-decision-3",
+            "q-correction-0",
+            "q-correction-1"
+          ]
+        }
+      ],
+      "probes": [
+        {
+          "id": "q-constraint-0",
+          "anchor": "R2-CONS-81651ee3",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-1",
+          "anchor": "R2-CONS-f949cbec",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-2",
+          "anchor": "R2-CONS-f8d397f9",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-3",
+          "anchor": "R2-CONS-711c09f7",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-4",
+          "anchor": "R2-CONS-425a6ead",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-5",
+          "anchor": "R2-CONS-93057a3c",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-6",
+          "anchor": "R2-CONS-344f494c",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-7",
+          "anchor": "R2-CONS-2716c09d",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-decision-0",
+          "anchor": "R2-DECI-72b9f4b9",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-decision-1",
+          "anchor": "R2-DECI-9ad8613a",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-decision-2",
+          "anchor": "R2-DECI-7d87dd22",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-decision-3",
+          "anchor": "R2-DECI-4c906815",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-evidence-0",
+          "anchor": "R2-EVID-8b9046db",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-1",
+          "anchor": "R2-EVID-2ec7fc56",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-2",
+          "anchor": "R2-EVID-51d1d8d4",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-3",
+          "anchor": "R2-EVID-966dc109",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-correction-0",
+          "anchor": "R2-CORR-b80518c9",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-correction-1",
+          "anchor": "R2-CORR-f2a8ddf5",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-subagent",
+          "anchor": "evidence/reviewer-1.json",
+          "retained": false,
+          "foundIn": []
+        }
+      ],
+      "finalContextMessages": [
+        "## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- C1 [911cede7]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C4 [911cede7]: CONSTRAINT: do not modify files under gateway/ without review R2-CONS-f8d397f9\n- C5 [911cede7]: CONSTRAINT: keep the billing protocol version at v2 R2-CONS-711c09f7\n- C6 [911cede7]: CONSTRAINT: the archiver migration must be reversible R2-CONS-425a6ead\n- C7 [911cede7]: CONSTRAINT: no new dependencies in reconciler without approval R2-CONS-93057a3c\n- C8 [911cede7]: CONSTRAINT: preserve the auth audit trail verbatim R2-CONS-344f494c\n- C9 [911cede7]: CONSTRAINT: the indexer service stays single-writer R2-CONS-2716c09d\n- C11 [415eff4f]: The earlier A decision is superseded.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- D1 [3a0f17be]: Decision: use architecture billing for the parser R2-DECI-72b9f4b9\n- D2 [1f4639f4]: Decision: keep the archiver client in-process R2-DECI-9ad8613a\n- D3 [8de732b6]: Decision: reject the reconciler rewrite; extend instead R2-DECI-7d87dd22\n- D4 [37f6342c]: Decision: the auth fix lands behind a feature flag R2-DECI-4c906815\n- D5 [dff41fe1]: Decision: use architecture A for the notifier module R2-SUPE-da1ea13c\n- D6 [125346e3]: Decision: use architecture A for the scheduler module R2-SUPE-bceddd90\n- C3 [911cede7] replaced by C2 [911cede7]: CONSTRAINT: never drop the ledger ledger R2-CONS-81651ee3\n- C2 [911cede7] replaced by C3 [911cede7]: CONSTRAINT: always run the reporting suite before publishing R2-CONS-f949cbec\n- C12 [7d43085b] replaced by C10 [415eff4f]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-b80518c9.\n- C10 [415eff4f] replaced by C12 [7d43085b]: CORRECTION: forget that; use architecture B for the scheduler module instead R2-CORR-f2a8ddf5.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prior summary) ## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- C1 [911cede7]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C4 [911cede7]: CONSTRAINT: do not modify files under gateway/ without review R2-CONS-f8d397f9\n- C5 [911cede7]: CONSTRAINT: keep the billing protocol version at v2 R2-CONS-711c09f7\n- C6 [911cede7]: CONSTRAINT: the archiver migration...\n(lossy excerpt) [User]: status update 1.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (1). / [User]: status update 2.1: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (2).",
+        "status update 2.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. ",
+        "Noted; continuing (2)."
+      ],
+      "finalSummary": "## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- C1 [911cede7]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C4 [911cede7]: CONSTRAINT: do not modify files under gateway/ without review R2-CONS-f8d397f9\n- C5 [911cede7]: CONSTRAINT: keep the billing protocol version at v2 R2-CONS-711c09f7\n- C6 [911cede7]: CONSTRAINT: the archiver migration must be reversible R2-CONS-425a6ead\n- C7 [911cede7]: CONSTRAINT: no new dependencies in reconciler without approval R2-CONS-93057a3c\n- C8 [911cede7]: CONSTRAINT: preserve the auth audit trail verbatim R2-CONS-344f494c\n- C9 [911cede7]: CONSTRAINT: the indexer service stays single-writer R2-CONS-2716c09d\n- C11 [415eff4f]: The earlier A decision is superseded.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- D1 [3a0f17be]: Decision: use architecture billing for the parser R2-DECI-72b9f4b9\n- D2 [1f4639f4]: Decision: keep the archiver client in-process R2-DECI-9ad8613a\n- D3 [8de732b6]: Decision: reject the reconciler rewrite; extend instead R2-DECI-7d87dd22\n- D4 [37f6342c]: Decision: the auth fix lands behind a feature flag R2-DECI-4c906815\n- D5 [dff41fe1]: Decision: use architecture A for the notifier module R2-SUPE-da1ea13c\n- D6 [125346e3]: Decision: use architecture A for the scheduler module R2-SUPE-bceddd90\n- C3 [911cede7] replaced by C2 [911cede7]: CONSTRAINT: never drop the ledger ledger R2-CONS-81651ee3\n- C2 [911cede7] replaced by C3 [911cede7]: CONSTRAINT: always run the reporting suite before publishing R2-CONS-f949cbec\n- C12 [7d43085b] replaced by C10 [415eff4f]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-b80518c9.\n- C10 [415eff4f] replaced by C12 [7d43085b]: CORRECTION: forget that; use architecture B for the scheduler module instead R2-CORR-f2a8ddf5.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prior summary) ## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- C1 [911cede7]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C4 [911cede7]: CONSTRAINT: do not modify files under gateway/ without review R2-CONS-f8d397f9\n- C5 [911cede7]: CONSTRAINT: keep the billing protocol version at v2 R2-CONS-711c09f7\n- C6 [911cede7]: CONSTRAINT: the archiver migration...\n(lossy excerpt) [User]: status update 1.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (1). / [User]: status update 2.1: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (2)."
+    }
+  ]
+}

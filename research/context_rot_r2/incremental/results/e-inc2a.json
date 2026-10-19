@@ -1,0 +1,1232 @@
+{
+ "experiment": "E-INC-2a",
+ "question": "per-cycle retention curves from same-scenario reruns at cycles 1..8; determinism and path independence of the pipeline.",
+ "retentionCurves": {
+  "a": {
+   "default": [
+    {
+     "cycle": 0,
+     "retained": 1,
+     "probes": 19,
+     "rate": 0.0526,
+     "byKind": {
+      "constraint": {
+       "present": 1,
+       "total": 8,
+       "rate": 0.125
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 1,
+     "retained": 0,
+     "probes": 19,
+     "rate": 0.0,
+     "byKind": {
+      "constraint": {
+       "present": 0,
+       "total": 8,
+       "rate": 0.0
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 2,
+     "retained": 0,
+     "probes": 19,
+     "rate": 0.0,
+     "byKind": {
+      "constraint": {
+       "present": 0,
+       "total": 8,
+       "rate": 0.0
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 3,
+     "retained": 0,
+     "probes": 19,
+     "rate": 0.0,
+     "byKind": {
+      "constraint": {
+       "present": 0,
+       "total": 8,
+       "rate": 0.0
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 4,
+     "retained": 0,
+     "probes": 19,
+     "rate": 0.0,
+     "byKind": {
+      "constraint": {
+       "present": 0,
+       "total": 8,
+       "rate": 0.0
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 5,
+     "retained": 0,
+     "probes": 19,
+     "rate": 0.0,
+     "byKind": {
+      "constraint": {
+       "present": 0,
+       "total": 8,
+       "rate": 0.0
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 6,
+     "retained": 0,
+     "probes": 19,
+     "rate": 0.0,
+     "byKind": {
+      "constraint": {
+       "present": 0,
+       "total": 8,
+       "rate": 0.0
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 7,
+     "retained": 0,
+     "probes": 19,
+     "rate": 0.0,
+     "byKind": {
+      "constraint": {
+       "present": 0,
+       "total": 8,
+       "rate": 0.0
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    }
+   ],
+   "taskState": [
+    {
+     "cycle": 0,
+     "retained": 14,
+     "probes": 19,
+     "rate": 0.7368,
+     "byKind": {
+      "constraint": {
+       "present": 8,
+       "total": 8,
+       "rate": 1.0
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 1,
+     "retained": 14,
+     "probes": 19,
+     "rate": 0.7368,
+     "byKind": {
+      "constraint": {
+       "present": 8,
+       "total": 8,
+       "rate": 1.0
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 2,
+     "retained": 14,
+     "probes": 19,
+     "rate": 0.7368,
+     "byKind": {
+      "constraint": {
+       "present": 8,
+       "total": 8,
+       "rate": 1.0
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 3,
+     "retained": 14,
+     "probes": 19,
+     "rate": 0.7368,
+     "byKind": {
+      "constraint": {
+       "present": 8,
+       "total": 8,
+       "rate": 1.0
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 4,
+     "retained": 14,
+     "probes": 19,
+     "rate": 0.7368,
+     "byKind": {
+      "constraint": {
+       "present": 8,
+       "total": 8,
+       "rate": 1.0
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 5,
+     "retained": 14,
+     "probes": 19,
+     "rate": 0.7368,
+     "byKind": {
+      "constraint": {
+       "present": 8,
+       "total": 8,
+       "rate": 1.0
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 6,
+     "retained": 14,
+     "probes": 19,
+     "rate": 0.7368,
+     "byKind": {
+      "constraint": {
+       "present": 8,
+       "total": 8,
+       "rate": 1.0
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 7,
+     "retained": 14,
+     "probes": 19,
+     "rate": 0.7368,
+     "byKind": {
+      "constraint": {
+       "present": 8,
+       "total": 8,
+       "rate": 1.0
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    }
+   ]
+  },
+  "b": {
+   "default": [
+    {
+     "cycle": 0,
+     "retained": 1,
+     "probes": 19,
+     "rate": 0.0526,
+     "byKind": {
+      "constraint": {
+       "present": 1,
+       "total": 8,
+       "rate": 0.125
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 1,
+     "retained": 0,
+     "probes": 19,
+     "rate": 0.0,
+     "byKind": {
+      "constraint": {
+       "present": 0,
+       "total": 8,
+       "rate": 0.0
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 2,
+     "retained": 0,
+     "probes": 19,
+     "rate": 0.0,
+     "byKind": {
+      "constraint": {
+       "present": 0,
+       "total": 8,
+       "rate": 0.0
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 3,
+     "retained": 0,
+     "probes": 19,
+     "rate": 0.0,
+     "byKind": {
+      "constraint": {
+       "present": 0,
+       "total": 8,
+       "rate": 0.0
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 4,
+     "retained": 0,
+     "probes": 19,
+     "rate": 0.0,
+     "byKind": {
+      "constraint": {
+       "present": 0,
+       "total": 8,
+       "rate": 0.0
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 5,
+     "retained": 0,
+     "probes": 19,
+     "rate": 0.0,
+     "byKind": {
+      "constraint": {
+       "present": 0,
+       "total": 8,
+       "rate": 0.0
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 6,
+     "retained": 0,
+     "probes": 19,
+     "rate": 0.0,
+     "byKind": {
+      "constraint": {
+       "present": 0,
+       "total": 8,
+       "rate": 0.0
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 7,
+     "retained": 0,
+     "probes": 19,
+     "rate": 0.0,
+     "byKind": {
+      "constraint": {
+       "present": 0,
+       "total": 8,
+       "rate": 0.0
+      },
+      "decision": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 0,
+       "total": 2,
+       "rate": 0.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    }
+   ],
+   "taskState": [
+    {
+     "cycle": 0,
+     "retained": 13,
+     "probes": 19,
+     "rate": 0.6842,
+     "byKind": {
+      "constraint": {
+       "present": 7,
+       "total": 8,
+       "rate": 0.875
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 1,
+     "retained": 13,
+     "probes": 19,
+     "rate": 0.6842,
+     "byKind": {
+      "constraint": {
+       "present": 7,
+       "total": 8,
+       "rate": 0.875
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 2,
+     "retained": 13,
+     "probes": 19,
+     "rate": 0.6842,
+     "byKind": {
+      "constraint": {
+       "present": 7,
+       "total": 8,
+       "rate": 0.875
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 3,
+     "retained": 13,
+     "probes": 19,
+     "rate": 0.6842,
+     "byKind": {
+      "constraint": {
+       "present": 7,
+       "total": 8,
+       "rate": 0.875
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 4,
+     "retained": 13,
+     "probes": 19,
+     "rate": 0.6842,
+     "byKind": {
+      "constraint": {
+       "present": 7,
+       "total": 8,
+       "rate": 0.875
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 5,
+     "retained": 13,
+     "probes": 19,
+     "rate": 0.6842,
+     "byKind": {
+      "constraint": {
+       "present": 7,
+       "total": 8,
+       "rate": 0.875
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 6,
+     "retained": 13,
+     "probes": 19,
+     "rate": 0.6842,
+     "byKind": {
+      "constraint": {
+       "present": 7,
+       "total": 8,
+       "rate": 0.875
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    },
+    {
+     "cycle": 7,
+     "retained": 13,
+     "probes": 19,
+     "rate": 0.6842,
+     "byKind": {
+      "constraint": {
+       "present": 7,
+       "total": 8,
+       "rate": 0.875
+      },
+      "decision": {
+       "present": 4,
+       "total": 4,
+       "rate": 1.0
+      },
+      "evidence": {
+       "present": 0,
+       "total": 4,
+       "rate": 0.0
+      },
+      "supersession": {
+       "present": 2,
+       "total": 2,
+       "rate": 1.0
+      },
+      "task": {
+       "present": 0,
+       "total": 1,
+       "rate": 0.0
+      }
+     }
+    }
+   ]
+  }
+ },
+ "probeSurvival": {
+  "a": {
+   "default": {
+    "q-constraint-0": 0,
+    "q-constraint-1": null,
+    "q-constraint-2": null,
+    "q-constraint-3": null,
+    "q-constraint-4": null,
+    "q-constraint-5": null,
+    "q-constraint-6": null,
+    "q-constraint-7": null,
+    "q-decision-0": null,
+    "q-decision-1": null,
+    "q-decision-2": null,
+    "q-decision-3": null,
+    "q-evidence-0": null,
+    "q-evidence-1": null,
+    "q-evidence-2": null,
+    "q-evidence-3": null,
+    "q-correction-0": null,
+    "q-correction-1": null,
+    "q-subagent": null
+   },
+   "taskState": {
+    "q-constraint-0": 7,
+    "q-constraint-1": 7,
+    "q-constraint-2": 7,
+    "q-constraint-3": 7,
+    "q-constraint-4": 7,
+    "q-constraint-5": 7,
+    "q-constraint-6": 7,
+    "q-constraint-7": 7,
+    "q-decision-0": 7,
+    "q-decision-1": 7,
+    "q-decision-2": 7,
+    "q-decision-3": 7,
+    "q-evidence-0": null,
+    "q-evidence-1": null,
+    "q-evidence-2": null,
+    "q-evidence-3": null,
+    "q-correction-0": 7,
+    "q-correction-1": 7,
+    "q-subagent": null
+   }
+  },
+  "b": {
+   "default": {
+    "q-constraint-0": 0,
+    "q-constraint-1": null,
+    "q-constraint-2": null,
+    "q-constraint-3": null,
+    "q-constraint-4": null,
+    "q-constraint-5": null,
+    "q-constraint-6": null,
+    "q-constraint-7": null,
+    "q-decision-0": null,
+    "q-decision-1": null,
+    "q-decision-2": null,
+    "q-decision-3": null,
+    "q-evidence-0": null,
+    "q-evidence-1": null,
+    "q-evidence-2": null,
+    "q-evidence-3": null,
+    "q-correction-0": null,
+    "q-correction-1": null,
+    "q-subagent": null
+   },
+   "taskState": {
+    "q-constraint-0": 7,
+    "q-constraint-1": 7,
+    "q-constraint-2": 7,
+    "q-constraint-3": null,
+    "q-constraint-4": 7,
+    "q-constraint-5": 7,
+    "q-constraint-6": 7,
+    "q-constraint-7": 7,
+    "q-decision-0": 7,
+    "q-decision-1": 7,
+    "q-decision-2": 7,
+    "q-decision-3": 7,
+    "q-evidence-0": null,
+    "q-evidence-1": null,
+    "q-evidence-2": null,
+    "q-evidence-3": null,
+    "q-correction-0": 7,
+    "q-correction-1": 7,
+    "q-subagent": null
+   }
+  }
+ },
+ "determinism": {
+  "default": {
+   "cycleDiffs": [],
+   "identical": true
+  },
+  "taskState": {
+   "cycleDiffs": [],
+   "identical": true
+  }
+ },
+ "pathIndependence": {
+  "default-k1": {
+   "finalCycleEqualsLongRunCycle": true,
+   "diffs": []
+  },
+  "taskState-k1": {
+   "finalCycleEqualsLongRunCycle": true,
+   "diffs": []
+  },
+  "default-k2": {
+   "finalCycleEqualsLongRunCycle": true,
+   "diffs": []
+  },
+  "taskState-k2": {
+   "finalCycleEqualsLongRunCycle": true,
+   "diffs": []
+  },
+  "default-k3": {
+   "finalCycleEqualsLongRunCycle": true,
+   "diffs": []
+  },
+  "taskState-k3": {
+   "finalCycleEqualsLongRunCycle": true,
+   "diffs": []
+  },
+  "default-k4": {
+   "finalCycleEqualsLongRunCycle": true,
+   "diffs": []
+  },
+  "taskState-k4": {
+   "finalCycleEqualsLongRunCycle": true,
+   "diffs": []
+  },
+  "default-k5": {
+   "finalCycleEqualsLongRunCycle": true,
+   "diffs": []
+  },
+  "taskState-k5": {
+   "finalCycleEqualsLongRunCycle": true,
+   "diffs": []
+  },
+  "default-k6": {
+   "finalCycleEqualsLongRunCycle": true,
+   "diffs": []
+  },
+  "taskState-k6": {
+   "finalCycleEqualsLongRunCycle": true,
+   "diffs": []
+  },
+  "default-k7": {
+   "finalCycleEqualsLongRunCycle": true,
+   "diffs": []
+  },
+  "taskState-k7": {
+   "finalCycleEqualsLongRunCycle": true,
+   "diffs": []
+  }
+ }
+}
