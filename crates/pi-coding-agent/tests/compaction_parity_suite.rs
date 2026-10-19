@@ -2149,6 +2149,19 @@ async fn post_compaction_usage_is_not_stale() {
         "no second durable compaction entry for stale usage"
     );
 
+    // D5 (3b08e3f2e) removed `previous_summary.is_none()` from the
+    // empty-window guard in prepare_compaction: an empty summarize window
+    // is now a no-op even when a summary already exists. The turns above add
+    // only a few dozen tokens, so with keep_recent_tokens = 1000 they fit
+    // inside the retained tail and the second compaction's summarize window
+    // is empty: it starts, but makes no model call and appends no durable
+    // entry. One large post-compaction turn puts new material outside the
+    // retained tail, so the fresh usage below produces a real second
+    // compaction.
+    fixture
+        .turn(&long_user_text("post-compaction-fill", 2_000))
+        .await;
+
     // A genuinely new usage crossing the threshold must still compact.
     let fresh = AssistantMessage {
         content: vec![ContentBlock::Text(TextContent::new("fresh-large-usage-turn"))],
