@@ -475,10 +475,13 @@ fn main() {
 async fn run(request: HarnessRequest) -> HarnessResponse {
     std::fs::create_dir_all(&request.session_dir).expect("session dir");
     let dir_string = request.session_dir.clone();
-    // `create` opens the existing session when the directory already holds
-    // one (same contract as the recovery tests); the open fallback covers a
-    // torn head on the session file.
-    let mut manager = match SessionManager::create(&dir_string, Some(&dir_string)) {
+    // F1: `create` always starts a NEW session file, so a per-case dir
+    // accumulated across invocations would silently fork a fresh session
+    // every call. `continue_recent` reopens the most recent session in the
+    // dir (falling back to a new one when the dir is empty), which is the
+    // design-doc 2.3 delta-append mode: the previous compaction entry and its
+    // taskState ledger carry forward across compact() calls.
+    let mut manager = match SessionManager::continue_recent(&dir_string, Some(&dir_string)) {
         Ok(manager) => manager,
         Err(error) => fail(format!("session manager: {error}")),
     };
@@ -490,13 +493,23 @@ async fn run(request: HarnessRequest) -> HarnessResponse {
                 manager.append_message(user_message(&turn.content)).unwrap();
             }
             "assistant" => {
+                // F4: a zero usage anchor makes the usage-anchored estimator
+                // read 0 tokens. Give each assistant turn a conservative
+                // self-estimate (its own content at chars/4) so the anchor is
+                // non-zero and monotone with transcript growth.
+                let usage_input = (turn.content.chars().count() as f64 / 4.0).ceil().max(1.0);
                 manager
-                    .append_message(assistant_message(&turn.content, 0.0))
+                    .append_message(assistant_message(&turn.content, usage_input))
                     .unwrap();
             }
             other => fail(format!("unsupported turn role: {other}")),
         }
         turn_map.push(turn.turn_id);
+    }
+    // F5: flush appended turns immediately so an error-path exit cannot lose
+    // them (the sidecar would otherwise outlive a partial session file).
+    if let Err(error) = manager.flush_now() {
+        fail(format!("session flush after append: {error}"));
     }
     store_turn_map(&request.session_dir, &turn_map);
 
