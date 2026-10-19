@@ -324,6 +324,17 @@ fn system_prompt_and_tools_from_state(
     )
 }
 
+/// D11: a live harness-digest custom (the provider-context snapshot that
+/// `create_harness_digest_message` shapes). Superseded ones are pruned from
+/// the live provider context; the durable transcript keeps them.
+fn is_harness_digest_custom(message: &AgentMessage) -> bool {
+    matches!(
+        message,
+        AgentMessage::Custom(CustomAgentMessage::Custom { custom_type, .. })
+            if custom_type == HARNESS_DIGEST_CUSTOM_TYPE
+    )
+}
+
 pub trait AgentHandle: Send + Sync {
     /// Snapshot the live callbacks copied by TypeScript's standalone side agent.
     fn side_question_options(&self) -> Option<pi_agent_core::agent::AgentOptions> {
@@ -11911,6 +11922,13 @@ impl AgentSession {
                         now_ms_i64(),
                     ))),
                 );
+                // D11: the incoming digest supersedes every digest custom
+                // already in the live provider context.
+                self.prune_superseded_harness_digests(true);
+            } else {
+                // The harness changed back: the newest digest custom is
+                // current again, older ones stay superseded.
+                self.prune_superseded_harness_digests(false);
             }
         }
         let first_id = turns[0].id.clone();
@@ -16221,6 +16239,30 @@ impl AgentSession {
             }
         }
         None
+    }
+
+    /// D11: harness digest customs are superseded once a newer digest exists,
+    /// but `append_harness_digest_if_stale` compares only the last one, so
+    /// without this prune k harness changes leave k digest user turns in the
+    /// provider context (k-1 stale). `drop_all` marks every digest custom as
+    /// superseded (the turn being committed carries the newest digest);
+    /// otherwise the newest digest custom stays (it is current again) and
+    /// older ones are dropped. Only the live `state().messages` view is
+    /// pruned; the durable session transcript keeps the full digest history.
+    fn prune_superseded_harness_digests(&self, drop_all: bool) {
+        self.agent.update_state(Box::new(move |state| {
+            let Some(last) = state.messages.iter().rposition(is_harness_digest_custom) else {
+                return;
+            };
+            let mut kept: Vec<AgentMessage> = Vec::with_capacity(state.messages.len());
+            for (index, message) in state.messages.drain(..).enumerate() {
+                if is_harness_digest_custom(&message) && (drop_all || index != last) {
+                    continue;
+                }
+                kept.push(message);
+            }
+            state.messages = kept;
+        }));
     }
 
     /// `_harnessDigest()`.
