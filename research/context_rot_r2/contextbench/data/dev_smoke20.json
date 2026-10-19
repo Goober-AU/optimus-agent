@@ -1,0 +1,158 @@
+{
+  "subset_version": "w10.1",
+  "source": "dev split of data/contextbench_verified.parquet",
+  "manifest": "C:\\Users\\openclawuser\\optimus-rot2-w10-contextbench\\research\\context_rot_r2\\contextbench\\data\\dev_holdout_split.json",
+  "k": 20,
+  "language_counts": {
+    "c": 1,
+    "cpp": 1,
+    "go": 3,
+    "java": 1,
+    "javascript": 2,
+    "python": 7,
+    "rust": 2,
+    "typescript": 3
+  },
+  "instances": [
+    {
+      "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__a47dfbbf",
+      "original_inst_id": "facebook__zstd-2094",
+      "repo": "facebook/zstd",
+      "language": "c",
+      "source": "Multi"
+    },
+    {
+      "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__6a4e21e9",
+      "original_inst_id": "nlohmann__json-2989",
+      "repo": "nlohmann/json",
+      "language": "cpp",
+      "source": "Multi"
+    },
+    {
+      "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__1384380d",
+      "original_inst_id": "cli__cli-5648",
+      "repo": "cli/cli",
+      "language": "go",
+      "source": "Multi"
+    },
+    {
+      "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__2a889a1d",
+      "original_inst_id": "cli__cli-1387",
+      "repo": "cli/cli",
+      "language": "go",
+      "source": "Multi"
+    },
+    {
+      "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__2c512ec3",
+      "original_inst_id": "cli__cli-5698",
+      "repo": "cli/cli",
+      "language": "go",
+      "source": "Multi"
+    },
+    {
+      "instance_id": "Multi-SWE-Bench__java__maintenance__bugfix__92782c7b",
+      "original_inst_id": "elastic__logstash-14970",
+      "repo": "elastic/logstash",
+      "language": "java",
+      "source": "Multi"
+    },
+    {
+      "instance_id": "Multi-SWE-Bench__javascript__maintenance__bugfix__2f405b15",
+      "original_inst_id": "sveltejs__svelte-9962",
+      "repo": "sveltejs/svelte",
+      "language": "javascript",
+      "source": "Multi"
+    },
+    {
+      "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__ae8b362a",
+      "original_inst_id": "clap-rs__clap-1869",
+      "repo": "clap-rs/clap",
+      "language": "rust",
+      "source": "Multi"
+    },
+    {
+      "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__d3133dfb",
+      "original_inst_id": "clap-rs__clap-4248",
+      "repo": "clap-rs/clap",
+      "language": "rust",
+      "source": "Multi"
+    },
+    {
+      "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+      "original_inst_id": "mui__material-ui-29898",
+      "repo": "mui/material",
+      "language": "typescript",
+      "source": "Multi"
+    },
+    {
+      "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__1ac0bb81",
+      "original_inst_id": "mui__material-ui-33692",
+      "repo": "mui/material",
+      "language": "typescript",
+      "source": "Multi"
+    },
+    {
+      "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__b8bf59e7",
+      "original_inst_id": "mui__material-ui-30374",
+      "repo": "mui/material",
+      "language": "typescript",
+      "source": "Multi"
+    },
+    {
+      "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__681ea2b6",
+      "original_inst_id": "django__django-15569",
+      "repo": "django/django",
+      "language": "python",
+      "source": "Verified"
+    },
+    {
+      "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__91e36e16",
+      "original_inst_id": "sympy__sympy-21847",
+      "repo": "sympy/sympy",
+      "language": "python",
+      "source": "Verified"
+    },
+    {
+      "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__afcc47be",
+      "original_inst_id": "django__django-16032",
+      "repo": "django/django",
+      "language": "python",
+      "source": "Verified"
+    },
+    {
+      "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__b10492be",
+      "original_inst_id": "django__django-15022",
+      "repo": "django/django",
+      "language": "python",
+      "source": "Verified"
+    },
+    {
+      "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__f667fa43",
+      "original_inst_id": "django__django-15499",
+      "repo": "django/django",
+      "language": "python",
+      "source": "Verified"
+    },
+    {
+      "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__eb1411ba",
+      "original_inst_id": "sveltejs__svelte-2185",
+      "repo": "sveltejs/svelte",
+      "language": "javascript",
+      "source": "Poly"
+    },
+    {
+      "instance_id": "SWE-PolyBench__python__evolution__feature__4a329645",
+      "original_inst_id": "huggingface__transformers-15795",
+      "repo": "huggingface/transformers",
+      "language": "python",
+      "source": "Poly"
+    },
+    {
+      "instance_id": "SWE-PolyBench__python__evolution__feature__674464fb",
+      "original_inst_id": "huggingface__transformers-28517",
+      "repo": "huggingface/transformers",
+      "language": "python",
+      "source": "Poly"
+    }
+  ]
+}
