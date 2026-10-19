@@ -13,6 +13,27 @@ same policy the Rust pipeline executes:
   (`provenance_target`, typed_state.rs:978) and the `retirePath` field
   (token | provenance) rendered as a pairing annotation
   (typed_state.rs:261/269/1770);
+- the W38/W37 typed-state fixes, ported for R2-E5-RM (the integrated tip):
+  D24 (commit 8bc0811fb) - identity is assigned at first sight and carried,
+  so `reconcile` only fills empty record ids and a restatement that
+  replaces a tool record's text keeps the id (the text is a version, not
+  the identity); D23 (same commit) - the verifier's reference grammar
+  matches exactly what the renderer emits (kind-prefixed record ids, `@`
+  entry refs, no plain entry-shape heuristic) and a bracketed token quoted
+  inside a ledger record's text is exempt as verbatim source material;
+  D25 (commit a3997b5d6) - `merge` is the step boundary (a Step-scoped
+  record carried from the previous ledger retires unless the new window
+  restates it), retired ids/entry ids live in the bounded `retiredRefs`
+  list and stay resolvable in `verify`, and every merged ledger is capped
+  at `MAX_DURABLE_RECORDS` (512) with the cumulative drop count rendered;
+  D22 (commit 51c9a6a59) - a superseded correction/task renders
+  "(superseded by [retiring])", not "(supersedes [X])"; D27 (same commit)
+  - `is_heading_line` admits structural shapes only (markdown/bold prefix
+  or an exact render section title), so an all-caps claim line still goes
+  through the fabricated-verified-claim check. D26 (the strict-parse
+  salvage rider) is out of scope for the mirror: the research drivers
+  always read well-formed `details.typedState` payloads, and the Rust
+  salvage path only differs on payloads that fail strict deserialization;
 - `crates/pi-coding-agent/src/core/compaction/compaction.rs`
   (TYPED_STATE_INSTRUCTION, typed_hot_state_budget_tokens, the unsafe
   allocation failure, the deterministic missing-item repair and the
@@ -98,6 +119,12 @@ _LABEL = {
     HISTORICAL_FACT: "HISTORICAL_FACT",
     LOW_PRIORITY_EPISODE: "LOW_PRIORITY_EPISODE",
 }
+
+
+# D25 (typed_state.rs): the hard durable bound on every merged ledger, and
+# the bound on retired-reference tombstones kept for reference resolution.
+MAX_DURABLE_RECORDS = 512
+RETIRED_REFS_MAX = 512
 
 
 def kind_prefix(kind: str) -> str:
@@ -630,7 +657,14 @@ def reconcile(records: List[Dict[str, Any]]) -> Dict[str, Any]:
             restated[slot].append(record["ordinal"])
         else:
             record = dict(record)
-            record["id"] = stable_id(record["kind"], key)
+            # D24 (typed_state.rs, commit 8bc0811fb): identity is assigned
+            # at first sight and then carried. A record that arrives with
+            # an id (persisted from a previous cycle) keeps it even when a
+            # restatement replaced its text; recomputing from the current
+            # text would churn the id across merges and strand the [id]
+            # references earlier summaries carry.
+            if not record["id"]:
+                record["id"] = stable_id(record["kind"], key)
             index[(record["kind"], key)] = len(out)
             restated.append([record["ordinal"]])
             out.append(record)
@@ -791,26 +825,118 @@ def reconcile(records: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def ledger_is_empty(state: Dict[str, Any]) -> bool:
-    return not state["records"]
+    """typed_state.rs TypedStateLedger::is_empty (D25): records and retired
+    reference tombstones both count, so a ledger that only carries retired
+    refs is still a ledger."""
+    return not (state["records"] or state.get("retiredRefs"))
 
 
 def build_typed_state(entries: Sequence[Any]) -> Dict[str, Any]:
     return reconcile(classify_window(entries))
 
 
+def restated_in(record: Dict[str, Any], new_keys: Sequence[Tuple[str, str, Set[str]]]) -> bool:
+    """typed_state.rs restated_in (D25, a3997b5d6): does any new-window record
+    restate `record`? Mirrors the reconcile dedupe rule (same kind, equal
+    content key or a subset restatement with at least three shared tokens)
+    so exactly the records reconcile would merge are carried across the
+    step boundary."""
+    key = content_key(record["text"])
+    tokens = token_set_from_key(key)
+    return any(
+        kind == record["kind"] and (candidate_key == key or is_restatement(tokens, candidate_tokens))
+        for kind, candidate_key, candidate_tokens in new_keys
+    )
+
+
+def retire_ref(retired_refs: List[str], reference: str) -> None:
+    """typed_state.rs retire_ref (D25): append one retired reference,
+    keeping the list duplicate-free."""
+    if reference not in retired_refs:
+        retired_refs.append(reference)
+
+
+def cap_drop_rank(record: Dict[str, Any]) -> Tuple[int, int]:
+    """typed_state.rs cap_drop_rank (D25): drop-first rank for the durable
+    cap. Superseded history drops before any CURRENT record (the allocator
+    renders it last), then higher (less protected) tiers drop first, then
+    the oldest. Deterministic."""
+    effective_tier = 8 if record["status"] != CURRENT else kind_tier(record["kind"])
+    return (effective_tier, kind_tier(record["kind"]))
+
+
+def enforce_durable_cap(ledger: Dict[str, Any]) -> Dict[str, Any]:
+    """typed_state.rs enforce_durable_cap (D25): the hard durable bound.
+    Records above MAX_DURABLE_RECORDS drop in cap_drop_rank order, their
+    ids and entry ids are retired (so existing references keep resolving),
+    the cumulative count is kept in droppedByCap, and retiredRefs is trimmed
+    to the RETIRED_REFS_MAX most recent entries."""
+    if len(ledger["records"]) > MAX_DURABLE_RECORDS:
+        drop_count = len(ledger["records"]) - MAX_DURABLE_RECORDS
+        order = sorted(
+            range(len(ledger["records"])),
+            key=lambda slot: (
+                -cap_drop_rank(ledger["records"][slot])[0],
+                -cap_drop_rank(ledger["records"][slot])[1],
+                ledger["records"][slot]["ordinal"],
+            ),
+        )
+        drop_indexes = set(order[:drop_count])
+        retired_refs = list(ledger.get("retiredRefs") or [])
+        kept = []
+        for index, record in enumerate(ledger["records"]):
+            if index in drop_indexes:
+                retire_ref(retired_refs, record["id"])
+                retire_ref(retired_refs, record["sourceEntryId"])
+            else:
+                kept.append(record)
+        ledger["records"] = kept
+        ledger["droppedByCap"] = (ledger.get("droppedByCap") or 0) + drop_count
+        if retired_refs:
+            ledger["retiredRefs"] = retired_refs
+    overflow = len(ledger.get("retiredRefs") or []) - RETIRED_REFS_MAX
+    if overflow > 0:
+        ledger["retiredRefs"] = ledger["retiredRefs"][overflow:]
+    return ledger
+
+
 def merge(previous: Optional[Dict[str, Any]], new: Dict[str, Any]) -> Dict[str, Any]:
-    """typed_state.rs merge(): previous records kept as-is, new records
-    renumbered after the previous maximum ordinal, reconcile re-run."""
+    """typed_state.rs merge(): the D25 step boundary, then reconcile.
+    A Step-scoped record carried from the previous ledger (a window that
+    has been summarized) retires unless the new window restates it; new
+    records are renumbered after the previous maximum ordinal and reconcile
+    re-runs over the combination. Retired record ids and source entry ids
+    move to the bounded retiredRefs list; the durable cap applies to every
+    merged ledger."""
     if previous is None:
-        return new
+        return enforce_durable_cap(new)
+    # Step boundary: a restatement in the new window keeps the previous
+    # record alive as the current step's record; every other Step-scoped
+    # record from `previous` retires here.
+    new_keys = [
+        (record["kind"], content_key(record["text"]), token_set(record["text"]))
+        for record in new["records"]
+    ]
     base = (max((record["ordinal"] for record in previous["records"]), default=-1)) + 1
-    combined = [dict(record) for record in previous["records"]]
+    retired_refs = list(previous.get("retiredRefs") or [])
+    combined: List[Dict[str, Any]] = []
+    for record in previous["records"]:
+        if record["scope"] == "step" and not restated_in(record, new_keys):
+            retire_ref(retired_refs, record["id"])
+            retire_ref(retired_refs, record["sourceEntryId"])
+            continue
+        combined.append(dict(record))
     new_records = sorted(new["records"], key=lambda record: record["ordinal"])
     for offset, record in enumerate(new_records):
         record = dict(record)
         record["ordinal"] = base + offset
         combined.append(record)
-    return reconcile(combined)
+    merged = reconcile(combined)
+    if retired_refs:
+        merged["retiredRefs"] = retired_refs
+    if previous.get("droppedByCap"):
+        merged["droppedByCap"] = previous["droppedByCap"]
+    return enforce_durable_cap(merged)
 
 
 # ---------------------------------------------------------------------------
@@ -854,8 +980,17 @@ def record_line(record: Dict[str, Any]) -> str:
             return f"- [{record['id']}] {entry_ref} (for [{record['link']}]): {record['text']}"
         return f"- [{record['id']}] {entry_ref}: {record['text']}"
     if kind in (USER_CORRECTION, CURRENT_TASK):
-        if record["link"]:
+        # D22 (typed_state.rs, commit 51c9a6a59): the link direction
+        # depends on the status. A CURRENT correction/task points at the
+        # record it retired ("supersedes"); reconcile overwrites a retired
+        # record's link with the id of the record that retired it
+        # ("superseded by"). Rendering the kind arm before the status arm
+        # inverted the retirement direction for superseded corrections and
+        # tasks. No link: the clause is omitted rather than guessed.
+        if record["status"] == CURRENT and record["link"]:
             return f"- [{record['id']}] {entry_ref} {record['text']} (supersedes [{record['link']}])"
+        if record["status"] != CURRENT and record["link"]:
+            return f"- [{record['id']}] {record['text']} (superseded by [{record['link']}])"
         return f"- [{record['id']}] {entry_ref} {record['text']}"
     if record["status"] == SUPERSEDED:
         if record["link"]:
@@ -881,6 +1016,9 @@ def allocate(state: Dict[str, Any], budget_tokens: int) -> Dict[str, Any]:
         "budgetTokens": budget_tokens,
         "overflow": {"dropped": []},
         "unsafeCompaction": None,
+        # D25: records the durable cap has dropped from this ledger
+        # (cumulative), rendered so a capped ledger is visibly truncated.
+        "droppedByCap": state.get("droppedByCap") or 0,
     }
     opened_sections: Set[str] = set()
     for record in ranked:
@@ -935,8 +1073,14 @@ def allocation_is_safe(allocation: Dict[str, Any]) -> bool:
 
 REF_ALLOWLIST = ("none", "x", "y", "TODO", "TBD", "N/A", "WIP", "DONE")
 REF_SCAN_RE = re.compile(r"\[(@?)([A-Za-z0-9_./\-]+)\]")
-RECORD_ID_SHAPE_RE = re.compile(r"^[A-Z]{2}-[0-9a-f]{6}$")
-ENTRY_ID_SHAPE_RE = re.compile(r"^[a-z]+\d+$")
+# D23 (typed_state.rs, commit 8bc0811fb): the two-letter id prefixes
+# `stable_id` can emit, in kind order, kept in lockstep with _PREFIX. The
+# record-id grammar is exactly what the renderer emits: one of the kind
+# prefixes, a dash, six lowercase hex. A bracketed token is a record
+# reference only when it matches this grammar, so ticket-style user tokens
+# ([JX-4f1c2a], [issue42]) stay prose.
+KIND_PREFIXES = ("UC", "CO", "SB", "AC", "VD", "DR", "TK", "PA", "VT", "SE", "RS", "SS", "HF", "LP")
+RECORD_ID_SHAPE_RE = re.compile(r"^(?:" + "|".join(KIND_PREFIXES) + r")-[0-9a-f]{6}$")
 VERIFIED_WORD_RE = re.compile(r"(?i)\bverified\b")
 
 
@@ -958,11 +1102,35 @@ def artifact_mentions(artifact: str, record: Dict[str, Any]) -> bool:
     return len(half_norm) >= 16 and half_norm in normalized(artifact)
 
 
+# D27 (typed_state.rs, commit 51c9a6a59): the render's section titles, the
+# only stand-alone all-caps lines the artifact carries as structure.
+SECTION_TITLE_LINES = (
+    "ACTIVE CONSTRAINTS",
+    "USER CORRECTIONS",
+    "SAFETY BOUNDARIES",
+    "ACCEPTANCE CRITERIA",
+    "DECISIONS (CURRENT)",
+    "DECISION RATIONALE",
+    "CURRENT TASK",
+    "PENDING ACTIONS",
+    "VERIFIED EVIDENCE",
+    "SOURCE EVIDENCE",
+    "REPOSITORY STATE",
+    "SUBAGENT STATE",
+    "HISTORICAL FACTS",
+    "LOW-PRIORITY EPISODES",
+    "SUPERSEDED (HISTORY, NOT CURRENT)",
+)
+
+
 def _is_heading_line(line: str) -> bool:
     trimmed = line.strip()
     if trimmed.startswith("#") or trimmed.startswith("**"):
         return True
-    return trimmed == trimmed.upper() and any(c.isalpha() for c in trimmed)
+    # D27: casing alone must not mark a heading. An all-caps claim line
+    # ("ALL TESTS VERIFIED PASSING") still has to pass through the
+    # fabricated-verified-claim check.
+    return trimmed in SECTION_TITLE_LINES
 
 
 def verify(compact_artifact: str, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -970,6 +1138,16 @@ def verify(compact_artifact: str, state: Dict[str, Any]) -> Dict[str, Any]:
     material not current, references resolve, no fabricated verified claims."""
     known_record_ids = {record["id"] for record in state["records"]}
     known_entry_ids = {record["sourceEntryId"] for record in state["records"]}
+    # D23: bracketed tokens the ledger itself quotes inside record texts.
+    # The summarizer is instructed to copy statement texts verbatim, so such
+    # a token is quoted source material (a ticket id inside a user
+    # constraint), not a reference the model invented.
+    quoted_tokens = {match.group(0) for record in state["records"] for match in REF_SCAN_RE.finditer(record["text"])}
+    # D25: ids and entry ids retired at a step boundary or by the durable
+    # cap stay resolvable; the previous summary may still quote them.
+    for reference in state.get("retiredRefs") or []:
+        known_record_ids.add(reference)
+        known_entry_ids.add(reference)
 
     verification: Dict[str, Any] = {
         "passed": True,
@@ -1014,6 +1192,11 @@ def verify(compact_artifact: str, state: Dict[str, Any]) -> Dict[str, Any]:
         # Skip markdown links: [text](url).
         if compact_artifact[whole_end:].startswith("("):
             continue
+        # Skip quoted material (D23): the ledger carries this exact
+        # bracketed token inside a record's text, so the copy is verbatim
+        # source material, not a model-invented reference.
+        if match.group(0) in quoted_tokens:
+            continue
         sigil, token = match.group(1), match.group(2)
         if any(allowed.lower() == token.lower() for allowed in REF_ALLOWLIST):
             continue
@@ -1025,19 +1208,14 @@ def verify(compact_artifact: str, state: Dict[str, Any]) -> Dict[str, Any]:
                         "detail": "entry reference does not resolve to a known source entry",
                     }
                 )
-        elif RECORD_ID_SHAPE_RE.match(token):
-            if token not in known_record_ids:
-                verification["unresolvedRefs"].append(
-                    {
-                        "subject": f"[{token}]",
-                        "detail": "record id does not resolve to a known record",
-                    }
-                )
-        elif ENTRY_ID_SHAPE_RE.match(token) and token not in known_entry_ids and token not in known_record_ids:
+        elif RECORD_ID_SHAPE_RE.match(token) and token not in known_record_ids:
+            # D23: only kind-prefixed ids are references; the plain
+            # entry-shape heuristic is gone, so [issue42]-style tokens stay
+            # prose instead of unresolvable references.
             verification["unresolvedRefs"].append(
                 {
                     "subject": f"[{token}]",
-                    "detail": "bracketed entry-shaped token does not resolve",
+                    "detail": "record id does not resolve to a known record",
                 }
             )
 
@@ -1092,6 +1270,13 @@ def render_allocation(allocation: Dict[str, Any]) -> str:
     if not allocation["included"]:
         return ""
     out = HOT_STATE_HEADER + "\n" + HOT_STATE_INTRO + "\n"
+    # D25: the durable cap's dropped count is visible to the summarizer,
+    # never a silent truncation.
+    if allocation.get("droppedByCap"):
+        out += (
+            f"- {allocation['droppedByCap']} record(s) omitted by the durable ledger cap "
+            f"({MAX_DURABLE_RECORDS}); lowest-priority records were dropped first\n"
+        )
     current_section = ""
     for item in allocation["included"]:
         if item["section"] != current_section:
@@ -1119,6 +1304,11 @@ def render_durable_index(state: Dict[str, Any]) -> str:
         out += f"- {record['id']} {kind_label(record['kind'])} @{record['sourceEntryId']}\n"
     if superseded:
         out += f"- {superseded} SUPERSEDED (history)\n"
+    if state.get("droppedByCap"):
+        out += (
+            f"- {state['droppedByCap']} record(s) omitted by the durable ledger cap "
+            f"({MAX_DURABLE_RECORDS})\n"
+        )
     return out
 
 
