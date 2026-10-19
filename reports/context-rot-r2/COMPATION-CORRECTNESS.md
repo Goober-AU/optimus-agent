@@ -179,14 +179,18 @@ From `reports/context-rot-r2/BUG-LEDGER.md` and the post-W22 findings:
   recommended fix (honour the skipped entry's `firstKeptEntryId` as a
   truncation boundary while using the older summary for text) is deferred
   because it needs dedicated restore test coverage.
-- D30 (open; the W46 fix is in flight): a user-stated decision
-  ("Decision: ...") classifies as LowPriorityEpisode and retires at the
-  first merge; only assistant-stated decisions reach VerifiedDecision.
+- (D30, listed here for the record of what was open at the `34c27c07d`
+  sweep: fixed since by W46 `10e2b36e6` - a user-stated decision
+  ("Decision: ...") classified as LowPriorityEpisode and retired at the
+  first merge; user units matching DECISION_RE now classify as
+  VERIFIED_DECISION with Task scope, BUG-LEDGER.md section 4.)
 - The D20 residue outside `agent_session.rs` (text form cannot carry image
   blocks; native-compaction providers receive the
   `compaction_provider_context` rebuild) and the W41 cycle-5 caveat (the
   tier-8 history line overflows the fixed 800-token hot budget; verify
-  still passes).
+  still passes - accepted-and-pinned by W46, `d00ff2067`: a full hot budget
+  drops the tier-8 SUPERSEDED history line first by design while the
+  pairing line still renders).
 - D12 (partial): the `<memory_data>` fence is soft (closing-tag collision),
   same as the harness digest fence.
 - D10's "never retry" sub-item (an assistant call whose kept tool result
@@ -196,8 +200,13 @@ From `reports/context-rot-r2/BUG-LEDGER.md` and the post-W22 findings:
   `taskState = "prompt"`, and the shipped default is `off`
   (`reports/context-rot/FINAL-REPORT.md` section 6). The durable fix,
   typed-state v2, is shipped AND wired as an opt-in mode (section 2) and
-  measured once (R2-E5: 15/19 fixture vs v1 14/19, live parity where it
-  ran, D24/D29 found and fixed); the re-measure (E5-RM, W47) is in flight.
+  measured twice: R2-E5 (15/19 fixture vs v1 14/19 at the pre-D25
+  implementation, W29, committed E5; live parity where it ran; D24/D29
+  found and fixed) and the re-measure E5-RM (W47: 13/19 on the integrated
+  tip - the D25 step boundary correctly retires two Step-scoped
+  episode-classified probes; decisions 4/4, evidence 1/4, supersession 2/2
+  unchanged; verifier 5/5 both - with TASK-E 5/5 cycles no halt and the
+  E3ADV C1 SUPERSEDED render at every cycle).
 
 Resolved since the first edition: D10 (fixed, `0e25a7db1`), D11 (fixed,
 `30588707d`), D12 (partially fixed, `021678796`), D13 (fixed, `157316268`),
@@ -205,7 +214,9 @@ the W9-F2/F4/F5 ledger mechanisms (fixed, `1754a3e1b`, offline-verified by
 R2-E2-RM) and the D6 call site (`6e1c3a139`). Resolved since the W34
 refresh: D18, D19, D20 (pin), D21 and D22-D29 (see above); the
 `rot2/w16-supersession` v1 rework never carried commits and holds nothing
-in flight - the supersession mechanism moved to typed v2 (D29).
+in flight - the supersession mechanism moved to typed v2 (D29). Resolved
+since the W50 sweep: D30 (fixed, W46 `10e2b36e6`) and the W41 cycle-5
+budget caveat (accepted-and-pinned, `d00ff2067`).
 
 ## 4. New defects found this campaign
 
