@@ -13,6 +13,8 @@ mod jev_activity;
 mod communication_activity;
 #[path = "generation_throughput.rs"]
 mod generation_throughput;
+#[path = "context_health_indicator.rs"]
+mod context_health_indicator;
 
 #[derive(Default)]
 struct JevBarState {
@@ -174,7 +176,7 @@ impl Bar {
         )
     }
 
-    fn update_communication(&mut self) {
+    fn update_communication(&mut self, width: usize) {
         let parent = self.mode.borrow().connection_state.as_ref().map(|state| RosterParent {
             active_session_id: state.active_session_id.clone(),
             session_id: Some(state.session_id.clone()), session_file: state.session_file.clone(),
@@ -197,7 +199,18 @@ impl Bar {
             }
         }
         self.throughput.observe(&rows, &parent);
-        self.line.set_communication_status(Some(format!("{}  {}", self.communication.indicators(now), self.throughput.indicator())));
+        let mode = self.mode.borrow();
+        let usage = mode.get_connection_context_usage();
+        let input = crate::core::context_health::ContextHealthInput {
+            tokens: usage.as_ref().and_then(|usage| usage.tokens),
+            context_window: usage.as_ref().map(|usage| usage.context_window).unwrap_or(0.0),
+            compaction_cycles: mode.connection_state.as_ref().map(|state| state.compaction_count).unwrap_or(0.0),
+            is_compacting: mode.is_agent_compacting(),
+        };
+        self.line.set_communication_status(Some(context_health_indicator::status_line(
+            &self.communication.indicators(now), &self.throughput.indicator(), &input,
+            width.saturating_sub(2),
+        )));
     }
 
     /// Returns true when the tray consumed input; all other input stays in chat.
@@ -253,7 +266,7 @@ impl TuiComponent for Bar {
             state.status.clone()
         };
         self.line.set_right_status(status);
-        self.update_communication();
+        self.update_communication(width.max(0.0) as usize);
         let counts = self.counts();
         self.line.set_subagent_counts(counts);
         if !self.line.is_selectable() && self.line.focused() {
@@ -333,6 +346,10 @@ pub(super) fn project_child(
         error: child.error.clone(),
     }
 }
+
+#[cfg(test)]
+#[path = "context_health_bar_tests.rs"]
+mod context_health_bar_tests;
 
 #[cfg(test)]
 mod jev_bar_tests {
