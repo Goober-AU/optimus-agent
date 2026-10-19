@@ -75,3 +75,4 @@ pattern); subagent-state lines clip at `ITEM_TEXT_MAX` (320) while the module
 doc promises 200 for tool-derived lines; `format_file_operations` output is
 appended to the summary after verification, so the persisted text is not
 byte-identical to the verified artifact.
+| D29 | MED-HIGH | OPEN (W29 live evidence) | typed_state supersession pairing is token-overlap-based, not provenance-based: a zero-overlap correction (E3ADV C1) scores 0, the stale decision stays CURRENT, and no SUPERSEDED section is ever rendered (verified in all 6 typed summarizer requests; GLM reconciled in its own words). The campaign's structural fix for the no-anchor adversarial case is NOT achieved; the pairing function needs role/provenance-aware retirement (a user correction retires an older decision when their provenance chains relate, not when their tokens overlap). Evidence: research/context_rot_r2/live/e5/live/e3adv-typed-c1-results.json + e5/README.md Part 3. |

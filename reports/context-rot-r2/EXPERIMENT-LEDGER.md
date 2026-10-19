@@ -330,3 +330,37 @@ Integrated as `2fbb14f33` (worker branch `rot2/w24-remeasure`, worker commit 19a
   populated in only 34 of 104 arm-B cycles, so the effect observed is prompt-level
   (the Protected Task State instructions), not ledger-level. Descriptive
   statistics, not confirmatory.
+
+## R2-E5 — the typed-arm benchmark (fixture + live GLM 5.3)
+
+- Status: EXECUTED (branch rot2/w29-typedarm; commits 4f2e6935e, bf0ba53f6, 89e8f7273;
+  artifacts research/context_rot_r2/live/e5/).
+- Part 1 (PRODUCTION-PATH, offline adapter, E1 19-probe x 5 cycles, all three arms one pass):
+  default 0/19, taskState v1 14/19, typed 15/19. The typed ledger holds 23 records at a stable
+  777/800 hot-token budget (min(2048, floor(3200/4))); the verifier passed 5/5 cycles with zero
+  repairs; +886 mean request chars over v1. All six pre-registrations confirmed (15/19 with the
+  predicted composition: q-evidence-0 recovered via the cargo-test-line classifier; the other three
+  evidence lines match no typed tool category and are lost in both arms; the subagent probe is
+  lost — agentMessage custom entries are machine text by design).
+- Part 2 (LIVE-MODEL, e3 tasks A/C/E, typed vs default, 5 cycles, 3 reps, 123 wire calls):
+  default 15/15 + 3 baselines correct; typed correct on every point that ran (A 5/5, C 5/5,
+  E cycle-1 + baselines), 0 extraction failures. TASK-E typed HALTED at cycle 2: cycles 2-5
+  failed the typed verifier with unresolved references (5/3/3/3). Mechanism (documented in
+  e5/README.md): a failing-suite line's 4-token key restatement-merges into recurring 8-token
+  telemetry lines; tool kinds keep the latest text; the id is re-derived from the merged text;
+  the cited ids stop resolving; the repair only covers missing items. The same flow fails in the
+  Rust production path. Failure direction is safe (conversation preserved, compaction refused),
+  but compaction stalls: an availability bug on repeated-CI-output sessions. Pre-registrations 1
+  and 4 (15/15; no hard verifier failure) NOT confirmed for E — recorded as the first live
+  falsification of a typed-mode pre-registration.
+- Part 3 (E3ADV C1 typed cell, 21 wire calls): correct 5/5 + baseline, 3/3 reps strict clean,
+  anchor retained — but NO SUPERSEDED section at any cycle (verified in all 6 typed summarizer
+  requests). The typed supersession pairing is still token-overlap-based: the zero-overlap
+  correction scores 0, so the stale decision stays in DECISIONS (CURRENT) and GLM reconciled in
+  its own words, exactly as in E3ADV-v1. The provenance-based retirement the campaign brief
+  predicted does not hold of the implementation; recorded as defect D29.
+- Verdict: typed v2 strictly dominates v1 on the fixture (verifier-gated, stable budget,
+  id-stable corrections within a cycle) and matches default live wherever it ran; but two
+  integration defects bound its current availability (D24 id instability under restatement-merge;
+  D29 token-overlap pairing), and the E3ADV structural fix is NOT yet achieved.
+- Budget: 123 + 21 = 144 new wire calls (within the 250/80 caps).
