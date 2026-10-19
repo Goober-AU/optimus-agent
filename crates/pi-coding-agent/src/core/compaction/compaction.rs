@@ -1402,6 +1402,26 @@ pub struct CutPointResult {
     pub is_split_turn: bool,
 }
 
+/// Token cost of an entry the cut-point walk must pay for.
+fn entry_token_cost(entry: &CompactionSessionEntry) -> Option<f64> {
+    match entry {
+        CompactionSessionEntry::Message { message, .. } => Some(estimate_tokens(message)),
+        CompactionSessionEntry::CustomMessage { content, .. } => Some(match content {
+            CustomMessageContent::Text(text) => ceil_div4(count_chars(text)),
+            CustomMessageContent::Blocks(blocks) => blocks
+                .iter()
+                .map(|block| match block {
+                    pi_agent_core::types::ContentBlock::Text(text) => count_chars(&text.text),
+                    pi_agent_core::types::ContentBlock::Image(_) => 4096,
+                })
+                .sum::<usize>() as f64
+                / 4.0,
+        }),
+        CompactionSessionEntry::BranchSummary { summary, .. } => Some(ceil_div4(count_chars(summary))),
+        CompactionSessionEntry::Compaction { .. } | CompactionSessionEntry::Other { .. } => None,
+    }
+}
+
 /// Find the cut point in session entries that keeps approximately `keepRecentTokens`.
 ///
 /// Algorithm: Walk backwards from newest, accumulating estimated message sizes.
@@ -1432,10 +1452,14 @@ pub fn find_cut_point(
     if end_index > start_index {
         for index in (start_index..end_index).rev() {
             let entry = &entries[index];
-            let CompactionSessionEntry::Message { message, .. } = entry else {
-                continue;
-            };
-            accumulated_tokens += estimate_tokens(message);
+            // Custom messages (memory digests, kernel state, queued agent messages)
+            // and branch summaries are real context the model receives. Skipping
+            // them made keep_recent_tokens a lower bound only: an injected block
+            // cost zero, so the retained tail could exceed its budget by its whole
+            // size while the summarized region shrank.
+            if let Some(tokens) = entry_token_cost(entry) {
+                accumulated_tokens += tokens;
+            }
             if accumulated_tokens >= keep_recent_tokens {
                 // No cut point at/after i (trailing tool results): keep only the final turn, not everything.
                 cut_index = *cut_points.last().unwrap();
