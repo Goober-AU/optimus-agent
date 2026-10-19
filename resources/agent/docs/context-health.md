@@ -36,6 +36,17 @@ meaning when colour is unavailable. Both classic and neon layouts use the same
 green/amber/red classification and ANSI colours. The change is presentation-only:
 it does not change compaction settings, the task-state ledger, or daemon protocol.
 
+## Compaction count in the bottom-right tray
+
+When space permits, `Compactions: 3` appears immediately before the context
+meter and existing context-health/token reading. The count comes from the
+current session's persisted compaction entries. It updates after compaction
+ends and follows the selected session when you resume or switch chats.
+
+A known zero appears as `Compactions: 0`. Missing or invalid counts are not
+invented. The count hides on crowded rows before existing Jev, heartbeat,
+goal, or context labels are shortened. This display adds no setting or model call.
+
 ## Open-source attribution
 
 The default pressure classifier is a Rust port of

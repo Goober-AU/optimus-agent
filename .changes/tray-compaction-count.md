@@ -1,0 +1,1 @@
+- Added the current session's completed compaction count to the bottom-right tray, before the context meter. The count hides when space is needed for existing status labels.

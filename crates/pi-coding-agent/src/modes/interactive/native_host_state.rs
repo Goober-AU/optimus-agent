@@ -2,6 +2,11 @@
 use super::*;
 use pi_agent_core::types::AgentEvent;
 
+/// Refresh persisted metadata when compaction ends, even if the session is idle.
+pub(super) fn event_requires_snapshot_refresh(event_name: &str) -> bool {
+    matches!(event_name, "agent_end" | "session_action_update" | "compaction_end")
+}
+
 struct RefreshResult {
     generation: u64,
     revision: u64,
@@ -259,4 +264,38 @@ pub(super) fn track_activity(
         _ => return,
     };
     mode.activity_tracker.handle_event(&event);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::event_requires_snapshot_refresh;
+
+    #[test]
+    fn compaction_end_requires_snapshot_refresh() {
+        assert!(event_requires_snapshot_refresh("compaction_end"));
+    }
+
+    #[test]
+    fn existing_terminal_events_require_snapshot_refresh() {
+        assert!(event_requires_snapshot_refresh("agent_end"));
+        assert!(event_requires_snapshot_refresh("session_action_update"));
+    }
+
+    #[test]
+    fn unrelated_events_do_not_require_snapshot_refresh() {
+        for event_name in [
+            "agent_start",
+            "compaction_start",
+            "message_start",
+            "message_update",
+            "message_end",
+            "tool_execution_update",
+            "turn_end",
+            "bash_end",
+            "",
+            "unknown_event",
+        ] {
+            assert!(!event_requires_snapshot_refresh(event_name), "{event_name}");
+        }
+    }
 }
