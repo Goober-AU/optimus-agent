@@ -43,7 +43,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # 3 reps per probe) plus a 1-rep pre-compaction baseline.
 PLAN_FULL = {"baseline": 1, 1: 3, 2: 3, 3: 3, 4: 3, 5: 3}
 BUDGET_MAX_CALLS = 250
-ARMS_AVAILABLE = ("default", "taskState")
+ARMS_AVAILABLE = ("default", "taskState", "typed")
+# W29-E5 Part 3: the typed arm runs family C1 only (the semantic-swap
+# headline cell); other families stay on the two committed arms.
+TYPED_FAMILY = "C1"
 
 
 class BudgetExceeded(RuntimeError):
@@ -349,7 +352,7 @@ def write_results(results: Dict[str, Dict[str, Any]], backend: Optional[GlmBacke
             "summaryUpdatePolicy": "off",
             "summaryBudgetTokens": 3200,
             "retainedStateAnchor": True,
-            "taskStateLedger": "taskState arm only",
+            "taskStateLedger": "taskState arm (v1 keyword ledger); typed arm (W15 typed protected state, family C1 only)",
             "concurrency": CONFIG["concurrency"],
             "probePlan": {"baseline": 1, "cycles 1-5": 3},
         },
@@ -365,7 +368,11 @@ def write_results(results: Dict[str, Dict[str, Any]], backend: Optional[GlmBacke
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--stage", choices=["run", "aggregate"], default="run")
-    parser.add_argument("--arm", default="both", help="'default', 'taskState', or 'both'")
+    parser.add_argument(
+        "--arm",
+        default="both",
+        help="'default', 'taskState', 'typed' (family C1 only), or 'both'",
+    )
     parser.add_argument("--families", default="C1,C2,C3", help="comma-separated family ids")
     parser.add_argument("--limit-cycles", type=int, default=None)
     parser.add_argument("--reps", type=int, default=None, help="override reps at every cycle point")
@@ -383,6 +390,15 @@ def main() -> int:
         if family not in e3adv_generators.FAMILY_IDS:
             print(f"unknown family {family!r}; available: {', '.join(e3adv_generators.FAMILY_IDS)}", file=sys.stderr)
             return 2
+    if args.arm == "typed":
+        # The decisive cell only: restrict the typed arm to family C1.
+        dropped = [f for f in families if f != TYPED_FAMILY]
+        if dropped:
+            print(
+                f"typed arm runs family {TYPED_FAMILY} only; dropping {', '.join(dropped)}",
+                file=sys.stderr,
+            )
+        families = [TYPED_FAMILY]
 
     results_path = os.path.join(HERE, "results.json")
     existing: Dict[str, Dict[str, Any]] = {}

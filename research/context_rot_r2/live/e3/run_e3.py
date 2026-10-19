@@ -11,7 +11,7 @@ Usage (from research/):
   python -m context_rot_r2.live.e3.run_e3 --arm both            # full suite
   python -m context_rot_r2.live.e3.run_e3 --arm default --tasks A --limit-cycles 1 --reps 1   # smoke
   python -m context_rot_r2.live.e3.run_e3 --stage aggregate      # rebuild results.json
-  python -m context_rot_r2.live.e3.run_e3 --arm typed            # FAILS LOUDLY (not yet available)
+  python -m context_rot_r2.live.e3.run_e3 --arm typed                     # typed protected-state arm
 
 Every model call is appended to e3/raw-calls.jsonl with its request,
 response, usage and latency; identical requests resume from the cache.
@@ -43,7 +43,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # 3 reps per probe) plus a 1-rep pre-compaction baseline.
 PLAN_FULL = {"baseline": 1, 1: 3, 2: 3, 3: 3, 4: 3, 5: 3}
 BUDGET_MAX_CALLS = 400
-ARMS_AVAILABLE = ("default", "taskState")
+ARMS_AVAILABLE = ("default", "taskState", "typed")
 
 
 class BudgetExceeded(RuntimeError):
@@ -348,7 +348,7 @@ def write_results(results: Dict[str, Dict[str, Any]], backend: Optional[GlmBacke
             "summaryUpdatePolicy": "off",
             "summaryBudgetTokens": 3200,
             "retainedStateAnchor": True,
-            "taskStateLedger": "taskState arm only",
+            "taskStateLedger": "taskState arm (v1 keyword ledger); typed arm (W15 typed protected state)",
             "concurrency": CONFIG["concurrency"],
             "probePlan": {"baseline": 1, "cycles 1-5": 3},
         },
@@ -367,27 +367,18 @@ def main() -> int:
     parser.add_argument(
         "--arm",
         default="both",
-        help="'default', 'taskState', 'both', or 'typed' (fails: not yet available)",
+        help="'default', 'taskState', 'typed', or 'both' (default+taskState)",
     )
     parser.add_argument("--tasks", default="A,C,E,H,F", help="comma-separated task ids")
     parser.add_argument("--limit-cycles", type=int, default=None)
     parser.add_argument("--reps", type=int, default=None, help="override reps at every cycle point")
     args = parser.parse_args()
 
-    if args.arm == "typed":
-        print(
-            "typed arm not yet available: waiting for the W15 typed-state integration "
-            "(see e3/README.md, section 'Adding the typed arm'); refusing to silently "
-            "substitute another arm.",
-            file=sys.stderr,
-        )
-        return 2
-
     if args.arm == "both":
         arms = list(ARMS_AVAILABLE)
     else:
         if args.arm not in ARMS_AVAILABLE:
-            print(f"unknown arm {args.arm!r}; available: {', '.join(ARMS_AVAILABLE)} + typed (stub)", file=sys.stderr)
+            print(f"unknown arm {args.arm!r}; available: {', '.join(ARMS_AVAILABLE)}", file=sys.stderr)
             return 2
         arms = [args.arm]
     tasks = [t.strip().upper() for t in args.tasks.split(",") if t.strip()]

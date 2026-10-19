@@ -32,6 +32,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
+from . import typed_mirror
 from .rust_prompts import (
     CONSOLIDATING_UPDATE_SUMMARIZATION_PROMPT,
     CONSOLIDATING_UPDATE_SUMMARIZATION_PROMPT_V2,
@@ -54,6 +55,9 @@ COMPACTION_PROMPT_LEGACY = "legacy"
 COMPACTION_PROMPT_V2 = "v2"
 TASK_STATE_MODE_OFF = "off"
 TASK_STATE_MODE_PROMPT = "prompt"
+# W15 (compaction.rs TASK_STATE_MODE_TYPED): taskState = "typed" selects the
+# v2 typed protected-state implementation.
+TASK_STATE_MODE_TYPED = "typed"
 
 
 @dataclass
@@ -74,7 +78,13 @@ def arm_settings(scenario: Dict[str, Any], arm: str) -> CompactionSettings:
     settings = CompactionSettings()
     settings.reserve_tokens = scenario["reserveTokens"]
     settings.keep_recent_tokens = scenario["keepRecentTokens"]
-    settings.task_state = TASK_STATE_MODE_PROMPT if arm == "taskState" else TASK_STATE_MODE_OFF
+    # resolve_task_state_mode (compaction.rs): "prompt" keeps the v1 keyword
+    # ledger, "typed" selects the v2 typed protected-state pipeline.
+    settings.task_state = (
+        TASK_STATE_MODE_PROMPT if arm == "taskState"
+        else TASK_STATE_MODE_TYPED if arm == "typed"
+        else TASK_STATE_MODE_OFF
+    )
     return settings
 
 
@@ -909,6 +919,21 @@ def prepare_compaction(
         ledger = build_ledger(path[boundary_start:history_end], previous_ledger)
         task_state = ledger if not ledger_is_empty(ledger) else None
 
+    # W15 (compaction.rs prepare_compaction, commit 338b920c3): the typed
+    # (v2) ledger over the same leaving window, merged with the ledger
+    # persisted by the previous compaction under details.typedState (never
+    # the v1 field) so durable records carry forward as canonical state.
+    typed_state = None
+    if settings.task_state == TASK_STATE_MODE_TYPED:
+        previous_typed = None
+        if prev_compaction_index >= 0:
+            details = path[prev_compaction_index].details or {}
+            if details.get("typedState"):
+                previous_typed = details["typedState"]
+        window_ledger = typed_mirror.build_typed_state(path[boundary_start:history_end])
+        merged = typed_mirror.merge(previous_typed, window_ledger)
+        typed_state = merged if not typed_mirror.ledger_is_empty(merged) else None
+
     return {
         "first_kept_entry_id": first_kept_entry_id,
         "first_kept_entry_index": first_kept_index,
@@ -917,6 +942,7 @@ def prepare_compaction(
         "previous_summary": previous_summary,
         "retained_state_anchor": anchor,
         "task_state": task_state,
+        "typed_state": typed_state,
         "boundary_start": boundary_start,
         "history_end": history_end,
     }
@@ -999,14 +1025,20 @@ def generate_bounded_summary(
     protected_state: Optional[str],
     summarizer_fn: SummarizerFn,
     wire_max_tokens: float,
+    protected_instruction: str = LEDGER_INSTRUCTION,
 ) -> Tuple[str, List[Dict[str, Any]]]:
-    """Returns (summary, call_records). Mirrors generate_bounded_summary."""
+    """Returns (summary, call_records). Mirrors generate_bounded_summary.
+
+    protected_instruction is the mode-selected copy instruction appended
+    after the protected block (compaction.rs: LEDGER_INSTRUCTION for the v1
+    ledger, typed_mirror.TYPED_STATE_INSTRUCTION for the typed block).
+    """
     def instructions(previous: Optional[str]) -> str:
         prompt = build_summarization_prompt(
             custom_instructions, previous, summary_update_policy, prompt_version, summary_budget_tokens
         )
         if protected_state and protected_state.strip():
-            return f"{prompt}\n\n{protected_state}\n\n{LEDGER_INSTRUCTION}"
+            return f"{prompt}\n\n{protected_state}\n\n{protected_instruction}"
         return prompt
 
     conversation = serialize_conversation(convert_to_llm(messages_to_summarize))
@@ -1103,6 +1135,43 @@ def _conversation_chunks(request: str) -> List[str]:
     return chunks
 
 
+def _typed_section_bucket(line: str) -> Optional[str]:
+    """Typed protected-block section routing for the lossy fixture.
+
+    Mirrors the Rust adapter fixture (tests/rot2_multicycle.rs
+    lossy_summary): the typed block's intro orders the model to "Copy every
+    item below into the matching summary section", so the fixture routes
+    every typed section title to its summary bucket - user-authority and
+    task-shape sections to Constraints & Preferences, decisions to Key
+    Decisions, verified/history material to Critical Context. The exact
+    uppercase titles are the typed render's own (typed_state.rs
+    section_title); the v1 titles ("DECISIONS (current)") keep their
+    original contains() routing below, so v1-arm behavior is unchanged.
+    """
+    if line == "ACTIVE CONSTRAINTS" or line == "SAFETY BOUNDARIES" or line == "ACCEPTANCE CRITERIA" or line == "USER CORRECTIONS" or line == "CURRENT TASK" or line == "PENDING ACTIONS":
+        return "constraints"
+    if line == "DECISIONS (CURRENT)" or line == "DECISION RATIONALE":
+        return "decisions"
+    if (
+        line == "VERIFIED EVIDENCE"
+        or line == "SOURCE EVIDENCE"
+        or line == "REPOSITORY STATE"
+        or line == "SUBAGENT STATE"
+        or line == "HISTORICAL FACTS"
+        or line == "LOW-PRIORITY EPISODES"
+        or line == "SUPERSEDED (HISTORY, NOT CURRENT)"
+    ):
+        return "evidence"
+    # v1 ledger titles (render_ledger in task_state.rs): unchanged routing.
+    if "ACTIVE CONSTRAINTS" in line:
+        return "constraints"
+    if "DECISIONS (current)" in line:
+        return "decisions"
+    if "VERIFIED EVIDENCE" in line:
+        return "evidence"
+    return None
+
+
 def lossy_summary(request: str) -> str:
     constraints: List[str] = []
     decisions: List[str] = []
@@ -1110,12 +1179,12 @@ def lossy_summary(request: str) -> str:
     section = ""
     in_block = False
     for line in request.split("\n"):
-        if line.startswith("## Protected Task State"):
+        if line.startswith("## Protected Task State") or line.startswith("## Typed Protected State"):
             in_block = True
             continue
         if in_block:
             if line.startswith("## ") or line.startswith("Copy every ACTIVE CONSTRAINT"):
-                if not line.startswith("## Protected"):
+                if not line.startswith("## Protected") and not line.startswith("## Typed"):
                     in_block = False
                     continue
             if line.startswith("- "):
@@ -1125,11 +1194,11 @@ def lossy_summary(request: str) -> str:
                     decisions.append(line)
                 elif section == "evidence":
                     evidence.append(line)
-            elif "ACTIVE CONSTRAINTS" in line:
+            elif _typed_section_bucket(line) == "constraints":
                 section = "constraints"
-            elif "DECISIONS (current)" in line:
+            elif _typed_section_bucket(line) == "decisions":
                 section = "decisions"
-            elif "VERIFIED EVIDENCE" in line:
+            elif _typed_section_bucket(line) == "evidence":
                 section = "evidence"
 
     excerpts = []

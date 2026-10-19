@@ -209,18 +209,36 @@ class RestartTests(unittest.TestCase):
             self.assertTrue(all(c["ran"] for c in result.cycles), msg=task)
 
 
-class TypedArmStubTests(unittest.TestCase):
-    def test_typed_arm_fails_loudly(self) -> None:
+class TypedArmTests(unittest.TestCase):
+    def test_typed_arm_runs_offline_pipeline(self) -> None:
+        for task in e3_scenarios.TASK_IDS:
+            scenario = e3_scenarios.build_e3_scenario(task)
+            result = e3_driver.run_arm_e3(
+                scenario,
+                "typed",
+                rm.fixture_summarizer,
+                prompt_version=rm.COMPACTION_PROMPT_LEGACY,
+                wire_max_tokens=8192.0,
+                restart_after_cycle=scenario["restartAfterCycle"],
+            )
+            self.assertEqual(result.failures, [], msg=task)
+            self.assertTrue(all(c["ran"] for c in result.cycles), msg=task)
+            for cycle in result.cycles:
+                self.assertTrue(cycle.get("typedLedgerPresent"), msg=(task, cycle["cycle"]))
+                self.assertTrue(cycle.get("typedVerification", {}).get("passed"), msg=(task, cycle["cycle"]))
+
+    def test_typed_arm_accepted_by_cli(self) -> None:
+        # The stub is gone: --arm typed now parses; an unknown task id still
+        # exits 2 BEFORE any credential resolution or wire call.
         research = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         proc = subprocess.run(
-            [sys.executable, "-m", "context_rot_r2.live.e3.run_e3", "--arm", "typed"],
+            [sys.executable, "-m", "context_rot_r2.live.e3.run_e3", "--arm", "typed", "--tasks", "Z"],
             capture_output=True,
             text=True,
             cwd=research,
         )
         self.assertEqual(proc.returncode, 2)
-        self.assertIn("typed arm not yet available", proc.stderr)
-        self.assertIn("silently", proc.stderr)
+        self.assertIn("unknown task", proc.stderr)
 
 
 if __name__ == "__main__":

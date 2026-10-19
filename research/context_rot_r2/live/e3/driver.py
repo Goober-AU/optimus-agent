@@ -18,6 +18,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from context_rot_r2.live import driver
 from context_rot_r2.live import rust_mirror as rm
+from context_rot_r2.live import typed_mirror as tm
 
 context_texts = driver.context_texts
 restored_request_messages = driver.restored_request_messages
@@ -165,18 +166,45 @@ def run_arm_e3(
 
         summarized_entries = len(preparation["messages_to_summarize"])
         task_state = preparation["task_state"]
-        protected_state = rm.render_ledger(task_state) if task_state else None
+        typed_state = preparation.get("typed_state")
         text_instructions = rm.with_retained_state(None, preparation["retained_state_anchor"])
         budget_tokens = rm.summary_output_budget(
             settings.reserve_tokens, settings.summary_budget_mode, preparation["tokens_before"]
         )
+        # W15 (compaction.rs compact_with_metrics, commit 338b920c3): the
+        # typed arm replaces the v1 rendered ledger with the budgeted
+        # allocation (min(2048, floor(summary_budget/4)) tokens). An unsafe
+        # allocation (mandatory material dropped) fails the episode before
+        # any model call through the same channel as validate_summary
+        # failures; the block and its copy instruction are mode-selected.
+        protected_state = rm.render_ledger(task_state) if task_state else None
+        protected_instruction = rm.LEDGER_INSTRUCTION
+        typed_allocation: Optional[Dict[str, Any]] = None
+        typed_verification: Optional[Dict[str, Any]] = None
+        if typed_state is not None:
+            typed_allocation = tm.allocate(
+                typed_state, tm.typed_hot_state_budget_tokens(budget_tokens)
+            )
+            if not tm.allocation_is_safe(typed_allocation):
+                result.failures.append(
+                    f"cycle {cycle}: {tm.typed_allocation_failure(typed_allocation)}"
+                )
+                # Production keeps the session unchanged on a failed compaction.
+                continue
+            typed_block = tm.render_allocation(typed_allocation)
+            if typed_block.strip():
+                protected_state = typed_block
+                protected_instruction = tm.TYPED_STATE_INSTRUCTION
         summary = None
         call_records: List[Dict[str, Any]] = []
         last_error: Optional[RuntimeError] = None
         for attempt in range(1, max(1, validation_attempts) + 1):
             fn = summarizer_fn if attempt == 1 else (summarizer_retry or summarizer_fn)
             try:
-                summary, call_records = rm.generate_bounded_summary(
+                # The candidate pattern mirrors compact()'s Err channel: a
+                # summary the typed verifier rejects is never used, exactly
+                # as a validate_summary failure discards its summary.
+                candidate, call_records = rm.generate_bounded_summary(
                     preparation["messages_to_summarize"],
                     model,
                     settings.reserve_tokens,
@@ -188,7 +216,14 @@ def run_arm_e3(
                     protected_state,
                     fn,
                     wire_max_tokens,
+                    protected_instruction=protected_instruction,
                 )
+                if typed_state is not None:
+                    # W15 verify gate: one bounded deterministic repair for
+                    # missing-only findings, then re-verify; any other failure
+                    # surfaces through the same channel as validate_summary.
+                    candidate, typed_verification = tm.verify_and_repair(candidate, typed_state)
+                summary = candidate
                 break
             except RuntimeError as error:
                 last_error = error
@@ -200,6 +235,9 @@ def run_arm_e3(
             continue
 
         details: Dict[str, Any] = {"taskState": task_state}
+        if typed_state is not None:
+            details["typedState"] = typed_state
+            details["typedVerification"] = typed_verification
         session.append_compaction(
             summary, preparation["first_kept_entry_id"], preparation["tokens_before"], details
         )
@@ -249,6 +287,15 @@ def run_arm_e3(
                 "summarizerUsage": usage_totals,
             }
         )
+        if typed_state is not None:
+            cycle_record = result.cycles[-1]
+            cycle_record["typedLedgerPresent"] = True
+            cycle_record["typedLedgerRecords"] = len(typed_state["records"])
+            cycle_record["typedAllocationTokens"] = (
+                typed_allocation["tokensUsed"] if typed_allocation else 0
+            )
+            cycle_record["typedIncludedItems"] = len(typed_allocation["included"]) if typed_allocation else 0
+            cycle_record["typedVerification"] = typed_verification
         if probe_hook is not None:
             probe_hook(arm, summary_text, kept, cycle)
 
