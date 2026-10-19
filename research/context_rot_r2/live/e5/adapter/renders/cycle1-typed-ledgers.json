@@ -1,0 +1,364 @@
+{
+ "A": {
+  "task": "A",
+  "summaryBudgetTokens": 3200,
+  "hotStateBudgetTokens": 800,
+  "allocationTokensUsed": 592,
+  "records": 17,
+  "unsafe": false,
+  "recordsDetail": [
+   {
+    "kind": "currentTask",
+    "status": "current",
+    "link": null,
+    "text": "TASK GOAL: implement strict JSON schema validation for the orders-api service so invalid configs are rejected at load time."
+   },
+   {
+    "kind": "userConstraint",
+    "status": "current",
+    "link": null,
+    "text": "CONSTRAINT: do not touch the auth module (src/auth.rs) - the security team owns it and every change there must go through their review."
+   },
+   {
+    "kind": "userConstraint",
+    "status": "current",
+    "link": null,
+    "text": "CONSTRAINT: keep the public REST API backward compatible."
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "Plan: reproduce the failing validation test, locate the violating frame, then fix the check."
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "test parser::tests::validate_nested ... FAILED"
+   },
+   {
+    "kind": "sourceEvidence",
+    "status": "current",
+    "link": null,
+    "text": "---- parser::tests::validate_nested stdout ----"
+   },
+   {
+    "kind": "sourceEvidence",
+    "status": "current",
+    "link": null,
+    "text": "0: orders_api::parser::validate at src/parser.rs:60"
+   },
+   {
+    "kind": "sourceEvidence",
+    "status": "current",
+    "link": null,
+    "text": "1: orders_api::auth::check_scope at src/auth.rs:217"
+   },
+   {
+    "kind": "verifiedDecision",
+    "status": "current",
+    "link": null,
+    "text": "Decision: the scope check at src/auth.rs:217 is the root cause, but src/auth.rs is off-limits; the fix goes in src/parser.rs - validate the 'limits' field before the auth call."
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "Also verify src/lexer.rs handles the new schema - but make no changes there if it is clean."
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "test result: 8 passed; 0 failed (src/lexer.rs clean - no changes needed)"
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "Lexer verified clean; continuing with the implementation."
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "status update 0.0: sprint notes."
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "unrelated historical discussion."
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "cargo test --lib telemetry::tests_00: test result: 18 passed; 0 failed"
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed"
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "cargo test --lib telemetry::tests_02: test result: 18 passed; 0 failed"
+   }
+  ],
+  "hotBlock": "## Typed Protected State (deterministic, provenance-tagged)\nDerived from the transcript by fixed provenance rules; no item is inferred or invented. Copy every item below into the matching summary section without paraphrasing identifiers, paths, numbers or error codes. Items under SUPERSEDED are history, not current requirements.\n\nACTIVE CONSTRAINTS\n- [UC-6b9f06] [@80d647b8-8e78-5572-7ea3-3d8871b3e30f] CONSTRAINT: keep the public REST API backward compatible.\n- [UC-172d2e] [@80d647b8-8e78-5572-7ea3-3d8871b3e30f] CONSTRAINT: do not touch the auth module (src/auth.rs) - the security team owns it and every change there must go through their review.\n\nCURRENT TASK\n- [TK-2d0974] [@80d647b8-8e78-5572-7ea3-3d8871b3e30f] TASK GOAL: implement strict JSON schema validation for the orders-api service so invalid configs are rejected at load time.\n\nDECISIONS (CURRENT)\n- [VD-47b62e] [@15f545b2-810e-8a1d-5853-549613938b45] unverified: Decision: the scope check at src/auth.rs:217 is the root cause, but src/auth.rs is off-limits; the fix goes in src/parser.rs - validate the 'limits' field before the auth call.\n\nVERIFIED EVIDENCE\n- [VT-174e04] [@23a7d1f3-b67f-663b-b175-2f9093a4a911] cargo test --lib telemetry::tests_02: test result: 18 passed; 0 failed\n- [VT-25d467] [@7090b18a-4ff9-45cd-5aaa-e19ff7e9c405] cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed\n- [VT-1cfcd1] [@a9647138-561b-1b3d-bbad-9ffea609cff4] cargo test --lib telemetry::tests_00: test result: 18 passed; 0 failed\n- [VT-a35276] [@d7c724b7-90a5-6ac4-ae6e-98f73aa741c3] test result: 8 passed; 0 failed (src/lexer.rs clean - no changes needed)\n\nSOURCE EVIDENCE\n- [SE-fa021c] [@a0744bdd-ab4e-318a-2837-3c0d1c22f0dc] 1: orders_api::auth::check_scope at src/auth.rs:217\n- [SE-b77aad] [@a0744bdd-ab4e-318a-2837-3c0d1c22f0dc] 0: orders_api::parser::validate at src/parser.rs:60\n- [SE-3da504] [@a0744bdd-ab4e-318a-2837-3c0d1c22f0dc] ---- parser::tests::validate_nested stdout ----\n\nVERIFIED EVIDENCE\n- [VT-faf714] [@a0744bdd-ab4e-318a-2837-3c0d1c22f0dc] test parser::tests::validate_nested ... FAILED\n\nLOW-PRIORITY EPISODES\n- [LP-8261a0] [@00ec7fe3-d558-67eb-6413-bca7d2d29b5e] unrelated historical discussion.\n- [LP-8c9ce5] [@00ec7fe3-d558-67eb-6413-bca7d2d29b5e] status update 0.0: sprint notes.\n- [LP-735885] [@e14988e4-9e54-95d2-df80-f3a12ad442b8] Also verify src/lexer.rs handles the new schema - but make no changes there if it is clean.\n- [LP-a0728f] [@3db893b9-0277-c374-f6d9-2567bc556195] Lexer verified clean; continuing with the implementation.\n- [LP-2ea754] [@6e1720e0-8dfc-d236-4e4f-f032c7b5104b] Plan: reproduce the failing validation test, locate the violating frame, then fix the check.\n"
+ },
+ "C": {
+  "task": "C",
+  "summaryBudgetTokens": 3200,
+  "hotStateBudgetTokens": 800,
+  "allocationTokensUsed": 419,
+  "records": 13,
+  "unsafe": false,
+  "recordsDetail": [
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "TASK GOAL: fix duplicate orders in the checkout flow of orders-api before the Friday release."
+   },
+   {
+    "kind": "verifiedDecision",
+    "status": "superseded",
+    "link": "CO-310f6f",
+    "text": "Decision: fix the duplicates with a synchronous lock on the order table."
+   },
+   {
+    "kind": "repositoryState",
+    "status": "current",
+    "link": null,
+    "text": "2 files changed"
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "cargo test --lib telemetry::tests_00: test result: 18 passed; 0 failed"
+   },
+   {
+    "kind": "pendingAction",
+    "status": "current",
+    "link": null,
+    "text": "Lock wrapper is in; running the checkout load test next."
+   },
+   {
+    "kind": "userCorrection",
+    "status": "current",
+    "link": "VD-5dedff",
+    "text": "CORRECTION: forget the synchronous lock - it serializes every checkout and the p99 collapses."
+   },
+   {
+    "kind": "userCorrection",
+    "status": "current",
+    "link": null,
+    "text": "Use idempotency keys on the request handler instead."
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "The synchronous-lock approach is rejected."
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "Understood - switching the fix to idempotency keys on the request handler."
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "status update 0.0: sprint notes."
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "unrelated historical discussion."
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed"
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "cargo test --lib telemetry::tests_02: test result: 18 passed; 0 failed"
+   }
+  ],
+  "hotBlock": "## Typed Protected State (deterministic, provenance-tagged)\nDerived from the transcript by fixed provenance rules; no item is inferred or invented. Copy every item below into the matching summary section without paraphrasing identifiers, paths, numbers or error codes. Items under SUPERSEDED are history, not current requirements.\n\nUSER CORRECTIONS\n- [CO-b59b48] [@4293ef41-c2ac-f8b7-32b9-dda6a3dfc6bc] Use idempotency keys on the request handler instead.\n- [CO-310f6f] [@4293ef41-c2ac-f8b7-32b9-dda6a3dfc6bc] CORRECTION: forget the synchronous lock - it serializes every checkout and the p99 collapses. (supersedes [VD-5dedff])\n\nPENDING ACTIONS\n- [PA-121b6a] [@0f5ff0b8-c00a-2fa9-797e-4f9544652d5b] Lock wrapper is in; running the checkout load test next.\n\nVERIFIED EVIDENCE\n- [VT-174e04] [@abd65ccb-718d-3f29-0357-a64e9950f37a] cargo test --lib telemetry::tests_02: test result: 18 passed; 0 failed\n- [VT-25d467] [@3f6a9013-9aee-af73-e1a2-b56b1ae749dd] cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed\n- [VT-2632d8] [@f63809c2-28b2-6fc7-9edd-1124507dc2c4] cargo test --lib telemetry::tests_00: test result: 18 passed; 0 failed\n\nREPOSITORY STATE\n- [RS-de76ff] [@f63809c2-28b2-6fc7-9edd-1124507dc2c4] 2 files changed\n\nLOW-PRIORITY EPISODES\n- [LP-8261a0] [@5934dacf-24f6-fc50-f2ae-df392c0d40dd] unrelated historical discussion.\n- [LP-8c9ce5] [@5934dacf-24f6-fc50-f2ae-df392c0d40dd] status update 0.0: sprint notes.\n- [LP-ff9bc8] [@4293ef41-c2ac-f8b7-32b9-dda6a3dfc6bc] The synchronous-lock approach is rejected.\n- [LP-6b38da] [@bca3cb37-7cd3-6a4c-c961-153c7672a8e5] TASK GOAL: fix duplicate orders in the checkout flow of orders-api before the Friday release.\n- [LP-f9e73c] [@add48c55-928d-acf2-4cbf-12def220d4e6] Understood - switching the fix to idempotency keys on the request handler.\n\nSUPERSEDED (HISTORY, NOT CURRENT)\n- [VD-5dedff] [@e66fe28a-5ecd-2be4-7199-784d7bc46ffd] unverified: Decision: fix the duplicates with a synchronous lock on the order table.\n"
+ },
+ "E": {
+  "task": "E",
+  "summaryBudgetTokens": 3200,
+  "hotStateBudgetTokens": 800,
+  "allocationTokensUsed": 310,
+  "records": 11,
+  "unsafe": false,
+  "recordsDetail": [
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "TASK GOAL: make the orders-api integration suite green before the release cut."
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "Running the full suite now."
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "status update 0.0: sprint notes."
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "unrelated historical discussion."
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "test result: 55 passed; 1 failed"
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed"
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "cargo test --lib telemetry::tests_02: test result: 18 passed; 0 failed"
+   },
+   {
+    "kind": "pendingAction",
+    "status": "current",
+    "link": null,
+    "text": "Suite finished: one failure - details next."
+   },
+   {
+    "kind": "sourceEvidence",
+    "status": "current",
+    "link": null,
+    "text": "---- parser::tests::parse_nested stdout ----"
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "thread 'parser::tests::parse_nested' panicked at src/parser.rs:198:"
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "assertion failed: depth == 4096 (got 3072)"
+   }
+  ],
+  "hotBlock": "## Typed Protected State (deterministic, provenance-tagged)\nDerived from the transcript by fixed provenance rules; no item is inferred or invented. Copy every item below into the matching summary section without paraphrasing identifiers, paths, numbers or error codes. Items under SUPERSEDED are history, not current requirements.\n\nPENDING ACTIONS\n- [PA-42d2e9] [@24f356c8-b9f9-2aa2-7cb2-e387ef79c1fc] Suite finished: one failure - details next.\n\nVERIFIED EVIDENCE\n- [VT-c2f9b6] [@1b141b64-fc82-a2c8-1440-405508c72551] assertion failed: depth == 4096 (got 3072)\n- [VT-61907a] [@1b141b64-fc82-a2c8-1440-405508c72551] thread 'parser::tests::parse_nested' panicked at src/parser.rs:198:\n\nSOURCE EVIDENCE\n- [SE-017881] [@1b141b64-fc82-a2c8-1440-405508c72551] ---- parser::tests::parse_nested stdout ----\n\nVERIFIED EVIDENCE\n- [VT-174e04] [@fbb04977-7aa4-eca1-a178-300832f1085e] cargo test --lib telemetry::tests_02: test result: 18 passed; 0 failed\n- [VT-25d467] [@dda0637b-52f1-84a7-2cce-a7b56b3aa686] cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed\n- [VT-1cfcd1] [@4ec0dccc-ea13-2794-f436-b641157e5fef] test result: 55 passed; 1 failed\n\nLOW-PRIORITY EPISODES\n- [LP-8261a0] [@496830ab-5415-db9c-a5d4-17ce7dbeea27] unrelated historical discussion.\n- [LP-8c9ce5] [@496830ab-5415-db9c-a5d4-17ce7dbeea27] status update 0.0: sprint notes.\n- [LP-fb8ad2] [@d3751dcb-71c0-fb50-7b13-ad158488cc48] TASK GOAL: make the orders-api integration suite green before the release cut.\n- [LP-bdfaf3] [@c5fbee6e-956d-a54f-8bbe-ffbfc9ed079c] Running the full suite now.\n"
+ },
+ "C1": {
+  "task": "C1",
+  "summaryBudgetTokens": 3200,
+  "hotStateBudgetTokens": 800,
+  "allocationTokensUsed": 397,
+  "records": 12,
+  "unsafe": false,
+  "recordsDetail": [
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "TASK GOAL: eliminate double-charges in the payments flow of billing-api before the Friday release."
+   },
+   {
+    "kind": "verifiedDecision",
+    "status": "current",
+    "link": null,
+    "text": "Decision: resolve the double-charges with a two-phase commit coordinator."
+   },
+   {
+    "kind": "repositoryState",
+    "status": "current",
+    "link": null,
+    "text": "2 files changed"
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "cargo test --lib telemetry::tests_00: test result: 18 passed; 0 failed"
+   },
+   {
+    "kind": "pendingAction",
+    "status": "current",
+    "link": null,
+    "text": "Two-phase commit coordinator wired in; running the payments load test next."
+   },
+   {
+    "kind": "userCorrection",
+    "status": "current",
+    "link": null,
+    "text": "CORRECTION: scrap that plan - blocking round-trips stall the checkout path under load."
+   },
+   {
+    "kind": "userCorrection",
+    "status": "current",
+    "link": null,
+    "text": "Use the saga pattern with compensating transactions instead."
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "Understood - switching to the saga pattern with compensating transactions on the billing service."
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "status update 0.0: sprint notes."
+   },
+   {
+    "kind": "lowPriorityEpisode",
+    "status": "current",
+    "link": null,
+    "text": "unrelated historical discussion."
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed"
+   },
+   {
+    "kind": "verifiedToolResult",
+    "status": "current",
+    "link": null,
+    "text": "cargo test --lib telemetry::tests_02: test result: 18 passed; 0 failed"
+   }
+  ],
+  "hotBlock": "## Typed Protected State (deterministic, provenance-tagged)\nDerived from the transcript by fixed provenance rules; no item is inferred or invented. Copy every item below into the matching summary section without paraphrasing identifiers, paths, numbers or error codes. Items under SUPERSEDED are history, not current requirements.\n\nUSER CORRECTIONS\n- [CO-9c384a] [@b87caa7c-6247-bc82-c5ed-6731b88398be] Use the saga pattern with compensating transactions instead.\n- [CO-9dea27] [@b87caa7c-6247-bc82-c5ed-6731b88398be] CORRECTION: scrap that plan - blocking round-trips stall the checkout path under load.\n\nPENDING ACTIONS\n- [PA-a48451] [@b2f62413-95d3-43bb-c08d-2ffcc858b07c] Two-phase commit coordinator wired in; running the payments load test next.\n\nDECISIONS (CURRENT)\n- [VD-76361d] [@691f9ed4-dfdf-dfba-3956-4739fbe1fe16] unverified: Decision: resolve the double-charges with a two-phase commit coordinator.\n\nVERIFIED EVIDENCE\n- [VT-174e04] [@24a8abce-9d9d-61b9-39d4-b9d640118871] cargo test --lib telemetry::tests_02: test result: 18 passed; 0 failed\n- [VT-25d467] [@d2990096-2ff5-0695-681b-3ebf19a1daab] cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed\n- [VT-2632d8] [@9e334c83-9793-cc2e-7d97-37d979163bab] cargo test --lib telemetry::tests_00: test result: 18 passed; 0 failed\n\nREPOSITORY STATE\n- [RS-de76ff] [@9e334c83-9793-cc2e-7d97-37d979163bab] 2 files changed\n\nLOW-PRIORITY EPISODES\n- [LP-8261a0] [@4ce6f242-0127-22ef-a0e7-ef86eef9399d] unrelated historical discussion.\n- [LP-8c9ce5] [@4ce6f242-0127-22ef-a0e7-ef86eef9399d] status update 0.0: sprint notes.\n- [LP-693e66] [@28bc41fa-6a07-6a77-c2db-b0186b445ecc] TASK GOAL: eliminate double-charges in the payments flow of billing-api before the Friday release.\n- [LP-540c05] [@4dce180f-62b0-5bfa-135c-4bba6475c704] Understood - switching to the saga pattern with compensating transactions on the billing service.\n"
+ }
+}

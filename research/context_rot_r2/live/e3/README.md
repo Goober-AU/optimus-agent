@@ -189,24 +189,30 @@ Not simulated (a real restart additionally):
 - re-reads the compaction summary as the first provider message — this IS
   exercised (`build_context` on the reloaded session).
 
-## Adding the typed arm (W15 integration point)
+## Adding the typed arm (W15 integration point) — WIRED (R2-E5)
 
-`run_e3.py --arm typed` fails loudly today: exit code 2, message
-`typed arm not yet available` — it never silently substitutes another arm.
-When the W15 typed-state integration lands, wire it at exactly two points
-and the whole suite runs unchanged:
+`run_e3.py --arm typed` runs the real typed arm since R2-E5 (branch
+`rot2/w29-typedarm`); the former stub is gone. The two documented wiring
+points landed exactly as planned:
 
-1. `rust_mirror.arm_settings`: accept a `typed` task-state mode (today only
-   `off`/`prompt` exist) mapping the arm to the typed-state pipeline;
-2. `rust_mirror.prepare_compaction`: build the typed ledger (the Rust
-   side already exists — `feat(compaction): typed state v2`, commit
-   c948905a3) and render it as `protected_state` exactly where
-   `render_ledger(task_state)` is called now (`driver.run_arm_e3` passes
-   that string into `generate_bounded_summary`).
+1. `rust_mirror.arm_settings`: the `typed` arm maps to
+   `TASK_STATE_MODE_TYPED` (mirrors `resolve_task_state_mode`,
+   compaction.rs); `rust_mirror.prepare_compaction` builds the typed
+   ledger over the leaving window and merges it with the previous
+   cycle's `details.typedState` (the Python port lives in
+   `live/typed_mirror.py`, line-cited to typed_state.rs).
+2. `e3/driver.py`: where `render_ledger(task_state)` was called, the
+   typed arm renders `typed_mirror.render_allocation(allocate(state,
+   min(2048, floor(summary_budget/4))))` as the protected block with
+   `TYPED_STATE_INSTRUCTION`, gates on the unsafe allocation before any
+   model call, and runs the verify gate (one bounded deterministic repair
+   for missing-only findings) after the summary; `details.typedState` /
+   `details.typedVerification` persist on the compaction entry.
 
-No scenario, probe, matcher, or aggregation change is needed: the arms are
-data (`scenario["arms"]` + `--arm`), and `E3ArmResult`/scoring are
-arm-agnostic.
+No scenario, probe, matcher, or aggregation change: the arms are data and
+`E3ArmResult`/scoring are arm-agnostic. Results: `live/e5/` (README
+section "Part 2"). The e3adv suite accepts `--arm typed` for family C1
+only.
 
 ## Deviations from the Rust path / W7 harness
 

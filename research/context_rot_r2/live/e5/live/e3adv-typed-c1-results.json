@@ -1,0 +1,797 @@
+{
+ "experiment": "r2-e5-live-e3adv-typed-c1",
+ "scoringVersion": "r2.3+e3adv-v1",
+ "config": {
+  "model": "glm-5.3",
+  "baseUrl": "https://a8349d0f-f602-991e-52c5-963eb2f2e949-in-docker-k3.apps.launchpad.nvidia.com/v1",
+  "temperature": 0.0,
+  "summarizerMaxTokens": 8192,
+  "probeMaxTokens": 4000,
+  "promptVersion": "v2",
+  "summaryUpdatePolicy": "off",
+  "summaryBudgetTokens": 3200,
+  "retainedStateAnchor": true,
+  "taskStateLedger": "taskState arm (v1 keyword ledger); typed arm (W15 typed protected state, family C1 only)",
+  "concurrency": 6,
+  "probePlan": {
+   "baseline": 1,
+   "cycles 1-5": 3
+  }
+ },
+ "results": {
+  "C1|typed": {
+   "family": "C1",
+   "scenario": "r2-e3adv-c1",
+   "arm": "typed",
+   "spec": {
+    "cycles": 5,
+    "restartAfterCycle": null,
+    "probePlan": {
+     "baseline": 1,
+     "1": 3,
+     "2": 3,
+     "3": 3,
+     "4": 3,
+     "5": 3
+    },
+    "limitCycles": null
+   },
+   "cycles": [
+    {
+     "cycle": 0,
+     "ran": true,
+     "firstKeptEntryId": "0700d507-6a65-9a0f-cc18-eff4de38a80a",
+     "summarizedEntries": 15,
+     "retainedEntries": 1,
+     "summaryChars": 3040,
+     "summarizerRequestChars": 14934,
+     "summarizerCalls": 1,
+     "compactedContextTokens": 1020.0,
+     "ledgerPresent": false,
+     "ledgerItems": 0,
+     "anchorsPresent": [
+      "q-c1-approach"
+     ],
+     "summarizerUsage": {
+      "promptTokens": 2700,
+      "completionTokens": 2285,
+      "reasoningTokens": 1434
+     },
+     "typedLedgerPresent": true,
+     "typedLedgerRecords": 12,
+     "typedAllocationTokens": 397,
+     "typedIncludedItems": 12,
+     "typedVerification": {
+      "passed": true,
+      "repaired": false,
+      "missing": 0,
+      "misSuperseded": 0,
+      "unresolvedRefs": 0,
+      "fabricated": 0
+     }
+    },
+    {
+     "cycle": 1,
+     "ran": true,
+     "firstKeptEntryId": "d27eab4b-5495-50cc-2716-3cc75ae2b805",
+     "summarizedEntries": 10,
+     "retainedEntries": 1,
+     "summaryChars": 3604,
+     "summarizerRequestChars": 19135,
+     "summarizerCalls": 1,
+     "compactedContextTokens": 1161.0,
+     "ledgerPresent": false,
+     "ledgerItems": 0,
+     "anchorsPresent": [
+      "q-c1-approach"
+     ],
+     "summarizerUsage": {
+      "promptTokens": 3806,
+      "completionTokens": 6911,
+      "reasoningTokens": 5860
+     },
+     "typedLedgerPresent": true,
+     "typedLedgerRecords": 16,
+     "typedAllocationTokens": 516,
+     "typedIncludedItems": 16,
+     "typedVerification": {
+      "passed": true,
+      "repaired": false,
+      "missing": 0,
+      "misSuperseded": 0,
+      "unresolvedRefs": 0,
+      "fabricated": 0
+     }
+    },
+    {
+     "cycle": 2,
+     "ran": true,
+     "firstKeptEntryId": "539cc3f1-ebfa-80a4-fe22-dfeb246c26ae",
+     "summarizedEntries": 10,
+     "retainedEntries": 1,
+     "summaryChars": 4149,
+     "summarizerRequestChars": 20082,
+     "summarizerCalls": 1,
+     "compactedContextTokens": 1298.0,
+     "ledgerPresent": false,
+     "ledgerItems": 0,
+     "anchorsPresent": [
+      "q-c1-approach"
+     ],
+     "summarizerUsage": {
+      "promptTokens": 4176,
+      "completionTokens": 6065,
+      "reasoningTokens": 4782
+     },
+     "typedLedgerPresent": true,
+     "typedLedgerRecords": 19,
+     "typedAllocationTokens": 609,
+     "typedIncludedItems": 19,
+     "typedVerification": {
+      "passed": true,
+      "repaired": false,
+      "missing": 0,
+      "misSuperseded": 0,
+      "unresolvedRefs": 0,
+      "fabricated": 0
+     }
+    },
+    {
+     "cycle": 3,
+     "ran": true,
+     "firstKeptEntryId": "5e234883-59d6-47e4-ac8f-fb68f051a1ad",
+     "summarizedEntries": 10,
+     "retainedEntries": 1,
+     "summaryChars": 4704,
+     "summarizerRequestChars": 21010,
+     "summarizerCalls": 1,
+     "compactedContextTokens": 1436.0,
+     "ledgerPresent": false,
+     "ledgerItems": 0,
+     "anchorsPresent": [
+      "q-c1-approach"
+     ],
+     "summarizerUsage": {
+      "promptTokens": 4581,
+      "completionTokens": 5674,
+      "reasoningTokens": 4153
+     },
+     "typedLedgerPresent": true,
+     "typedLedgerRecords": 22,
+     "typedAllocationTokens": 702,
+     "typedIncludedItems": 22,
+     "typedVerification": {
+      "passed": true,
+      "repaired": false,
+      "missing": 0,
+      "misSuperseded": 0,
+      "unresolvedRefs": 0,
+      "fabricated": 0
+     }
+    },
+    {
+     "cycle": 4,
+     "ran": true,
+     "firstKeptEntryId": "108ffd5e-eeb1-c21b-914a-4e270b0fe67b",
+     "summarizedEntries": 10,
+     "retainedEntries": 1,
+     "summaryChars": 5259,
+     "summarizerRequestChars": 21948,
+     "summarizerCalls": 1,
+     "compactedContextTokens": 1575.0,
+     "ledgerPresent": false,
+     "ledgerItems": 0,
+     "anchorsPresent": [
+      "q-c1-approach"
+     ],
+     "summarizerUsage": {
+      "promptTokens": 4988,
+      "completionTokens": 5761,
+      "reasoningTokens": 4003
+     },
+     "typedLedgerPresent": true,
+     "typedLedgerRecords": 25,
+     "typedAllocationTokens": 795,
+     "typedIncludedItems": 25,
+     "typedVerification": {
+      "passed": true,
+      "repaired": false,
+      "missing": 0,
+      "misSuperseded": 0,
+      "unresolvedRefs": 0,
+      "fabricated": 0
+     }
+    }
+   ],
+   "failures": [],
+   "probes": [
+    {
+     "id": "q-c1-approach",
+     "anchor": "SGA-KX1",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    }
+   ],
+   "restarts": [],
+   "probeRounds": {
+    "1": [
+     {
+      "id": "q-c1-approach",
+      "kind": "action-approach",
+      "question": "Which approach do you implement next for the double-charge fix? Answer with the approach in a few words.",
+      "gold": "the saga pattern with compensating transactions (two-phase commit coordinator rejected)",
+      "reps": [
+       {
+        "callId": "r2-e3adv-c1|typed|probe|1|q-c1-approach|r0",
+        "extracted": "saga pattern with compensating transactions",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: saga pattern with compensating transactions",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 1110,
+         "total_tokens": 1193,
+         "completion_tokens": 83,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 73
+        },
+        "latencyS": 0.494
+       },
+       {
+        "callId": "r2-e3adv-c1|typed|probe|1|q-c1-approach|r1",
+        "extracted": "Saga pattern with compensating transactions",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: Saga pattern with compensating transactions",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 1110,
+         "total_tokens": 1161,
+         "completion_tokens": 51,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 41
+        },
+        "latencyS": 0.764
+       },
+       {
+        "callId": "r2-e3adv-c1|typed|probe|1|q-c1-approach|r2",
+        "extracted": "Saga pattern with compensating transactions",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: Saga pattern with compensating transactions",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 1110,
+         "total_tokens": 1161,
+         "completion_tokens": 51,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 41
+        },
+        "latencyS": 0.413
+       }
+      ],
+      "score": {
+       "status": "correct",
+       "strictStatus": "correct",
+       "correctReps": 3,
+       "strictCorrectReps": 3,
+       "extractedReps": 3,
+       "totalReps": 3
+      }
+     }
+    ],
+    "2": [
+     {
+      "id": "q-c1-approach",
+      "kind": "action-approach",
+      "question": "Which approach do you implement next for the double-charge fix? Answer with the approach in a few words.",
+      "gold": "the saga pattern with compensating transactions (two-phase commit coordinator rejected)",
+      "reps": [
+       {
+        "callId": "r2-e3adv-c1|typed|probe|2|q-c1-approach|r0",
+        "extracted": "Saga pattern with compensating transactions",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: Saga pattern with compensating transactions",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 1310,
+         "total_tokens": 1389,
+         "completion_tokens": 79,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 69
+        },
+        "latencyS": 0.449
+       },
+       {
+        "callId": "r2-e3adv-c1|typed|probe|2|q-c1-approach|r1",
+        "extracted": "Saga pattern with compensating transactions",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: Saga pattern with compensating transactions",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 1310,
+         "total_tokens": 1402,
+         "completion_tokens": 92,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 82
+        },
+        "latencyS": 0.465
+       },
+       {
+        "callId": "r2-e3adv-c1|typed|probe|2|q-c1-approach|r2",
+        "extracted": "Saga pattern with compensating transactions",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: Saga pattern with compensating transactions",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 1310,
+         "total_tokens": 1402,
+         "completion_tokens": 92,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 82
+        },
+        "latencyS": 1.095
+       }
+      ],
+      "score": {
+       "status": "correct",
+       "strictStatus": "correct",
+       "correctReps": 3,
+       "strictCorrectReps": 3,
+       "extractedReps": 3,
+       "totalReps": 3
+      }
+     }
+    ],
+    "3": [
+     {
+      "id": "q-c1-approach",
+      "kind": "action-approach",
+      "question": "Which approach do you implement next for the double-charge fix? Answer with the approach in a few words.",
+      "gold": "the saga pattern with compensating transactions (two-phase commit coordinator rejected)",
+      "reps": [
+       {
+        "callId": "r2-e3adv-c1|typed|probe|3|q-c1-approach|r0",
+        "extracted": "Saga pattern with compensating transactions",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: Saga pattern with compensating transactions",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 1542,
+         "total_tokens": 1606,
+         "completion_tokens": 64,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 54
+        },
+        "latencyS": 0.468
+       },
+       {
+        "callId": "r2-e3adv-c1|typed|probe|3|q-c1-approach|r1",
+        "extracted": "Saga pattern with compensating transactions",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: Saga pattern with compensating transactions",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 1542,
+         "total_tokens": 1607,
+         "completion_tokens": 65,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 55
+        },
+        "latencyS": 0.484
+       },
+       {
+        "callId": "r2-e3adv-c1|typed|probe|3|q-c1-approach|r2",
+        "extracted": "Saga pattern with compensating transactions",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: Saga pattern with compensating transactions",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 1542,
+         "total_tokens": 1607,
+         "completion_tokens": 65,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 55
+        },
+        "latencyS": 0.805
+       }
+      ],
+      "score": {
+       "status": "correct",
+       "strictStatus": "correct",
+       "correctReps": 3,
+       "strictCorrectReps": 3,
+       "extractedReps": 3,
+       "totalReps": 3
+      }
+     }
+    ],
+    "4": [
+     {
+      "id": "q-c1-approach",
+      "kind": "action-approach",
+      "question": "Which approach do you implement next for the double-charge fix? Answer with the approach in a few words.",
+      "gold": "the saga pattern with compensating transactions (two-phase commit coordinator rejected)",
+      "reps": [
+       {
+        "callId": "r2-e3adv-c1|typed|probe|4|q-c1-approach|r0",
+        "extracted": "Saga pattern with compensating transactions on the billing service",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: Saga pattern with compensating transactions on the billing service",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 1780,
+         "total_tokens": 1853,
+         "completion_tokens": 73,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 59
+        },
+        "latencyS": 0.537
+       },
+       {
+        "callId": "r2-e3adv-c1|typed|probe|4|q-c1-approach|r1",
+        "extracted": "Saga pattern with compensating transactions",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: Saga pattern with compensating transactions",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 1780,
+         "total_tokens": 1849,
+         "completion_tokens": 69,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 59
+        },
+        "latencyS": 0.495
+       },
+       {
+        "callId": "r2-e3adv-c1|typed|probe|4|q-c1-approach|r2",
+        "extracted": "Saga pattern with compensating transactions",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: Saga pattern with compensating transactions",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 1780,
+         "total_tokens": 1849,
+         "completion_tokens": 69,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 59
+        },
+        "latencyS": 0.491
+       }
+      ],
+      "score": {
+       "status": "correct",
+       "strictStatus": "correct",
+       "correctReps": 3,
+       "strictCorrectReps": 3,
+       "extractedReps": 3,
+       "totalReps": 3
+      }
+     }
+    ],
+    "5": [
+     {
+      "id": "q-c1-approach",
+      "kind": "action-approach",
+      "question": "Which approach do you implement next for the double-charge fix? Answer with the approach in a few words.",
+      "gold": "the saga pattern with compensating transactions (two-phase commit coordinator rejected)",
+      "reps": [
+       {
+        "callId": "r2-e3adv-c1|typed|probe|5|q-c1-approach|r0",
+        "extracted": "Saga pattern with compensating transactions",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: Saga pattern with compensating transactions",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 2017,
+         "total_tokens": 2094,
+         "completion_tokens": 77,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 67
+        },
+        "latencyS": 0.793
+       },
+       {
+        "callId": "r2-e3adv-c1|typed|probe|5|q-c1-approach|r1",
+        "extracted": "Saga pattern with compensating transactions",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: Saga pattern with compensating transactions",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 2017,
+         "total_tokens": 2104,
+         "completion_tokens": 87,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 77
+        },
+        "latencyS": 0.609
+       },
+       {
+        "callId": "r2-e3adv-c1|typed|probe|5|q-c1-approach|r2",
+        "extracted": "Saga pattern with compensating transactions",
+        "match": {
+         "kind": "action-approach",
+         "goldPresent": true,
+         "positiveHit": "compensat",
+         "forbiddenAsserted": [],
+         "forbiddenAbsent": true,
+         "primary": true,
+         "strict": true
+        },
+        "extractionFailure": false,
+        "rawContent": "ANSWER: Saga pattern with compensating transactions",
+        "finishReason": "stop",
+        "usage": {
+         "prompt_tokens": 2017,
+         "total_tokens": 2105,
+         "completion_tokens": 88,
+         "prompt_tokens_details": null,
+         "reasoning_tokens": 78
+        },
+        "latencyS": 0.608
+       }
+      ],
+      "score": {
+       "status": "correct",
+       "strictStatus": "correct",
+       "correctReps": 3,
+       "strictCorrectReps": 3,
+       "extractedReps": 3,
+       "totalReps": 3
+      }
+     }
+    ]
+   },
+   "baseline": [
+    {
+     "id": "q-c1-approach",
+     "kind": "action-approach",
+     "question": "Which approach do you implement next for the double-charge fix? Answer with the approach in a few words.",
+     "gold": "the saga pattern with compensating transactions (two-phase commit coordinator rejected)",
+     "reps": [
+      {
+       "callId": "r2-e3adv-c1|typed|probe|baseline|q-c1-approach|r0",
+       "extracted": "Saga pattern with compensating transactions",
+       "match": {
+        "kind": "action-approach",
+        "goldPresent": true,
+        "positiveHit": "compensat",
+        "forbiddenAsserted": [],
+        "forbiddenAbsent": true,
+        "primary": true,
+        "strict": true
+       },
+       "extractionFailure": false,
+       "rawContent": "ANSWER: Saga pattern with compensating transactions",
+       "finishReason": "stop",
+       "usage": {
+        "prompt_tokens": 1754,
+        "total_tokens": 1819,
+        "completion_tokens": 65,
+        "prompt_tokens_details": null,
+        "reasoning_tokens": 55
+       },
+       "latencyS": 1.392
+      }
+     ],
+     "score": {
+      "status": "correct",
+      "strictStatus": "correct",
+      "correctReps": 1,
+      "strictCorrectReps": 1,
+      "extractedReps": 1,
+      "totalReps": 1
+     }
+    }
+   ],
+   "finalSummary": "## Goal\n- Eliminate double-charges in the payments flow of billing-api before the Friday release [LP-693e66].\n\n## Constraints & Preferences\n- Use the saga pattern with compensating transactions instead of the two-phase commit approach [CO-9c384a] [@453d150f-070f-83ee-8eff-d15ecad3f4e8].\n- Blocking round-trips stall the checkout path under load \u2014 the chosen design must avoid them [CO-9dea27] [@453d150f-070f-83ee-8eff-d15ecad3f4e8].\n- Hard deadline: Friday release.\n\n## Progress\n### Done\n- [x] Two-phase commit coordinator wired in (src/payments/2pc_coordinator.rs, 94 lines; src/payments/checkout.rs, 14 lines changed; 2 files changed [RS-de76ff]; payments patch tests: 16 passed; 0 failed) \u2014 **now superseded** by user correction [CO-9dea27]/[CO-9c384a].\n- [x] Telemetry test suites green: cargo test --lib telemetry::tests_00, tests_01, tests_02 \u2014 each 18 passed; 0 failed [VT-1cfcd1, VT-25d467, VT-174e04].\n- [x] Next telemetry batch green: cargo test --lib telemetry::tests_10, tests_11, tests_12 \u2014 each 19 passed; 0 failed [VT-5090ab, VT-b15b70, VT-a64178] (fulfills \"moving to the next batch\" [PA-64eef9]).\n- [x] Telemetry batch green: cargo test --lib telemetry::tests_20, tests_21, tests_22 \u2014 each 20 passed; 0 failed [VT-6119b8] [@7798017b-497f-b000-f27d-5adc200c5207], [VT-de0a47] [@034b1b5a-6dc5-e8b0-4da7-fd8a7704fb62], [VT-a7cdc3] [@1c1ae312-91dc-6cc3-7cda-2be201ab2917] (fulfills status update 1.final \"moving to the next batch\").\n- [x] Telemetry batch green: cargo test --lib telemetry::tests_30, tests_31, tests_32 \u2014 each 21 passed; 0 failed [VT-9df175] [@d40a6b6e-1a61-776f-6ddc-2cd88584383d], [VT-0aad10] [@64f36bfe-56a6-4d16-8a16-8f8fbd358814], [VT-cb43a9] [@93c90e4c-1499-cb23-fb32-df54330f541f] (fulfills status update 2.final \"moving to the next batch\").\n- [x] Latest telemetry batch green: cargo test --lib telemetry::tests_40, tests_41, tests_42 \u2014 each 22 passed; 0 failed [VT-324a36] [@c727669e-a1dd-0fb8-db53-17472e25e011], [VT-ba9cfc] [@57a317d1-9dc3-c1dc-ba14-a9f79461862e], [VT-9844f1] [@448b6bbc-b0b4-01ea-aa26-397c57587a0a] (fulfills status update 3.final \"moving to the next batch\").\n- [x] Acknowledged switch: \"Understood - switching to the saga pattern with compensating transactions on the billing service.\" [LP-540c05]\n\n### In Progress\n- [ ] Implementing the saga pattern with compensating transactions on the billing service to replace the 2PC coordinator [CO-9c384a].\n\n### Blocked\n- (none)\n\n## Key Decisions\n- **Saga pattern with compensating transactions (SGA-KX1)** [CO-9c384a]: User-directed correction; blocking round-trips of 2PC stall the checkout path under load [CO-9dea27].\n- **Two-phase commit coordinator (TPC-DEC1) [VD-76361d] \u2014 SUPERSEDED**: originally chosen to resolve double-charges (\"Decision: resolve the double-charges with a two-phase commit coordinator\"), retired by user correction [CO-9dea27]/[CO-9c384a]. Its code (src/payments/2pc_coordinator.rs, src/payments/checkout.rs changes) is still in the repo and must be replaced.\n- **Superseded pending action [PA-a48451]** (\"Two-phase commit coordinator wired in; running the payments load test next\"): retired by the correction; load testing should instead validate the saga implementation.\n\n## Next Steps\n1. Remove/replace the 2PC coordinator in src/payments/2pc_coordinator.rs with a saga-pattern implementation using compensating transactions.\n2. Rework src/payments/checkout.rs to invoke the saga orchestration instead of the 2PC coordinator.\n3. Run the payments test suite and confirm all tests pass.\n4. Run the payments load test to verify the checkout path does not stall under load (no blocking round-trips).\n5. Confirm double-charges are eliminated ahead of the Friday release.\n\n## Critical Context\n- Superseded 2PC patch footprint (to be reverted/reworked): src/payments/2pc_coordinator.rs | 94 +++++, src/payments/checkout.rs | 14 +- (2 files changed) [RS-de76ff].\n- Payments patch test baseline: 16 passed; 0 failed.\n- Telemetry suites (unrelated to payments work, all green): telemetry::tests_00 / tests_01 / tests_02 \u2014 18 passed; 0 failed each [VT-1cfcd1, VT-25d467, VT-174e04]; telemetry::tests_10 / tests_11 / tests_12 \u2014 19 passed; 0 failed each [VT-5090ab, VT-b15b70, VT-a64178]; telemetry::tests_20 / tests_21 / tests_22 \u2014 20 passed; 0 failed each [VT-6119b8, VT-de0a47, VT-a7cdc3]; telemetry::tests_30 / tests_31 / tests_32 \u2014 21 passed; 0 failed each [VT-9df175, VT-0aad10, VT-cb43a9]; telemetry::tests_40 / tests_41 / tests_42 \u2014 22 passed; 0 failed each [VT-324a36, VT-ba9cfc, VT-9844f1].\n- Status updates 0.0\u20130.2, 0.final, 1.0\u20131.2, 1.final, 2.0\u20132.2, 2.final, 3.0\u20133.2, 3.final, and 4.0\u20134.2 were sprint notes / unrelated historical discussion [LP-8c9ce5, LP-8261a0]; no action required. Status update 0.final (\"moving to the next batch\") [PA-64eef9] [@0700d507-6a65-9a0f-cc18-eff4de38a80a] was followed by the tests_10\u201312 batch, all green; status update 1.final (\"moving to the next batch\") was followed by the tests_20\u201322 batch, all green; status update 2.final (\"moving to the next batch\") was followed by the tests_30\u201332 batch, all green; status update 3.final (\"moving to the next batch\") was followed by the tests_40\u201342 batch, all green.\n- No Python variables/helpers were defined in this session (Rust/cargo project only)."
+  }
+ },
+ "metrics": {
+  "C1|typed": {
+   "family": "C1",
+   "scenario": "r2-e3adv-c1",
+   "arms": {
+    "typed": {
+     "cyclesRun": 5,
+     "failures": [],
+     "restarts": [],
+     "retention": {
+      "retained": 1,
+      "total": 1
+     },
+     "rounds": {
+      "1": {
+       "probes": 1,
+       "correct": 1,
+       "incorrect": 0,
+       "extractionFailures": 0,
+       "strictCorrect": 1
+      },
+      "2": {
+       "probes": 1,
+       "correct": 1,
+       "incorrect": 0,
+       "extractionFailures": 0,
+       "strictCorrect": 1
+      },
+      "3": {
+       "probes": 1,
+       "correct": 1,
+       "incorrect": 0,
+       "extractionFailures": 0,
+       "strictCorrect": 1
+      },
+      "4": {
+       "probes": 1,
+       "correct": 1,
+       "incorrect": 0,
+       "extractionFailures": 0,
+       "strictCorrect": 1
+      },
+      "5": {
+       "probes": 1,
+       "correct": 1,
+       "incorrect": 0,
+       "extractionFailures": 0,
+       "strictCorrect": 1
+      }
+     },
+     "baseline": {
+      "probes": 1,
+      "correct": 1,
+      "incorrect": 0,
+      "extractionFailures": 0,
+      "strictCorrect": 1
+     },
+     "usage": {
+      "promptTokens": 45282,
+      "completionTokens": 27866,
+      "reasoningTokens": 21183
+     }
+    }
+   }
+  }
+ },
+ "budget": {
+  "total": 145,
+  "byKind": {
+   "pong": 1,
+   "summarizer": 36,
+   "probe": 108
+  },
+  "byFinishReason": {
+   "pong:stop": 1,
+   "summarizer:stop": 35,
+   "probe:stop": 108,
+   "summarizer:length": 1
+  },
+  "httpRetries": 0
+ },
+ "note": "E5 wire calls only: the C1|typed chain added 21 (5 cycles x (1 summarizer + 3 probes) + 1 baseline); the committed W23-E3ADV log held 124. The e3adv raw log is restored to the committed state; the typed-arm calls are preserved in e3adv-typed-raw-calls.jsonl."
+}

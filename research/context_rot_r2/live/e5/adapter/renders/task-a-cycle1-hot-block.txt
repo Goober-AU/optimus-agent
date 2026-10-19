@@ -1,0 +1,33 @@
+## Typed Protected State (deterministic, provenance-tagged)
+Derived from the transcript by fixed provenance rules; no item is inferred or invented. Copy every item below into the matching summary section without paraphrasing identifiers, paths, numbers or error codes. Items under SUPERSEDED are history, not current requirements.
+
+ACTIVE CONSTRAINTS
+- [UC-6b9f06] [@80d647b8-8e78-5572-7ea3-3d8871b3e30f] CONSTRAINT: keep the public REST API backward compatible.
+- [UC-172d2e] [@80d647b8-8e78-5572-7ea3-3d8871b3e30f] CONSTRAINT: do not touch the auth module (src/auth.rs) - the security team owns it and every change there must go through their review.
+
+CURRENT TASK
+- [TK-2d0974] [@80d647b8-8e78-5572-7ea3-3d8871b3e30f] TASK GOAL: implement strict JSON schema validation for the orders-api service so invalid configs are rejected at load time.
+
+DECISIONS (CURRENT)
+- [VD-47b62e] [@15f545b2-810e-8a1d-5853-549613938b45] unverified: Decision: the scope check at src/auth.rs:217 is the root cause, but src/auth.rs is off-limits; the fix goes in src/parser.rs - validate the 'limits' field before the auth call.
+
+VERIFIED EVIDENCE
+- [VT-174e04] [@23a7d1f3-b67f-663b-b175-2f9093a4a911] cargo test --lib telemetry::tests_02: test result: 18 passed; 0 failed
+- [VT-25d467] [@7090b18a-4ff9-45cd-5aaa-e19ff7e9c405] cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed
+- [VT-1cfcd1] [@a9647138-561b-1b3d-bbad-9ffea609cff4] cargo test --lib telemetry::tests_00: test result: 18 passed; 0 failed
+- [VT-a35276] [@d7c724b7-90a5-6ac4-ae6e-98f73aa741c3] test result: 8 passed; 0 failed (src/lexer.rs clean - no changes needed)
+
+SOURCE EVIDENCE
+- [SE-fa021c] [@a0744bdd-ab4e-318a-2837-3c0d1c22f0dc] 1: orders_api::auth::check_scope at src/auth.rs:217
+- [SE-b77aad] [@a0744bdd-ab4e-318a-2837-3c0d1c22f0dc] 0: orders_api::parser::validate at src/parser.rs:60
+- [SE-3da504] [@a0744bdd-ab4e-318a-2837-3c0d1c22f0dc] ---- parser::tests::validate_nested stdout ----
+
+VERIFIED EVIDENCE
+- [VT-faf714] [@a0744bdd-ab4e-318a-2837-3c0d1c22f0dc] test parser::tests::validate_nested ... FAILED
+
+LOW-PRIORITY EPISODES
+- [LP-8261a0] [@00ec7fe3-d558-67eb-6413-bca7d2d29b5e] unrelated historical discussion.
+- [LP-8c9ce5] [@00ec7fe3-d558-67eb-6413-bca7d2d29b5e] status update 0.0: sprint notes.
+- [LP-735885] [@e14988e4-9e54-95d2-df80-f3a12ad442b8] Also verify src/lexer.rs handles the new schema - but make no changes there if it is clean.
+- [LP-a0728f] [@3db893b9-0277-c374-f6d9-2567bc556195] Lexer verified clean; continuing with the implementation.
+- [LP-2ea754] [@6e1720e0-8dfc-d236-4e4f-f032c7b5104b] Plan: reproduce the failing validation test, locate the violating frame, then fix the check.
