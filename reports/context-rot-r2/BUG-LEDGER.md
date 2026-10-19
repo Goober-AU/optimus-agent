@@ -85,3 +85,24 @@ appended to the summary after verification, so the persisted text is not
 byte-identical to the verified artifact. D30: a user-stated decision
 ("Decision: ...") classifies as LowPriorityEpisode and retires at the first
 merge; only assistant-stated decisions reach VerifiedDecision (fix in W46).
+
+## 5. W48 post-wave adversarial review (fix-code red team, rot2/w48-waveaudit)
+
+Red-team of the D21-D29 fix code itself (integration tip 71e770c5e), one
+adversarial test per surface from the W48 brief, in
+crates/pi-coding-agent/tests/rot2_wave_adversarial.rs. Six surfaces pinned
+green (the fixes hold under attack): the 512-cap invariant (a required record
+drops only after every superseded record dropped; the render stays honest),
+the D24+D29 combination (evolving tool state with stable id across three
+merges, provenance-paired retirement with no resurrection or double
+retirement), additive schema evolution (unknown record/ledger fields are
+tolerated by the strict parse and do not widen the salvage), interleaved
+D1 C1 D2 C2 pairing (positional, no crossing), the token-tier rule (a
+correction sharing more tokens with a sibling correction still retires the
+qualifying decision; W9-F4 stays dead), and the D22 chain render (A names
+its direct superseder B, not the current C). Two new defects found:
+
+| # | severity | status r2 | finding |
+| --- | --- | --- | --- |
+| D31 | MED | VERIFIED-OPEN (W48) | The D25 retired-reference tombstones pollute the verifier's fabricated-claim check. `verify` inserts every `retired_refs` entry into both `known_record_ids` and `known_entry_ids` (typed_state.rs:1942-1946, the D25 reference-resolution fix), and the fabricated check accepts any bracketed token contained in those sets as a mapping (typed_state.rs:2040-2047). A summary line claiming verified material therefore passes while citing only a retired record id, or a retired source-entry id quoted without the `@` sigil: no record with that id exists in the ledger, nothing vouches for the text, yet verification returns `fabricated: []` and passes. The D27 guarantee (a "verified" claim maps to a verified or corroborated record) is bypassable by tombstone citation; retired ids are visible to the summarizer because the previous summary quoting them rides in the prompt, so a lossy or adversarial summarizer can launder arbitrary claims through them. The unresolved-refs check legitimately needs retired ids known (earlier summaries still quote them); only the fabricated check's resolution sets must be restricted to ids the ledger still carries. Red: `retired_ids_do_not_vouch_for_verified_claims` (ignored, runnable red with `cargo test -- --ignored`): the artifact's only "verified" line cites the step-retired pending action's id and verifies clean (`passed: true, fabricated: []`); the control line citing the live task record maps legitimately either way. |
+| D32 | LOW-MED | VERIFIED-OPEN (W48) | The D28 native compaction arm carries the salvaged records through but drops the D26 diagnostics. `compact_with_metrics`' native path (compaction.rs:2949-2959) persists `typed_state: typed_state.clone()` — so the salvaged durable records survive the native boundary, confirmed — while returning `typed_verification: None`. The D26 salvage report only surfaces through `details.typedVerification.malformedPriorLedger` (compaction.rs:3181 on the text-summarizer path), and the `salvage` rider is serde-skipped on the ledger itself, so when a native compaction observes a malformed prior `details.typedState` payload the malformation is never recorded anywhere: the episode succeeds with no trace of the salvage, and the next cycle reads a clean-looking ledger. The D26 "loud salvage" contract ("salvaged per record and reported, never silently dropped") holds only on the text path. Red: `native_compaction_reports_the_salvage_of_a_malformed_prior_ledger` (ignored, runnable red): the salvaged constraint persists in `details.typedState` (assert passes) but `typedVerification` is absent from the native result. |
