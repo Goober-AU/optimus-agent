@@ -6,7 +6,7 @@ Verdict up front: one blocker (a changelog bullet claims a behavior change that 
 
 ## 1. Cleanup commit (surface 2)
 
-`7b570d082` `chore(compaction): drop the four campaign-introduced warnings`
+`fa3634b7a` `chore(compaction): drop the four campaign-introduced warnings`
 
 - `src/bin/compaction_harness.rs:32` — removed the unused `CompactionSettings` import. Verified truly unused: the only occurrence in the file was the import; the bin builds settings through `default_compaction_settings()` and the stdin JSON contract lives in the local `HarnessSettings` struct, so no CLI/serde contract changes.
 - `tests/rot2_multicycle.rs:46` — removed the unused `use std::path::PathBuf;`.
@@ -103,7 +103,7 @@ Missing from the fragment: D18 (`8c558dd7b`), D19 (`4769f42f4`), D21 (`a9035ce8a
 
 ## 5. Commit index (this audit)
 
-- `7b570d082` `chore(compaction): drop the four campaign-introduced warnings` — the surface-2 cleanup, verified behavior-preserving (see section 1).
+- `fa3634b7a` `chore(compaction): drop the four campaign-introduced warnings` — the surface-2 cleanup, verified behavior-preserving (see section 1).
 - `reports/context-rot-r2/REVIEW-AUDIT.md` — this file.
 
 ## 6. W45 appendix: post-audit status of the should-fix items
@@ -189,3 +189,200 @@ convert unrelated text files through the lfs filter; (c) the alternative
 (drop the telemetry, keep `results.json` aggregates) stays available if
 maintainers prefer no LFS dependency - in that case delete the five files
 and the attribute block in one commit.
+
+## 7. AUDIT RESOLUTION — final disposition (W59)
+
+Recorded by the W59 final-resolution pass (worktree `optimus-rot2-w59-audit2`,
+branch `rot2/w59-audit2`) at integration tip `0a35fbfa6` (130 commits over
+base `6000d6bc1`). Method: full read of the three reviewer-facing files
+(`PR-BODY.md`, `BUG-LEDGER.md`, `.changes/context-rot-r2.md`); `git log`/
+`git show` on specific paths, including bounded reads of exactly the files
+the audit items and the cross-check name (the two adversarial test files,
+`rot2_multicycle.rs`, the live drivers, `run-config.json`, `.gitattributes`,
+report headers); and two bounded `git grep` sweeps against HEAD (conflict
+markers; embedded `git log --oneline` lines) over `reports/context-rot-r2/`
+and the fragment only, with bounded context reads around each hit. No test
+was run (docs-only pass; W59 file map). This section supersedes sections 1-6
+where they conflict. One citation correction was applied to this file: the
+cleanup commit cited at lines 9 and 106 used the W42 worktree sha
+`7b570d082`; the ancestor on this branch is `fa3634b7a` (same subject), and
+both occurrences now cite it — the same class of fix the W50 sweep applied to
+the `963ca575a` typo.
+
+### B1 — RESOLVED (claim rescoped to what the tree does)
+
+`b65e2cd2e` rewrote the D17 fragment bullet to a request-aware estimator
+"verified against the kernel-parity mirror and exercised by the multicycle
+adapter; production call-site wiring remains follow-up work, the no-usage
+fallback path is unchanged", and the ledger D17 row to
+`FIXED (W3 estimator; call-site wiring deferred)` with the post-audit note
+naming the six unchanged production estimator call sites. Both verified at
+HEAD; the false "pressure readings" claim is gone from every
+reviewer-facing file. N1 rides the same disclosed follow-up: the
+request-aware variant stays a pub, adapter-exercised API until the wiring
+lands.
+
+### S1 — substance resolved by W45/W50; the landing itself regressed (R1/R2)
+
+The D18-D21 "pending / in flight" language S1 flagged is gone from PR-BODY
+and FINAL-REPORT (the W45 refresh `68ca1cc81` + `c72df0c31`, then the W50
+sweep `2ed67a8b3`, whose commit message records it as extending S1 to the
+whole report set), and the ledger rows are current. Two regressions came
+with the landing: the W50 sweep was committed with PR-BODY.md's conflicts
+unresolved, and both PR-BODY.md and FINAL-REPORT.md now carry paste debris
+plus in-flight claims that went stale when W46/W47 landed after them (R1/R2
+below).
+
+### S2 — RESOLVED, residual fragment debris (integrator-owned)
+
+The D18/D19/D21 and D22-D29 bullets are present. Residuals at HEAD, all in
+the integrator-owned fragment (outside the W59 file map): twelve bullet
+texts appear twice (the W45 `9cf87b266` and W50 `5e2491cff` fragment
+commits both landed and unioned); a stray `D` line after the D11 bullet
+(fragment line 12); two embedded `git log` lines citing worker-tree shas
+`78ccdf254`/`557ca0c0c` (lines 30/45) that are not ancestors of this
+branch; and no D30 bullet — the W46 fix (`10e2b36e6`) postdates both
+fragment waves, so both typed-mode bullets still list the D30 classifier
+gap as the "known remaining gap" although the ledger row and the pinned
+smoke seed (user entry `ARCH-DECISION-C`, probe q4,
+`tests/rot2_multicycle.rs:970-978`) mark it FIXED.
+
+### S3 — RESOLVED
+
+PR-BODY carries the W35 red-team table (D22-D29 with severities and fix
+shas) plus the "Disclosed, not claimed away" paragraph; the fragment's
+typed-mode bullets carry the same disclosure. Residual: the disclosed-open
+list is stale on D30 (see S2), and PR-BODY's own conflict markers sit above
+it (see R1).
+
+### S4 — RESOLVED
+
+`8e7796702`: `contextbench/live/harness_client.py` resolves both
+credential scripts from `ROT2_GLM_RESOLVER_SCRIPT` /
+`ROT2_POMERIUM_RESOLVER_SCRIPT` with no machine default — it fails closed
+with a clear message (verified at HEAD); `compactbench_adapter/live/run_live.py`
+takes `BENCHMARKS` from `ROT2_COMPACTBENCH_BENCHMARKS` only and requires
+`HARNESS`. `run-config.json` keeps its machine paths by recorded ruling
+(artifact provenance, not reusable input), documented in the two live
+READMEs and the commit message.
+
+### S5 — RESOLVED
+
+`.gitattributes` carries LFS rules for exactly the five raw call-log
+files; all five are LFS pointers in the HEAD tree; the working-tree file
+is still 8,131,489 bytes. History was not rewritten. The S5 appendix
+integrator notes stand: (a) `git lfs push` must accompany the first push;
+(b) no repo-wide `git add --renormalize .`; (c) the drop-the-telemetry
+alternative remains open to the maintainers.
+
+### S6 — CLOSED: leave as committed (option 1)
+
+No history rewrite happened: all seven cited subjects exist with unchanged
+shas (`59832805f`, `fe6b6d966`, `0b824f358`, `4b8f2165f`, `2fbb14f33`,
+`c5107fc31`, `fb089ee6e`). The count grew from seven to twelve — the W47
+E5-RM wave added `0f60ee761`, `83ae4fb32`, `8ebc8155b`, `621dc462f`,
+`f932b746e` — which only strengthens the appendix's citation-churn
+argument against a rebase at 130 commits over base.
+
+### S7 — RESOLVED
+
+`4144028c1`: `explicit_off_setting_wins_over_the_typed_environment_variable`
+now exercises the precedence through the explicit `environment` parameter
+of `resolve_task_state_mode`; the single env readback asserts only when
+the host has not exported the variable; no `set_var`/`remove_var` remains
+in `tests/rot2_typed_adversarial.rs` (verified at HEAD; the module doc
+records the rationale).
+
+### Nits
+
+N1 rides B1's disclosed follow-up. N3 was not acted on (nit; no action was
+requested): `lossy_summary` (`src/bin/compaction_harness.rs:257`) and
+`is_empty` (`src/core/compaction/typed_state.rs:441`) still lack doc
+comments. N2 and N4-N7 were observations with no action requested and
+stand as recorded; the W50 sweep refreshed the drifted citations it found
+in the report set.
+
+### Post-audit defect waves (context for the residual-risk list)
+
+- D30 FIXED (W46, `10e2b36e6`; the W41 cycle-5 budget caveat pinned by
+  `d00ff2067`; ledger row current). The files that still disclose the gap
+  as open are the S2/S3 residuals above.
+- D31 OPEN at this tip: no fix commit is an ancestor of `0a35fbfa6`; the
+  fix is in flight on `rot2/w52` at the time of this writing. The red test
+  `retired_ids_do_not_vouch_for_verified_claims` stays ignored in
+  `tests/rot2_wave_adversarial.rs` (runnable red with `--ignored`). Risk as
+  recorded in the W48 row: the fabricated-claim check accepts retired
+  (tombstoned) record and entry ids as vouching mappings, so a "verified"
+  claim citing a retired id passes. If the w52 fix lands before the PR
+  opens, replace this bullet with its sha.
+- D32 FIXED: the on-branch fix is `53ab2e3d9` (compaction.rs, plus the red
+  test un-ignored in `tests/rot2_wave_adversarial.rs`); the ledger-marking
+  commit is `b12560575`. The D32 row's cited `aab8e4c58` is the worker-tree
+  original, not an ancestor of this branch (see R3).
+- D33 OPEN (filed by `2e727e0b6`; fix direction in the row: retire absorbed
+  ids into `retiredRefs` at absorption time).
+- Post-audit docs work: the typed mode is now user-documented (`a5362aa63`
+  README, `0a35fbfa6` settings reference and settings-manager doc comments).
+
+### PR-BODY reviewer-checklist cross-check (paths, shas, sections)
+
+- Paths: every file and directory the body cites exists at HEAD. The
+  crate-relative `src/...` and `tests/...` mentions resolve under
+  `crates/pi-coding-agent/`; the two glob references
+  (`runs/r2-e1-multicycle.*`, `repro/typecompact_repro*.json`) match
+  committed files.
+- Shas: all 39 commit citations resolve to ancestors of HEAD (`48a229cea`
+  is the rustc build hash, not a commit). The only non-resolving sha in
+  the file is `78ccdf254`, and it occurs only inside the six conflict
+  blocks (R1).
+- Sections: "FINAL-REPORT section 4.4" exists and is the right section (the
+  typed-state red team and the D21-D29 fix wave); "BUG-LEDGER.md section 4"
+  exists (the W35 findings). One drifted pointer: the Testing section's
+  "documented at `reports/context-rot/REGRESSION-GATES.md` and r2's section
+  4" — the r2 gates file carries the environmental exceptions in section 5
+  (its section 4 is the Python research suites; iteration-1's equivalent
+  material is section 3).
+- Count drift: "23 tests green, zero ignored" for
+  `rot2_typed_adversarial.rs` was exact at the W50 tip (`2ed67a8b3`) and
+  is 24 at HEAD (the W46 D30 tests added one); zero ignored still holds.
+  The W48 suite `rot2_wave_adversarial.rs` (8 tests, one ignored — the D31
+  red) is not yet in the body's gate table.
+
+### Residual risks at this tip (integrator checklist before the PR opens)
+
+R1. PR-BODY.md carries six unresolved merge-conflict blocks (lines 5-22,
+    61-74, 97-140, 472-490, 495-506, 598-605), each naming worker sha
+    `78ccdf254`; the W50 landing `2ed67a8b3` committed them. Both sides
+    describe the D18-D21 fixes as landed, so no information is lost —
+    resolve each block by picking a side. The W50-side text also still
+    says "E5-RM, W47, in flight" (three places) and "the W46 fix is in
+    flight": both landed since (`8ebc8155b`/`83ae4fb32`/`0f60ee761`,
+    `10e2b36e6`). A bounded marker sweep shows PR-BODY.md is the only
+    file under `reports/context-rot-r2/` still carrying markers.
+R2. FINAL-REPORT.md (outside the W59 file map; found by the bounded
+    embedded-log sweep) carries 29 pasted `git log --oneline` lines citing
+    worker shas `f638de7b9`/`78ccdf254` (not ancestors) at eleven
+    locations, several interrupting tables and lists (the hypotheses
+    table at lines 53-55; the reviewer-check numbered list at 611-613),
+    and its intro, section 5 and section 8 still say the D30/W46 recovery
+    is "in flight / NOT in this tree" — false at HEAD. EXPERIMENT-LEDGER.md
+    carries two of the same pasted lines (65, 472).
+R3. BUG-LEDGER.md debris: a stray `D` line (112) between the D31/D32 rows;
+    three embedded log lines (81, 115, 116) citing non-ancestor worker
+    shas; and the D32 row's `aab8e4c58` citation — the on-branch fix to
+    cite is `53ab2e3d9`.
+R4. Fragment debris and the missing D30 bullet (the S2 residuals).
+R5. D31 open (in flight on `rot2/w52`): the typed verifier's
+    fabricated-claim check accepts retired-id citations.
+R6. D33 open: absorbed-record reference stranding.
+R7. Disclosed open/deferred, unchanged: D7, D12 partial (soft fence), D20
+    residue, D10 "never retry" sub-item, W9-F1 v1 capture gap, D17
+    production wiring follow-up.
+R8. `git lfs push` must accompany the first push (S5 note a).
+
+Reproduce the debris sweeps (bounded, against HEAD):
+`git grep -n "^<<<<<<< " HEAD -- reports/context-rot-r2/` for R1, and
+`git grep -n -E "^[0-9a-f]{9} \((docs|research)" HEAD -- reports/context-rot-r2/ .changes/context-rot-r2.md`
+for R2-R4. R1-R4 are outside the W59 file map (this pass edits
+REVIEW-AUDIT.md only); they are recorded here so the integrator can sweep
+them in one pass before the PR opens.
