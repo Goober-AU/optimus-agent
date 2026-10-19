@@ -1640,6 +1640,43 @@ fn approx_compaction_entries_bytes(entries: &[CompactionSessionEntry]) -> usize 
         .sum()
 }
 
+/// D9: the previous-summary prose for the next compaction. The boundary
+/// compaction owns the retained-tail semantics even when it is a
+/// deadline-fallback marker, but its boilerplate is a truncation record, not
+/// authoritative prose. Walk back over the compactions at and before the
+/// boundary: skip deadline-fallback markers and provider checkpoints (the
+/// native path writes server boilerplate, not a handoff) and return the
+/// first real summary; an entry whose summary is only a file inventory stops
+/// the walk with no prose, mirroring the pre-D9 behavior for that entry.
+fn previous_summary_prose(
+    path_entries: &[CompactionSessionEntry],
+    boundary_index: i64,
+) -> Option<String> {
+    let mut index = boundary_index;
+    while index >= 0 {
+        if let CompactionSessionEntry::Compaction {
+            summary,
+            details,
+            ..
+        } = &path_entries[index as usize]
+        {
+            let details_value = details.clone().unwrap_or(Value::Null);
+            let deadline_fallback = details_value
+                .get("deadlineFallback")
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            if deadline_fallback || has_provider_checkpoint(&details_value) {
+                index -= 1;
+                continue;
+            }
+            let prose = strip_file_operations(summary);
+            return (!prose.is_empty()).then_some(prose);
+        }
+        index -= 1;
+    }
+    None
+}
+
 pub fn prepare_compaction(
     path_entries: &[CompactionSessionEntry],
     settings: &CompactionSettings,
@@ -1666,13 +1703,10 @@ pub fn prepare_compaction(
     let mut boundary_start = 0usize;
     if prev_compaction_index >= 0 {
         if let CompactionSessionEntry::Compaction {
-            summary,
-            first_kept_entry_id,
-            ..
+            first_kept_entry_id, ..
         } = &path_entries[prev_compaction_index as usize]
         {
-            let prose = strip_file_operations(summary);
-            previous_summary = (!prose.is_empty()).then_some(prose);
+            previous_summary = previous_summary_prose(path_entries, prev_compaction_index);
             let first_kept_entry_index = path_entries
                 .iter()
                 .position(|entry| entry.id() == first_kept_entry_id);

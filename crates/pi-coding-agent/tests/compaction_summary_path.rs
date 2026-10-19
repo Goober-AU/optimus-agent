@@ -20,10 +20,13 @@ use pi_ai::types::{Message, UserContent, UserMessage};
 use pi_coding_agent::core::compaction::compaction::{
     default_compaction_settings, prepare_compaction, CompactionSessionEntry, CompactionSettings,
 };
-use serde_json::Value;
+use serde_json::{json, Value};
 
 /// A handoff body that satisfies the conversation-format section rules.
 const SUMMARY: &str = "## Goal\nShip the parser fix.\n## Constraints & Preferences\nKeep the public API.\n## Progress\nParser fixed.\n## Key Decisions\nIncremental rollout.\n## Next Steps\nPublish.\n## Critical Context\nSee src/parser.rs.";
+
+/// The A7 deadline-fallback marker text `deadline_truncation_result` writes.
+const FALLBACK_SUMMARY: &str = "## Goal\nCompaction deadline fallback: truncated to the retained tail.\n## Constraints & Preferences\n- See the retained recent tail.\n## Progress\n### Done\n- [x] History dropped after the deadline.\n\n### In Progress\n- [ ] Continue from the tail.\n\n### Blocked\n- Summary generation exceeded the deadline.\n\n## Key Decisions\n- **Keep-recent-tail truncation**: applied.\n## Next Steps\n1. Continue the work.\n## Critical Context\n- The transcript keeps the full record.";
 
 fn compaction_entry(
     id: &str,
@@ -168,4 +171,77 @@ fn extension_summary_guard_rejects_empty_files_only_and_unsectioned_summaries() 
     assert!(validate_extension_compaction_summary(&format!("```markdown\n{SUMMARY}\n```")).is_ok());
     let with_files = format!("{SUMMARY}\n\n<read-files>\nsrc/a.rs\n</read-files>");
     assert!(validate_extension_compaction_summary(&with_files).is_ok());
+}
+
+// ---------------------------------------------------------------------------
+// D9: deadline-fallback boilerplate becomes the next previous_summary
+// ---------------------------------------------------------------------------
+
+/// D9 regression: a deadline-fallback compaction is still a boundary (its
+/// firstKeptEntryId defines the retained tail, its cumulative file inventory
+/// is inherited), but its boilerplate summary must not be fed back as the
+/// next compaction's previous_summary. The walk for previous prose must skip
+/// the fallback entry and continue to the last real summary.
+#[test]
+fn deadline_fallback_boilerplate_is_not_the_next_previous_summary() {
+    let entries = vec![
+        compaction_entry("c0", SUMMARY, "kept-2", None),
+        user_entry(
+            "kept-2",
+            &format!("Real summarized history. {}", "fact: ".repeat(300)),
+        ),
+        compaction_entry(
+            "c1",
+            FALLBACK_SUMMARY,
+            "kept-3",
+            Some(json!({
+                "deadlineFallback": true,
+                "readFiles": ["fallback-read.txt"],
+                "modifiedFiles": ["fallback-modified.txt"]
+            })),
+        ),
+        user_entry("kept-3", "A small retained turn."),
+        user_entry("new-1", "Another small turn."),
+    ];
+    let preparation = prepare_compaction(&entries, &settings_with(1.0), &|_| 250_000.0)
+        .expect("new material after the fallback boundary prepares");
+    assert_eq!(
+        preparation.previous_summary.as_deref(),
+        Some(SUMMARY),
+        "the fallback boilerplate must not be fed back as previous prose"
+    );
+    // The fallback entry still owns the boundary: the cut lands inside the
+    // material after its firstKeptEntryId, not after the older real summary.
+    assert_eq!(preparation.first_kept_entry_id, "new-1");
+    assert!(!preparation.messages_to_summarize.is_empty());
+    // Its cumulative file inventory is still inherited.
+    use pi_coding_agent::core::compaction::utils::compute_file_lists;
+    let (read_files, modified_files) = compute_file_lists(&preparation.file_ops);
+    assert!(read_files.contains(&"fallback-read.txt".to_string()));
+    assert!(modified_files.contains(&"fallback-modified.txt".to_string()));
+}
+
+/// D9 regression: when only a deadline-fallback compaction exists, the next
+/// compaction has no real previous summary and must run as a first
+/// compaction instead of treating the boilerplate as authoritative prose.
+#[test]
+fn fallback_only_history_yields_no_previous_summary() {
+    let entries = vec![
+        compaction_entry(
+            "c0",
+            FALLBACK_SUMMARY,
+            "kept-1",
+            Some(json!({"deadlineFallback": true})),
+        ),
+        user_entry("kept-1", "A small retained turn."),
+        user_entry("new-1", "Another small turn."),
+    ];
+    let preparation = prepare_compaction(&entries, &settings_with(1.0), &|_| 250_000.0)
+        .expect("new material after the fallback boundary prepares");
+    assert!(
+        preparation.previous_summary.is_none(),
+        "no real summary exists before the fallback, so previous prose stays empty"
+    );
+    assert_eq!(preparation.first_kept_entry_id, "new-1");
+    assert!(!preparation.messages_to_summarize.is_empty());
 }
