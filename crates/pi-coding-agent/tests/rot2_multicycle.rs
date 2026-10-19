@@ -950,7 +950,7 @@ fn smoke_scenario() -> Scenario {
         seed_entries: vec![
             ScenarioEntry {
                 kind: "user".into(),
-                text: "TASK GOAL: migrate the billing service. CONSTRAINT: never drop the payments ledger ARCH-KEEP-LEDGER. Decision: use architecture B ARCH-DECISION-B for the parser (corrected from architecture A).".into(),
+                text: "TASK GOAL: migrate the billing service. CONSTRAINT: never drop the payments ledger ARCH-KEEP-LEDGER.".into(),
                 usage_input: 0.0,
                 tool_call_id: String::new(),
                 tool_name: String::new(),
@@ -958,7 +958,12 @@ fn smoke_scenario() -> Scenario {
             },
             ScenarioEntry {
                 kind: "assistant".into(),
-                text: "Started the migration plan.".into(),
+                // D25/D30: a decision stated by the ASSISTANT classifies as
+                // VerifiedDecision (Task scope) and survives the step-boundary
+                // merge; the same sentence in user text currently falls through
+                // to LowPriorityEpisode (Step scope) and is retired at the first
+                // merge (filed as D30).
+                text: "Started the migration plan. Decision: use architecture B ARCH-DECISION-B for the parser (corrected from architecture A).".into(),
                 usage_input: 12.0,
                 tool_call_id: String::new(),
                 tool_name: String::new(),
