@@ -7,6 +7,8 @@ run the real Rust pipeline (`prepare_compaction` -> `compact` ->
 
 ## R2-E1 — multicycle retention, default vs taskState (deterministic lossy summarizer)
 
+- Status: EXECUTED (r2 research harness, scenario and experiment committed in
+  `3eeed6f3f`; artifacts `research/context_rot_r2/runs/r2-e1-multicycle.{scenario,result,score}.json`).
 - date: 2026-10-19
 - scenario: `r2-e1-multicycle` (19 probes: 8 constraints, 4 decisions, 4 evidence,
   2 corrections/supersession, 1 subagent artifact), 5 compaction cycles, filler turns
@@ -47,20 +49,40 @@ run the real Rust pipeline (`prepare_compaction` -> `compact` ->
 
 ## R2-E0 — adapter smoke (d4-drift, 3 probes, 5 cycles)
 
+- Status: EXECUTED (early adapter smoke inside the r2 research harness,
+  `3eeed6f3f`; superseded by R2-E1 and kept for the record — the committed
+  run artifacts are R2-E1's).
 - same adapter, smaller scenario; default lost all anchors by cycle 2;
   taskState retained constraint+decision, lost evidence. Superseded by R2-E1
   (same mechanism, larger probe set).
 
-## NOT EXECUTED (yet)
+## NOT EXECUTED (updated at the W34 refresh)
 
-- live-model arms (real GLM 5.3 summarizer + real probe answering): BLOCKED on
-  typed-state integration; planned as R2-E2 with the delimiter answer protocol.
-- CompactBench official suite: adapter design complete (see
-  KNOWLEDGE-TRIAGE-STUDY.md / COMPACTBENCH-ADAPTER-DESIGN.md), not yet run.
-- ContextBench coding tasks: eval design complete, not yet run.
+Executed since this list was first written: the live-model arms (R2-E2 base+hard
+below, R2-E3, R2-E3ADV), the offline re-measure R2-E2-RM, the CompactBench
+practice suites (W12 mock, W26 live) and the ContextBench live practice run (W27)
+— sections below. Still not executed:
+
+- the live TYPED arm (R2-E5, the decisive H-r2-3 measurement): `--arm typed` in
+  the E3 orchestrator is a stub (exit 2, never a silent substitution),
+  `arm_settings` in `tests/rot2_multicycle.rs` maps only `default`/`taskState`,
+  and worker W29 has no commits over the integration head at this writing.
+- any official / leaderboard-comparable number: every CompactBench run is
+  CUSTOM-OPTIMUS (public practice suites, custom adapter, scorer 2.0.0; the W26
+  live run is 8 of 20 starter cases per arm, one live draw per case); every
+  ContextBench number is the offline pipeline or the W27 practice run (synthetic
+  retention trajectories, patch_success UNAVAILABLE).
+- ContextBench repository checkouts, free-form agent trajectories and the holdout
+  run (the W10 blockers, unchanged).
+- re-running the iteration-1 retrieval surfaces on a second model: the r2 live
+  family ran on GLM 5.3, but the iteration-1 surfaces themselves were not re-run.
 
 ## E-INC — incremental/selective compaction experiments (W9, offline, production path)
 
+- Status: EXECUTED (variant driver and offline tests `0229dee3a`, adapter runs and
+  per-experiment analysis `91ac4b2cb`; artifacts
+  `research/context_rot_r2/incremental/results/e-inc{1,2a,2b,2c,3}.json` and
+  `incremental/runs/*.json`).
 - 8 cycles x 2 seeds, both arms; 16 adapter runs. Growth is non-compounding
   (fixed point at cycle 1: default steady 309 tok, taskState 712-716 tok).
 - default arm retention decays 1/19 -> 0/19 by the second compaction;
@@ -90,6 +112,10 @@ run the real Rust pipeline (`prepare_compaction` -> `compact` ->
 
 ## R2-E2 — LIVE-MODEL multicycle (real GLM 5.3 as summarizer and probe answerer, W7)
 
+- Status: EXECUTED (live driver and Python mirror committed in `fb089ee6e`;
+  artifacts `research/context_rot_r2/live/` — `results.json`, `raw-calls.jsonl`,
+  `r2-e2-{multicycle,hard}.*`, README; the corpus was later replayed offline
+  against the post-W11 ledger by R2-E2-RM below).
 - 581 wire calls, 526 distinct, 0 probe extraction failures (delimiter protocol held).
 - Python fixture mirror reproduced the stored R2-E1 result byte-exact (parity gate).
 - base scenario (19 probes x 5 cycles): default 95/95, taskState 89/95 (17/19 at cycles 3-5).
@@ -123,9 +149,45 @@ run the real Rust pipeline (`prepare_compaction` -> `compact` ->
   presenting itself as authoritative). This is the strongest argument yet for typed_state
   v2's provenance-based supersession (W4) and for keeping taskState default OFF.
 - the W11 fixes (stable ids, retirement by identity, corrections must not supersede each
-  other) target exactly this mechanism; W7's raw-calls.jsonl is the regression corpus.
+  other) target exactly this mechanism; W7's raw-calls.jsonl is the regression corpus,
+  and R2-E2-RM (below) replayed it offline: the inversion is removed on the base
+  corpus, the render cap (D21) is the residual.
 
 HEAD
+## R2-E3 — coding-task scenario suite (live GLM 5.3, W17)
+
+- Status: EXECUTED (worker branch `rot2/w17-e3`, integrated as `d8e318f81` +
+  `346f6c4f3` + `c5107fc31`; artifacts `research/context_rot_r2/live/e3/` —
+  `results.json`, `raw-calls.jsonl`, `README.md`, `r2-e3-task-{a,c,e,h,f}.scenario.json`).
+- Category: LIVE-MODEL (glm-5.3, temperature 0; the W7 Python mirror of the
+  production compaction path per cycle, `prepare_compaction` -> `compact` ->
+  `append_compaction` -> restore, with the v1 ledger rendered as protected state on
+  the taskState arm; probes are ACTION questions with negation-aware matchers,
+  3 reps per point, majority >= 2 of 3).
+- Question: does repeated compaction lose ACTION-level facts (next file to edit
+  under a constraint, corrected approach, boundary-adjacent exact error,
+  acceptable-set exclusion, post-restart approach) when the summarizer is a real
+  model?
+- Result: 50/50 probe points correct on BOTH arms (5 tasks x 2 arms x 5 cycles);
+  strict == primary everywhere; 0 extraction failures; no split majorities; anchor
+  retention 1/1 at every cycle, both arms, all tasks. TASK-F's simulated restart
+  (serialize -> fresh reload) left the restored provider context byte-identical on
+  both arms (`contextRoundTripIdentical: true`).
+- Findings: no measurable action-level rot at this scale, either arm. The taskState
+  arm handled the TASK-C/TASK-F corrections correctly by PAIRING LUCK — the
+  correction texts happen to share specific anchors with the old decision
+  ("synchronous", "nightly"), so the token/positional supersession rule that
+  INVERTED W7-E2's base correction paired correctly here; the E3 suite therefore
+  measures baseline action retention, not the ledger's known failure modes (the
+  adversarial variant is R2-E3ADV below). TASK-E's exact failing-test assertion
+  survived through summarizer verbatim-anchor discipline, not ledger protection
+  (EVIDENCE_RE takes the first matching line of the tool result; N1 again). Ops:
+  3 of 50 summarizer cycles needed the 16384 ladder step, max summarizer latency
+  45.3 s, 209 wire calls (155 probes, 53 summarizers, 1 pong).
+- Typed arm: deliberate stub in this run (`--arm typed` exits 2 with a loud
+  message, never a silent substitution); the live typed-arm run is R2-E5 (W29,
+  in flight at this writing).
+
 ## R2-E3ADV — adversarial correction suite (live GLM 5.3)
 
 - Status: EXECUTED (branch rot2/w23-adv, commits 76eefbf9f + 754bb75a1; artifacts
@@ -198,4 +260,73 @@ HEAD
 
 Artifacts: research/context_rot_r2/live/remeasure/{w11_port.py, replay.py, results.json,
 README.md} (three-column verdict table, per-correction renders, port diff with Rust lines).
-19add7970 (research(context-rot): r2-e2-rm offline re-measure of the w11 ledger fix)
+Integrated as `2fbb14f33` (worker branch `rot2/w24-remeasure`, worker commit 19add7970).
+
+## W26 — live-model CompactBench practice run (GLM 5.3 in both roles)
+
+- Status: EXECUTED (integration commits `6ea85dc10` live env-configured harness
+  summarizer + `4b8f2165f` run artifacts and report; artifacts
+  `research/context_rot_r2/compactbench_adapter/live/` — `README.md`,
+  `run-config.json`, the four live `results/*.jsonl` plus the mock@HEAD
+  baselines, `raw-calls.jsonl`, `aggregate.json`, `amend1-decision.json`;
+  report section `reports/context-rot-r2/COMPACTBENCH-RESULTS.md` section 9).
+- Category: CUSTOM-OPTIMUS + LIVE-MODEL — practice run on the public starter suite
+  (slots 0-1 = 8 of 20 cases per arm, the ruled Option B budget), one live draw per
+  case; NOT a leaderboard number, NOT comparable to any 1.0.0-scored run.
+- Setup: GLM 5.3 as BOTH the summarizer (behind the Rust compaction-harness binary,
+  production path, env-configured HTTP provider with the 8192->65536 ladder) and the
+  task/eval model (in-process provider registration in the stock runner); 4 custom
+  arms, 3 drift cycles, delta-append, scorer 2.0.0; 676 HTTP requests of a 768
+  ceiling; one fixed-and-resumed provider incident (a `length` finish re-rolled the
+  same 2048 rung instead of advancing the ladder; ~130 extra requests, no invalid
+  answers recorded).
+- Result (overall / drift_res / constraint_ret / contradiction / compression):
+  task-state 0.6844 / 0.990 / 0.800 / 0.094 / 0.67x; echo-first-n 0.6531 / 0.833 /
+  0.800 / 0.094 / 1.60x; full-transcript-oracle 0.5781 / 0.721 / 0.650 / 0.078 /
+  0.92x; plain 0.4906 / 0.757 / 0.650 / 0.172 / 0.72x.
+- Findings: the arms' quality separates under live eval (the W12 mock runs could not
+  separate anything — every arm 0.375); the 0.194 Rust-arm gap is driven by exactly
+  the ledger-mediated checks (`recall_latest_decision` 0.625 vs 0.125,
+  `assign_a/b` 0.375 vs 0.125, drift resistance 0.99 vs 0.76, contradiction rate
+  0.094 vs 0.172). GLM writes tighter summaries than the lossy fixture (compression
+  0.46x -> 0.67x task-state on identical cycle-0 transcripts). The verbatim oracle is
+  not the ceiling under live eval (0.578; worst arm on `recall_constraint` 0.500).
+  Live single-draw runs are not bit-reproducible even at temperature 0 (two
+  identical smoke draws scored 0.4 vs 0.1); with n = 8 per arm only the Rust-arm gap
+  is a robust signal.
+
+## W27 — live-model ContextBench practice run (retention through compaction)
+
+- Status: EXECUTED (integration commits `da38b1edf` driver + `3e5880dd5` loader
+  and sizing fix + `963ca577a` + `32a430f08` artifacts; report section
+  `reports/context-rot-r2/CONTEXTBENCH-RESULTS.md` section 6; artifacts
+  `research/context_rot_r2/contextbench/live/` — `README.md`, `run_config.json`,
+  `results.json`, `raw-calls.jsonl`).
+- Category: CUSTOM-OPTIMUS + LIVE-MODEL — practice run, not an official scorecard;
+  no number is comparable to a ContextBench leaderboard result.
+- Setup: 26 paired dev instances (deterministic blake2b slice of the 110 size-window
+  dev candidates; 7 languages, 15 repos; holdout untouched) x 2 arms x 4
+  append+compact cycles, delta-append sessions through the compaction-harness
+  binary with the live GLM 5.3 summarizer (the W26 wiring), evaluated by the W10
+  metric mirror; 439 requests for 208 cycle attempts (581/600 total including an
+  invalidated blind first attempt plus smoke), mean latency 20.4 s, 0 transport
+  retries, 47 ladder climbs, 0 error calls.
+- Arms: A = baseline (taskState off) vs B = task-state-ledger (taskState prompt)
+  — a documented substitution (W10's offline arm B, jev-relevance, is not
+  expressible through the compaction surface).
+- Method caveat: no repository checkouts exist under the offline waiver — the
+  trajectories are synthetic explorations built from the gold annotations plus
+  same-repo distractor reads, so the metrics measure RETENTION of the gold context
+  through compaction, not free-form exploration; patch_success stays UNAVAILABLE by
+  construction.
+- Result (paired, n = 26; exact sign test / tie-corrected Wilcoxon): final line
+  precision B 0.586 vs A 0.320 (+0.097, 18+/4-, sign p = 0.004, Wilcoxon p =
+  0.003); final line coverage 0.916 vs 0.852 (p = 0.455 / 0.196); final file
+  coverage 0.974 = 0.974; final file precision 0.326 vs 0.357 (p = 0.057 / 0.064);
+  EditLoc via the gold-patch fallback (arm-independent).
+- Findings: file-granularity retention barely separates the arms (the summarizer
+  keeps naming every file it saw); line granularity does — arm B ends 69% gold /
+  31% distractor retained lines vs arm A 47% / 53%. The parsed ledger itself
+  populated in only 34 of 104 arm-B cycles, so the effect observed is prompt-level
+  (the Protected Task State instructions), not ledger-level. Descriptive
+  statistics, not confirmatory.
