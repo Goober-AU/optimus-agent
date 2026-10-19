@@ -177,12 +177,15 @@ fn heartbeat_neon_and_classic_painted_footer_keeps_status_beside_context() {
             for width in [20, 36, 80, 120] {
                 h.width.set(width);
                 let frame = h.paint();
+                // The context health indicator narrows with the terminal: the
+                // compact score at 20 columns, the full score and counter above.
+                let expected = if width >= 36 { "146k (15%)" } else { "CTX HEALTH 100" };
                 let footer = frame
                     .iter()
-                    .find(|row| row.contains("146k (15%)"))
+                    .find(|row| row.contains(expected))
                     .unwrap_or_else(|| panic!("missing usage {style}/{width}: {frame:?}"));
                 assert!(footer.contains("HB"), "{style}/{width}: {footer}");
-                assert!(footer.trim_end().ends_with("146k (15%)"), "{footer}");
+                assert!(footer.trim_end().ends_with(expected), "{footer}");
                 assert!(
                     frame.iter().all(|row| visible_width(row) <= width),
                     "{style}/{width}: {frame:?}"

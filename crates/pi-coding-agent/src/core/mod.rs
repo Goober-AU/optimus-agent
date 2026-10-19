@@ -10,6 +10,7 @@ pub mod auth_storage;
 pub mod autonomous;
 pub mod bash_executor;
 pub mod compaction;
+pub mod context_health;
 pub mod context_tree;
 pub mod cron_jobs;
 pub mod defaults;

@@ -2231,14 +2231,14 @@ fn the_tray_row_pulls_the_jev_segments_onto_the_model_effort_row() {
         "Tray renders the merged row"
     );
     assert!(
-        tray.contains("get_tray_context_usage_text()"),
-        "the counter comes from the connection state"
+        tray.contains("get_tray_context_health_text()"),
+        "the indicator comes from the connection state"
     );
     assert!(tray.contains("tray_row::compose_tray_row"));
     let mode = crate_file("src/modes/interactive/interactive_mode.rs");
     assert!(
-        mode.contains("fn get_tray_context_usage_text("),
-        "the counter text is its own accessor"
+        mode.contains("fn get_tray_context_health("),
+        "the health text is its own accessor"
     );
 }
 

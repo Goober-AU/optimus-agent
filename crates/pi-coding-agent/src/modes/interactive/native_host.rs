@@ -33,6 +33,7 @@ use crate::modes::interactive::prompt_stash_state::{
 };
 use pi_tui::components::text::Text as TuiText;
 use pi_tui::render_cache::RenderedLine;
+use pi_tui::utils::visible_width;
 use pi_tui::tui::{Component as TuiComponent, InputListenerResult, TuiStopOptions, TUI};
 use std::cell::{Cell, RefCell};
 use std::hash::{Hash, Hasher};
@@ -806,15 +807,39 @@ impl TuiComponent for Transcript {
     }
 }
 
+/// Narrow-terminal ladder for the context health indicator: the full score and
+/// counter, then the score alone, then the abbreviation. The goal and heartbeat
+/// labels still drop first in `native_status::right_status`, so the indicator is
+/// the last thing to go.
+fn context_health_text(
+    health: Option<&crate::core::context_health::ContextHealth>,
+    full: Option<String>,
+    width: usize,
+) -> Option<String> {
+    let (health, full) = match (health, full) {
+        (Some(health), Some(full)) => (health, full),
+        _ => return None,
+    };
+    if visible_width(&full) <= width {
+        return Some(full);
+    }
+    let compact = crate::core::context_health::compact_label(health);
+    if visible_width(&compact) <= width {
+        return Some(compact);
+    }
+    Some(crate::core::context_health::minimal_label(health))
+}
+
 struct Tray(Rc<RefCell<InteractiveMode>>, Rc<RefCell<CustomEditor>>);
 impl Tray {
     /// The bottom row. The navigation/model/effort label, the two Jev segments
     /// (decision mode + independent compaction, published through the extension
-    /// status surface) and the context usage counter share ONE baseline: the
-    /// counter is right-aligned on the same row, never on a separate lower-left
+    /// status surface) and the context health indicator share ONE baseline: the
+    /// indicator is right-aligned on the same row, never on a separate lower-left
     /// line and never hidden behind a full-width left string. The narrow
     /// fallback ladder (full -> compact segments -> left truncation) lives in
-    /// the pure `tray_row` module.
+    /// the pure `tray_row` module; the indicator itself shortens to its compact
+    /// and minimal labels before that ladder drops anything else.
     fn render_row(
         &mut self,
         width: f64,
@@ -826,11 +851,20 @@ impl Tray {
             .get_tray_override_label(&self.1.borrow().editor().get_text())
             .or_else(|| mode.get_tray_location_label())
             .unwrap_or_default();
-        let usage = mode.get_tray_context_usage_text();
+        let health = mode.get_tray_context_health();
+        let context_text = context_health_text(
+            health.as_ref(),
+            mode.get_tray_context_health_text(),
+            width as usize,
+        );
+        let context_colour = health
+            .as_ref()
+            .map(|health| crate::core::context_health::band_colour(health.band))
+            .unwrap_or("dim");
         let left_themed = theme().fg("dim", &left);
-        let usage_themed = usage.as_deref().map(|usage| if native_neon::active() {
-            native_neon::context_meter(mode.get_connection_context_usage().as_ref(), usage, width as usize)
-        } else { theme().fg("dim", usage) });
+        let usage_themed = context_text.as_deref().map(|text| if native_neon::active() {
+            native_neon::context_meter(mode.get_connection_context_usage().as_ref(), text, width as usize)
+        } else { theme().fg(context_colour, text) });
         let right = native_status::right_status(&mode, usage_themed.as_deref(), width as usize);
         let composed = tray_row::compose_tray_row(
             tray_row::TrayRow {
