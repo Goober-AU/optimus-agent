@@ -142,6 +142,10 @@ pub struct Supersession {
     /// Id of the retired item.
     pub old_id: String,
     pub old_entry: String,
+    /// Verbatim text of the retired item, so the render can show what is
+    /// history. Empty in ledgers persisted before this field existed.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub old_text: String,
     /// Id of the item that now carries the requirement.
     pub new_id: String,
     /// Verbatim correction text.
@@ -500,13 +504,16 @@ pub fn build_ledger(
         }
     }
 
-    // Supersession: a user correction retires the best-matching OLDER decision or
-    // constraint that shares a specific anchor (identifier, path, digit-bearing
-    // token). Shared generic words alone never retire a constraint. Corrections
-    // are authoritative user statements and never serve as targets, so two
-    // corrections cannot retire each other; when a later correction matches a
-    // target that is already superseded, the newest correction carries the
-    // requirement.
+    // Supersession: a later user correction retires the best earlier item about
+    // the same subject. Three gates make retirement directional and anchored:
+    //   1. The target is older: captured before the correction in this
+    //      window, or carried by the previous ledger (earlier windows).
+    //   2. The target is not itself a correction, so retirement can never be
+    //      mutual and a correction always stays current.
+    //   3. The pair shares a subject anchor: a specific token (path,
+    //      identifier, digit-bearing or long word) or enough non-scaffold
+    //      content words. Frame words that merely state that a correction
+    //      happened never count.
     for correction in &corrections {
         let correction_order = capture_order.get(&correction.id).copied().unwrap_or(0);
         let correction_tokens = tokens(&correction.text);
@@ -535,16 +542,21 @@ pub fn build_ledger(
             }
             let item_tokens = tokens(&item.text);
             let shared: Vec<&String> = correction_tokens.intersection(&item_tokens).collect();
+            let anchors = shared
+                .iter()
+                .filter(|token| !SCAFFOLD.contains(&token.as_str()))
+                .count();
             let specific = shared
                 .iter()
                 .filter(|token| {
-                    token.contains('_')
-                        || token.contains('/')
-                        || token.chars().any(|c| c.is_ascii_digit())
-                        || token.chars().count() > 8
+                    !SCAFFOLD.contains(&token.as_str())
+                        && (token.contains('_')
+                            || token.contains('/')
+                            || token.chars().any(|c| c.is_ascii_digit())
+                            || token.chars().count() > 8)
                 })
                 .count();
-            let score = (specific as i32) * 3 + shared.len() as i32;
+            let score = (specific as i32) * 3 + anchors as i32;
             if score > best.map(|(_, current)| current).unwrap_or(0) {
                 best = Some(((is_decision, index), score));
             }
@@ -573,6 +585,7 @@ pub fn build_ledger(
         ledger.superseded.push(Supersession {
             old_id: old.id.clone(),
             old_entry: old.entry.clone(),
+            old_text: old.text.clone(),
             new_id: correction.id.clone(),
             new_text: correction.text.clone(),
             new_entry: correction.entry.clone(),
@@ -963,6 +976,103 @@ mod tests {
         assert!(is_correction_clause(
             "Never drop the audit log; persist it inline instead."
         ));
+    }
+
+    #[test]
+    fn two_corrections_never_retire_each_other() {
+        // W7 root cause 2/W9-F4: the reporting and validator corrections share
+        // more frame tokens with each other than with their targets, so the
+        // old pairing retired them mutually. Corrections are excluded as
+        // targets, so each retires only its own older decision.
+        let entries = vec![
+            assistant_entry(
+                "a1",
+                "Decision: use architecture A for the reporting module R2-SUPE-48258b00.",
+            ),
+            user_entry(
+                "u2",
+                "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.",
+            ),
+            user_entry(
+                "u3",
+                "CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.",
+            ),
+        ];
+        let ledger = build_ledger(&entries, None);
+        assert!(
+            ledger
+                .constraints
+                .iter()
+                .any(|item| item.text.contains("B for the reporting module")),
+            "the reporting correction must stay active: {:?}",
+            ledger.constraints
+        );
+        assert!(
+            ledger
+                .constraints
+                .iter()
+                .any(|item| item.text.contains("B for the validator module")),
+            "the validator correction must stay active: {:?}",
+            ledger.constraints
+        );
+        assert!(
+            ledger
+                .decisions
+                .iter()
+                .all(|item| !item.text.contains("architecture A")),
+            "the A decision must be retired: {:?}",
+            ledger.decisions
+        );
+        assert_eq!(ledger.superseded.len(), 1, "{:?}", ledger.superseded);
+    }
+
+    #[test]
+    fn a_correction_cannot_retire_a_newer_decision() {
+        // Ordinal gate: only older items are retirement targets.
+        let entries = vec![
+            user_entry(
+                "u1",
+                "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.",
+            ),
+            assistant_entry(
+                "a2",
+                "Decision: use architecture A for the reporting module R2-SUPE-48258b00.",
+            ),
+        ];
+        let ledger = build_ledger(&entries, None);
+        assert!(ledger.superseded.is_empty(), "{:?}", ledger.superseded);
+        assert!(
+            ledger
+                .decisions
+                .iter()
+                .any(|item| item.text.contains("architecture A")),
+            "the newer decision stays current: {:?}",
+            ledger.decisions
+        );
+    }
+
+    #[test]
+    fn the_split_off_superseded_sentence_retires_nothing() {
+        // W7 root cause 3 evidence: "The earlier A decision is superseded."
+        // shares only frame words with the A decision, so it must not retire
+        // it (or anything else).
+        let entries = vec![
+            assistant_entry(
+                "a1",
+                "Decision: use architecture A for the reporting module R2-SUPE-48258b00.",
+            ),
+            user_entry("u2", "The earlier A decision is superseded."),
+        ];
+        let ledger = build_ledger(&entries, None);
+        assert!(ledger.superseded.is_empty(), "{:?}", ledger.superseded);
+        assert!(
+            ledger
+                .decisions
+                .iter()
+                .any(|item| item.text.contains("architecture A")),
+            "the A decision stays current: {:?}",
+            ledger.decisions
+        );
     }
 
     #[test]
