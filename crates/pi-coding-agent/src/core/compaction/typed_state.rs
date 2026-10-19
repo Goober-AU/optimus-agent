@@ -110,8 +110,11 @@
 //! # Integration contract (for `prepare_compaction`; not wired here)
 //!
 //! ```text
-//! // where v1 called build_ledger, with the same window slice:
-//! let previous: Option<TypedStateLedger> = /* details.typedState of the last compaction */;
+//! // where v1 called build_ledger, with the same window slice.
+//! // parse_typed_state is the loud D26 path: a malformed payload is
+//! // salvaged per record and reported, never silently dropped.
+//! let previous: Option<TypedStateLedger> =
+//!     details.typedState.map(parse_typed_state);
 //! let new_state = build_typed_state(&path_entries[boundary_start..history_end]);
 //! let state = merge(previous.as_ref(), new_state);
 //! let allocation = allocate(&state, budget_tokens);   // budget from settings
@@ -402,6 +405,16 @@ pub struct TypedStateLedger {
     /// ledger is never silently truncated.
     #[serde(default, skip_serializing_if = "is_zero")]
     pub dropped_by_cap: usize,
+    /// D26 diagnostics observed while reading this ledger from a prior
+    /// cycle's `details.typedState` payload (a strict-parse failure and the
+    /// salvage that followed). Metadata about the read, never durable
+    /// state: the field is skipped by serde so the persisted schema stays
+    /// record-only and the rider never crosses an episode boundary; `merge`
+    /// carries it into the observing episode's ledger so the compaction
+    /// that saw the malformation can surface it in
+    /// `details.typedVerification`.
+    #[serde(skip)]
+    pub salvage: Option<TypedStateSalvage>,
 }
 
 /// D25: hard bound on the durable records one ledger may carry. `merge` is
@@ -1411,6 +1424,10 @@ pub fn merge(
     let mut merged = reconcile(combined);
     merged.retired_refs = retired_refs;
     merged.dropped_by_cap = previous.dropped_by_cap;
+    // D26: the salvage rider is metadata about reading `previous`, so it
+    // survives the merge into the observing episode's ledger; serialization
+    // strips it (serde skip), so it never crosses an episode boundary.
+    merged.salvage = previous.salvage.clone();
     enforce_durable_cap(merged)
 }
 
@@ -1484,6 +1501,90 @@ fn enforce_durable_cap(mut ledger: TypedStateLedger) -> TypedStateLedger {
         ledger.retired_refs.drain(0..overflow);
     }
     ledger
+}
+
+/// D26 diagnostics for a persisted `details.typedState` payload that failed
+/// strict deserialization: what the salvage path dropped and what it repaired.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct TypedStateSalvage {
+    /// Record slots that could not be recovered at all and were dropped from
+    /// the merge (the fresh window is then their only replacement).
+    pub dropped_records: usize,
+    /// Fields coerced to a safe default while salvaging, by location, e.g.
+    /// `records[0].ordinal`.
+    pub repaired_fields: Vec<String>,
+}
+
+/// Deserialize a persisted typed ledger. A payload that fails the strict
+/// parse (schema drift between versions, a partially written line) is not
+/// silently dropped: every record slot is retried individually, positional
+/// fields with a safe default (`ordinal`, `revision.order`) are repaired in
+/// place, the diagnostics ride on the ledger's `salvage` field, and the
+/// merge proceeds with whatever was recovered plus the fresh window.
+pub fn parse_typed_state(value: &serde_json::Value) -> TypedStateLedger {
+    if let Ok(ledger) = serde_json::from_value::<TypedStateLedger>(value.clone()) {
+        return ledger;
+    }
+    let mut salvage = TypedStateSalvage::default();
+    let Some(slots) = value.get("records").and_then(serde_json::Value::as_array) else {
+        // The payload is recognizable enough to have a `records` field but
+        // not as an array (or is not an object at all): nothing is
+        // recoverable, and the diagnostics still surface the malformation.
+        return TypedStateLedger {
+            salvage: Some(salvage),
+            ..TypedStateLedger::default()
+        };
+    };
+    let mut records: Vec<TypedStateRecord> = Vec::new();
+    for (index, slot) in slots.iter().enumerate() {
+        match serde_json::from_value::<TypedStateRecord>(slot.clone()) {
+            Ok(record) => records.push(record),
+            Err(_) => match salvage_record(slot, index, &mut salvage.repaired_fields) {
+                Some(record) => records.push(record),
+                None => salvage.dropped_records += 1,
+            },
+        }
+    }
+    TypedStateLedger {
+        records,
+        salvage: Some(salvage),
+        ..TypedStateLedger::default()
+    }
+}
+
+/// Retry one record slot with its positional fields defaulted: `ordinal`
+/// and `revision.order` are ordering metadata with a documented zero
+/// default, so a type-drifted value can be replaced without changing what
+/// the record means. Any other malformation keeps the record unrecoverable.
+fn salvage_record(
+    slot: &serde_json::Value,
+    index: usize,
+    repaired_fields: &mut Vec<String>,
+) -> Option<TypedStateRecord> {
+    let mut candidate = slot.clone();
+    let map = candidate.as_object_mut()?;
+    let location = format!("records[{index}]");
+    match map.get("ordinal") {
+        Some(serde_json::Value::Number(_)) => {}
+        _ => {
+            map.insert("ordinal".to_string(), serde_json::Value::from(0usize));
+            repaired_fields.push(format!("{location}.ordinal"));
+        }
+    }
+    if let Some(revision) = map
+        .get_mut("revision")
+        .and_then(serde_json::Value::as_object_mut)
+    {
+        match revision.get("order") {
+            Some(serde_json::Value::Number(_)) => {}
+            _ => {
+                revision.insert("order".to_string(), serde_json::Value::from(0u32));
+                repaired_fields.push(format!("{location}.revision.order"));
+            }
+        }
+    }
+    serde_json::from_value::<TypedStateRecord>(candidate).ok()
 }
 
 // ---------------------------------------------------------------------------
@@ -1610,13 +1711,27 @@ fn record_line(record: &TypedStateRecord) -> String {
             ),
             None => format!("- [{}] {}: {}", record.id, entry_ref, record.text),
         },
+        // D22: the link direction depends on the status. A CURRENT
+        // correction/task points at the record it retired ("supersedes");
+        // reconcile overwrites a retired record's link with the id of the
+        // record that retired it ("superseded by"). Rendering the kind arm
+        // before the status arm inverted the retirement direction for
+        // superseded corrections and tasks, teaching the summarizer that the
+        // retired record supersedes its replacer.
         TypedInformationKind::UserCorrection | TypedInformationKind::CurrentTask => {
-            match &record.link {
-                Some(target) => format!(
+            match (&record.status, &record.link) {
+                (RecordStatus::Current, Some(target)) => format!(
                     "- [{}] {} {} (supersedes [{}])",
                     record.id, entry_ref, record.text, target
                 ),
-                None => format!("- [{}] {} {}", record.id, entry_ref, record.text),
+                (RecordStatus::Superseded, Some(retiring)) => format!(
+                    "- [{}] {} (superseded by [{}])",
+                    record.id, record.text, retiring
+                ),
+                // No link: a restatement resets the link (reconcile's dedupe
+                // loop) and an unlinked retirement has no direction to render,
+                // so the clause is omitted rather than guessed.
+                _ => format!("- [{}] {} {}", record.id, entry_ref, record.text),
             }
         }
         _ if record.status == RecordStatus::Superseded => match &record.link {
@@ -1946,12 +2061,39 @@ pub fn verify(compact_artifact: &str, state: &TypedStateLedger) -> TypedStateVer
     verification
 }
 
+/// The render's section titles: the all-caps lines `render_allocation`
+/// emits as stand-alone structure. `is_heading_line` admits exactly these
+/// (plus markdown/bold prefixes), so the list must cover every
+/// `section_title` output; `heading_allowlist_covers_every_section_title`
+/// pins that.
+const SECTION_TITLE_LINES: &[&str] = &[
+    "ACTIVE CONSTRAINTS",
+    "USER CORRECTIONS",
+    "SAFETY BOUNDARIES",
+    "ACCEPTANCE CRITERIA",
+    "DECISIONS (CURRENT)",
+    "DECISION RATIONALE",
+    "CURRENT TASK",
+    "PENDING ACTIONS",
+    "VERIFIED EVIDENCE",
+    "SOURCE EVIDENCE",
+    "REPOSITORY STATE",
+    "SUBAGENT STATE",
+    "HISTORICAL FACTS",
+    "LOW-PRIORITY EPISODES",
+    "SUPERSEDED (HISTORY, NOT CURRENT)",
+];
+
 fn is_heading_line(line: &str) -> bool {
     let trimmed = line.trim();
     if trimmed.starts_with('#') || trimmed.starts_with("**") {
         return true;
     }
-    trimmed == trimmed.to_uppercase() && trimmed.chars().any(|c| c.is_alphabetic())
+    // D27: casing alone must not mark a heading. The render's section
+    // titles are the only stand-alone all-caps lines the artifact carries
+    // as structure; an all-caps claim line ("ALL TESTS VERIFIED PASSING")
+    // still has to pass through the fabricated-verified-claim check.
+    SECTION_TITLE_LINES.contains(&trimmed)
 }
 
 // ---------------------------------------------------------------------------
@@ -2583,6 +2725,70 @@ mod tests {
     }
 
     #[test]
+    fn superseded_corrections_and_tasks_render_both_directions() {
+        // D22: the link direction depends on the status. A CURRENT
+        // correction renders "supersedes [target]"; a superseded correction
+        // or task renders "superseded by [retiring]" — never the inverted
+        // direction the summarizer would copy.
+        let corrections = build_typed_state(&[
+            user_entry("u1", "Correction: the parser must use architecture alpha ARCH-CHOICE."),
+            user_entry("u2", "Correction: the parser must use architecture beta ARCH-CHOICE instead."),
+        ]);
+        let rendered = render_hot_state(&corrections);
+        let retired = corrections
+            .records
+            .iter()
+            .find(|record| record.text.contains("alpha"))
+            .expect("retired correction");
+        let active = corrections
+            .records
+            .iter()
+            .find(|record| record.text.contains("beta"))
+            .expect("active correction");
+        assert_eq!(retired.status, RecordStatus::Superseded);
+        assert_eq!(active.status, RecordStatus::Current);
+        let retired_line = rendered
+            .lines()
+            .find(|line| line.starts_with(&format!("- [{}]", retired.id)))
+            .expect("the retired correction renders");
+        assert!(
+            retired_line.contains(&format!("(superseded by [{}]", active.id)),
+            "a superseded USER_CORRECTION renders the record that retired it: {retired_line}"
+        );
+        let active_line = rendered
+            .lines()
+            .find(|line| line.starts_with(&format!("- [{}]", active.id)))
+            .expect("the active correction renders");
+        assert!(
+            active_line.contains(&format!("(supersedes [{}]", retired.id)),
+            "a CURRENT USER_CORRECTION renders the record it retired: {active_line}"
+        );
+
+        let tasks = build_typed_state(&[
+            user_entry("t1", "Your task is to implement the typed state module."),
+            user_entry("t2", "The new task is writing the integration tests."),
+        ]);
+        let rendered = render_hot_state(&tasks);
+        let retired_task = tasks
+            .records
+            .iter()
+            .find(|record| record.text.contains("typed state module"))
+            .expect("retired task");
+        assert_eq!(retired_task.status, RecordStatus::Superseded);
+        let task_line = rendered
+            .lines()
+            .find(|line| line.starts_with(&format!("- [{}]", retired_task.id)))
+            .expect("the retired task renders");
+        assert!(
+            task_line.contains(&format!(
+                "(superseded by [{}]",
+                retired_task.link.clone().unwrap()
+            )),
+            "a superseded CURRENT_TASK renders the record that retired it: {task_line}"
+        );
+    }
+
+    #[test]
     fn restatement_after_correction_revives_the_target() {
         let entries = vec![
             user_entry("u1", "Always use Postgres for the cache."),
@@ -2707,6 +2913,59 @@ mod tests {
         let value = serde_json::to_value(&ledger).unwrap();
         let back: TypedStateLedger = serde_json::from_value(value).unwrap();
         assert_eq!(ledger, back);
+    }
+
+    #[test]
+    fn parse_typed_state_salvages_and_reports_malformed_payloads() {
+        // D26: a clean parse reports no salvage.
+        let ledger = build_typed_state(&[user_entry(
+            "u1",
+            "CONSTRAINT: never delete the payments ledger ARCH-TYPED-KEEP.",
+        )]);
+        let clean = parse_typed_state(&serde_json::to_value(&ledger).unwrap());
+        assert_eq!(clean, ledger);
+        assert!(clean.salvage.is_none());
+
+        // Positional drift (a type-drifted ordinal) is repaired in place and
+        // the record survives with its identity.
+        let mut drifted = serde_json::to_value(&ledger).unwrap();
+        drifted["records"][0]["ordinal"] = serde_json::json!("zero");
+        let parsed = parse_typed_state(&drifted);
+        assert_eq!(parsed.records, ledger.records, "the record is salvaged");
+        let salvage = parsed.salvage.as_ref().expect("the malformation is reported");
+        assert_eq!(salvage.dropped_records, 0);
+        assert_eq!(salvage.repaired_fields, vec!["records[0].ordinal".to_string()]);
+        // The rider never serializes: the persisted schema stays record-only.
+        let round = serde_json::to_value(&parsed).unwrap();
+        assert!(round.get("salvage").is_none());
+
+        // Semantic drift (the text) is unrecoverable: the slot is dropped
+        // loudly, and the merge can only proceed from the fresh window.
+        let mut broken = serde_json::to_value(&ledger).unwrap();
+        broken["records"][0]["text"] = serde_json::json!(42);
+        let parsed = parse_typed_state(&broken);
+        assert!(parsed.records.is_empty());
+        let salvage = parsed.salvage.as_ref().expect("the drop is reported");
+        assert_eq!(salvage.dropped_records, 1);
+        assert!(salvage.repaired_fields.is_empty());
+
+        // An unrecognizable payload reports the malformation even though
+        // nothing can be counted or recovered.
+        let parsed = parse_typed_state(&serde_json::json!({"records": "oops"}));
+        assert!(parsed.records.is_empty());
+        assert!(parsed.salvage.is_some());
+
+        // The rider survives the merge into the observing episode's ledger
+        // and serialization strips it, so it never crosses an episode.
+        let window = build_typed_state(&[user_entry(
+            "u2",
+            "CONSTRAINT: always keep the changelog frozen ARCH-2-CHANGELOG.",
+        )]);
+        let merged = merge(Some(&parsed), window);
+        assert!(merged.salvage.is_some(), "the rider reaches the episode");
+        let round: TypedStateLedger =
+            serde_json::from_value(serde_json::to_value(&merged).unwrap()).unwrap();
+        assert!(round.salvage.is_none(), "the rider never serializes");
     }
 
     // ---------------------------------------------------------------
@@ -3425,6 +3684,56 @@ mod tests {
         let verification = verify(&artifact, &ledger);
         assert!(!verification.passed);
         assert_eq!(verification.fabricated.len(), 1, "{verification:?}");
+    }
+
+    #[test]
+    fn all_caps_verified_claims_cannot_pose_as_headings() {
+        // D27: casing alone must not exempt a line from the
+        // fabricated-verified-claim check; only structural headings are
+        // exempt (markdown/bold prefixes and the render's section titles).
+        let ledger = build_typed_state(&[tool_entry("t1", "test result: ok. 4785 passed; 0 failed")]);
+        let claim = "ALL TESTS VERIFIED PASSING";
+        assert!(!is_heading_line(claim));
+        let verification = verify(claim, &ledger);
+        assert_eq!(verification.fabricated.len(), 1, "{verification:?}");
+        // The render's own all-caps section titles stay headings.
+        assert!(is_heading_line("VERIFIED EVIDENCE"));
+        assert!(is_heading_line("SUPERSEDED (HISTORY, NOT CURRENT)"));
+        let render = render_hot_state(&ledger);
+        let verification = verify(&render, &ledger);
+        assert!(
+            verification.fabricated.is_empty(),
+            "the full render passes: {verification:?}"
+        );
+    }
+
+    #[test]
+    fn heading_allowlist_covers_every_section_title() {
+        let kinds = [
+            TypedInformationKind::UserConstraint,
+            TypedInformationKind::UserCorrection,
+            TypedInformationKind::SafetyOrPermissionBoundary,
+            TypedInformationKind::AcceptanceCriterion,
+            TypedInformationKind::VerifiedDecision,
+            TypedInformationKind::DecisionRationale,
+            TypedInformationKind::CurrentTask,
+            TypedInformationKind::PendingAction,
+            TypedInformationKind::VerifiedToolResult,
+            TypedInformationKind::SourceEvidence,
+            TypedInformationKind::RepositoryState,
+            TypedInformationKind::SubagentState,
+            TypedInformationKind::HistoricalFact,
+            TypedInformationKind::LowPriorityEpisode,
+        ];
+        for kind in kinds {
+            for status in [RecordStatus::Current, RecordStatus::Superseded] {
+                let title = section_title(kind, status);
+                assert!(
+                    SECTION_TITLE_LINES.contains(&title),
+                    "section title {title:?} must be a known heading line"
+                );
+            }
+        }
     }
 
     #[test]

@@ -1140,6 +1140,137 @@ fn malformed_typed_state_payload_silently_drops_durable_records() {
             .any(|record| record.text.contains("ARCH-2-CHANGELOG")),
         "the new window constraint is present either way"
     );
+    // D26: the malformation is loud, not just salvaged: the merged ledger
+    // carries the salvage diagnostics, and nothing was dropped.
+    let salvage = preparation
+        .typed_state
+        .as_ref()
+        .and_then(|state| state.salvage.as_ref())
+        .expect("a malformed payload must be reported, never dropped silently");
+    assert_eq!(salvage.dropped_records, 0, "the record was recoverable");
+    assert_eq!(
+        salvage.repaired_fields,
+        vec!["records[0].ordinal".to_string()],
+        "the repaired field is recorded by location"
+    );
+}
+
+/// A record whose semantic fields are malformed (not just positional
+/// metadata) cannot be salvaged: it is dropped from the merge and the
+/// episode continues from the fresh window, but the drop is counted in the
+/// ledger's salvage diagnostics instead of vanishing.
+#[test]
+fn unrecoverable_typed_state_records_drop_loudly_with_a_count() {
+    let mut payload = serde_json::to_value(build_typed_state(&[user_entry(
+        "u1",
+        "CONSTRAINT: never delete the payments ledger ARCH-TYPED-KEEP.",
+    )]))
+    .expect("serialize the typed payload");
+    // The record text is semantic: no safe default exists, so the record is
+    // unrecoverable.
+    payload["records"][0]["text"] = json!(42);
+    let details = json!({"typedState": payload});
+
+    let entries = vec![
+        user_entry("u1", "CONSTRAINT: never delete the payments ledger ARCH-TYPED-KEEP."),
+        compaction_marker("c1", "u2", &details),
+        user_entry("u2", "CONSTRAINT: always keep the changelog frozen ARCH-2-CHANGELOG."),
+        user_entry("u3", "status update: second cycle filler content for the window."),
+        user_entry("u4", "status update: more second cycle filler content for the window."),
+    ];
+    let preparation =
+        prepare_compaction(&entries, &typed_settings(), &|_| 40_000.0).expect("prepare");
+    let typed = preparation
+        .typed_state
+        .as_ref()
+        .expect("the fresh window still produces a ledger");
+    assert!(
+        !typed
+            .records
+            .iter()
+            .any(|record| record.text.contains("ARCH-TYPED-KEEP")),
+        "an unrecoverable record cannot be salvaged into the merge"
+    );
+    assert!(
+        typed
+            .records
+            .iter()
+            .any(|record| record.text.contains("ARCH-2-CHANGELOG")),
+        "the merge proceeds from the fresh window"
+    );
+    let salvage = preparation
+        .typed_state
+        .as_ref()
+        .and_then(|state| state.salvage.as_ref())
+        .expect("the drop must be reported");
+    assert_eq!(salvage.dropped_records, 1, "the dropped slot is counted");
+    assert!(
+        salvage.repaired_fields.is_empty(),
+        "nothing was repairable: {salvage:?}"
+    );
+}
+
+/// The D26 loss must be visible in the persisted episode: an episode that
+/// observed a malformed prior `details.typedState` carries the salvage
+/// diagnostics in `details.typedVerification.malformedPriorLedger` and still
+/// succeeds, with the salvaged durable record carried forward in
+/// `details.typedState`.
+#[tokio::test]
+async fn malformed_prior_ledger_flag_surfaces_in_details_typed_verification() {
+    let mut payload = serde_json::to_value(build_typed_state(&[user_entry(
+        "u1",
+        "CONSTRAINT: never delete the payments ledger ARCH-TYPED-KEEP.",
+    )]))
+    .expect("serialize the typed payload");
+    payload["records"][0]["ordinal"] = json!("zero");
+    let details = json!({"typedState": payload});
+
+    let entries = vec![
+        user_entry("u1", "CONSTRAINT: never delete the payments ledger ARCH-TYPED-KEEP."),
+        compaction_marker("c1", "u2", &details),
+        user_entry("u2", "CONSTRAINT: always keep the changelog frozen ARCH-2-CHANGELOG."),
+        user_entry("u3", "status update: second cycle filler content for the window."),
+        user_entry("u4", "status update: more second cycle filler content for the window."),
+    ];
+    let preparation =
+        prepare_compaction(&entries, &typed_settings(), &|_| 40_000.0).expect("prepare");
+    let (model, _captured) = summarizer_fixture("rot2-adv-malformed-prior", None);
+    let result = compact(
+        &preparation,
+        &model,
+        "unused",
+        None,
+        None,
+        None,
+        default_summary_call_runner(None),
+        None,
+        None,
+    )
+    .await
+    .expect("the episode must not fail on a malformed prior payload");
+    let details = details_value(&result);
+    let verification = details
+        .get("typedVerification")
+        .expect("the verification record is persisted");
+    assert_eq!(verification["passed"], json!(true));
+    let malformed = verification
+        .get("malformedPriorLedger")
+        .expect("the D26 flag is visible in details.typedVerification");
+    assert_eq!(malformed["droppedRecords"], json!(0));
+    assert_eq!(malformed["repairedFields"], json!(["records[0].ordinal"]));
+    let persisted = details
+        .get("typedState")
+        .and_then(|value| value.get("records"))
+        .and_then(|records| records.as_array())
+        .expect("the salvaged ledger is persisted");
+    assert!(
+        persisted
+            .iter()
+            .any(|record| record["text"]
+                .as_str()
+                .is_some_and(|text| text.contains("ARCH-TYPED-KEEP"))),
+        "the salvaged durable record carries forward in details.typedState"
+    );
 }
 
 // ---------------------------------------------------------------------------

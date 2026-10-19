@@ -46,9 +46,9 @@ use crate::core::compaction::task_state::{
     build_ledger, render_ledger, TaskStateLedger, LEDGER_INSTRUCTION,
 };
 use crate::core::compaction::typed_state::{
-    allocate, build_typed_state, merge, render_allocation, verify, TypedInformationKind,
-    TypedStateLedger, TypedStateRecord, TypedStateVerification, UnsafeCompaction,
-    VerificationFinding,
+    allocate, build_typed_state, merge, parse_typed_state, render_allocation, verify,
+    TypedInformationKind, TypedStateLedger, TypedStateRecord, TypedStateSalvage,
+    TypedStateVerification, UnsafeCompaction, VerificationFinding,
 };
 use crate::core::compaction::utils::{
     compute_file_lists, create_file_ops, extract_file_ops_from_message, format_file_operations,
@@ -104,6 +104,12 @@ pub struct TypedVerificationRecord {
     pub mis_superseded: usize,
     pub unresolved_refs: usize,
     pub fabricated: usize,
+    /// D26: present when the previous cycle's `details.typedState` failed
+    /// strict deserialization and was salvaged (dropped record slots and
+    /// repaired fields recorded). Absent on pre-D26 entries and clean
+    /// parses.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub malformed_prior_ledger: Option<TypedStateSalvage>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1837,7 +1843,8 @@ pub struct CompactionPreparation {
     /// W15: typed (v2) protected-state ledger for this episode. `None` when
     /// the mode is not `typed`; carried here so the summarizer prompt, the
     /// verifier and the persisted compaction entry use one deterministic
-    /// artefact.
+    /// artefact. A ledger salvaged from a malformed prior payload carries its
+    /// D26 diagnostics on the `salvage` rider (never serialized).
     pub typed_state: Option<TypedStateLedger>,
 }
 
@@ -2052,13 +2059,18 @@ pub fn prepare_compaction(
     // the ledger persisted by the previous compaction under
     // `details.typedState` (never the v1 field) so durable records carry
     // forward as canonical state instead of being re-derived from a summary.
+    // D26: a payload that fails strict deserialization goes through
+    // `parse_typed_state`'s salvage path instead of a silent `.ok()` drop:
+    // recoverable records survive, and the diagnostics ride on the ledger's
+    // `salvage` field through the merge, surfacing in
+    // `details.typedVerification`.
     let typed_state = if task_state_mode == TASK_STATE_MODE_TYPED {
         let previous_ledger = if prev_compaction_index >= 0 {
             match &path_entries[prev_compaction_index as usize] {
                 CompactionSessionEntry::Compaction { details, .. } => details
                     .as_ref()
                     .and_then(|details| details.get("typedState"))
-                    .and_then(|value| serde_json::from_value::<TypedStateLedger>(value.clone()).ok()),
+                    .map(parse_typed_state),
                 _ => None,
             }
         } else {
@@ -3166,6 +3178,7 @@ pub async fn compact_with_metrics(
             mis_superseded: verification.mis_superseded.len(),
             unresolved_refs: verification.unresolved_refs.len(),
             fabricated: verification.fabricated.len(),
+            malformed_prior_ledger: state.salvage.clone(),
         });
     }
     let (read_files, modified_files) = compute_file_lists(file_ops);
