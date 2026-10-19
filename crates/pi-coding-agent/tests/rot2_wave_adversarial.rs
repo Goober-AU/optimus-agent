@@ -140,7 +140,6 @@ fn record_with_text<'a>(ledger: &'a TypedStateLedger, needle: &str) -> &'a Typed
 /// vouches for, so the fabricated-claim check (the D27 surface) must fire.
 /// The retirements here come from the D25 step boundary: a pending action
 /// from the first window that the second window does not restate.
-#[ignore = "D31: retired ids count as evidence in the fabricated-claim check"]
 #[test]
 fn retired_ids_do_not_vouch_for_verified_claims() {
     let first = build_typed_state(&[user_entry(
@@ -215,6 +214,63 @@ Also don't forget to update the changelog after the migration R2-W48-PA.",
     assert!(
         verification_control.fabricated.is_empty(),
         "a live verified record is legitimate evidence: {verification_control:?}"
+    );
+}
+
+/// Positive pin for the D31 fix: the fabricated-claim check's resolver is
+/// restricted to the records the ledger carries, so a "verified" line
+/// citing a LIVE record still maps while tombstones sit in the same
+/// ledger's retired_refs. Both renderer-grammar reference forms count:
+/// `[id]` for a record, `[@entry]` for the source entry of a carried
+/// record.
+#[test]
+fn live_record_ids_still_vouch_for_verified_claims() {
+    let first = build_typed_state(&[user_entry(
+        "u1",
+        "TASK GOAL: migrate the billing service R2-W48-A1. \
+Also don't forget to update the changelog after the migration R2-W48-PA.",
+    )]);
+    let pending = record_with_text(&first, "changelog after the migration").clone();
+    let second = build_typed_state(&[user_entry(
+        "u2",
+        "CONSTRAINT: always keep the changelog frozen ARCH-2-CHANGELOG.",
+    )]);
+    let merged = merge(Some(&first), second);
+    assert!(merged.retired_refs.contains(&pending.id));
+
+    let task = merged
+        .records
+        .iter()
+        .find(|record| record.kind == TypedInformationKind::CurrentTask)
+        .expect("the task survives the merge")
+        .clone();
+    let constraint = record_with_text(&merged, "ARCH-2-CHANGELOG").clone();
+
+    // The record-id form: a verified line citing the live task record.
+    let artifact = format!(
+        "## Goal\n- [{}] TASK GOAL: migrate the billing service R2-W48-A1.\n\n\
+         ## Constraints & Preferences\n- [{}] CONSTRAINT: always keep the changelog frozen ARCH-2-CHANGELOG.\n\n\
+         ## Critical Context\n- Verified: the migration goal is recorded [{}].\n",
+        task.id, constraint.id, task.id
+    );
+    let verification = verify(&artifact, &merged);
+    assert!(
+        verification.fabricated.is_empty(),
+        "a live record id still vouches: {verification:?}"
+    );
+
+    // The @-sigil form: a verified line citing the source entry of a
+    // carried record.
+    let artifact_entry = format!(
+        "## Goal\n- [{}] TASK GOAL: migrate the billing service R2-W48-A1.\n\n\
+         ## Constraints & Preferences\n- [{}] CONSTRAINT: always keep the changelog frozen ARCH-2-CHANGELOG.\n\n\
+         ## Critical Context\n- Verified: the constraint was recorded [@{}].\n",
+        task.id, constraint.id, constraint.source_entry_id
+    );
+    let verification_entry = verify(&artifact_entry, &merged);
+    assert!(
+        verification_entry.fabricated.is_empty(),
+        "a carried entry reference still vouches: {verification_entry:?}"
     );
 }
 

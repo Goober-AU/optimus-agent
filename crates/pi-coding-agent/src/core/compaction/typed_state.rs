@@ -1936,15 +1936,22 @@ fn artifact_mentions(artifact: &str, record: &TypedStateRecord) -> bool {
 ///   `@` sigil), and a token quoted verbatim inside a ledger record's text is
 ///   exempt as source material the summarizer was told to copy;
 /// - a line mentioning the word "verified" maps to a verified or corroborated
-///   record by reference or text.
+///   record by reference or text; the reference resolver for that mapping is
+///   restricted to the records the ledger carries (D31: a retired id resolves
+///   a reference but vouches for no claim).
 pub fn verify(compact_artifact: &str, state: &TypedStateLedger) -> TypedStateVerification {
-    let mut known_record_ids: BTreeSet<&str> =
+    // D31: the fabricated-claim check below resolves a "verified" line only
+    // against ids the ledger still carries, so the carried sets are built
+    // before retired refs widen the resolvable ones.
+    let carried_record_ids: BTreeSet<&str> =
         state.records.iter().map(|record| record.id.as_str()).collect();
-    let mut known_entry_ids: BTreeSet<&str> = state
+    let carried_entry_ids: BTreeSet<&str> = state
         .records
         .iter()
         .map(|record| record.source_entry_id.as_str())
         .collect();
+    let mut known_record_ids = carried_record_ids.clone();
+    let mut known_entry_ids = carried_entry_ids.clone();
     // Bracketed tokens the ledger itself quotes inside record texts. The
     // summarizer is instructed to copy statement texts verbatim, so such a
     // token is quoted source material (a ticket id inside a user
@@ -1956,7 +1963,9 @@ pub fn verify(compact_artifact: &str, state: &TypedStateLedger) -> TypedStateVer
         }
     }
     // D25: ids and entry ids retired at a step boundary or by the durable
-    // cap stay resolvable; the previous summary may still quote them.
+    // cap stay resolvable; the previous summary may still quote them. These
+    // widened sets feed only the unresolved-refs check; the fabricated-claim
+    // check resolves against the carried sets (D31).
     for reference in &state.retired_refs {
         known_record_ids.insert(reference.as_str());
         known_entry_ids.insert(reference.as_str());
@@ -2055,13 +2064,18 @@ pub fn verify(compact_artifact: &str, state: &TypedStateLedger) -> TypedStateVer
             continue;
         }
         let line_norm = normalized(trimmed);
+        // D31: only ids the ledger still carries vouch, and only through the
+        // renderer's grammar: `[id]` for a record, `[@entry]` for a source
+        // entry. A retired tombstone resolves a reference (the loop above)
+        // but vouches for no claim, and a bare entry id without the `@`
+        // sigil is prose, not evidence.
         let maps = REF_SCAN_RE.captures_iter(trimmed).any(|capture| {
             let sigil = capture.get(1).expect("sigil").as_str();
             let token = capture.get(2).expect("token").as_str();
             if sigil == "@" {
-                known_entry_ids.contains(token)
+                carried_entry_ids.contains(token)
             } else {
-                known_record_ids.contains(token) || known_entry_ids.contains(token)
+                carried_record_ids.contains(token)
             }
         }) || verified_texts.iter().any(|text| line_norm.contains(text.as_str()));
         if !maps {
