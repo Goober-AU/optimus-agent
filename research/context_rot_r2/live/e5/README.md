@@ -177,6 +177,24 @@ with zero findings and zero repairs** (`typedVerification`:
 `{passed: true, repaired: false, missing: 0, misSuperseded: 0,
 unresolvedRefs: 0, fabricated: 0}` at cycles 1-5).
 
+Post-D25 re-measurement (W46, rot2/w46-d30): re-running this exact
+scenario document through the current integration tip reproduces default
+0/19 and taskState 14/19, but the typed arm scores **13/19** with a
+19-record ledger from cycle 2 on. The committed 15/19 above was measured
+on the pre-D25 W29 code, where Step-scoped records accumulated across
+cycles. Under the D25 step boundary (W36 a6da817e3) the four Step-scoped
+seed records that the filler never restates retire at the first merge:
+the two episode-classified constraints (c6 `preserve ... verbatim`,
+c7 `stays single-writer`), the assistant episode (`Started the migration
+plan.`) and the pending action (`Section 3 verified; publishing next.`),
+verified offline against the exact seed window (23 records at cycle 1,
+identical classification; zero user-stated decisions in the chain). This
+is D25 working as designed, not a regression: the E1 fixture's c6/c7
+carry no constraint marker, so their loss is the documented
+classifier-scoping outcome now compounded by the step boundary. The W46
+D30 gate is not implicated (no E1 user unit matches the decision
+vocabulary outside the correction gate).
+
 Pre-registration verdict: predictions 1-6 **all CONFIRMED** (15/19 with
 exactly the predicted composition and the 1/4 evidence mechanism).
 

@@ -66,7 +66,7 @@ sample failed verification, the resample passed) - the verifier gate
 rejecting a summary that mishandles the newly-retired decision, which the
 committed run (both currents presented) never exercised.
 
-### Cycle 5 render caveat (budget, not pairing)
+### Cycle 5 render caveat (budget, not pairing) — resolved W46: accepted and pinned
 
 At cycle 5 the ledger holds 25 records; the fixed 800-token hot budget
 fits 24, and the allocator's tier 8 (superseded history, dropped first)
@@ -76,8 +76,28 @@ still carries the pairing (the correction's "(supersedes [VD-76361d])
 and the probe (3/3 strict). The committed E5 run had 795/800 tokens used
 at cycle 5 with zero headroom, so the tier-8 section is budget-boundary
 either way; D29 did not touch budgets/caps (the brief's rule), so this is
-reported, not fixed here. The pairing annotations themselves are not
+reported, not fixed there. The pairing annotations themselves are not
 budget-counted (render-only, ~2 tokens per paired line).
+
+W46 resolution (accepted): the drop is the allocator's documented
+drop-first tier doing its job under a deliberately full budget, not a
+pairing defect, and every measured consequence on this cell was benign
+(the pairing line rendered, the verifier passed, probes 3/3 strict, the
+stale approach never asserted). The drop is also reported, never silent:
+the record lands in `allocate`'s overflow report. The contract is now
+pinned by `tight_budget_drops_superseded_history_but_keeps_the_pairing_line`
+(typed_state.rs): a budget that fits the correction but not the history
+line still renders the tier-1 "(supersedes [id])" line, stays safe (no
+mandatory material dropped) and lists the dropped record in the overflow.
+The alternatives were rejected on evidence: raising the hot-budget floor
+(`min(2048, floor(summary_budget/4))` in compaction.rs) raises
+steady-state prompt cost on the arm E5 already measures at roughly double
+token spend, for a cell where every probe was already correct; making the
+history line budget-exempt-but-truncated breaches the allocator's budget
+invariant (`allocation.tokens_used <= budget`) with a new render path for
+a special case with zero measured benefit. Revisit if a live cell ever
+shows a budget-dropped superseded decision paraphrased back as current
+(that failure shape is not covered by the current verifier either way).
 
 ## Verdict
 
@@ -86,4 +106,5 @@ of a zero-overlap correction) holds on the decisive cell - before: 0/5
 cycles with retirement, no SUPERSEDED render, GLM reconciling alone;
 after: 5/5 cycles retired in the ledger with the replaced-by link and
 provenance path, SUPERSEDED rendered and copied at cycles 1-4, cycle 5
-pairing rendered with the history line budget-dropped, all probes correct.
+pairing rendered with the history line budget-dropped (accepted and
+pinned, W46 - see the caveat section above), all probes correct.
