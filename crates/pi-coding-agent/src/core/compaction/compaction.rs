@@ -1741,11 +1741,14 @@ pub fn prepare_compaction(
         }
     }
 
-    // Avoid a compaction that would summarize no history.
-    if messages_to_summarize.is_empty()
-        && turn_prefix_messages.is_empty()
-        && previous_summary.is_none()
-    {
+    // Avoid a compaction that would summarize no history. A previous
+    // summary alone is not new material: the window between the last
+    // compaction boundary and the cut is empty, so a summary call could
+    // only rewrite prose the last compaction already persists. Resolve to a
+    // no-op instead of stopping the turn for it; the next turn re-evaluates
+    // the threshold as before, and because nothing was appended the next
+    // real compaction walks back to the same boundary unchanged.
+    if messages_to_summarize.is_empty() && turn_prefix_messages.is_empty() {
         return None;
     }
     let mut file_ops =
