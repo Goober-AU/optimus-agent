@@ -19,6 +19,14 @@ Two passes per scenario:
     post-W11 ledgers are exact; the corpus summaries are held fixed for the
     compaction entries (they cannot influence the ledger or the cut points).
 
+  pass 3 (post-W11+D21, added by W28): the pass-2 replay repeated with the
+    render swapped for the D21 port (d21_render.render_ledger), which exempts
+    correction carriers from the section caps (task_state.rs render_ledger on
+    rot2/w28-d21). The render only feeds the recorded cycle renders and the
+    D21 scoring columns; pass 1 still byte-matches the corpus and pass 2
+    still reproduces the committed W24 numbers, so the before/after D21
+    comparison is computed inside one run of this driver.
+
 Scoring: the same probes with the same versioned matchers (probe_protocol
 "live-v1"), applied to the replayed ledger renders:
 
@@ -51,7 +59,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from context_rot_r2.live import probe_protocol as pp
 from context_rot_r2.live import rust_mirror as rm
-from context_rot_r2.live.remeasure import w11_port
+from context_rot_r2.live.remeasure import d21_render, w11_port
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LIVE_DIR = os.path.dirname(HERE)
@@ -141,8 +149,14 @@ def replay_arm(
     expect: Dict[str, Any],
     fixed_summaries: Optional[List[str]] = None,
     ledger_builder=None,
+    render_fn=None,
 ) -> Dict[str, Any]:
-    """One arm replay. corpus=None with fixed_summaries set: post-W11 pass."""
+    """One arm replay. corpus=None with fixed_summaries set: post-W11 pass.
+
+    render_fn swaps the render used to record each cycle's Protected Task
+    State block (the D21 pass); it never touches the fixture pass, whose
+    requests must keep byte-matching the corpus.
+    """
     if (corpus is None) != (fixed_summaries is not None):
         raise ValueError("exactly one of corpus / fixed_summaries")
     settings = rm.arm_settings(scenario, arm)
@@ -171,7 +185,8 @@ def replay_arm(
                 raise FixtureError(f"{scenario['name']}|{arm}|cycle {cycle}: prepare_compaction returned None")
 
             task_state = preparation["task_state"]
-            protected_state = rm.render_ledger(task_state) if task_state else None
+            render = render_fn or rm.render_ledger
+            protected_state = render(task_state) if task_state else None
             text_instructions = rm.with_retained_state(None, preparation["retained_state_anchor"])
             budget_tokens = rm.summary_output_budget(
                 settings.reserve_tokens, settings.summary_budget_mode, preparation["tokens_before"]
@@ -264,17 +279,27 @@ def verify_structure_matches(pre: Dict[str, Any], post: Dict[str, Any], label: s
 # ---------------------------------------------------------------------------
 
 
-def module_scoped_current(correction_text: str, ledger: Optional[Dict[str, Any]], cap: bool) -> str:
+def module_scoped_current(correction_text: str, ledger: Optional[Dict[str, Any]], cap: bool,
+                          priority: bool = False) -> str:
     """CURRENT item texts naming the corrected module.
 
     cap=True restricts to the items the render lists (render caps); cap=False
     uses the ledger's full current sections (the ledger's own assertion).
+    priority=True models the D21 render (correction carriers first, cap on
+    the remaining slots) instead of the plain head-take caps.
     """
     module = correction_module(correction_text)
     if not module or not ledger:
         return ""
-    constraints = ledger["constraints"][: rm.CONSTRAINTS_CAP] if cap else ledger["constraints"]
-    decisions = ledger["decisions"][: rm.DECISIONS_CAP] if cap else ledger["decisions"]
+    if cap and priority:
+        constraints = d21_render.prioritize_corrections(ledger["constraints"], rm.CONSTRAINTS_CAP)[0]
+        decisions = d21_render.prioritize_corrections(ledger["decisions"], rm.DECISIONS_CAP)[0]
+    elif cap:
+        constraints = ledger["constraints"][: rm.CONSTRAINTS_CAP]
+        decisions = ledger["decisions"][: rm.DECISIONS_CAP]
+    else:
+        constraints = ledger["constraints"]
+        decisions = ledger["decisions"]
     return "\n".join(t for t in (i["text"] for i in constraints + decisions) if module in t)
 
 
@@ -288,7 +313,8 @@ def correction_anchor(correction_text: str) -> str:
     return match.group(1) if match else correction_text[:40]
 
 
-def classify_correction(correction_text: str, ledger: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+def classify_correction(correction_text: str, ledger: Optional[Dict[str, Any]],
+                         priority: bool = False) -> Dict[str, Any]:
     """Verdict for one correction.
 
     structural (the ledger's own assertion, uncapped):
@@ -310,7 +336,10 @@ def classify_correction(correction_text: str, ledger: Optional[Dict[str, Any]]) 
             return {"correctionCurrent": False, "oldDecisionCurrent": False}
         constraints = ledger_dict["constraints"]
         decisions = ledger_dict["decisions"]
-        if cap is not None:
+        if cap is not None and priority:
+            constraints = d21_render.prioritize_corrections(constraints, rm.CONSTRAINTS_CAP)[0]
+            decisions = d21_render.prioritize_corrections(decisions, rm.DECISIONS_CAP)[0]
+        elif cap is not None:
             constraints = constraints[: rm.CONSTRAINTS_CAP]
             decisions = decisions[: rm.DECISIONS_CAP]
         corr = any(anchor in i["text"] for i in constraints + decisions)
@@ -331,7 +360,13 @@ def classify_correction(correction_text: str, ledger: Optional[Dict[str, Any]]) 
 
     rendered_as = "absent"
     if ledger:
-        if any(anchor in i["text"] for i in ledger["constraints"][: rm.CONSTRAINTS_CAP] + ledger["decisions"][: rm.DECISIONS_CAP]):
+        if priority:
+            rendered_constraints = d21_render.prioritize_corrections(ledger["constraints"], rm.CONSTRAINTS_CAP)[0]
+            rendered_decisions = d21_render.prioritize_corrections(ledger["decisions"], rm.DECISIONS_CAP)[0]
+        else:
+            rendered_constraints = ledger["constraints"][: rm.CONSTRAINTS_CAP]
+            rendered_decisions = ledger["decisions"][: rm.DECISIONS_CAP]
+        if any(anchor in i["text"] for i in list(rendered_constraints) + list(rendered_decisions)):
             rendered_as = "active"
         elif any(anchor in s["newText"] for s in ledger["superseded"][: rm.SUPERSEDED_CAP]):
             rendered_as = "superseded-new-text"
@@ -361,6 +396,23 @@ def run() -> Dict[str, Any]:
     with open(RESULTS_PATH, encoding="utf-8") as handle:
         live = json.load(handle)
 
+    # D21 port guard: without correction carriers the ported render must be
+    # byte-identical to the mirror render (the Rust test
+    # no_corrections_render_is_byte_equal_to_the_previous_output pins the same
+    # property on the Rust side).
+    plain_ledger = {
+        "constraints": [
+            {"id": f"C{i}", "text": f"CONSTRAINT: rule {i} must hold for module_{i}", "entry": "e1", "why": [], "correction": False}
+            for i in range(rm.CONSTRAINTS_CAP + 3)
+        ],
+        "decisions": [
+            {"id": f"D{i}", "text": f"Decision: choice {i}", "entry": "e2", "why": [], "correction": False}
+            for i in range(rm.DECISIONS_CAP + 3)
+        ],
+        "superseded": [], "evidence": [], "anchors": [], "openWork": [], "retractions": [], "retired": [],
+    }
+    guard_ok = d21_render.render_ledger(plain_ledger) == rm.render_ledger(plain_ledger)
+
     out: Dict[str, Any] = {
         "experiment": "R2-E2-RM",
         "scoringVersion": pp.PROTOCOL_VERSION,
@@ -371,6 +423,10 @@ def run() -> Dict[str, Any]:
             "postW11": "w11_port.build_ledger (commit 1754a3e1b) swapped in at the "
                        "prepare_compaction call site; ledger windows and cut points asserted "
                        "identical to the fixture pass",
+            "postW11D21": "the same post-W11 ledger rendered through d21_render.render_ledger "
+                          "(correction carriers exempt from the section caps; task_state.rs "
+                          "render_ledger of rot2/w28-d21); the render feeds the recorded cycle "
+                          "renders and the D21 scoring columns only",
             "scoring": "same probes, same live-v1 matchers; recall kinds (constraint, "
                        "decision, evidence, task) scored on the full rendered block; the "
                        "supersession kind scored on the render's CURRENT composite scoped to "
@@ -417,6 +473,21 @@ def run() -> Dict[str, Any]:
         )
         problems = verify_structure_matches(pre_replay, post, f"{scenario_name}|taskState|postW11")
         fixture["postW11Structure"] = {"ok": not problems, "problems": problems}
+        # post-W11+D21 pass: the same post-W11 ledger, rendered through the D21
+        # port (correction carriers exempt from the section caps; the render
+        # change under verification). The render only feeds the recorded cycle
+        # renders and the scoring below: the fixture pass above still
+        # byte-matches the corpus and the post-W11 pass still reproduces the
+        # committed W24 numbers, so both stay comparable against the D21
+        # column.
+        post_d21 = replay_arm(
+            scenario, "taskState", None, None,
+            fixed_summaries=pre_replay["summaries"],
+            ledger_builder=w11_port.build_ledger,
+            render_fn=d21_render.render_ledger,
+        )
+        problems = verify_structure_matches(pre_replay, post_d21, f"{scenario_name}|taskState|postW11D21")
+        fixture["postW11D21Structure"] = {"ok": not problems, "problems": problems}
         scenario_result["taskState"]["preW11"] = {
             "cycles": [
                 {"cycle": c["cycle"], "ledger": c["ledger"], "render": c["render"]}
@@ -429,6 +500,12 @@ def run() -> Dict[str, Any]:
                 for c in post["cycles"]
             ]
         }
+        scenario_result["taskState"]["postW11D21"] = {
+            "cycles": [
+                {"cycle": c["cycle"], "ledger": c["ledger"], "render": c["render"]}
+                for c in post_d21["cycles"]
+            ]
+        }
         out["fixtureCheck"][scenario_name] = fixture
         out["replay"][scenario_name] = scenario_result
 
@@ -436,6 +513,7 @@ def run() -> Dict[str, Any]:
         probes = scenario["probes"]
         pre_cycles = scenario_result["taskState"]["preW11"]["cycles"]
         post_cycles = scenario_result["taskState"]["postW11"]["cycles"]
+        post_d21_cycles = scenario_result["taskState"]["postW11D21"]["cycles"]
         probe_rows: List[Dict[str, Any]] = []
         for probe in probes:
             row: Dict[str, Any] = {
@@ -456,10 +534,15 @@ def run() -> Dict[str, Any]:
                     str(c["cycle"]): pp.match_answer(probe, module_scoped_current(seed_text, c["ledger"], cap=True))
                     for c in post_cycles
                 }
+                row["postW11D21Render"] = {
+                    str(c["cycle"]): pp.match_answer(probe, module_scoped_current(seed_text, c["ledger"], cap=True, priority=True))
+                    for c in post_d21_cycles
+                }
                 row["answerText"] = "module-scoped current composite (render-capped ACTIVE CONSTRAINTS + DECISIONS items naming the module)"
             else:
                 row["preW11Render"] = {str(c["cycle"]): pp.match_answer(probe, c["render"]) for c in pre_cycles}
                 row["postW11Render"] = {str(c["cycle"]): pp.match_answer(probe, c["render"]) for c in post_cycles}
+                row["postW11D21Render"] = {str(c["cycle"]): pp.match_answer(probe, c["render"]) for c in post_d21_cycles}
                 # The W7 matcher's stemmed-coverage fallback is lenient on a
                 # full render (scattered words satisfy it), so the strict
                 # containment of the gold core is reported alongside.
@@ -469,11 +552,15 @@ def run() -> Dict[str, Any]:
                         if core.startswith(prefix):
                             core = core[len(prefix):]
                     norm_core = pp.normalize(core)
+                    row["goldCore"] = core
                     row["preW11RenderContains"] = {
                         str(c["cycle"]): norm_core in pp.normalize(c["render"]) for c in pre_cycles
                     }
                     row["postW11RenderContains"] = {
                         str(c["cycle"]): norm_core in pp.normalize(c["render"]) for c in post_cycles
+                    }
+                    row["postW11D21RenderContains"] = {
+                        str(c["cycle"]): norm_core in pp.normalize(c["render"]) for c in post_d21_cycles
                     }
                 row["answerText"] = "full rendered block"
             probe_rows.append(row)
@@ -489,6 +576,7 @@ def run() -> Dict[str, Any]:
             )
             classes_pre = {str(c["cycle"]): classify_correction(seed_text, c["ledger"]) for c in pre_cycles}
             classes_post = {str(c["cycle"]): classify_correction(seed_text, c["ledger"]) for c in post_cycles}
+            classes_post_d21 = {str(c["cycle"]): classify_correction(seed_text, c["ledger"], priority=True) for c in post_d21_cycles}
             correction_rows.append({
                 "probeId": probe["id"],
                 "anchor": probe["anchor"],
@@ -498,6 +586,7 @@ def run() -> Dict[str, Any]:
                 "liveDefault": live_probe_status(live, scenario_name, "default", probe["id"]),
                 "preW11": classes_pre,
                 "postW11": classes_post,
+                "postW11D21": classes_post_d21,
                 "preW11RenderMatch": {
                     str(c["cycle"]): pp.match_answer(probe, module_scoped_current(seed_text, c["ledger"], cap=True))
                     for c in pre_cycles
@@ -509,6 +598,10 @@ def run() -> Dict[str, Any]:
                 "postW11LedgerMatch": {
                     str(c["cycle"]): pp.match_answer(probe, module_scoped_current(seed_text, c["ledger"], cap=False))
                     for c in post_cycles
+                },
+                "postW11D21RenderMatch": {
+                    str(c["cycle"]): pp.match_answer(probe, module_scoped_current(seed_text, c["ledger"], cap=True, priority=True))
+                    for c in post_d21_cycles
                 },
             })
         out["scoring"][scenario_name]["corrections"] = correction_rows
@@ -525,6 +618,11 @@ def run() -> Dict[str, Any]:
                     "ledgerMatch": sorted(set(row["postW11LedgerMatch"].values())),
                     "correctionRenderedAs": sorted({v["correctionRenderedAs"] for v in row["postW11"].values()}),
                 },
+                "postW11D21Replay": {
+                    "structural": sorted({v["structural"] for v in row["postW11D21"].values()}),
+                    "renderMatch": sorted(set(row["postW11D21RenderMatch"].values())),
+                    "correctionRenderedAs": sorted({v["correctionRenderedAs"] for v in row["postW11D21"].values()}),
+                },
                 "preW11Replay": {
                     "structural": sorted({v["structural"] for v in row["preW11"].values()}),
                     "renderMatch": sorted(set(row["preW11RenderMatch"].values())),
@@ -533,6 +631,9 @@ def run() -> Dict[str, Any]:
                 "defaultLive": row["liveDefault"],
             })
 
+    out["fixtureCheck"]["d21RenderPortGuard"] = {
+        "noCorrectionRenderByteEqual": {"ok": guard_ok}
+    }
     out["fixtureCheck"]["consumedSummarizerRecords"] = len(corpus.consumed)
     out["fixtureCheck"]["leftoverSummarizerRecords"] = corpus.leftover_summarizer_records()
     return out

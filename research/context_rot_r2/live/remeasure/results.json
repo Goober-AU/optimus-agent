@@ -5,6 +5,7 @@
   "corpus": "research/context_rot_r2/live/raw-calls.jsonl (W7 live run, 581 calls)",
   "fixture": "pre-W11 mirror replay must byte-match every corpus summarizer request and reproduce the committed results.json cycle fields",
   "postW11": "w11_port.build_ledger (commit 1754a3e1b) swapped in at the prepare_compaction call site; ledger windows and cut points asserted identical to the fixture pass",
+  "postW11D21": "the same post-W11 ledger rendered through d21_render.render_ledger (correction carriers exempt from the section caps; task_state.rs render_ledger of rot2/w28-d21); the render feeds the recorded cycle renders and the D21 scoring columns only",
   "scoring": "same probes, same live-v1 matchers; recall kinds (constraint, decision, evidence, task) scored on the full rendered block; the supersession kind scored on the render's CURRENT composite scoped to the corrected module (ACTIVE CONSTRAINTS + DECISIONS at the render caps, mirroring the live per-module question), plus a structural inverted/ambiguous/clean/lost classification from the ledger",
   "offline": "no model calls; model-dependent claims are predictions only"
  },
@@ -135,6 +136,10 @@
    "postW11Structure": {
     "ok": true,
     "problems": []
+   },
+   "postW11D21Structure": {
+    "ok": true,
+    "problems": []
    }
   },
   "r2-e2-hard": {
@@ -263,6 +268,15 @@
    "postW11Structure": {
     "ok": true,
     "problems": []
+   },
+   "postW11D21Structure": {
+    "ok": true,
+    "problems": []
+   }
+  },
+  "d21RenderPortGuard": {
+   "noCorrectionRenderByteEqual": {
+    "ok": true
    }
   },
   "consumedSummarizerRecords": 20,
@@ -1733,6 +1747,765 @@
        "render": "## Protected Task State (deterministic, provenance-tagged)\nDerived from the transcript by fixed rules; no item is inferred or invented. Use it to keep constraints, current decisions and verified evidence exact. A SUPERSEDED item is history, not a current requirement.\n\n**ACTIVE CONSTRAINTS**\n- C-d39f7377 [39295c8e]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-42580380 [39295c8e]: CONSTRAINT: never drop the scheduler ledger R2-CONS-bc725595\n- C-1b667e53 [39295c8e]: CONSTRAINT: always run the payments suite before publishing R2-CONS-3516c936\n- C-a9d40d77 [39295c8e]: CONSTRAINT: do not modify files under auth/ without review R2-CONS-698afcda\n- C-b0a770d9 [39295c8e]: CONSTRAINT: keep the reconciler protocol version at v2 R2-CONS-5d76e931\n- C-bbcaa294 [39295c8e]: CONSTRAINT: the billing migration must be reversible R2-CONS-068b308a\n- C-92064cc1 [39295c8e]: CONSTRAINT: no new dependencies in gateway without approval R2-CONS-0b032270\n- C-e9034e05 [39295c8e]: CONSTRAINT: preserve the ledger audit trail verbatim R2-CONS-76b74091\n- C-1f54dfe6 [39295c8e]: CONSTRAINT: the notifier service stays single-writer R2-CONS-b8ef61c5\n- C-f254f147 [6a7636bb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.\n- C-a8d7bb8a [6a7636bb]: The earlier A decision is superseded.\n- C-28efeee2 [bde7e737]: CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.\n\n**DECISIONS (current)**\n- D-f139556b [8d7229a7]: Decision: use architecture reconciler for the parser R2-DECI-b42dbfea\n- D-8ed8db6a [0f6d87da]: Decision: keep the billing client in-process R2-DECI-2c55b71d\n- D-90b5b294 [0fc7b1ae]: Decision: reject the gateway rewrite; extend instead R2-DECI-e382f68e\n- D-d2826a60 [13d3d0e2]: Decision: the ledger fix lands behind a feature flag R2-DECI-42a5f117\n\n**SUPERSEDED (history, not current)**\n- D-a782bae3 [be7a823c] replaced by C-f254f147 [6a7636bb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.\n- D-3ee8f96d [715a005d] replaced by C-28efeee2 [bde7e737]: CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.\n\n**EXACT ANCHORS**: DECI, CORRECTION, SUPE, CORR\n"
       }
      ]
+    },
+    "postW11D21": {
+     "cycles": [
+      {
+       "cycle": 0,
+       "ledger": {
+        "constraints": [
+         {
+          "id": "C-d39f7377",
+          "text": "TASK GOAL: migrate the billing service to API v2 before Friday.",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-42580380",
+          "text": "CONSTRAINT: never drop the scheduler ledger R2-CONS-bc725595",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-1b667e53",
+          "text": "CONSTRAINT: always run the payments suite before publishing R2-CONS-3516c936",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a9d40d77",
+          "text": "CONSTRAINT: do not modify files under auth/ without review R2-CONS-698afcda",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-b0a770d9",
+          "text": "CONSTRAINT: keep the reconciler protocol version at v2 R2-CONS-5d76e931",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bbcaa294",
+          "text": "CONSTRAINT: the billing migration must be reversible R2-CONS-068b308a",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-92064cc1",
+          "text": "CONSTRAINT: no new dependencies in gateway without approval R2-CONS-0b032270",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-e9034e05",
+          "text": "CONSTRAINT: preserve the ledger audit trail verbatim R2-CONS-76b74091",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-1f54dfe6",
+          "text": "CONSTRAINT: the notifier service stays single-writer R2-CONS-b8ef61c5",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-f254f147",
+          "text": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.",
+          "entry": "6a7636bb",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a8d7bb8a",
+          "text": "The earlier A decision is superseded.",
+          "entry": "6a7636bb",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-28efeee2",
+          "text": "CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.",
+          "entry": "bde7e737",
+          "why": [],
+          "correction": true
+         }
+        ],
+        "decisions": [
+         {
+          "id": "D-f139556b",
+          "text": "Decision: use architecture reconciler for the parser R2-DECI-b42dbfea",
+          "entry": "8d7229a7",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-8ed8db6a",
+          "text": "Decision: keep the billing client in-process R2-DECI-2c55b71d",
+          "entry": "0f6d87da",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-90b5b294",
+          "text": "Decision: reject the gateway rewrite; extend instead R2-DECI-e382f68e",
+          "entry": "0fc7b1ae",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-d2826a60",
+          "text": "Decision: the ledger fix lands behind a feature flag R2-DECI-42a5f117",
+          "entry": "13d3d0e2",
+          "why": [],
+          "correction": false
+         }
+        ],
+        "superseded": [
+         {
+          "oldId": "D-a782bae3",
+          "oldEntry": "be7a823c",
+          "newId": "C-f254f147",
+          "newText": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.",
+          "newEntry": "6a7636bb"
+         },
+         {
+          "oldId": "D-3ee8f96d",
+          "oldEntry": "715a005d",
+          "newId": "C-28efeee2",
+          "newText": "CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.",
+          "newEntry": "bde7e737"
+         }
+        ],
+        "evidence": [],
+        "anchors": [
+         "DECI",
+         "CORRECTION",
+         "SUPE",
+         "CORR"
+        ],
+        "openWork": [],
+        "retractions": [],
+        "retired": [
+         "D-3ee8f96d",
+         "D-a782bae3"
+        ]
+       },
+       "render": "## Protected Task State (deterministic, provenance-tagged)\nDerived from the transcript by fixed rules; no item is inferred or invented. Use it to keep constraints, current decisions and verified evidence exact. A SUPERSEDED item is history, not a current requirement.\n\n**ACTIVE CONSTRAINTS**\n- C-d39f7377 [39295c8e]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-42580380 [39295c8e]: CONSTRAINT: never drop the scheduler ledger R2-CONS-bc725595\n- C-1b667e53 [39295c8e]: CONSTRAINT: always run the payments suite before publishing R2-CONS-3516c936\n- C-a9d40d77 [39295c8e]: CONSTRAINT: do not modify files under auth/ without review R2-CONS-698afcda\n- C-b0a770d9 [39295c8e]: CONSTRAINT: keep the reconciler protocol version at v2 R2-CONS-5d76e931\n- C-bbcaa294 [39295c8e]: CONSTRAINT: the billing migration must be reversible R2-CONS-068b308a\n- C-92064cc1 [39295c8e]: CONSTRAINT: no new dependencies in gateway without approval R2-CONS-0b032270\n- C-e9034e05 [39295c8e]: CONSTRAINT: preserve the ledger audit trail verbatim R2-CONS-76b74091\n- C-1f54dfe6 [39295c8e]: CONSTRAINT: the notifier service stays single-writer R2-CONS-b8ef61c5\n- C-f254f147 [6a7636bb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.\n- C-a8d7bb8a [6a7636bb]: The earlier A decision is superseded.\n- C-28efeee2 [bde7e737]: CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.\n\n**DECISIONS (current)**\n- D-f139556b [8d7229a7]: Decision: use architecture reconciler for the parser R2-DECI-b42dbfea\n- D-8ed8db6a [0f6d87da]: Decision: keep the billing client in-process R2-DECI-2c55b71d\n- D-90b5b294 [0fc7b1ae]: Decision: reject the gateway rewrite; extend instead R2-DECI-e382f68e\n- D-d2826a60 [13d3d0e2]: Decision: the ledger fix lands behind a feature flag R2-DECI-42a5f117\n\n**SUPERSEDED (history, not current)**\n- D-a782bae3 [be7a823c] replaced by C-f254f147 [6a7636bb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.\n- D-3ee8f96d [715a005d] replaced by C-28efeee2 [bde7e737]: CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.\n\n**EXACT ANCHORS**: DECI, CORRECTION, SUPE, CORR\n"
+      },
+      {
+       "cycle": 1,
+       "ledger": {
+        "constraints": [
+         {
+          "id": "C-d39f7377",
+          "text": "TASK GOAL: migrate the billing service to API v2 before Friday.",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-42580380",
+          "text": "CONSTRAINT: never drop the scheduler ledger R2-CONS-bc725595",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-1b667e53",
+          "text": "CONSTRAINT: always run the payments suite before publishing R2-CONS-3516c936",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a9d40d77",
+          "text": "CONSTRAINT: do not modify files under auth/ without review R2-CONS-698afcda",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-b0a770d9",
+          "text": "CONSTRAINT: keep the reconciler protocol version at v2 R2-CONS-5d76e931",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bbcaa294",
+          "text": "CONSTRAINT: the billing migration must be reversible R2-CONS-068b308a",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-92064cc1",
+          "text": "CONSTRAINT: no new dependencies in gateway without approval R2-CONS-0b032270",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-e9034e05",
+          "text": "CONSTRAINT: preserve the ledger audit trail verbatim R2-CONS-76b74091",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-1f54dfe6",
+          "text": "CONSTRAINT: the notifier service stays single-writer R2-CONS-b8ef61c5",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-f254f147",
+          "text": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.",
+          "entry": "6a7636bb",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a8d7bb8a",
+          "text": "The earlier A decision is superseded.",
+          "entry": "6a7636bb",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-28efeee2",
+          "text": "CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.",
+          "entry": "bde7e737",
+          "why": [],
+          "correction": true
+         }
+        ],
+        "decisions": [
+         {
+          "id": "D-f139556b",
+          "text": "Decision: use architecture reconciler for the parser R2-DECI-b42dbfea",
+          "entry": "8d7229a7",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-8ed8db6a",
+          "text": "Decision: keep the billing client in-process R2-DECI-2c55b71d",
+          "entry": "0f6d87da",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-90b5b294",
+          "text": "Decision: reject the gateway rewrite; extend instead R2-DECI-e382f68e",
+          "entry": "0fc7b1ae",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-d2826a60",
+          "text": "Decision: the ledger fix lands behind a feature flag R2-DECI-42a5f117",
+          "entry": "13d3d0e2",
+          "why": [],
+          "correction": false
+         }
+        ],
+        "superseded": [
+         {
+          "oldId": "D-a782bae3",
+          "oldEntry": "be7a823c",
+          "newId": "C-f254f147",
+          "newText": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.",
+          "newEntry": "6a7636bb"
+         },
+         {
+          "oldId": "D-3ee8f96d",
+          "oldEntry": "715a005d",
+          "newId": "C-28efeee2",
+          "newText": "CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.",
+          "newEntry": "bde7e737"
+         }
+        ],
+        "evidence": [],
+        "anchors": [
+         "DECI",
+         "CORRECTION",
+         "SUPE",
+         "CORR"
+        ],
+        "openWork": [],
+        "retractions": [],
+        "retired": [
+         "D-3ee8f96d",
+         "D-a782bae3"
+        ]
+       },
+       "render": "## Protected Task State (deterministic, provenance-tagged)\nDerived from the transcript by fixed rules; no item is inferred or invented. Use it to keep constraints, current decisions and verified evidence exact. A SUPERSEDED item is history, not a current requirement.\n\n**ACTIVE CONSTRAINTS**\n- C-d39f7377 [39295c8e]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-42580380 [39295c8e]: CONSTRAINT: never drop the scheduler ledger R2-CONS-bc725595\n- C-1b667e53 [39295c8e]: CONSTRAINT: always run the payments suite before publishing R2-CONS-3516c936\n- C-a9d40d77 [39295c8e]: CONSTRAINT: do not modify files under auth/ without review R2-CONS-698afcda\n- C-b0a770d9 [39295c8e]: CONSTRAINT: keep the reconciler protocol version at v2 R2-CONS-5d76e931\n- C-bbcaa294 [39295c8e]: CONSTRAINT: the billing migration must be reversible R2-CONS-068b308a\n- C-92064cc1 [39295c8e]: CONSTRAINT: no new dependencies in gateway without approval R2-CONS-0b032270\n- C-e9034e05 [39295c8e]: CONSTRAINT: preserve the ledger audit trail verbatim R2-CONS-76b74091\n- C-1f54dfe6 [39295c8e]: CONSTRAINT: the notifier service stays single-writer R2-CONS-b8ef61c5\n- C-f254f147 [6a7636bb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.\n- C-a8d7bb8a [6a7636bb]: The earlier A decision is superseded.\n- C-28efeee2 [bde7e737]: CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.\n\n**DECISIONS (current)**\n- D-f139556b [8d7229a7]: Decision: use architecture reconciler for the parser R2-DECI-b42dbfea\n- D-8ed8db6a [0f6d87da]: Decision: keep the billing client in-process R2-DECI-2c55b71d\n- D-90b5b294 [0fc7b1ae]: Decision: reject the gateway rewrite; extend instead R2-DECI-e382f68e\n- D-d2826a60 [13d3d0e2]: Decision: the ledger fix lands behind a feature flag R2-DECI-42a5f117\n\n**SUPERSEDED (history, not current)**\n- D-a782bae3 [be7a823c] replaced by C-f254f147 [6a7636bb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.\n- D-3ee8f96d [715a005d] replaced by C-28efeee2 [bde7e737]: CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.\n\n**EXACT ANCHORS**: DECI, CORRECTION, SUPE, CORR\n"
+      },
+      {
+       "cycle": 2,
+       "ledger": {
+        "constraints": [
+         {
+          "id": "C-d39f7377",
+          "text": "TASK GOAL: migrate the billing service to API v2 before Friday.",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-42580380",
+          "text": "CONSTRAINT: never drop the scheduler ledger R2-CONS-bc725595",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-1b667e53",
+          "text": "CONSTRAINT: always run the payments suite before publishing R2-CONS-3516c936",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a9d40d77",
+          "text": "CONSTRAINT: do not modify files under auth/ without review R2-CONS-698afcda",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-b0a770d9",
+          "text": "CONSTRAINT: keep the reconciler protocol version at v2 R2-CONS-5d76e931",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bbcaa294",
+          "text": "CONSTRAINT: the billing migration must be reversible R2-CONS-068b308a",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-92064cc1",
+          "text": "CONSTRAINT: no new dependencies in gateway without approval R2-CONS-0b032270",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-e9034e05",
+          "text": "CONSTRAINT: preserve the ledger audit trail verbatim R2-CONS-76b74091",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-1f54dfe6",
+          "text": "CONSTRAINT: the notifier service stays single-writer R2-CONS-b8ef61c5",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-f254f147",
+          "text": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.",
+          "entry": "6a7636bb",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a8d7bb8a",
+          "text": "The earlier A decision is superseded.",
+          "entry": "6a7636bb",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-28efeee2",
+          "text": "CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.",
+          "entry": "bde7e737",
+          "why": [],
+          "correction": true
+         }
+        ],
+        "decisions": [
+         {
+          "id": "D-f139556b",
+          "text": "Decision: use architecture reconciler for the parser R2-DECI-b42dbfea",
+          "entry": "8d7229a7",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-8ed8db6a",
+          "text": "Decision: keep the billing client in-process R2-DECI-2c55b71d",
+          "entry": "0f6d87da",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-90b5b294",
+          "text": "Decision: reject the gateway rewrite; extend instead R2-DECI-e382f68e",
+          "entry": "0fc7b1ae",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-d2826a60",
+          "text": "Decision: the ledger fix lands behind a feature flag R2-DECI-42a5f117",
+          "entry": "13d3d0e2",
+          "why": [],
+          "correction": false
+         }
+        ],
+        "superseded": [
+         {
+          "oldId": "D-a782bae3",
+          "oldEntry": "be7a823c",
+          "newId": "C-f254f147",
+          "newText": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.",
+          "newEntry": "6a7636bb"
+         },
+         {
+          "oldId": "D-3ee8f96d",
+          "oldEntry": "715a005d",
+          "newId": "C-28efeee2",
+          "newText": "CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.",
+          "newEntry": "bde7e737"
+         }
+        ],
+        "evidence": [],
+        "anchors": [
+         "DECI",
+         "CORRECTION",
+         "SUPE",
+         "CORR"
+        ],
+        "openWork": [],
+        "retractions": [],
+        "retired": [
+         "D-3ee8f96d",
+         "D-a782bae3"
+        ]
+       },
+       "render": "## Protected Task State (deterministic, provenance-tagged)\nDerived from the transcript by fixed rules; no item is inferred or invented. Use it to keep constraints, current decisions and verified evidence exact. A SUPERSEDED item is history, not a current requirement.\n\n**ACTIVE CONSTRAINTS**\n- C-d39f7377 [39295c8e]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-42580380 [39295c8e]: CONSTRAINT: never drop the scheduler ledger R2-CONS-bc725595\n- C-1b667e53 [39295c8e]: CONSTRAINT: always run the payments suite before publishing R2-CONS-3516c936\n- C-a9d40d77 [39295c8e]: CONSTRAINT: do not modify files under auth/ without review R2-CONS-698afcda\n- C-b0a770d9 [39295c8e]: CONSTRAINT: keep the reconciler protocol version at v2 R2-CONS-5d76e931\n- C-bbcaa294 [39295c8e]: CONSTRAINT: the billing migration must be reversible R2-CONS-068b308a\n- C-92064cc1 [39295c8e]: CONSTRAINT: no new dependencies in gateway without approval R2-CONS-0b032270\n- C-e9034e05 [39295c8e]: CONSTRAINT: preserve the ledger audit trail verbatim R2-CONS-76b74091\n- C-1f54dfe6 [39295c8e]: CONSTRAINT: the notifier service stays single-writer R2-CONS-b8ef61c5\n- C-f254f147 [6a7636bb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.\n- C-a8d7bb8a [6a7636bb]: The earlier A decision is superseded.\n- C-28efeee2 [bde7e737]: CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.\n\n**DECISIONS (current)**\n- D-f139556b [8d7229a7]: Decision: use architecture reconciler for the parser R2-DECI-b42dbfea\n- D-8ed8db6a [0f6d87da]: Decision: keep the billing client in-process R2-DECI-2c55b71d\n- D-90b5b294 [0fc7b1ae]: Decision: reject the gateway rewrite; extend instead R2-DECI-e382f68e\n- D-d2826a60 [13d3d0e2]: Decision: the ledger fix lands behind a feature flag R2-DECI-42a5f117\n\n**SUPERSEDED (history, not current)**\n- D-a782bae3 [be7a823c] replaced by C-f254f147 [6a7636bb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.\n- D-3ee8f96d [715a005d] replaced by C-28efeee2 [bde7e737]: CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.\n\n**EXACT ANCHORS**: DECI, CORRECTION, SUPE, CORR\n"
+      },
+      {
+       "cycle": 3,
+       "ledger": {
+        "constraints": [
+         {
+          "id": "C-d39f7377",
+          "text": "TASK GOAL: migrate the billing service to API v2 before Friday.",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-42580380",
+          "text": "CONSTRAINT: never drop the scheduler ledger R2-CONS-bc725595",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-1b667e53",
+          "text": "CONSTRAINT: always run the payments suite before publishing R2-CONS-3516c936",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a9d40d77",
+          "text": "CONSTRAINT: do not modify files under auth/ without review R2-CONS-698afcda",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-b0a770d9",
+          "text": "CONSTRAINT: keep the reconciler protocol version at v2 R2-CONS-5d76e931",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bbcaa294",
+          "text": "CONSTRAINT: the billing migration must be reversible R2-CONS-068b308a",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-92064cc1",
+          "text": "CONSTRAINT: no new dependencies in gateway without approval R2-CONS-0b032270",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-e9034e05",
+          "text": "CONSTRAINT: preserve the ledger audit trail verbatim R2-CONS-76b74091",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-1f54dfe6",
+          "text": "CONSTRAINT: the notifier service stays single-writer R2-CONS-b8ef61c5",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-f254f147",
+          "text": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.",
+          "entry": "6a7636bb",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a8d7bb8a",
+          "text": "The earlier A decision is superseded.",
+          "entry": "6a7636bb",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-28efeee2",
+          "text": "CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.",
+          "entry": "bde7e737",
+          "why": [],
+          "correction": true
+         }
+        ],
+        "decisions": [
+         {
+          "id": "D-f139556b",
+          "text": "Decision: use architecture reconciler for the parser R2-DECI-b42dbfea",
+          "entry": "8d7229a7",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-8ed8db6a",
+          "text": "Decision: keep the billing client in-process R2-DECI-2c55b71d",
+          "entry": "0f6d87da",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-90b5b294",
+          "text": "Decision: reject the gateway rewrite; extend instead R2-DECI-e382f68e",
+          "entry": "0fc7b1ae",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-d2826a60",
+          "text": "Decision: the ledger fix lands behind a feature flag R2-DECI-42a5f117",
+          "entry": "13d3d0e2",
+          "why": [],
+          "correction": false
+         }
+        ],
+        "superseded": [
+         {
+          "oldId": "D-a782bae3",
+          "oldEntry": "be7a823c",
+          "newId": "C-f254f147",
+          "newText": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.",
+          "newEntry": "6a7636bb"
+         },
+         {
+          "oldId": "D-3ee8f96d",
+          "oldEntry": "715a005d",
+          "newId": "C-28efeee2",
+          "newText": "CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.",
+          "newEntry": "bde7e737"
+         }
+        ],
+        "evidence": [],
+        "anchors": [
+         "DECI",
+         "CORRECTION",
+         "SUPE",
+         "CORR"
+        ],
+        "openWork": [],
+        "retractions": [],
+        "retired": [
+         "D-3ee8f96d",
+         "D-a782bae3"
+        ]
+       },
+       "render": "## Protected Task State (deterministic, provenance-tagged)\nDerived from the transcript by fixed rules; no item is inferred or invented. Use it to keep constraints, current decisions and verified evidence exact. A SUPERSEDED item is history, not a current requirement.\n\n**ACTIVE CONSTRAINTS**\n- C-d39f7377 [39295c8e]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-42580380 [39295c8e]: CONSTRAINT: never drop the scheduler ledger R2-CONS-bc725595\n- C-1b667e53 [39295c8e]: CONSTRAINT: always run the payments suite before publishing R2-CONS-3516c936\n- C-a9d40d77 [39295c8e]: CONSTRAINT: do not modify files under auth/ without review R2-CONS-698afcda\n- C-b0a770d9 [39295c8e]: CONSTRAINT: keep the reconciler protocol version at v2 R2-CONS-5d76e931\n- C-bbcaa294 [39295c8e]: CONSTRAINT: the billing migration must be reversible R2-CONS-068b308a\n- C-92064cc1 [39295c8e]: CONSTRAINT: no new dependencies in gateway without approval R2-CONS-0b032270\n- C-e9034e05 [39295c8e]: CONSTRAINT: preserve the ledger audit trail verbatim R2-CONS-76b74091\n- C-1f54dfe6 [39295c8e]: CONSTRAINT: the notifier service stays single-writer R2-CONS-b8ef61c5\n- C-f254f147 [6a7636bb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.\n- C-a8d7bb8a [6a7636bb]: The earlier A decision is superseded.\n- C-28efeee2 [bde7e737]: CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.\n\n**DECISIONS (current)**\n- D-f139556b [8d7229a7]: Decision: use architecture reconciler for the parser R2-DECI-b42dbfea\n- D-8ed8db6a [0f6d87da]: Decision: keep the billing client in-process R2-DECI-2c55b71d\n- D-90b5b294 [0fc7b1ae]: Decision: reject the gateway rewrite; extend instead R2-DECI-e382f68e\n- D-d2826a60 [13d3d0e2]: Decision: the ledger fix lands behind a feature flag R2-DECI-42a5f117\n\n**SUPERSEDED (history, not current)**\n- D-a782bae3 [be7a823c] replaced by C-f254f147 [6a7636bb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.\n- D-3ee8f96d [715a005d] replaced by C-28efeee2 [bde7e737]: CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.\n\n**EXACT ANCHORS**: DECI, CORRECTION, SUPE, CORR\n"
+      },
+      {
+       "cycle": 4,
+       "ledger": {
+        "constraints": [
+         {
+          "id": "C-d39f7377",
+          "text": "TASK GOAL: migrate the billing service to API v2 before Friday.",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-42580380",
+          "text": "CONSTRAINT: never drop the scheduler ledger R2-CONS-bc725595",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-1b667e53",
+          "text": "CONSTRAINT: always run the payments suite before publishing R2-CONS-3516c936",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a9d40d77",
+          "text": "CONSTRAINT: do not modify files under auth/ without review R2-CONS-698afcda",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-b0a770d9",
+          "text": "CONSTRAINT: keep the reconciler protocol version at v2 R2-CONS-5d76e931",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bbcaa294",
+          "text": "CONSTRAINT: the billing migration must be reversible R2-CONS-068b308a",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-92064cc1",
+          "text": "CONSTRAINT: no new dependencies in gateway without approval R2-CONS-0b032270",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-e9034e05",
+          "text": "CONSTRAINT: preserve the ledger audit trail verbatim R2-CONS-76b74091",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-1f54dfe6",
+          "text": "CONSTRAINT: the notifier service stays single-writer R2-CONS-b8ef61c5",
+          "entry": "39295c8e",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-f254f147",
+          "text": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.",
+          "entry": "6a7636bb",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a8d7bb8a",
+          "text": "The earlier A decision is superseded.",
+          "entry": "6a7636bb",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-28efeee2",
+          "text": "CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.",
+          "entry": "bde7e737",
+          "why": [],
+          "correction": true
+         }
+        ],
+        "decisions": [
+         {
+          "id": "D-f139556b",
+          "text": "Decision: use architecture reconciler for the parser R2-DECI-b42dbfea",
+          "entry": "8d7229a7",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-8ed8db6a",
+          "text": "Decision: keep the billing client in-process R2-DECI-2c55b71d",
+          "entry": "0f6d87da",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-90b5b294",
+          "text": "Decision: reject the gateway rewrite; extend instead R2-DECI-e382f68e",
+          "entry": "0fc7b1ae",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-d2826a60",
+          "text": "Decision: the ledger fix lands behind a feature flag R2-DECI-42a5f117",
+          "entry": "13d3d0e2",
+          "why": [],
+          "correction": false
+         }
+        ],
+        "superseded": [
+         {
+          "oldId": "D-a782bae3",
+          "oldEntry": "be7a823c",
+          "newId": "C-f254f147",
+          "newText": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.",
+          "newEntry": "6a7636bb"
+         },
+         {
+          "oldId": "D-3ee8f96d",
+          "oldEntry": "715a005d",
+          "newId": "C-28efeee2",
+          "newText": "CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.",
+          "newEntry": "bde7e737"
+         }
+        ],
+        "evidence": [],
+        "anchors": [
+         "DECI",
+         "CORRECTION",
+         "SUPE",
+         "CORR"
+        ],
+        "openWork": [],
+        "retractions": [],
+        "retired": [
+         "D-3ee8f96d",
+         "D-a782bae3"
+        ]
+       },
+       "render": "## Protected Task State (deterministic, provenance-tagged)\nDerived from the transcript by fixed rules; no item is inferred or invented. Use it to keep constraints, current decisions and verified evidence exact. A SUPERSEDED item is history, not a current requirement.\n\n**ACTIVE CONSTRAINTS**\n- C-d39f7377 [39295c8e]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-42580380 [39295c8e]: CONSTRAINT: never drop the scheduler ledger R2-CONS-bc725595\n- C-1b667e53 [39295c8e]: CONSTRAINT: always run the payments suite before publishing R2-CONS-3516c936\n- C-a9d40d77 [39295c8e]: CONSTRAINT: do not modify files under auth/ without review R2-CONS-698afcda\n- C-b0a770d9 [39295c8e]: CONSTRAINT: keep the reconciler protocol version at v2 R2-CONS-5d76e931\n- C-bbcaa294 [39295c8e]: CONSTRAINT: the billing migration must be reversible R2-CONS-068b308a\n- C-92064cc1 [39295c8e]: CONSTRAINT: no new dependencies in gateway without approval R2-CONS-0b032270\n- C-e9034e05 [39295c8e]: CONSTRAINT: preserve the ledger audit trail verbatim R2-CONS-76b74091\n- C-1f54dfe6 [39295c8e]: CONSTRAINT: the notifier service stays single-writer R2-CONS-b8ef61c5\n- C-f254f147 [6a7636bb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.\n- C-a8d7bb8a [6a7636bb]: The earlier A decision is superseded.\n- C-28efeee2 [bde7e737]: CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.\n\n**DECISIONS (current)**\n- D-f139556b [8d7229a7]: Decision: use architecture reconciler for the parser R2-DECI-b42dbfea\n- D-8ed8db6a [0f6d87da]: Decision: keep the billing client in-process R2-DECI-2c55b71d\n- D-90b5b294 [0fc7b1ae]: Decision: reject the gateway rewrite; extend instead R2-DECI-e382f68e\n- D-d2826a60 [13d3d0e2]: Decision: the ledger fix lands behind a feature flag R2-DECI-42a5f117\n\n**SUPERSEDED (history, not current)**\n- D-a782bae3 [be7a823c] replaced by C-f254f147 [6a7636bb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.\n- D-3ee8f96d [715a005d] replaced by C-28efeee2 [bde7e737]: CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.\n\n**EXACT ANCHORS**: DECI, CORRECTION, SUPE, CORR\n"
+      }
+     ]
     }
    }
   },
@@ -4375,6 +5148,1335 @@
        "render": "## Protected Task State (deterministic, provenance-tagged)\nDerived from the transcript by fixed rules; no item is inferred or invented. Use it to keep constraints, current decisions and verified evidence exact. A SUPERSEDED item is history, not a current requirement.\n\n**ACTIVE CONSTRAINTS**\n- C-d39f7377 [8a9365a6]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-bcd72597 [8a9365a6]: CONSTRAINT: never drop the reporting ledger R2-CONS-c03c64d5\n- C-a683baa1 [8a9365a6]: CONSTRAINT: always run the indexer suite before publishing R2-CONS-614389ba\n- C-a5c479a5 [8a9365a6]: CONSTRAINT: do not modify files under gateway/ without review R2-CONS-08df154e\n- C-19b62f2c [8a9365a6]: CONSTRAINT: keep the archiver protocol version at v2 R2-CONS-b5e2af97\n- C-bfc4b042 [8a9365a6]: CONSTRAINT: the validator migration must be reversible R2-CONS-611c40b5\n- C-e523b49d [8a9365a6]: CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-3e350f73\n- C-9c044975 [8a9365a6]: CONSTRAINT: preserve the billing audit trail verbatim R2-CONS-ff67f34f\n- C-fe974584 [8a9365a6]: CONSTRAINT: the auth service stays single-writer R2-CONS-6f107ef4\n- C-6412df3b [8a9365a6]: CONSTRAINT: never drop the ledger ledger R2-CONS-a2ddeedf\n- C-30a5ef54 [8a9365a6]: CONSTRAINT: always run the reconciler suite before publishing R2-CONS-6e0de741\n- C-4cbc31b3 [8a9365a6]: CONSTRAINT: do not modify files under notifier/ without review R2-CONS-525ffed6\n\n**DECISIONS (current)**\n- D-0d55f3b2 [fb8023b5]: Decision: use architecture archiver for the parser R2-DECI-e59e919f\n- D-39f65e70 [b5644cac]: Decision: keep the validator client in-process R2-DECI-255629a6\n- D-451f921c [9db086ff]: Decision: reject the scheduler rewrite; extend instead R2-DECI-c760d973\n- D-406783e5 [32851fb1]: Decision: the billing fix lands behind a feature flag R2-DECI-b472e29c\n\n**SUPERSEDED (history, not current)**\n- D-23d2bfa9 [38408d79] replaced by C-60dd84cf [52ffb9bc]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.\n- D-0d48175a [5a4a6b18] replaced by C-489f4523 [b7efe50b]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.\n- D-62c4ee28 [b7122a3e] replaced by C-6c6eb1bd [63a609b1]: CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.\n- D-39a661c9 [d9ef4714] replaced by C-353648f3 [a91a2ecb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.\n\n**EXACT ANCHORS**: CORRECTION, DECI, SUPE, CORR\n\n_(14 lower-priority item(s) omitted from this block: 14 active constraint(s); the full ledger is persisted on the compaction entry.)_\n"
       }
      ]
+    },
+    "postW11D21": {
+     "cycles": [
+      {
+       "cycle": 0,
+       "ledger": {
+        "constraints": [
+         {
+          "id": "C-d39f7377",
+          "text": "TASK GOAL: migrate the billing service to API v2 before Friday.",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bcd72597",
+          "text": "CONSTRAINT: never drop the reporting ledger R2-CONS-c03c64d5",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a683baa1",
+          "text": "CONSTRAINT: always run the indexer suite before publishing R2-CONS-614389ba",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a5c479a5",
+          "text": "CONSTRAINT: do not modify files under gateway/ without review R2-CONS-08df154e",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-19b62f2c",
+          "text": "CONSTRAINT: keep the archiver protocol version at v2 R2-CONS-b5e2af97",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bfc4b042",
+          "text": "CONSTRAINT: the validator migration must be reversible R2-CONS-611c40b5",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-e523b49d",
+          "text": "CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-3e350f73",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-9c044975",
+          "text": "CONSTRAINT: preserve the billing audit trail verbatim R2-CONS-ff67f34f",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-fe974584",
+          "text": "CONSTRAINT: the auth service stays single-writer R2-CONS-6f107ef4",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6412df3b",
+          "text": "CONSTRAINT: never drop the ledger ledger R2-CONS-a2ddeedf",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-30a5ef54",
+          "text": "CONSTRAINT: always run the reconciler suite before publishing R2-CONS-6e0de741",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-4cbc31b3",
+          "text": "CONSTRAINT: do not modify files under notifier/ without review R2-CONS-525ffed6",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-5f27de5d",
+          "text": "CONSTRAINT: keep the payments protocol version at v2 R2-CONS-b0719117",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-06d9bd75",
+          "text": "CONSTRAINT: the reporting migration must be reversible R2-CONS-63df81b1",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-03d1f31d",
+          "text": "CONSTRAINT: no new dependencies in indexer without approval R2-CONS-7175c414",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-9634f19e",
+          "text": "CONSTRAINT: preserve the gateway audit trail verbatim R2-CONS-6b04a002",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-80299c88",
+          "text": "CONSTRAINT: the archiver service stays single-writer R2-CONS-7c670c54",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-954a6c75",
+          "text": "CONSTRAINT: never drop the validator ledger R2-CONS-be0c3750",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-0648e003",
+          "text": "CONSTRAINT: always run the scheduler suite before publishing R2-CONS-df2c908e",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6458459e",
+          "text": "CONSTRAINT: do not modify files under billing/ without review R2-CONS-d9f6fc43",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-72d86255",
+          "text": "CONSTRAINT: keep the auth protocol version at v2 R2-CONS-647a02ae",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-60dd84cf",
+          "text": "CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.",
+          "entry": "52ffb9bc",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a8d7bb8a",
+          "text": "The earlier A decision is superseded.",
+          "entry": "52ffb9bc",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-489f4523",
+          "text": "CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.",
+          "entry": "b7efe50b",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6c6eb1bd",
+          "text": "CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.",
+          "entry": "63a609b1",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-353648f3",
+          "text": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.",
+          "entry": "a91a2ecb",
+          "why": [],
+          "correction": true
+         }
+        ],
+        "decisions": [
+         {
+          "id": "D-0d55f3b2",
+          "text": "Decision: use architecture archiver for the parser R2-DECI-e59e919f",
+          "entry": "fb8023b5",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-39f65e70",
+          "text": "Decision: keep the validator client in-process R2-DECI-255629a6",
+          "entry": "b5644cac",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-451f921c",
+          "text": "Decision: reject the scheduler rewrite; extend instead R2-DECI-c760d973",
+          "entry": "9db086ff",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-406783e5",
+          "text": "Decision: the billing fix lands behind a feature flag R2-DECI-b472e29c",
+          "entry": "32851fb1",
+          "why": [],
+          "correction": false
+         }
+        ],
+        "superseded": [
+         {
+          "oldId": "D-23d2bfa9",
+          "oldEntry": "38408d79",
+          "newId": "C-60dd84cf",
+          "newText": "CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.",
+          "newEntry": "52ffb9bc"
+         },
+         {
+          "oldId": "D-0d48175a",
+          "oldEntry": "5a4a6b18",
+          "newId": "C-489f4523",
+          "newText": "CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.",
+          "newEntry": "b7efe50b"
+         },
+         {
+          "oldId": "D-62c4ee28",
+          "oldEntry": "b7122a3e",
+          "newId": "C-6c6eb1bd",
+          "newText": "CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.",
+          "newEntry": "63a609b1"
+         },
+         {
+          "oldId": "D-39a661c9",
+          "oldEntry": "d9ef4714",
+          "newId": "C-353648f3",
+          "newText": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.",
+          "newEntry": "a91a2ecb"
+         }
+        ],
+        "evidence": [],
+        "anchors": [
+         "CORRECTION",
+         "DECI",
+         "SUPE",
+         "CORR"
+        ],
+        "openWork": [],
+        "retractions": [],
+        "retired": [
+         "D-0d48175a",
+         "D-23d2bfa9",
+         "D-39a661c9",
+         "D-62c4ee28"
+        ]
+       },
+       "render": "## Protected Task State (deterministic, provenance-tagged)\nDerived from the transcript by fixed rules; no item is inferred or invented. Use it to keep constraints, current decisions and verified evidence exact. A SUPERSEDED item is history, not a current requirement.\n\n**ACTIVE CONSTRAINTS**\n- C-d39f7377 [8a9365a6]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-bcd72597 [8a9365a6]: CONSTRAINT: never drop the reporting ledger R2-CONS-c03c64d5\n- C-a683baa1 [8a9365a6]: CONSTRAINT: always run the indexer suite before publishing R2-CONS-614389ba\n- C-a5c479a5 [8a9365a6]: CONSTRAINT: do not modify files under gateway/ without review R2-CONS-08df154e\n- C-19b62f2c [8a9365a6]: CONSTRAINT: keep the archiver protocol version at v2 R2-CONS-b5e2af97\n- C-bfc4b042 [8a9365a6]: CONSTRAINT: the validator migration must be reversible R2-CONS-611c40b5\n- C-e523b49d [8a9365a6]: CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-3e350f73\n- C-9c044975 [8a9365a6]: CONSTRAINT: preserve the billing audit trail verbatim R2-CONS-ff67f34f\n- C-fe974584 [8a9365a6]: CONSTRAINT: the auth service stays single-writer R2-CONS-6f107ef4\n- C-6412df3b [8a9365a6]: CONSTRAINT: never drop the ledger ledger R2-CONS-a2ddeedf\n- C-30a5ef54 [8a9365a6]: CONSTRAINT: always run the reconciler suite before publishing R2-CONS-6e0de741\n- C-4cbc31b3 [8a9365a6]: CONSTRAINT: do not modify files under notifier/ without review R2-CONS-525ffed6\n- C-5f27de5d [8a9365a6]: CONSTRAINT: keep the payments protocol version at v2 R2-CONS-b0719117\n- C-06d9bd75 [8a9365a6]: CONSTRAINT: the reporting migration must be reversible R2-CONS-63df81b1\n- C-03d1f31d [8a9365a6]: CONSTRAINT: no new dependencies in indexer without approval R2-CONS-7175c414\n- C-9634f19e [8a9365a6]: CONSTRAINT: preserve the gateway audit trail verbatim R2-CONS-6b04a002\n- C-80299c88 [8a9365a6]: CONSTRAINT: the archiver service stays single-writer R2-CONS-7c670c54\n- C-954a6c75 [8a9365a6]: CONSTRAINT: never drop the validator ledger R2-CONS-be0c3750\n- C-0648e003 [8a9365a6]: CONSTRAINT: always run the scheduler suite before publishing R2-CONS-df2c908e\n- C-6458459e [8a9365a6]: CONSTRAINT: do not modify files under billing/ without review R2-CONS-d9f6fc43\n- C-72d86255 [8a9365a6]: CONSTRAINT: keep the auth protocol version at v2 R2-CONS-647a02ae\n- C-60dd84cf [52ffb9bc]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.\n- C-a8d7bb8a [52ffb9bc]: The earlier A decision is superseded.\n- C-489f4523 [b7efe50b]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.\n- C-6c6eb1bd [63a609b1]: CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.\n- C-353648f3 [a91a2ecb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.\n\n**DECISIONS (current)**\n- D-0d55f3b2 [fb8023b5]: Decision: use architecture archiver for the parser R2-DECI-e59e919f\n- D-39f65e70 [b5644cac]: Decision: keep the validator client in-process R2-DECI-255629a6\n- D-451f921c [9db086ff]: Decision: reject the scheduler rewrite; extend instead R2-DECI-c760d973\n- D-406783e5 [32851fb1]: Decision: the billing fix lands behind a feature flag R2-DECI-b472e29c\n\n**SUPERSEDED (history, not current)**\n- D-23d2bfa9 [38408d79] replaced by C-60dd84cf [52ffb9bc]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.\n- D-0d48175a [5a4a6b18] replaced by C-489f4523 [b7efe50b]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.\n- D-62c4ee28 [b7122a3e] replaced by C-6c6eb1bd [63a609b1]: CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.\n- D-39a661c9 [d9ef4714] replaced by C-353648f3 [a91a2ecb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.\n\n**EXACT ANCHORS**: CORRECTION, DECI, SUPE, CORR\n"
+      },
+      {
+       "cycle": 1,
+       "ledger": {
+        "constraints": [
+         {
+          "id": "C-d39f7377",
+          "text": "TASK GOAL: migrate the billing service to API v2 before Friday.",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bcd72597",
+          "text": "CONSTRAINT: never drop the reporting ledger R2-CONS-c03c64d5",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a683baa1",
+          "text": "CONSTRAINT: always run the indexer suite before publishing R2-CONS-614389ba",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a5c479a5",
+          "text": "CONSTRAINT: do not modify files under gateway/ without review R2-CONS-08df154e",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-19b62f2c",
+          "text": "CONSTRAINT: keep the archiver protocol version at v2 R2-CONS-b5e2af97",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bfc4b042",
+          "text": "CONSTRAINT: the validator migration must be reversible R2-CONS-611c40b5",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-e523b49d",
+          "text": "CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-3e350f73",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-9c044975",
+          "text": "CONSTRAINT: preserve the billing audit trail verbatim R2-CONS-ff67f34f",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-fe974584",
+          "text": "CONSTRAINT: the auth service stays single-writer R2-CONS-6f107ef4",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6412df3b",
+          "text": "CONSTRAINT: never drop the ledger ledger R2-CONS-a2ddeedf",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-30a5ef54",
+          "text": "CONSTRAINT: always run the reconciler suite before publishing R2-CONS-6e0de741",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-4cbc31b3",
+          "text": "CONSTRAINT: do not modify files under notifier/ without review R2-CONS-525ffed6",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-5f27de5d",
+          "text": "CONSTRAINT: keep the payments protocol version at v2 R2-CONS-b0719117",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-06d9bd75",
+          "text": "CONSTRAINT: the reporting migration must be reversible R2-CONS-63df81b1",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-03d1f31d",
+          "text": "CONSTRAINT: no new dependencies in indexer without approval R2-CONS-7175c414",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-9634f19e",
+          "text": "CONSTRAINT: preserve the gateway audit trail verbatim R2-CONS-6b04a002",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-80299c88",
+          "text": "CONSTRAINT: the archiver service stays single-writer R2-CONS-7c670c54",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-954a6c75",
+          "text": "CONSTRAINT: never drop the validator ledger R2-CONS-be0c3750",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-0648e003",
+          "text": "CONSTRAINT: always run the scheduler suite before publishing R2-CONS-df2c908e",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6458459e",
+          "text": "CONSTRAINT: do not modify files under billing/ without review R2-CONS-d9f6fc43",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-72d86255",
+          "text": "CONSTRAINT: keep the auth protocol version at v2 R2-CONS-647a02ae",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-60dd84cf",
+          "text": "CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.",
+          "entry": "52ffb9bc",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a8d7bb8a",
+          "text": "The earlier A decision is superseded.",
+          "entry": "52ffb9bc",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-489f4523",
+          "text": "CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.",
+          "entry": "b7efe50b",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6c6eb1bd",
+          "text": "CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.",
+          "entry": "63a609b1",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-353648f3",
+          "text": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.",
+          "entry": "a91a2ecb",
+          "why": [],
+          "correction": true
+         }
+        ],
+        "decisions": [
+         {
+          "id": "D-0d55f3b2",
+          "text": "Decision: use architecture archiver for the parser R2-DECI-e59e919f",
+          "entry": "fb8023b5",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-39f65e70",
+          "text": "Decision: keep the validator client in-process R2-DECI-255629a6",
+          "entry": "b5644cac",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-451f921c",
+          "text": "Decision: reject the scheduler rewrite; extend instead R2-DECI-c760d973",
+          "entry": "9db086ff",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-406783e5",
+          "text": "Decision: the billing fix lands behind a feature flag R2-DECI-b472e29c",
+          "entry": "32851fb1",
+          "why": [],
+          "correction": false
+         }
+        ],
+        "superseded": [
+         {
+          "oldId": "D-23d2bfa9",
+          "oldEntry": "38408d79",
+          "newId": "C-60dd84cf",
+          "newText": "CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.",
+          "newEntry": "52ffb9bc"
+         },
+         {
+          "oldId": "D-0d48175a",
+          "oldEntry": "5a4a6b18",
+          "newId": "C-489f4523",
+          "newText": "CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.",
+          "newEntry": "b7efe50b"
+         },
+         {
+          "oldId": "D-62c4ee28",
+          "oldEntry": "b7122a3e",
+          "newId": "C-6c6eb1bd",
+          "newText": "CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.",
+          "newEntry": "63a609b1"
+         },
+         {
+          "oldId": "D-39a661c9",
+          "oldEntry": "d9ef4714",
+          "newId": "C-353648f3",
+          "newText": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.",
+          "newEntry": "a91a2ecb"
+         }
+        ],
+        "evidence": [],
+        "anchors": [
+         "CORRECTION",
+         "DECI",
+         "SUPE",
+         "CORR"
+        ],
+        "openWork": [],
+        "retractions": [],
+        "retired": [
+         "D-0d48175a",
+         "D-23d2bfa9",
+         "D-39a661c9",
+         "D-62c4ee28"
+        ]
+       },
+       "render": "## Protected Task State (deterministic, provenance-tagged)\nDerived from the transcript by fixed rules; no item is inferred or invented. Use it to keep constraints, current decisions and verified evidence exact. A SUPERSEDED item is history, not a current requirement.\n\n**ACTIVE CONSTRAINTS**\n- C-d39f7377 [8a9365a6]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-bcd72597 [8a9365a6]: CONSTRAINT: never drop the reporting ledger R2-CONS-c03c64d5\n- C-a683baa1 [8a9365a6]: CONSTRAINT: always run the indexer suite before publishing R2-CONS-614389ba\n- C-a5c479a5 [8a9365a6]: CONSTRAINT: do not modify files under gateway/ without review R2-CONS-08df154e\n- C-19b62f2c [8a9365a6]: CONSTRAINT: keep the archiver protocol version at v2 R2-CONS-b5e2af97\n- C-bfc4b042 [8a9365a6]: CONSTRAINT: the validator migration must be reversible R2-CONS-611c40b5\n- C-e523b49d [8a9365a6]: CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-3e350f73\n- C-9c044975 [8a9365a6]: CONSTRAINT: preserve the billing audit trail verbatim R2-CONS-ff67f34f\n- C-fe974584 [8a9365a6]: CONSTRAINT: the auth service stays single-writer R2-CONS-6f107ef4\n- C-6412df3b [8a9365a6]: CONSTRAINT: never drop the ledger ledger R2-CONS-a2ddeedf\n- C-30a5ef54 [8a9365a6]: CONSTRAINT: always run the reconciler suite before publishing R2-CONS-6e0de741\n- C-4cbc31b3 [8a9365a6]: CONSTRAINT: do not modify files under notifier/ without review R2-CONS-525ffed6\n- C-5f27de5d [8a9365a6]: CONSTRAINT: keep the payments protocol version at v2 R2-CONS-b0719117\n- C-06d9bd75 [8a9365a6]: CONSTRAINT: the reporting migration must be reversible R2-CONS-63df81b1\n- C-03d1f31d [8a9365a6]: CONSTRAINT: no new dependencies in indexer without approval R2-CONS-7175c414\n- C-9634f19e [8a9365a6]: CONSTRAINT: preserve the gateway audit trail verbatim R2-CONS-6b04a002\n- C-80299c88 [8a9365a6]: CONSTRAINT: the archiver service stays single-writer R2-CONS-7c670c54\n- C-954a6c75 [8a9365a6]: CONSTRAINT: never drop the validator ledger R2-CONS-be0c3750\n- C-0648e003 [8a9365a6]: CONSTRAINT: always run the scheduler suite before publishing R2-CONS-df2c908e\n- C-6458459e [8a9365a6]: CONSTRAINT: do not modify files under billing/ without review R2-CONS-d9f6fc43\n- C-72d86255 [8a9365a6]: CONSTRAINT: keep the auth protocol version at v2 R2-CONS-647a02ae\n- C-60dd84cf [52ffb9bc]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.\n- C-a8d7bb8a [52ffb9bc]: The earlier A decision is superseded.\n- C-489f4523 [b7efe50b]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.\n- C-6c6eb1bd [63a609b1]: CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.\n- C-353648f3 [a91a2ecb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.\n\n**DECISIONS (current)**\n- D-0d55f3b2 [fb8023b5]: Decision: use architecture archiver for the parser R2-DECI-e59e919f\n- D-39f65e70 [b5644cac]: Decision: keep the validator client in-process R2-DECI-255629a6\n- D-451f921c [9db086ff]: Decision: reject the scheduler rewrite; extend instead R2-DECI-c760d973\n- D-406783e5 [32851fb1]: Decision: the billing fix lands behind a feature flag R2-DECI-b472e29c\n\n**SUPERSEDED (history, not current)**\n- D-23d2bfa9 [38408d79] replaced by C-60dd84cf [52ffb9bc]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.\n- D-0d48175a [5a4a6b18] replaced by C-489f4523 [b7efe50b]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.\n- D-62c4ee28 [b7122a3e] replaced by C-6c6eb1bd [63a609b1]: CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.\n- D-39a661c9 [d9ef4714] replaced by C-353648f3 [a91a2ecb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.\n\n**EXACT ANCHORS**: CORRECTION, DECI, SUPE, CORR\n"
+      },
+      {
+       "cycle": 2,
+       "ledger": {
+        "constraints": [
+         {
+          "id": "C-d39f7377",
+          "text": "TASK GOAL: migrate the billing service to API v2 before Friday.",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bcd72597",
+          "text": "CONSTRAINT: never drop the reporting ledger R2-CONS-c03c64d5",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a683baa1",
+          "text": "CONSTRAINT: always run the indexer suite before publishing R2-CONS-614389ba",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a5c479a5",
+          "text": "CONSTRAINT: do not modify files under gateway/ without review R2-CONS-08df154e",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-19b62f2c",
+          "text": "CONSTRAINT: keep the archiver protocol version at v2 R2-CONS-b5e2af97",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bfc4b042",
+          "text": "CONSTRAINT: the validator migration must be reversible R2-CONS-611c40b5",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-e523b49d",
+          "text": "CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-3e350f73",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-9c044975",
+          "text": "CONSTRAINT: preserve the billing audit trail verbatim R2-CONS-ff67f34f",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-fe974584",
+          "text": "CONSTRAINT: the auth service stays single-writer R2-CONS-6f107ef4",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6412df3b",
+          "text": "CONSTRAINT: never drop the ledger ledger R2-CONS-a2ddeedf",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-30a5ef54",
+          "text": "CONSTRAINT: always run the reconciler suite before publishing R2-CONS-6e0de741",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-4cbc31b3",
+          "text": "CONSTRAINT: do not modify files under notifier/ without review R2-CONS-525ffed6",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-5f27de5d",
+          "text": "CONSTRAINT: keep the payments protocol version at v2 R2-CONS-b0719117",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-06d9bd75",
+          "text": "CONSTRAINT: the reporting migration must be reversible R2-CONS-63df81b1",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-03d1f31d",
+          "text": "CONSTRAINT: no new dependencies in indexer without approval R2-CONS-7175c414",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-9634f19e",
+          "text": "CONSTRAINT: preserve the gateway audit trail verbatim R2-CONS-6b04a002",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-80299c88",
+          "text": "CONSTRAINT: the archiver service stays single-writer R2-CONS-7c670c54",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-954a6c75",
+          "text": "CONSTRAINT: never drop the validator ledger R2-CONS-be0c3750",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-0648e003",
+          "text": "CONSTRAINT: always run the scheduler suite before publishing R2-CONS-df2c908e",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6458459e",
+          "text": "CONSTRAINT: do not modify files under billing/ without review R2-CONS-d9f6fc43",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-72d86255",
+          "text": "CONSTRAINT: keep the auth protocol version at v2 R2-CONS-647a02ae",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-60dd84cf",
+          "text": "CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.",
+          "entry": "52ffb9bc",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a8d7bb8a",
+          "text": "The earlier A decision is superseded.",
+          "entry": "52ffb9bc",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-489f4523",
+          "text": "CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.",
+          "entry": "b7efe50b",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6c6eb1bd",
+          "text": "CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.",
+          "entry": "63a609b1",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-353648f3",
+          "text": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.",
+          "entry": "a91a2ecb",
+          "why": [],
+          "correction": true
+         }
+        ],
+        "decisions": [
+         {
+          "id": "D-0d55f3b2",
+          "text": "Decision: use architecture archiver for the parser R2-DECI-e59e919f",
+          "entry": "fb8023b5",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-39f65e70",
+          "text": "Decision: keep the validator client in-process R2-DECI-255629a6",
+          "entry": "b5644cac",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-451f921c",
+          "text": "Decision: reject the scheduler rewrite; extend instead R2-DECI-c760d973",
+          "entry": "9db086ff",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-406783e5",
+          "text": "Decision: the billing fix lands behind a feature flag R2-DECI-b472e29c",
+          "entry": "32851fb1",
+          "why": [],
+          "correction": false
+         }
+        ],
+        "superseded": [
+         {
+          "oldId": "D-23d2bfa9",
+          "oldEntry": "38408d79",
+          "newId": "C-60dd84cf",
+          "newText": "CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.",
+          "newEntry": "52ffb9bc"
+         },
+         {
+          "oldId": "D-0d48175a",
+          "oldEntry": "5a4a6b18",
+          "newId": "C-489f4523",
+          "newText": "CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.",
+          "newEntry": "b7efe50b"
+         },
+         {
+          "oldId": "D-62c4ee28",
+          "oldEntry": "b7122a3e",
+          "newId": "C-6c6eb1bd",
+          "newText": "CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.",
+          "newEntry": "63a609b1"
+         },
+         {
+          "oldId": "D-39a661c9",
+          "oldEntry": "d9ef4714",
+          "newId": "C-353648f3",
+          "newText": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.",
+          "newEntry": "a91a2ecb"
+         }
+        ],
+        "evidence": [],
+        "anchors": [
+         "CORRECTION",
+         "DECI",
+         "SUPE",
+         "CORR"
+        ],
+        "openWork": [],
+        "retractions": [],
+        "retired": [
+         "D-0d48175a",
+         "D-23d2bfa9",
+         "D-39a661c9",
+         "D-62c4ee28"
+        ]
+       },
+       "render": "## Protected Task State (deterministic, provenance-tagged)\nDerived from the transcript by fixed rules; no item is inferred or invented. Use it to keep constraints, current decisions and verified evidence exact. A SUPERSEDED item is history, not a current requirement.\n\n**ACTIVE CONSTRAINTS**\n- C-d39f7377 [8a9365a6]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-bcd72597 [8a9365a6]: CONSTRAINT: never drop the reporting ledger R2-CONS-c03c64d5\n- C-a683baa1 [8a9365a6]: CONSTRAINT: always run the indexer suite before publishing R2-CONS-614389ba\n- C-a5c479a5 [8a9365a6]: CONSTRAINT: do not modify files under gateway/ without review R2-CONS-08df154e\n- C-19b62f2c [8a9365a6]: CONSTRAINT: keep the archiver protocol version at v2 R2-CONS-b5e2af97\n- C-bfc4b042 [8a9365a6]: CONSTRAINT: the validator migration must be reversible R2-CONS-611c40b5\n- C-e523b49d [8a9365a6]: CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-3e350f73\n- C-9c044975 [8a9365a6]: CONSTRAINT: preserve the billing audit trail verbatim R2-CONS-ff67f34f\n- C-fe974584 [8a9365a6]: CONSTRAINT: the auth service stays single-writer R2-CONS-6f107ef4\n- C-6412df3b [8a9365a6]: CONSTRAINT: never drop the ledger ledger R2-CONS-a2ddeedf\n- C-30a5ef54 [8a9365a6]: CONSTRAINT: always run the reconciler suite before publishing R2-CONS-6e0de741\n- C-4cbc31b3 [8a9365a6]: CONSTRAINT: do not modify files under notifier/ without review R2-CONS-525ffed6\n- C-5f27de5d [8a9365a6]: CONSTRAINT: keep the payments protocol version at v2 R2-CONS-b0719117\n- C-06d9bd75 [8a9365a6]: CONSTRAINT: the reporting migration must be reversible R2-CONS-63df81b1\n- C-03d1f31d [8a9365a6]: CONSTRAINT: no new dependencies in indexer without approval R2-CONS-7175c414\n- C-9634f19e [8a9365a6]: CONSTRAINT: preserve the gateway audit trail verbatim R2-CONS-6b04a002\n- C-80299c88 [8a9365a6]: CONSTRAINT: the archiver service stays single-writer R2-CONS-7c670c54\n- C-954a6c75 [8a9365a6]: CONSTRAINT: never drop the validator ledger R2-CONS-be0c3750\n- C-0648e003 [8a9365a6]: CONSTRAINT: always run the scheduler suite before publishing R2-CONS-df2c908e\n- C-6458459e [8a9365a6]: CONSTRAINT: do not modify files under billing/ without review R2-CONS-d9f6fc43\n- C-72d86255 [8a9365a6]: CONSTRAINT: keep the auth protocol version at v2 R2-CONS-647a02ae\n- C-60dd84cf [52ffb9bc]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.\n- C-a8d7bb8a [52ffb9bc]: The earlier A decision is superseded.\n- C-489f4523 [b7efe50b]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.\n- C-6c6eb1bd [63a609b1]: CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.\n- C-353648f3 [a91a2ecb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.\n\n**DECISIONS (current)**\n- D-0d55f3b2 [fb8023b5]: Decision: use architecture archiver for the parser R2-DECI-e59e919f\n- D-39f65e70 [b5644cac]: Decision: keep the validator client in-process R2-DECI-255629a6\n- D-451f921c [9db086ff]: Decision: reject the scheduler rewrite; extend instead R2-DECI-c760d973\n- D-406783e5 [32851fb1]: Decision: the billing fix lands behind a feature flag R2-DECI-b472e29c\n\n**SUPERSEDED (history, not current)**\n- D-23d2bfa9 [38408d79] replaced by C-60dd84cf [52ffb9bc]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.\n- D-0d48175a [5a4a6b18] replaced by C-489f4523 [b7efe50b]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.\n- D-62c4ee28 [b7122a3e] replaced by C-6c6eb1bd [63a609b1]: CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.\n- D-39a661c9 [d9ef4714] replaced by C-353648f3 [a91a2ecb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.\n\n**EXACT ANCHORS**: CORRECTION, DECI, SUPE, CORR\n"
+      },
+      {
+       "cycle": 3,
+       "ledger": {
+        "constraints": [
+         {
+          "id": "C-d39f7377",
+          "text": "TASK GOAL: migrate the billing service to API v2 before Friday.",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bcd72597",
+          "text": "CONSTRAINT: never drop the reporting ledger R2-CONS-c03c64d5",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a683baa1",
+          "text": "CONSTRAINT: always run the indexer suite before publishing R2-CONS-614389ba",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a5c479a5",
+          "text": "CONSTRAINT: do not modify files under gateway/ without review R2-CONS-08df154e",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-19b62f2c",
+          "text": "CONSTRAINT: keep the archiver protocol version at v2 R2-CONS-b5e2af97",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bfc4b042",
+          "text": "CONSTRAINT: the validator migration must be reversible R2-CONS-611c40b5",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-e523b49d",
+          "text": "CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-3e350f73",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-9c044975",
+          "text": "CONSTRAINT: preserve the billing audit trail verbatim R2-CONS-ff67f34f",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-fe974584",
+          "text": "CONSTRAINT: the auth service stays single-writer R2-CONS-6f107ef4",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6412df3b",
+          "text": "CONSTRAINT: never drop the ledger ledger R2-CONS-a2ddeedf",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-30a5ef54",
+          "text": "CONSTRAINT: always run the reconciler suite before publishing R2-CONS-6e0de741",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-4cbc31b3",
+          "text": "CONSTRAINT: do not modify files under notifier/ without review R2-CONS-525ffed6",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-5f27de5d",
+          "text": "CONSTRAINT: keep the payments protocol version at v2 R2-CONS-b0719117",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-06d9bd75",
+          "text": "CONSTRAINT: the reporting migration must be reversible R2-CONS-63df81b1",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-03d1f31d",
+          "text": "CONSTRAINT: no new dependencies in indexer without approval R2-CONS-7175c414",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-9634f19e",
+          "text": "CONSTRAINT: preserve the gateway audit trail verbatim R2-CONS-6b04a002",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-80299c88",
+          "text": "CONSTRAINT: the archiver service stays single-writer R2-CONS-7c670c54",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-954a6c75",
+          "text": "CONSTRAINT: never drop the validator ledger R2-CONS-be0c3750",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-0648e003",
+          "text": "CONSTRAINT: always run the scheduler suite before publishing R2-CONS-df2c908e",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6458459e",
+          "text": "CONSTRAINT: do not modify files under billing/ without review R2-CONS-d9f6fc43",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-72d86255",
+          "text": "CONSTRAINT: keep the auth protocol version at v2 R2-CONS-647a02ae",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-60dd84cf",
+          "text": "CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.",
+          "entry": "52ffb9bc",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a8d7bb8a",
+          "text": "The earlier A decision is superseded.",
+          "entry": "52ffb9bc",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-489f4523",
+          "text": "CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.",
+          "entry": "b7efe50b",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6c6eb1bd",
+          "text": "CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.",
+          "entry": "63a609b1",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-353648f3",
+          "text": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.",
+          "entry": "a91a2ecb",
+          "why": [],
+          "correction": true
+         }
+        ],
+        "decisions": [
+         {
+          "id": "D-0d55f3b2",
+          "text": "Decision: use architecture archiver for the parser R2-DECI-e59e919f",
+          "entry": "fb8023b5",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-39f65e70",
+          "text": "Decision: keep the validator client in-process R2-DECI-255629a6",
+          "entry": "b5644cac",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-451f921c",
+          "text": "Decision: reject the scheduler rewrite; extend instead R2-DECI-c760d973",
+          "entry": "9db086ff",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-406783e5",
+          "text": "Decision: the billing fix lands behind a feature flag R2-DECI-b472e29c",
+          "entry": "32851fb1",
+          "why": [],
+          "correction": false
+         }
+        ],
+        "superseded": [
+         {
+          "oldId": "D-23d2bfa9",
+          "oldEntry": "38408d79",
+          "newId": "C-60dd84cf",
+          "newText": "CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.",
+          "newEntry": "52ffb9bc"
+         },
+         {
+          "oldId": "D-0d48175a",
+          "oldEntry": "5a4a6b18",
+          "newId": "C-489f4523",
+          "newText": "CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.",
+          "newEntry": "b7efe50b"
+         },
+         {
+          "oldId": "D-62c4ee28",
+          "oldEntry": "b7122a3e",
+          "newId": "C-6c6eb1bd",
+          "newText": "CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.",
+          "newEntry": "63a609b1"
+         },
+         {
+          "oldId": "D-39a661c9",
+          "oldEntry": "d9ef4714",
+          "newId": "C-353648f3",
+          "newText": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.",
+          "newEntry": "a91a2ecb"
+         }
+        ],
+        "evidence": [],
+        "anchors": [
+         "CORRECTION",
+         "DECI",
+         "SUPE",
+         "CORR"
+        ],
+        "openWork": [],
+        "retractions": [],
+        "retired": [
+         "D-0d48175a",
+         "D-23d2bfa9",
+         "D-39a661c9",
+         "D-62c4ee28"
+        ]
+       },
+       "render": "## Protected Task State (deterministic, provenance-tagged)\nDerived from the transcript by fixed rules; no item is inferred or invented. Use it to keep constraints, current decisions and verified evidence exact. A SUPERSEDED item is history, not a current requirement.\n\n**ACTIVE CONSTRAINTS**\n- C-d39f7377 [8a9365a6]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-bcd72597 [8a9365a6]: CONSTRAINT: never drop the reporting ledger R2-CONS-c03c64d5\n- C-a683baa1 [8a9365a6]: CONSTRAINT: always run the indexer suite before publishing R2-CONS-614389ba\n- C-a5c479a5 [8a9365a6]: CONSTRAINT: do not modify files under gateway/ without review R2-CONS-08df154e\n- C-19b62f2c [8a9365a6]: CONSTRAINT: keep the archiver protocol version at v2 R2-CONS-b5e2af97\n- C-bfc4b042 [8a9365a6]: CONSTRAINT: the validator migration must be reversible R2-CONS-611c40b5\n- C-e523b49d [8a9365a6]: CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-3e350f73\n- C-9c044975 [8a9365a6]: CONSTRAINT: preserve the billing audit trail verbatim R2-CONS-ff67f34f\n- C-fe974584 [8a9365a6]: CONSTRAINT: the auth service stays single-writer R2-CONS-6f107ef4\n- C-6412df3b [8a9365a6]: CONSTRAINT: never drop the ledger ledger R2-CONS-a2ddeedf\n- C-30a5ef54 [8a9365a6]: CONSTRAINT: always run the reconciler suite before publishing R2-CONS-6e0de741\n- C-4cbc31b3 [8a9365a6]: CONSTRAINT: do not modify files under notifier/ without review R2-CONS-525ffed6\n- C-5f27de5d [8a9365a6]: CONSTRAINT: keep the payments protocol version at v2 R2-CONS-b0719117\n- C-06d9bd75 [8a9365a6]: CONSTRAINT: the reporting migration must be reversible R2-CONS-63df81b1\n- C-03d1f31d [8a9365a6]: CONSTRAINT: no new dependencies in indexer without approval R2-CONS-7175c414\n- C-9634f19e [8a9365a6]: CONSTRAINT: preserve the gateway audit trail verbatim R2-CONS-6b04a002\n- C-80299c88 [8a9365a6]: CONSTRAINT: the archiver service stays single-writer R2-CONS-7c670c54\n- C-954a6c75 [8a9365a6]: CONSTRAINT: never drop the validator ledger R2-CONS-be0c3750\n- C-0648e003 [8a9365a6]: CONSTRAINT: always run the scheduler suite before publishing R2-CONS-df2c908e\n- C-6458459e [8a9365a6]: CONSTRAINT: do not modify files under billing/ without review R2-CONS-d9f6fc43\n- C-72d86255 [8a9365a6]: CONSTRAINT: keep the auth protocol version at v2 R2-CONS-647a02ae\n- C-60dd84cf [52ffb9bc]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.\n- C-a8d7bb8a [52ffb9bc]: The earlier A decision is superseded.\n- C-489f4523 [b7efe50b]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.\n- C-6c6eb1bd [63a609b1]: CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.\n- C-353648f3 [a91a2ecb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.\n\n**DECISIONS (current)**\n- D-0d55f3b2 [fb8023b5]: Decision: use architecture archiver for the parser R2-DECI-e59e919f\n- D-39f65e70 [b5644cac]: Decision: keep the validator client in-process R2-DECI-255629a6\n- D-451f921c [9db086ff]: Decision: reject the scheduler rewrite; extend instead R2-DECI-c760d973\n- D-406783e5 [32851fb1]: Decision: the billing fix lands behind a feature flag R2-DECI-b472e29c\n\n**SUPERSEDED (history, not current)**\n- D-23d2bfa9 [38408d79] replaced by C-60dd84cf [52ffb9bc]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.\n- D-0d48175a [5a4a6b18] replaced by C-489f4523 [b7efe50b]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.\n- D-62c4ee28 [b7122a3e] replaced by C-6c6eb1bd [63a609b1]: CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.\n- D-39a661c9 [d9ef4714] replaced by C-353648f3 [a91a2ecb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.\n\n**EXACT ANCHORS**: CORRECTION, DECI, SUPE, CORR\n"
+      },
+      {
+       "cycle": 4,
+       "ledger": {
+        "constraints": [
+         {
+          "id": "C-d39f7377",
+          "text": "TASK GOAL: migrate the billing service to API v2 before Friday.",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bcd72597",
+          "text": "CONSTRAINT: never drop the reporting ledger R2-CONS-c03c64d5",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a683baa1",
+          "text": "CONSTRAINT: always run the indexer suite before publishing R2-CONS-614389ba",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a5c479a5",
+          "text": "CONSTRAINT: do not modify files under gateway/ without review R2-CONS-08df154e",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-19b62f2c",
+          "text": "CONSTRAINT: keep the archiver protocol version at v2 R2-CONS-b5e2af97",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-bfc4b042",
+          "text": "CONSTRAINT: the validator migration must be reversible R2-CONS-611c40b5",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-e523b49d",
+          "text": "CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-3e350f73",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-9c044975",
+          "text": "CONSTRAINT: preserve the billing audit trail verbatim R2-CONS-ff67f34f",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-fe974584",
+          "text": "CONSTRAINT: the auth service stays single-writer R2-CONS-6f107ef4",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6412df3b",
+          "text": "CONSTRAINT: never drop the ledger ledger R2-CONS-a2ddeedf",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-30a5ef54",
+          "text": "CONSTRAINT: always run the reconciler suite before publishing R2-CONS-6e0de741",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-4cbc31b3",
+          "text": "CONSTRAINT: do not modify files under notifier/ without review R2-CONS-525ffed6",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-5f27de5d",
+          "text": "CONSTRAINT: keep the payments protocol version at v2 R2-CONS-b0719117",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-06d9bd75",
+          "text": "CONSTRAINT: the reporting migration must be reversible R2-CONS-63df81b1",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-03d1f31d",
+          "text": "CONSTRAINT: no new dependencies in indexer without approval R2-CONS-7175c414",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-9634f19e",
+          "text": "CONSTRAINT: preserve the gateway audit trail verbatim R2-CONS-6b04a002",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-80299c88",
+          "text": "CONSTRAINT: the archiver service stays single-writer R2-CONS-7c670c54",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-954a6c75",
+          "text": "CONSTRAINT: never drop the validator ledger R2-CONS-be0c3750",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-0648e003",
+          "text": "CONSTRAINT: always run the scheduler suite before publishing R2-CONS-df2c908e",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6458459e",
+          "text": "CONSTRAINT: do not modify files under billing/ without review R2-CONS-d9f6fc43",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-72d86255",
+          "text": "CONSTRAINT: keep the auth protocol version at v2 R2-CONS-647a02ae",
+          "entry": "8a9365a6",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-60dd84cf",
+          "text": "CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.",
+          "entry": "52ffb9bc",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-a8d7bb8a",
+          "text": "The earlier A decision is superseded.",
+          "entry": "52ffb9bc",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-489f4523",
+          "text": "CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.",
+          "entry": "b7efe50b",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-6c6eb1bd",
+          "text": "CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.",
+          "entry": "63a609b1",
+          "why": [],
+          "correction": true
+         },
+         {
+          "id": "C-353648f3",
+          "text": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.",
+          "entry": "a91a2ecb",
+          "why": [],
+          "correction": true
+         }
+        ],
+        "decisions": [
+         {
+          "id": "D-0d55f3b2",
+          "text": "Decision: use architecture archiver for the parser R2-DECI-e59e919f",
+          "entry": "fb8023b5",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-39f65e70",
+          "text": "Decision: keep the validator client in-process R2-DECI-255629a6",
+          "entry": "b5644cac",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-451f921c",
+          "text": "Decision: reject the scheduler rewrite; extend instead R2-DECI-c760d973",
+          "entry": "9db086ff",
+          "why": [],
+          "correction": false
+         },
+         {
+          "id": "D-406783e5",
+          "text": "Decision: the billing fix lands behind a feature flag R2-DECI-b472e29c",
+          "entry": "32851fb1",
+          "why": [],
+          "correction": false
+         }
+        ],
+        "superseded": [
+         {
+          "oldId": "D-23d2bfa9",
+          "oldEntry": "38408d79",
+          "newId": "C-60dd84cf",
+          "newText": "CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.",
+          "newEntry": "52ffb9bc"
+         },
+         {
+          "oldId": "D-0d48175a",
+          "oldEntry": "5a4a6b18",
+          "newId": "C-489f4523",
+          "newText": "CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.",
+          "newEntry": "b7efe50b"
+         },
+         {
+          "oldId": "D-62c4ee28",
+          "oldEntry": "b7122a3e",
+          "newId": "C-6c6eb1bd",
+          "newText": "CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.",
+          "newEntry": "63a609b1"
+         },
+         {
+          "oldId": "D-39a661c9",
+          "oldEntry": "d9ef4714",
+          "newId": "C-353648f3",
+          "newText": "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.",
+          "newEntry": "a91a2ecb"
+         }
+        ],
+        "evidence": [],
+        "anchors": [
+         "CORRECTION",
+         "DECI",
+         "SUPE",
+         "CORR"
+        ],
+        "openWork": [],
+        "retractions": [],
+        "retired": [
+         "D-0d48175a",
+         "D-23d2bfa9",
+         "D-39a661c9",
+         "D-62c4ee28"
+        ]
+       },
+       "render": "## Protected Task State (deterministic, provenance-tagged)\nDerived from the transcript by fixed rules; no item is inferred or invented. Use it to keep constraints, current decisions and verified evidence exact. A SUPERSEDED item is history, not a current requirement.\n\n**ACTIVE CONSTRAINTS**\n- C-d39f7377 [8a9365a6]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-bcd72597 [8a9365a6]: CONSTRAINT: never drop the reporting ledger R2-CONS-c03c64d5\n- C-a683baa1 [8a9365a6]: CONSTRAINT: always run the indexer suite before publishing R2-CONS-614389ba\n- C-a5c479a5 [8a9365a6]: CONSTRAINT: do not modify files under gateway/ without review R2-CONS-08df154e\n- C-19b62f2c [8a9365a6]: CONSTRAINT: keep the archiver protocol version at v2 R2-CONS-b5e2af97\n- C-bfc4b042 [8a9365a6]: CONSTRAINT: the validator migration must be reversible R2-CONS-611c40b5\n- C-e523b49d [8a9365a6]: CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-3e350f73\n- C-9c044975 [8a9365a6]: CONSTRAINT: preserve the billing audit trail verbatim R2-CONS-ff67f34f\n- C-fe974584 [8a9365a6]: CONSTRAINT: the auth service stays single-writer R2-CONS-6f107ef4\n- C-6412df3b [8a9365a6]: CONSTRAINT: never drop the ledger ledger R2-CONS-a2ddeedf\n- C-30a5ef54 [8a9365a6]: CONSTRAINT: always run the reconciler suite before publishing R2-CONS-6e0de741\n- C-4cbc31b3 [8a9365a6]: CONSTRAINT: do not modify files under notifier/ without review R2-CONS-525ffed6\n- C-5f27de5d [8a9365a6]: CONSTRAINT: keep the payments protocol version at v2 R2-CONS-b0719117\n- C-06d9bd75 [8a9365a6]: CONSTRAINT: the reporting migration must be reversible R2-CONS-63df81b1\n- C-03d1f31d [8a9365a6]: CONSTRAINT: no new dependencies in indexer without approval R2-CONS-7175c414\n- C-9634f19e [8a9365a6]: CONSTRAINT: preserve the gateway audit trail verbatim R2-CONS-6b04a002\n- C-80299c88 [8a9365a6]: CONSTRAINT: the archiver service stays single-writer R2-CONS-7c670c54\n- C-954a6c75 [8a9365a6]: CONSTRAINT: never drop the validator ledger R2-CONS-be0c3750\n- C-0648e003 [8a9365a6]: CONSTRAINT: always run the scheduler suite before publishing R2-CONS-df2c908e\n- C-6458459e [8a9365a6]: CONSTRAINT: do not modify files under billing/ without review R2-CONS-d9f6fc43\n- C-72d86255 [8a9365a6]: CONSTRAINT: keep the auth protocol version at v2 R2-CONS-647a02ae\n- C-60dd84cf [52ffb9bc]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.\n- C-a8d7bb8a [52ffb9bc]: The earlier A decision is superseded.\n- C-489f4523 [b7efe50b]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.\n- C-6c6eb1bd [63a609b1]: CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.\n- C-353648f3 [a91a2ecb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.\n\n**DECISIONS (current)**\n- D-0d55f3b2 [fb8023b5]: Decision: use architecture archiver for the parser R2-DECI-e59e919f\n- D-39f65e70 [b5644cac]: Decision: keep the validator client in-process R2-DECI-255629a6\n- D-451f921c [9db086ff]: Decision: reject the scheduler rewrite; extend instead R2-DECI-c760d973\n- D-406783e5 [32851fb1]: Decision: the billing fix lands behind a feature flag R2-DECI-b472e29c\n\n**SUPERSEDED (history, not current)**\n- D-23d2bfa9 [38408d79] replaced by C-60dd84cf [52ffb9bc]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.\n- D-0d48175a [5a4a6b18] replaced by C-489f4523 [b7efe50b]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.\n- D-62c4ee28 [b7122a3e] replaced by C-6c6eb1bd [63a609b1]: CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.\n- D-39a661c9 [d9ef4714] replaced by C-353648f3 [a91a2ecb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.\n\n**EXACT ANCHORS**: CORRECTION, DECI, SUPE, CORR\n"
+      }
+     ]
     }
    }
   }
@@ -4413,6 +6515,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "never drop the scheduler ledger ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -4421,6 +6531,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -4460,6 +6577,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "always run the payments suite before publishing ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -4468,6 +6593,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -4507,6 +6639,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "do not modify files under auth/ without review ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -4515,6 +6655,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -4554,6 +6701,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "keep the reconciler protocol version at v2 ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -4562,6 +6717,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -4601,6 +6763,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "the billing migration must be reversible ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -4609,6 +6779,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -4648,6 +6825,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "no new dependencies in gateway without approval ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -4656,6 +6841,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -4695,6 +6887,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "preserve the ledger audit trail verbatim ",
      "preW11RenderContains": {
       "0": false,
       "1": false,
@@ -4703,6 +6903,13 @@
       "4": false
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -4742,6 +6949,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "the notifier service stays single-writer ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -4750,6 +6965,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -4789,6 +7011,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "use architecture reconciler for the parser ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -4797,6 +7027,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -4836,6 +7073,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "keep the billing client in-process ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -4844,6 +7089,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -4883,6 +7135,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "reject the gateway rewrite; extend instead ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -4891,6 +7151,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -4930,6 +7197,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "the ledger fix lands behind a feature flag ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -4938,6 +7213,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -4977,6 +7259,13 @@
       "3": false,
       "4": false
      },
+     "postW11D21Render": {
+      "0": false,
+      "1": false,
+      "2": false,
+      "3": false,
+      "4": false
+     },
      "answerText": "full rendered block"
     },
     {
@@ -5004,6 +7293,13 @@
       "4": false
      },
      "postW11Render": {
+      "0": false,
+      "1": false,
+      "2": false,
+      "3": false,
+      "4": false
+     },
+     "postW11D21Render": {
       "0": false,
       "1": false,
       "2": false,
@@ -5043,6 +7339,13 @@
       "3": false,
       "4": false
      },
+     "postW11D21Render": {
+      "0": false,
+      "1": false,
+      "2": false,
+      "3": false,
+      "4": false
+     },
      "answerText": "full rendered block"
     },
     {
@@ -5070,6 +7373,13 @@
       "4": false
      },
      "postW11Render": {
+      "0": false,
+      "1": false,
+      "2": false,
+      "3": false,
+      "4": false
+     },
+     "postW11D21Render": {
       "0": false,
       "1": false,
       "2": false,
@@ -5109,6 +7419,13 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
      "answerText": "module-scoped current composite (render-capped ACTIVE CONSTRAINTS + DECISIONS items naming the module)"
     },
     {
@@ -5142,6 +7459,13 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
      "answerText": "module-scoped current composite (render-capped ACTIVE CONSTRAINTS + DECISIONS items naming the module)"
     },
     {
@@ -5169,6 +7493,13 @@
       "4": false
      },
      "postW11Render": {
+      "0": false,
+      "1": false,
+      "2": false,
+      "3": false,
+      "4": false
+     },
+     "postW11D21Render": {
       "0": false,
       "1": false,
       "2": false,
@@ -5272,6 +7603,43 @@
        "correctionRenderedAs": "active"
       }
      },
+     "postW11D21": {
+      "0": {
+       "module": "reporting",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "1": {
+       "module": "reporting",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "2": {
+       "module": "reporting",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "3": {
+       "module": "reporting",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "4": {
+       "module": "reporting",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      }
+     },
      "preW11RenderMatch": {
       "0": false,
       "1": false,
@@ -5287,6 +7655,13 @@
       "4": true
      },
      "postW11LedgerMatch": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderMatch": {
       "0": true,
       "1": true,
       "2": true,
@@ -5387,6 +7762,43 @@
        "correctionRenderedAs": "active"
       }
      },
+     "postW11D21": {
+      "0": {
+       "module": "validator",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "1": {
+       "module": "validator",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "2": {
+       "module": "validator",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "3": {
+       "module": "validator",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "4": {
+       "module": "validator",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      }
+     },
      "preW11RenderMatch": {
       "0": false,
       "1": false,
@@ -5402,6 +7814,13 @@
       "4": true
      },
      "postW11LedgerMatch": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderMatch": {
       "0": true,
       "1": true,
       "2": true,
@@ -5440,6 +7859,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "never drop the reporting ledger ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -5448,6 +7875,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -5483,6 +7917,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "always run the indexer suite before publishing ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -5491,6 +7933,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -5526,6 +7975,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "do not modify files under gateway/ without review ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -5534,6 +7991,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -5569,6 +8033,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "keep the archiver protocol version at v2 ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -5577,6 +8049,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -5612,6 +8091,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "the validator migration must be reversible ",
      "preW11RenderContains": {
       "0": false,
       "1": false,
@@ -5620,6 +8107,13 @@
       "4": false
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -5655,6 +8149,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "no new dependencies in scheduler without approval ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -5663,6 +8165,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -5698,6 +8207,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "preserve the billing audit trail verbatim ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -5706,6 +8223,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -5741,6 +8265,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "the auth service stays single-writer ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -5749,6 +8281,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -5784,6 +8323,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "never drop the ledger ledger ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -5792,6 +8339,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -5827,6 +8381,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "always run the reconciler suite before publishing ",
      "preW11RenderContains": {
       "0": false,
       "1": false,
@@ -5835,6 +8397,13 @@
       "4": false
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -5870,6 +8439,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "do not modify files under notifier/ without review ",
      "preW11RenderContains": {
       "0": false,
       "1": false,
@@ -5878,6 +8455,13 @@
       "4": false
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -5913,6 +8497,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "keep the payments protocol version at v2 ",
      "preW11RenderContains": {
       "0": false,
       "1": false,
@@ -5926,6 +8518,13 @@
       "2": false,
       "3": false,
       "4": false
+     },
+     "postW11D21RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
      },
      "answerText": "full rendered block"
     },
@@ -5956,6 +8555,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "the reporting migration must be reversible ",
      "preW11RenderContains": {
       "0": false,
       "1": false,
@@ -5969,6 +8576,13 @@
       "2": false,
       "3": false,
       "4": false
+     },
+     "postW11D21RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
      },
      "answerText": "full rendered block"
     },
@@ -5999,6 +8613,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "no new dependencies in indexer without approval ",
      "preW11RenderContains": {
       "0": false,
       "1": false,
@@ -6012,6 +8634,13 @@
       "2": false,
       "3": false,
       "4": false
+     },
+     "postW11D21RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
      },
      "answerText": "full rendered block"
     },
@@ -6042,6 +8671,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "preserve the gateway audit trail verbatim ",
      "preW11RenderContains": {
       "0": false,
       "1": false,
@@ -6055,6 +8692,13 @@
       "2": false,
       "3": false,
       "4": false
+     },
+     "postW11D21RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
      },
      "answerText": "full rendered block"
     },
@@ -6085,6 +8729,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "the archiver service stays single-writer ",
      "preW11RenderContains": {
       "0": false,
       "1": false,
@@ -6098,6 +8750,13 @@
       "2": false,
       "3": false,
       "4": false
+     },
+     "postW11D21RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
      },
      "answerText": "full rendered block"
     },
@@ -6128,6 +8787,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "never drop the validator ledger ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -6141,6 +8808,13 @@
       "2": false,
       "3": false,
       "4": false
+     },
+     "postW11D21RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
      },
      "answerText": "full rendered block"
     },
@@ -6171,6 +8845,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "always run the scheduler suite before publishing ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -6184,6 +8866,13 @@
       "2": false,
       "3": false,
       "4": false
+     },
+     "postW11D21RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
      },
      "answerText": "full rendered block"
     },
@@ -6214,6 +8903,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "do not modify files under billing/ without review ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -6227,6 +8924,13 @@
       "2": false,
       "3": false,
       "4": false
+     },
+     "postW11D21RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
      },
      "answerText": "full rendered block"
     },
@@ -6257,6 +8961,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "keep the auth protocol version at v2 ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -6270,6 +8982,13 @@
       "2": false,
       "3": false,
       "4": false
+     },
+     "postW11D21RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
      },
      "answerText": "full rendered block"
     },
@@ -6300,6 +9019,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "use architecture archiver for the parser ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -6308,6 +9035,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -6343,6 +9077,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "keep the validator client in-process ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -6351,6 +9093,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -6386,6 +9135,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "reject the scheduler rewrite; extend instead ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -6394,6 +9151,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -6429,6 +9193,14 @@
       "3": true,
       "4": true
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "goldCore": "the billing fix lands behind a feature flag ",
      "preW11RenderContains": {
       "0": true,
       "1": true,
@@ -6437,6 +9209,13 @@
       "4": true
      },
      "postW11RenderContains": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderContains": {
       "0": true,
       "1": true,
       "2": true,
@@ -6472,6 +9251,13 @@
       "3": false,
       "4": false
      },
+     "postW11D21Render": {
+      "0": false,
+      "1": false,
+      "2": false,
+      "3": false,
+      "4": false
+     },
      "answerText": "full rendered block"
     },
     {
@@ -6495,6 +9281,13 @@
       "4": false
      },
      "postW11Render": {
+      "0": false,
+      "1": false,
+      "2": false,
+      "3": false,
+      "4": false
+     },
+     "postW11D21Render": {
       "0": false,
       "1": false,
       "2": false,
@@ -6530,6 +9323,13 @@
       "3": false,
       "4": false
      },
+     "postW11D21Render": {
+      "0": false,
+      "1": false,
+      "2": false,
+      "3": false,
+      "4": false
+     },
      "answerText": "full rendered block"
     },
     {
@@ -6553,6 +9353,13 @@
       "4": false
      },
      "postW11Render": {
+      "0": false,
+      "1": false,
+      "2": false,
+      "3": false,
+      "4": false
+     },
+     "postW11D21Render": {
       "0": false,
       "1": false,
       "2": false,
@@ -6588,6 +9395,13 @@
       "3": false,
       "4": false
      },
+     "postW11D21Render": {
+      "0": false,
+      "1": false,
+      "2": false,
+      "3": false,
+      "4": false
+     },
      "answerText": "full rendered block"
     },
     {
@@ -6611,6 +9425,13 @@
       "4": false
      },
      "postW11Render": {
+      "0": false,
+      "1": false,
+      "2": false,
+      "3": false,
+      "4": false
+     },
+     "postW11D21Render": {
       "0": false,
       "1": false,
       "2": false,
@@ -6646,6 +9467,13 @@
       "3": false,
       "4": false
      },
+     "postW11D21Render": {
+      "0": false,
+      "1": false,
+      "2": false,
+      "3": false,
+      "4": false
+     },
      "answerText": "full rendered block"
     },
     {
@@ -6669,6 +9497,13 @@
       "4": false
      },
      "postW11Render": {
+      "0": false,
+      "1": false,
+      "2": false,
+      "3": false,
+      "4": false
+     },
+     "postW11D21Render": {
       "0": false,
       "1": false,
       "2": false,
@@ -6704,6 +9539,13 @@
       "3": false,
       "4": false
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
      "answerText": "module-scoped current composite (render-capped ACTIVE CONSTRAINTS + DECISIONS items naming the module)"
     },
     {
@@ -6732,6 +9574,13 @@
       "2": false,
       "3": false,
       "4": false
+     },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
      },
      "answerText": "module-scoped current composite (render-capped ACTIVE CONSTRAINTS + DECISIONS items naming the module)"
     },
@@ -6762,6 +9611,13 @@
       "3": false,
       "4": false
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
      "answerText": "module-scoped current composite (render-capped ACTIVE CONSTRAINTS + DECISIONS items naming the module)"
     },
     {
@@ -6791,6 +9647,13 @@
       "3": false,
       "4": false
      },
+     "postW11D21Render": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
      "answerText": "module-scoped current composite (render-capped ACTIVE CONSTRAINTS + DECISIONS items naming the module)"
     },
     {
@@ -6814,6 +9677,13 @@
       "4": false
      },
      "postW11Render": {
+      "0": false,
+      "1": false,
+      "2": false,
+      "3": false,
+      "4": false
+     },
+     "postW11D21Render": {
       "0": false,
       "1": false,
       "2": false,
@@ -6913,6 +9783,43 @@
        "correctionRenderedAs": "superseded-new-text"
       }
      },
+     "postW11D21": {
+      "0": {
+       "module": "reconciler",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "1": {
+       "module": "reconciler",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "2": {
+       "module": "reconciler",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "3": {
+       "module": "reconciler",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "4": {
+       "module": "reconciler",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      }
+     },
      "preW11RenderMatch": {
       "0": false,
       "1": false,
@@ -6928,6 +9835,13 @@
       "4": false
      },
      "postW11LedgerMatch": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderMatch": {
       "0": true,
       "1": true,
       "2": true,
@@ -7024,6 +9938,43 @@
        "correctionRenderedAs": "superseded-new-text"
       }
      },
+     "postW11D21": {
+      "0": {
+       "module": "notifier",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "1": {
+       "module": "notifier",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "2": {
+       "module": "notifier",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "3": {
+       "module": "notifier",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "4": {
+       "module": "notifier",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      }
+     },
      "preW11RenderMatch": {
       "0": false,
       "1": false,
@@ -7039,6 +9990,13 @@
       "4": false
      },
      "postW11LedgerMatch": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderMatch": {
       "0": true,
       "1": true,
       "2": true,
@@ -7135,6 +10093,43 @@
        "correctionRenderedAs": "superseded-new-text"
       }
      },
+     "postW11D21": {
+      "0": {
+       "module": "payments",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "1": {
+       "module": "payments",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "2": {
+       "module": "payments",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "3": {
+       "module": "payments",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "4": {
+       "module": "payments",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      }
+     },
      "preW11RenderMatch": {
       "0": true,
       "1": true,
@@ -7150,6 +10145,13 @@
       "4": false
      },
      "postW11LedgerMatch": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderMatch": {
       "0": true,
       "1": true,
       "2": true,
@@ -7246,6 +10248,43 @@
        "correctionRenderedAs": "superseded-new-text"
       }
      },
+     "postW11D21": {
+      "0": {
+       "module": "reporting",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "1": {
+       "module": "reporting",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "2": {
+       "module": "reporting",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "3": {
+       "module": "reporting",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      },
+      "4": {
+       "module": "reporting",
+       "structural": "clean",
+       "renderedCurrent": "clean",
+       "correctionRenderedActive": true,
+       "correctionRenderedAs": "active"
+      }
+     },
      "preW11RenderMatch": {
       "0": true,
       "1": true,
@@ -7261,6 +10300,13 @@
       "4": false
      },
      "postW11LedgerMatch": {
+      "0": true,
+      "1": true,
+      "2": true,
+      "3": true,
+      "4": true
+     },
+     "postW11D21RenderMatch": {
       "0": true,
       "1": true,
       "2": true,
@@ -7291,6 +10337,17 @@
      true
     ],
     "ledgerMatch": [
+     true
+    ],
+    "correctionRenderedAs": [
+     "active"
+    ]
+   },
+   "postW11D21Replay": {
+    "structural": [
+     "clean"
+    ],
+    "renderMatch": [
      true
     ],
     "correctionRenderedAs": [
@@ -7341,6 +10398,17 @@
      "active"
     ]
    },
+   "postW11D21Replay": {
+    "structural": [
+     "clean"
+    ],
+    "renderMatch": [
+     true
+    ],
+    "correctionRenderedAs": [
+     "active"
+    ]
+   },
    "preW11Replay": {
     "structural": [
      "inverted"
@@ -7383,6 +10451,17 @@
      "superseded-new-text"
     ]
    },
+   "postW11D21Replay": {
+    "structural": [
+     "clean"
+    ],
+    "renderMatch": [
+     true
+    ],
+    "correctionRenderedAs": [
+     "active"
+    ]
+   },
    "preW11Replay": {
     "structural": [
      "inverted"
@@ -7421,6 +10500,17 @@
     ],
     "correctionRenderedAs": [
      "superseded-new-text"
+    ]
+   },
+   "postW11D21Replay": {
+    "structural": [
+     "clean"
+    ],
+    "renderMatch": [
+     true
+    ],
+    "correctionRenderedAs": [
+     "active"
     ]
    },
    "preW11Replay": {
@@ -7463,6 +10553,17 @@
      "superseded-new-text"
     ]
    },
+   "postW11D21Replay": {
+    "structural": [
+     "clean"
+    ],
+    "renderMatch": [
+     true
+    ],
+    "correctionRenderedAs": [
+     "active"
+    ]
+   },
    "preW11Replay": {
     "structural": [
      "ambiguous"
@@ -7501,6 +10602,17 @@
     ],
     "correctionRenderedAs": [
      "superseded-new-text"
+    ]
+   },
+   "postW11D21Replay": {
+    "structural": [
+     "clean"
+    ],
+    "renderMatch": [
+     true
+    ],
+    "correctionRenderedAs": [
+     "active"
     ]
    },
    "preW11Replay": {

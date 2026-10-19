@@ -300,3 +300,112 @@ Reproduce: from `research/`, `python -m context_rot_r2.live.remeasure.replay`.
   measurements.
 - The live probe points cover cycles 1-5 (base) and 2/4/5 (hard); the
   replay scores all cycles 0-4 for both scenarios.
+
+
+---
+
+# D21 addendum — correction carriers exempt from the render caps (W28)
+
+W28 (branch `rot2/w28-d21`) fixed the render-level defect candidate this
+re-measure reported (Finding 2): the section caps prioritize capture order
+over semantic role, so correction carriers could be cap-omitted from the
+rendered ACTIVE CONSTRAINTS while their stale targets stayed visible as
+SUPERSEDED replacement texts. The fix (`task_state.rs` `render_ledger`,
+branch `rot2/w28-d21`) orders every capped section through
+`prioritize_corrections`: correction carriers always render, ahead of the
+non-correction items, and the cap applies to the remaining slots; the
+dropped-count line states how many corrections were protected when the
+constraints cap omitted anything ("N protected correction(s) rendered; M
+lower-priority item(s) omitted from this block: ...").
+
+This driver now runs a third pass: the post-W11 ledger (unchanged
+`w11_port.build_ledger`) rendered through `d21_render.render_ledger`, the
+Python port of the fixed render. The render only feeds the recorded cycle
+renders and the `postW11D21*` scoring columns; pass 1 still byte-matches
+the corpus and pass 2 still reproduces the W24 numbers, so the before/after
+comparison below is computed inside one run. A port guard asserts that a
+ledger without correction carriers renders byte-identically to the mirror
+(the Rust test `no_corrections_render_is_byte_equal_to_the_previous_output`
+pins the same property on the Rust side).
+
+## Before/after (strict containment = normalized gold core contained in the
+render; corrections = module-scoped CURRENT composite at the render's item
+selection)
+
+| scenario | metric | post-W11 render (W24, before) | post-W11 + D21 render (after) |
+|---|---|---|---|
+| hard | constraint strict containment | 11/20 (9 cap-omitted) | **20/20** |
+| hard | constraint W7 matcher (lenient) | 20/20 | 20/20 |
+| hard | decision strict containment | 4/4 | 4/4 |
+| hard | corrections render-level (module-scoped) | 0/4 (cap-omitted) | **4/4** |
+| hard | corrections structural classification | clean, every cycle | clean, every cycle (unchanged) |
+| base | constraint strict containment | 8/8 | 8/8 |
+| base | corrections render-level | 2/2 (rendered active) | 2/2 (unchanged) |
+| base | full render | — | byte-equal to the W24 render |
+
+## Mechanism on this corpus
+
+The hard scenario's seed message matches SUPERSEDE_RE ("never drop ..."),
+so with the message-level correction marker every one of the 26 active
+constraints is a correction carrier (the W24 ledger table already noted
+this marker side effect for supersession safety). The D21 exemption
+therefore renders the whole ACTIVE CONSTRAINTS list: all 26 lines, the 4
+corrections included, in capture order, with no omitted-count line (nothing
+is omitted; 3961 chars, well under RENDER_MAX_CHARS = 6000, identical at
+every cycle 0-4). That is how the constraint strict containment reaches
+20/20 and the four corrections render in ACTIVE; the ledger itself is
+byte-identical to pass 2 (the fix is render-only).
+
+When a ledger does mix correction carriers with plain items, the cap
+applies to the remaining slots and the dropped-count line states the
+protected count; that shape is covered by the Rust tests
+(`corrections_are_exempt_from_the_constraints_cap_in_the_render`,
+`w24_hard_corpus_shape_renders_every_correction` for the 22-plain + 4-
+correction direct shape: 4 protected, 14 omitted).
+
+### hard, post-W11 + D21, cycle 0 (ACTIVE CONSTRAINTS head; identical through cycle 4)
+
+```
+**ACTIVE CONSTRAINTS**
+- C-d39f7377 [8a9365a6]: TASK GOAL: migrate the billing service to API v2 before Friday.
+- C-bcd72597 [8a9365a6]: CONSTRAINT: never drop the reporting ledger R2-CONS-c03c64d5
+... (all 26 active constraints render; the four corrections close the list)
+- C-60dd84cf [52ffb9bc]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.
+- C-489f4523 [b7efe50b]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.
+- C-6c6eb1bd [63a609b1]: CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.
+- C-353648f3 [a91a2ecb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.
+
+**DECISIONS (current)**
+- D-0d55f3b2 [fb8023b5]: Decision: use architecture archiver for the parser R2-DECI-e59e919f
+- D-39f65e70 [b5644cac]: Decision: keep the validator client in-process R2-DECI-255629a6
+- D-451f921c [9db086ff]: Decision: reject the scheduler rewrite; extend instead R2-DECI-c760d973
+- D-406783e5 [32851fb1]: Decision: the ledger fix lands behind a feature flag R2-DECI-b472e29c
+
+**SUPERSEDED (history, not current)**
+- D-23d2bfa9 [38408d79] replaced by C-60dd84cf [52ffb9bc]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-c5538937.
+- D-0d48175a [5a4a6b18] replaced by C-489f4523 [b7efe50b]: CORRECTION: forget that; use architecture B for the notifier module instead R2-CORR-976a0af8.
+- D-62c4ee28 [b7122a3e] replaced by C-6c6eb1bd [63a609b1]: CORRECTION: forget that; use architecture B for the payments module instead R2-CORR-db6b6d66.
+- D-39a661c9 [d9ef4714] replaced by C-353648f3 [a91a2ecb]: CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-0b6d89d3.
+
+**EXACT ANCHORS**: CORRECTION, DECI, SUPE, CORR
+```
+
+The pre-D21 render for contrast is the W24 cycle-0 render above (12 seed
+lines, "14 lower-priority item(s) omitted", corrections only as SUPERSEDED
+replacement texts).
+
+Prediction (model-dependent, not a measurement): the hard-corpus corrections
+are now asserted as ACTIVE constraints in the render the summarizer and the
+probes see, and every probed constraint line is strict-contained, so the
+live hard answers are expected to stay correct with higher confidence; the
+live run already answered them correctly from a strictly weaker render.
+
+## Files (D21 addendum)
+
+- `d21_render.py` — the D21 render port (provenance comments cite the Rust
+  lines).
+- `replay.py` — third pass (`postW11D21`) plus the `postW11D21*` scoring
+  columns, `goldCore` recording, the priority-aware module-scoped composite
+  and classification, and the no-correction port guard.
+- `results.json` — regenerated: pass 1 and pass 2 outputs unchanged from W24;
+  pass 3 and the D21 columns added.
