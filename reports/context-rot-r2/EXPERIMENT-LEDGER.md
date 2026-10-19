@@ -124,3 +124,36 @@ run the real Rust pipeline (`prepare_compaction` -> `compact` ->
   v2's provenance-based supersession (W4) and for keeping taskState default OFF.
 - the W11 fixes (stable ids, retirement by identity, corrections must not supersede each
   other) target exactly this mechanism; W7's raw-calls.jsonl is the regression corpus.
+
+## R2-E3ADV — adversarial correction suite (live GLM 5.3)
+
+- Status: EXECUTED (branch rot2/w23-adv, commits 76eefbf9f + 754bb75a1; artifacts
+  research/context_rot_r2/live/e3adv/ — results.json, raw-calls.jsonl, README.md).
+- Category: LIVE-MODEL (glm-5.3, temperature 0, production compaction path per cycle:
+  prepare_compaction -> compact -> append_compaction -> restore; the v1 ledger rendered
+  as protected state on the taskState arm).
+- Question: when a correction shares NO anchor token with the decision it replaces
+  (supersession score 0-2 < pairing threshold 3), what does the v1 ledger do, and does
+  the pipeline still answer correctly?
+- Design: 3 adversarial families (semantic swap C1, numeric correction C2, retraction-only
+  C3) x 2 arms x 5 cycles x probe-every-cycle x 3 reps; predictions pre-registered in
+  commit 5c18dab81 BEFORE any live call; offline selftest proves the zero-pairing
+  property against the real mirror ledger (superseded == [] at every cycle).
+- Result: 30/30 cycle points correct BOTH arms; 0 extraction failures; strict == primary
+  everywhere; anchor retention 1/1 every cycle.
+- Finding (the mechanism, verified in raw-calls.jsonl): the ledger retired NOTHING;
+  the stale decision stayed DECISIONS-current at every cycle while the render header
+  promised "A SUPERSEDED item is history" with no superseded items to show. GLM 5.3
+  resolved the contradiction in all 15 taskState summarizer outputs by annotating the
+  stale item as history in its own words ("Treat as history only", "superseded in
+  practice", "no longer applies to the current deliverable"). Correctness is the
+  summarizer's achievement AGAINST the ledger, not a property of it — at +1.5k-1.9k
+  request chars and +0.6k-1.2k summary chars per cycle (mean summarizer request
+  16.8k-17.0k chars taskState vs 15.1k-15.3k default).
+- Combined with R2-E2: the v1 ledger on corrections is EITHER a coin-flip that can
+  invert user intent (shared-anchor luck pairs wrong: the E2 inversion) OR dead weight
+  the model must argue down (no shared anchor: stale current re-asserted verbatim
+  every cycle). In neither case does it DO the correction's work. The typed-state v2
+  role/provenance supersession remains the fix direction.
+- Budget: 124 wire calls (93 probes, 30 summarizers, 1 pong; cap 250). 0 HTTP retries;
+  all summarizers finished at 8192 (no ladder steps).
