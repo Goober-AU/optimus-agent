@@ -9,6 +9,15 @@
 # Shell scripts should keep LF
 *.sh text eol=lf
 
+# Large research call logs (provenance telemetry JSONL) are stored via
+# git-lfs when newly committed; see reports/context-rot-r2/REVIEW-AUDIT.md
+# appendix for the migration note (existing blobs are unchanged).
+research/context_rot_r2/live/raw-calls.jsonl filter=lfs diff=lfs merge=lfs -text
+research/context_rot_r2/live/e3/raw-calls.jsonl filter=lfs diff=lfs merge=lfs -text
+research/context_rot_r2/live/e3adv/raw-calls.jsonl filter=lfs diff=lfs merge=lfs -text
+research/context_rot_r2/live/e5/live/e3-typed-raw-calls.jsonl filter=lfs diff=lfs merge=lfs -text
+research/context_rot_r2/compactbench_adapter/live/raw-calls.jsonl filter=lfs diff=lfs merge=lfs -text
+
 # Common binary assets
 *.png binary
 *.jpg binary
