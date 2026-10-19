@@ -146,6 +146,11 @@ struct CycleRecord {
     ledger_present: bool,
     ledger_items: Value,
     anchors_present: Vec<String>,
+    /// W15: the typed (v2) protected-state verification outcome persisted
+    /// on the compaction details (`typedVerification`); `None` when the arm
+    /// is not `typed`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    typed_verification: Option<Value>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -413,23 +418,33 @@ fn conversation_chunks(request: &str) -> Vec<String> {
 pub fn lossy_summary(request: &str) -> String {
     let protected = request
         .lines()
-        .any(|line| line.starts_with("## Protected Task State"));
+        .any(|line| line.starts_with("## Protected Task State"))
+        || request
+            .lines()
+            .any(|line| line.starts_with("## Typed Protected State"));
     let mut constraints = Vec::new();
     let mut decisions = Vec::new();
     let mut evidence = Vec::new();
     if protected {
         // Copy the ledger block verbatim, routed by its own section markers.
+        // The typed block's intro orders the model to "Copy every item
+        // below into the matching summary section", so every typed section
+        // routes to its summary bucket (see `typed_section_bucket`); the v1
+        // titles keep their original contains() routing, so the v1 arm is
+        // byte-identical to the committed E1 run.
         let mut section = String::new();
         let mut in_block = false;
         for line in request.lines() {
-            if line.starts_with("## Protected Task State") {
+            if line.starts_with("## Protected Task State")
+                || line.starts_with("## Typed Protected State")
+            {
                 in_block = true;
                 continue;
             }
             if in_block {
                 if line.starts_with("## ") || line.starts_with("Copy every ACTIVE CONSTRAINT") {
                     // End of the protected block (instruction line follows).
-                    if !line.starts_with("## Protected") {
+                    if !line.starts_with("## Protected") && !line.starts_with("## Typed") {
                         in_block = false;
                         continue;
                     }
@@ -441,12 +456,8 @@ pub fn lossy_summary(request: &str) -> String {
                         "evidence" => evidence.push(line.to_string()),
                         _ => {}
                     }
-                } else if line.contains("ACTIVE CONSTRAINTS") {
-                    section = "constraints".into();
-                } else if line.contains("DECISIONS (current)") {
-                    section = "decisions".into();
-                } else if line.contains("VERIFIED EVIDENCE") {
-                    section = "evidence".into();
+                } else if let Some(bucket) = typed_section_bucket(line) {
+                    section = bucket.into();
                 }
             }
         }
@@ -536,6 +547,42 @@ pub fn lossy_summary(request: &str) -> String {
     summary
 }
 
+/// Typed protected-block section routing for the lossy fixture: the
+/// summary bucket a typed section title maps to. The exact uppercase
+/// titles are the typed render's own (`typed_state.rs section_title`); the
+/// v1 titles (wrapped in `**` by `render_ledger`) fall through to their
+/// historical contains() routing so v1-arm behavior is unchanged.
+fn typed_section_bucket(line: &str) -> Option<&'static str> {
+    match line {
+        "ACTIVE CONSTRAINTS"
+        | "SAFETY BOUNDARIES"
+        | "ACCEPTANCE CRITERIA"
+        | "USER CORRECTIONS"
+        | "CURRENT TASK"
+        | "PENDING ACTIONS" => Some("constraints"),
+        "DECISIONS (CURRENT)" | "DECISION RATIONALE" => Some("decisions"),
+        "VERIFIED EVIDENCE"
+        | "SOURCE EVIDENCE"
+        | "REPOSITORY STATE"
+        | "SUBAGENT STATE"
+        | "HISTORICAL FACTS"
+        | "LOW-PRIORITY EPISODES"
+        | "SUPERSEDED (HISTORY, NOT CURRENT)" => Some("evidence"),
+        _ => {
+            // v1 ledger titles (task_state.rs render_ledger): unchanged.
+            if line.contains("ACTIVE CONSTRAINTS") {
+                Some("constraints")
+            } else if line.contains("DECISIONS (current)") {
+                Some("decisions")
+            } else if line.contains("VERIFIED EVIDENCE") {
+                Some("evidence")
+            } else {
+                None
+            }
+        }
+    }
+}
+
 /// Registers the lossy summarizer fixture; returns the model plus captured
 /// request texts (for budget accounting).
 fn lossy_summarizer_fixture(api: &str) -> (Model, Arc<Mutex<Vec<String>>>) {
@@ -587,8 +634,12 @@ fn arm_settings(scenario: &Scenario, arm: &str) -> CompactionSettings {
     let mut settings = default_compaction_settings();
     settings.reserve_tokens = scenario.reserve_tokens;
     settings.keep_recent_tokens = scenario.keep_recent_tokens;
+    // resolve_task_state_mode (compaction.rs): "prompt" keeps the v1
+    // keyword ledger, "typed" (W15) selects the v2 typed protected-state
+    // pipeline.
     settings.task_state = match arm {
         "taskState" => Some("prompt".to_string()),
+        "typed" => Some("typed".to_string()),
         _ => Some("off".to_string()),
     };
     settings
@@ -600,11 +651,20 @@ fn ledger_items_value(details: Option<&Value>) -> (bool, Value) {
     };
     match details.get("taskState") {
         Some(ledger) => (true, ledger.clone()),
-        None => (false, Value::Null),
+        None => match details.get("typedState") {
+            // W15: the typed (v2) ledger persists under its own field
+            // (details.typedState, never the v1 payload).
+            Some(ledger) => (true, ledger.clone()),
+            None => (false, Value::Null),
+        },
     }
 }
 
 fn count_ledger_items(ledger: &Value) -> usize {
+    if let Some(records) = ledger.get("records").and_then(Value::as_array) {
+        // Typed ledger: one entry per retained record.
+        return records.len();
+    }
     let mut total = 0;
     for key in ["constraints", "decisions", "superseded", "evidence", "anchors", "openWork", "retractions"] {
         if let Some(items) = ledger.get(key).and_then(Value::as_array) {
@@ -680,6 +740,7 @@ async fn run_arm(scenario: &Scenario, arm: &str) -> ArmResult {
                 ledger_present: false,
                 ledger_items: Value::Null,
                 anchors_present: Vec::new(),
+                typed_verification: None,
             });
             continue;
         };
@@ -703,6 +764,9 @@ async fn run_arm(scenario: &Scenario, arm: &str) -> ArmResult {
             .as_ref()
             .and_then(|details| serde_json::to_value(details).ok());
         let (ledger_present, ledger_items) = ledger_items_value(details.as_ref());
+        let typed_verification = details
+            .as_ref()
+            .and_then(|details| details.get("typedVerification").cloned());
         manager
             .append_compaction(
                 &result.summary,
@@ -744,6 +808,7 @@ async fn run_arm(scenario: &Scenario, arm: &str) -> ArmResult {
             ledger_present,
             ledger_items: Value::String(format!("{}", count_ledger_items(&ledger_items))),
             anchors_present,
+            typed_verification,
         });
     }
 
@@ -960,6 +1025,46 @@ fn smoke_scenario() -> Scenario {
                 kind: "evidence".into(),
             },
         ],
+    }
+}
+
+/// W15: the typed arm runs the same smoke scenario through the real
+/// compaction pipeline with the typed protected-state mode selected, so the
+/// always-on suite regression-tests the typed wiring offline.
+#[tokio::test]
+async fn rot2_smoke_typed_arm_persists_typed_ledger_and_verifies() {
+    let mut scenario = smoke_scenario();
+    scenario.arms = vec!["typed".into()];
+    let result = execute_scenario(&scenario).await;
+    assert_eq!(result.arms.len(), 1);
+    let typed_arm = &result.arms[0];
+    assert_eq!(typed_arm.arm, "typed");
+    for cycle in &typed_arm.cycles {
+        assert!(cycle.ran, "typed arm cycle {} must run", cycle.cycle);
+        assert!(
+            cycle.ledger_present,
+            "typed arm cycle {} must persist the typed ledger",
+            cycle.cycle
+        );
+        let verification = cycle
+            .typed_verification
+            .as_ref()
+            .unwrap_or_else(|| panic!("typed arm cycle {} must record the verification", cycle.cycle));
+        assert_eq!(
+            verification.get("passed").and_then(Value::as_bool),
+            Some(true),
+            "typed arm cycle {} must pass the typed verifier",
+            cycle.cycle
+        );
+    }
+    // The deterministic lossy fixture copies the typed protected block, so
+    // every planted anchor survives the five cycles.
+    for probe in &typed_arm.probes {
+        assert!(
+            probe.retained,
+            "typed arm probe {} must be retained (found in {:?})",
+            probe.id, probe.found_in
+        );
     }
 }
 
