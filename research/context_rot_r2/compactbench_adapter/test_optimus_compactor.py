@@ -1,8 +1,9 @@
 """Offline validation for the Optimus Rust CompactBench adapter.
 
 Runs the real harness binary through the adapter and checks the CompactionArtifact
-contract. No network, no model calls. Run with the campaign's CompactBench venv
-(has compactbench + pydantic):
+contract, including the delta-append session semantics (one persistent session
+dir per case, turn-map bookkeeping across calls). No network, no model calls.
+Run with the campaign's CompactBench venv (has compactbench + pydantic):
 
     C:/Users/openclawuser/optimus-rot2-w5-research/refs/cb-venv/Scripts/python.exe \
         research/context_rot_r2/compactbench_adapter/test_optimus_compactor.py
@@ -67,10 +68,23 @@ STARTER_SHAPE = [
     ("user", "OK, given all that, what do you suggest as the next step?"),
 ]
 
+CONTINUATIONS = [
+    ("user", "What should we tackle next?"),
+    ("assistant", "Given the constraints, I suggest we start with the pricing tiers."),
+    ("user", "Anything else to wire in before we move on?"),
+    ("assistant", "The export feature and the password rule remain open."),
+    ("user", "Which risk concerns you most right now?"),
+    ("assistant", "Storing raw passwords remains the top risk."),
+]
+
 
 def check(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
+
+
+def _session_file_count(compactor: OptimusRustCompactorTaskState) -> int:
+    return len(list(compactor._live_dir.glob("*.jsonl")))
 
 
 def test_task_state_arm() -> None:
@@ -94,6 +108,10 @@ def test_task_state_arm() -> None:
     check(artifact.method_metadata["taskState"] == "prompt", "task-state arm: wrong taskState")
     check(artifact.method_metadata["fallback"] is None, "task-state arm: unexpected fallback")
     check(artifact.method_metadata["harnessCalls"] >= 1, "task-state arm: harness never invoked")
+    check(
+        artifact.method_metadata["sessionMode"] in ("initial", "resync"),
+        "first call must open a fresh session",
+    )
     compactor.close()
     print(f"PASS task-state arm (attempts={len(artifact.method_metadata['attempts'])}, "
           f"state entries={len(artifact.structured_state.forbidden_behaviors)})")
@@ -154,6 +172,113 @@ def test_determinism() -> None:
     first.close()
     second.close()
     print("PASS determinism (same transcript -> identical artifact modulo session entry ids)")
+
+
+def test_delta_round_trip() -> None:
+    """Two cycles on one instance: the session persists, the second compaction
+    is a real re-compaction of the live session, and the artifact bookkeeping
+    covers the whole conversation."""
+    compactor = OptimusRustCompactorTaskState(None, "unused")
+    first = asyncio.run(compactor.compact(_transcript(MARKED)))
+    check(first.method_metadata["sessionMode"] == "initial", "cycle 0 must open the session")
+    check(first.method_metadata["deltaTurnsSent"] == len(MARKED), "cycle 0 sends the full transcript")
+
+    extended = MARKED + CONTINUATIONS[:2]
+    second = asyncio.run(compactor.compact(_transcript(extended)))
+    metadata = second.method_metadata
+    check(metadata["sessionMode"] == "delta", f"cycle 1 must delta-append, got {metadata['sessionMode']}")
+    check(metadata["deltaTurnsSent"] == 2, f"cycle 1 must send only the 2 new turns, got {metadata['deltaTurnsSent']}")
+    check(metadata["sessionMapTurns"] == len(MARKED), "cycle 1 session map must hold the cycle-0 turns")
+    check(metadata["fallback"] is None, "cycle 1 must land a compaction")
+    check(second.selected_source_turn_ids == list(range(len(extended))),
+          "cycle 1 selected ids must cover the whole conversation")
+    check("(decayed prior summary)" in second.summary_text,
+          "cycle 1 summary must embed the decayed prior summary")
+    check(
+        any("raw passwords" in item for item in second.structured_state.forbidden_behaviors),
+        f"cycle 1 ledger must carry the constraint forward, got {second.structured_state.forbidden_behaviors}",
+    )
+    check(_session_file_count(compactor) == 1, "delta mode must reuse the one session file")
+    check(metadata["harnessCalls"] == 2, "two cycles = two harness invocations")
+    compactor.close()
+    print("PASS delta round trip (persistent session, carried ledger, decayed prior summary)")
+
+
+def test_delta_three_cycles_partitions() -> None:
+    """Three cycles: the cumulative turn map stays exact and every cycle's
+    summarized+kept ids partition it at a user-turn boundary."""
+    compactor = OptimusRustCompactorTaskState(None, "unused")
+    pairs = list(MARKED)
+    artifacts = []
+    for cycle in range(3):
+        if cycle:
+            pairs = pairs + CONTINUATIONS[2 * (cycle - 1):2 * cycle]
+        artifacts.append(asyncio.run(compactor.compact(_transcript(pairs))))
+        metadata = artifacts[-1].method_metadata
+        expected_ids = list(range(len(pairs)))
+        kept = metadata["attempts"][-1]["keptTurns"]
+        partition = (
+            artifacts[-1].method_metadata["summarizedTurns"] * [None]  # counts only, see below
+        )
+        check(metadata["fallback"] is None, f"cycle {cycle} must land")
+        check(artifacts[-1].selected_source_turn_ids == expected_ids,
+              f"cycle {cycle} selected ids must cover the transcript")
+        # keptTurnIds must be the transcript tail that starts at a user turn
+        first_kept = len(expected_ids) - kept
+        check(pairs[first_kept][0] == "user",
+              f"cycle {cycle} cut must precede a user turn (got {pairs[first_kept][0]})")
+        check(metadata["sessionMode"] == ("initial" if cycle == 0 else "delta"),
+              f"cycle {cycle} session mode")
+    ledger = artifacts[-1].structured_state
+    check(any("raw passwords" in item for item in ledger.forbidden_behaviors),
+          "the constraint must survive three compactions")
+    check(_session_file_count(compactor) == 1, "one session file across three cycles")
+    compactor.close()
+    print("PASS delta three-cycle partitions (map exact, cuts at user turns, ledger survives)")
+
+
+def test_retry_after_failed_call() -> None:
+    """A cycle whose ladder fails leaves the appends durable; the next cycle
+    re-compacts the same session without re-sending the transcript."""
+    compactor = OptimusRustCompactorTaskState(None, "unused")
+    # pin a keepRecentTokens that lands the cut before an assistant turn
+    compactor._pinned_keep_recent = 1.0
+    failed = asyncio.run(compactor.compact(_transcript(MARKED)))
+    check(failed.method_metadata["fallback"] == "uncompacted-transcript",
+          "pinned bad cut must fall back")
+    check(any("no compaction" in w.lower() for w in failed.warnings),
+          "fallback must warn loudly")
+    # unpin: the next call re-reads the turn map and sends only what is missing
+    compactor._pinned_keep_recent = None
+    extended = MARKED + CONTINUATIONS[:2]
+    recovered = asyncio.run(compactor.compact(_transcript(extended)))
+    metadata = recovered.method_metadata
+    check(metadata["fallback"] is None, "recovery call must land")
+    check(metadata["deltaTurnsSent"] == 2,
+          f"recovery must send only the 2 new turns, got {metadata['deltaTurnsSent']}")
+    check(recovered.selected_source_turn_ids == list(range(len(extended))),
+          "recovery selected ids must cover the transcript")
+    check(_session_file_count(compactor) == 1, "recovery must reuse the same session dir")
+    compactor.close()
+    print("PASS retry after failed call (durable appends, no duplicate re-send)")
+
+
+def test_resync_on_foreign_transcript() -> None:
+    """A transcript whose ids do not extend the session map forces a resync:
+    a fresh session dir and a full re-send."""
+    compactor = OptimusRustCompactorTaskState(None, "unused")
+    asyncio.run(compactor.compact(_transcript(MARKED)))
+    foreign = [(role, f"unrelated {i}") for i, (role, _) in enumerate(
+        [("user", ""), ("assistant", ""), ("user", ""), ("assistant", ""),
+         ("user", ""), ("assistant", ""), ("user", ""), ("assistant", "")])]
+    artifact = asyncio.run(compactor.compact(_transcript(foreign)))
+    metadata = artifact.method_metadata
+    check(metadata["sessionMode"] == "resync", f"foreign transcript must resync, got {metadata['sessionMode']}")
+    check(metadata["fallback"] is None, "resync must land a compaction")
+    check(metadata["deltaTurnsSent"] == len(foreign), "resync must re-send the full transcript")
+    check(_session_file_count(compactor) >= 1, "resync opens a new session dir")
+    compactor.close()
+    print("PASS resync on foreign transcript (fresh session, full re-send)")
 
 
 def test_small_transcript_fallback() -> None:
@@ -263,6 +388,10 @@ def main() -> int:
         test_plain_arm,
         test_starter_shape_compacts,
         test_determinism,
+        test_delta_round_trip,
+        test_delta_three_cycles_partitions,
+        test_retry_after_failed_call,
+        test_resync_on_foreign_transcript,
         test_small_transcript_fallback,
         test_missing_binary_falls_back,
         test_controls,

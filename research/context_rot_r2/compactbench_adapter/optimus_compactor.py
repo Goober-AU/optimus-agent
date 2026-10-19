@@ -1,13 +1,16 @@
 """CompactBench adapter: the real Optimus Rust compaction behind the Compactor contract.
 
 Drives the committed one-shot harness binary (crates/pi-coding-agent/src/bin/
-compaction_harness.rs, built at C:/Users/openclawuser/rot2-shared-target/debug/
-compaction-harness.exe) from the stock CompactBench runner:
+compaction_harness.rs; set ``HARNESS``/``ROT2_HARNESS_BIN`` to the build you
+want) from the stock CompactBench runner in DELTA-APPEND mode: one persistent
+per-case session directory, each ``compact()`` call appends only the turns the
+session has not seen yet, and the harness re-compacts the live session
+(49f473d8d ``SessionManager::continue_recent`` semantics).
 
     compactbench run \
       --method research/context_rot_r2/compactbench_adapter/optimus_compactor.py:OptimusRustCompactorTaskState \
       --suite starter --provider mock --model mock-deterministic \
-      --case-count 2 --drift-cycles 1 \
+      --case-count 5 --drift-cycles 3 \
       --benchmarks-dir <compactbench-checkout>/benchmarks/public \
       -o results/task-state.jsonl
 
@@ -19,27 +22,30 @@ Arms (same driver, different settings.taskState):
 Controls (deterministic, zero model calls): ``EchoFirstNCompactor`` (head
 truncation floor), ``FullTranscriptOracleCompactor`` (verbatim ceiling).
 
-Empirical harness behavior this adapter is built around (evidence and probe
-scripts in README.md):
+Empirical harness behavior this adapter is built around (evidence in
+README.md; reproduced by probe_harness_behavior.py):
 
-1. Each harness invocation starts a NEW session file in the session dir;
-   sessions do not survive across invocations. The adapter therefore sends the
-   FULL transcript to a fresh session dir on every compact() call. The Rust
-   session then equals the live conversation each cycle, which is the state the
-   real pipeline would compact. previous_artifact is ignored (the full raw
-   transcript re-enters every call; there is no nested previous-summary path
-   through this binary).
-2. The compaction cut must immediately precede a USER turn. Cuts that land
+1. Sessions persist across invocations: ``continue_recent`` reopens the most
+   recent session file in the directory (falling back to a new one). The
+   session entry's ``cwd`` must match the directory, so a copied session dir
+   is NOT continuable (a clone silently forks a fresh session); the adapter
+   therefore uses ONE stable live dir per case and never clones.
+2. The compaction cut must immediately precede a USER turn; cuts that land
    before an assistant turn make the pipeline reject the summarizer handoff
-   ("unusable handoff" error). A fixed keepRecentTokens is fragile for this
-   reason (on the starter suite, keepRecentTokens 20 and 40 fail while 30
-   works); this adapter computes candidate values that land valid cuts.
-3. The harness sizes the kept tail with a per-message token estimate of about
-   chars/4 + 0.6; the adapter mirrors that estimate to aim its candidates.
-4. On the error path appends are only partially flushed (observed: 2 of 8
-   messages persisted, turn-map sidecar fully written), which desynchronizes
-   the sidecar from the session. Fresh session dirs per attempt make that
-   state irrelevant here.
+   ("unusable handoff" error). The adapter aims candidates at user turns.
+3. Tail sizing: walking backwards, message ``j`` joins the kept tail iff the
+   estimate of the tail without it (``cum[j+1] = chars/4 + 0.6`` per message
+   of ``[j+1, end)``) is ``<= keepRecentTokens``; the cut sits before the
+   first message that does not fit. In delta mode the walk clamps at the
+   previous compaction's firstKeptEntryId: an oversized keepRecentTokens
+   keeps the whole live window and summarizes nothing (harmless).
+4. Assistant turns carry a conservative ``ceil(chars/4)`` usage anchor, so
+   ``tokensBefore``/``compactedContextTokens`` are non-zero (anchored on the
+   last assistant turn; they undercount prior user turns).
+5. Appends are flushed (and the turn-map sidecar stored) BEFORE compaction
+   runs, so after an error-path exit the session deterministically holds the
+   new turns: the adapter re-reads the sidecar before every attempt and sends
+   only the turns the session is still missing (possibly none).
 
 All quality numbers produced with the mock provider are CUSTOM plumbing-runs
 only; see README.md for the labeling rules.
@@ -63,8 +69,8 @@ from compactbench.contracts import CompactionArtifact, StructuredState, Transcri
 DEFAULT_HARNESS_BIN = Path("C:/Users/openclawuser/rot2-shared-target/debug/compaction-harness.exe")
 
 #: Per-message tail estimate that reproduces the harness's keep-recent sizing
-#: (see README.md "cut-point ladder"). Validated against all four starter
-#: templates: the predicted kept tail matched keptTurnIds exactly.
+#: (see README.md "cut-point ladder"). Validated on the starter templates and
+#: on delta sessions: message j joins the tail iff cum[j+1] <= keepRecentTokens.
 _TAIL_TOKENS_PER_CHAR = 0.25
 _TAIL_TOKENS_PER_MESSAGE = 0.6
 
@@ -78,9 +84,21 @@ _WARNING_MAX_COUNT = 50
 #: Upper bound on harness spawns per compact() call (cut-point ladder width).
 _MAX_ATTEMPTS = 10
 
+#: Harness warnings that mark a degenerate (non-advancing) compaction: the
+#: ladder treats them as "not landed" and tries the next candidate.
+_DEGENERATE_WARNING_MARKERS = (
+    "no compaction prepared",
+    "empty summarize window",
+)
+
+#: Harness error prefixes that leave the session dir in an UNKNOWN state:
+#: the remaining attempts (and later calls) must not reuse it.
+_POISON_ERROR_PREFIXES = ("session flush after append",)
+
 _SUMMARIZER_MODE = "fixture"
 _CONTEXT_WINDOW = 1_000_000.0
 _MAX_TOKENS = 64_000.0
+_TURN_MAP_NAME = ".rot2-turn-map.json"
 
 
 def _harness_bin() -> Path:
@@ -180,11 +198,12 @@ def structured_state_from_ledger(ledger: Any) -> StructuredState:
 def tail_candidates(turns: list[Any]) -> list[float]:
     """keepRecentTokens values that land the cut immediately before a user turn.
 
-    The harness extends the kept tail backwards while its token estimate stays
-    under keepRecentTokens, and the pipeline rejects cuts that do not precede a
-    user turn. For each user turn ``j`` (with a non-empty summarize window
-    ``[0, j)``), the midpoint of the cumulative estimates of ``[j, end)`` and
-    ``[j+1, end)`` stops the tail exactly at ``j``. Candidates are ordered most
+    The harness walks the kept tail backwards: message ``j`` joins the tail iff
+    the estimate of the tail without it (``cum[j+1]``, ``chars/4 + 0.6`` per
+    message) is ``<= keepRecentTokens``, and the pipeline rejects cuts that do
+    not precede a user turn. For each user turn ``j`` (with a non-empty
+    summarize window ``[0, j)``), the midpoint of ``cum[j]`` and ``cum[j+1]``
+    includes exactly ``[j, end)`` in the tail. Candidates are ordered most
     aggressive first (shortest valid tail).
     """
     count = len(turns)
@@ -231,17 +250,59 @@ def _parse_response(stdout: bytes, stderr: bytes) -> dict[str, Any]:
     return response
 
 
+def _degenerate(response: dict[str, Any]) -> str | None:
+    """Return the marker of the degenerate warning the response carries, if any."""
+    for warning in response.get("warnings") or []:
+        text = str(warning)
+        for marker in _DEGENERATE_WARNING_MARKERS:
+            if marker in text:
+                return marker
+    return None
+
+
+def _poisoned(response: dict[str, Any]) -> bool:
+    """True when the harness left its session dir in an unknown state.
+
+    Kill/crash paths (timeout, no stdout) and a failed flush-after-append can
+    tear the "appends flushed, sidecar stored" invariant; the safe reaction is
+    to abandon the directory rather than risk duplicated appends.
+    """
+    error = response.get("error")
+    if not isinstance(error, str):
+        return False
+    if error.startswith("harness timed out"):
+        return True
+    if error.startswith("harness wrote no response"):
+        return True
+    return any(error.startswith(prefix) for prefix in _POISON_ERROR_PREFIXES)
+
+
 class OptimusRustCompactor(Compactor):
     """Compactor arm that drives the real Optimus Rust compaction pipeline.
 
     One instance per benchmark case (the runner constructs a fresh compactor
-    per case). Each compact() call sends the full transcript to a fresh
-    per-attempt session dir under a per-instance temp root and translates the
-    harness response into a CompactionArtifact.
+    per case). The instance owns one persistent session directory (the "live"
+    dir). Each ``compact()`` call:
+
+    1. reads the live dir's ``.rot2-turn-map.json`` sidecar (the ids of the
+       conversation turns the session already holds),
+    2. if the sidecar is a prefix of the incoming transcript, appends only
+       the missing turns (delta-append); otherwise opens a fresh session dir
+       and re-sends the full transcript (resync),
+    3. walks the cut-point ladder; before every attempt it re-reads the
+       sidecar so an attempt whose appends landed but whose compaction
+       failed is retried with zero new turns instead of duplicating them,
+    4. on a landed compaction translates the response into a
+       CompactionArtifact; the live dir becomes the attempt dir.
+
+    ``previous_artifact`` is ignored by design: the harness session carries
+    its own compaction state (summary + kept tail + ledger) across calls, and
+    that state — not a re-rendered artifact — is what the next compaction
+    sees, which is the repeated-compaction semantics the benchmark measures.
     """
 
     name: ClassVar[str] = "optimus-rust"
-    version: ClassVar[str] = "0.1.0"
+    version: ClassVar[str] = "0.2.0"
 
     #: Which compaction settings the harness should use: "prompt" keeps the
     #: task-state ledger, "off" disables it. Fixed per subclass.
@@ -261,8 +322,43 @@ class OptimusRustCompactor(Compactor):
             self._pinned_keep_recent = None
         self._tmp = tempfile.TemporaryDirectory(prefix="optimus-rust-compactor-")
         self._root = Path(self._tmp.name)
+        self._live_dir: Path | None = None
+        #: (id, content) of every turn appended to the live session dir, in
+        #: order — the content-aware mirror of the harness turn-map sidecar.
+        self._sent: list[tuple[Any, str]] = []
+        self._session_seq = 0
         self._compact_calls = 0
         self._harness_calls = 0
+
+    # ------------------------------------------------------------------ #
+    # Session bookkeeping
+    # ------------------------------------------------------------------ #
+
+    def _turn_map(self, session_dir: Path | None) -> list[Any]:
+        if session_dir is None:
+            return []
+        try:
+            raw = (session_dir / _TURN_MAP_NAME).read_text(encoding="utf-8")
+        except OSError:
+            return []
+        try:
+            data = json.loads(raw)
+        except ValueError:
+            return []
+        return data if isinstance(data, list) else []
+
+    def _new_session_dir(self, tag: str) -> Path:
+        directory = self._root / f"session-{self._session_seq:03d}-{tag}"
+        self._session_seq += 1
+        return directory
+
+    @staticmethod
+    def _is_prefix(candidate: list[Any], ids: list[Any]) -> bool:
+        return ids[: len(candidate)] == candidate
+
+    # ------------------------------------------------------------------ #
+    # Compactor contract
+    # ------------------------------------------------------------------ #
 
     async def compact(
         self,
@@ -270,12 +366,7 @@ class OptimusRustCompactor(Compactor):
         config: dict[str, Any] | None = None,
         previous_artifact: CompactionArtifact | None = None,
     ) -> CompactionArtifact:
-        """Translate the transcript into one harness run and back.
-
-        ``previous_artifact`` is ignored by design: every call rebuilds the
-        Rust session from the full raw transcript (the harness starts a new
-        session per invocation), so there is no carried artifact to merge.
-        """
+        """Append the unseen turns to the live session and re-compact it."""
         self._compact_calls += 1
         turns = list(transcript.turns)
         harness_turns = [t for t in turns if t.role.value in ("user", "assistant")]
@@ -301,8 +392,32 @@ class OptimusRustCompactor(Compactor):
                     total_turns=len(turns),
                     dropped_system=dropped_system,
                     response=None,
+                    session_mode="skipped",
+                    map_length=0,
+                    delta_turns=0,
                 ),
             )
+
+        turn_ids = [turn.id for turn in harness_turns]
+        live_map = self._turn_map(self._live_dir)
+        sent_prefix = [(t.id, t.content) for t in harness_turns[: len(self._sent)]]
+        in_sync = (
+            self._live_dir is not None
+            and self._sent == sent_prefix
+            and len(live_map) == len(self._sent)
+        )
+        if in_sync:
+            session_dir = self._live_dir
+            session_mode = "delta"
+        else:
+            session_dir = self._new_session_dir("resync" if self._live_dir else "initial")
+            session_mode = "resync" if self._live_dir else "initial"
+            self._sent = []
+        # Track the dir from the moment it is chosen, landing or not: a failed
+        # call may still have flushed its appends there, and the map-prefix
+        # check on the next call needs the dir to find them.
+        self._live_dir = session_dir
+        map_at_entry = len(live_map) if in_sync else 0
 
         candidates = (
             [self._pinned_keep_recent]
@@ -313,10 +428,23 @@ class OptimusRustCompactor(Compactor):
         response: dict[str, Any] | None = None
         keep_recent: float | None = None
         for index, candidate in enumerate(candidates[:_MAX_ATTEMPTS]):
-            response = await self._invoke(harness_turns, candidate, index)
+            current_map = self._turn_map(session_dir)
+            if not self._is_prefix(current_map, turn_ids) or len(current_map) != len(self._sent):
+                # The dir diverged from the conversation (only possible after
+                # external interference): restart from a fresh session dir.
+                session_dir = self._new_session_dir("resync")
+                self._live_dir = session_dir
+                self._sent = []
+                session_mode = "resync"
+                current_map = []
+            new_turns = harness_turns[len(current_map):]
+            response = await self._invoke(session_dir, new_turns, candidate, index)
+            growth = max(0, len(self._turn_map(session_dir)) - len(current_map))
+            self._sent.extend((t.id, t.content) for t in new_turns[:growth])
             keep_recent = candidate
-            attempts.append(self._attempt_record(candidate, response))
-            if response.get("status") == "ok" and str(response.get("summary") or "").strip():
+            attempts.append(self._attempt_record(candidate, response, len(new_turns)))
+            if self._landed(response):
+                self._live_dir = session_dir
                 return self._artifact_from_response(
                     response,
                     keep_recent,
@@ -324,24 +452,43 @@ class OptimusRustCompactor(Compactor):
                     warnings,
                     total_turns=len(turns),
                     dropped_system=dropped_system,
+                    session_mode=session_mode,
+                    map_length=map_at_entry,
+                    delta_turns=len(new_turns),
                 )
+            if _poisoned(response):
+                # Unknown on-disk state: never append to this dir again.
+                session_dir = self._new_session_dir("resync")
+                self._live_dir = session_dir
+                self._sent = []
+                session_mode = "resync"
 
         return self._fallback_artifact(
-            harness_turns, attempts, warnings, total_turns=len(turns), dropped_system=dropped_system
+            harness_turns, attempts, warnings, total_turns=len(turns), dropped_system=dropped_system,
+            session_mode=session_mode, map_length=map_at_entry,
         )
+
+    @staticmethod
+    def _landed(response: dict[str, Any]) -> bool:
+        """A landed attempt: a real compaction that advanced the session."""
+        if response.get("status") != "ok":
+            return False
+        if not str(response.get("summary") or "").strip():
+            return False
+        return _degenerate(response) is None
 
     # ------------------------------------------------------------------ #
     # Harness invocation
     # ------------------------------------------------------------------ #
 
-    async def _invoke(self, turns: list[Any], keep_recent: float, attempt: int) -> dict[str, Any]:
-        session_dir = self._root / f"call-{self._compact_calls:03d}-attempt-{attempt:02d}"
-        session_dir.mkdir(parents=True, exist_ok=True)
+    async def _invoke(
+        self, session_dir: Path, new_turns: list[Any], keep_recent: float, attempt: int
+    ) -> dict[str, Any]:
         request = {
             "sessionDir": str(session_dir).replace("\\", "/"),
             "newTurns": [
                 {"role": turn.role.value, "content": turn.content, "turnId": turn.id}
-                for turn in turns
+                for turn in new_turns
             ],
             "settings": {
                 "reserveTokens": self._reserve_tokens,
@@ -373,11 +520,12 @@ class OptimusRustCompactor(Compactor):
         return _parse_response(stdout, stderr)
 
     @staticmethod
-    def _attempt_record(keep_recent: float, response: dict[str, Any]) -> dict[str, Any]:
+    def _attempt_record(keep_recent: float, response: dict[str, Any], new_turns: int) -> dict[str, Any]:
         error = response.get("error")
         return {
             "keepRecentTokens": round(keep_recent, 3),
             "status": response.get("status"),
+            "newTurnsSent": new_turns,
             "summarizedTurns": len(response.get("summarizedTurnIds") or []),
             "keptTurns": len(response.get("keptTurnIds") or []),
             "error": str(error)[:_WARNING_MAX_CHARS] if error else None,
@@ -397,6 +545,9 @@ class OptimusRustCompactor(Compactor):
         *,
         total_turns: int,
         dropped_system: int,
+        session_mode: str,
+        map_length: int,
+        delta_turns: int,
     ) -> CompactionArtifact:
         summary, fit_warnings = fit_summary_text(str(response.get("summary") or ""))
         merged = warnings + list(response.get("warnings") or []) + fit_warnings
@@ -421,6 +572,9 @@ class OptimusRustCompactor(Compactor):
                 total_turns=total_turns,
                 dropped_system=dropped_system,
                 response=response,
+                session_mode=session_mode,
+                map_length=map_length,
+                delta_turns=delta_turns,
             ),
         )
 
@@ -432,6 +586,8 @@ class OptimusRustCompactor(Compactor):
         *,
         total_turns: int,
         dropped_system: int,
+        session_mode: str,
+        map_length: int,
     ) -> CompactionArtifact:
         """No harness attempt compacted: the live context is the un-compacted transcript."""
         text, fit_warnings = fit_summary_text(_render_turns(turns))
@@ -456,6 +612,9 @@ class OptimusRustCompactor(Compactor):
                 total_turns=total_turns,
                 dropped_system=dropped_system,
                 response=None,
+                session_mode=session_mode,
+                map_length=map_length,
+                delta_turns=0,
             ),
         )
 
@@ -469,12 +628,18 @@ class OptimusRustCompactor(Compactor):
         total_turns: int,
         dropped_system: int,
         response: dict[str, Any] | None,
+        session_mode: str,
+        map_length: int,
+        delta_turns: int,
     ) -> dict[str, Any]:
         return {
             "method": self.name,
             "taskState": self.task_state,
             "harnessBinary": str(self._harness),
             "harnessStatus": harness_status,
+            "sessionMode": session_mode,
+            "sessionMapTurns": map_length,
+            "deltaTurnsSent": delta_turns,
             "keepRecentTokens": keep_recent,
             "reserveTokens": self._reserve_tokens,
             "summarizer": _SUMMARIZER_MODE,
