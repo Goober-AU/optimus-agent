@@ -516,10 +516,6 @@ fn live_log(
     let Some(dir) = &state.log_dir else {
         return;
     };
-    if let Err(error) = std::fs::create_dir_all(dir) {
-        eprintln!("live summarizer call log failed: {error}");
-        return;
-    }
     let record = json!({
         "tsMs": now_unix_ms(),
         "purpose": "summarizer",
