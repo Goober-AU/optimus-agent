@@ -999,6 +999,78 @@ async fn rot2_smoke_multicycle_runs_all_cycles_and_reports_probes() {
     }
 }
 
+#[test]
+fn rot2_user_image_blocks_cost_tokens_d16() {
+    use pi_ai::types::{ImageOrTextContent, TextContent, UserContent};
+    let text_only = AgentMessage::Message(Message::User(UserMessage::new(
+        UserContent::Blocks(vec![ImageOrTextContent::Text(TextContent::new("hello world"))]),
+        0,
+    )));
+    let with_image = AgentMessage::Message(Message::User(UserMessage::new(
+        UserContent::Blocks(vec![
+            ImageOrTextContent::Text(TextContent::new("hello world")),
+            ImageOrTextContent::Text(TextContent::new(TextContent::new("").text.clone())),
+            ImageOrTextContent::Image(pi_ai::types::ImageContent::default()),
+        ]),
+        0,
+    )));
+    let base = estimate_tokens_message(&text_only);
+    let with_img = estimate_tokens_message(&with_image);
+    assert_eq!(
+        with_img - base,
+        pi_coding_agent::core::compaction::request_tokens::IMAGE_BLOCK_TOKENS,
+        "D16: a user image block must cost IMAGE_BLOCK_TOKENS, not zero"
+    );
+}
+
+/// Helper reaching the private estimator through the public context estimate:
+/// with no assistant usage, tokens = sum(estimate_tokens), so the delta between
+/// two message lists isolates the per-message estimate.
+fn estimate_tokens_message(message: &AgentMessage) -> f64 {
+    estimate_context_tokens(std::slice::from_ref(message)).tokens
+}
+
+#[test]
+fn rot2_request_level_estimate_adds_system_prompt_and_tools_d17() {
+    use pi_coding_agent::core::compaction::compaction::estimate_context_tokens_with_request;
+    let messages = vec![user_message_ref("a short user message")];
+    let prompt = "You are a coding agent. Follow the user's constraints exactly.";
+    let tools = [tool_definition_fixture("read_file"), tool_definition_fixture("bash")];
+
+    let message_only = estimate_context_tokens(&messages);
+    assert_eq!(message_only.system_prompt_tokens, 0.0);
+    let request = estimate_context_tokens_with_request(&messages, prompt, &tools);
+    assert!(
+        request.system_prompt_tokens > 0.0,
+        "system prompt must be counted on the request-level path"
+    );
+    assert!(request.tool_schema_tokens > 0.0);
+    assert!(
+        (request.tokens - (message_only.tokens + request.system_prompt_tokens + request.tool_schema_tokens)).abs() < 1e-9,
+        "request tokens must be the sum of its parts on the no-usage path"
+    );
+}
+
+fn user_message_ref(text: &str) -> AgentMessage {
+    AgentMessage::Message(Message::User(UserMessage::new(
+        UserContent::Text(text.into()),
+        0,
+    )))
+}
+
+fn tool_definition_fixture(name: &str) -> pi_ai::types::Tool {
+    serde_json::from_value(serde_json::json!({
+        "name": name,
+        "description": format!("Fixture tool {name} for request-level token estimates"),
+        "parameters": {
+            "type": "object",
+            "properties": {"path": {"type": "string"}},
+            "required": ["path"]
+        }
+    }))
+    .expect("tool fixture")
+}
+
 #[tokio::test]
 async fn rot2_lossy_summarizer_keeps_protected_block_verbatim_and_drops_middle() {
     let request = "instructions\n\n## Protected Task State (deterministic, provenance-tagged)\nUse it.\n\n**ACTIVE CONSTRAINTS**\n- c1 [t1]: never drop the payments ledger ARCH-KEEP-LEDGER\n\n**DECISIONS (current)**\n- d1 [t2]: use architecture B ARCH-DECISION-B\n\n**VERIFIED EVIDENCE**\n- e1 [t3]: cargo test 4785 passed EV-4785\n\nCopy every ACTIVE CONSTRAINT item.\n\n<conversation>\nline one\nline two\nmiddle line that must be dropped by the lossy rule\nline four\nline five\n</conversation>\n\n<previous-summary>\n## Goal\nOld goal text that is long enough to be decayed by the previous-summary loss rule so that only its head survives this cycle and the rest is lost to drift modelling. PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD PAD 

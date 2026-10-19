@@ -41,6 +41,7 @@ use crate::core::compaction::parallel::{
 };
 use crate::core::compaction::checkpoint::has_provider_checkpoint;
 use crate::core::compaction::metrics::CompactionMetrics;
+use crate::core::compaction::request_tokens::IMAGE_BLOCK_CHARS;
 use crate::core::compaction::task_state::{
     build_ledger, render_ledger, TaskStateLedger, LEDGER_INSTRUCTION,
 };
@@ -1136,6 +1137,13 @@ pub struct ContextUsageEstimate {
     pub trailing_tokens: f64,
     /// `null` when no assistant usage was found.
     pub last_usage_index: Option<usize>,
+    /// System-prompt tokens included in `tokens`. Non-zero only on the
+    /// no-usage fallback path: provider-reported usage already counts the
+    /// system prompt, so the usage-anchored path carries 0.0 here (D17).
+    pub system_prompt_tokens: f64,
+    /// Tool-schema tokens included in `tokens` (same rule as
+    /// `system_prompt_tokens`, D17).
+    pub tool_schema_tokens: f64,
 }
 
 fn get_last_assistant_usage_info(messages: &[AgentMessage]) -> Option<(Usage, usize)> {
@@ -1175,23 +1183,13 @@ pub fn estimate_context_tokens(messages: &[AgentMessage]) -> ContextUsageEstimat
             for tokens in per_message {
                 estimated += tokens;
             }
-            return ContextUsageEstimate {
-                tokens: estimated,
-                usage_tokens: 0.0,
-                trailing_tokens: estimated,
-                last_usage_index: None,
-            };
+            return no_usage_estimate(estimated, "", &[]);
         }
         let mut estimated = 0.0;
         for message in messages {
             estimated += estimate_tokens(message);
         }
-        return ContextUsageEstimate {
-            tokens: estimated,
-            usage_tokens: 0.0,
-            trailing_tokens: estimated,
-            last_usage_index: None,
-        };
+        return no_usage_estimate(estimated, "", &[]);
     };
 
     let usage_tokens = calculate_context_tokens(&usage);
@@ -1200,12 +1198,57 @@ pub fn estimate_context_tokens(messages: &[AgentMessage]) -> ContextUsageEstimat
         trailing_tokens += estimate_tokens(message);
     }
 
+    // The provider already tokenized the system prompt and tool schemas its
+    // usage covers; adding local estimates on top would double-count (D17).
     ContextUsageEstimate {
         tokens: usage_tokens + trailing_tokens,
         usage_tokens,
         trailing_tokens,
         last_usage_index: Some(index),
+        system_prompt_tokens: 0.0,
+        tool_schema_tokens: 0.0,
     }
+}
+
+/// Assembles the no-usage estimate from its parts. `system_prompt` and
+/// `tool_definitions` default to empty for the message-list-only call; the
+/// request-level variant passes the real values (D17).
+fn no_usage_estimate(
+    messages_tokens: f64,
+    system_prompt: &str,
+    tool_definitions: &[pi_ai::types::Tool],
+) -> ContextUsageEstimate {
+    let system_prompt_tokens =
+        crate::core::compaction::request_tokens::system_prompt_tokens(system_prompt);
+    let tool_schema_tokens =
+        crate::core::compaction::request_tokens::tool_schema_tokens(tool_definitions);
+    ContextUsageEstimate {
+        tokens: messages_tokens + system_prompt_tokens + tool_schema_tokens,
+        usage_tokens: 0.0,
+        trailing_tokens: messages_tokens,
+        last_usage_index: None,
+        system_prompt_tokens,
+        tool_schema_tokens,
+    }
+}
+
+/// Request-level context estimate (D17): the message list plus the system
+/// prompt and tool schema the provider actually receives. On the no-usage
+/// fallback path the parts are added; the usage-anchored path keeps the
+/// provider-reported total (which already includes them).
+pub fn estimate_context_tokens_with_request(
+    messages: &[AgentMessage],
+    system_prompt: &str,
+    tool_definitions: &[pi_ai::types::Tool],
+) -> ContextUsageEstimate {
+    let base = estimate_context_tokens(messages);
+    if base.last_usage_index.is_some() {
+        return base;
+    }
+    // Rebuild with the request parts: the fallback path returned the plain
+    // message sum, and its parts were computed with empty prompt/tools.
+    let messages_tokens = base.trailing_tokens;
+    no_usage_estimate(messages_tokens, system_prompt, tool_definitions)
 }
 
 /// Check if compaction should trigger based on context usage.
@@ -1282,7 +1325,7 @@ fn content_chars(content: &CustomMessageContent) -> usize {
             .iter()
             .map(|block| match block {
                 pi_agent_core::types::ContentBlock::Text(text) => count_chars(&text.text),
-                pi_agent_core::types::ContentBlock::Image(_) => 4800,
+                pi_agent_core::types::ContentBlock::Image(_) => IMAGE_BLOCK_CHARS,
             })
             .sum(),
     }
@@ -1304,7 +1347,9 @@ pub fn estimate_tokens(message: &AgentMessage) -> f64 {
                         pi_ai::types::ImageOrTextContent::Text(text) => {
                             Some(count_chars(&text.text))
                         }
-                        pi_ai::types::ImageOrTextContent::Image(_) => None,
+                        // D16: one image block costs IMAGE_BLOCK_CHARS chars in
+                        // every estimator; user images are no longer free.
+                        pi_ai::types::ImageOrTextContent::Image(_) => Some(IMAGE_BLOCK_CHARS),
                     })
                     .sum(),
             };
