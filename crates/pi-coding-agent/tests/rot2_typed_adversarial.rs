@@ -8,6 +8,12 @@
 //! `#[ignore]` note naming the entry, so the suite stays green while the
 //! integrator routes the fixes. Run them red with `cargo test -- --ignored`.
 //!
+//! W37 fixed D23 (ticket-token grammar collision; the D23 red test was
+//! un-ignored as `bracketed_ticket_ids_in_user_text_verify_cleanly`) and D24
+//! (tool-state id churn across merges; un-ignored as
+//! `evolving_tool_state_records_keep_a_stable_id_across_merges`), and added
+//! the compounding three-cycle pin. D22, D25, D26 and D27 remain ignored.
+//!
 //! No network: the summarizer is a deterministic fixture registered through
 //! `register_api_provider_simple`, mirroring rot2_typed_integration.rs. All
 //! state lives under a fresh temp dir per test.
@@ -342,9 +348,10 @@ fn assemble_summary(
     out
 }
 
-fn summarizer_fixture(
+fn fixture_provider(
     api: &str,
     drop_marker: Option<String>,
+    fabricated_line: Option<String>,
 ) -> (Model, Arc<Mutex<Vec<String>>>) {
     let captured: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
     let seen = Arc::clone(&captured);
@@ -363,7 +370,14 @@ fn summarizer_fixture(
                     .collect::<Vec<_>>()
                     .join("\n");
                 seen.lock().unwrap().push(text.clone());
-                let summary = fixture_summary(&text, drop_marker.as_deref());
+                let mut summary = fixture_summary(&text, drop_marker.as_deref());
+                if let Some(line) = fabricated_line.as_deref() {
+                    // Appends to Critical Context: a claim with no resolvable
+                    // reference, which the missing-item repair cannot fix.
+                    summary.push_str("- ");
+                    summary.push_str(line);
+                    summary.push('\n');
+                }
                 let stream = AssistantMessageEventStream::new();
                 stream.push(AssistantMessageEvent::Done {
                     reason: "stop".into(),
@@ -384,6 +398,24 @@ fn summarizer_fixture(
     model.context_window = 1_000_000.0;
     model.max_tokens = 64_000.0;
     (model, captured)
+}
+
+fn summarizer_fixture(
+    api: &str,
+    drop_marker: Option<String>,
+) -> (Model, Arc<Mutex<Vec<String>>>) {
+    fixture_provider(api, drop_marker, None)
+}
+
+/// A summarizer fixture that also appends one fabricated "verified" claim to
+/// Critical Context: a line with no resolvable reference, so re-verification
+/// after the deterministic repair still fails.
+fn fabricating_summarizer_fixture(
+    api: &str,
+    drop_marker: Option<String>,
+    fabricated_line: &str,
+) -> (Model, Arc<Mutex<Vec<String>>>) {
+    fixture_provider(api, drop_marker, Some(fabricated_line.to_string()))
 }
 
 async fn run_compaction(
@@ -608,13 +640,12 @@ async fn starved_budget_fails_closed_before_any_model_call_and_the_retry_merges(
 // ---------------------------------------------------------------------------
 
 /// A user constraint quoting a ticket-style id ([JX-4f1c2a]: two capitals,
-/// dash, six lowercase hex) collides with the record-id reference grammar.
-/// The obedient summarizer copies the line verbatim as instructed; the
-/// verifier then reports an unresolved reference and the episode fails with
-/// no repair path (the finding is not a missing item).
+/// dash, six lowercase hex) is copied verbatim by the obedient summarizer
+/// and must verify: the token matches no kind prefix, so it is prose, not a
+/// record reference (BUG-LEDGER D23, fixed by tightening the reference
+/// grammar to the exact id shape the renderer emits).
 #[tokio::test]
-#[ignore = "D23: bracketed ticket-shaped tokens in user text fail typed verification unrepairably"]
-async fn bracketed_ticket_ids_in_user_text_fail_typed_verification() {
+async fn bracketed_ticket_ids_in_user_text_verify_cleanly() {
     let (mut manager, _root) = new_manager("rot2-adv-ticket-");
     seed_user(
         &mut manager,
@@ -638,10 +669,10 @@ CONSTRAINT: every commit must reference ticket [JX-4f1c2a] in the message.",
 }
 
 /// The deterministic repair is bounded at exactly one attempt and never
-/// re-queries the model: a repair whose output still fails verification fails
-/// the episode. Here the model drops the ticket-id constraint; the repair
-/// re-appends it verbatim, and the re-verification flags the very reference
-/// the repair reintroduced (the D23 grammar collision).
+/// re-queries the model. Here the model drops the ticket-id constraint; the
+/// repair re-appends it verbatim, the re-verification accepts the copied
+/// ticket token as quoted ledger material (the D23 grammar fix), and the
+/// episode completes with a single model call.
 #[tokio::test]
 async fn repair_is_bounded_to_one_attempt_with_no_second_model_call() {
     let (mut manager, _root) = new_manager("rot2-adv-repair-bound-");
@@ -654,11 +685,55 @@ CONSTRAINT: every commit must reference ticket [JX-4f1c2a] in the message.",
     seed_user(&mut manager, "status update: more release hardening filler for the window.");
     let (model, captured) = summarizer_fixture("rot2-adv-repair-bound", Some("JX-4f1c2a".to_string()));
 
+    let result = run_compaction(&mut manager, &typed_settings(), &model)
+        .await
+        .expect("the bounded repair re-appends the dropped constraint and verifies");
+    assert!(
+        result.summary.contains("[JX-4f1c2a]"),
+        "the repair re-appends the constraint verbatim: {}",
+        result.summary
+    );
+    let details = details_value(&result);
+    assert_eq!(
+        details["typedVerification"]["repaired"], json!(true),
+        "the deterministic repair ran: {details}"
+    );
+    assert_eq!(
+        details["typedVerification"]["passed"], json!(true),
+        "the repaired summary verifies: {details}"
+    );
+    assert_eq!(
+        captured.lock().unwrap().len(),
+        1,
+        "the bounded repair is deterministic: exactly one model call"
+    );
+}
+
+/// The repair bound is fail-closed: the deterministic repair only re-appends
+/// missing items, so a summary that also carries an unbacked verified claim
+/// still fails re-verification and the episode fails with exactly one model
+/// call (no second attempt).
+#[tokio::test]
+async fn repair_that_still_fails_verification_fails_the_episode() {
+    let (mut manager, _root) = new_manager("rot2-adv-repair-fail-");
+    seed_user(
+        &mut manager,
+        "TASK GOAL: implement the release hardening for the billing service. \
+CONSTRAINT: every commit must reference ticket [JX-4f1c2a] in the message.",
+    );
+    seed_user(&mut manager, "status update: continuing the release hardening work.");
+    seed_user(&mut manager, "status update: more release hardening filler for the window.");
+    let (model, captured) = fabricating_summarizer_fixture(
+        "rot2-adv-repair-fail",
+        Some("JX-4f1c2a".to_string()),
+        "The flaky retry integration test is verified fixed on the staging cluster.",
+    );
+
     let error = run_compaction(&mut manager, &typed_settings(), &model)
         .await
         .expect_err("a repair whose output still fails verification must fail the episode");
     assert!(
-        error.contains("unresolved references"),
+        error.contains("unbacked verified claims"),
         "the re-verification failure must be reported: {error}"
     );
     assert!(
@@ -809,7 +884,6 @@ fn statement_record_ids_stay_stable_across_three_merges() {
 /// that churns breaks the stable-reference contract (summaries carry [id]
 /// references across cycles).
 #[test]
-#[ignore = "D24: evolving tool-state records change their id across merges"]
 fn evolving_tool_state_records_keep_a_stable_id_across_merges() {
     let cycle1 = build_typed_state(&[tool_entry("t1", "on branch main; nothing to commit")]);
     let cycle2 = merge(
@@ -840,6 +914,91 @@ fn evolving_tool_state_records_keep_a_stable_id_across_merges() {
     assert_eq!(
         rs2.id, rs3.id,
         "an evolving tool-state record must keep its id across merges"
+    );
+}
+
+/// Regression pin for the compounding D23+D24 failure: a three-cycle chain
+/// with ticket-token user text and an evolving tool-derived record keeps
+/// verification green at every cycle, keeps the tool record's id stable, and
+/// the render an obedient model produced at cycle 2 still verifies against
+/// the cycle-3 ledger (id churn would strand its `[id]` references as
+/// unrepairable unresolved references).
+#[test]
+fn three_cycle_chain_with_ticket_text_and_evolving_tool_state_verifies_every_cycle() {
+    let cycle1 = build_typed_state(&[
+        user_entry(
+            "u1",
+            "TASK GOAL: implement the release hardening for the billing service. \
+CONSTRAINT: every commit must reference ticket [JX-4f1c2a] in the message. \
+CONSTRAINT: the changelog must link the tracking issue [issue42].",
+        ),
+        tool_entry("t1", "on branch main; nothing to commit"),
+    ]);
+    let rs1 = cycle1
+        .records
+        .iter()
+        .find(|record| record.kind == TypedInformationKind::RepositoryState)
+        .expect("repository-state record");
+    let verification1 = verify(&render_hot_state(&cycle1), &cycle1);
+    assert!(verification1.passed, "cycle 1 findings: {verification1:?}");
+
+    // Cycle 2: the ticket constraint is restated and the tool state evolves.
+    let cycle2 = merge(
+        Some(&cycle1),
+        build_typed_state(&[
+            user_entry(
+                "u2",
+                "CONSTRAINT: every commit must reference ticket [JX-4f1c2a] in the message.",
+            ),
+            tool_entry("t2", "on branch main; nothing to commit, working tree clean"),
+        ]),
+    );
+    let rs2 = cycle2
+        .records
+        .iter()
+        .find(|record| record.kind == TypedInformationKind::RepositoryState)
+        .expect("the merged repository-state record");
+    assert!(
+        rs2.text.contains("working tree clean"),
+        "the tool state keeps the latest text"
+    );
+    assert_eq!(rs1.id, rs2.id, "the evolving tool record keeps its id");
+    let render2 = render_hot_state(&cycle2);
+    assert!(
+        render2.contains("[JX-4f1c2a]"),
+        "the ticket token stays in the render"
+    );
+    assert!(
+        render2.contains("[issue42]"),
+        "the issue token stays in the render"
+    );
+    let verification2 = verify(&render2, &cycle2);
+    assert!(verification2.passed, "cycle 2 findings: {verification2:?}");
+
+    // Cycle 3: no tool restatement, so the record is carried, not re-derived.
+    let cycle3 = merge(
+        Some(&cycle2),
+        build_typed_state(&[user_entry(
+            "u3",
+            "status update: continuing the release hardening work.",
+        )]),
+    );
+    let rs3 = cycle3
+        .records
+        .iter()
+        .find(|record| record.kind == TypedInformationKind::RepositoryState)
+        .expect("the record must survive the third merge");
+    assert_eq!(rs2.id, rs3.id, "the carried tool record keeps its id");
+    let verification3 = verify(&render_hot_state(&cycle3), &cycle3);
+    assert!(verification3.passed, "cycle 3 findings: {verification3:?}");
+
+    // The compounding check: the cycle-2 render stands in for the summary an
+    // obedient model produced at cycle 2. Its references must still resolve
+    // against the cycle-3 ledger.
+    let stale_check = verify(&render2, &cycle3);
+    assert!(
+        stale_check.passed,
+        "cycle-2 render vs cycle-3 ledger: {stale_check:?}"
     );
 }
 

@@ -32,7 +32,11 @@
 //! Everything here is pure and deterministic: no I/O, no clocks, no
 //! randomness. Record ids are derived from content (sha256 of kind prefix
 //! plus content key), so the same fact restated in a later window resolves to
-//! the same id and merges instead of duplicating.
+//! the same id and merges instead of duplicating. The id is assigned at first
+//! sight and then carried: text updates for tool-derived kinds (state
+//! snapshots evolve) are versions of the same record, so `merge` never
+//! re-derives an id from replaced text and `[id]` references in earlier
+//! summaries stay resolvable.
 //!
 //! # Semantics
 //!
@@ -66,8 +70,15 @@
 //! line; tool output matching no category is not retained.
 //!
 //! Reference grammar (used by render and verify):
-//! - record reference: `[UC-1a2b3c]` (record id in brackets)
+//! - record reference: `[UC-1a2b3c]` (record id in brackets; the id shape is
+//!   exactly what `stable_id` emits: a kind prefix, a dash, six lowercase hex)
 //! - entry reference: `[@t42]` (`@` plus source entry id in brackets)
+//!
+//! `verify` treats a bracketed token as a reference only when it matches this
+//! grammar. Other bracketed tokens (ticket ids like `[JX-4f1c2a]`, issue
+//! refs like `[issue42]`) are prose, and a token the ledger itself quotes
+//! inside a record's text is exempt as verbatim source material, so quoting a
+//! ticket id in a constraint cannot fail verification.
 //!
 //! # Integration contract (for `prepare_compaction`; not wired here)
 //!
@@ -290,7 +301,9 @@ pub struct Revision {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct TypedStateRecord {
-    /// Stable id derived from kind plus content key, e.g. `UC-1a2b3c`.
+    /// Stable id derived from kind plus content key at first sight, e.g.
+    /// `UC-1a2b3c`, then carried across merges: a restatement that replaces
+    /// the text keeps the id (the text is a version, not the identity).
     pub id: String,
     pub kind: TypedInformationKind,
     /// Session entry id the first occurrence came from.
@@ -927,9 +940,11 @@ fn supersession_target_kinds(kind: TypedInformationKind) -> bool {
     )
 }
 
-/// Turn classified records into the canonical ledger: assign ids, dedupe by
-/// (kind, key), resolve supersession, task succession, revival and
-/// corroboration. Deterministic for a given record sequence.
+/// Turn classified records into the canonical ledger: assign ids to
+/// first-seen records (an id a record already carries survives, so identity
+/// is stable across merges), dedupe by (kind, key), resolve supersession,
+/// task succession, revival and corroboration. Deterministic for a given
+/// record sequence.
 fn reconcile(mut records: Vec<TypedStateRecord>) -> TypedStateLedger {
     records.sort_by(|a, b| a.ordinal.cmp(&b.ordinal));
 
@@ -974,7 +989,15 @@ fn reconcile(mut records: Vec<TypedStateRecord>) -> TypedStateLedger {
             }
             None => {
                 let mut record = record;
-                record.id = stable_id(record.kind, &key);
+                // Identity is assigned at first sight and then carried: a
+                // record that arrives with an id (persisted from a previous
+                // cycle) keeps it even when a restatement replaced its text.
+                // Recomputing from the current text would churn the id
+                // across merges and strand the `[id]` references earlier
+                // summaries carry; the text is a version, not the identity.
+                if record.id.is_empty() {
+                    record.id = stable_id(record.kind, &key);
+                }
                 index.insert((record.kind, key), out.len());
                 restated.push(vec![record.ordinal]);
                 out.push(record);
@@ -1452,9 +1475,20 @@ const REF_ALLOWLIST: &[&str] = &["none", "x", "y", "TODO", "TBD", "N/A", "WIP", 
 
 static REF_SCAN_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\[(@?)([A-Za-z0-9_./\-]+)\]").unwrap());
-static RECORD_ID_SHAPE_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"^[A-Z]{2}-[0-9a-f]{6}$").unwrap());
-static ENTRY_ID_SHAPE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[a-z]+\d+$").unwrap());
+/// The two-letter id prefixes `stable_id` can emit, in kind order. Kept in
+/// lockstep with `TypedInformationKind::prefix`; the shape test pins every
+/// kind to this table.
+const KIND_PREFIXES: &[&str] = &[
+    "UC", "CO", "SB", "AC", "VD", "DR", "TK", "PA", "VT", "SE", "RS", "SS", "HF", "LP",
+];
+/// The exact record-id grammar the renderer emits (`stable_id`): one of the
+/// kind prefixes, a dash, then the six lowercase hex characters of
+/// `hex_prefix`. A bracketed token is a record reference only when it matches
+/// this grammar, so ticket-style user tokens (`[JX-4f1c2a]`, `[issue42]`)
+/// stay prose.
+static RECORD_ID_SHAPE_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(&format!("^(?:{})-[0-9a-f]{{6}}$", KIND_PREFIXES.join("|"))).unwrap()
+});
 static VERIFIED_WORD_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)\bverified\b").unwrap());
 
 /// Kinds that must be represented in the compact artifact.
@@ -1489,7 +1523,11 @@ fn artifact_mentions(artifact: &str, record: &TypedStateRecord) -> bool {
 ///   task and pending action is present by id reference or text;
 /// - a superseded record's text or id may appear only together with the
 ///   record that retired it;
-/// - bracketed references resolve to known record ids or entry ids;
+/// - bracketed references resolve to known record ids or entry ids. A token
+///   counts as a reference only when it matches the renderer's grammar
+///   (record ids carry a kind prefix and six hex; entry references carry the
+///   `@` sigil), and a token quoted verbatim inside a ledger record's text is
+///   exempt as source material the summarizer was told to copy;
 /// - a line mentioning the word "verified" maps to a verified or corroborated
 ///   record by reference or text.
 pub fn verify(compact_artifact: &str, state: &TypedStateLedger) -> TypedStateVerification {
@@ -1500,6 +1538,16 @@ pub fn verify(compact_artifact: &str, state: &TypedStateLedger) -> TypedStateVer
         .iter()
         .map(|record| record.source_entry_id.as_str())
         .collect();
+    // Bracketed tokens the ledger itself quotes inside record texts. The
+    // summarizer is instructed to copy statement texts verbatim, so such a
+    // token is quoted source material (a ticket id inside a user
+    // constraint), not a reference the model invented.
+    let mut quoted_tokens: BTreeSet<String> = BTreeSet::new();
+    for record in &state.records {
+        for capture in REF_SCAN_RE.captures_iter(&record.text) {
+            quoted_tokens.insert(capture.get(0).expect("whole match").as_str().to_string());
+        }
+    }
 
     let mut verification = TypedStateVerification {
         passed: true,
@@ -1551,6 +1599,12 @@ pub fn verify(compact_artifact: &str, state: &TypedStateLedger) -> TypedStateVer
         if compact_artifact[whole.end()..].starts_with('(') {
             continue;
         }
+        // Skip quoted material: the ledger carries this exact bracketed
+        // token inside a record's text, so the copy is verbatim source
+        // material, not a model-invented reference.
+        if quoted_tokens.contains(whole.as_str()) {
+            continue;
+        }
         let sigil = capture.get(1).expect("sigil").as_str();
         let token = capture.get(2).expect("token").as_str();
         if REF_ALLOWLIST
@@ -1566,20 +1620,10 @@ pub fn verify(compact_artifact: &str, state: &TypedStateLedger) -> TypedStateVer
                     detail: "entry reference does not resolve to a known source entry".to_string(),
                 });
             }
-        } else if RECORD_ID_SHAPE_RE.is_match(token) {
-            if !known_record_ids.contains(token) {
-                verification.unresolved_refs.push(VerificationFinding {
-                    subject: format!("[{token}]"),
-                    detail: "record id does not resolve to a known record".to_string(),
-                });
-            }
-        } else if ENTRY_ID_SHAPE_RE.is_match(token)
-            && !known_entry_ids.contains(token)
-            && !known_record_ids.contains(token)
-        {
+        } else if RECORD_ID_SHAPE_RE.is_match(token) && !known_record_ids.contains(token) {
             verification.unresolved_refs.push(VerificationFinding {
                 subject: format!("[{token}]"),
-                detail: "bracketed entry-shaped token does not resolve".to_string(),
+                detail: "record id does not resolve to a known record".to_string(),
             });
         }
     }
@@ -2744,6 +2788,84 @@ mod tests {
             "See [the docs](https://example.com) and [none] of the rest. The rule [{constraint_id}] holds."
         );
         let verification = verify(&artifact, &ledger);
+        assert!(verification.unresolved_refs.is_empty(), "{verification:?}");
+        assert!(verification.passed, "{verification:?}");
+    }
+
+    #[test]
+    fn record_id_shape_matches_every_kind_prefix() {
+        let kinds = [
+            TypedInformationKind::UserConstraint,
+            TypedInformationKind::UserCorrection,
+            TypedInformationKind::SafetyOrPermissionBoundary,
+            TypedInformationKind::AcceptanceCriterion,
+            TypedInformationKind::VerifiedDecision,
+            TypedInformationKind::DecisionRationale,
+            TypedInformationKind::CurrentTask,
+            TypedInformationKind::PendingAction,
+            TypedInformationKind::VerifiedToolResult,
+            TypedInformationKind::SourceEvidence,
+            TypedInformationKind::RepositoryState,
+            TypedInformationKind::SubagentState,
+            TypedInformationKind::HistoricalFact,
+            TypedInformationKind::LowPriorityEpisode,
+        ];
+        for kind in kinds {
+            let prefix = kind.prefix();
+            assert!(KIND_PREFIXES.contains(&prefix), "{prefix} missing from KIND_PREFIXES");
+            assert!(
+                RECORD_ID_SHAPE_RE.is_match(&format!("{prefix}-1a2b3c")),
+                "ids stable_id emits for {prefix} must be reference-shaped"
+            );
+        }
+        // Ticket-style user tokens are not kind-prefixed, so they are prose.
+        for token in ["JX-4f1c2a", "issue42", "AB-12345", "UC-1234567", "uc-123abc"] {
+            assert!(
+                !RECORD_ID_SHAPE_RE.is_match(token),
+                "{token} must not read as a record reference"
+            );
+        }
+    }
+
+    #[test]
+    fn verify_treats_bracketed_user_tokens_as_prose() {
+        // The constraint quotes ticket-style tokens; an obedient copy of the
+        // rendered line must verify (BUG-LEDGER D23).
+        let ledger = build_typed_state(&[user_entry(
+            "u1",
+            "CONSTRAINT: every commit must reference ticket [JX-4f1c2a] in the message.",
+        )]);
+        let constraint = &ledger.records[0];
+        let artifact = format!(
+            "- [{}] [@u1] {}",
+            constraint.id, constraint.text
+        );
+        let verification = verify(&artifact, &ledger);
+        assert!(verification.unresolved_refs.is_empty(), "{verification:?}");
+        assert!(verification.passed, "{verification:?}");
+
+        // Even when the model echoes an unquoted ticket token in its own
+        // prose, the token is not reference-shaped, so it stays prose.
+        let echoed = format!("{artifact} Also tracking [issue42] for the changelog.");
+        let verification = verify(&echoed, &ledger);
+        assert!(verification.unresolved_refs.is_empty(), "{verification:?}");
+
+        // A kind-prefixed token the ledger does not know still fails: the
+        // grammar is narrower, not blind.
+        let invented = format!("{artifact} See [UC-deadbe] for details.");
+        let verification = verify(&invented, &ledger);
+        assert_eq!(verification.unresolved_refs.len(), 1, "{verification:?}");
+        assert!(!verification.passed, "{verification:?}");
+
+        // A kind-prefixed token quoted inside a record's own text is
+        // verbatim source material, not a model-invented reference.
+        let quoting = build_typed_state(&[user_entry(
+            "u1",
+            "CONSTRAINT: the changelog must link the release ticket [SE-123abc].",
+        )]);
+        let record = &quoting.records[0];
+        let artifact = format!("- [{}] [@u1] {}", record.id, record.text);
+        let verification = verify(&artifact, &quoting);
         assert!(verification.unresolved_refs.is_empty(), "{verification:?}");
         assert!(verification.passed, "{verification:?}");
     }
