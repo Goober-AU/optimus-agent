@@ -2052,15 +2052,13 @@ impl SettingsManager {
     /// setting wins, then `PRIME_AGENT_COMPACTION_TASK_STATE`, then `"off"`.
     pub fn get_compaction_task_state(&self) -> String {
         let configured = nested_string(&self.settings, keys::COMPACTION, "taskState");
-        match configured.as_deref() {
-            Some("prompt") => return "prompt".to_string(),
-            Some(_) => return "off".to_string(),
-            None => {}
-        }
-        if env_flag("PRIME_AGENT_COMPACTION_TASK_STATE").as_deref() == Some("prompt") {
-            return "prompt".to_string();
-        }
-        "off".to_string()
+        // Mirrors resolve_task_state_mode (compaction.rs): the three modes
+        // are "off" (default), "prompt" (v1 ledger) and "typed" (v2 typed
+        // protected state); any other value fails safe to "off".
+        crate::core::compaction::compaction::resolve_task_state_mode(
+            configured.as_deref(),
+            env_flag("PRIME_AGENT_COMPACTION_TASK_STATE").as_deref(),
+        )
     }
 
     /// B4: explicit compaction trigger threshold, a fraction of the context
@@ -3878,5 +3876,32 @@ mod local_gateway_tests {
                 start_timeout_ms: 20000,
             }
         );
+    }
+
+    #[test]
+    fn compaction_task_state_accepts_typed_and_fails_safe() {
+        let storage = Arc::new(InMemorySettingsStorage::new());
+        storage.with_lock(SETTINGS_SCOPE_GLOBAL, &mut |_| {
+            Some(r#"{"compaction":{"taskState":"typed"}}"#.to_string())
+        });
+        let manager = SettingsManager::from_storage(storage);
+        assert_eq!(manager.get_compaction_task_state(), "typed");
+    }
+
+    #[test]
+    fn compaction_task_state_unknown_value_fails_safe_to_off() {
+        let storage = Arc::new(InMemorySettingsStorage::new());
+        storage.with_lock(SETTINGS_SCOPE_GLOBAL, &mut |_| {
+            Some(r#"{"compaction":{"taskState":"bogus"}}"#.to_string())
+        });
+        let manager = SettingsManager::from_storage(storage);
+        assert_eq!(manager.get_compaction_task_state(), "off");
+    }
+
+    #[test]
+    fn compaction_task_state_defaults_to_off() {
+        let storage = Arc::new(InMemorySettingsStorage::new());
+        let manager = SettingsManager::from_storage(storage);
+        assert_eq!(manager.get_compaction_task_state(), "off");
     }
 }
