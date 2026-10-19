@@ -958,13 +958,25 @@ fn smoke_scenario() -> Scenario {
             },
             ScenarioEntry {
                 kind: "assistant".into(),
-                // D25/D30: a decision stated by the ASSISTANT classifies as
+                // D25: a decision stated by the ASSISTANT classifies as
                 // VerifiedDecision (Task scope) and survives the step-boundary
-                // merge; the same sentence in user text currently falls through
-                // to LowPriorityEpisode (Step scope) and is retired at the first
-                // merge (filed as D30).
+                // merge (the corroboration path).
                 text: "Started the migration plan. Decision: use architecture B ARCH-DECISION-B for the parser (corrected from architecture A).".into(),
                 usage_input: 12.0,
+                tool_call_id: String::new(),
+                tool_name: String::new(),
+                from_name: String::new(),
+            },
+            ScenarioEntry {
+                kind: "user".into(),
+                // D30 (fixed W46): a decision stated by the USER classifies
+                // as VerifiedDecision too (Verified provenance, Task
+                // scope), so it survives the step-boundary merge instead of
+                // retiring as a low-priority episode at the first merge.
+                // The assistant-stated seed above is no longer a
+                // workaround: both roles now pin their own path.
+                text: "Decision: use architecture C for the billing client ARCH-DECISION-C.".into(),
+                usage_input: 0.0,
                 tool_call_id: String::new(),
                 tool_name: String::new(),
                 from_name: String::new(),
@@ -1011,6 +1023,10 @@ fn smoke_scenario() -> Scenario {
             ScenarioProbe {
                 id: "q3".into(),
                 anchor: "EV-4785".into(),
+            },
+            ScenarioProbe {
+                id: "q4".into(),
+                anchor: "ARCH-DECISION-C".into(),
             },
         ],
     }
@@ -1078,7 +1094,7 @@ async fn rot2_smoke_multicycle_runs_all_cycles_and_reports_probes() {
                 arm.arm
             );
         }
-        assert_eq!(arm.probes.len(), 3);
+        assert_eq!(arm.probes.len(), 4);
     }
     // The ledger arm must persist a ledger on every cycle.
     let task_state_arm = &result.arms[1];

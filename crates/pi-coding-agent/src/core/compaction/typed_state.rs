@@ -13,7 +13,12 @@
 //! - Classification is provenance-aware. Only user-role text can become a
 //!   `USER_CONSTRAINT`, `USER_CORRECTION`, `SAFETY_OR_PERMISSION_BOUNDARY` or
 //!   `ACCEPTANCE_CRITERION`. Tool output and source-file text containing
-//!   "must"/"never" never do.
+//!   "must"/"never" never do. A user-role unit stating a decision
+//!   (`DECISION_RE`) classifies as a `VERIFIED_DECISION` too (D30): the
+//!   user can state the project decision, and the user is the in-session
+//!   authority, so their statement enters at `Verified` provenance while
+//!   an assistant-stated decision enters `Unverified` and corroborates
+//!   through later tool evidence.
 //! - The ledger is cap-free. Capacity is decided by an explicit priority
 //!   allocator (`allocate`), which reports exactly what did not fit
 //!   (`OverflowReport`, durable source references) and flags
@@ -699,6 +704,19 @@ fn classify_user_unit(unit: &str, first_user_unit: bool) -> Option<TypedInformat
     }
     if HISTORICAL_RE.is_match(unit) {
         return Some(TypedInformationKind::HistoricalFact);
+    }
+    // D30: the user can state the project decision themselves, and the
+    // user is the in-session authority, so the statement classifies as a
+    // VERIFIED_DECISION (Verified provenance, Task scope) instead of
+    // falling through to a Step-scoped episode that retires at the first
+    // merge. The assistant DECISION_RE path remains the corroboration
+    // path (an assistant decision enters unverified). The gate sits below
+    // the safety/correction/acceptance/pending/constraint/task/historical
+    // gates, so a correction restating its replacement ("we are going
+    // with approach B") stays a correction and a past-tense report ("we
+    // chose X last campaign") stays history.
+    if DECISION_RE.is_match(unit) {
+        return Some(TypedInformationKind::VerifiedDecision);
     }
     if unit.chars().count() >= MIN_EPISODE_CHARS {
         return Some(TypedInformationKind::LowPriorityEpisode);
@@ -2276,10 +2294,10 @@ mod tests {
         }
     }
 
-    /// 71 labelled snippets: 8 constraints, 6 corrections, 6 safety, 5
-    /// acceptance, 5 tasks, 5 pending, 5 decisions, 3 rationale, 5 tool
-    /// results, 5 source evidence, 4 repository state, 3 subagent, 3
-    /// historical, 3 episodes, 5 adversarial negatives.
+    /// 74 labelled snippets: 8 constraints, 6 corrections, 6 safety, 5
+    /// acceptance, 5 tasks, 5 pending, 7 decisions (2 user-stated), 3
+    /// rationale, 5 tool results, 5 source evidence, 4 repository state,
+    /// 3 subagent, 4 historical, 3 episodes, 5 adversarial negatives.
     fn corpus() -> Vec<CorpusCase> {
         vec![
             // user constraints
@@ -2323,7 +2341,11 @@ mod tests {
             case(SourceRole::User, "Next, we need to wire the ledger into prepare_compaction.", Some(TypedInformationKind::PendingAction)),
             case(SourceRole::User, "There are three files left to do before we finish.", Some(TypedInformationKind::PendingAction)),
             case(SourceRole::Assistant, "I still need to add the verifier tests.", Some(TypedInformationKind::PendingAction)),
-            // verified decisions
+            // verified decisions (D30: user-stated decisions are
+            // VERIFIED_DECISIONs at Verified provenance; assistant-stated
+            // ones enter unverified)
+            case(SourceRole::User, "Decision: use architecture B for the parser.", Some(TypedInformationKind::VerifiedDecision)),
+            case(SourceRole::User, "We will use the saga pattern for the coordinator.", Some(TypedInformationKind::VerifiedDecision)),
             case(SourceRole::Assistant, "Decision: store checkpoints in a sidecar file.", Some(TypedInformationKind::VerifiedDecision)),
             case(SourceRole::Assistant, "We will use a BTreeMap for the ledger index.", Some(TypedInformationKind::VerifiedDecision)),
             case(SourceRole::Assistant, "I chose deterministic sha256 ids for stability.", Some(TypedInformationKind::VerifiedDecision)),
@@ -2359,8 +2381,11 @@ mod tests {
                 tool_name: "agent",
                 is_error: false,
             },
-            // historical facts
+            // historical facts (the decision gate sits below the
+            // historical gate, so a past-tense decision report stays
+            // history)
             case(SourceRole::User, "Last campaign we used Postgres for the ledger store.", Some(TypedInformationKind::HistoricalFact)),
+            case(SourceRole::User, "We chose the saga pattern last campaign.", Some(TypedInformationKind::HistoricalFact)),
             case(SourceRole::User, "Previously the module lived in utils.rs.", Some(TypedInformationKind::HistoricalFact)),
             case(SourceRole::Assistant, "We tried the regex approach before and it drifted.", Some(TypedInformationKind::HistoricalFact)),
             // low-priority episodes
@@ -2590,6 +2615,75 @@ mod tests {
             .find(|record| record.kind == TypedInformationKind::VerifiedDecision)
             .expect("decision");
         assert_eq!(decision.verification, Verification::Unverified);
+    }
+
+    #[test]
+    fn user_stated_decision_is_a_verified_decision_with_task_scope() {
+        // D30: the user can state the project decision; the statement is
+        // the in-session authority, so it must not degrade to a
+        // Step-scoped low-priority episode that retires at the first
+        // merge.
+        let ledger = build_typed_state(&[user_entry(
+            "u1",
+            "Decision: use architecture B for the parser.",
+        )]);
+        assert_eq!(ledger.records.len(), 1);
+        let record = &ledger.records[0];
+        assert_eq!(record.kind, TypedInformationKind::VerifiedDecision);
+        assert_eq!(record.verification, Verification::Verified);
+        assert_eq!(record.scope, RecordScope::Task);
+        assert!(record.id.starts_with("VD-"));
+    }
+
+    #[test]
+    fn user_stated_decision_survives_the_step_boundary_merge() {
+        // The D30 acceptance: before the fix the user's decision
+        // classified as LOW_PRIORITY_EPISODE and the first merge retired
+        // it; only assistant-stated decisions survived.
+        let first = build_typed_state(&[
+            user_entry("u1", "Decision: use architecture B for the parser."),
+            user_entry("u2", "Sounds good, let me know when it is done."),
+        ]);
+        let second = build_typed_state(&[user_entry(
+            "u3",
+            "Thanks, that explanation makes sense.",
+        )]);
+        let merged = merge(Some(&first), second);
+        let decision = merged
+            .records
+            .iter()
+            .find(|record| record.kind == TypedInformationKind::VerifiedDecision)
+            .expect("user decision survives the step boundary");
+        assert_eq!(decision.status, RecordStatus::Current);
+        // The episode from the summarized window retired at the boundary;
+        // the new window's episode is the current step's record.
+        assert!(merged
+            .records
+            .iter()
+            .all(|record| !record.text.contains("Sounds good")));
+    }
+
+    #[test]
+    fn user_correction_retires_a_user_stated_decision() {
+        // The user can still change their mind: a user-stated decision is
+        // a supersession target like any other decision.
+        let ledger = build_typed_state(&[
+            user_entry("u1", "Decision: use architecture B for the parser."),
+            user_entry("u2", "Actually, use architecture C for the parser instead."),
+        ]);
+        let decision = ledger
+            .records
+            .iter()
+            .find(|record| record.kind == TypedInformationKind::VerifiedDecision)
+            .expect("decision");
+        assert_eq!(decision.status, RecordStatus::Superseded);
+        assert_eq!(decision.retire_path, Some(SupersessionPath::Token));
+        let correction = ledger
+            .records
+            .iter()
+            .find(|record| record.kind == TypedInformationKind::UserCorrection)
+            .expect("correction");
+        assert_eq!(correction.link.as_deref(), Some(decision.id.as_str()));
     }
 
     #[test]

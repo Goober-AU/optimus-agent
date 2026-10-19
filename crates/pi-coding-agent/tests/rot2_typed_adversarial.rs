@@ -36,8 +36,8 @@ use pi_coding_agent::core::compaction::compaction::{
     TASK_STATE_MODE_TYPED,
 };
 use pi_coding_agent::core::compaction::typed_state::{
-    build_typed_state, merge, render_hot_state, verify, RecordStatus, SourceRole,
-    SupersessionPath, TypedInformationKind, TypedStateLedger, TypedStateRecord,
+    build_typed_state, merge, render_hot_state, verify, RecordScope, RecordStatus, SourceRole,
+    SupersessionPath, TypedInformationKind, TypedStateLedger, TypedStateRecord, Verification,
 };
 use pi_coding_agent::core::session_manager::{SessionManager, SessionEntry};
 use pi_agent_core::types::AgentMessage;
@@ -1775,5 +1775,76 @@ fn unrelated_distant_correction_retires_nothing() {
             .filter(|record| record.status == RecordStatus::Superseded)
             .count(),
         1
+    );
+}
+
+// ---------------------------------------------------------------------------
+// D30: user-stated decisions (W46)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn user_stated_decision_survives_the_merge_and_retires_like_any_decision() {
+    // D30: a decision stated in USER text ("Decision: use architecture
+    // B ...") matched no user gate and fell through to LOW_PRIORITY_EPISODE
+    // (Step scope), retiring at the first merge; only assistant-stated
+    // decisions reached VERIFIED_DECISION (the smoke scenario documented
+    // the workaround, 7bec70f09). W46 ruling: the user can state the
+    // project decision -- the user is the in-session authority -- so the
+    // user unit classifies as VERIFIED_DECISION at `verified` provenance,
+    // and the assistant DECISION_RE path remains the corroboration path.
+    // The E1/E2/E3ADV fixtures state decisions in assistant text only, so
+    // no fixture classification changes under this ruling.
+    let first = build_typed_state(&[
+        user_entry("u1", "Decision: use architecture B for the parser."),
+        user_entry("u2", "Sounds good, let me know when it is done."),
+    ]);
+    let decision = record_with_text(&first, "architecture B").clone();
+    assert_eq!(decision.kind, TypedInformationKind::VerifiedDecision);
+    assert_eq!(decision.source_role, SourceRole::User);
+    assert_eq!(decision.verification, Verification::Verified);
+    assert_eq!(decision.scope, RecordScope::Task);
+
+    // The step-boundary merge that retires the window's episodes keeps
+    // the Task-scoped decision current.
+    let merged = merge(
+        Some(&first),
+        build_typed_state(&[user_entry("u3", "Continue the migration.")]),
+    );
+    let record = merged
+        .records
+        .iter()
+        .find(|record| record.id == decision.id)
+        .expect("the user decision survives the merge");
+    assert_eq!(record.status, RecordStatus::Current);
+    assert!(merged
+        .records
+        .iter()
+        .all(|record| !record.text.contains("Sounds good")));
+
+    // A later user correction still retires it (token-overlap pairing):
+    // the user can change their mind about their own decision.
+    let retired = merge(
+        Some(&merged),
+        build_typed_state(&[user_entry(
+            "u4",
+            "Actually, use architecture C for the parser instead.",
+        )]),
+    );
+    let record = retired
+        .records
+        .iter()
+        .find(|record| record.id == decision.id)
+        .expect("the record stays as history");
+    assert_eq!(record.status, RecordStatus::Superseded);
+    assert_eq!(record.retire_path, Some(SupersessionPath::Token));
+    let render = render_hot_state(&retired);
+    // The retirement direction renders on the correction's line (the D22
+    // ruling kept the decision's own line kind-shaped); the decision itself
+    // moves to the history section.
+    let supersede_note = format!("(supersedes [{}])", decision.id);
+    assert!(render.contains(&supersede_note), "{render}");
+    assert!(
+        render.contains("SUPERSEDED (HISTORY, NOT CURRENT)"),
+        "{render}"
     );
 }
