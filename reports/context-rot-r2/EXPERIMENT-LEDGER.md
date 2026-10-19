@@ -62,7 +62,7 @@ Executed since this list was first written: the live-model arms (R2-E2 base+hard
 below, R2-E3, R2-E3ADV, R2-E5 typed), the offline re-measure R2-E2-RM, the
 CompactBench practice suites (W12 mock, W26 live) and the ContextBench live
 practice run (W27) — sections below. Still not executed:
-
+78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 - any official / leaderboard-comparable number: every CompactBench run is
   CUSTOM-OPTIMUS (public practice suites, custom adapter, scorer 2.0.0; the W26
   live run is 8 of 20 starter cases per arm, one live draw per case); every
@@ -183,8 +183,9 @@ practice run (W27) — sections below. Still not executed:
   3 of 50 summarizer cycles needed the 16384 ladder step, max summarizer latency
   45.3 s, 209 wire calls (155 probes, 53 summarizers, 1 pong).
 - Typed arm: deliberate stub in this run (`--arm typed` exits 2 with a loud
-  message, never a silent substitution); the live typed-arm run is R2-E5 (W29,
-  in flight at this writing).
+  message, never a silent substitution); the typed arm was later wired for
+  R2-E5 (adapter `08f16adf0`, mirror `fe6b6d966`), whose results are the
+  section below.
 
 ## R2-E3ADV — adversarial correction suite (live GLM 5.3)
 
@@ -468,3 +469,4 @@ re-pin `31ce39b84` holds at this tip).
   no commits over the integration head `71e770c5e`.
 - a full post-fix R2-E5 live re-run was NOT executed: only the D29 C1 cell
   was re-run live (`621dc462f`).
+78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)

@@ -2,7 +2,8 @@
 
 Scope: the honest status of coding-task evaluation after the r2 campaign.
 Report writer W14, 2026-10-20, refreshed by W34 at the integration tip
-`f8ad670c8`. No number in this file is a coding-benchmark capability
+`f8ad670c8` and reconciled by the W50 consistency sweep at `34c27c07d`.
+No number in this file is a coding-benchmark capability
 score; every figure cites a committed artefact.
 
 ## 1. Where iteration-1 left this
@@ -131,13 +132,13 @@ and 400 cycles per arm), artifacts
 the W26 live practice run, 4 arms x 8 starter cases, GLM 5.3 in both
 roles).
 
-## 4. What is NOT run, and the exact blockers (updated at the W34 refresh)
+## 4. What is NOT run, and the exact blockers (updated at the W34 refresh, reconciled at the W50 sweep)
 
 | planned item | status | exact blocker |
 | --- | --- | --- |
 | R2-E2 live-model arms | EXECUTED (W7) | no longer blocked: `research/context_rot_r2/live/` (`fb089ee6e`); base 95/95 default vs 89/95 taskState, hard 111/111 both arms |
 | R2-E3 live coding-task suite | EXECUTED (W17) | no longer blocked: `research/context_rot_r2/live/e3/` (`c5107fc31`); 50/50 action-probe points on both arms |
-| live TYPED arm (R2-E5) | NOT EXECUTED | in flight (W29): the E3 orchestrator's `--arm typed` is a stub (exit 2) and the multicycle adapter maps only `default`/`taskState` |
+| live TYPED arm (R2-E5) | EXECUTED (W29) | no longer blocked: the typed arm is wired in the adapter (`08f16adf0`) and the E3 mirror (`fe6b6d966`); artifacts `research/context_rot_r2/live/e5/` (`59832805f`, `c248a101f`) - fixture 15/19 (v1 14/19, default 0/19), live parity on the e3 tasks that ran, TASK-E halted pre-fix (D24, fixed W37), E3ADV C1 pairing gap (D29, fixed W41); re-measure E5-RM (W47) in flight |
 | CompactBench model-backed run at full suite scale | NOT EXECUTED | the W26 practice run (8 of 20 starter cases per arm, one live draw, `compactbench_adapter/live/`) is the only live data; full-suite live runs and the elite suite need a further authorized budget |
 | CompactBench official suites beyond the public starter practice suite | NOT EXECUTED | starter (and elite practice) are the public suites; no leaderboard-scored run exists |
 | ContextBench arms A/B on real agent trajectories | NOT EXECUTED | the W27 practice run used synthetic gold-derived trajectories (`contextbench/live/`); free-form exploration needs repository checkouts + a live agent, harness ready (`contextbench/runs/.gitignore`) |
@@ -145,7 +146,7 @@ roles).
 | ContextBench holdout run | NOT EXECUTED | live phase runs dev first; holdout runs once, at the end (scorecard section 7) |
 | RepoQA / SWE-bench / Terminal-Bench | NOT EXECUTED | not attempted in r2; no run artefact, no official scorer (inherited from iteration-1 `reports/context-rot/CODING-TASK-RESULTS.md` section 5) |
 
-## 5. Status summary (updated at the W34 refresh)
+## 5. Status summary (reconciled at the W50 sweep)
 
 The r2 campaign moved coding-task evaluation from "one synthetic fixture"
 (iteration-1 E4) to committed, tested measurement infrastructure on two
@@ -154,8 +155,9 @@ repo-level dev/holdout split and a matched A/B harness, and a
 CompactBench adapter that runs the real Optimus compaction pipeline
 inside the official runner with controls. Model-backed numbers now exist
 at practice scale only - R2-E2/R2-E3 (live multicycle and coding-task
-action probes, GLM 5.3), the W26 CompactBench practice run and the W27
+action probes, GLM 5.3), R2-E5 (the typed arm: fixture plus live cells),
+the W26 CompactBench practice run and the W27
 ContextBench retention run - all labelled CUSTOM-OPTIMUS + LIVE-MODEL and
-none leaderboard-comparable. The remaining unblocks: the live typed arm
-(R2-E5), repository checkouts with real agent trajectories, and any
-official-scored run.
+none leaderboard-comparable. The remaining unblocks: the post-fix
+re-measure of the typed arm (E5-RM, W47, in flight), repository checkouts
+with real agent trajectories, and any official-scored run.

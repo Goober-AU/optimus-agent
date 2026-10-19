@@ -7,8 +7,8 @@ negative result (the v1 task-state ledger: no recall gain, a token cost). This
 campaign closed the mirror gap: every multicycle number below marked PRODUCTION-PATH
 was produced by the real `prepare_compaction` -> `compact` -> `append_compaction` ->
 `SessionManager` restore pipeline, offline, through the committed adapter, and a
-live family (R2-E2, R2-E3, R2-E3ADV, the W26 CompactBench practice run, the W27
-ContextBench practice run) put the same prompts and the same pipeline against GLM
+live family (R2-E2, R2-E3, R2-E3ADV, R2-E5, the W26 CompactBench practice run, the
+W27 ContextBench practice run) put the same prompts and the same pipeline against GLM
 5.3. The headline is split again, and sharper than iteration 1's: repeated
 compaction is a confirmed information-loss mechanism on the production path, the
 v1 ledger is not a safe fix for it (under a live model it inverted a user
@@ -41,6 +41,7 @@ and the W16 supersession work (`rot2/w16-supersession`, no commits over this
 head).
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
+78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 
 ## 1. Hypotheses
 
@@ -51,6 +52,7 @@ f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fix
 | H-r2-3 | provenance-aware typed state fixes the mechanism | typed_state v2 module (design + 74 unit tests at this tip, `c948905a3` + the wave); the W15 integration wiring (`338b920c3`, `40bead288`, `4be9623b0`); W11's content-derived id and correction-safe supersession fixes in v1 (`1754a3e1b`), re-measured offline on the live corpus by R2-E2-RM (`2fbb14f33`); R2-E5 (the typed-arm measurement, `EXPERIMENT-LEDGER.md`); the W35 red team and the D21-D29 fix wave (section 4.4) | partially supported: wired end to end, verifier-gated, and R2-E5 part 1 beats control B on the fixture (15/19 vs 14/19) with live parts 2-3 correct where they ran; the first live run also falsified two pre-registrations (TASK-E halt, the D24 id-churn mechanism; no SUPERSEDED render in E3ADV C1, the D29 token-overlap pairing) - both now fixed, with D29 live-confirmed on the C1 cell (`621dc462f`); the red team then found D22-D28, all fixed, leaving D30 and the cycle-5 budget caveat open (W46). The E3ADV structural goal is achieved post-D29; no full post-fix R2-E5 re-run exists |
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
+78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 | H-r2-4 | pressure/cycle health does not predict semantic loss | W8 calibration corpus: 66 labelled cases scored by the production scorer | supported on synthetic labels: ROC-AUC 0.604 against `lost_constraint` |
 
 ## 2. What was measured
@@ -80,6 +82,7 @@ here; never mixed within one table):
 | R2-E3 | live coding-task action retention (next-file, corrected approach, boundary evidence, acceptable set, restart) | 5 tasks x 2 arms x 5 cycles, 50 probe points per arm, 3 reps each | GLM 5.3 (as above) | `research/context_rot_r2/live/e3/` (`results.json`, `raw-calls.jsonl`, `README.md`; commits `d8e318f81`, `346f6c4f3`, `c5107fc31`) | LIVE-MODEL |
 | R2-E3ADV | adversarial corrections sharing no anchor with the decision they replace | 3 families x 2 arms x 5 cycles, 30 cycle points per arm, 3 reps each | GLM 5.3 (as above) | `live/e3adv/` (`results.json`, `raw-calls.jsonl`, `README.md`; commits `76eefbf9f`, `754bb75a1`) | LIVE-MODEL |
 | R2-E2-RM | does the W11 fix remove the R2-E2 inversion (offline re-measure on the live corpus) | 2 scenarios x 2 passes x 5 cycles (fixture pass + post-W11 pass) | none (corpus replay, no model calls) | `live/remeasure/` (`results.json`, `README.md`, `w11_port.py`, `replay.py`; commit `2fbb14f33`) | PRODUCTION-PATH-MIRROR |
+| R2-E5 | the typed arm: fixture retention, live action parity, adversarial supersession | E1 19-probe x 5-cycle three-arm pass (fixture) + e3 tasks A/C/E typed-vs-default x 5 cycles x 3 reps + the E3ADV C1 typed cell (live) | GLM 5.3 (as above) for the live parts; none for the fixture pass | `live/e5/` (`adapter/`, `live/`, `live-d29/`, `README.md`; worker commits `4f2e6935e`, `bf0ba53f6`, `89e8f7273`; integrated as `fe6b6d966`, `59832805f`, `c248a101f`) | PRODUCTION-PATH + LIVE-MODEL |
 | W26 live CompactBench | custom practice run, GLM as summarizer (production path) and task/eval model | 4 arms, starter slots 0-1 (8 cases/arm), 3 drift cycles, one live draw per case | GLM 5.3 (DGX K3 LaunchPad, SGLang, temperature 0) | `compactbench_adapter/live/` (`run-config.json`, `results/`, `raw-calls.jsonl`, `README.md`; commits `6ea85dc10`, `4b8f2165f`) | CUSTOM-OPTIMUS + LIVE-MODEL |
 | W27 live ContextBench | retention of gold context through compaction, paired arms | 26 paired dev instances x 2 arms x 4 cycles (208 cycle attempts) | GLM 5.3 (as above, summarizer; synthetic gold-derived trajectories) | `contextbench/live/` (`run_config.json`, `results.json`, `raw-calls.jsonl`, `README.md`; commits `da38b1edf`, `3e5880dd5`, `963ca577a`, `32a430f08`) | CUSTOM-OPTIMUS + LIVE-MODEL |
 | W12 suites | CompactBench public practice suites, 3 drift cycles | 9 arms x 2 suites (18 runs; starter 20 cases, elite 100) | mock-deterministic (mock eval provider, scorer 2.0.0) | `research/context_rot_r2/compactbench_adapter/results/w12/`, `SUITE-RESULTS.md` | CUSTOM-OPTIMUS (PRODUCTION-PATH pipeline) |
@@ -256,6 +259,7 @@ with a loud message, never a silent substitution); the typed-arm run
 (R2-E5) has since been executed and recorded in `EXPERIMENT-LEDGER.md`.
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
+78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 
 ### 3.10 R2-E3ADV: when supersession cannot pair, the ledger does nothing and the model argues it down
 
@@ -301,6 +305,7 @@ CONSTRAINTS_CAP=12 omits the four corrections from the rendered ACTIVE list
 are also omitted) - defect candidate D21, since fixed by the correction-carrier
 cap exemption (`a9035ce8a`; the replay re-measured strict containment 20/20,
 `0b824f358`; see section 5.9 for the refreshed status).
+78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 Pre-existing and W11-independent: `EVIDENCE_RE` never matched this corpus's
 evidence shapes, so the VERIFIED EVIDENCE section is empty in every render
 pre and post; the W11 id-collision half is not exercised by this corpus.
@@ -351,6 +356,34 @@ lines (line precision 0.586 vs 0.320, 18+/4-, sign p = 0.004, Wilcoxon p =
 53%). The parsed ledger itself populated in only 34 of 104 arm-B cycles, so
 the effect observed is prompt-level, not ledger-level.
 
+### 3.14 R2-E5: the typed arm measured - one step over v1 on the fixture, two live defects found and forced
+
+Three parts (`live/e5/`, EXPERIMENT-LEDGER R2-E5). Part 1, the E1 fixture
+(19 probes x 5 cycles, all three arms in one pass, offline adapter): default
+0/19, v1 taskState 14/19, typed 15/19. The typed ledger holds 23 records at a
+stable 777/800 hot-token budget (min(2048, floor(3200/4))); the verifier
+passed 5/5 cycles with zero repairs, at +886 mean request chars over v1. All
+six pre-registrations confirmed: the composition is exactly the predicted
+15/19 (q-evidence-0 recovered through the cargo-test-line classifier; the
+other three evidence lines match no typed tool category and are lost in both
+arms; the subagent probe is lost - agentMessage custom entries are machine
+text by design). Part 2, live (e3 tasks A/C/E, typed vs default, 5 cycles,
+3 reps, 123 wire calls): default 15/15 plus baselines; typed correct on
+every point that ran (A 5/5, C 5/5, E cycle-1 plus baselines), 0 extraction
+failures - but TASK-E typed halted at cycle 2 with unresolved-reference
+verifier failures (5/3/3/3), the availability bug recorded as D24 (id
+re-derivation under restatement-merge; failure direction safe - conversation
+preserved, compaction refused), the first live falsification of a
+typed-mode pre-registration. Part 3, the E3ADV C1 typed cell (21 wire calls):
+correct 5/5 plus baseline, 3/3 reps strict, anchor retained - but no
+SUPERSEDED section at any cycle (all 6 typed summarizer requests): the
+pairing was still token-overlap-based, recorded as D29. Both defects are
+fixed since the run (D24: W37 `8bc0811fb`; D29: W41 `e616a3126`,
+live-verified on the same C1 cell - 5/5 cycles retired with the replaced-by
+link and SUPERSEDED rendered at cycles 1-4, all probes 3/3 strict), so the
+numbers above describe the pre-fix module; the re-measure E5-RM (W47) is in
+flight. Budget: 144 new wire calls (within the 250/80 caps).
+
 ## 4. What shipped
 
 ### 4.1 Defect fixes (all on this branch; guards named)
@@ -372,6 +405,12 @@ the effect observed is prompt-level, not ledger-level.
 | W9-F2/F4/F5 ledger ids and supersession (v1) | `1754a3e1b` content-derived ids (`C-a1b2c3d4`, sha256 of the dedupe key), correction carriers excluded as supersession targets, newest correction wins the same target; old positional ids still deserialize | `w9_f4_corrections_supersede_the_older_decisions_not_each_other`, `w9_f2_a_late_decision_reusing_a_retired_id_is_not_deleted`, `w9_f2_and_f5_late_constraints_reusing_retired_ids_survive_with_anchors`, `ids_are_content_derived_and_stable_across_merges`, `a_later_correction_wins_the_same_target_and_keeps_the_earlier_correction`, `a_retired_id_suppresses_only_the_exact_same_content`, `old_positional_ids_round_trip_and_merge_without_losing_new_items` (`tests/rot2_ledger_fixes.rs`) |
 | D11 stale harness digests accumulate in the provider context | `30588707d` prune superseded digest user turns from the provider context (k harness changes leave exactly one live digest) | `k_harness_changes_leave_exactly_one_digest_in_the_provider_context`, `compaction_keeps_the_pruned_provider_context_digest_clean` (`tests/rot2_harness_digest.rs`, `d9ceea230`) |
 | harness F1/F4/F5 | `49f473d8d` `continue_recent` session persistence, chars/4 usage anchors, flush-on-append | `probe_harness_behavior.py` + the 13 adapter checks (`research/context_rot_r2/compactbench_adapter/`) |
+| D18 compaction failure invisible to the model | `8c558dd7b` one bounded model-visible live notice (240-char failure excerpt) replacing its predecessor; skipped/cancelled silent, success drops it | `d18_failure_notice_is_model_visible_and_bounded` (`agent_session.rs`), `d18_failed_auto_compaction_surfaces_a_bounded_notice_to_the_model`, `d18_successful_compaction_does_not_surface_a_failure_notice` (`tests/rot2_defect_wave2.rs`) |
+| D19 live-list producers without drain/cap | `4769f42f4` both producers (deferred `pending_next_turn_messages`, unpersisted outcomes) capped at 200 entries with the evicted count folded into a front `live_disclosure_dropped` marker | `d19_live_disclosure_lists_are_bounded_with_a_dropped_marker` (`agent_session.rs`) |
+| D20 summarizer request divergence | `e44faff08` the summarizer wire request is byte-exact-pinned to `serialize_conversation` over `convert_to_llm` of the same preparation | `d20_summarizer_request_equals_the_serialized_model_visible_conversation` (`tests/rot2_defect_wave2.rs`) |
+| D21 render cap omits authoritative corrections | `a9035ce8a` correction carriers exempt from the section caps and priority-ordered ahead of plain items | the seven `rot2_render_cap` cases; offline replay of the hard corpus: strict containment 20/20 (`0b824f358`, `live/remeasure/d21_render.py`) |
+| D22-D27, D29 (W35 red-team, typed mode) | D22 `51c9a6a59` (superseded-render direction), D23 `8bc0811fb` (reference grammar), D24 `8bc0811fb` (ids stable across restatement), D25 `a6da817e3` (step-scoped records retire at the merge boundary, `retiredRefs`), D26 `51c9a6a59` (malformed payload salvaged, not dropped), D27 `51c9a6a59` (all-caps claims cannot evade the fabricated-verified check), D29 `e616a3126` (provenance-based supersession pairing, live-verified) | `tests/rot2_typed_adversarial.rs` (the six former red tests un-ignored and green, plus the D25/D29 pins), `--lib typed_state` |
+| D28 native compaction resets the typed chain | `1e6e5ff9d` the native path persists the ledger it received unchanged | `tests/rot2_native_typed_chain.rs` (2/2) |
 
 Production-path verification of the W11 fix: the `w9-a-late3c` rerun regains the
 id-collision constraint (4/8 -> 5/8; the remaining three are the known CONSTRAINT_RE
@@ -571,6 +610,7 @@ live-confirmed on the E3ADV C1 cell only.
    and predate this campaign.
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
+78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 3. R2-E2 is a Python mirror, not the Rust binary: it was validated byte-for-byte
    against the stored R2-E1 fixture result, but the live run documents seven
    deviations (`live/README.md` "Deviations from the Rust path"): summarizer budget
@@ -615,6 +655,7 @@ f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fix
    with no commits over this head.
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
+78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 
 ## 6. Recommendation for defaults
 
@@ -624,6 +665,7 @@ f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fix
 | typed state v2 | `off`; opt-in via `compaction.taskState = "typed"` | OPT-IN; measured and red-teamed, not a default | wired end to end (`338b920c3`, `40bead288`, `4be9623b0`; section 4.2) and measured: R2-E5 part 1 beats control B on the fixture (typed 15/19 vs v1 14/19 vs default 0/19; verifier 5/5 cycles, stable 777/800 hot-token budget, +886 mean request chars) and parts 2-3 are live-correct wherever they ran, but TASK-E halted at cycle 2 pre-fix (the D24 id-churn mechanism, since fixed) and the E3ADV C1 cell showed no SUPERSEDED render pre-D29 (since fixed and live-confirmed `621dc462f`). The W35 red team then found seven more defects (D22-D28), all fixed (section 4.4), with the W49 battery green at `71e770c5e`. Still open: D30 and the cycle-5 budget caveat (W46 in flight); a full post-fix R2-E5 live re-run was NOT executed. Other evidence remains prompt-level or v1-level (W26, W27, E2-RM). No default change before D30 lands and the full re-run beats control B at comparable or lower token cost |
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
+78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 | defect fixes D1/D5/D6/D8/D9/D10/D11/D12/D13/D14/D16/D17 + W11 ids + harness F1/F4/F5 | always on | KEEP | correctness fixes with regression guards, not policies; none adds a model call |
 | evidence-recovery tool excerpt (iteration-1) | always on | KEEP | 0/4 -> 4/4 at the same budget (iteration-1 E4); unchanged this campaign |
 | CONTEXT HEALTH indicator | display only | KEEP, DO NOT GATE | calibration AUC 0.604: the pressure/cycle heuristic does not predict semantic loss, so it must not gate any compaction decision |
@@ -652,6 +694,7 @@ f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fix
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
   evidence.
+78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 - R2-E1/E-INC numbers are pipeline mechanics under a deliberately lossy
   deterministic fixture: worst-case bounds on what the pipeline alone protects, not
   predictions about a specific model. The live result (19/19 anchors at every cycle)
@@ -674,10 +717,13 @@ f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fix
   D21-D29 landed (W32-W41, section 4.4).
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
+78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 - Not reproducible from the drivers alone: item seeds derive from salted blake2b
   digests recorded per row (iteration-1 M5, fixed for r2; `scenario.py`).
 
 ## 8. Report index
+
+Every file in `reports/context-rot-r2/` at this writing (15 files):
 
 - `BASELINE.md` - the commit under test, the measurement frame, the category
   labels, the R2-E1 numbers, the inherited iteration-1 context, the TypeCompact
@@ -688,16 +734,26 @@ f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fix
 - `REVIEW-AUDIT.md` - the W42 pre-PR hostile-reviewer pass (blocker B1, should-fix
   S1-S7, nits) plus the W45 appendix: the D22-D29 red-team wave record and the
   integrator's commit-subject options.
+78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 - `CODING-TASK-RESULTS.md` - what coding-task evaluation exists (ContextBench
   pipeline, CompactBench custom runs) and the exact blockers for everything else.
+- `COMPACTBENCH-RESULTS.md` - the CompactBench family consolidated: the W6 adapter
+  validation runs, the W12 mock practice suites and the W26 live practice run
+  (W21 scorecard, staleness-fixed).
 - `COMPATION-CORRECTNESS.md` - the D-defect narrative: what is fixed on the branch,
   what sat on worker branches at its writing, what remains open, and the
   fix-to-guard map.
-- `EXPERIMENT-LEDGER.md` - every arm and every NOT-EXECUTED item, now including
+- `CONTEXT-HEALTH-CALIBRATION.md` - the W8 calibration corpus, metric definitions
+  and verdict for the context-health score.
+- `CONTEXTBENCH-RESULTS.md` - the W10 offline pipeline, its blocked records, and
+  the W27 live practice run.
+- `EXPERIMENT-LEDGER.md` - every arm and every NOT-EXECUTED item, including
   the post-W22 sections (R2-E3, R2-E3ADV, R2-E2-RM, the W26 live CompactBench
-  run and the W27 live ContextBench run) with Status lines citing their commits
-  and artifact paths.
+  run, the W27 live ContextBench run and R2-E5) with Status lines citing their
+  commits and artifact paths.
 - `FINAL-REPORT.md` - this file, the campaign entry point.
+- `KNOWLEDGE-TRIAGE-REPRODUCTION.md` - the TypeCompact reproduction: setup,
+  substitutions, numbers, and the kind-mapping to typed_state v2 (W21).
 - `MULTICYCLE-DRIFT.md` - the offline multicycle runs consolidated: decay regimes,
   growth model, late material, late supersession, token cost (W14).
 - `REGRESSION-GATES.md` - the test-suite state: the W25 full pass at `29f1f0c92`
@@ -712,3 +768,4 @@ f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fix
   read time, the experiment ledger and the cited artefacts hold its content.
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
+78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)

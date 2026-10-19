@@ -90,7 +90,7 @@ Recommended action: exercise the precedence through the explicit `environment` p
 | 14 | L14 typed mode | `c948905a3`,`338b920c3`,`40bead288`,`4be9623b0` | `resolve_task_state_mode` `compaction.rs:722-736` accepts `typed`, fails-safe to `off`; default `off` (`settings_manager.rs:3902-3906`); typed_state.rs 3033 lines | TRUE (open defects undisclosed, S3) |
 | 15 | L15 calibration harness | `6f0d592c6` | module self-contained, 17 unit tests, no production readers | TRUE |
 | 16 | L16 subagent constraints | `0c920a95e` | three named scenarios exist in `rot2_subagent_constraints.rs:740,901,1031` | TRUE |
-| 17 | L17 compaction-harness binary | `b04d1f040`, live mode `963ca575a` | `[[bin]]` in `Cargo.toml`, 1148 lines, JSON on stdin | TRUE |
+| 17 | L17 compaction-harness binary | `b04d1f040`, live mode `963ca577a` | `[[bin]]` in `Cargo.toml`, 1148 lines, JSON on stdin | TRUE |
 | 18 | L18 research harness | `3eeed6f3f` + the research commits | `research/context_rot_r2/` tree (this audit's surface 7) | TRUE |
 
 Missing from the fragment: D18 (`8c558dd7b`), D19 (`4769f42f4`), D21 (`a9035ce8a`) — see S2.

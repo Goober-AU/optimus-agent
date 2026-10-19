@@ -2,11 +2,24 @@
 
 Branch: `improve/context-rot-iteration-2` (base `6000d6bc1`, v0.1.36 + #181/#182).
 Campaign reports live in `reports/context-rot-r2/`; every number below cites a
+<<<<<<< HEAD
 committed artefact. This body was written against the integration head
 `f8ad670c8` and refreshed at the current tip on `rot2/w45-auditfix`: the
 D18/D19/D20/D21 recovery wave, the R2-E5 typed-arm measurement and the
 D22-D29 red-team fix wave are all ancestors of this head and are reflected
 below. The integrator adjusts if later commits land before merge.
+=======
+committed artefact. This body was written at the typed-wiring head
+(`f8ad670c8`, 64 commits over base; the branch advanced twice while that
+refresh was being written - the D11 prune pair, then the W26/W27 live-run
+landings - and the workspace-wide verification below covers both the
+pre-landing tip `4be9623b0` and the head, with identical results). The
+integration head has since advanced to `34c27c07d` (104 commits over base:
+the W30/W32 defect waves, the W35 red-team and the W36-W41 fixes, R2-E5); the
+status notes added by the W50 consistency sweep below reflect that tip, and
+the W45 audit-fix wave owns the full refresh of this body. The integrator
+adjusts if later commits land before merge.
+>>>>>>> 78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 
 ## Summary
 
@@ -45,12 +58,20 @@ does four things:
    under a lossy summarizer; the v1 ledger mitigates the kinds it captures but
    is unsafe on corrections (live inversion in R2-E2, argued-down dead weight
    in R2-E3ADV); the W11 id/supersession fix removes the measured inversion
+<<<<<<< HEAD
    mechanisms on the live corpus offline (R2-E2-RM); and therefore the
    shipped default (`taskState = "off"`) stays correct until the typed arm
    clears its measurement and red-team bars - R2-E5 has since landed
    (15/19 offline vs 14/19 control, live A/C clean; see the typed-mode
    section and the red-team wave disclosure) and the default still stays
    `"off"` pending cross-model and longer-session evidence.
+=======
+   mechanisms on the live corpus offline (R2-E2-RM); and the typed arm has now
+   been measured end to end (R2-E5: 15/19 on the E1 fixture vs v1's 14/19,
+   live parity on the e3 tasks that ran, two integration defects found and
+   since fixed - D24, D29), so the shipped default (`taskState = "off"`)
+   stays correct pending the E5 re-measure (E5-RM, W47, in flight).
+>>>>>>> 78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 
 ## Defect -> fix -> test (evidence table)
 
@@ -73,6 +94,7 @@ files. Statuses are for this branch's head.
 | D16 (MED): user-attached images cost zero tokens in `estimate_tokens` while `find_cut_point` charged 4096 chars | `fa4ccc8f2`/`0bb973e43` introduce the shared `IMAGE_BLOCK_CHARS` (4096 chars = 1024 tokens) across all estimator paths; `4dea91d72` aligns the kernel-parity reference | `rot2_user_image_blocks_cost_tokens_d16` (`tests/rot2_multicycle.rs`), `image_blocks_cost_4096_chars_1024_tokens` (`request_tokens.rs`), `compaction_kernel_parity` suite (23/23) |
 | D17 (LOW-MED): the context estimate ignored the system prompt and tool schemas | `fa4ccc8f2` adds `request_tokens.rs` (`estimate_request_tokens`, `RequestTokenEstimate`); `0bb973e43` carries the split on `ContextUsageEstimate` and adds the parts on the no-usage fallback path only (usage-anchored path keeps provider totals); `2200211fe` documents the tray's inherited underestimate | `rot2_request_level_estimate_adds_system_prompt_and_tools_d17` (`tests/rot2_multicycle.rs`), `message_list_estimates_understate_request_utilisation` (`src/core/context_health.rs`), `empty_inputs_score_zero`...`total_is_exactly_the_sum_of_its_parts` (`request_tokens.rs`) |
 | W9-F2/F4/F5 (v1 ledger ids and supersession): ids renumbered per merge so a retired id could be re-issued and silently deleted; corrections superseded each other while the corrected decisions stayed current | `1754a3e1b` content-derived ids (`C-a1b2c3d4`, sha256 of the dedupe key), correction carriers excluded as supersession targets, newest correction wins the same target; old positional ids still deserialize | `w9_f4_corrections_supersede_the_older_decisions_not_each_other`, `w9_f2_a_late_decision_reusing_a_retired_id_is_not_deleted`, `w9_f2_and_f5_late_constraints_reusing_retired_ids_survive_with_anchors`, plus id-stability, correction-precedence and old-id interop cases (7 total, `tests/rot2_ledger_fixes.rs`) |
+<<<<<<< HEAD
 | D21 (MED, new, found post-W11): with the churn fixed, `CONSTRAINTS_CAP=12` omitted the four corrections from the rendered ACTIVE list on the hard scenario (visible only as SUPERSEDED replacement texts; 9 of 20 constraint lines also cap-omitted; strict containment 11/20) | `a9035ce8a` exempts correction carriers from the render caps and priority-orders them ahead of plain items (W32) | 7 tests in `tests/rot2_render_cap.rs` (priority order, exemption beyond the cap, hard-corpus shape, superseded-replacement link, byte-equal no-corrections render) + the offline replay re-measure: strict containment 20/20 (`0b824f358`) |
 | harness F1/F4/F5: the harness binary forked a session per invocation, read 0 tokens, lost appends on error paths | `49f473d8d` (`continue_recent` session persistence, chars/4 usage anchors, flush-on-append) | `probe_harness_behavior.py` + the 13 adapter checks (`research/context_rot_r2/compactbench_adapter/`) |
 
@@ -92,6 +114,30 @@ re-measure validated (below). The typed-arm end-to-end measurement (R2-E5,
 `59832805f`) landed after the first edition of this body; its numbers are
 summarized in "What is NOT claimed" below and carried in full by
 `research/context_rot_r2/live/e5/README.md` and FINAL-REPORT section 4.4.
+=======
+| D21 (MED, new, found post-W11): with the churn fixed, `CONSTRAINTS_CAP=12` omitted the four corrections from the rendered ACTIVE list on the hard scenario (visible only as SUPERSEDED replacement texts; 9 of 20 constraint lines also cap-omitted; strict containment 11/20 pre-fix) | FIXED (W32, `a9035ce8a`): correction carriers are exempt from the section caps and priority-ordered ahead of plain items | the seven `rot2_render_cap` cases (`tests/rot2_render_cap.rs`); offline replay of the hard corpus: strict containment 20/20 (`0b824f358`, `live/remeasure/d21_render.py`) |
+| harness F1/F4/F5: the harness binary forked a session per invocation, read 0 tokens, lost appends on error paths | `49f473d8d` (`continue_recent` session persistence, chars/4 usage anchors, flush-on-append) | `probe_harness_behavior.py` + the 13 adapter checks (`research/context_rot_r2/compactbench_adapter/`) |
+
+Status at the current integration head `34c27c07d` (W50 consistency note;
+`BUG-LEDGER.md` is the source of truth): D18 (`8c558dd7b`), D19 (`4769f42f4`)
+and D21 (`a9035ce8a`) are fixed with regression guards since this body was
+written, D20 is pinned by a contract test (`e44faff08`) with its residue
+outside `agent_session.rs` verified open, and the W35 adversarial red-team
+against the typed mode found eight more defects (D22-D29) that are all fixed
+(W36-W41; D29 live-verified on the E3ADV C1 cell). Still open: D7 (deferred),
+D12 (partial - soft-fence residual), the D20 residue, D10's "never retry"
+sub-item, the v1 render's keyword-less capture gap W9-F1 (typed v2 removes it
+by classifying on role), and the D30 classifier gap (user-stated decisions
+classify as LowPriorityEpisode and retire at the first merge; the W46 fix is
+in flight). The `rot2/w16-supersession` branch never carried unique commits
+and holds nothing in flight; what this PR claims for the v1 ledger is exactly
+the W11 fixes the offline re-measure validated (below), with the supersession
+mechanism itself replaced by typed v2's provenance-based pairing (D29). The
+typed-arm end-to-end measurement (R2-E5) has run: 15/19 on the E1 fixture
+(v1 14/19, default 0/19), live parity on the e3 tasks that ran, TASK-E
+halted pre-fix (D24), and the E3ADV C1 cell found the token-overlap pairing
+gap (D29) - both fixed since; the re-measure (E5-RM, W47) is in flight.
+>>>>>>> 78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 
 ## The typed-state v2 mode (opt-in, wired)
 
@@ -423,6 +469,7 @@ max_tokens ladder climbs, 0 error calls.
   deterministic fixture. They bound what the pipeline alone protects; they are
   not predictions about any specific model.
 - RepoQA, SWE-bench and Terminal-Bench: not executed in this campaign.
+<<<<<<< HEAD
 - The typed-arm measurement exists (R2-E5, `59832805f`: offline three-arm
   adapter suite typed 15/19 vs taskState v1 14/19 vs default 0/19, live
   TASK-A/C 5/5 with zero verifier repairs, E3ADV C1 correct 5/5) but it is
@@ -431,13 +478,32 @@ max_tokens ladder climbs, 0 error calls.
   compaction at cycle 2 on unresolved verifier references. The default stays
   `"off"` pending cross-model and longer-session evidence (D30 and the
   cycle-5 budget caveat open).
+=======
+- No typed-arm confirmation beyond R2-E5. The typed arm has been measured once
+  (R2-E5: 15/19 on the E1 fixture, live parity on the e3 tasks that ran), but
+  that run predates the D24/D29 fixes it forced, its TASK-E cell halted at
+  cycle 2 (the D24 availability bug, since fixed), and it did not fully meet
+  the pre-registered bar (EXPERIMENT-LEDGER: control B at 14/19 with evidence
+  and subagent retained, at comparable or lower token cost - the run holds
+  evidence at 1/4, subagent 0/1 by design, +886 mean request chars over v1).
+  The default stays `"off"` pending the re-measure (E5-RM, W47, in flight).
+>>>>>>> 78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 - The W11 ledger fix is validated offline on the live corpus (R2-E2-RM), not
   by a fresh live run; the model-dependent prediction (live corrections
   answered correctly at every point) is stated as a prediction in the
   experiment ledger, not as a measurement.
+<<<<<<< HEAD
 - The v1 ledger's deeper supersession semantics are not reworked in this PR
   (the drafted `rot2/w16-supersession` line was superseded by the typed-mode
   fixes); D18/D19/D20 and D21 are fixed on this branch and disclosed above.
+=======
+- The v1 ledger's deeper supersession semantics are not reworked in this PR:
+  the `rot2/w16-supersession` branch carries no unique commits; the v1 path
+  keeps the W11 fixes the offline re-measure validated (below), and the
+  supersession mechanism itself moved to typed v2's provenance-based pairing
+  (D29, fixed W41). D18/D19/D21 are fixed (see the status note above the
+  typed-mode section) and D20 is pinned with its residue documented.
+>>>>>>> 78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 - Not a measurement of the shipped binary for R2-E2/E3/E3ADV: those runs are
   a Python mirror of the Rust path, fixture-validated byte-for-byte against
   the stored R2-E1 result, with the documented deviations in each README.
@@ -463,7 +529,8 @@ other crate's tests were re-run.
 
 Focused gate table - the last committed full pass ran at the `4b0add723` tip
 (see `reports/context-rot-r2/REGRESSION-GATES.md` for the method; the
-final-tip matrix refresh is in flight and lands there):
+final-tip matrix has since landed there: the W25 pass at `29f1f0c92` with the
+W43 parity-fix addendum):
 
 | suite (command filter) | result | notes |
 | --- | --- | --- |
@@ -528,8 +595,14 @@ passes serialized. Neither file is touched by this campaign.
   shared anchor, the ledger keeps the stale decision current and GLM argues
   it down in its own words - correctness against the ledger, not because of
   it. The W11 fixes remove the measured inversion mechanisms (R2-E2-RM,
+<<<<<<< HEAD
   offline on the live corpus); the deeper v1 semantics rework was superseded
   by the typed-mode red-team fixes (see the red-team wave table above).
+=======
+  offline on the live corpus); the v1 semantics rework itself was not pursued
+  (no commits ever landed on `rot2/w16-supersession`), with the mechanism
+  instead replaced in typed v2 by the D29 provenance-based pairing.
+>>>>>>> 78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 - D17 detail: `ContextUsageEstimate.system_prompt_tokens` /
   `tool_schema_tokens` are non-zero only on the no-usage fallback path - the
   usage-anchored path keeps 0.0 to avoid double-counting provider-reported

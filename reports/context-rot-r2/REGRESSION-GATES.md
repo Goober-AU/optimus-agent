@@ -14,6 +14,16 @@ byte-identical sources: the last wave touched only
 files, no library or other test-binary source. This pass supersedes the
 W14 gate report (written at `0ec43c8cb`, 23 commits over base).
 
+W50 consistency note (2026-10-20): the recorded pass stays pinned to
+`29f1f0c92`; the integration tip has since advanced to `34c27c07d`
+(104 commits over base) with the W36-W41 typed-defect fixes. Those waves
+un-ignored and greened the six `rot2_typed_adversarial` rows below (the
+former D22-D27 red tests) and added the D25/D29 pins named in BUG-LEDGER,
+so the "8 passed, 6 ignored" row and the D22-D27 mentions in sections 3
+and 8 describe the state at `29f1f0c92`, not the current suite. No
+full-gate re-run was performed by the W50 docs-only sweep; re-run the
+focused suites at the final tip before merging.
+
 ## 1. Environment
 
 | item | value |

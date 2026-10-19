@@ -3,7 +3,9 @@
 Scope: what the r2 campaign's integrated branch fixes, what is still in
 flight, and what remains open, narrated from the verified ledger and the
 worker commits. Report writer W14, 2026-10-20, refreshed by W34 at the
-integration tip `f8ad670c8` (64 commits over base). Sources:
+integration tip `f8ad670c8` (64 commits over base) and reconciled by the W50
+consistency sweep at the integration tip `34c27c07d` (104 commits over base).
+Sources:
 `reports/context-rot-r2/BUG-LEDGER.md` (status vocabulary and evidence),
 `reports/context-rot-r2/EXPERIMENT-LEDGER.md`, the W9 findings index in
 `research/context_rot_r2/incremental/README.md`, and `git log`/`git show`
@@ -155,7 +157,19 @@ shipped and wired: module `c948905a3` (see FINAL-REPORT.md section 4.2),
 integration `338b920c3` + `40bead288` + `4be9623b0` (settings, kernel,
 verifier, budget; `tests/rot2_typed_integration.rs`).
 
-## 3. Open and deferred at the W34 refresh tip
+Landed since the W34 refresh (W50 reconciliation): D18 (fixed, W30,
+`8c558dd7b`: one bounded model-visible failure notice), D19 (fixed, W30,
+`4769f42f4`: both live-list producers capped at 200 with a dropped-count
+marker), D20 (pinned by the byte-exact wire-request contract test, W30,
+`e44faff08`; the residue outside `agent_session.rs` stays VERIFIED-OPEN),
+D21 (fixed, W32, `a9035ce8a`: correction carriers exempt from the render
+caps; strict containment 20/20 on the offline replay, `0b824f358`), and the
+W35 red-team set D22-D29 (fixed W36-W41: D22 `51c9a6a59`, D23/D24
+`8bc0811fb`, D25 `a6da817e3`, D26/D27 `51c9a6a59`, D28 `1e6e5ff9d`, D29
+`e616a3126` live-verified; guards in `tests/rot2_typed_adversarial.rs`,
+`tests/rot2_native_typed_chain.rs` and `tests/rot2_render_cap.rs`).
+
+## 3. Open and deferred at the current tip (`34c27c07d`)
 
 From `reports/context-rot-r2/BUG-LEDGER.md` and the post-W22 findings:
 
@@ -165,34 +179,33 @@ From `reports/context-rot-r2/BUG-LEDGER.md` and the post-W22 findings:
   recommended fix (honour the skipped entry's `firstKeptEntryId` as a
   truncation boundary while using the older summary for text) is deferred
   because it needs dedicated restore test coverage.
-- D18 (LOW), VERIFIED-OPEN: compaction failure is invisible to the model.
-- D19 (MED), VERIFIED-OPEN: two live-list producers have no drain or cap.
-- D20 (MED), VERIFIED-OPEN: the summarizer request diverges from the
-  model-visible request; the request-level estimator it needed is on this
-  branch (`request_tokens.rs`). D18/D19/D20 recovery is assigned to W30;
-  `rot2/w18-defects` has no commits over this head at this writing.
-- D21 (new from R2-E2-RM; severity not yet assigned in BUG-LEDGER.md):
-  with the W11 churn gone, CONSTRAINTS_CAP=12
-  omits authoritative corrections from the rendered ACTIVE list of the v1
-  ledger (they appear only as SUPERSEDED replacement texts). Found by the
-  offline re-measure on the hard corpus (`2fbb14f33`,
-  `research/context_rot_r2/live/remeasure/README.md` finding 2); fix in
-  flight as W32, drafted on `rot2/w28-d21` (`ba26fb120` exempt correction
-  carriers from the ledger render caps, `59d870a02` the replay
-  re-measure).
+- D30 (open; the W46 fix is in flight): a user-stated decision
+  ("Decision: ...") classifies as LowPriorityEpisode and retires at the
+  first merge; only assistant-stated decisions reach VerifiedDecision.
+- The D20 residue outside `agent_session.rs` (text form cannot carry image
+  blocks; native-compaction providers receive the
+  `compaction_provider_context` rebuild) and the W41 cycle-5 caveat (the
+  tier-8 history line overflows the fixed 800-token hot budget; verify
+  still passes).
+- D12 (partial): the `<memory_data>` fence is soft (closing-tag collision),
+  same as the harness digest fence.
+- D10's "never retry" sub-item (an assistant call whose kept tool result
+  must not be retried) remains open after `0e25a7db1`.
 - D4 (HIGH): CONFIRMED on the production path (R2-E1, default arm 0/19
   after 5 cycles). The v1 ledger mitigates it only when
   `taskState = "prompt"`, and the shipped default is `off`
   (`reports/context-rot/FINAL-REPORT.md` section 6). The durable fix,
-  typed-state v2, is now shipped AND wired as an opt-in mode (section 2);
-  its decisive live measurement (R2-E5, W29) is still in flight.
-- D10's "never retry" sub-item (an assistant call whose kept tool result
-  must not be retried) remains open after `0e25a7db1`.
+  typed-state v2, is shipped AND wired as an opt-in mode (section 2) and
+  measured once (R2-E5: 15/19 fixture vs v1 14/19, live parity where it
+  ran, D24/D29 found and fixed); the re-measure (E5-RM, W47) is in flight.
 
 Resolved since the first edition: D10 (fixed, `0e25a7db1`), D11 (fixed,
 `30588707d`), D12 (partially fixed, `021678796`), D13 (fixed, `157316268`),
 the W9-F2/F4/F5 ledger mechanisms (fixed, `1754a3e1b`, offline-verified by
-R2-E2-RM) and the D6 call site (`6e1c3a139`).
+R2-E2-RM) and the D6 call site (`6e1c3a139`). Resolved since the W34
+refresh: D18, D19, D20 (pin), D21 and D22-D29 (see above); the
+`rot2/w16-supersession` v1 rework never carried commits and holds nothing
+in flight - the supersession mechanism moved to typed v2 (D29).
 
 ## 4. New defects found this campaign
 
@@ -254,6 +267,7 @@ reports are not retained as SUBAGENT_STATE by the committed classifier
 | typed state v2 wiring | the nine `rot2_typed_integration` cases (mode resolution, budget formula, VERIFIED_TOOL_RESULT/SUBAGENT_STATE capture, protected-block round-trip, unsafe allocation, repair, superseded-as-current fails verification, v1 interop) | `crates/pi-coding-agent/tests/rot2_typed_integration.rs` |
 | harness F1/F4/F5 | reopen/anchor/flush behaviour verified by `probe_harness_behavior.py` and the adapter checks | `research/context_rot_r2/compactbench_adapter/` |
 
-Execution state of these suites on this branch: REGRESSION-GATES.md (the
-W14 record at `0ec43c8cb`; the post-`4b0add723` commits have no recorded
-full gate pass - FINAL-REPORT.md section 5.2).
+Execution state of these suites on this branch: REGRESSION-GATES.md (the W25
+full pass at `29f1f0c92` with the W43 parity-fix addendum, superseding the W14
+record at `0ec43c8cb`; the post-`29f1f0c92` commits have no recorded full gate
+pass - FINAL-REPORT.md section 5.2).

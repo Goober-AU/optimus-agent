@@ -60,8 +60,8 @@ table):
 
 Consequence: the OFFLINE r2 multicycle numbers are pipeline-mechanics
 results, labelled SYNTHETIC-DIAGNOSTIC on the PRODUCTION-PATH. The live
-family (R2-E2, R2-E3, R2-E3ADV, W26, W27; see FINAL-REPORT.md sections
-3.4 and 3.9-3.13) carries its own LIVE-MODEL / CUSTOM-OPTIMUS +
+family (R2-E2, R2-E3, R2-E3ADV, R2-E5, W26, W27; see FINAL-REPORT.md
+sections 3.4 and 3.9-3.14) carries its own LIVE-MODEL / CUSTOM-OPTIMUS +
 LIVE-MODEL labels and is never mixed into the offline tables.
 
 ## 3. R2-E1 — the campaign baseline experiment
@@ -156,9 +156,9 @@ Optimus pipeline.
   must-keep material outside the summarizer survives compaction.
 - It does not support live-model claims by itself: it is the offline
   instrument's baseline. The model-dependent arms now exist as the labelled
-  live family (R2-E2, R2-E3, R2-E3ADV, W26, W27; FINAL-REPORT.md sections
-  3.4 and 3.9-3.13); what remains NOT EXECUTED there is listed in
-  EXPERIMENT-LEDGER.md ("NOT EXECUTED", updated at the W34 refresh).
+  live family (R2-E2, R2-E3, R2-E3ADV, R2-E5, W26, W27; FINAL-REPORT.md
+  sections 3.4, 3.9-3.14); what remains NOT EXECUTED there is listed in
+  EXPERIMENT-LEDGER.md ("NOT EXECUTED", updated at the W50 sweep).
 - The r2-e1 default-arm 0/19 is a fixture result under a deliberately lossy
   deterministic summarizer. It bounds what the pipeline alone protects
   without the ledger; it is not a prediction about a specific model.

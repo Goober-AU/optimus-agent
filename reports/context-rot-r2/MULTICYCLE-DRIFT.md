@@ -237,8 +237,8 @@ Established (pipeline mechanics, deterministic):
 Not established by these runs: anything about a live model. The summarizer
 is a fixture; the consolidate policy's designed effect is model-dependent
 and NOT EXECUTED. (The live family has since run separately - R2-E2/E3/E3ADV
-showed no measurable rot at their scale on GLM 5.3; see FINAL-REPORT.md
-sections 3.4, 3.9, 3.10.) The 8-cycle, 19/21-probe, 2-seed scenario with
+showed no measurable rot at their scale on GLM 5.3, and R2-E5 measured the
+typed arm; see FINAL-REPORT.md sections 3.4, 3.9, 3.10 and 3.14.) The 8-cycle, 19/21-probe, 2-seed scenario with
 fixed filler describes this fixture's pipeline mechanics, not live behaviour
 (`incremental/README.md`, "Limitations"). The v1 gaps that cap the ledger
 arm at 14/19 (evidence regex, subagent custom messages) are defects N1/N2
