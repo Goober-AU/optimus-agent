@@ -64,7 +64,6 @@ typed-arm re-measure R2-E5-RM (W47: the E1 fixture on the integrated tip plus
 the two affected live cells), the CompactBench practice suites (W12 mock, W26
 live) and the ContextBench live practice run (W27) — sections below. Still not
 executed:
-78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 - any official / leaderboard-comparable number: every CompactBench run is
   CUSTOM-OPTIMUS (public practice suites, custom adapter, scorer 2.0.0; the W26
   live run is 8 of 20 starter cases per arm, one live draw per case); every
@@ -377,7 +376,7 @@ Integrated as `2fbb14f33` (worker branch `rot2/w24-remeasure`, worker commit 19a
   the E3ADV structural gap are fixed (D24/D29, post-wave note below).
 - Budget: 123 + 21 = 144 new wire calls (within the 250/80 caps).
 - Post-wave note (W49): both integration defects this run surfaced are fixed —
-  D24 by `891702c32` (W37) and D29 by `4315f4154` (W41, live-confirmed
+  D24 by `891702c32` (W37) and D29 by `4315f9154` (W41, live-confirmed
   `621dc462f`) — see DEFECT-WAVE-2 below. A full post-fix re-run of this
   benchmark was NOT executed at that writing; R2-E5-RM (W47, below) has since
   re-measured the affected cells on the fixed tree (fixture 13/19, TASK-E no
@@ -387,7 +386,7 @@ Integrated as `2fbb14f33` (worker branch `rot2/w24-remeasure`, worker commit 19a
 
 - Status: EXECUTED. Red team `f7bc6306c` (W35); fixes D21 `a9035ce8a` (W32),
   D25 `a3997b5d6` (W36), D23+D24 `891702c32` (W37), D22+D26+D27 `51c9a6a59`
-  (W38), D28 `1e6e5ff9d` (W39), D29 `4315f4154` (W41); every number in the
+  (W38), D28 `1e6e5ff9d` (W39), D29 `4315f9154` (W41); every number in the
   battery below is this worker's own re-run in the worktree
   `optimus-rot2-w49-wavereport` at the integration tip `71e770c5e` (103
   commits over base `6000d6bc1`), 2026-10-19.
@@ -433,7 +432,7 @@ worker's file map). With D21 (the render cap, found by R2-E2-RM) and D29
 | D23+D24 | `891702c32` (W37; worker `8bc0811fb`) | the verifier's reference grammar matches exactly what the renderer emits (kind prefix plus six lowercase hex; `@` sigil for entries; a bracketed token the ledger itself quotes inside a record's text is exempt as verbatim source material); identity is assigned at first sight and `merge` only fills empty ids — the text is a version, not the identity |
 | D22+D26+D27 | `51c9a6a59` (W38) | render direction depends on status (CURRENT renders `supersedes [target]`; Superseded renders `superseded by [retiring]`); `parse_typed_state` salvages per record (positional fields repaired in place, unrecoverable slots counted, diagnostics surfaced as `details.typedVerification.malformedPriorLedger` with droppedRecords/repairedFields); heading detection requires structural shape (markdown/bold prefix or an exact `SECTION_TITLE_LINES` match) |
 | D28 | `1e6e5ff9d` (W39; worker `d41c74c83`) | the native arm persists the ledger it received unchanged (deadline-fallback carry-through semantics, no typedVerification record); new suite `rot2_native_typed_chain.rs` drives the real pipeline offline with the dual-mode fixture API |
-| D29 | `4315f4154` (W41; worker `e616a3126`) + `e71c21563` (test helper) | two marked retire paths: token (non-correction kinds outrank corrections as targets, so a later correction retires its stale decision instead of swallowing the previous correction) and provenance (the most recent prior CURRENT decision, when the correction is the only un-retired correction introduced since it and no other decision intervened); both paired records carry `retire_path`, rendered as a pairing annotation |
+| D29 | `4315f9154` (W41; worker `e616a3126`) + `e71c21563` (test helper) | two marked retire paths: token (non-correction kinds outrank corrections as targets, so a later correction retires its stale decision instead of swallowing the previous correction) and provenance (the most recent prior CURRENT decision, when the correction is the only un-retired correction introduced since it and no other decision intervened); both paired records carry `retire_path`, rendered as a pairing annotation |
 
 D29 verification: offline mirror port and C1 cell `f932b746e`; live
 confirmation `621dc462f` (the E3ADV C1 typed cell re-run on live GLM 5.3,
@@ -487,7 +486,6 @@ re-pin `31ce39b84` holds at this tip).
 - a full post-fix R2-E5 live re-run was NOT executed at that writing: only
   the D29 C1 cell was re-run live (`621dc462f`); R2-E5-RM (W47, below) has
   since re-measured the affected cells on the fixed tree.
-78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
 
 
 
