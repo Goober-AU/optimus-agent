@@ -137,6 +137,26 @@ Compaction work includes saved-checkpoint restoration, continuation of incomplet
 
 Claude summarization reserves extra output headroom for adaptive thinking and retries a confirmed output-token-limit stop once with a larger budget. The selected effort and original transcript remain unchanged; incomplete handoffs never replace the conversation.
 
+Repeated compaction can erode enduring constraints, current decisions, verified evidence, and open work. The `compaction.taskState` setting opts in to a protected task-state ledger that carries this material across cycles; set it in global or project `settings.json`:
+
+```json
+{
+  "compaction": {
+    "taskState": "off"
+  }
+}
+```
+
+| `compaction.taskState` | Behavior |
+| --- | --- |
+| `off` (default) | No protected task state; the summarizer works from the retained window alone. |
+| `prompt` (v1, legacy) | Keyword ledger built from the messages leaving the window and merged with the previous cycle's ledger. Superseded by evaluation evidence; kept for compatibility. |
+| `typed` (v2) | Provenance-aware typed protected state with verifier-gated summaries. Opt-in. |
+
+In `typed` mode, compaction classifies session material into typed information kinds such as constraints, decisions, verified evidence, and open work, each record carrying its source provenance. The ledger is merged with the one persisted by the previous compaction, rendered as a protected block sized from the summary output budget (one quarter, capped at 2,048 tokens), and supplied to the summarizer. Mandatory material that cannot fit that budget fails the compaction before any model call instead of being silently dropped. After summarization, the output is verified against the protected state: missing protected lines are appended back deterministically without a model call, and a handoff that still drops or misrepresents mandatory state fails so the existing conversation is preserved.
+
+Resolution follows the other compaction switches: an explicit setting wins, then the `PRIME_AGENT_COMPACTION_TASK_STATE` environment variable, then `off`. Unrecognized values fail safe to `off`.
+
 Fast/service-tier selection remains separate from reasoning effort and context management, and depends on the provider. It is not a prerequisite for using Astra.
 
 ### Memory that you can inspect and correct
