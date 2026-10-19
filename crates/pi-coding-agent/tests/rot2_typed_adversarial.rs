@@ -797,7 +797,6 @@ fn three_cycle_supersession_chain_keeps_the_newest_current_without_resurrection(
 /// render is what the summarizer copies, so an inverted line teaches the
 /// model the wrong direction.
 #[test]
-#[ignore = "D22: superseded corrections/tasks render the retirement direction inverted"]
 fn superseded_corrections_and_tasks_render_the_retirement_direction() {
     // Correction retired by a later correction.
     let cycle1 = build_typed_state(&[user_entry(
@@ -1104,7 +1103,6 @@ fn details_with_both_v1_and_typed_payloads_keep_both_and_the_mode_selects() {
 /// below that compaction boundary. The record below the boundary exists
 /// only in that payload; the new window cannot rebuild it.
 #[test]
-#[ignore = "D26: a malformed details.typedState payload silently drops durable records"]
 fn malformed_typed_state_payload_silently_drops_durable_records() {
     let mut payload = serde_json::to_value(build_typed_state(&[user_entry(
         "u1",
@@ -1373,7 +1371,6 @@ fn retired_step_records_keep_summary_references_resolvable() {
 /// claim. `is_heading_line` treats any all-caps line as a heading, so the
 /// claim evades the check entirely.
 #[test]
-#[ignore = "D27: all-caps verified claims evade the fabricated-claim check"]
 fn all_caps_verified_claims_cannot_evade_the_fabricated_check() {
     let ledger = build_typed_state(&[user_entry(
         "u1",
