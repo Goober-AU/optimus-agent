@@ -95,7 +95,7 @@ pub struct CompactionSettings {
     /// B4: compaction trigger threshold, fraction of the context limit in (0, 1].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trigger_threshold: Option<f64>,
-    /// Context-rot campaign: protected task-state ledger mode, `"off"` (default) or `"prompt"`.
+    /// Context-rot campaign: protected task-state ledger mode, `"off"` (default), `"prompt"` (v1, legacy) or `"typed"` (v2).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub task_state: Option<String>,
     /// A7: episode deadline for the model-driven summary phase, in ms. 0 disables.
@@ -345,7 +345,7 @@ pub struct ResolvedCompactionSettings {
     pub summary_budget_mode: String,
     /// B4: explicit trigger threshold (fraction of the context limit), `None` = current behavior.
     pub trigger_threshold: Option<f64>,
-    /// Context-rot campaign: `"off"` (default) or `"prompt"`.
+    /// Context-rot campaign: `"off"` (default), `"prompt"` (v1, legacy) or `"typed"` (v2).
     pub task_state: String,
     /// A7: episode deadline for the model-driven summary phase, in ms. 0 disables.
     pub deadline_ms: f64,
