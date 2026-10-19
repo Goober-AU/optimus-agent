@@ -6,16 +6,19 @@
 //! `SessionManager` restore), and writes one compact-response JSON on stdout.
 //! Exit code 0 on `ok`/`unsafe`, 1 on transport/schema failure.
 //!
-//! The summarizer is the deterministic lossy fixture registered through
-//! `register_api_provider_simple` (same fixture as
+//! The summarizer defaults to the deterministic lossy fixture registered
+//! through `register_api_provider_simple` (same fixture as
 //! `tests/rot2_multicycle.rs`): it copies protected ledger blocks verbatim
-//! and applies a fixed head/tail loss elsewhere. A live endpoint mode is
-//! reserved for the online phase and refuses to run until wired.
-//!
-//! Offline by construction: no network, all state under `session_dir`.
+//! and applies a fixed head/tail loss elsewhere. A live endpoint mode
+//! (`summarizer: "live"`, context-rot r2 W26) routes the summary wire calls
+//! to an OpenAI-compatible chat-completions endpoint configured entirely
+//! through `ROT2_LIVE_*` environment variables; see the live section below.
+//! It is opt-in per request: every other invocation stays offline by
+//! construction (no network, all state under `session_dir`).
 
 use std::io::{Read, Write};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use pi_agent_core::types::{AgentMessage, CustomMessageContent};
 use pi_ai::api_registry::{register_api_provider_simple, ApiProviderSimple};
@@ -73,7 +76,8 @@ struct HarnessRequest {
     #[serde(default)]
     settings: HarnessSettings,
     /// `null` or `"fixture"` selects the deterministic lossy summarizer.
-    /// Any other value is refused: the live endpoint mode is not wired yet.
+    /// `"live"` selects the env-configured HTTP summarizer (`ROT2_LIVE_*`).
+    /// Any other value is refused.
     summarizer: Option<String>,
 }
 
@@ -408,6 +412,491 @@ fn lossy_summarizer_fixture(api: &str) -> Model {
 }
 
 // ---------------------------------------------------------------------------
+// Live GLM summarizer (W26): env-configured HTTP provider, opt-in per request
+// ---------------------------------------------------------------------------
+
+/// `summarizer: "live"` routes the pipeline's summary wire calls to an
+/// OpenAI-compatible chat-completions endpoint. Every URL and secret comes
+/// from the environment; nothing is embedded and nothing else is contacted.
+///
+/// GLM 5.3 on SGLang bills `reasoning_content` tokens against `max_tokens`
+/// (verified against the live endpoint), so a rung that runs out of budget
+/// ends with `finish_reason: "length"` and a summary the pipeline's
+/// validation would reject. The provider therefore walks a bounded
+/// max_tokens ladder (8192 -> 16384 -> 32768 -> 65536; the floor and the
+/// pipeline-requested budget, whichever is larger, starts the ladder) and
+/// only surfaces clean completions to the pipeline above it. Every HTTP
+/// request - including 429/5xx transport retries - is logged as one JSON
+/// line to `ROT2_LIVE_CALL_LOG_DIR` (one file per process; this harness
+/// serves exactly one request per invocation).
+const LIVE_API: &str = "rot2-harness-live-glm";
+const LIVE_MAX_TOKENS_CEILING: f64 = 65_536.0;
+const LIVE_LADDER: [f64; 4] = [8_192.0, 16_384.0, 32_768.0, 65_536.0];
+const LIVE_TRANSPORT_RETRIES: u32 = 3;
+const LIVE_TRANSPORT_BACKOFF_S: [u64; 3] = [2, 4, 8];
+
+/// Session dir of the (single) request this process serves; call logging only.
+static LIVE_SESSION_DIR: OnceLock<String> = OnceLock::new();
+static LIVE_LOG_STAMP: OnceLock<u64> = OnceLock::new();
+
+struct LiveCallState {
+    client: reqwest::Client,
+    base_url: String,
+    api_key: String,
+    pomerium: String,
+    model: String,
+    log_dir: Option<std::path::PathBuf>,
+    max_tokens_start: f64,
+}
+
+struct LiveChatOutcome {
+    finish_reason: String,
+    content: String,
+    reasoning: String,
+    prompt_tokens: f64,
+    completion_tokens: f64,
+    reasoning_tokens: Option<f64>,
+}
+
+fn live_env(name: &str) -> Result<String, String> {
+    match std::env::var(name) {
+        Ok(value) if !value.trim().is_empty() => Ok(value),
+        Ok(_) => Err(format!("live summarizer: {name} is empty")),
+        Err(_) => Err(format!("live summarizer: {name} is not set")),
+    }
+}
+
+/// Fail fast on missing configuration, before any session state is touched.
+fn live_required_env() -> Result<(), String> {
+    live_env("ROT2_LIVE_BASE_URL")?;
+    live_env("ROT2_LIVE_API_KEY")?;
+    live_env("ROT2_LIVE_POMERIUM")?;
+    Ok(())
+}
+
+fn live_env_f64(name: &str, default: f64) -> f64 {
+    std::env::var(name)
+        .ok()
+        .and_then(|raw| raw.trim().parse::<f64>().ok())
+        .filter(|value| value.is_finite() && *value > 0.0)
+        .unwrap_or(default)
+}
+
+fn now_unix_ms() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_millis() as i64)
+        .unwrap_or(0)
+}
+
+fn truncate_chars(text: &str, limit: usize) -> String {
+    if text.chars().count() <= limit {
+        text.to_string()
+    } else {
+        let cut: String = text.chars().take(limit).collect();
+        format!("{cut}...")
+    }
+}
+
+/// One JSON line per HTTP request, appended to a per-process file.
+#[allow(clippy::too_many_arguments)]
+fn live_log(
+    state: &LiveCallState,
+    session_dir: &str,
+    max_tokens: f64,
+    http_status: Option<u16>,
+    latency: Duration,
+    transport_retries: u32,
+    finish_reason: Option<&str>,
+    content_chars: usize,
+    reasoning_chars: usize,
+    usage: Option<(f64, f64, Option<f64>)>,
+    error: Option<&str>,
+) {
+    let Some(dir) = &state.log_dir else {
+        return;
+    };
+    if let Err(error) = std::fs::create_dir_all(dir) {
+        eprintln!("live summarizer call log failed: {error}");
+        return;
+    }
+    let record = json!({
+        "tsMs": now_unix_ms(),
+        "purpose": "summarizer",
+        "sessionDir": session_dir,
+        "model": state.model,
+        "maxTokens": max_tokens,
+        "httpStatus": http_status,
+        "latencyMs": latency.as_millis() as u64,
+        "transportRetries": transport_retries,
+        "finishReason": finish_reason,
+        "contentChars": content_chars,
+        "reasoningChars": reasoning_chars,
+        "promptTokens": usage.map(|(prompt, _, _)| prompt),
+        "completionTokens": usage.map(|(_, completion, _)| completion),
+        "reasoningTokens": usage.and_then(|(_, _, reasoning)| reasoning),
+        "error": error,
+    });
+    let stamp = *LIVE_LOG_STAMP.get_or_init(now_unix_ms_from_epoch);
+    let path = dir.join(format!("summarizer-{stamp}-{}.jsonl", std::process::id()));
+    if let Err(error) = append_line(&path, &record) {
+        eprintln!("live summarizer call log failed: {error}");
+    }
+}
+
+fn now_unix_ms_from_epoch() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+fn append_line(path: &std::path::Path, record: &Value) -> std::io::Result<()> {
+    use std::io::Write;
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)?;
+    writeln!(file, "{record}")
+}
+
+/// One ladder rung: a single chat-completions POST with bounded transport
+/// retries (429 / 5xx / network errors only). Non-retryable HTTP statuses
+/// and parse failures are terminal.
+async fn live_chat_once(
+    state: &LiveCallState,
+    system: &str,
+    user: &str,
+    max_tokens: f64,
+    session_dir: &str,
+) -> Result<LiveChatOutcome, String> {
+    let url = format!("{}/chat/completions", state.base_url.trim_end_matches('/'));
+    let mut messages = Vec::new();
+    if !system.trim().is_empty() {
+        messages.push(json!({"role": "system", "content": system}));
+    }
+    messages.push(json!({"role": "user", "content": user}));
+    let body = json!({
+        "model": state.model,
+        "messages": messages,
+        "temperature": 0.0,
+        "max_tokens": max_tokens,
+        "stream": false,
+    });
+    let mut transport_retries = 0u32;
+    loop {
+        let started = Instant::now();
+        let attempt = state
+            .client
+            .post(&url)
+            .header("Authorization", format!("Bearer {}", state.api_key))
+            .header("X-Pomerium-Authorization", &state.pomerium)
+            .json(&body)
+            .send()
+            .await;
+        let response = match attempt {
+            Ok(response) => response,
+            Err(error) => {
+                live_log(
+                    state,
+                    session_dir,
+                    max_tokens,
+                    None,
+                    started.elapsed(),
+                    transport_retries,
+                    None,
+                    0,
+                    0,
+                    None,
+                    Some(&format!("network error: {error}")),
+                );
+                if transport_retries < LIVE_TRANSPORT_RETRIES {
+                    transport_retries += 1;
+                    tokio::time::sleep(Duration::from_secs(
+                        LIVE_TRANSPORT_BACKOFF_S[(transport_retries - 1) as usize],
+                    ))
+                    .await;
+                    continue;
+                }
+                return Err(format!(
+                    "live summarizer: network error after {transport_retries} retries: {error}"
+                ));
+            }
+        };
+        let status = response.status();
+        let status_code = status.as_u16();
+        if status_code == 429 || status.is_server_error() {
+            live_log(
+                state,
+                session_dir,
+                max_tokens,
+                Some(status_code),
+                started.elapsed(),
+                transport_retries,
+                None,
+                0,
+                0,
+                None,
+                Some("retryable status"),
+            );
+            if transport_retries < LIVE_TRANSPORT_RETRIES {
+                transport_retries += 1;
+                tokio::time::sleep(Duration::from_secs(
+                    LIVE_TRANSPORT_BACKOFF_S[(transport_retries - 1) as usize],
+                ))
+                .await;
+                continue;
+            }
+            return Err(format!(
+                "live summarizer: http {status_code} after {transport_retries} retries"
+            ));
+        }
+        if !status.is_success() {
+            let detail = response.text().await.unwrap_or_default();
+            let brief = truncate_chars(&detail, 200);
+            live_log(
+                state,
+                session_dir,
+                max_tokens,
+                Some(status_code),
+                started.elapsed(),
+                transport_retries,
+                None,
+                0,
+                0,
+                None,
+                Some(&format!("http {status_code}: {brief}")),
+            );
+            return Err(format!(
+                "live summarizer: http {status_code}: {}",
+                truncate_chars(&detail, 300)
+            ));
+        }
+        let value: Value = match response.json().await {
+            Ok(value) => value,
+            Err(error) => {
+                live_log(
+                    state,
+                    session_dir,
+                    max_tokens,
+                    Some(status_code),
+                    started.elapsed(),
+                    transport_retries,
+                    None,
+                    0,
+                    0,
+                    None,
+                    Some(&format!("response parse: {error}")),
+                );
+                return Err(format!("live summarizer: response parse failed: {error}"));
+            }
+        };
+        let choice = value
+            .get("choices")
+            .and_then(Value::as_array)
+            .and_then(|choices| choices.first())
+            .cloned()
+            .unwrap_or(Value::Null);
+        let message = choice.get("message").cloned().unwrap_or(Value::Null);
+        let content = message
+            .get("content")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string();
+        let reasoning = message
+            .get("reasoning_content")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string();
+        let finish_reason = choice
+            .get("finish_reason")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string();
+        let usage = value.get("usage").cloned().unwrap_or(Value::Null);
+        let prompt_tokens = usage
+            .get("prompt_tokens")
+            .and_then(Value::as_f64)
+            .unwrap_or(0.0);
+        let completion_tokens = usage
+            .get("completion_tokens")
+            .and_then(Value::as_f64)
+            .unwrap_or(0.0);
+        let reasoning_tokens = usage.get("reasoning_tokens").and_then(Value::as_f64);
+        let outcome = LiveChatOutcome {
+            finish_reason,
+            content,
+            reasoning,
+            prompt_tokens,
+            completion_tokens,
+            reasoning_tokens,
+        };
+        live_log(
+            state,
+            session_dir,
+            max_tokens,
+            Some(status_code),
+            started.elapsed(),
+            transport_retries,
+            Some(&outcome.finish_reason),
+            outcome.content.chars().count(),
+            outcome.reasoning.chars().count(),
+            Some((
+                outcome.prompt_tokens,
+                outcome.completion_tokens,
+                outcome.reasoning_tokens,
+            )),
+            None,
+        );
+        return Ok(outcome);
+    }
+}
+
+/// Build the live model and register its HTTP provider. The provider's
+/// `stream_simple` owns the max_tokens ladder and the transport-retry
+/// policy; the pipeline above it only ever sees clean completions.
+fn live_glm_model() -> Result<Model, String> {
+    let state = Arc::new(LiveCallState {
+        client: reqwest::Client::builder()
+            .timeout(Duration::from_secs_f64(live_env_f64(
+                "ROT2_LIVE_HTTP_TIMEOUT_S",
+                600.0,
+            )))
+            .build()
+            .map_err(|error| format!("live summarizer http client: {error}"))?,
+        base_url: live_env("ROT2_LIVE_BASE_URL")?,
+        api_key: live_env("ROT2_LIVE_API_KEY")?,
+        pomerium: live_env("ROT2_LIVE_POMERIUM")?,
+        model: std::env::var("ROT2_LIVE_MODEL").unwrap_or_else(|_| "glm-5.3".to_string()),
+        log_dir: std::env::var("ROT2_LIVE_CALL_LOG_DIR")
+            .ok()
+            .map(|dir| dir.trim().to_string())
+            .filter(|dir| !dir.is_empty())
+            .map(std::path::PathBuf::from),
+        max_tokens_start: live_env_f64("ROT2_LIVE_MAX_TOKENS_START", LIVE_LADDER[0]),
+    });
+    let provider_state = Arc::clone(&state);
+    register_api_provider_simple(
+        ApiProviderSimple {
+            api: LIVE_API.into(),
+            stream: Arc::new(|_, _, _| panic!("unexpected base stream")),
+            stream_simple: Arc::new(move |_model, context, options| {
+                let state = Arc::clone(&provider_state);
+                let system = context.system_prompt.clone().unwrap_or_default();
+                let user = context
+                    .messages
+                    .iter()
+                    .map(|message| match message {
+                        Message::User(user) => user.content.text(),
+                        _ => String::new(),
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                // The ladder starts at the larger of the pipeline-requested
+                // budget and the configured floor; GLM reasoning tokens bill
+                // against max_tokens, so a smaller first rung truncates.
+                let requested = options
+                    .and_then(|options| options.stream.max_tokens)
+                    .unwrap_or(state.max_tokens_start)
+                    .max(state.max_tokens_start)
+                    .min(LIVE_MAX_TOKENS_CEILING);
+                let stream = AssistantMessageEventStream::new_owned();
+                let out = stream.producer_handle();
+                stream.spawn(async move {
+                    let session_dir = LIVE_SESSION_DIR.get().cloned().unwrap_or_default();
+                    let mut rungs: Vec<f64> = vec![requested];
+                    for step in LIVE_LADDER {
+                        if step > requested {
+                            rungs.push(step);
+                        }
+                    }
+                    let mut failure = String::from("live summarizer made no attempt");
+                    for (index, rung) in rungs.iter().enumerate() {
+                        let started = Instant::now();
+                        match live_chat_once(&state, &system, &user, *rung, &session_dir).await {
+                            Ok(outcome) => {
+                                let usable = outcome.finish_reason == "stop"
+                                    && !outcome.content.trim().is_empty();
+                                let retryable = outcome.finish_reason == "length"
+                                    || outcome.content.trim().is_empty();
+                                if usable {
+                                    let mut message = AssistantMessage::new(
+                                        LIVE_API,
+                                        "custom",
+                                        state.model.clone(),
+                                        now_unix_ms(),
+                                    );
+                                    message.content = vec![ContentBlock::Text(TextContent::new(
+                                        outcome.content,
+                                    ))];
+                                    message.stop_reason = "stop".into();
+                                    message.usage = Usage {
+                                        input: outcome.prompt_tokens,
+                                        output: outcome.completion_tokens,
+                                        ..Default::default()
+                                    };
+                                    out.push(AssistantMessageEvent::Done {
+                                        reason: "stop".into(),
+                                        message,
+                                    });
+                                    out.end(None);
+                                    return;
+                                }
+                                failure = format!(
+                                    "live summarizer rung {} (max_tokens {}) finished '{}' with {} content chars",
+                                    index,
+                                    rung,
+                                    outcome.finish_reason,
+                                    outcome.content.trim().chars().count()
+                                );
+                                let _ = started.elapsed();
+                                if !retryable {
+                                    break;
+                                }
+                            }
+                            Err(error) => {
+                                failure = error;
+                                break;
+                            }
+                        }
+                    }
+                    let mut message = AssistantMessage::new(
+                        LIVE_API,
+                        "custom",
+                        state.model.clone(),
+                        now_unix_ms(),
+                    );
+                    message.stop_reason = "error".into();
+                    message.error_message = Some(failure);
+                    out.push(AssistantMessageEvent::Error {
+                        reason: "error".into(),
+                        error: message,
+                    });
+                    out.end(None);
+                });
+                stream
+            }),
+            compact: None,
+            supports_compaction: None,
+        },
+        None,
+    );
+    let mut model = Model::new(
+        &state.model,
+        &state.model,
+        LIVE_API,
+        "custom",
+        state.base_url.trim_end_matches('/'),
+    );
+    // GLM 5.3 on SGLang: max_model_len 1,048,576; the ladder ceiling bounds
+    // max_tokens (65,536) and with it `summary_output_budgets`.
+    model.context_window = 1_048_576.0;
+    model.max_tokens = LIVE_MAX_TOKENS_CEILING;
+    model.reasoning = true;
+    Ok(model)
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -442,6 +931,11 @@ fn main() {
     };
     match request.summarizer.as_deref() {
         None | Some("fixture") => {}
+        Some("live") => {
+            if let Err(error) = live_required_env() {
+                fail(error);
+            }
+        }
         Some(other) => fail(format!("unsupported summarizer mode: {other}")),
     }
 
@@ -462,6 +956,7 @@ fn main() {
 }
 
 async fn run(request: HarnessRequest) -> HarnessResponse {
+    let _ = LIVE_SESSION_DIR.set(request.session_dir.clone());
     std::fs::create_dir_all(&request.session_dir).expect("session dir");
     let dir_string = request.session_dir.clone();
     // F1: `create` always starts a NEW session file, so a per-case dir
@@ -534,8 +1029,16 @@ async fn run(request: HarnessRequest) -> HarnessResponse {
     settings.keep_recent_tokens = request.settings.keep_recent_tokens;
     settings.task_state = request.settings.task_state.clone();
 
-    let api = format!("rot2-harness-lossy-{}", request.session_dir.len());
-    let model = lossy_summarizer_fixture(&api);
+    let model = match request.summarizer.as_deref() {
+        Some("live") => match live_glm_model() {
+            Ok(model) => model,
+            Err(error) => fail(error),
+        },
+        _ => {
+            let api = format!("rot2-harness-lossy-{}", request.session_dir.len());
+            lossy_summarizer_fixture(&api)
+        }
+    };
 
     let Some(preparation) = prepare_compaction(&entries, &settings, &|_| tokens) else {
         return HarnessResponse {
