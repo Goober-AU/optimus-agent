@@ -1,0 +1,63 @@
+{
+  "label": "CUSTOM-OPTIMUS + LIVE-MODEL (practice run; NOT an official scorecard)",
+  "date": "2026-10-19",
+  "ruling": "parent Option B: 4 custom arms x starter slots 0-1 (8 cases/arm, deterministic W12 seed prefix), 3 drift cycles, 512 planned logical calls; Amendment-1 extension not triggered (gap 0.194 > 0.05)",
+  "endpoint": {
+    "base_url": "https://a8349d0f-f602-991e-52c5-963eb2f2e949-in-docker-k3.apps.launchpad.nvidia.com/v1",
+    "model": "glm-5.3",
+    "auth": "Bearer ROT2_LIVE_API_KEY + X-Pomerium-Authorization ROT2_LIVE_POMERIUM (env; resolved from the DGX K3 credential scripts; never printed)",
+    "temperature": 0.0,
+    "verified": "PONG before every arm; httpx and reqwest clients"
+  },
+  "harness": {
+    "binary": "C:/Users/openclawuser/rot2-w26-target/debug/compaction-harness.exe",
+    "built_from": "worktree optimus-rot2-w26-cblive at rot2/w26-cblive (base fcbd7d2ae) + live GLM provider (this branch)",
+    "isolated_target_dir": "C:/Users/openclawuser/rot2-w26-target",
+    "summarizer_mode": "live (env-configured HTTP provider in the production compaction path)",
+    "max_tokens_ladder": [
+      8192,
+      16384,
+      32768,
+      65536
+    ],
+    "http_timeout_s": 600,
+    "adapter_timeout_s": 1800,
+    "offline_regression": "13/13 adapter checks pass; probe F3 sweep has 4 pre-existing failures at HEAD from post-W12 library changes (D5 et al.), reproduced and documented, unrelated to the live provider"
+  },
+  "runner": {
+    "suite": "starter (4 templates)",
+    "case_count_per_template": 2,
+    "case_slots": "0-1 (identical seeds to W12 slots 0-1; verified case-id subset match)",
+    "drift_cycles": 3,
+    "difficulty": "medium",
+    "seed_group": "default",
+    "concurrency": 2,
+    "scorer_version": "2.0.0",
+    "provider": "glm-live (in-process registration; shared checkout read-only)",
+    "task_ladder": [
+      8192,
+      32768
+    ]
+  },
+  "arms": [
+    "optimus-rust-task-state",
+    "optimus-rust-plain",
+    "echo-first-n",
+    "full-transcript-oracle"
+  ],
+  "budget": {
+    "planned_logical_calls": 512,
+    "http_cap": 768,
+    "actual_http_requests": 676,
+    "unlogged_pre_ledger_requests": 7,
+    "backoff_events": 0,
+    "incident": "first task-state arm run hit a task-provider ladder bug (length finish re-rolled the same 2048 rung instead of advancing; ~128 extra requests). Fixed (glm_provider.py break-not-continue + 8192 ladder start), verified offline, arm resumed; all subsequent calls clean. Amendment-1 extension headroom treated as spent."
+  },
+  "env": {
+    "HARNESS": "C:/Users/openclawuser/rot2-w26-target/debug/compaction-harness.exe",
+    "ROT2_RESERVE_TOKENS": "4000",
+    "ROT2_HARNESS_TIMEOUT_S": "1800",
+    "ROT2_LIVE_MAX_TOKENS_START": "8192",
+    "ROT2_LIVE_HTTP_TIMEOUT_S": "600"
+  }
+}

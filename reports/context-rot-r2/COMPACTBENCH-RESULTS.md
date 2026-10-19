@@ -198,3 +198,89 @@ sections 2-3). A run that produces quality numbers additionally needs:
   the harness-fix probe
 - `research/context_rot_r2/compactbench_adapter/test_optimus_compactor.py` -
   13 offline adapter checks
+
+
+---
+
+## 9. LIVE-MODEL practice run (W26, CUSTOM-OPTIMUS + LIVE-MODEL)
+
+Sections 1-8 above are the W12 MOCK runs and stay untouched. This section
+records the W26 live-model practice run: GLM 5.3 as BOTH the summarizer
+(behind the Rust compaction-harness binary, production path, via a new
+env-configured HTTP provider) and the task/eval model (behind the stock
+runner via an in-process provider registration). Full report, wiring
+rationale, budget accounting and incident record:
+`research/context_rot_r2/compactbench_adapter/live/README.md` (primary
+source); results and raw call logs live under
+`research/context_rot_r2/compactbench_adapter/live/`.
+
+Labels: **CUSTOM-OPTIMUS + LIVE-MODEL** - a practice run on the public
+starter suite (8 of 20 cases per arm, the ruled Option B budget), one
+live draw per case. NOT a leaderboard number, NOT comparable to any
+1.0.0-scored run, and NOT an official scorecard. The mock numbers in
+sections 4-6 are unchanged and remain the only committed full-suite
+numbers.
+
+Configuration: starter slots 0-1 (verified identical case ids to W12's
+first two per template), 3 drift cycles, medium/default seeds,
+delta-append, scorer 2.0.0, temperature 0, summarizer max_tokens ladder
+8192->65536 (GLM reasoning bills against max_tokens), 4 custom arms
+(no built-in baselines live, no elite). Total spend 676 HTTP requests
+(669 logged + 7 pre-ledger test calls) against a 768 ceiling, zero
+backoff events, one fixed-and-resumed provider incident (a `length`
+finish re-rolled the same 2048 rung instead of advancing the ladder;
+~130 extra requests, no invalid answers recorded, arm resumed).
+
+Results (overall / drift_res / constraint_ret / compression; live on the
+left, mock@HEAD same-8-cases baseline on the right - the mock quality
+column is degenerate by construction, section 5):
+
+| arm | LIVE overall | drift_res | constraint_ret | compression | mock@HEAD overall |
+| --- | --- | --- | --- | --- | --- |
+| optimus-rust-task-state | **0.6844** | 0.990 | 0.800 | 0.67x | 0.3750 |
+| echo-first-n | 0.6531 | 0.833 | 0.800 | 1.60x | 0.3750 |
+| full-transcript-oracle | 0.5781 | 0.721 | 0.650 | 0.92x | 0.3750 |
+| optimus-rust-plain | 0.4906 | 0.757 | 0.650 | 0.72x | 0.3750 |
+
+Findings (details and item-level tables in the live README):
+
+- **The live run does what the mock could not: the arms' quality
+  separates.** The two Rust arms differ by 0.194 overall (task-state
+  0.684 vs plain 0.491), driven by exactly the ledger-mediated checks
+  (`recall_latest_decision` 0.625 vs 0.125, `assign_a/b` 0.375 vs
+  0.125, drift resistance 0.99 vs 0.76, contradiction rate 0.094 vs
+  0.172).
+- **GLM writes tighter summaries than the lossy fixture**: compression
+  improved from 0.46x to 0.67x (task-state) on identical cycle-0
+  transcripts.
+- **The verbatim oracle is not the ceiling under live eval** (0.578,
+  worst arm on `recall_constraint` at 0.500): for this eval model on
+  these templates, a structured summary that surfaces the constraint
+  beats a raw transcript dump.
+- **Live single-draw runs are not bit-reproducible** even at temperature
+  0 (two identical smoke draws scored 0.4 vs 0.1); with n = 8 per arm,
+  only the Rust-arm gap is a robust signal. The pre-registered
+  Amendment-1 extension (extend if the top arms finish within 0.05) did
+  not trigger.
+
+The harness change itself (`summarizer: "live"` in
+`crates/pi-coding-agent/src/bin/compaction_harness.rs`) is offline by
+default, adds no dependencies, and keeps the fixture mode byte-identical
+(13/13 adapter checks still pass; the 4 failing probe F3 sweep checks
+fail identically at HEAD without the live provider - post-W12 library
+changes, documented in the live README).
+
+## 10. Files (live run)
+
+- `research/context_rot_r2/compactbench_adapter/live/README.md` - the
+  live run report (wiring choice, budget, verdict tables, mock-vs-live)
+- `research/context_rot_r2/compactbench_adapter/live/run-config.json` -
+  frozen run configuration and budget/incident record
+- `research/context_rot_r2/compactbench_adapter/live/results/*.jsonl` -
+  the 4 live arm results, 4 mock@HEAD baselines, 1 smoke run
+- `research/context_rot_r2/compactbench_adapter/live/raw-calls.jsonl` -
+  all 669 logged HTTP requests (purpose, rung, latency, usage)
+- `research/context_rot_r2/compactbench_adapter/live/{run_live.py,
+  glm_provider.py, optimus_compactor_live.py, aggregate.py}` - the
+  driver, the live task provider, the adapter live wrapper, the
+  aggregator
