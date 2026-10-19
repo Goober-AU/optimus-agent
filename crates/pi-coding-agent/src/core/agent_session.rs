@@ -1190,6 +1190,15 @@ const COMPACTION_ALREADY_COMPACTED_ERROR_MESSAGE: &str = "Already compacted";
 /// so this separate bounded notice is what the model actually sees when an
 /// automatic compaction fails.
 const AUTO_COMPACTION_FAILURE_NOTICE_CUSTOM_TYPE: &str = "auto_compaction_failure_notice";
+/// D19: bounded retention for the live in-session disclosure lists
+/// (`unpersisted_outcomes`, the deferred `pending_next_turn_messages`
+/// producer). Repeated failures must not grow those lists - and through them
+/// the provider context - without bound.
+const LIVE_DISCLOSURE_RETENTION: usize = 200;
+/// D19: custom type of the dropped-count marker kept at the front of a live
+/// disclosure list once eviction has started.
+const LIVE_DISCLOSURE_DROPPED_CUSTOM_TYPE: &str = "live_disclosure_dropped";
+
 /// `turnExecutionPoliciesEqual`.
 pub fn turn_execution_policies_equal(
     left: &TurnExecutionPolicy,
@@ -9706,10 +9715,13 @@ impl AgentSession {
         if self.disposed.load(Ordering::SeqCst) || self.disposing.load(Ordering::SeqCst) {
             return Ok(());
         }
-        self.pending_next_turn_messages
-            .lock()
-            .unwrap()
-            .push(clone_custom_message(&message));
+        {
+            let mut pending = self.pending_next_turn_messages.lock().unwrap();
+            // D19: the defer path can outpace the flusher while input
+            // admission is paused; bound the live list before pushing.
+            cap_live_disclosure_list(&mut pending, LIVE_DISCLOSURE_RETENTION);
+            pending.push(clone_custom_message(&message));
+        }
         self.flush_deferred_rlm_terminal_notices();
         Ok(())
     }
@@ -16782,10 +16794,12 @@ impl AgentSession {
                 false,
                 now_ms_i64(),
             );
-            self.unpersisted_outcomes
-                .lock()
-                .unwrap()
-                .push(message.clone());
+            {
+                let mut outcomes = self.unpersisted_outcomes.lock().unwrap();
+                // D19: the live list has no drain; bound it before pushing.
+                cap_live_disclosure_list(&mut outcomes, LIVE_DISCLOSURE_RETENTION);
+                outcomes.push(message.clone());
+            }
         }
         // TS 9568-9570: message_start AND message_end, unlike a plain append.
         let agent_message = AgentMessage::Custom(CustomAgentMessage::Custom {
@@ -17473,6 +17487,52 @@ fn auto_compaction_failure_notice_text(message: &str) -> String {
     format!(
         "System notice: compaction failed and this conversation was not compacted - the full context remains in place and may still be near the context limit. Keep responses and tool output short until compaction succeeds. Failure detail: {excerpt}"
     )
+}
+
+/// D19: cap a live disclosure list so one more entry can be pushed without
+/// exceeding `retention` (marker included). When the list is at capacity the
+/// oldest entries are evicted and their count folds into a single
+/// `live_disclosure_dropped` marker kept at the front, so the eviction stays
+/// observable instead of silently losing disclosures. The marker's timestamp
+/// is the first evicted entry's, so timestamp-ordered merges keep it ahead of
+/// the surviving entries.
+fn cap_live_disclosure_list(list: &mut Vec<CustomMessage>, retention: usize) {
+    if list.len() < retention {
+        return;
+    }
+    let mut marker = match list
+        .iter()
+        .position(|entry| entry.custom_type == LIVE_DISCLOSURE_DROPPED_CUSTOM_TYPE)
+    {
+        Some(index) => list.remove(index),
+        None => custom_message_baseline(),
+    };
+    let mut dropped = marker
+        .details
+        .as_ref()
+        .and_then(|details| details.get("dropped"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let mut marker_timestamp = marker.timestamp;
+    while list.len() + 1 >= retention {
+        let Some(evicted) = list.first() else {
+            break;
+        };
+        if dropped == 0 {
+            marker_timestamp = evicted.timestamp;
+        }
+        dropped += 1;
+        list.remove(0);
+    }
+    marker.role = "custom".to_string();
+    marker.custom_type = LIVE_DISCLOSURE_DROPPED_CUSTOM_TYPE.to_string();
+    marker.content = CustomMessageContent::Text(format!(
+        "{dropped} older entries were dropped to keep this bounded in-session list at {retention} entries."
+    ));
+    marker.display = false;
+    marker.details = Some(serde_json::json!({ "dropped": dropped }));
+    marker.timestamp = marker_timestamp;
+    list.insert(0, marker);
 }
 
 /// `CustomMessage` as the `AgentMessage` the agent state and events carry.
@@ -23382,6 +23442,76 @@ mod post_compaction_continuation_tests {
                 "repeated failures replace the notice, never accumulate"
             );
             session.dispose_async(Some(false)).await;
+        }
+
+        /// D19: the live disclosure lists are bounded - at capacity the
+        /// oldest entries evict into a single dropped-count marker while the
+        /// newest survive, and a short list is untouched.
+        #[test]
+        fn d19_live_disclosure_lists_are_bounded_with_a_dropped_marker() {
+            let entry = |index: i64| CustomMessage {
+                role: "custom".to_string(),
+                custom_type: "compaction_outcome".to_string(),
+                content: CustomMessageContent::Text(format!("outcome {index}")),
+                display: false,
+                details: None,
+                timestamp: index,
+            };
+            let text_of = |message: &CustomMessage| match &message.content {
+                CustomMessageContent::Text(text) => text.clone(),
+                CustomMessageContent::Blocks(_) => String::new(),
+            };
+
+            // A short list is untouched.
+            let mut short = vec![entry(0), entry(1)];
+            cap_live_disclosure_list(&mut short, LIVE_DISCLOSURE_RETENTION);
+            assert_eq!(short.len(), 2, "a list below the cap is untouched");
+
+            // 250 entries at capacity: the cap makes room for one push and
+            // folds the 52 evicted oldest entries into the marker.
+            let mut list: Vec<CustomMessage> = (0..250).map(entry).collect();
+            cap_live_disclosure_list(&mut list, LIVE_DISCLOSURE_RETENTION);
+            assert_eq!(
+                list.len(),
+                LIVE_DISCLOSURE_RETENTION - 1,
+                "the cap leaves room for exactly one more push"
+            );
+            list.push(entry(250));
+            assert_eq!(list.len(), LIVE_DISCLOSURE_RETENTION);
+            let marker = &list[0];
+            assert_eq!(marker.custom_type, LIVE_DISCLOSURE_DROPPED_CUSTOM_TYPE);
+            assert_eq!(
+                marker
+                    .details
+                    .as_ref()
+                    .and_then(|details| details.get("dropped"))
+                    .and_then(Value::as_u64),
+                Some(52),
+                "the marker counts the evicted entries"
+            );
+            assert_eq!(marker.timestamp, 0, "the marker keeps the evicted head's slot");
+            let joined = list.iter().map(text_of).collect::<Vec<_>>().join("\n");
+            assert!(
+                !joined.contains("outcome 51"),
+                "the oldest plain entries are evicted"
+            );
+            assert!(joined.contains("outcome 52"), "the first survivor stays");
+            assert!(joined.contains("outcome 249"), "the newest survivor stays");
+            assert!(joined.contains("outcome 250"), "the pushed entry stays");
+
+            // A second cap round folds the marker's own count forward.
+            cap_live_disclosure_list(&mut list, LIVE_DISCLOSURE_RETENTION);
+            assert_eq!(list.len(), LIVE_DISCLOSURE_RETENTION - 1);
+            let marker = &list[0];
+            assert_eq!(
+                marker
+                    .details
+                    .as_ref()
+                    .and_then(|details| details.get("dropped"))
+                    .and_then(Value::as_u64),
+                Some(53),
+                "a second round folds the previous marker count forward"
+            );
         }
     }
 
