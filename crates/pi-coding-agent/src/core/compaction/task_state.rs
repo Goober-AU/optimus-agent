@@ -10,10 +10,14 @@
 //! The ledger is carried forward across compactions (merged, not re-derived from a
 //! summary) so repeated cycles cannot erode it. It is fed to the summarizer as protected
 //! material and persisted on the compaction entry under `details.taskState`.
+//!
+//! Item ids are content-derived, so a merge never renumbers them and a retired id
+//! can only ever suppress the exact content it was assigned to.
 
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use super::compaction::CompactionSessionEntry;
 use pi_agent_core::types::AgentMessage;
@@ -67,7 +71,11 @@ static DIGITS_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\d+").unwrap());
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct TaskStateItem {
-    /// Stable within the ledger, e.g. `C3`.
+    /// Content-derived: the section prefix plus the first 8 hex chars of the
+    /// SHA-256 of the item's dedupe key, e.g. `C-a1b2c3d4`. Ids are stable across
+    /// merges, so a retired id can never be re-issued to different content.
+    /// Ledgers persisted before this scheme carry positional ids like `C3`;
+    /// those are treated as opaque strings.
     pub id: String,
     /// Verbatim (clipped) statement.
     pub text: String,
@@ -76,6 +84,10 @@ pub struct TaskStateItem {
     /// Reason attached by the user in the same message (`Rationale: ...`).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub why: Vec<String>,
+    /// True when the item carries a user correction. Corrections are
+    /// authoritative user statements and never serve as supersession targets.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub correction: bool,
 }
 
 /// An earlier item replaced by a later user correction.
@@ -107,6 +119,10 @@ pub struct EvidenceItem {
 
 fn is_one(value: &u32) -> bool {
     *value <= 1
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 /// The ledger.
@@ -244,6 +260,14 @@ fn dedupe_key(text: &str) -> String {
     tokens(text).into_iter().collect::<Vec<_>>().join(" ")
 }
 
+/// Content-derived item id: the section prefix plus the first 8 hex chars of
+/// the SHA-256 of the dedupe key.
+fn content_id(prefix: &str, key: &str) -> String {
+    let digest = Sha256::digest(key.as_bytes());
+    let head = u32::from_be_bytes([digest[0], digest[1], digest[2], digest[3]]);
+    format!("{prefix}-{head:08x}")
+}
+
 fn short_id(entry_id: &str) -> String {
     if entry_id.is_empty() {
         "summary".to_string()
@@ -294,6 +318,12 @@ pub fn build_ledger(
     }
 
     let mut corrections: Vec<TaskStateItem> = Vec::new();
+    // Capture order of the items this window adds, so supersession targets can
+    // be restricted to older items. Items carried in from `previous` are absent
+    // from the map and always count as older.
+    let mut capture_order: std::collections::HashMap<String, usize> =
+        std::collections::HashMap::new();
+    let mut captured: usize = 0;
     let mut evidence_seen: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
     for (index, item) in ledger.evidence.iter().enumerate() {
         evidence_seen.insert(evidence_key(&item.text), index);
@@ -332,16 +362,19 @@ pub fn build_ledger(
                         continue;
                     }
                     let key = dedupe_key(&clause);
-                    if key.is_empty() || !seen.insert(key) {
+                    if key.is_empty() || !seen.insert(key.clone()) {
                         continue;
                     }
-                    let id = format!("C{}", ledger.constraints.len() + 1);
+                    let id = content_id("C", &key);
                     let item = TaskStateItem {
                         id,
                         text: clip(&clause, ITEM_TEXT_MAX),
                         entry: short_id(&entry_id),
                         why: Vec::new(),
+                        correction: is_correction,
                     };
+                    capture_order.insert(item.id.clone(), captured);
+                    captured += 1;
                     if is_correction {
                         corrections.push(item.clone());
                     }
@@ -354,10 +387,11 @@ pub fn build_ledger(
             for sentence in sentences(&text) {
                 if role == Role::Assistant && RETRACTION_RE.is_match(&sentence) {
                     ledger.retractions.push(TaskStateItem {
-                        id: format!("R{}", ledger.retractions.len() + 1),
+                        id: content_id("R", &dedupe_key(&sentence)),
                         text: clip(&sentence, 240),
                         entry: short_id(&entry_id),
                         why: Vec::new(),
+                        correction: false,
                     });
                     continue;
                 }
@@ -365,15 +399,18 @@ pub fn build_ledger(
                     continue;
                 }
                 let key = dedupe_key(&sentence);
-                if key.is_empty() || !seen.insert(key) {
+                if key.is_empty() || !seen.insert(key.clone()) {
                     continue;
                 }
-                let id = format!("D{}", ledger.decisions.len() + 1);
+                let id = content_id("D", &key);
+                capture_order.insert(id.clone(), captured);
+                captured += 1;
                 ledger.decisions.push(TaskStateItem {
                     id,
                     text: clip(&sentence, ITEM_TEXT_MAX),
                     entry: short_id(&entry_id),
                     why: Vec::new(),
+                    correction: false,
                 });
             }
             for capture in ANCHOR_RE.captures_iter(&text) {
@@ -405,7 +442,7 @@ pub fn build_ledger(
                 }
             } else {
                 let item = EvidenceItem {
-                    id: format!("E{}", ledger.evidence.len() + 1),
+                    id: content_id("E", &key),
                     text: clip(line, 200),
                     entry: short_id(&entry_id),
                     repeats: 1,
@@ -417,10 +454,15 @@ pub fn build_ledger(
         }
     }
 
-    // Supersession: a later user correction retires the best earlier item that shares a
-    // specific anchor (identifier, path, digit-bearing token). Shared generic words alone
-    // never retire a constraint.
+    // Supersession: a user correction retires the best-matching OLDER decision or
+    // constraint that shares a specific anchor (identifier, path, digit-bearing
+    // token). Shared generic words alone never retire a constraint. Corrections
+    // are authoritative user statements and never serve as targets, so two
+    // corrections cannot retire each other; when a later correction matches a
+    // target that is already superseded, the newest correction carries the
+    // requirement.
     for correction in &corrections {
+        let correction_order = capture_order.get(&correction.id).copied().unwrap_or(0);
         let correction_tokens = tokens(&correction.text);
         let mut best: Option<((bool, usize), i32)> = None;
         let candidates = ledger
@@ -436,7 +478,13 @@ pub fn build_ledger(
                     .map(|(index, item)| (false, index, item)),
             );
         for (is_decision, index, item) in candidates {
-            if item.id == correction.id {
+            if item.id == correction.id || item.correction {
+                continue;
+            }
+            if capture_order
+                .get(&item.id)
+                .is_some_and(|order| *order >= correction_order)
+            {
                 continue;
             }
             let item_tokens = tokens(&item.text);
@@ -466,7 +514,14 @@ pub fn build_ledger(
         } else {
             &ledger.constraints[index]
         };
-        if ledger.superseded.iter().any(|existing| existing.old_id == old.id) {
+        if let Some(existing) = ledger
+            .superseded
+            .iter_mut()
+            .find(|existing| existing.old_id == old.id)
+        {
+            existing.new_id = correction.id.clone();
+            existing.new_text = correction.text.clone();
+            existing.new_entry = correction.entry.clone();
             continue;
         }
         ledger.superseded.push(Supersession {
@@ -501,6 +556,7 @@ pub fn build_ledger(
             text: clip(&text, 240),
             entry: short_id(entry.id()),
             why: Vec::new(),
+            correction: false,
         };
         let key = dedupe_key(&candidate.text);
         if !seen.contains(&key) {
@@ -885,12 +941,14 @@ mod tests {
                 text: "\u{0436}".repeat(200),
                 entry: "e".to_string(),
                 why: Vec::new(),
+                correction: false,
             });
             ledger.decisions.push(TaskStateItem {
                 id: format!("D{index}"),
                 text: "\u{0436}".repeat(200),
                 entry: "e".to_string(),
                 why: Vec::new(),
+                correction: false,
             });
         }
         let rendered = render_ledger(&ledger);
