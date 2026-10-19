@@ -236,7 +236,7 @@ delta-append, scorer 2.0.0, temperature 0, summarizer max_tokens ladder
 (669 logged + 7 pre-ledger test calls) against a 768 ceiling, zero
 backoff events, one fixed-and-resumed provider incident (a `length`
 finish re-rolled the same 2048 rung instead of advancing the ladder;
-~130 extra requests, no invalid answers recorded, arm resumed).
+~128 extra requests, no invalid answers recorded, arm resumed).
 
 Results (overall / drift_res / constraint_ret / compression; live on the
 left, mock@HEAD same-8-cases baseline on the right - the mock quality

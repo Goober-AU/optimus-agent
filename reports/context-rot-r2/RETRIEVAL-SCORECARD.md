@@ -42,8 +42,10 @@ see `reports/context-rot-r2/MULTICYCLE-DRIFT.md`.
 Iteration 1 scored memory recall `NOT EXECUTED` and predicted it "fails
 closed and silently when one entry has a foreign `projectId`"
 (`reports/context-rot/RETRIEVAL-SCORECARD.md` section 2, rows 10-13 and
-section 3). r2 fixed the two defects behind that prediction; it did not add
-a quality measurement.
+section 3). r2 fixed the two defects behind that prediction (D13 fully;
+D12's fence landed with the soft-fence residual, status PARTIALLY FIXED in
+`reports/context-rot-r2/BUG-LEDGER.md`); it did not add a quality
+measurement.
 
 | defect | fix on this branch | guard | effect on the retrieval path |
 | --- | --- | --- | --- |
@@ -60,7 +62,7 @@ unmeasured - iteration-1 row 10 (`NOT EXECUTED`) is still open in r2.
 | surface | iteration-1 status | r2 status |
 | --- | --- | --- |
 | Jev retrieval and Jev compaction filters | NOT EXECUTED | NOT EXECUTED (untouched in r2) |
-| the same tasks on a second model or endpoint | NOT EXECUTED | still NOT EXECUTED for the iteration-1 surfaces: the r2 live family ran on a second model (GLM 5.3 - R2-E2/R2-E3/R2-E3ADV, W26, W27) but these surfaces themselves were not re-run on it |
+| the same tasks on a second model or endpoint | NOT EXECUTED | still NOT EXECUTED for the iteration-1 surfaces: the r2 live family ran on a second model (GLM 5.3 - R2-E2/R2-E3/R2-E3ADV/R2-E5 + R2-E5-RM, W26, W27) but these surfaces themselves were not re-run on it |
 | official benchmark scorers (Chroma context-rot, NoLiMa, RULER, LongBench, RepoQA, CompactBench, SWE-bench, Terminal-Bench) | NOT EXECUTED | partially changed: CompactBench and ContextBench now have committed custom infrastructure (sections 4-5); no official-scored number exists |
 
 ## 4. The r2 coding-task retrieval surface (offline infrastructure)
@@ -87,10 +89,15 @@ counts and per-metric upstream citations: the draft above and
 
 What is committed: W4's typed-state v2
 (`crates/pi-coding-agent/src/core/compaction/typed_state.rs`, commit
-`c948905a3`, 60 unit tests) renders a durable index - `render_durable_index`
-emits one line per current record with its stable id, kind label and
-source-entry reference, plus the superseded count - and the priority
-allocator, verifier and `render_hot_state` / `render_allocation` behind it.
+`c948905a3`, 60 unit tests at introduction - 74 at the tip, plus the W35
+red team and the D21-D29 fix wave, BUG-LEDGER.md) renders a durable index -
+`render_durable_index` emits one line per current record with its stable id,
+kind label and source-entry reference, plus the superseded count - and the
+priority allocator, verifier and `render_hot_state` / `render_allocation`
+behind it. The typed state is wired into compaction as an opt-in mode
+(documented in the README and the settings reference, commit `0a35fbfa6`)
+and measured live by R2-E5, re-measured post-fix by R2-E5-RM (W47:
+TASK-E typed 5/5 cycles no halt; E3ADV C1 SUPERSEDED at every cycle).
 
 What does not exist: any retrieval consumer. Nothing queries the durable
 index at recall time; ranking or selecting over it (and hydrating selected

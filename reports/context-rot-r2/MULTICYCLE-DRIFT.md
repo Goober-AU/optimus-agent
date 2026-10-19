@@ -5,9 +5,9 @@ Rust pipeline, what stops the erosion, and how do late material and late
 supersession behave? This report consolidates every committed OFFLINE
 multicycle run of the r2 campaign (the deterministic fixture family; report
 writer W14, 2026-10-20, no new runs). The live multicycle runs (R2-E2, R2-E3,
-R2-E3ADV and the W26/W27 live practice runs) carry LIVE-MODEL labels, live in
-their own research READMEs and are summarized in FINAL-REPORT.md sections 3.4
-and 3.9-3.13.
+R2-E3ADV, the R2-E5/R2-E5-RM typed runs and the W26/W27 live practice runs)
+carry LIVE-MODEL labels, live in their own research READMEs and are
+summarized in FINAL-REPORT.md sections 3.4, 3.9-3.11 and 3.14.
 
 All runs in this file share one instrument and one label pair:
 SYNTHETIC-DIAGNOSTIC (deterministic lossy summarizer fixture, zero model
@@ -231,17 +231,32 @@ Established (pipeline mechanics, deterministic):
    +995 tokens/cycle.
 3. Retention is placement- and seed-dependent through id-instability and
    sibling-text capture (W9-F1/F2/F5), not through content.
-4. Supersession does not honor "forget that" (W9-F4), and anchor-presence
-   scoring overstates current-state retention (W9-F3).
+4. Supersession did not honor "forget that" (W9-F4), and anchor-presence
+   scoring overstates current-state retention (W9-F3). The W9-F1/F3/F4
+   family is fixed in v1 by the W16 supersession refinement (integrated by
+   W51: clause-level correction classification, scaffold-aware anchor
+   scoring under W11's ordinal gate, and a SUPERSEDED history render for the
+   retired item; `rot2_supersession` 4/4, BUG-LEDGER.md). The mechanism
+   stays recorded here because the numbers in this file pre-date that fix.
 
 Not established by these runs: anything about a live model. The summarizer
 is a fixture; the consolidate policy's designed effect is model-dependent
 and NOT EXECUTED. (The live family has since run separately - R2-E2/E3/E3ADV
-showed no measurable rot at their scale on GLM 5.3, and R2-E5 measured the
-typed arm; see FINAL-REPORT.md sections 3.4, 3.9, 3.10 and 3.14.) The 8-cycle, 19/21-probe, 2-seed scenario with
+showed no measurable rot at their scale on GLM 5.3, and R2-E5, re-measured
+post-fix by R2-E5-RM (W47), covered the typed arm: TASK-E typed 5/5 cycles
+with no halt and the E3ADV C1 SUPERSEDED render at every cycle; see
+FINAL-REPORT.md sections 3.4, 3.9, 3.10 and 3.14.) The 8-cycle, 19/21-probe, 2-seed scenario with
 fixed filler describes this fixture's pipeline mechanics, not live behaviour
 (`incremental/README.md`, "Limitations"). The v1 gaps that cap the ledger
 arm at 14/19 (evidence regex, subagent custom messages) are defects N1/N2
 in `reports/context-rot-r2/BUG-LEDGER.md`; the W9-F1..F5 mechanisms are
 candidates for the same ledger and are narrated in
-COMPATION-CORRECTNESS.md.
+COMPATION-CORRECTNESS.md (the W9-F1/F3/F4 family is fixed in v1 by the W16
+supersession refinement, integrated by W51; W9-F2/F5 by the W11 content-id
+fixes). For the record beyond this fixture: the typed-state v2 arm scored
+15/19 on this scenario at the pre-D25 implementation (W29, committed E5)
+and 13/19 on the integrated tip (W46/W47 re-measurements; the D25 step
+boundary correctly retires two Step-scoped episode-classified probes;
+decisions 4/4, evidence 1/4, supersession 2/2 unchanged; verifier 5/5
+both; EXPERIMENT-LEDGER.md R2-E5-RM). The typed mode is documented in the
+README and the settings reference (commit `0a35fbfa6`).

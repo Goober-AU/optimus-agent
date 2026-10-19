@@ -101,6 +101,14 @@ the typed-state v2 arm must beat 14/19 with evidence and subagent retained
 at comparable or lower token cost
 (`reports/context-rot-r2/EXPERIMENT-LEDGER.md`, decision).
 
+Outcome, measured after that decision
+(`reports/context-rot-r2/EXPERIMENT-LEDGER.md`, R2-E5 and R2-E5-RM): the typed arm scored 15/19 at the pre-D25 implementation (W29,
+committed E5) and 13/19 on the integrated tip (W46/W47 re-measurements:
+the D25 step boundary correctly retires two Step-scoped episode-classified
+probes; decisions 4/4, evidence 1/4, supersession 2/2 unchanged; verifier
+5/5 both) - the two retired probes are Step-scoped episodes by classifier
+design, not a regression.
+
 ## 4. Iteration-1 context inherited by r2
 
 From `reports/context-rot/FINAL-REPORT.md` (campaign 2026-10-18/19, model
@@ -158,7 +166,8 @@ Optimus pipeline.
   instrument's baseline. The model-dependent arms now exist as the labelled
   live family (R2-E2, R2-E3, R2-E3ADV, R2-E5, W26, W27; FINAL-REPORT.md
   sections 3.4, 3.9-3.14); what remains NOT EXECUTED there is listed in
-  EXPERIMENT-LEDGER.md ("NOT EXECUTED", updated at the W50 sweep).
+  EXPERIMENT-LEDGER.md ("NOT EXECUTED", updated at the W49 and W60
+  sweeps).
 - The r2-e1 default-arm 0/19 is a fixture result under a deliberately lossy
   deterministic summarizer. It bounds what the pipeline alone protects
   without the ledger; it is not a prediction about a specific model.
