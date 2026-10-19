@@ -8,6 +8,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::core::refinement::refinement::{HarnessEntry, HarnessScope, HarnessState};
+use crate::utils::warning_limiter::{
+    limited_warning, wall_clock_ms, DEFAULT_WARNING_WINDOW_MS,
+};
 
 use super::evidence::{hash, MemorySource};
 use super::store::{MemorySettings, MemoryStore};
@@ -471,10 +474,16 @@ impl CorpusIndex {
     ) -> CorpusIndex {
         let mut lexicon: HashMap<String, TermId> = HashMap::new();
         let mut entries: Vec<IndexedEntry> = Vec::new();
+        // D13: foreign-scope drops are expected in shared corpora (the global
+        // state holds every project's memories), but a corpus whose entries
+        // were ALL dropped recalls nothing. Count the drops so that outcome
+        // can be surfaced instead of failing closed silently.
+        let mut foreign_dropped = 0usize;
         for bucket in state.entries.values() {
             for entry in bucket.values() {
                 let project = entry.metadata.get("projectId").and_then(Value::as_str);
                 if project.is_some() && project != Some(project_id) {
+                    foreign_dropped += 1;
                     continue;
                 }
                 let host = entry
@@ -483,6 +492,7 @@ impl CorpusIndex {
                     .and_then(Value::as_str)
                     .filter(|id| !id.is_empty());
                 if host.is_some() && host != Some(host_id) {
+                    foreign_dropped += 1;
                     continue;
                 }
                 let active = !(entry.metadata.contains_key("supersededBy")
@@ -630,6 +640,19 @@ impl CorpusIndex {
                 if entry.active {
                     *df_active.entry(id).or_insert(0) += 1;
                 }
+            }
+        }
+        if foreign_dropped > 0 && entries.is_empty() {
+            if let Some(line) = limited_warning(
+                "memory-recall",
+                &format!("foreign-corpus:{project_id}"),
+                &format!(
+                    "Warning: memory corpus held {foreign_dropped} entr(y/ies) but every one is scoped to another projectId or hostId; recall over this corpus is empty"
+                ),
+                wall_clock_ms(),
+                DEFAULT_WARNING_WINDOW_MS,
+            ) {
+                eprintln!("{line}");
             }
         }
         CorpusIndex {
@@ -1101,6 +1124,10 @@ pub fn recall_memory(
     let mut lines: Vec<String> = vec![header.to_string()];
     let mut size = header.chars().count() as i64;
     let mut ids: Vec<String> = Vec::new();
+    // D13: count every silent skip so a fail-closed outcome (hits existed,
+    // nothing rendered) can say why instead of disappearing.
+    let mut skipped_stale = 0usize;
+    let mut skipped_budget = 0usize;
     for hit in hits {
         if ids.len() as i64 >= settings.max_recall_entries {
             break;
@@ -1109,6 +1136,7 @@ pub fn recall_memory(
             freshness(&hit.sources, project_root),
             MemoryFreshness::Missing | MemoryFreshness::Stale
         ) {
+            skipped_stale += 1;
             continue;
         }
         // Source ids are kept so the model can cite provenance, but the file
@@ -1151,6 +1179,7 @@ pub fn recall_memory(
         let space =
             settings.max_recall_chars - size - prefix.chars().count() as i64 - source_chars - 32;
         if space < 80 {
+            skipped_budget += 1;
             continue;
         }
         let content = if hit.entry.content.chars().count() as i64 <= space {
@@ -1168,6 +1197,23 @@ pub fn recall_memory(
         lines.push(format!("{prefix}{content}{}", source_line.unwrap_or_default()));
         size += prefix.chars().count() as i64 + content.chars().count() as i64 + source_chars + 1;
         ids.push(hit.id.clone());
+    }
+    if ids.is_empty() && skipped_stale + skipped_budget > 0 {
+        if let Some(line) = limited_warning(
+            "memory-recall",
+            "render-skips",
+            &format!(
+                "Warning: memory recall matched {} entr(y/ies) but rendered none \
+                 ({} with missing or stale sources, {} over the character budget)",
+                hits.len(),
+                skipped_stale,
+                skipped_budget
+            ),
+            wall_clock_ms(),
+            DEFAULT_WARNING_WINDOW_MS,
+        ) {
+            eprintln!("{line}");
+        }
     }
     let text = if ids.is_empty() {
         String::new()
@@ -1302,6 +1348,150 @@ mod tests {
                 }
             }
         }
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn foreign_only_corpus_fails_closed_and_surfaces_the_reason() {
+        let _guard = crate::utils::warning_limiter::limiter_test_lock();
+        crate::utils::warning_limiter::reset_limited_warnings();
+        let (store, root) = fixture();
+        let mut foreign = entry("foreign", "Amber", "amber details");
+        foreign.metadata = store_record(&serde_json::json!({
+            "projectId": "project_other"
+        }))
+        .unwrap();
+        let all_foreign = corpus(MemoryScope::Global, vec![foreign]);
+
+        // D13 regression: recall over a corpus whose every entry is scoped to
+        // a foreign projectId fails closed - no hit, no recall text...
+        assert!(
+            search_memory(
+                &store,
+                "amber",
+                std::slice::from_ref(&all_foreign),
+                false
+            )
+            .is_empty()
+        );
+        // ...and the skip is surfaced: a fresh warning for the same scope and
+        // key inside the window is suppressed because the corpus build
+        // already emitted one.
+        assert_eq!(
+            limited_warning(
+                "memory-recall",
+                &format!("foreign-corpus:{}", store.project.id),
+                "probe",
+                wall_clock_ms(),
+                DEFAULT_WARNING_WINDOW_MS
+            ),
+            None,
+            "the all-foreign corpus drop must surface a warning, not fail silently"
+        );
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn budget_short_skip_fails_closed_and_surfaces_the_reason() {
+        let _guard = crate::utils::warning_limiter::limiter_test_lock();
+        crate::utils::warning_limiter::reset_limited_warnings();
+        let (store, root) = fixture();
+        let runtime = runtime();
+        let proposal = crate::core::refinement::refinement::normalize_refinement_proposal(
+            &serde_json::json!({
+                "summary": "s", "rationale": "r", "expectedOutcome": "o",
+                "edits": [{"action": "create", "kind": "memory", "id": "syd", "title": "Sydney", "content": "visited the opera house"}]
+            }),
+        );
+        runtime
+            .block_on(store.apply(
+                &proposal,
+                crate::core::memory::store::ApplyOptions {
+                    event_id: "op".to_string(),
+                    expected_revision: 0,
+                    ..Default::default()
+                },
+            ))
+            .unwrap();
+        let hits = search_memory(&store, "Sydney", &[], false);
+        assert_eq!(hits.len(), 1);
+
+        // A recall budget that cannot fit the header plus the entry label:
+        // the short-skip (space < 80) drops the only hit.
+        let settings = MemorySettings {
+            max_recall_chars: 400,
+            max_recall_entries: 2,
+            ..crate::core::memory::store::default_memory_settings()
+        };
+        let recall = recall_memory(&hits, &settings, None);
+        assert!(recall.ids.is_empty(), "the short-skip fails closed");
+        assert_eq!(recall.text, "");
+        // ...and it is surfaced: the limiter already emitted for this key.
+        assert_eq!(
+            limited_warning(
+                "memory-recall",
+                "render-skips",
+                "probe",
+                wall_clock_ms(),
+                DEFAULT_WARNING_WINDOW_MS
+            ),
+            None,
+            "the short-skip must surface a warning, not fail silently"
+        );
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn partial_recall_skips_stay_silent() {
+        let _guard = crate::utils::warning_limiter::limiter_test_lock();
+        crate::utils::warning_limiter::reset_limited_warnings();
+        let (store, root) = fixture();
+        let runtime = runtime();
+        let file = root.join("source.txt");
+        std::fs::write(&file, "hello").unwrap();
+        let digest = hash("hello");
+        let source_uri = url::Url::from_file_path(&file).unwrap().to_string();
+        let proposal = crate::core::refinement::refinement::normalize_refinement_proposal(
+            &serde_json::json!({
+                "summary": "s", "rationale": "r", "expectedOutcome": "o",
+                "edits": [
+                    {"action": "create", "kind": "memory", "id": "fresh", "title": "Sydney fresh", "content": "visited the opera house"},
+                    {"action": "create", "kind": "memory", "id": "stale", "title": "Sydney stale", "content": "old info",
+                     "metadata": {"sources": [{"id": "file_1", "origin": "file", "sha256": digest, "uri": source_uri}]}}
+                ]
+            }),
+        );
+        runtime
+            .block_on(store.apply(
+                &proposal,
+                crate::core::memory::store::ApplyOptions {
+                    event_id: "op".to_string(),
+                    expected_revision: 0,
+                    ..Default::default()
+                },
+            ))
+            .unwrap();
+        // The source file changes after the write: the second entry turns stale.
+        std::fs::write(&file, "changed").unwrap();
+        let hits = search_memory(&store, "Sydney", &[], false);
+        assert_eq!(hits.len(), 2);
+        let settings = crate::core::memory::store::default_memory_settings();
+        let recall = recall_memory(&hits, &settings, None);
+        assert_eq!(recall.ids.len(), 1, "one entry renders, one is stale-skipped");
+        // A partial skip does not warn (the rendered id list is the visible
+        // outcome): the probe still emits for the key.
+        assert_eq!(
+            limited_warning(
+                "memory-recall",
+                "render-skips",
+                "probe",
+                wall_clock_ms(),
+                DEFAULT_WARNING_WINDOW_MS
+            )
+            .map(|line| line.contains("probe")),
+            Some(true),
+            "partial skips must stay silent; only fail-closed renders warn"
+        );
         std::fs::remove_dir_all(&root).ok();
     }
 
