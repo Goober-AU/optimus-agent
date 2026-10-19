@@ -106,12 +106,16 @@ fn w9_f4_corrections_supersede_the_older_decisions_not_each_other() {
     }
 
     let rendered = render_ledger(&ledger);
+    // W16 supersession render: the retired decisions now render as SUPERSEDED
+    // history (their old text behind a replaced-by link), so the regression
+    // scopes to the CURRENT sections (everything before the history block).
+    let current = rendered.split("**SUPERSEDED").next().unwrap_or("");
     assert!(
-        !rendered.contains("architecture A for the notifier"),
+        !current.contains("architecture A for the notifier"),
         "{rendered}"
     );
     assert!(
-        !rendered.contains("architecture A for the scheduler"),
+        !current.contains("architecture A for the scheduler"),
         "{rendered}"
     );
     assert!(rendered.contains("use architecture B for the notifier module instead"));

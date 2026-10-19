@@ -13,6 +13,12 @@
 //!
 //! Item ids are content-derived, so a merge never renumbers them and a retired id
 //! can only ever suppress the exact content it was assigned to.
+//!
+//! Supersession semantics: a user correction is the newest statement on its subject,
+//! so it is always current. It may retire only an older, non-correction item that
+//! shares a subject anchor, and the render then shows the retired item as history
+//! with a "replaced by" link to the correction. A correction itself never lands in
+//! SUPERSEDED, and ordinary constraint lines never create supersession pairs.
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -740,10 +746,24 @@ pub fn render_ledger(ledger: &TaskStateLedger) -> String {
     if !ledger.superseded.is_empty() {
         out.push_str("\n**SUPERSEDED (history, not current)**\n");
         for item in ledger.superseded.iter().take(SUPERSEDED_CAP) {
-            out.push_str(&format!(
-                "- {} [{}] replaced by {} [{}]: {}\n",
-                item.old_id, item.old_entry, item.new_id, item.new_entry, item.new_text
-            ));
+            // The retired item is the history; the replacement link points at
+            // the correction, which renders as a current item in its own
+            // section. The correction's own text never appears here.
+            if item.old_text.is_empty() {
+                out.push_str(&format!(
+                    "- {} [{}] replaced by {} [{}] (current)\n",
+                    item.old_id, item.old_entry, item.new_id, item.new_entry
+                ));
+            } else {
+                out.push_str(&format!(
+                    "- {} [{}]: {} (replaced by {} [{}], current)\n",
+                    item.old_id,
+                    item.old_entry,
+                    item.old_text,
+                    item.new_id,
+                    item.new_entry
+                ));
+            }
         }
         if ledger.superseded.len() > SUPERSEDED_CAP {
             dropped.push((ledger.superseded.len() - SUPERSEDED_CAP, "supersession"));
