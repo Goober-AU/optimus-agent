@@ -656,7 +656,6 @@ fn token_pairing_prefers_the_decision_over_the_sibling_correction() {
 /// vanish with them: the native episode observed the malformation, so
 /// `details.typedVerification.malformedPriorLedger` must carry the repair
 /// exactly as the text-summarizer path does.
-#[ignore = "D32: the native arm drops the D26 salvage diagnostics"]
 #[tokio::test]
 async fn native_compaction_reports_the_salvage_of_a_malformed_prior_ledger() {
     let first = build_typed_state(&[user_entry(

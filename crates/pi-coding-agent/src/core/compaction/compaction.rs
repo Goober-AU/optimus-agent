@@ -2956,7 +2956,29 @@ pub async fn compact_with_metrics(
                         // semantics as the deadline fallback in
                         // `deadline_truncation_result`.
                         typed_state: typed_state.clone(),
-                        typed_verification: None,
+                        // D32 (Option A): a ledger salvaged from a malformed
+                        // prior `details.typedState` must not lose its D26
+                        // diagnostics at the native boundary, so the
+                        // salvage rider is surfaced through the same
+                        // `details.typedVerification.malformedPriorLedger`
+                        // channel the text-summarizer path uses. The record
+                        // exists only to carry that diagnostic: the
+                        // server-side summary is never verifier-checked, so
+                        // `passed` is true and every finding count is zero,
+                        // mirroring the deadline fallback's carry-through
+                        // semantics above.
+                        typed_verification: typed_state
+                            .as_ref()
+                            .and_then(|state| state.salvage.clone())
+                            .map(|malformed_prior_ledger| TypedVerificationRecord {
+                                passed: true,
+                                repaired: false,
+                                missing: 0,
+                                mis_superseded: 0,
+                                unresolved_refs: 0,
+                                fabricated: 0,
+                                malformed_prior_ledger: Some(malformed_prior_ledger),
+                            }),
                     }),
                 });
             }
