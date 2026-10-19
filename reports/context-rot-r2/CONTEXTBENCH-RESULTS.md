@@ -111,3 +111,71 @@ not consumed by this report; the integrator merges and scores them. When
 the live phase lands, the offline pipeline above is what evaluates it -
 and the holdout runs once, at the end (W10's live-phase checklist, draft
 scorecard section 7).
+
+
+## 6. LIVE practice run (W27, CUSTOM-OPTIMUS + LIVE-MODEL labels)
+
+A model-backed practice run exists as of 2026-10-20 (worker W27, branch
+`rot2/w27-cblivecb`): the dev-subset slice ran through the REAL
+compaction pipeline (`compaction-harness` binary) with a live GLM 5.3
+summarizer and was evaluated by the offline-validated mirror above.
+Every number in this section carries the labels CUSTOM-OPTIMUS and
+LIVE-MODEL: it is a practice run, not an official scorecard, and no
+number is comparable to a ContextBench leaderboard result. Artifacts:
+`research/context_rot_r2/contextbench/live/` (run config, results JSON,
+raw-calls JSONL, README with method, slice rule and limits).
+
+What ran: 26 paired dev instances (deterministic blake2b-seeded slice of
+the 110 size-window dev candidates; 7 languages, 15 repos; holdout
+untouched), 2 arms x 4 append+compact cycles, delta-append sessions,
+temperature 0, max_tokens ladder 8192->65536, wire-call budget 581 of
+600 requests (439 in the corrected run; 123 in an invalidated blind
+first attempt plus 17 smoke + 2 PONG verification - all documented in
+the live README). Arms: A = baseline (taskState off), B =
+task-state-ledger (taskState prompt) - a documented substitution, since
+W10's offline arm B (jev-relevance) is not expressible through the
+compaction surface.
+
+Method caveat (full detail in the live README): no repository checkouts
+exist under the offline waiver, so trajectories are synthetic
+explorations built from the gold annotations (gold reads + same-repo
+distractor reads from other dev instances) and the metrics measure
+RETENTION of the gold context through compaction, not free-form agent
+exploration. Coverage = what the working context still carries after
+each compaction; precision penalizes retained distractor material.
+EditLoc uses the upstream gold-patch fallback (arm-independent);
+patch_success stays UNAVAILABLE in every record.
+
+Headline numbers (paired, n = 26; exact sign test and tie-corrected
+Wilcoxon normal approximation from the W10 mirror):
+
+| metric | A baseline | B task-state-ledger | delta B-A | sign p | Wilcoxon p |
+| --- | --- | --- | --- | --- | --- |
+| final file coverage | 0.974 | 0.974 | +0.000 | 1.000 | 1.000 |
+| final file precision | 0.357 | 0.326 | -0.029 | 0.057 | 0.064 |
+| final line coverage | 0.852 | 0.916 | +0.069 | 0.455 | 0.196 |
+| final line precision | 0.320 | 0.586 | +0.097 | 0.004 | 0.003 |
+| AUC coverage file / line | 0.860 / 0.583 | 0.863 / 0.605 | +0.003 / +0.022 | 0.625 / 0.815 | 0.715 / 0.420 |
+| redundancy file / line | 0.672 / 0.587 | 0.661 / 0.605 | -0.011 / +0.017 | 0.629 / 1.000 | 0.190 / 0.954 |
+| EditLoc recall / precision | 0.046 / 1.000 | 0.046 / 1.000 | 0 (gold-patch fallback) | - | - |
+
+Practice-run observations (descriptive, not confirmatory):
+
+- Gold FILE references survive compaction almost fully in both arms
+  (coverage 0.974): the summarizer keeps naming every file it saw, so
+  file granularity barely separates the arms.
+- Gold LINE retention separates them: arm B keeps a significantly larger
+  share of gold lines among retained lines (line precision 0.586 vs
+  0.320, 18+/4-, sign p = 0.004) - by raw counts arm B ends 69% gold /
+  31% distractor lines, arm A 47% / 53%. The protected task-state
+  prompt biases the summary toward issue-relevant spans; the parsed
+  ledger itself populated in only 34 of 104 arm-B cycles, so the effect
+  observed is prompt-level.
+- Summarizer wire cost: 439 requests for 208 cycle attempts (206
+  fired), mean latency 20.4 s, 0 transport retries, 47 max_tokens ladder
+  climbs, 0 error calls.
+
+Remaining blockers are unchanged from section 4: repository checkouts
+(byte spans, symbols, path filtering), real agent trajectories, and
+patch_success all still need their live-phase prerequisites; this run
+does not clear them. The holdout stays untouched.
