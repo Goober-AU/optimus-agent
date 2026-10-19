@@ -1380,7 +1380,7 @@ pub fn estimate_tokens(message: &AgentMessage) -> f64 {
                     pi_ai::types::ImageOrTextContent::Text(text) => {
                         chars += count_chars(&text.text)
                     }
-                    pi_ai::types::ImageOrTextContent::Image(_) => chars += 4800,
+                    pi_ai::types::ImageOrTextContent::Image(_) => chars += IMAGE_BLOCK_CHARS,
                 }
             }
             ceil_div4(chars)

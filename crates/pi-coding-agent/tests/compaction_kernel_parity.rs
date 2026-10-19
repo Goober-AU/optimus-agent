@@ -55,6 +55,7 @@ use pi_ai::types::{
     UserContent, UserMessage, Usage,
 };
 use pi_ai::utils::event_stream::AssistantMessageEventStream;
+use pi_coding_agent::core::compaction::request_tokens::IMAGE_BLOCK_CHARS;
 use pi_coding_agent::core::compaction::compaction::{
     build_summarization_prompt, calculate_context_tokens, compact, default_compaction_settings,
     default_summary_call_runner, estimate_context_tokens, estimate_tokens, generate_summary,
@@ -87,9 +88,12 @@ fn reference_estimate_tokens(message: &AgentMessage) -> f64 {
                 UserContent::Text(text) => text.chars().count(),
                 UserContent::Blocks(blocks) => blocks
                     .iter()
-                    .filter_map(|block| match block {
-                        ImageOrTextContent::Text(text) => Some(text.text.chars().count()),
-                        ImageOrTextContent::Image(_) => None,
+                    .map(|block| match block {
+                        ImageOrTextContent::Text(text) => text.text.chars().count(),
+                        // D16: every image block costs IMAGE_BLOCK_CHARS (4096)
+                        // under the shared estimator convention; user images
+                        // are no longer free.
+                        ImageOrTextContent::Image(_) => IMAGE_BLOCK_CHARS,
                     })
                     .sum(),
             };
@@ -118,7 +122,7 @@ fn reference_estimate_tokens(message: &AgentMessage) -> f64 {
             for block in &tool_result.content {
                 match block {
                     ImageOrTextContent::Text(text) => chars += text.text.chars().count(),
-                    ImageOrTextContent::Image(_) => chars += 4800,
+                    ImageOrTextContent::Image(_) => chars += IMAGE_BLOCK_CHARS,
                 }
             }
             ceil_div4_reference(chars)
@@ -133,7 +137,7 @@ fn reference_estimate_tokens(message: &AgentMessage) -> f64 {
                     .iter()
                     .map(|block| match block {
                         CoreContentBlock::Text(text) => text.text.chars().count(),
-                        CoreContentBlock::Image(_) => 4800,
+                        CoreContentBlock::Image(_) => IMAGE_BLOCK_CHARS,
                     })
                     .sum(),
             };
@@ -555,16 +559,18 @@ fn estimate_tokens_pins_exact_values_for_documented_cases() {
 }
 
 #[test]
-fn estimate_tokens_user_blocks_skip_images_and_provider_context_overrides() {
-    // User blocks: only text blocks contribute; images are skipped entirely
-    // (no 4800 rule here — that applies to tool results and custom blocks).
+fn estimate_tokens_user_blocks_charge_images_and_provider_context_overrides() {
+    // User blocks: text blocks contribute chars; image blocks cost
+    // IMAGE_BLOCK_CHARS each (D16: user images are no longer free; the same
+    // shared convention as tool results and custom blocks).
     let blocks = user_blocks(
         vec![text_block("abcd"), image_block(), text_block("efgh")],
         None,
     );
-    assert_eq!(estimate_tokens(&blocks), 2.0);
+    // 4 + 4096 + 4 = 4104 chars -> ceil(4104/4) = 1026.
+    assert_eq!(estimate_tokens(&blocks), 1_026.0);
     let only_image = user_blocks(vec![image_block()], None);
-    assert_eq!(estimate_tokens(&only_image), 0.0);
+    assert_eq!(estimate_tokens(&only_image), 1_024.0);
 
     // provider_context.estimated_tokens replaces the whole estimate, verbatim,
     // with no ceil-div applied.
@@ -629,24 +635,24 @@ fn estimate_tokens_assistant_counts_text_thinking_and_serialized_arguments() {
 }
 
 #[test]
-fn estimate_tokens_tool_results_count_images_as_4800_chars() {
+fn estimate_tokens_tool_results_count_images_at_the_shared_image_cost() {
     let one_image = tool_result("id", "ipython", vec![image_block()], false);
-    assert_eq!(estimate_tokens(&one_image), 1_200.0);
+    assert_eq!(estimate_tokens(&one_image), 1_024.0);
     let two_images = tool_result(
         "id",
         "ipython",
         vec![image_block(), image_block()],
         false,
     );
-    assert_eq!(estimate_tokens(&two_images), 2_400.0);
+    assert_eq!(estimate_tokens(&two_images), 2_048.0);
     let images_and_text = tool_result(
         "id",
         "bash",
         vec![image_block(), text_block("abcdefgh"), image_block()],
         true,
     );
-    // 4800 + 8 + 4800 = 9608 chars -> ceil(9608/4) = 2402.
-    assert_eq!(estimate_tokens(&images_and_text), 2_402.0);
+    // 4096 + 8 + 4096 = 8200 chars -> ceil(8200/4) = 2050.
+    assert_eq!(estimate_tokens(&images_and_text), 2_050.0);
     let text_only = tool_result("id", "bash", vec![text_block("界界界界界")], false);
     assert_eq!(estimate_tokens(&text_only), 2.0);
 }
@@ -663,12 +669,13 @@ fn estimate_tokens_custom_variants_pin_their_own_char_rules() {
     let custom = custom_text("abcd");
     assert_eq!(estimate_tokens(&custom), 1.0);
 
-    // custom (blocks): text chars + 4800 per image (unlike user blocks).
+    // custom (blocks): text chars + IMAGE_BLOCK_CHARS per image (D16 shared
+    // convention: 4096 chars -> 1024 tokens, same as every other image site).
     let custom_with_image = custom_blocks(vec![
         CoreContentBlock::text("abcd"),
         CoreContentBlock::Image(ImageContent::new("synthetic", "image/png")),
     ]);
-    assert_eq!(estimate_tokens(&custom_with_image), 1_201.0);
+    assert_eq!(estimate_tokens(&custom_with_image), 1_025.0);
 
     // branchSummary: summary chars.
     let branch = branch_summary(&"界".repeat(8));
@@ -755,15 +762,15 @@ fn estimate_context_tokens_uses_the_last_assistant_usage_plus_trailing_estimates
         user_text("abcd"),                                  // 0
         assistant(Vec::new(), "stop", usage(1_000.0, 400.0, 100.0, 250.0, 250.0)), // 1
         user_text("efgh"),                                  // 2
-        tool_result("id", "bash", vec![image_block()], false), // 3: 1200.0
+        tool_result("id", "bash", vec![image_block()], false), // 3: 1024.0 (D16 shared image cost)
         assistant(Vec::new(), "error", usage(9_999.0, 9.0, 9.0, 0.0, 0.0)), // 4: skipped
     ];
     let estimate = estimate_context_tokens(&messages);
     assert_eq!(estimate.last_usage_index, Some(1));
     assert_eq!(estimate.usage_tokens, 1_000.0);
-    // Trailing: ceil(4/4) + 1200.0 + 0.0 = 1201.0.
-    assert_eq!(estimate.trailing_tokens, 1_201.0);
-    assert_eq!(estimate.tokens, 2_201.0);
+    // Trailing: ceil(4/4) + 1024.0 + 0.0 = 1025.0.
+    assert_eq!(estimate.trailing_tokens, 1_025.0);
+    assert_eq!(estimate.tokens, 2_025.0);
 
     // With total_tokens == 0 the usage falls back to components.
     let messages = vec![
