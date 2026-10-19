@@ -2,12 +2,12 @@
 
 Scope: what the r2 campaign's integrated branch fixes, what is still in
 flight, and what remains open, narrated from the verified ledger and the
-worker commits. Report writer W14, 2026-10-20. Sources:
+worker commits. Report writer W14, 2026-10-20, refreshed by W34 at the
+integration tip `f8ad670c8` (64 commits over base). Sources:
 `reports/context-rot-r2/BUG-LEDGER.md` (status vocabulary and evidence),
 `reports/context-rot-r2/EXPERIMENT-LEDGER.md`, the W9 findings index in
 `research/context_rot_r2/incremental/README.md`, and `git log`/`git show`
-in this worktree. Base `6000d6bc1`; branch content = 23 commits
-(`git rev-list --count 6000d6bc1..HEAD`).
+in this worktree. Base `6000d6bc1`.
 
 Status vocabulary (from BUG-LEDGER.md): FIXED (behaviour changed and a test
 covers it), VERIFIED-OPEN, NEEDS-REVERIFICATION, DEFERRED, in flight.
@@ -122,25 +122,42 @@ adapter's determinism test
 (`research/context_rot_r2/compactbench_adapter/README.md`, "Harness
 findings").
 
-## 2. Fixed on the worker branch, not yet integrated
+### D5/D9/D14 (W2) and the D6 call site - integrated since the first edition
 
-The r2 ledger's "in flight (W2)" items are committed on branch
-`rot2/w2-summarypath` but are NOT in this branch at report time
-(`git rev-list --count HEAD..rot2/w2-summarypath` = 3):
+The items this report first carried as "fixed on the worker branch, not yet
+integrated" (`rot2/w2-summarypath`, worker commits `1fda4ee7f` D5,
+`7aade7492` D6 validator, `0bd1b1888` D9) are integrated on this branch as
+`3b08e3f2e` (D5), `289f3c2e1` (D6 validator) and `720428967` (D9), each with
+guards in `crates/pi-coding-agent/tests/compaction_summary_path.rs`; D14
+followed as `439808412`. D6's `agent_session.rs` call site - the remaining
+step at the first edition - is wired by `6e1c3a139` (the extension
+compaction arm applies the validator; the commit also drops unused harness
+settings).
 
-| defect | commit (rot2/w2-summarypath) | change |
+## 2. Fixed since this report's first edition (W11-W25 integrations)
+
+Everything the first edition listed as in flight has landed on the
+integration branch, plus the fixes below. All are behaviour changes with
+regression guards; the guard names are in section 5 and
+FINAL-REPORT.md section 4.1.
+
+| defect | integrated commit(s) | change |
 | --- | --- | --- |
-| D5 | `1fda4ee7f` | skip no-op compaction when the summarize window is empty, regardless of `previous_summary`; no model call, no turn stop, no appended entry |
-| D6 | `7aade7492` | `validate_extension_compaction_summary`: the same structural handoff check `validate_summary` enforces on model output, applied to extension-supplied summaries; the `agent_session.rs` call-site still needs wiring by the file owner |
-| D9 | `0bd1b1888` | previous prose for the next summarizer comes from a dedicated walk that skips deadline-fallback markers and provider checkpoints, so fallback boilerplate no longer becomes `previous_summary` |
+| D10 branch summaries lose tool output (W13) | `0e25a7db1` | tool results pair with their assistant calls, evidence-aware excerpt, budget walk keeps the call of a kept result ("never retry" sub-item still open); `tests/rot2_branch_summary.rs` |
+| D12 memory-recall text unfenced | `021678796` | `MEMORY_RECALL_TYPE` custom text fenced as `<memory_data>` at `convert_to_llm` time (soft-fence residual documented); partial fix |
+| D13 recall fails closed silently | `157316268` | fail-closed surfaces emit rate-limited warnings with counts; guards in `src/core/memory/search.rs` |
+| W9-F2/F4/F5 v1 ledger ids and supersession (W11) | `1754a3e1b` | content-derived ids, correction carriers excluded as supersession targets, newest correction wins the same target; `tests/rot2_ledger_fixes.rs`. Offline-verified on the R2-E2 live corpus by R2-E2-RM (`2fbb14f33`): the inversion is removed, the render cap (D21) is the residual |
+| D11 stale harness digests (W25) | `30588707d` + `d9ceea230` | prune superseded digest user turns from the provider context; `tests/rot2_harness_digest.rs` pins one live digest after k harness changes |
+| D6 call site | `6e1c3a139` | see section 1 |
 
-Each carries tests in `crates/pi-coding-agent/tests/compaction_summary_path.rs`
-(new file on that branch). D14 (read-files inventory always empty) is also
-listed "in flight (W2)" in BUG-LEDGER.md with no commit on the branch yet.
+The typed-state work the first edition listed as "not yet landed" is now
+shipped and wired: module `c948905a3` (see FINAL-REPORT.md section 4.2),
+integration `338b920c3` + `40bead288` + `4be9623b0` (settings, kernel,
+verifier, budget; `tests/rot2_typed_integration.rs`).
 
-## 3. Open and deferred on this base
+## 3. Open and deferred at the W34 refresh tip
 
-From `reports/context-rot-r2/BUG-LEDGER.md`:
+From `reports/context-rot-r2/BUG-LEDGER.md` and the post-W22 findings:
 
 - D7 (MED-HIGH), VERIFIED-OPEN, DEFERRED: a null or incompatible provider
   checkpoint makes the checkpointed compaction skip as boundary and
@@ -148,26 +165,34 @@ From `reports/context-rot-r2/BUG-LEDGER.md`:
   recommended fix (honour the skipped entry's `firstKeptEntryId` as a
   truncation boundary while using the older summary for text) is deferred
   because it needs dedicated restore test coverage.
-- D10 (MED), VERIFIED-OPEN, DEFERRED to wave 3, in flight (W13):
-  `branch_summarization.rs` skips toolResult entries entirely, so branch
-  summaries lose tool output. Branch `rot2/w13-branchsummary` currently
-  has no commits beyond the integration head, so no fix is committed yet.
-- D18 (LOW), VERIFIED-OPEN, DEFERRED: compaction failure is invisible to
-  the model.
-- D19 (MED), VERIFIED-OPEN, DEFERRED: two live-list producers have no
-  drain or cap.
-- D20 (MED), VERIFIED-OPEN, DEFERRED: the summarizer request diverges from
-  the model-visible request; the ledger noted it needs the request-token
-  work first - that estimator is now on this branch (`request_tokens.rs`),
-  so D20 can be scheduled.
-- D11, D12, D13 (MED): NEEDS-REVERIFICATION (stale digests, unfenced
-  memory/harness text, memory recall failing closed on a foreign
-  projectId).
+- D18 (LOW), VERIFIED-OPEN: compaction failure is invisible to the model.
+- D19 (MED), VERIFIED-OPEN: two live-list producers have no drain or cap.
+- D20 (MED), VERIFIED-OPEN: the summarizer request diverges from the
+  model-visible request; the request-level estimator it needed is on this
+  branch (`request_tokens.rs`). D18/D19/D20 recovery is assigned to W30;
+  `rot2/w18-defects` has no commits over this head at this writing.
+- D21 (new from R2-E2-RM; severity not yet assigned in BUG-LEDGER.md):
+  with the W11 churn gone, CONSTRAINTS_CAP=12
+  omits authoritative corrections from the rendered ACTIVE list of the v1
+  ledger (they appear only as SUPERSEDED replacement texts). Found by the
+  offline re-measure on the hard corpus (`2fbb14f33`,
+  `research/context_rot_r2/live/remeasure/README.md` finding 2); fix in
+  flight as W32, drafted on `rot2/w28-d21` (`ba26fb120` exempt correction
+  carriers from the ledger render caps, `59d870a02` the replay
+  re-measure).
 - D4 (HIGH): CONFIRMED on the production path (R2-E1, default arm 0/19
   after 5 cycles). The v1 ledger mitigates it only when
   `taskState = "prompt"`, and the shipped default is `off`
-  (`reports/context-rot/FINAL-REPORT.md` section 6). The durable fix is
-  the typed-state v2 work (W4), not landed.
+  (`reports/context-rot/FINAL-REPORT.md` section 6). The durable fix,
+  typed-state v2, is now shipped AND wired as an opt-in mode (section 2);
+  its decisive live measurement (R2-E5, W29) is still in flight.
+- D10's "never retry" sub-item (an assistant call whose kept tool result
+  must not be retried) remains open after `0e25a7db1`.
+
+Resolved since the first edition: D10 (fixed, `0e25a7db1`), D11 (fixed,
+`30588707d`), D12 (partially fixed, `021678796`), D13 (fixed, `157316268`),
+the W9-F2/F4/F5 ledger mechanisms (fixed, `1754a3e1b`, offline-verified by
+R2-E2-RM) and the D6 call site (`6e1c3a139`).
 
 ## 4. New defects found this campaign
 
@@ -205,8 +230,12 @@ index", each verified against a rendered ledger):
 
 N1/N2 and W9-F1/F2/F4 all point at the same conclusion the experiments
 reached: capture must be role/provenance-based with stable ids, which is
-the typed_state v2 requirement (W4), not yet landed
-(branch `rot2/w4-typedstate` has no commits beyond the base).
+the typed_state v2 requirement (W4). That module landed as `c948905a3`
+(`rot2/w4-typedstate` content) and is wired end to end as an opt-in mode
+(`338b920c3`, `40bead288`, `4be9623b0`); the pinned boundary is that
+custom `agent_message` entries are still not classified, so subagent
+reports are not retained as SUBAGENT_STATE by the committed classifier
+(FINAL-REPORT.md section 4.2).
 
 ## 5. Guard map (fix -> test on this branch)
 
@@ -214,9 +243,17 @@ the typed_state v2 requirement (W4), not yet landed
 | --- | --- | --- |
 | D1 | `d1_toggle_off_over_threshold_does_not_stop_the_turn` | `crates/pi-coding-agent/tests/compaction_turn_flow.rs` |
 | D2 contract | `d2_interactive_turn_crossing_threshold_compacts_and_continues`, `d2_queued_user_prompt_completes_after_threshold_compaction` | same |
+| D5/D6/D9/D14 | the D5 no-op cases, `extension_summary_guard_rejects_empty_files_only_and_unsectioned_summaries`, the D9 walk cases, the D14 read-inventory cases | `crates/pi-coding-agent/tests/compaction_summary_path.rs` |
 | D8 | `migration_keeps_a_durable_boundary_when_first_kept_index_is_out_of_bounds`, `migration_ignores_a_boundary_pointing_at_the_session_header` | `crates/pi-coding-agent/src/core/session_manager.rs` |
+| D10 | `branch_summary_input_carries_the_failing_tool_result`, `branch_summary_input_skips_tool_results_with_no_text` | `crates/pi-coding-agent/tests/rot2_branch_summary.rs` |
+| D11 | `k_harness_changes_leave_exactly_one_digest_in_the_provider_context`, `compaction_keeps_the_pruned_provider_context_digest_clean` | `crates/pi-coding-agent/tests/rot2_harness_digest.rs` |
+| D12/D13 | `convert_to_llm_fences_memory_recall_text_but_not_other_custom_types`; `foreign_only_corpus_fails_closed_and_surfaces_the_reason`, `budget_short_skip_fails_closed_and_surfaces_the_reason`, `partial_recall_skips_stay_silent` | `crates/pi-coding-agent/src/core/messages.rs`; `crates/pi-coding-agent/src/core/memory/search.rs` |
 | D16 | `rot2_user_image_blocks_cost_tokens_d16`; `image_blocks_cost_4096_chars_1024_tokens` | `tests/rot2_multicycle.rs`; `src/core/compaction/request_tokens.rs` |
 | D17 | `rot2_request_level_estimate_adds_system_prompt_and_tools_d17`; `message_list_estimates_understate_request_utilisation`; request_tokens unit tests | `tests/rot2_multicycle.rs`; `src/core/context_health.rs`; `src/core/compaction/request_tokens.rs` |
+| W9-F2/F4/F5 (W11) | the seven `rot2_ledger_fixes` cases (corrections supersede older decisions, retired-id reuse survives, content-derived ids stable across merges) | `crates/pi-coding-agent/tests/rot2_ledger_fixes.rs` |
+| typed state v2 wiring | the nine `rot2_typed_integration` cases (mode resolution, budget formula, VERIFIED_TOOL_RESULT/SUBAGENT_STATE capture, protected-block round-trip, unsafe allocation, repair, superseded-as-current fails verification, v1 interop) | `crates/pi-coding-agent/tests/rot2_typed_integration.rs` |
 | harness F1/F4/F5 | reopen/anchor/flush behaviour verified by `probe_harness_behavior.py` and the adapter checks | `research/context_rot_r2/compactbench_adapter/` |
 
-Execution state of these suites on this branch: REGRESSION-GATES.md.
+Execution state of these suites on this branch: REGRESSION-GATES.md (the
+W14 record at `0ec43c8cb`; the post-`4b0add723` commits have no recorded
+full gate pass - FINAL-REPORT.md section 5.2).

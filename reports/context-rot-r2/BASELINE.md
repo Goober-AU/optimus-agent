@@ -11,9 +11,9 @@ for this file; every number cites a committed artefact.
 | field | value | source |
 | --- | --- | --- |
 | base commit | `6000d6bc1` (merge of PR #182, v0.1.36 + #181/#182) | `git log --oneline` in this worktree |
-| campaign branch content | 23 commits on top of the base (research harness, D-fixes, W9-W10 experiments) | `git rev-list --count 6000d6bc1..HEAD` in this worktree |
+| campaign branch content | 23 commits at this file's writing (W14: research harness, D-fixes, W9-W10 experiments); 64 at the W34 refresh tip `f8ad670c8` | `git rev-list --count 6000d6bc1..HEAD` in the worktree |
 | report worktree | `C:/Users/openclawuser/optimus-rot2-w14-reports`, branch `rot2/w14-reports` | `git status` in this worktree |
-| offline rule | no network calls, no provider APIs, no model calls in any r2 measurement | campaign common rules; enforced by the committed drivers (no network code in `research/context_rot_r2/`) |
+| offline rule | offline r2 measurements make no network calls, no provider APIs, no model calls; the live family (R2-E2, R2-E3, R2-E3ADV, W26, W27) ran later under explicit campaign waivers against one GLM 5.3 endpoint, every call logged | campaign common rules; offline enforced by the committed drivers; the live drivers (`live/`, `compactbench_adapter/live/`, `contextbench/live/`) are the waiver-exercised exception |
 
 Iteration-1 background (PR #179, reports/context-rot/FINAL-REPORT.md): the
 iteration-1 arms were Python mirrors of the production prompt and excerpt
@@ -54,10 +54,15 @@ table):
 - CUSTOM-OPTIMUS - run on official external benchmark infrastructure with
   custom Optimus adapters/settings (mock provider, starter suite, custom
   scorer version); not comparable to official scores.
+- LIVE-MODEL and SYNTHETIC-CALIBRATION - added by the final report for the
+  live family (real model endpoint as summarizer and/or probe answerer) and
+  the generated-label calibration; the offline rows above never carry them.
 
-Consequence: all r2 multicycle numbers are pipeline-mechanics results,
-labelled SYNTHETIC-DIAGNOSTIC on the PRODUCTION-PATH. No r2 number in
-this report set is a model-quality measurement.
+Consequence: the OFFLINE r2 multicycle numbers are pipeline-mechanics
+results, labelled SYNTHETIC-DIAGNOSTIC on the PRODUCTION-PATH. The live
+family (R2-E2, R2-E3, R2-E3ADV, W26, W27; see FINAL-REPORT.md sections
+3.4 and 3.9-3.13) carries its own LIVE-MODEL / CUSTOM-OPTIMUS +
+LIVE-MODEL labels and is never mixed into the offline tables.
 
 ## 3. R2-E1 — the campaign baseline experiment
 
@@ -149,9 +154,11 @@ Optimus pipeline.
 - It supports: pipeline-mechanics claims about repeated compaction on the
   real Rust path (R2-E1, E-INC), and the external evidence that pinning
   must-keep material outside the summarizer survives compaction.
-- It does not support: any live-model claim. Every model-dependent r2 arm
-  (real summarizer, real probe answering) is BLOCKED offline and not
-  executed; see CODING-TASK-RESULTS.md for the exact blocker list.
+- It does not support live-model claims by itself: it is the offline
+  instrument's baseline. The model-dependent arms now exist as the labelled
+  live family (R2-E2, R2-E3, R2-E3ADV, W26, W27; FINAL-REPORT.md sections
+  3.4 and 3.9-3.13); what remains NOT EXECUTED there is listed in
+  EXPERIMENT-LEDGER.md ("NOT EXECUTED", updated at the W34 refresh).
 - The r2-e1 default-arm 0/19 is a fixture result under a deliberately lossy
   deterministic summarizer. It bounds what the pipeline alone protects
   without the ledger; it is not a prediction about a specific model.

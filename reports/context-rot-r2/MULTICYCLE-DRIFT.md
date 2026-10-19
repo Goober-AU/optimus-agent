@@ -2,8 +2,12 @@
 
 Question: does repeated compaction erode anchor retention through the real
 Rust pipeline, what stops the erosion, and how do late material and late
-supersession behave? This report consolidates every committed multicycle
-run of the r2 campaign. Report writer W14, 2026-10-20; no new runs.
+supersession behave? This report consolidates every committed OFFLINE
+multicycle run of the r2 campaign (the deterministic fixture family; report
+writer W14, 2026-10-20, no new runs). The live multicycle runs (R2-E2, R2-E3,
+R2-E3ADV and the W26/W27 live practice runs) carry LIVE-MODEL labels, live in
+their own research READMEs and are summarized in FINAL-REPORT.md sections 3.4
+and 3.9-3.13.
 
 All runs in this file share one instrument and one label pair:
 SYNTHETIC-DIAGNOSTIC (deterministic lossy summarizer fixture, zero model
@@ -230,10 +234,12 @@ Established (pipeline mechanics, deterministic):
 4. Supersession does not honor "forget that" (W9-F4), and anchor-presence
    scoring overstates current-state retention (W9-F3).
 
-Not established: anything about a live model. The summarizer is a fixture;
-the consolidate policy's designed effect is model-dependent and NOT
-EXECUTED. The 8-cycle, 19/21-probe, 2-seed scenario with fixed filler
-describes this fixture's pipeline mechanics, not live behaviour
+Not established by these runs: anything about a live model. The summarizer
+is a fixture; the consolidate policy's designed effect is model-dependent
+and NOT EXECUTED. (The live family has since run separately - R2-E2/E3/E3ADV
+showed no measurable rot at their scale on GLM 5.3; see FINAL-REPORT.md
+sections 3.4, 3.9, 3.10.) The 8-cycle, 19/21-probe, 2-seed scenario with
+fixed filler describes this fixture's pipeline mechanics, not live behaviour
 (`incremental/README.md`, "Limitations"). The v1 gaps that cap the ledger
 arm at 14/19 (evidence regex, subagent custom messages) are defects N1/N2
 in `reports/context-rot-r2/BUG-LEDGER.md`; the W9-F1..F5 mechanisms are

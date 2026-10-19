@@ -1,8 +1,9 @@
 # CODING-TASK RESULTS — what exists, what does not, and what blocks it
 
 Scope: the honest status of coding-task evaluation after the r2 campaign.
-Report writer W14, 2026-10-20. No number in this file is a coding-benchmark
-capability score; every figure cites a committed artefact.
+Report writer W14, 2026-10-20, refreshed by W34 at the integration tip
+`f8ad670c8`. No number in this file is a coding-benchmark capability
+score; every figure cites a committed artefact.
 
 ## 1. Where iteration-1 left this
 
@@ -53,7 +54,8 @@ its test suite):
   `_filter_step_to_repo` normalization half (`86e8ad09b`).
 
 What is scaffolded but emits blocked records only: arms C
-(type-aware-task-context; typed state not landed) and D
+(type-aware-task-context; the typed-state ledger landed and is wired in
+compaction, but no retrieval consumer queries it) and D
 (source-grounded-reconstruction; policy not implemented)
 (`arms.py`, scorecard section 6).
 
@@ -120,32 +122,40 @@ compaction. The pipeline behind them is PRODUCTION-PATH (real Rust
 compaction per cycle); the scores are mock-eval artifacts and are not
 mixed with any production-path measurement in this report set.
 
-W12 status: the cbsuites worker branch `rot2/w12-cbsuites` currently
-points at the integration head with no additional commits
-(`git rev-parse rot2/w12-cbsuites` = this branch's HEAD), so the committed
-custom runs above are W6's; no further suites were committed by W12 at
-report time.
+W12 status (updated at the W34 refresh): the full practice suites ARE
+committed - 18 runs (9 arms x 2 suites: starter 20 cases, elite 100; 80
+and 400 cycles per arm), artifacts
+`research/context_rot_r2/compactbench_adapter/results/w12/` and
+`SUITE-RESULTS.md`; the consolidated reading is
+`reports/context-rot-r2/COMPACTBENCH-RESULTS.md` (whose section 9 adds
+the W26 live practice run, 4 arms x 8 starter cases, GLM 5.3 in both
+roles).
 
-## 4. What is NOT run, and the exact blockers
+## 4. What is NOT run, and the exact blockers (updated at the W34 refresh)
 
 | planned item | status | exact blocker |
 | --- | --- | --- |
-| R2-E2 live-model arms (real summarizer + real probe answering, delimiter answer protocol) | NOT EXECUTED | BLOCKED on typed-state integration (`reports/context-rot-r2/EXPERIMENT-LEDGER.md`, "NOT EXECUTED") |
-| CompactBench model-backed run (any suite, real eval provider) | NOT EXECUTED | offline rule: no provider APIs, no paid tokens; the adapter and controls are ready for an authorized run (`compactbench_adapter/README.md`) |
-| CompactBench official suites beyond the public starter practice suite | NOT EXECUTED | same offline rule; starter is the only suite run (all five `results/*.jsonl` `suite_key` = `starter`) |
-| ContextBench arms A/B on real trajectories | NOT EXECUTED | requires live agent runs; harness ready, no trajectories committed (`contextbench/runs/.gitignore`) |
+| R2-E2 live-model arms | EXECUTED (W7) | no longer blocked: `research/context_rot_r2/live/` (`fb089ee6e`); base 95/95 default vs 89/95 taskState, hard 111/111 both arms |
+| R2-E3 live coding-task suite | EXECUTED (W17) | no longer blocked: `research/context_rot_r2/live/e3/` (`c5107fc31`); 50/50 action-probe points on both arms |
+| live TYPED arm (R2-E5) | NOT EXECUTED | in flight (W29): the E3 orchestrator's `--arm typed` is a stub (exit 2) and the multicycle adapter maps only `default`/`taskState` |
+| CompactBench model-backed run at full suite scale | NOT EXECUTED | the W26 practice run (8 of 20 starter cases per arm, one live draw, `compactbench_adapter/live/`) is the only live data; full-suite live runs and the elite suite need a further authorized budget |
+| CompactBench official suites beyond the public starter practice suite | NOT EXECUTED | starter (and elite practice) are the public suites; no leaderboard-scored run exists |
+| ContextBench arms A/B on real agent trajectories | NOT EXECUTED | the W27 practice run used synthetic gold-derived trajectories (`contextbench/live/`); free-form exploration needs repository checkouts + a live agent, harness ready (`contextbench/runs/.gitignore`) |
 | ContextBench `patch_success` | UNAVAILABLE by construction | requires live model run + test harness (`harness.py` `PATCH_SUCCESS_UNAVAILABLE`) |
 | ContextBench holdout run | NOT EXECUTED | live phase runs dev first; holdout runs once, at the end (scorecard section 7) |
 | RepoQA / SWE-bench / Terminal-Bench | NOT EXECUTED | not attempted in r2; no run artefact, no official scorer (inherited from iteration-1 `reports/context-rot/CODING-TASK-RESULTS.md` section 5) |
 
-## 5. Status summary
+## 5. Status summary (updated at the W34 refresh)
 
 The r2 campaign moved coding-task evaluation from "one synthetic fixture"
 (iteration-1 E4) to committed, tested measurement infrastructure on two
 official benchmarks: a fully mirrored ContextBench metric layer with a
 repo-level dev/holdout split and a matched A/B harness, and a
 CompactBench adapter that runs the real Optimus compaction pipeline
-inside the official runner with controls. Zero model-backed or
-leaderboard-comparable numbers exist. The next unblock is an authorized
-live-model run; until then every quality claim about coding tasks stays
-BLOCKED, by rule and by measurement.
+inside the official runner with controls. Model-backed numbers now exist
+at practice scale only - R2-E2/R2-E3 (live multicycle and coding-task
+action probes, GLM 5.3), the W26 CompactBench practice run and the W27
+ContextBench retention run - all labelled CUSTOM-OPTIMUS + LIVE-MODEL and
+none leaderboard-comparable. The remaining unblocks: the live typed arm
+(R2-E5), repository checkouts with real agent trajectories, and any
+official-scored run.

@@ -1,10 +1,12 @@
 # CONTEXTBENCH RESULTS — the offline pipeline, and what has actually run
 
 Scope: the ContextBench coding-task evaluation pipeline committed by W10 and
-its execution state. Report writer W21, 2026-10-20. No number in this file
-is a ContextBench capability score for Optimus: no model-backed run exists
-on this branch, and every model-dependent quantity is UNAVAILABLE or NOT
-EXECUTED, never fabricated. Sources: the committed package
+its execution state. Report writer W21, 2026-10-20; sections 3 and 5
+updated by W34 at the integration tip `f8ad670c8`. No number in this file
+is a ContextBench capability score for Optimus: the only model-backed run
+is the W27 practice run (section 6, CUSTOM-OPTIMUS + LIVE-MODEL labels),
+and every leaderboard-dependent quantity is UNAVAILABLE or NOT EXECUTED,
+never fabricated. Sources: the committed package
 `research/context_rot_r2/contextbench/` (code, data manifests, tests),
 W10's draft scorecard
 `research/context_rot_r2/contextbench/RETRIEVAL-SCORECARD-DRAFT.md` (kept
@@ -76,17 +78,20 @@ Arms scaffold:
 | C | type-aware-task-context | placeholder - blocked records only (typed state not integrated with retrieval) |
 | D | source-grounded-reconstruction | placeholder - blocked records only (policy not implemented) |
 
-## 3. What has run
+## 3. What has run (updated at the W34 refresh)
 
-Offline self-check only: the test suite, the manifest-regeneration check,
-the sha256 verification, and metric functions over synthetic inputs and
-recorded sample trajectories. No agent run has been executed on this
-branch: `contextbench/runs/` is empty and gitignored (no trajectories
-exist), so no arm - not even A/B over recorded trajectories - has produced
-a number, and `patch_success` is reported `UNAVAILABLE` in every record by
+Offline self-check: the test suite, the manifest-regeneration check, the
+sha256 verification, and metric functions over synthetic inputs and
+recorded sample trajectories. Since the first edition, one model-backed
+practice run has executed (W27, section 6): 26 paired dev instances x 2
+arms x 4 cycles through the real compaction pipeline with a live GLM 5.3
+summarizer, evaluated by this mirror - with synthetic gold-derived
+trajectories, not agent runs (`contextbench/runs/` stays empty and
+gitignored). `patch_success` is reported `UNAVAILABLE` in every record by
 construction. No ContextBench leaderboard-comparable number exists in any
 category (SYNTHETIC-DIAGNOSTIC / CUSTOM-OPTIMUS / PRODUCTION-PATH /
-LIVE-MODEL): the pipeline is infrastructure awaiting its live phase.
+LIVE-MODEL): free-form exploration, repository checkouts and the holdout
+run remain live-phase prerequisites.
 
 ## 4. Blockers for real runs
 
@@ -97,20 +102,19 @@ LIVE-MODEL): the pipeline is infrastructure awaiting its live phase.
 | `patch_success` (f2p / p2p resolution) | requires a live model run plus the test harness; `UNAVAILABLE` in every record by construction |
 | any ContextBench leaderboard-comparable number | the three rows above |
 
-## 5. Live phase status (not this report's dependency)
+## 5. Live phase status (updated at the W34 refresh)
 
-The campaign's live coding-task phase (R2-E3) is in flight on branch
-`rot2/w17-e3` and is not integrated into this branch: scenario suite
-`fb27f02ec` (five coding-task scenarios TASK-A/C/E/H/F, action-level
-probes with negation-aware matchers, restart driver, 13 offline selftests),
-orchestrator `f08d92c36`, and live results `97e1be671` (GLM 5.3, 5 tasks x
-2 arms x 5 cycles; 50/50 action-probe points on both arms, 0 extraction
-failures). Those runs are committed on their own branch, are not visible
-under `research/context_rot_r2/` in this worktree, and are deliberately
-not consumed by this report; the integrator merges and scores them. When
-the live phase lands, the offline pipeline above is what evaluates it -
-and the holdout runs once, at the end (W10's live-phase checklist, draft
-scorecard section 7).
+The campaign's live coding-task phase (R2-E3) IS integrated on this branch
+(scenario suite `d8e318f81` - five coding-task scenarios TASK-A/C/E/H/F,
+action-level probes with negation-aware matchers, restart driver, 13
+offline selftests; orchestrator `346f6c4f3`; live results `c5107fc31`:
+GLM 5.3, 5 tasks x 2 arms x 5 cycles, 50/50 action-probe points on both
+arms, 0 extraction failures). Its artifacts are committed under
+`research/context_rot_r2/live/e3/`; it is a Python-mirror live run, not a
+ContextBench run, and this pipeline does not evaluate it (the E3 suite
+has its own action matchers). The W27 practice run (section 6) is the run
+this pipeline evaluated. The holdout still runs once, at the end (W10's
+live-phase checklist, draft scorecard section 7).
 
 
 ## 6. LIVE practice run (W27, CUSTOM-OPTIMUS + LIVE-MODEL labels)

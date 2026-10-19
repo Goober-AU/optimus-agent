@@ -60,7 +60,7 @@ unmeasured - iteration-1 row 10 (`NOT EXECUTED`) is still open in r2.
 | surface | iteration-1 status | r2 status |
 | --- | --- | --- |
 | Jev retrieval and Jev compaction filters | NOT EXECUTED | NOT EXECUTED (untouched in r2) |
-| the same tasks on a second model or endpoint | NOT EXECUTED | NOT EXECUTED offline (the live phase, R2-E2/R2-E3, is where this lands) |
+| the same tasks on a second model or endpoint | NOT EXECUTED | still NOT EXECUTED for the iteration-1 surfaces: the r2 live family ran on a second model (GLM 5.3 - R2-E2/R2-E3/R2-E3ADV, W26, W27) but these surfaces themselves were not re-run on it |
 | official benchmark scorers (Chroma context-rot, NoLiMa, RULER, LongBench, RepoQA, CompactBench, SWE-bench, Terminal-Bench) | NOT EXECUTED | partially changed: CompactBench and ContextBench now have committed custom infrastructure (sections 4-5); no official-scored number exists |
 
 ## 4. The r2 coding-task retrieval surface (offline infrastructure)
@@ -76,10 +76,12 @@ fallback, micro/macro aggregation, the A/B arm harness, paired statistics),
 verified by 124 offline tests (127 with the 3 parquet-integration tests
 gated on `CB_REFS_ROOT`; re-run for this report at this HEAD: 124 passed,
 3 skipped). Six further items are blocked offline (repository checkouts,
-symbol metrics, checkout-based path filtering, arms A/B trajectories,
-`patch_success`, any leaderboard-comparable number). Full status, split
+symbol metrics, checkout-based path filtering, arms A/B on real agent
+trajectories, `patch_success`, any leaderboard-comparable number; the W27
+practice run substituted synthetic gold-derived trajectories, which is why
+"arms A/B trajectories" is only partially addressed). Full status, split
 counts and per-metric upstream citations: the draft above and
-`reports/context-rot-r2/CONTEXTBENCH-RESULTS.md`.
+`reports/context-rot-r2/CONTEXTBENCH-RESULTS.md` (sections 5-6).
 
 ## 5. Type-aware retrieval: NOT EXECUTED
 
@@ -112,7 +114,11 @@ about their operator, not a claim about ours.
   memory path safe and observable (D12/D13, section 2) without measuring
   its retrieval quality; the Jev filters remain untouched and unmeasured.
 - The ContextBench pipeline (section 4) is the committed instrument for the
-  coding-task retrieval surface; its first model-backed numbers belong to
-  the live phase.
+  coding-task retrieval surface; its first model-backed numbers exist as
+  the W27 live practice run (CUSTOM-OPTIMUS + LIVE-MODEL: retention through
+  compaction over synthetic gold-derived trajectories, arm B line precision
+  0.586 vs 0.320, sign p = 0.004; `research/context_rot_r2/contextbench/live/`).
 - Type-aware retrieval stays NOT EXECUTED until a consumer of the durable
-  index exists; the committed renderer is the input it would read.
+  index exists; the committed renderer is the input it would read (the
+  typed-state ledger is now wired into compaction, but nothing queries the
+  index at recall time).

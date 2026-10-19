@@ -1,9 +1,11 @@
 # COMPACTBENCH RESULTS — custom practice-suite runs of the Optimus compaction adapter
 
-Scope: the W12 CompactBench suite runs committed on this branch. Report
-writer W21, 2026-10-20; every number cites the committed artefacts, and the
-run itself is W12's (`research/context_rot_r2/compactbench_adapter/SUITE-RESULTS.md`
-is the primary source; the per-arm JSONL results under
+Scope: the W12 CompactBench mock suite runs committed on this branch, plus
+the W26 live practice run (sections 9-10). Report writer W21, 2026-10-20;
+scope line updated by W34. Every number cites the committed artefacts, and
+the mock runs themselves are W12's
+(`research/context_rot_r2/compactbench_adapter/SUITE-RESULTS.md` is the
+primary source; the per-arm JSONL results under
 `research/context_rot_r2/compactbench_adapter/results/w12/` were re-read
 for this report, including an independent re-verification of the degeneracy
 claim in section 5).
@@ -182,6 +184,11 @@ sections 2-3). A run that produces quality numbers additionally needs:
    reply per cycle);
 4. the token-scale caveat kept in mind: scorer compression uses tiktoken
    cl100k_base while harness estimates are chars/4-based (ordering only).
+
+Updated at the W34 refresh: items 1-3 were satisfied once, at practice
+scale, by the W26 live run (section 9: 8 of 20 starter cases per arm, one
+live draw; quality columns separated). A full-suite or elite live run still
+needs its own authorized budget.
 
 ## 8. Files
 

@@ -120,6 +120,9 @@ The live-phase label corpus. Concretely:
 
 1. Run live sessions (real summarizer and real probe answering, the R2-E2 /
    R2-E3 live family - `research/context_rot_r2/live/`) through compaction.
+   The live sessions themselves now exist (R2-E2, R2-E3, R2-E3ADV, the W26
+   and W27 practice runs); no TrueLabels corpus has been derived from any
+   of them yet, so the calibration swap below has not started.
 2. For each case, fill `TrueLabels` from observed behaviour, not rules: did
    an outstanding constraint disappear from the working context
    (`lost_constraint`), did a depended-on evidence reference become
