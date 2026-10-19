@@ -646,7 +646,9 @@ pub fn summary_section<'a>(summary: &'a str, name: &str) -> Option<&'a str> {
 /// Render the ledger for the summarizer prompt.
 ///
 /// Bounded: lower-priority sections lose their tail first, and a dropped item is counted
-/// in the same block. Every line names the entry it came from.
+/// in the same block. Every line names the entry it came from. Correction carriers are
+/// exempt from the section caps: they always render in ACTIVE CONSTRAINTS, ahead of the
+/// non-correction items, and the caps apply to the remaining slots after them.
 pub fn render_ledger(ledger: &TaskStateLedger) -> String {
     if ledger.is_empty() {
         return String::new();
@@ -660,14 +662,20 @@ pub fn render_ledger(ledger: &TaskStateLedger) -> String {
     );
 
     let mut dropped: Vec<(usize, &'static str)> = Vec::new();
-    push_items(&mut out, "ACTIVE CONSTRAINTS", &ledger.constraints, CONSTRAINTS_CAP, &mut dropped, |item| {
+    // A cap must never drop the line that carries the user's latest word while the
+    // statement it corrected stays visible as a SUPERSEDED replacement text, so the
+    // correction carriers render first and the cap applies to what is left.
+    let (constraints, omitted_constraints) = prioritize_corrections(&ledger.constraints, CONSTRAINTS_CAP);
+    let protected_corrections = ledger.constraints.iter().filter(|item| item.correction).count();
+    push_items(&mut out, "ACTIVE CONSTRAINTS", &constraints, omitted_constraints, &mut dropped, |item| {
         let mut line = format!("{} [{}]: {}", item.id, item.entry, item.text);
         if !item.why.is_empty() {
             line.push_str(&format!(" (why: {})", item.why.join("; ")));
         }
         line
     });
-    push_items(&mut out, "DECISIONS (current)", &ledger.decisions, DECISIONS_CAP, &mut dropped, |item| {
+    let (decisions, omitted_decisions) = prioritize_corrections(&ledger.decisions, DECISIONS_CAP);
+    push_items(&mut out, "DECISIONS (current)", &decisions, omitted_decisions, &mut dropped, |item| {
         format!("{} [{}]: {}", item.id, item.entry, item.text)
     });
     if !ledger.superseded.is_empty() {
@@ -707,7 +715,8 @@ pub fn render_ledger(ledger: &TaskStateLedger) -> String {
             out.push_str(&format!("- [{}] {}\n", item.entry, item.text));
         }
     }
-    push_items(&mut out, "OPEN WORK", &ledger.open_work, OPEN_WORK_CAP, &mut dropped, |item| {
+    let (open_work, omitted_open_work) = prioritize_corrections(&ledger.open_work, OPEN_WORK_CAP);
+    push_items(&mut out, "OPEN WORK", &open_work, omitted_open_work, &mut dropped, |item| {
         format!("[{}] {}", item.entry, item.text)
     });
     if !dropped.is_empty() {
@@ -717,8 +726,16 @@ pub fn render_ledger(ledger: &TaskStateLedger) -> String {
             .map(|(count, label)| format!("{count} {label}(s)"))
             .collect::<Vec<_>>()
             .join(", ");
+        // When the constraints cap protected correction carriers, the count is
+        // stated, because it explains why these items were omitted while the
+        // corrections stayed in the rendered ACTIVE list.
+        let protected = if protected_corrections > 0 && omitted_constraints > 0 {
+            format!("{protected_corrections} protected correction(s) rendered; ")
+        } else {
+            String::new()
+        };
         out.push_str(&format!(
-            "\n_({total} lower-priority item(s) omitted from this block: {detail}; the full ledger is persisted on the compaction entry.)_\n"
+            "\n_({protected}{total} lower-priority item(s) omitted from this block: {detail}; the full ledger is persisted on the compaction entry.)_\n"
         ));
     }
     if out.len() > RENDER_MAX_CHARS {
@@ -737,11 +754,35 @@ fn truncate_ledger(mut out: String, max: usize) -> String {
     out
 }
 
+/// Order a section for rendering under a cap, corrections first.
+///
+/// A correction carrier is the authoritative line for the requirement it restates, so it
+/// outranks every non-correction item: it is exempt from the cap and always renders, ahead
+/// of the rest, and the cap then applies to the remaining slots. Returns the render order
+/// (corrections in capture order, then the leading non-correction items) and the number of
+/// non-correction items the cap left out. A section without corrections behaves exactly
+/// like a plain head-take of `cap` items.
+pub fn prioritize_corrections(items: &[TaskStateItem], cap: usize) -> (Vec<&TaskStateItem>, usize) {
+    let mut corrections: Vec<&TaskStateItem> = Vec::new();
+    let mut plain: Vec<&TaskStateItem> = Vec::new();
+    for item in items {
+        if item.correction {
+            corrections.push(item);
+        } else {
+            plain.push(item);
+        }
+    }
+    let slots = cap.saturating_sub(corrections.len());
+    let omitted = plain.len().saturating_sub(slots);
+    corrections.extend(plain.into_iter().take(slots));
+    (corrections, omitted)
+}
+
 fn push_items<F>(
     out: &mut String,
     title: &str,
-    items: &[TaskStateItem],
-    cap: usize,
+    items: &[&TaskStateItem],
+    omitted: usize,
     dropped: &mut Vec<(usize, &'static str)>,
     render: F,
 ) where
@@ -751,19 +792,19 @@ fn push_items<F>(
         return;
     }
     out.push_str(&format!("\n**{title}**\n"));
-    for item in items.iter().take(cap) {
+    for item in items.iter().copied() {
         out.push_str("- ");
         out.push_str(&render(item));
         out.push('\n');
     }
-    if items.len() > cap {
+    if omitted > 0 {
         let label = match title {
             "ACTIVE CONSTRAINTS" => "active constraint",
             "DECISIONS (current)" => "current decision",
             "OPEN WORK" => "open-work item",
             _ => "item",
         };
-        dropped.push((items.len() - cap, label));
+        dropped.push((omitted, label));
     }
 }
 
