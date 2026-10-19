@@ -105,3 +105,87 @@ Missing from the fragment: D18 (`8c558dd7b`), D19 (`4769f42f4`), D21 (`a9035ce8a
 
 - `7b570d082` `chore(compaction): drop the four campaign-introduced warnings` — the surface-2 cleanup, verified behavior-preserving (see section 1).
 - `reports/context-rot-r2/REVIEW-AUDIT.md` — this file.
+
+## 6. W45 appendix: post-audit status of the should-fix items
+
+Recorded by the W45 audit-fix wave (`rot2/w45-auditfix`). B1 (the D17
+changelog-bullet / production-wiring mismatch) is W44's item and is not
+touched here. The D22-D29 defect wave the audit could not yet see: after the
+audit, the integrator landed the red-team fixes and re-verified them - all of
+D22, D23, D24, D25, D26, D27, D28 and D29 are FIXED on the current tip
+(commits `a3997b5d6` D25, `891702c32` D23+D24, `51c9a6a59` D22+D26+D27,
+`1e6e5ff9d` D28, `4315f9154` D29, all ancestors of the W45 head), each with
+its committed red-first test un-ignored in
+`crates/pi-coding-agent/tests/rot2_typed_adversarial.rs` (23 tests green,
+zero ignored) and D28 pinned in `tests/rot2_native_typed_chain.rs`. The
+remaining open items are the D30 classifier gap (an unprefixed decision in
+plain user text classifies as step-scoped low-priority material and retires
+at the first merge) and the W41 cycle-5 budget caveat (E3ADV tier-8 history
+line overflows the fixed 800-token hot budget; the pairing line still
+renders, verification passes). S1 (stale in-flight language in PR-BODY and
+FINAL-REPORT), S2 (missing D18/D19/D21 and D22-D29 fragment bullets), S3
+(the undisclosed red-team wave), S4 (machine paths in research code), S5
+(the 8.1 MB `raw-calls.jsonl`) and S7 (the env-mutating test) are addressed
+by this wave's commits; S6 is the appendix below. A cosmetic defect this
+wave found and left untouched (file map): `BUG-LEDGER.md` carries unresolved
+merge-conflict markers from the D22-D29 status merges - the rows are
+readable and current, but the integrator should resolve the markers when
+next touching that file.
+
+### S6: non-conventional commit subjects, integrator options (no history rewrite performed)
+
+Seven commits on the branch use `research:` / `research(context-rot):`
+subjects, which is not a conventional-commit type:
+
+| commit | subject |
+| --- | --- |
+| `59832805f` | `research(context-rot): r2-e5 typed-arm benchmark results` |
+| `fe6b6d966` | `research(context-rot): typed-arm mirror wiring for e3/e3adv (W15 port)` |
+| `0b824f358` | `research(context-rot): d21 render replay - hard corpus strict containment 20/20` |
+| `4b8f2165f` | `research(context-rot): W26 live-model CompactBench practice run (GLM 5.3)` |
+| `2fbb14f33` | `research(context-rot): r2-e2-rm offline re-measure of the w11 ledger fix` |
+| `c5107fc31` | `research(context-rot): e3 live results (GLM 5.3, 5 tasks x 2 arms x 5 cycles)` |
+| `fb089ee6e` | `research: R2-E2 live-model multicycle experiment (GLM 5.3)` |
+
+The integrator's options:
+
+1. Leave the subjects as committed. Zero risk; the seven are research-only
+   commits (data, drivers, READMEs), no code paths. A maintainer reading
+   `git log --oneline` sees a non-standard type on seven of 80 commits.
+2. Interactive rebase renaming them to conventional subjects
+   (`docs(context-rot):` for report/data landings, `test(context-rot):` where
+   the commit adds test harness code, `chore(research):` otherwise). Cost: a
+   rewritten history invalidates every SHA citation pinned to these commits
+   in `reports/context-rot-r2/` (BUG-LEDGER, FINAL-REPORT, EXPERIMENT-LEDGER
+   and this file cite at least `59832805f`, `fe6b6d966`, `0b824f358`,
+   `4b8f2165f`, `2fbb14f33`, `c5107fc31`), so the rebase would require a
+   coordinated citation-refresh pass afterwards. Do this only before the PR
+   opens, not after review starts.
+3. Add `research` to the project's allowed commit types (a `commitlint`
+   config or CONTRIBUTING note), keeping the history intact. Zero risk, but
+   it legitimizes the type for future contributors.
+
+This wave's recommendation: option 1 (leave as committed). The citation
+churn of option 2 outweighs the cosmetic gain; option 3 is a policy call
+that belongs to the maintainers, not this PR.
+
+### S5: large research call logs, git-lfs adoption (implemented)
+
+`research/context_rot_r2/live/raw-calls.jsonl` was the only blob over 5 MB
+(8,131,489 bytes). Implemented: `.gitattributes` now carries LFS rules for
+the five raw call-log files (`live/raw-calls.jsonl`, `live/e3/raw-calls.jsonl`,
+`live/e3adv/raw-calls.jsonl`, `live/e5/live/e3-typed-raw-calls.jsonl`,
+`compactbench_adapter/live/raw-calls.jsonl`), and this wave re-staged them
+(`git add --renormalize` scoped to exactly those five paths) so their index
+blobs are LFS pointers as of this commit. Minimal disruption chosen over
+moving the files: no path changes, no citation churn, working-tree contents
+byte-identical (verified: 8,131,489 bytes after the operation). History is
+not rewritten - the pre-pointer blobs remain in earlier commits, so the
+8.1 MB blob exists in history once; the PR diff and all future writes use
+pointers. Integrator notes: (a) `git lfs push` must accompany the first
+push of these commits or the pointers will not resolve on the remote;
+(b) nobody should run a repo-wide `git add --renormalize .`, which would
+convert unrelated text files through the lfs filter; (c) the alternative
+(drop the telemetry, keep `results.json` aggregates) stays available if
+maintainers prefer no LFS dependency - in that case delete the five files
+and the attribute block in one commit.
