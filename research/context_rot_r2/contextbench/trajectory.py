@@ -28,7 +28,32 @@ import json
 import os
 from typing import Dict, List, Optional, Tuple
 
+from .gold import normalize_rel_path
 from .metrics import TrajStep
+
+
+def normalize_step_paths(step: TrajStep) -> TrajStep:
+    """Normalize a step's file paths like the gold side.
+
+    Offline stand-in for the path normalization half of the upstream
+    `_filter_step_to_repo` (evaluate.py:139-190): container prefixes
+    (`/testbed/`, `/workspace/<x>/`), leading `/`, `./` and backslashes
+    are stripped from predicted paths so they compare against the
+    normalized gold paths. The checkout-existence and suffix-matching
+    halves of the upstream filter need a worktree and stay live-phase.
+    """
+    files = [normalize_rel_path(f) for f in step.files if normalize_rel_path(f)]
+    spans = []
+    for span in step.spans:
+        f = normalize_rel_path(span.get("file", ""))
+        if f:
+            spans.append(dict(span, file=f))
+    symbols = {}
+    for f, names in (step.symbols or {}).items():
+        rel = normalize_rel_path(f)
+        if rel and names:
+            symbols[rel] = list(names)
+    return TrajStep(files, spans, symbols)
 
 
 def _spans_dict_to_items(

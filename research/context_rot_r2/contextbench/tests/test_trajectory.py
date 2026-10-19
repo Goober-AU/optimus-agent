@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "..
 
 from research.context_rot_r2.contextbench.trajectory import (  # noqa: E402
     load_trajectory_records,
+    normalize_step_paths,
     record_from_steps,
     to_steps,
 )
@@ -117,6 +118,24 @@ class LoadRecordsTests(unittest.TestCase):
         fd.close()
         self.addCleanup(os.unlink, fd.name)
         self.assertEqual(load_trajectory_records(fd.name), [])
+
+
+class NormalizeStepPathsTests(unittest.TestCase):
+    def test_container_prefixes_stripped(self):
+        step = TrajStep(
+            ["/testbed/src/a.py", "/workspace/repo/src/b.py"],
+            [{"file": "/testbed/src/a.py", "start_line": 1, "end_line": 5}],
+            {"/testbed/src/a.py": ["main"]},
+        )
+        out = normalize_step_paths(step)
+        self.assertEqual(out.files, ["src/a.py", "src/b.py"])
+        self.assertEqual(out.spans[0]["file"], "src/a.py")
+        self.assertEqual(out.symbols, {"src/a.py": ["main"]})
+
+    def test_empty_paths_dropped(self):
+        step = TrajStep(["", "/testbed/"], [], {})
+        out = normalize_step_paths(step)
+        self.assertEqual(out.files, [])
 
 
 class RecordFromStepsTests(unittest.TestCase):

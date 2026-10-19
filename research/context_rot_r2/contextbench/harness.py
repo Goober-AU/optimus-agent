@@ -16,7 +16,8 @@ carry:
 
 Offline deviation from upstream `evaluate_instance`
 (contextbench/evaluate.py:116-229), documented in the scorecard: predicted
-paths are NOT filtered against a repository checkout (no network, no repo
+paths are normalized like the gold side (`trajectory.normalize_step_paths`)
+but NOT filtered against a repository checkout (no network, no repo
 cache), and symbol/byte-span granularities are not computed (they need
 tree-sitter and checkout contents).
 
@@ -40,7 +41,7 @@ from .metrics import (
     step_line_intervals,
     trajectory_metrics,
 )
-from .trajectory import to_steps
+from .trajectory import normalize_step_paths, to_steps
 
 
 def _task_record_error(instance_id: str, arm: str, error: str) -> dict:
@@ -50,6 +51,10 @@ def _task_record_error(instance_id: str, arm: str, error: str) -> dict:
 def evaluate_task(arm: ArmConfig, gold: GoldContext, traj_record: dict) -> dict:
     """Evaluate one task's recorded trajectory against its gold context."""
     steps, final_step = to_steps(traj_record["traj_data"])
+    # predicted paths normalized like the gold side; checkout-based
+    # filtering stays live-phase (upstream evaluate.py:139-190)
+    steps = [normalize_step_paths(step) for step in steps]
+    final_step = normalize_step_paths(final_step)
 
     gold_files = set(gold.files())
     gold_lines = gold.line_spans()

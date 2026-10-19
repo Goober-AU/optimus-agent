@@ -49,7 +49,7 @@ regenerates exactly).
 | --- | --- | --- |
 | 14 | repository checkouts at `base_commit` (needed for byte spans on real data, symbol extraction, path filtering) | `core/repo.py::checkout` needs network for new repos; only the ContextBench repo checkout itself is network-waived |
 | 15 | symbol-granularity metrics | tree-sitter extraction over a checkout (`extractors/treesitter.py`); no checkout offline |
-| 16 | predicted-path filtering against the checkout | upstream `evaluate.py::_filter_step_to_repo` requires the worktree; offline runs must document this deviation |
+| 16 | predicted-path filtering against the checkout | upstream `evaluate.py::_filter_step_to_repo` (139-190) requires the worktree. Offline, `trajectory.normalize_step_paths` applies the same container-prefix normalization (`/testbed/`, `/workspace/<x>/`, leading `/`, `./`); the existence filter and suffix matching stay live-phase |
 | 17 | trajectories for arms A/B (actual agent runs) | requires a live model; live phase |
 | 18 | `patch_success` (f2p/p2p resolution) | requires live model run + test harness; reported as `UNAVAILABLE` in every record by construction |
 | 19 | any ContextBench leaderboard-comparable number | 17 + 18 |

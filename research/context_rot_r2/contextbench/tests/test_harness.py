@@ -118,6 +118,18 @@ class EvaluateTaskTests(unittest.TestCase):
         self.assertEqual(record["editloc"]["pred_size"], 1)
         self.assertEqual(record["editloc"]["intersection"], 1)
 
+    def test_prefixed_pred_paths_still_match(self):
+        gold = _gold()
+        steps = [
+            TrajStep(
+                ["/testbed/a.py"],
+                [{"file": "/testbed/a.py", "start_line": 1, "end_line": 10}],
+            )
+        ]
+        record = evaluate_task(get_arm("A"), gold, record_from_steps("inst-001", steps))
+        self.assertEqual(record["final"]["file"]["intersection"], 1)
+        self.assertEqual(record["final"]["line"]["intersection"], 10)
+
     def test_no_context_warning(self):
         gold = _gold()
         empty = record_from_steps("inst-001", [TrajStep([], [])])
