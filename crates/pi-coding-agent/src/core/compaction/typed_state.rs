@@ -3595,6 +3595,57 @@ mod tests {
         );
     }
 
+    #[test]
+    fn tight_budget_drops_superseded_history_but_keeps_the_pairing_line() {
+        // The W41 cycle-5 caveat, accepted and pinned (W46): tier 8
+        // (superseded history, dropped first) is the allocator's
+        // designated pressure-release material, so a full hot budget drops
+        // the history line while the retiring correction's tier-1 line
+        // still renders with its pairing. The drop is reported in the
+        // overflow, never silent, and no mandatory material is lost.
+        let ledger = build_typed_state(&[
+            user_entry("u1", "All tests must run offline."),
+            assistant_entry("a1", "Decision: use architecture B for the parser."),
+            user_entry("u2", "Actually, use architecture C for the parser instead."),
+        ]);
+        let decision = ledger
+            .records
+            .iter()
+            .find(|record| record.kind == TypedInformationKind::VerifiedDecision)
+            .expect("decision");
+        assert_eq!(decision.status, RecordStatus::Superseded);
+        let full = allocate(&ledger, usize::MAX);
+        // A budget that fits the mandatory constraint and the correction
+        // with their sections, but not the tier-8 history line with its.
+        let mut budget = 0usize;
+        for item in &full.included {
+            if item.status != RecordStatus::Superseded {
+                budget += item.tokens;
+            }
+        }
+        for section in ["ACTIVE CONSTRAINTS", "USER CORRECTIONS"] {
+            budget += estimate_tokens(section) + estimate_tokens("\n");
+        }
+        let allocation = allocate(&ledger, budget);
+        assert!(allocation.is_safe(), "no mandatory material dropped");
+        assert!(allocation.tokens_used <= budget);
+        let correction = allocation
+            .included
+            .iter()
+            .find(|item| item.kind == TypedInformationKind::UserCorrection)
+            .expect("the correction still renders");
+        assert!(correction.line.contains("supersedes"));
+        let render = render_allocation(&allocation);
+        assert!(render.contains("supersedes"), "{render}");
+        assert!(
+            !render.contains("SUPERSEDED (HISTORY, NOT CURRENT)"),
+            "the history line is the dropped-first tier: {render}"
+        );
+        // The dropped history line is reported, not silently lost.
+        assert_eq!(allocation.overflow.dropped.len(), 1);
+        assert_eq!(allocation.overflow.dropped[0].id, decision.id);
+    }
+
     // ---------------------------------------------------------------
     // Verifier
     // ---------------------------------------------------------------
