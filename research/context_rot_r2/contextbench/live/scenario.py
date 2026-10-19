@@ -333,11 +333,24 @@ def build_plan(target: dict, rows: Sequence[dict], dev_ids: set) -> dict:
 
 
 def load_rows_and_dev_ids(refs_root: str) -> Tuple[List[dict], set]:
-    """Load the pinned parquet rows and the committed dev id set."""
+    """Load the pinned parquet rows and the committed dev id set.
+
+    Same columns as `dataset.load_rows` plus `problem_statement` (the
+    live transcripts need the issue text; the W10 column list predates
+    the live phase and does not select it).
+    """
     import os
 
+    import pyarrow.dataset as ds
+
     parquet = os.path.join(refs_root, "data", "contextbench_verified.parquet")
-    rows = cb_dataset.load_rows(parquet)
+    columns = list(cb_dataset.PARQUET_COLUMNS) + ["problem_statement"]
+    table = ds.dataset(parquet, format="parquet").to_table(columns=columns)
+    rows = table.to_pylist()
+    if len(rows) != cb_dataset.GOLD_PARQUET_ROWS:
+        raise ValueError(
+            f"expected {cb_dataset.GOLD_PARQUET_ROWS} rows in {parquet}, got {len(rows)}"
+        )
     manifest_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "data",

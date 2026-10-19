@@ -130,8 +130,10 @@ class TranscriptTests(unittest.TestCase):
             self.assertEqual(pair["kind"], read["kind"])
 
     def test_chunks_partition_reads(self):
+        from . import CYCLES
+
         chunks = self.plan["chunks"]
-        self.assertEqual(len(chunks), 5)
+        self.assertEqual(len(chunks), CYCLES)
         flat = [read for chunk in chunks for read in chunk]
         self.assertEqual(flat, self.plan["reads"])
         sizes = [len(chunk) for chunk in chunks]
@@ -159,6 +161,11 @@ class TranscriptTests(unittest.TestCase):
         long_reserve, long_keep = long_plan["settings"]["reserveTokens"], long_plan["settings"]["keepRecentTokens"]
         self.assertGreater(long_reserve, reserve)
         self.assertGreater(long_keep, keep)
+
+    def test_plan_carries_problem_statement(self):
+        # guard against the W10 column list dropping the issue text
+        self.assertTrue(self.plan["turns"][0]["content"].count("Issue:"))
+        self.assertGreater(len(self.plan["turns"][0]["content"]), len("Issue:"))
 
     def test_plan_is_deterministic(self):
         other = live_scenario.build_plan(self.target, ROWS, DEV_IDS)

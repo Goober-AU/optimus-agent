@@ -27,8 +27,7 @@ from typing import Dict, List
 from . import (
     CYCLES,
     LIVE_LABEL,
-    PLANNED_WIRE_CALLS,
-    SLICE_SIZE,
+    PLANNED_CYCLE_ATTEMPTS,
     WIRE_CALL_HARD_CAP,
 )
 from . import driver as live_driver
@@ -55,7 +54,7 @@ def cmd_plan(args) -> int:
             "languages": sorted({p["language"] for p in plans}),
         },
         "cycles": CYCLES,
-        "plannedWireCalls": PLANNED_WIRE_CALLS,
+        "plannedCycleAttempts": PLANNED_CYCLE_ATTEMPTS,
         "wireCallHardCap": WIRE_CALL_HARD_CAP,
         "plans": plans,
     }

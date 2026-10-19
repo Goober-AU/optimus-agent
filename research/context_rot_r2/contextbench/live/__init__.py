@@ -30,9 +30,22 @@ SLICE_MAX_ITEMS = 12
 SLICE_MIN_CHARS = 1200
 SLICE_MAX_CHARS = 9000
 
-SLICE_SIZE = 40           # instances
-CYCLES = 5                # append+compact cycles per instance and arm
-PLANNED_WIRE_CALLS = SLICE_SIZE * 2 * CYCLES   # 400
+# Slice sized from the measured live smoke: 1.75-2.25 summarizer HTTP
+# requests per fired cycle (the pipeline splits windows into parallel
+# chunks and the max_tokens ladder can add rungs), fire rate ~0.85; so
+# ~8.5 wire calls per (instance, arm) pair, ~510 expected for 30
+# instances, worst case at the 600 hard cap.
+# Slice/cycle sizing from the measured live runs: ~1.64 summarizer HTTP
+# requests per cycle attempt (parallel window chunks + ladder rungs).
+# The first live attempt (30 instances x 5 cycles) was aborted after 15
+# pairs: the W10 row loader dropped the problem_statement column, so the
+# transcripts ran blind (123 calls, invalidated and documented). The
+# corrected run is sized into the remaining budget: 26 instances x 2 arms
+# x 4 cycles = 208 attempts, ~341 expected, <=460 remaining under the
+# 600 total practice cap (17 smoke + 123 blind + 460).
+SLICE_SIZE = 26           # instances
+CYCLES = 4                # append+compact cycles per instance and arm
+PLANNED_CYCLE_ATTEMPTS = SLICE_SIZE * 2 * CYCLES   # 208
 WIRE_CALL_HARD_CAP = 600  # absolute cap on HTTP requests, never exceeded
 
 # Practice-run compaction scaling (transcripts are ContextBench-sized, far
