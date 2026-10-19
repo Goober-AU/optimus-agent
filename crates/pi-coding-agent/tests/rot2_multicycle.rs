@@ -43,7 +43,6 @@
 //!
 //! No network. All state under a fresh temp dir per arm.
 
-use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use pi_agent_core::types::{AgentMessage, CustomMessageContent};
@@ -90,10 +89,6 @@ struct ScenarioProbe {
     /// Unique token planted in the source entry; survival means the restored
     /// provider context still carries the information the probe needs.
     anchor: String,
-    #[serde(default)]
-    gold: String,
-    #[serde(default)]
-    kind: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -103,8 +98,6 @@ struct Scenario {
     #[serde(default)]
     arms: Vec<String>,
     cycles: usize,
-    #[serde(default = "default_window")]
-    context_window: f64,
     #[serde(default = "default_reserve")]
     reserve_tokens: f64,
     #[serde(default = "default_keep_recent")]
@@ -117,9 +110,6 @@ struct Scenario {
     probes: Vec<ScenarioProbe>,
 }
 
-fn default_window() -> f64 {
-    20_000.0
-}
 fn default_reserve() -> f64 {
     4_000.0
 }
@@ -955,7 +945,6 @@ fn smoke_scenario() -> Scenario {
         name: "smoke".into(),
         arms: vec!["default".into(), "taskState".into()],
         cycles: 3,
-        context_window: 20_000.0,
         reserve_tokens: 4_000.0,
         keep_recent_tokens: 20.0,
         seed_entries: vec![
@@ -1009,20 +998,14 @@ fn smoke_scenario() -> Scenario {
             ScenarioProbe {
                 id: "q1".into(),
                 anchor: "ARCH-KEEP-LEDGER".into(),
-                gold: "never drop the payments ledger".into(),
-                kind: "constraint".into(),
             },
             ScenarioProbe {
                 id: "q2".into(),
                 anchor: "ARCH-DECISION-B".into(),
-                gold: "architecture B".into(),
-                kind: "decision".into(),
             },
             ScenarioProbe {
                 id: "q3".into(),
                 anchor: "EV-4785".into(),
-                gold: "4785 passed".into(),
-                kind: "evidence".into(),
             },
         ],
     }

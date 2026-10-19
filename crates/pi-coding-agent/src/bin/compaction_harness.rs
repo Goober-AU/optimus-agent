@@ -29,7 +29,7 @@ use pi_ai::types::{
 use pi_ai::utils::event_stream::AssistantMessageEventStream;
 use pi_coding_agent::core::compaction::compaction::{
     compact, default_compaction_settings, default_summary_call_runner, estimate_context_tokens,
-    prepare_compaction, CompactionSessionEntry, CompactionSettings,
+    prepare_compaction, CompactionSessionEntry,
 };
 use pi_coding_agent::core::session_manager::{SessionEntry, SessionManager};
 use serde::{Deserialize, Serialize};
