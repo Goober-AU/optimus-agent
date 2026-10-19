@@ -1,0 +1,5 @@
+- Added `compaction.taskState` (default `off`) that derives a bounded, provenance-tagged task-state ledger from the session records and gives it to the summarizer, so enduring constraints, current decisions, verified evidence and open work survive repeated compaction cycles.
+- Added `PRIME_AGENT_COMPACTION_TASK_STATE` as the process-local opt-in for the same mode.
+- Changed the tray indicator beside the streaming-throughput label to CONTEXT HEALTH, scored 0-100 from window utilisation and compaction cycles.
+- Changed summarizer tool-result excerpts to keep evidence-bearing lines from the elided middle (compiler errors, test totals, failing test names, source positions) inside the same 2000-character budget, with explicit elision counts.
+- Fixed the compaction cut point charging zero tokens for custom messages and branch summaries, so `keepRecentTokens` was only a lower bound and an injected block could push the retained tail past its budget.
