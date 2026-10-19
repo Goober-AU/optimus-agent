@@ -132,6 +132,7 @@ fn default_keep_recent() -> f64 {
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct CycleRecord {
     cycle: usize,
     ran: bool,
@@ -148,6 +149,7 @@ struct CycleRecord {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct ProbeRecord {
     id: String,
     anchor: String,
@@ -156,6 +158,7 @@ struct ProbeRecord {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct ArmResult {
     arm: String,
     cycles: Vec<CycleRecord>,
@@ -832,6 +835,7 @@ async fn run_arm(scenario: &Scenario, arm: &str) -> ArmResult {
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct RunResult {
     scenario: String,
     arms: Vec<ArmResult>,
