@@ -2826,6 +2826,7 @@ mod tests {
                 order: 0,
             },
             link: None,
+            retire_path: None,
         }
     }
 
