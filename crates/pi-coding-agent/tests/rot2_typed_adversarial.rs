@@ -1256,8 +1256,10 @@ don't forget to update the changelog after the migration ARCH-TODO.",
 /// pending action is also required summary content on every later cycle
 /// (`required_present`), so accumulation both bloats the durable ledger and
 /// grows every summary without bound.
+///
+/// Fixed (D25): `merge` is the step boundary. A Step-scoped record from a
+/// completed prior step is retired unless the new window restates it.
 #[test]
-#[ignore = "D25: RecordScope is never enforced; pending actions accumulate CURRENT forever"]
 fn pending_actions_do_not_accumulate_forever_across_merges() {
     let mut merged = build_typed_state(&[user_entry(
         "u1",
@@ -1284,6 +1286,86 @@ fn pending_actions_do_not_accumulate_forever_across_merges() {
         pending.iter().all(|record| record.status == RecordStatus::Current),
         "the surviving pending action is current"
     );
+}
+
+/// D25 pin: the step boundary bounds step-scoped records at O(1) across
+/// cycles. Twelve merges, each window contributing a fresh pending action
+/// and a fresh low-priority episode, keep exactly the newest window's step
+/// records; the durable constraint survives every merge. The ledger cannot
+/// grow through the step channel, and the retired references stay bounded.
+#[test]
+fn step_scoped_records_stay_bounded_across_twelve_merges() {
+    let mut merged = build_typed_state(&[user_entry(
+        "u1",
+        "CONSTRAINT: never delete the payments ledger ARCH-KEEP-LEDGER.",
+    )]);
+    for cycle in 2..=12 {
+        let window = build_typed_state(&[
+            user_entry(
+                &format!("u{cycle}"),
+                &format!(
+                    "Don't forget to update the changelog section for module_{cycle} ARCH-TODO."
+                ),
+            ),
+            user_entry(
+                &format!("f{cycle}"),
+                &format!("status update: filler about topic_{cycle} for the window boundary."),
+            ),
+        ]);
+        merged = merge(Some(&merged), window);
+        assert_eq!(
+            merged
+                .records
+                .iter()
+                .filter(|record| record.kind == TypedInformationKind::PendingAction)
+                .count(),
+            1,
+            "cycle {cycle}: only the newest pending action may be current"
+        );
+    }
+    assert!(
+        merged
+            .records
+            .iter()
+            .any(|record| record.text.contains("ARCH-KEEP-LEDGER")
+                && record.status == RecordStatus::Current),
+        "durable records are unaffected by the step boundary"
+    );
+    assert!(
+        merged.records.len() <= 3,
+        "constraint + the current window's pending action and episode: {merged:?}"
+    );
+}
+
+/// D25 pin: a record retired at the merge boundary keeps its `[id]` and
+/// `[@entry]` references resolvable. The next cycle's summary can still
+/// quote the retired pending action's line (carried from the previous
+/// summary) without failing verification, so the fix cannot trade ledger
+/// growth for permanent unresolved-reference failures.
+#[test]
+fn retired_step_records_keep_summary_references_resolvable() {
+    let first = build_typed_state(&[user_entry(
+        "u1",
+        "Don't forget to update the changelog section for module_1 ARCH-TODO.",
+    )]);
+    let retired_id = first.records[0].id.clone();
+    let second = merge(
+        Some(&first),
+        build_typed_state(&[user_entry(
+            "u2",
+            "Don't forget to update the changelog section for module_2 ARCH-TODO.",
+        )]),
+    );
+    let artifact = format!(
+        "{}\n- [{retired_id}] [@u1] Don't forget to update the changelog section for module_1 ARCH-TODO.\n",
+        render_hot_state(&second)
+    );
+    let verification = verify(&artifact, &second);
+    assert!(
+        verification.unresolved_refs.is_empty(),
+        "retired references must resolve: {verification:?}"
+    );
+    assert!(verification.passed, "{verification:?}");
 }
 
 /// An all-caps summary line claiming verified material ("ALL TESTS

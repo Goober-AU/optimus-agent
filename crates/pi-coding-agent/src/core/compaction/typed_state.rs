@@ -27,7 +27,9 @@
 //!   carries record ids (`[UC-1a2b3c]`) and entry references (`[@t42]`).
 //! - `merge` carries durable records forward as canonical state, not by
 //!   re-deriving from a summary. That is the D4 (summary-of-summary)
-//!   replacement path.
+//!   replacement path. The merge boundary is also the step boundary: a
+//!   Step-scoped record whose window has been summarized is retired there
+//!   (D25), and every merged ledger is bounded by `MAX_DURABLE_RECORDS`.
 //!
 //! Everything here is pure and deterministic: no I/O, no clocks, no
 //! randomness. Record ids are derived from content (sha256 of kind prefix
@@ -62,6 +64,18 @@
 //! are one record (a restatement). Statement kinds keep the first text
 //! verbatim; tool-derived kinds keep the latest text. A restatement after a
 //! supersession revives the target.
+//!
+//! Step boundary (D25): a `RecordScope::Step` record (pending action,
+//! low-priority episode) describes the window it was classified from. The
+//! merge that follows that window is the step boundary: the record is
+//! retired there unless the new window restates it (same kind, reconcile's
+//! restatement rule), which carries it forward as the current step's
+//! record. Retired record ids and source entry ids stay in `retired_refs`
+//! (bounded) so `[id]`/`[@entry]` references that earlier summaries still
+//! quote keep resolving; the records themselves are gone, so they are never
+//! re-required or re-appended by the repair. Durable records (Session and
+//! Task scope) are unaffected. Defense-in-depth, every merged ledger is
+//! capped at `MAX_DURABLE_RECORDS` with a visible dropped count.
 //!
 //! Clip policy: retained text is the whitespace-squeezed unit, clipped to
 //! 320 characters for user and assistant units and 200 for tool-derived
@@ -208,7 +222,9 @@ impl TypedInformationKind {
     /// Durable scope of the record.
     ///
     /// Session: endures for the whole session. Task: endures while the current
-    /// task is current. Step: transient.
+    /// task is current. Step: transient; `merge` is the step boundary, so a
+    /// Step-scoped record is retired at the merge that follows its window
+    /// unless the new window restates it (D25).
     pub fn scope(self) -> RecordScope {
         match self {
             TypedInformationKind::UserConstraint
@@ -325,17 +341,47 @@ pub struct TypedStateRecord {
     pub link: Option<String>,
 }
 
-/// The canonical durable state. Cap-free; capacity is an allocator decision.
+/// The canonical durable state. The allocator decides prompt capacity; the
+/// ledger itself is bounded by `MAX_DURABLE_RECORDS` (D25
+/// defense-in-depth) so no growth path is unbounded.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct TypedStateLedger {
     #[serde(default)]
     pub records: Vec<TypedStateRecord>,
+    /// D25: record ids and source entry ids of records retired from the
+    /// ledger (the merge step boundary or the durable-record cap). Not
+    /// records: they carry no text, are never required, rendered or
+    /// superseded. They keep bracketed `[id]` and `[@entry]` references that
+    /// earlier summaries still quote resolvable. Bounded to the
+    /// `RETIRED_REFS_MAX` most recent retirements.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub retired_refs: Vec<String>,
+    /// D25: cumulative count of records dropped by `MAX_DURABLE_RECORDS`.
+    /// Rendered (`render_allocation`, `render_durable_index`) so a capped
+    /// ledger is never silently truncated.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub dropped_by_cap: usize,
+}
+
+/// D25: hard bound on the durable records one ledger may carry. `merge` is
+/// the only cross-cycle growth path, so it enforces the bound. Above it the
+/// least valuable records drop first (superseded history, then lower tiers,
+/// oldest first -- the mirror of the allocator's keep order), their ids are
+/// retired, and the dropped count is reported.
+pub const MAX_DURABLE_RECORDS: usize = 512;
+
+/// D25: bound on retired-reference tombstones kept for reference
+/// resolution.
+pub const RETIRED_REFS_MAX: usize = 512;
+
+fn is_zero(value: &usize) -> bool {
+    *value == 0
 }
 
 impl TypedStateLedger {
     pub fn is_empty(&self) -> bool {
-        self.records.is_empty()
+        self.records.is_empty() && self.retired_refs.is_empty()
     }
 
     /// CURRENT records in ledger order.
@@ -1177,7 +1223,10 @@ fn reconcile(mut records: Vec<TypedStateRecord>) -> TypedStateLedger {
         }
     }
 
-    TypedStateLedger { records: out }
+    TypedStateLedger {
+        records: out,
+        ..Default::default()
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1197,14 +1246,37 @@ pub fn build_typed_state(entries: &[CompactionSessionEntry]) -> TypedStateLedger
 /// stays global. Reconcile then re-runs over the combined set, which lets a
 /// new-window correction retire a previous-cycle constraint and a new-window
 /// restatement revive one.
+///
+/// D25 step boundary: the merge boundary is the step boundary. A
+/// Step-scoped record carried from `previous` (pending action, low-priority
+/// episode) describes a window that has now been summarized, so it is not
+/// carried forward: the merge retires it. A record the new window restates
+/// (same kind, reconcile's restatement rule) is carried and revived as the
+/// current step's record by the reconcile dedupe. Retired ids and source
+/// entry ids are kept in `retired_refs` (bounded) so `[id]`/`[@entry]`
+/// references that the previous summary still carries do not fail
+/// verification as unresolved; the records themselves are gone, so they are
+/// never re-required or re-appended. Durable records (Session and Task
+/// scope) are unaffected.
+///
+/// D25 hard bound: the returned ledger is capped at `MAX_DURABLE_RECORDS`
+/// (see `enforce_durable_cap`), so no merge sequence grows the durable
+/// ledger without bound.
 pub fn merge(
     previous: Option<&TypedStateLedger>,
     new: TypedStateLedger,
 ) -> TypedStateLedger {
-    let previous = match previous {
-        Some(previous) => previous,
-        None => return new,
+    let Some(previous) = previous else {
+        return enforce_durable_cap(new);
     };
+    // Step boundary: a restatement in the new window keeps the previous
+    // record alive as the current step's record; every other Step-scoped
+    // record from `previous` retires here.
+    let new_keys: Vec<(TypedInformationKind, String, BTreeSet<String>)> = new
+        .records
+        .iter()
+        .map(|record| (record.kind, content_key(&record.text), token_set(&record.text)))
+        .collect();
     let base = previous
         .records
         .iter()
@@ -1212,14 +1284,98 @@ pub fn merge(
         .max()
         .map(|max| max + 1)
         .unwrap_or(0);
-    let mut combined = previous.records.clone();
+    let mut retired_refs = previous.retired_refs.clone();
+    let mut combined: Vec<TypedStateRecord> = Vec::new();
+    for record in &previous.records {
+        if record.scope == RecordScope::Step && !restated_in(record, &new_keys) {
+            retire_ref(&mut retired_refs, &record.id);
+            retire_ref(&mut retired_refs, &record.source_entry_id);
+            continue;
+        }
+        combined.push(record.clone());
+    }
     let mut new_records = new.records;
     new_records.sort_by(|a, b| a.ordinal.cmp(&b.ordinal));
     for (offset, mut record) in new_records.into_iter().enumerate() {
         record.ordinal = base + offset;
         combined.push(record);
     }
-    reconcile(combined)
+    let mut merged = reconcile(combined);
+    merged.retired_refs = retired_refs;
+    merged.dropped_by_cap = previous.dropped_by_cap;
+    enforce_durable_cap(merged)
+}
+
+/// D25: does any new-window record restate `record`? Mirrors the reconcile
+/// dedupe rule (same kind, equal content key or a subset restatement with
+/// at least three shared tokens) so exactly the records reconcile would
+/// merge are carried across the step boundary.
+fn restated_in(
+    record: &TypedStateRecord,
+    new_keys: &[(TypedInformationKind, String, BTreeSet<String>)],
+) -> bool {
+    let key = content_key(&record.text);
+    let tokens = token_set_from_key(&key);
+    new_keys.iter().any(|(kind, candidate_key, candidate_tokens)| {
+        *kind == record.kind
+            && (*candidate_key == key || is_restatement(&tokens, candidate_tokens))
+    })
+}
+
+/// D25: append one retired reference, keeping the list duplicate-free.
+fn retire_ref(retired_refs: &mut Vec<String>, reference: &str) {
+    if !retired_refs.iter().any(|existing| existing == reference) {
+        retired_refs.push(reference.to_string());
+    }
+}
+
+/// D25: drop-first rank for the durable cap. Superseded history drops before
+/// any CURRENT record (the allocator renders it last), then higher (less
+/// protected) tiers drop first, then the oldest. Deterministic.
+fn cap_drop_rank(record: &TypedStateRecord) -> (u8, u8) {
+    let effective_tier = if record.status == RecordStatus::Superseded {
+        8
+    } else {
+        record.kind.tier()
+    };
+    (effective_tier, record.kind.tier())
+}
+
+/// D25: enforce the hard durable bound on one ledger. Records above
+/// `MAX_DURABLE_RECORDS` drop in `cap_drop_rank` order, their ids and entry
+/// ids are retired (so existing references keep resolving), the cumulative
+/// count is kept in `dropped_by_cap`, and `retired_refs` is trimmed to the
+/// `RETIRED_REFS_MAX` most recent entries.
+fn enforce_durable_cap(mut ledger: TypedStateLedger) -> TypedStateLedger {
+    if ledger.records.len() > MAX_DURABLE_RECORDS {
+        let drop_count = ledger.records.len() - MAX_DURABLE_RECORDS;
+        let mut order: Vec<usize> = (0..ledger.records.len()).collect();
+        order.sort_by(|a, b| {
+            let rank_a = cap_drop_rank(&ledger.records[*a]);
+            let rank_b = cap_drop_rank(&ledger.records[*b]);
+            rank_b
+                .cmp(&rank_a)
+                .then_with(|| ledger.records[*a].ordinal.cmp(&ledger.records[*b].ordinal))
+        });
+        let drop_indexes: BTreeSet<usize> = order.into_iter().take(drop_count).collect();
+        let records = std::mem::take(&mut ledger.records);
+        let mut kept = Vec::with_capacity(MAX_DURABLE_RECORDS);
+        for (index, record) in records.into_iter().enumerate() {
+            if drop_indexes.contains(&index) {
+                retire_ref(&mut ledger.retired_refs, &record.id);
+                retire_ref(&mut ledger.retired_refs, &record.source_entry_id);
+            } else {
+                kept.push(record);
+            }
+        }
+        ledger.records = kept;
+        ledger.dropped_by_cap += drop_count;
+    }
+    let overflow = ledger.retired_refs.len().saturating_sub(RETIRED_REFS_MAX);
+    if overflow > 0 {
+        ledger.retired_refs.drain(0..overflow);
+    }
+    ledger
 }
 
 // ---------------------------------------------------------------------------
@@ -1281,6 +1437,10 @@ pub struct Allocation {
     pub budget_tokens: usize,
     pub overflow: OverflowReport,
     pub unsafe_compaction: Option<UnsafeCompaction>,
+    /// D25: records the durable cap has dropped from this ledger
+    /// (cumulative), rendered so a capped ledger is visibly truncated.
+    #[serde(default)]
+    pub dropped_by_cap: usize,
 }
 
 impl Allocation {
@@ -1394,6 +1554,7 @@ pub fn allocate(state: &TypedStateLedger, budget_tokens: usize) -> Allocation {
 
     let mut allocation = Allocation {
         budget_tokens,
+        dropped_by_cap: state.dropped_by_cap,
         ..Default::default()
     };
     let mut opened_sections: BTreeSet<&'static str> = BTreeSet::new();
@@ -1531,9 +1692,9 @@ fn artifact_mentions(artifact: &str, record: &TypedStateRecord) -> bool {
 /// - a line mentioning the word "verified" maps to a verified or corroborated
 ///   record by reference or text.
 pub fn verify(compact_artifact: &str, state: &TypedStateLedger) -> TypedStateVerification {
-    let known_record_ids: BTreeSet<&str> =
+    let mut known_record_ids: BTreeSet<&str> =
         state.records.iter().map(|record| record.id.as_str()).collect();
-    let known_entry_ids: BTreeSet<&str> = state
+    let mut known_entry_ids: BTreeSet<&str> = state
         .records
         .iter()
         .map(|record| record.source_entry_id.as_str())
@@ -1547,6 +1708,12 @@ pub fn verify(compact_artifact: &str, state: &TypedStateLedger) -> TypedStateVer
         for capture in REF_SCAN_RE.captures_iter(&record.text) {
             quoted_tokens.insert(capture.get(0).expect("whole match").as_str().to_string());
         }
+    // D25: ids and entry ids retired at a step boundary or by the durable
+    // cap stay resolvable; the previous summary may still quote them.
+    for reference in &state.retired_refs {
+        known_record_ids.insert(reference.as_str());
+        known_entry_ids.insert(reference.as_str());
+a6da817e3 (fix(compaction): enforce the typed ledger step boundary and durable cap (D25))
     }
 
     let mut verification = TypedStateVerification {
@@ -1693,6 +1860,14 @@ pub fn render_allocation(allocation: &Allocation) -> String {
     out.push('\n');
     out.push_str(HOT_STATE_INTRO);
     out.push('\n');
+    // D25: the durable cap's dropped count is visible to the summarizer
+    // (D21 render-cap idiom), never a silent truncation.
+    if allocation.dropped_by_cap > 0 {
+        out.push_str(&format!(
+            "- {} record(s) omitted by the durable ledger cap ({}); lowest-priority records were dropped first\n",
+            allocation.dropped_by_cap, MAX_DURABLE_RECORDS
+        ));
+    }
     let mut current_section = "";
     for item in &allocation.included {
         if item.section != current_section {
@@ -1729,6 +1904,12 @@ pub fn render_durable_index(state: &TypedStateLedger) -> String {
     }
     if superseded > 0 {
         out.push_str(&format!("- {superseded} SUPERSEDED (history)\n"));
+    }
+    if state.dropped_by_cap > 0 {
+        out.push_str(&format!(
+            "- {} record(s) omitted by the durable ledger cap ({})\n",
+            state.dropped_by_cap, MAX_DURABLE_RECORDS
+        ));
     }
     out
 }
@@ -2503,6 +2684,256 @@ mod tests {
             .find(|record| record.source_entry_id == "w1")
             .expect("new record");
         assert!(new_ordinal.ordinal > previous_ordinal.ordinal);
+    }
+
+    // ---------------------------------------------------------------
+    // D25: step boundary, retired references, durable cap
+    // ---------------------------------------------------------------
+
+    fn record_at(
+        index: usize,
+        kind: TypedInformationKind,
+        status: RecordStatus,
+    ) -> TypedStateRecord {
+        TypedStateRecord {
+            id: format!("{}-{:06x}", kind.prefix(), index),
+            kind,
+            source_entry_id: format!("u{index}"),
+            source_role: SourceRole::User,
+            ordinal: index,
+            text: format!("Requirement {index} must hold for module_{index}."),
+            status,
+            scope: kind.scope(),
+            verification: Verification::Verified,
+            revision: Revision {
+                entry_id: format!("u{index}"),
+                order: 0,
+            },
+            link: None,
+        }
+    }
+
+    #[test]
+    fn step_scoped_records_retire_at_the_merge_boundary() {
+        let previous = build_typed_state(&[user_entry(
+            "u1",
+            "Don't forget to update the changelog section for module_1 ARCH-TODO.",
+        )]);
+        let merged = merge(
+            Some(&previous),
+            build_typed_state(&[user_entry(
+                "u2",
+                "Don't forget to update the changelog section for module_2 ARCH-TODO.",
+            )]),
+        );
+        let pending: Vec<&TypedStateRecord> = merged
+            .records
+            .iter()
+            .filter(|record| record.kind == TypedInformationKind::PendingAction)
+            .collect();
+        assert_eq!(pending.len(), 1, "only the new step's record: {merged:?}");
+        assert_eq!(pending[0].status, RecordStatus::Current);
+        assert!(pending[0].text.contains("module_2"));
+        // The retired record's references stay resolvable.
+        assert!(merged.retired_refs.contains(&previous.records[0].id));
+        assert!(merged.retired_refs.contains(&"u1".to_string()));
+    }
+
+    #[test]
+    fn restated_step_records_carry_forward_as_current() {
+        let previous = build_typed_state(&[user_entry(
+            "u1",
+            "Don't forget to update the changelog section for module_1 ARCH-TODO.",
+        )]);
+        let merged = merge(
+            Some(&previous),
+            build_typed_state(&[user_entry(
+                "u2",
+                "Reminder: don't forget to update the changelog section for module_1 ARCH-TODO.",
+            )]),
+        );
+        let pending: Vec<&TypedStateRecord> = merged
+            .records
+            .iter()
+            .filter(|record| record.kind == TypedInformationKind::PendingAction)
+            .collect();
+        assert_eq!(pending.len(), 1, "{merged:?}");
+        assert_eq!(pending[0].id, previous.records[0].id);
+        assert_eq!(pending[0].status, RecordStatus::Current);
+        assert_eq!(pending[0].revision.entry_id, "u2");
+        assert!(merged.retired_refs.is_empty());
+    }
+
+    #[test]
+    fn step_records_stay_bounded_across_many_merges() {
+        let mut merged = build_typed_state(&[user_entry(
+            "u1",
+            "CONSTRAINT: never delete the payments ledger ARCH-KEEP-LEDGER.",
+        )]);
+        for cycle in 2..=24 {
+            let window = build_typed_state(&[
+                user_entry(
+                    &format!("u{cycle}"),
+                    &format!(
+                        "Don't forget to update the changelog section for module_{cycle} ARCH-TODO."
+                    ),
+                ),
+                user_entry(
+                    &format!("f{cycle}"),
+                    &format!("status update: filler about topic_{cycle} for the window boundary."),
+                ),
+            ]);
+            merged = merge(Some(&merged), window);
+            assert_eq!(
+                merged
+                    .records
+                    .iter()
+                    .filter(|record| record.kind == TypedInformationKind::PendingAction)
+                    .count(),
+                1,
+                "cycle {cycle}: {merged:?}"
+            );
+        }
+        // Constraint (Session) + the current window's pending action and
+        // episode: the ledger cannot grow through the step channel.
+        assert_eq!(merged.records.len(), 3, "{merged:?}");
+        assert!(merged
+            .records
+            .iter()
+            .any(|record| record.text.contains("ARCH-KEEP-LEDGER")
+                && record.status == RecordStatus::Current));
+        assert!(merged.retired_refs.len() <= RETIRED_REFS_MAX);
+    }
+
+    #[test]
+    fn retired_step_records_keep_summary_references_resolvable() {
+        let first = build_typed_state(&[user_entry(
+            "u1",
+            "Don't forget to update the changelog section for module_1 ARCH-TODO.",
+        )]);
+        let retired_id = first.records[0].id.clone();
+        let second = merge(
+            Some(&first),
+            build_typed_state(&[user_entry(
+                "u2",
+                "Don't forget to update the changelog section for module_2 ARCH-TODO.",
+            )]),
+        );
+        // A next-cycle summary that still quotes the retired line (carried
+        // from the previous summary) must verify: both references resolve.
+        let artifact = format!(
+            "{}\n- [{retired_id}] [@u1] Don't forget to update the changelog section for module_1 ARCH-TODO.\n",
+            render_hot_state(&second)
+        );
+        let verification = verify(&artifact, &second);
+        assert!(verification.passed, "{verification:?}");
+    }
+
+    #[test]
+    fn durable_cap_bounds_the_ledger_with_a_visible_count() {
+        let mut big = TypedStateLedger::default();
+        for index in 0..(MAX_DURABLE_RECORDS + 40) {
+            big.records
+                .push(record_at(index, TypedInformationKind::UserConstraint, RecordStatus::Current));
+        }
+        let capped = merge(None, big);
+        assert_eq!(capped.records.len(), MAX_DURABLE_RECORDS);
+        assert_eq!(capped.dropped_by_cap, 40);
+        // Same tier and status: the oldest drop first.
+        assert!(capped.records.iter().all(|record| record.ordinal >= 40));
+        // The renders state the drops (D21 idiom), never silently.
+        let rendered = render_hot_state(&capped);
+        assert!(rendered.contains("omitted by the durable ledger cap"));
+        assert!(render_durable_index(&capped).contains("omitted by the durable ledger cap"));
+        // Dropped references stay resolvable.
+        let artifact = format!(
+            "{rendered}\n- [UC-000000] [@u0] Requirement 0 must hold for module_0.\n"
+        );
+        let verification = verify(&artifact, &capped);
+        assert!(verification.unresolved_refs.is_empty(), "{verification:?}");
+        assert!(verification.passed, "{verification:?}");
+    }
+
+    #[test]
+    fn durable_cap_drops_superseded_history_before_current_records() {
+        let mut big = TypedStateLedger::default();
+        let current_count = MAX_DURABLE_RECORDS - 10;
+        for index in 0..current_count {
+            big.records
+                .push(record_at(index, TypedInformationKind::UserConstraint, RecordStatus::Current));
+        }
+        for index in 0..20 {
+            let mut record = record_at(
+                index + 1000,
+                TypedInformationKind::UserCorrection,
+                RecordStatus::Superseded,
+            );
+            record.link = Some("CO-retire".to_string());
+            big.records.push(record);
+        }
+        let capped = merge(None, big);
+        assert_eq!(capped.records.len(), MAX_DURABLE_RECORDS);
+        assert_eq!(capped.dropped_by_cap, 10);
+        // Every current record survives; only superseded history dropped,
+        // oldest first.
+        assert_eq!(
+            capped
+                .records
+                .iter()
+                .filter(|record| record.status == RecordStatus::Current)
+                .count(),
+            current_count
+        );
+        let superseded: Vec<usize> = capped
+            .records
+            .iter()
+            .filter(|record| record.status == RecordStatus::Superseded)
+            .map(|record| record.ordinal)
+            .collect();
+        assert_eq!(superseded, (1010..1020).collect::<Vec<usize>>());
+    }
+
+    #[test]
+    fn durable_cap_applies_on_the_merge_path() {
+        let mut previous = TypedStateLedger::default();
+        for index in 0..MAX_DURABLE_RECORDS {
+            previous.records.push(record_at(
+                index,
+                TypedInformationKind::UserConstraint,
+                RecordStatus::Current,
+            ));
+        }
+        let window = build_typed_state(&[user_entry(
+            "w1",
+            "The summary should be under 6000 characters.",
+        )]);
+        let merged = merge(Some(&previous), window);
+        assert_eq!(merged.records.len(), MAX_DURABLE_RECORDS);
+        assert_eq!(merged.dropped_by_cap, 1);
+        // The oldest record dropped; the new window's constraint survives.
+        assert!(merged.records.iter().all(|record| record.ordinal >= 1));
+        assert!(merged
+            .records
+            .iter()
+            .any(|record| record.text.contains("6000 characters")));
+    }
+
+    #[test]
+    fn ledger_round_trips_the_d25_fields_and_reads_pre_d25_payloads() {
+        let mut ledger = build_typed_state(&[user_entry("u1", "All tests must run offline.")]);
+        ledger.retired_refs = vec!["PA-deadbe".to_string(), "u9".to_string()];
+        ledger.dropped_by_cap = 7;
+        let value = serde_json::to_value(&ledger).unwrap();
+        let back: TypedStateLedger = serde_json::from_value(value).unwrap();
+        assert_eq!(ledger, back);
+        // A payload persisted before D25 deserializes with the defaults.
+        let mut old = serde_json::to_value(&ledger).unwrap();
+        let object = old.as_object_mut().unwrap();
+        assert!(object.remove("retiredRefs").is_some());
+        assert!(object.remove("droppedByCap").is_some());
+        let old_ledger: TypedStateLedger = serde_json::from_value(old).unwrap();
+        assert!(old_ledger.retired_refs.is_empty());
+        assert_eq!(old_ledger.dropped_by_cap, 0);
     }
 
     // ---------------------------------------------------------------
