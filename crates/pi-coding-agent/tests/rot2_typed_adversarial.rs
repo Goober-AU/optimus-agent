@@ -34,7 +34,7 @@ use pi_coding_agent::core::compaction::compaction::{
 };
 use pi_coding_agent::core::compaction::typed_state::{
     build_typed_state, merge, render_hot_state, verify, RecordStatus, SourceRole,
-    TypedInformationKind, TypedStateLedger, TypedStateRecord,
+    SupersessionPath, TypedInformationKind, TypedStateLedger, TypedStateRecord,
 };
 use pi_coding_agent::core::session_manager::{SessionManager, SessionEntry};
 use pi_agent_core::types::AgentMessage;
@@ -1389,4 +1389,251 @@ fn all_caps_verified_claims_cannot_evade_the_fabricated_check() {
         "an all-caps verified claim without a reference must be flagged"
     );
     assert!(!verification.passed);
+}
+
+// ---------------------------------------------------------------------------
+// Attack 6: D29 provenance-based supersession pairing
+// ---------------------------------------------------------------------------
+
+/// D29 pin 1 (the E3ADV C1 semantic-swap shape, ported from
+/// research/context_rot_r2/live/e3adv/e3adv_generators.py): a user
+/// correction that shares ZERO content tokens with the decision it replaces
+/// must still retire it by provenance position. Before the fix the token
+/// score was 0, the stale decision stayed CURRENT and no SUPERSEDED
+/// section ever rendered (all 6 typed summarizer requests in the E5 live
+/// run).
+#[test]
+fn zero_overlap_correction_retires_the_stale_decision_by_provenance() {
+    let ledger = build_typed_state(&[
+        user_entry(
+            "u1",
+            "TASK GOAL: eliminate double-charges in the payments flow of billing-api before the Friday release.",
+        ),
+        assistant_entry(
+            "a2",
+            "Decision: resolve the double-charges with a two-phase commit coordinator. TPC-DEC1",
+        ),
+        tool_entry_named(
+            "t3",
+            "bash",
+            "git apply --stat payments-fix.patch\n src/payments/2pc_coordinator.rs | 84 +++++\n 2 files changed\ntest result: 14 passed; 0 failed",
+            false,
+        ),
+        assistant_entry(
+            "a4",
+            "Two-phase commit coordinator wired in; running the payments load test next.",
+        ),
+        user_entry(
+            "u5",
+            "CORRECTION: scrap that plan - blocking round-trips stall the checkout path under load. Use the saga pattern with compensating transactions instead. SGA-KX1",
+        ),
+        assistant_entry(
+            "a6",
+            "Understood - switching to the saga pattern with compensating transactions on the billing service.",
+        ),
+    ]);
+    let decision = ledger
+        .records
+        .iter()
+        .find(|record| record.kind == TypedInformationKind::VerifiedDecision)
+        .expect("the stale decision")
+        .clone();
+    let correction = record_with_text(&ledger, "scrap that plan").clone();
+    // The pairing is provenance-based, marked on both records.
+    assert_eq!(decision.status, RecordStatus::Superseded);
+    assert_eq!(decision.link.as_deref(), Some(correction.id.as_str()));
+    assert_eq!(decision.retire_path, Some(SupersessionPath::Provenance));
+    assert_eq!(correction.status, RecordStatus::Current);
+    assert_eq!(correction.link.as_deref(), Some(decision.id.as_str()));
+    assert_eq!(correction.retire_path, Some(SupersessionPath::Provenance));
+    // The render shows the retirement: a SUPERSEDED section, the stale
+    // decision's line carrying the provenance pairing, and the correction
+    // CURRENT with the replacement link. (The decision's own
+    // "(superseded by ...)" text is blocked by record_line's
+    // VerifiedDecision arm ordering - the D22 render fix, w38; the
+    // replaced-by link itself is in the ledger, asserted above, and the
+    // correction side renders it here.)
+    let rendered = render_hot_state(&ledger);
+    assert!(
+        rendered.contains("SUPERSEDED (HISTORY, NOT CURRENT)"),
+        "the stale decision must render as history: {rendered}"
+    );
+    let superseded_line = rendered
+        .lines()
+        .find(|line| line.starts_with(&format!("- [{}]", decision.id)))
+        .expect("the superseded decision must render");
+    assert!(
+        superseded_line.contains("provenance pairing"),
+        "the pairing path must be visible: {superseded_line}"
+    );
+    let correction_line = rendered
+        .lines()
+        .find(|line| line.starts_with(&format!("- [{}]", correction.id)))
+        .expect("the correction must render");
+    assert!(
+        correction_line.contains(&format!("(supersedes [{}])", decision.id)),
+        "the replacement link must render on the correction: {correction_line}"
+    );
+    assert!(
+        rendered.contains("saga pattern with compensating transactions"),
+        "the correction renders CURRENT: {rendered}"
+    );
+    let correction_line = rendered
+        .lines()
+        .find(|line| line.starts_with(&format!("- [{}]", correction.id)))
+        .expect("the correction must render");
+    let correction_position = rendered
+        .find(&format!("- [{}]", correction.id))
+        .expect("the correction line position");
+    let corrections_header = rendered
+        .find("USER CORRECTIONS")
+        .expect("the USER CORRECTIONS header");
+    let superseded_header = rendered
+        .find("SUPERSEDED (HISTORY, NOT CURRENT)")
+        .expect("the SUPERSEDED header");
+    assert!(
+        correction_position > corrections_header && correction_position < superseded_header,
+        "the correction renders in its CURRENT section, not as history: {correction_line}"
+    );
+    // The full render still verifies (the summarizer contract holds).
+    let verification = verify(&rendered, &ledger);
+    assert!(verification.passed, "findings: {verification:?}");
+}
+
+/// D29 pin 2 (the E2 base-correction shape, the W9-F4 mutual-pair risk):
+/// two sibling corrections after two stale decisions. Each correction
+/// retires ITS decision, both corrections stay CURRENT, and neither
+/// correction retires the other. Before the fix the second correction won
+/// the token score against the first correction and swallowed it, leaving
+/// its own stale decision CURRENT.
+#[test]
+fn sibling_corrections_retire_their_respective_decisions_without_mutual_retirement() {
+    let ledger = build_typed_state(&[
+        assistant_entry(
+            "a1",
+            "Decision: use architecture A for the reporting module R2-SUPE-48258b00",
+        ),
+        user_entry(
+            "u2",
+            "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5. The earlier A decision is superseded.",
+        ),
+        assistant_entry(
+            "a3",
+            "Decision: use architecture A for the validator module R2-SUPE-1762c030",
+        ),
+        user_entry(
+            "u4",
+            "CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4. The earlier A decision is superseded.",
+        ),
+    ]);
+    let reporting_decision = ledger
+        .records
+        .iter()
+        .find(|record| {
+            record.kind == TypedInformationKind::VerifiedDecision && record.text.contains("reporting")
+        })
+        .expect("the reporting decision")
+        .clone();
+    let validator_decision = ledger
+        .records
+        .iter()
+        .find(|record| {
+            record.kind == TypedInformationKind::VerifiedDecision && record.text.contains("validator")
+        })
+        .expect("the validator decision")
+        .clone();
+    let reporting_correction = record_with_text(&ledger, "reporting module instead").clone();
+    let validator_correction = record_with_text(&ledger, "validator module instead").clone();
+    // Both stale decisions retire to their RESPECTIVE corrections.
+    assert_eq!(reporting_decision.status, RecordStatus::Superseded);
+    assert_eq!(
+        reporting_decision.link.as_deref(),
+        Some(reporting_correction.id.as_str())
+    );
+    assert_eq!(
+        reporting_decision.retire_path,
+        Some(SupersessionPath::Token)
+    );
+    assert_eq!(validator_decision.status, RecordStatus::Superseded);
+    assert_eq!(
+        validator_decision.link.as_deref(),
+        Some(validator_correction.id.as_str())
+    );
+    assert_eq!(
+        validator_decision.retire_path,
+        Some(SupersessionPath::Token)
+    );
+    // No mutual retirement: both corrections stay CURRENT.
+    assert_eq!(reporting_correction.status, RecordStatus::Current);
+    assert_eq!(validator_correction.status, RecordStatus::Current);
+    assert_eq!(
+        ledger
+            .records
+            .iter()
+            .filter(|record| record.status == RecordStatus::Superseded)
+            .count(),
+        2,
+        "exactly the two stale decisions are retired: {:?}",
+        ledger.records
+            .iter()
+            .map(|record| (record.id.as_str(), record.status))
+            .collect::<Vec<_>>()
+    );
+    let rendered = render_hot_state(&ledger);
+    let verification = verify(&rendered, &ledger);
+    assert!(verification.passed, "findings: {verification:?}");
+}
+
+/// D29 pin 3 (the over-fire guard): an unrelated correction with no token
+/// overlap must not retire a distant decision. Another correction and no
+/// positional adjacency stand between them, so the provenance path stays
+/// off and nothing is retired by the later correction.
+#[test]
+fn unrelated_distant_correction_retires_nothing() {
+    let ledger = build_typed_state(&[
+        assistant_entry(
+            "a1",
+            "Decision: use architecture auth for the parser R2-DECI-cc252ba5",
+        ),
+        user_entry(
+            "u2",
+            "CONSTRAINT: the scheduler ledger must stay in the nightly export batch R2-CONS-bc725595",
+        ),
+        user_entry(
+            "u3",
+            "Actually, keep the scheduler ledger in the export pipeline instead.",
+        ),
+        user_entry(
+            "u4",
+            "CORRECTION: scrap that plan - blocking round-trips stall the checkout path under load. Use the saga pattern with compensating transactions instead. SGA-KX1",
+        ),
+        user_entry("u5", "status update: filler turn for the window boundary."),
+    ]);
+    let decision = ledger
+        .records
+        .iter()
+        .find(|record| record.kind == TypedInformationKind::VerifiedDecision)
+        .expect("the unrelated decision")
+        .clone();
+    let mid_correction = record_with_text(&ledger, "export pipeline").clone();
+    let distant_correction = record_with_text(&ledger, "scrap that plan").clone();
+    // The mid correction retires the constraint it names (token path).
+    assert_eq!(mid_correction.retire_path, Some(SupersessionPath::Token));
+    assert!(mid_correction.link.is_some());
+    // The distant correction shares no tokens with the decision and another
+    // correction was introduced since it: no retirement, no over-firing.
+    assert_eq!(decision.status, RecordStatus::Current);
+    assert!(decision.link.is_none());
+    assert_eq!(distant_correction.status, RecordStatus::Current);
+    assert!(distant_correction.link.is_none());
+    assert!(distant_correction.retire_path.is_none());
+    // Only the constraint is superseded.
+    assert_eq!(
+        ledger
+            .records
+            .iter()
+            .filter(|record| record.status == RecordStatus::Superseded)
+            .count(),
+        1
+    );
 }

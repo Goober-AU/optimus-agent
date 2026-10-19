@@ -50,14 +50,27 @@
 //!   camel-case token) or at least three content tokens.
 //! - `Unverified`: an assistant claim with no such support in the ledger.
 //!
-//! Supersession: a user correction retires the best earlier CURRENT record
-//! among the user-authority and decision kinds when the overlap score
-//! (`3 * shared_anchors + shared_content_tokens`) reaches 4 with at least one
-//! shared anchor, or when at least two shared content tokens include a
-//! specific token (underscore, slash, dot, digit, or length >= 8). Both
-//! records are kept; the target flips to `Superseded`. A restatement of the
-//! target after the correction revives it. A newer user CURRENT_TASK retires
-//! earlier CURRENT_TASK records (task succession).
+//! Supersession pairs a user correction with the record it retires by one of
+//! two paths, marked on both records (`retire_path`):
+//! - Token path: the best earlier CURRENT record among the user-authority and
+//!   decision kinds when the overlap score (`3 * shared_anchors +
+//!   shared_content_tokens`) reaches 4 with at least one shared anchor, or
+//!   when at least two shared content tokens include a specific token
+//!   (underscore, slash, dot, digit, or length >= 8). Records of other kinds
+//!   outrank corrections as token targets, so a later correction retires its
+//!   stale decision or requirement instead of swallowing the previous
+//!   correction (the v1 W9-F4 mutual-pair defect; two corrections never
+//!   retire each other).
+//! - Provenance path (D29): when no token target qualifies, the most recent
+//!   prior CURRENT decision, provided the correction is the only un-retired
+//!   correction introduced since that decision and no other decision
+//!   intervened. The correction's position in the conversation is the
+//!   pairing evidence, so a zero-overlap semantic swap still retires the
+//!   stale decision it follows.
+//!
+//! Both records are kept; the target flips to `Superseded`. A restatement of
+//! the target after the correction revives it. A newer user CURRENT_TASK
+//! retires earlier CURRENT_TASK records (task succession).
 //!
 //! Dedupe: same-kind records whose content-token sets are equal, or whose
 //! smaller set is contained in the larger with at least three shared tokens,
@@ -266,6 +279,28 @@ pub enum RecordStatus {
     Superseded,
 }
 
+/// Which supersession pairing path matched: the correction and its target
+/// share specific content (token), or the correction directly follows the
+/// decision it retires with no other correction or decision between them
+/// (provenance). See the module docs; set on both paired records.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SupersessionPath {
+    Token,
+    Provenance,
+}
+
+impl SupersessionPath {
+    /// Pairing annotation appended to the rendered lines of the records the
+    /// path paired, so the summarizer sees how the retirement was decided.
+    fn pairing_note(self) -> &'static str {
+        match self {
+            SupersessionPath::Token => "token-overlap pairing",
+            SupersessionPath::Provenance => "provenance pairing",
+        }
+    }
+}
+
 /// Durable scope; see `TypedInformationKind::scope`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -339,6 +374,11 @@ pub struct TypedStateRecord {
     /// - a `Superseded` record: id of the record that retired it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub link: Option<String>,
+    /// Which supersession pairing path matched when this record retired or
+    /// was retired by a user correction: token overlap, or provenance
+    /// position. `None` on records supersession did not pair.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub retire_path: Option<SupersessionPath>,
 }
 
 /// The canonical durable state. The allocator decides prompt capacity; the
@@ -950,6 +990,7 @@ fn new_record(
         verification,
         revision: Revision { entry_id, order },
         link: None,
+        retire_path: None,
     }
 }
 
@@ -985,6 +1026,46 @@ fn supersession_target_kinds(kind: TypedInformationKind) -> bool {
             | TypedInformationKind::PendingAction
     )
 }
+
+/// Provenance supersession target for the correction at `slot` (D29): the
+/// most recent prior CURRENT decision, when the correction is the only
+/// un-retired correction introduced since that decision and no other
+/// decision intervened between them. The correction's position after the
+/// decision is the pairing evidence, not token overlap, so a zero-overlap
+/// correction still retires the stale decision it follows; the two guards
+/// keep the path from firing when the positional evidence is ambiguous.
+fn provenance_target(out: &[TypedStateRecord], slot: usize) -> Option<usize> {
+    let correction_ordinal = out[slot].ordinal;
+    let (target_slot, target) = out
+        .iter()
+        .enumerate()
+        .filter(|(_, record)| {
+            record.kind == TypedInformationKind::VerifiedDecision
+                && record.status == RecordStatus::Current
+                && record.ordinal < correction_ordinal
+        })
+        .max_by_key(|(_, record)| record.ordinal)?;
+    let target_ordinal = target.ordinal;
+    let decision_intervened = out.iter().any(|record| {
+        record.kind == TypedInformationKind::VerifiedDecision
+            && record.ordinal > target_ordinal
+            && record.ordinal < correction_ordinal
+    });
+    let sibling_correction = out.iter().any(|record| {
+        record.kind == TypedInformationKind::UserCorrection
+            && record.status == RecordStatus::Current
+            && record.ordinal > target_ordinal
+            && record.ordinal < correction_ordinal
+    });
+    if decision_intervened || sibling_correction {
+        return None;
+    }
+    Some(target_slot)
+}
+
+/// Turn classified records into the canonical ledger: assign ids, dedupe by
+/// (kind, key), resolve supersession, task succession, revival and
+/// corroboration. Deterministic for a given record sequence.
 
 /// Turn classified records into the canonical ledger: assign ids to
 /// first-seen records (an id a record already carries survives, so identity
@@ -1031,6 +1112,7 @@ fn reconcile(mut records: Vec<TypedStateRecord>) -> TypedStateLedger {
                 }
                 existing.status = record.status;
                 existing.link = record.link.clone();
+                existing.retire_path = record.retire_path;
                 restated[slot].push(record.ordinal);
             }
             None => {
@@ -1076,8 +1158,11 @@ fn reconcile(mut records: Vec<TypedStateRecord>) -> TypedStateLedger {
         used.insert(out[slot].id.clone(), slot);
     }
 
-    // Supersession: a user correction retires the best earlier CURRENT
-    // record by token overlap.
+    // Supersession (D29): a user correction retires the best earlier CURRENT
+    // record by token overlap, or by provenance position when no token target
+    // qualifies. Corrections never outrank other kinds as token targets, so a
+    // later correction retires its stale decision or requirement instead of
+    // swallowing the previous correction.
     let correction_slots: Vec<usize> = out
         .iter()
         .enumerate()
@@ -1092,7 +1177,11 @@ fn reconcile(mut records: Vec<TypedStateRecord>) -> TypedStateLedger {
         let correction_id = out[slot].id.clone();
         let correction_tokens = scoring_tokens(&correction_text);
         let correction_anchors = anchors(&correction_text);
-        let mut best: Option<(usize, i32)> = None;
+        // Best token target per tier: non-correction kinds outrank
+        // corrections, so the sibling-correction overlap never wins while a
+        // qualifying decision or requirement stays CURRENT.
+        let mut best_primary: Option<(usize, i32)> = None;
+        let mut best_correction: Option<(usize, i32)> = None;
         for (candidate_slot, candidate) in out.iter().enumerate() {
             if candidate_slot == slot
                 || candidate.status != RecordStatus::Current
@@ -1121,16 +1210,34 @@ fn reconcile(mut records: Vec<TypedStateRecord>) -> TypedStateLedger {
             let score = 3 * (shared_anchors as i32) + (shared.len() as i32);
             let qualifies = (shared_anchors >= 1 && score >= 4)
                 || (specific >= 1 && shared.len() >= 2);
-            if qualifies && score > best.map(|(_, current)| current).unwrap_or(0) {
-                best = Some((candidate_slot, score));
+            if !qualifies {
+                continue;
+            }
+            let best = if candidate.kind == TypedInformationKind::UserCorrection {
+                &mut best_correction
+            } else {
+                &mut best_primary
+            };
+            if score > best.map(|(_, current)| current).unwrap_or(0) {
+                *best = Some((candidate_slot, score));
             }
         }
-        if let Some((target_slot, _)) = best {
-            let target_id = out[target_slot].id.clone();
-            out[target_slot].status = RecordStatus::Superseded;
-            out[target_slot].link = Some(correction_id);
-            out[slot].link = Some(target_id);
-        }
+        let token_target = best_primary.or(best_correction);
+        let (target_slot, path) = match token_target {
+            Some((target_slot, _)) => (target_slot, SupersessionPath::Token),
+            // No token target: retire the most recent prior decision the
+            // correction positionally replaces.
+            None => match provenance_target(&out, slot) {
+                Some(target_slot) => (target_slot, SupersessionPath::Provenance),
+                None => continue,
+            },
+        };
+        let target_id = out[target_slot].id.clone();
+        out[target_slot].status = RecordStatus::Superseded;
+        out[target_slot].link = Some(correction_id);
+        out[target_slot].retire_path = Some(path);
+        out[slot].link = Some(target_id);
+        out[slot].retire_path = Some(path);
     }
 
     // Task succession: a newer user CURRENT_TASK retires earlier CURRENT_TASK
@@ -1183,6 +1290,7 @@ fn reconcile(mut records: Vec<TypedStateRecord>) -> TypedStateLedger {
         {
             out[slot].status = RecordStatus::Current;
             out[slot].link = None;
+            out[slot].retire_path = None;
         }
     }
 
@@ -1426,6 +1534,10 @@ pub struct IncludedItem {
     pub section: String,
     /// Rendered line, brackets and entry reference included.
     pub line: String,
+    /// Supersession pairing path, when supersession paired this record.
+    /// Rendered as a pairing annotation after the line.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub retire_path: Option<SupersessionPath>,
 }
 
 /// The result of `allocate`.
@@ -1578,6 +1690,7 @@ pub fn allocate(state: &TypedStateLedger, budget_tokens: usize) -> Allocation {
                 tokens: estimate_tokens(&line),
                 section: section.to_string(),
                 line,
+                retire_path: record.retire_path,
             });
         } else {
             let entry = OverflowEntry {
@@ -1877,6 +1990,9 @@ pub fn render_allocation(allocation: &Allocation) -> String {
             current_section = item.section.as_str();
         }
         out.push_str(&item.line);
+        if let Some(path) = item.retire_path {
+            out.push_str(&format!(" ({})", path.pairing_note()));
+        }
         out.push('\n');
     }
     out
