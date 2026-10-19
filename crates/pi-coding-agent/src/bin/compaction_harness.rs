@@ -15,7 +15,7 @@
 //! Offline by construction: no network, all state under `session_dir`.
 
 use std::io::{Read, Write};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use pi_agent_core::types::{AgentMessage, CustomMessageContent};
 use pi_ai::api_registry::{register_api_provider_simple, ApiProviderSimple};
@@ -53,10 +53,6 @@ struct HarnessSettings {
     keep_recent_tokens: f64,
     #[serde(default = "default_task_state")]
     task_state: Option<String>,
-    #[serde(default = "default_window")]
-    context_window: f64,
-    #[serde(default = "default_max_tokens")]
-    max_tokens: f64,
 }
 
 fn default_reserve() -> f64 {
@@ -68,13 +64,6 @@ fn default_keep_recent() -> f64 {
 fn default_task_state() -> Option<String> {
     Some("off".to_string())
 }
-fn default_window() -> f64 {
-    1_000_000.0
-}
-fn default_max_tokens() -> f64 {
-    64_000.0
-}
-
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct HarnessRequest {

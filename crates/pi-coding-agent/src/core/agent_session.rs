@@ -18173,19 +18173,44 @@ impl AgentSession {
             let result = match extension_compaction {
                 // TS 8282-8283: an extension compaction replaces the summary call, the
                 // context and the options entirely.
-                Some(compaction) => crate::core::compaction::compaction::CompactionResult {
-                    summary: compaction.summary,
-                    first_kept_entry_id: compaction.first_kept_entry_id,
-                    tokens_before: compaction.tokens_before,
-                    details: compaction
-                        .details
-                        .clone()
-                        .and_then(|details| serde_json::from_value(details).ok()),
-                    usage: compaction
-                        .usage
-                        .clone()
-                        .and_then(|usage| serde_json::from_value(usage).ok()),
-                },
+                Some(compaction) => {
+                    // D6: an extension-supplied summary must pass the same
+                    // structural guard as the model-generated one before it
+                    // replaces the prefix; a rejected hook output keeps the
+                    // prior context instead of appending an empty replacement.
+                    if let Err(guard_error) =
+                        crate::core::compaction::compaction::validate_extension_compaction_summary(
+                            &compaction.summary,
+                        )
+                    {
+                        let reason = format!(
+                            "extension compaction rejected by the summary guard: {guard_error}"
+                        );
+                        self.end_compaction_unsuccessfully(
+                            "extension_summary_guard",
+                            "failed",
+                            &reason,
+                            false,
+                            None,
+                            None,
+                            None,
+                        );
+                        return Err(reason);
+                    }
+                    crate::core::compaction::compaction::CompactionResult {
+                        summary: compaction.summary,
+                        first_kept_entry_id: compaction.first_kept_entry_id,
+                        tokens_before: compaction.tokens_before,
+                        details: compaction
+                            .details
+                            .clone()
+                            .and_then(|details| serde_json::from_value(details).ok()),
+                        usage: compaction
+                            .usage
+                            .clone()
+                            .and_then(|usage| serde_json::from_value(usage).ok()),
+                    }
+                }
                 None => {
                     let provider_context =
                         self.compaction_provider_context(&messages, &signal).await;
