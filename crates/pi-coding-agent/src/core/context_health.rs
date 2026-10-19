@@ -4,6 +4,17 @@
 //! risk: a context is unreliable once it is nearly full, and every compaction
 //! cycle spends fidelity. The score is deterministic and dependency-free so the
 //! tray can render it on every frame without I/O or RPC.
+//!
+//! What the score measures: the `tokens` value the caller feeds in, divided by
+//! `context_window`, plus compaction history. The score never inspects the
+//! session itself, so it inherits every blind spot of its input. The message
+//! list estimate the tray feeds today (compaction's
+//! `estimate_context_tokens`, usage-anchored where possible) omits the system
+//! prompt and tool schemas (defect D17) and undercounts image blocks (defect
+//! D16), so until a request-level total (compaction's
+//! `request_tokens::RequestTokenEstimate`) is fed in instead, utilisation
+//! and with it the score read optimistic. Fixing that means feeding a
+//! better number; the scoring itself must not change to compensate.
 
 /// Below this utilisation, size alone costs nothing.
 pub const RELIABLE_UTILISATION: f64 = 0.35;
@@ -43,6 +54,13 @@ impl ContextHealthBand {
 /// token count is never read as a zero-sized context.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct ContextHealthInput {
+    /// Working-context token count, exactly as the caller measured it. The
+    /// score trusts this value: it cannot see what the estimate behind it
+    /// counted. A message-list estimate omits the system prompt, tool
+    /// schemas and (pre-D16-fix) image blocks, so it understates the
+    /// request the provider will receive; a request-level total
+    /// (compaction's `request_tokens::RequestTokenEstimate::total`) is the
+    /// input this field wants once the caller has one.
     pub tokens: Option<f64>,
     pub context_window: f64,
     pub compaction_cycles: f64,
@@ -253,6 +271,29 @@ mod tests {
             );
         }
         assert_eq!(scores[5], scores[11]);
+    }
+
+    #[test]
+    fn message_list_estimates_understate_request_utilisation() {
+        // D17 documentation test: the score measures the fed token count and
+        // cannot see the request envelope around it. A session whose message
+        // list estimates 720 tokens of a 1000-token window scores on 72%
+        // utilisation...
+        let message_list = health(720.0, 1000.0, 0.0);
+        assert_eq!(message_list.utilisation, Some(0.72));
+        // ...while the request the provider actually receives also carries a
+        // system prompt (40 tokens) and tool schemas (40 tokens) the
+        // message-list estimate never counted.
+        let request_level = health(720.0 + 40.0 + 40.0, 1000.0, 0.0);
+        assert_eq!(request_level.utilisation, Some(0.8));
+        assert!(request_level.score < message_list.score);
+        // 45 * (0.72 - 0.35) / (0.95 - 0.35) = 27.75 -> score 72.25.
+        assert!((message_list.score - 72.25).abs() < 1e-9);
+        // 45 * (0.80 - 0.35) / (0.95 - 0.35) = 33.75 -> score 66.25.
+        assert!((request_level.score - 66.25).abs() < 1e-9);
+        // The tray text inherits the same optimism.
+        assert_eq!(message_list.reasons, vec!["utilisation 72% of the window"]);
+        assert_eq!(request_level.reasons, vec!["utilisation 80% of the window"]);
     }
 
     #[test]
