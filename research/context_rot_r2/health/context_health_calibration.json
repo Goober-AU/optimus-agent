@@ -1,0 +1,880 @@
+{
+  "target": "lost_constraint",
+  "corpus": "SYNTHETIC-CALIBRATION",
+  "cases": 66,
+  "positives": 30,
+  "roc_auc": 0.6041666666666666,
+  "brier_score": 0.25173579545454544,
+  "expected_calibration_error": 0.14575757575757575,
+  "threshold": 0.5,
+  "threshold_metrics": {
+    "true_positives": 13,
+    "false_positives": 11,
+    "false_negatives": 17,
+    "true_negatives": 25,
+    "precision": 0.5416666666666666,
+    "recall": 0.43333333333333335,
+    "false_positive_rate": 0.3055555555555556,
+    "false_negative_rate": 0.5666666666666667
+  },
+  "per_case": [
+    {
+      "scenario_id": "synthetic-u1-c0",
+      "utilisation": 0.2,
+      "compaction_cycles": 0.0,
+      "health_score": 100.0,
+      "risk_probability": 0.0,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u1-c1",
+      "utilisation": 0.2,
+      "compaction_cycles": 1.0,
+      "health_score": 94.0,
+      "risk_probability": 0.06000000000000005,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u1-c2",
+      "utilisation": 0.2,
+      "compaction_cycles": 2.0,
+      "health_score": 88.0,
+      "risk_probability": 0.12,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u1-c3",
+      "utilisation": 0.2,
+      "compaction_cycles": 3.0,
+      "health_score": 82.0,
+      "risk_probability": 0.18000000000000005,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": true,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u1-c4",
+      "utilisation": 0.2,
+      "compaction_cycles": 4.0,
+      "health_score": 76.0,
+      "risk_probability": 0.24,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u1-c5",
+      "utilisation": 0.2,
+      "compaction_cycles": 5.0,
+      "health_score": 70.0,
+      "risk_probability": 0.30000000000000004,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": false,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u1-c6",
+      "utilisation": 0.2,
+      "compaction_cycles": 6.0,
+      "health_score": 70.0,
+      "risk_probability": 0.30000000000000004,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u1-c7",
+      "utilisation": 0.2,
+      "compaction_cycles": 7.0,
+      "health_score": 70.0,
+      "risk_probability": 0.30000000000000004,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": true,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u1-c8",
+      "utilisation": 0.2,
+      "compaction_cycles": 8.0,
+      "health_score": 70.0,
+      "risk_probability": 0.30000000000000004,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u1-c9",
+      "utilisation": 0.2,
+      "compaction_cycles": 9.0,
+      "health_score": 70.0,
+      "risk_probability": 0.30000000000000004,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u1-c10",
+      "utilisation": 0.2,
+      "compaction_cycles": 10.0,
+      "health_score": 70.0,
+      "risk_probability": 0.30000000000000004,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u2-c0",
+      "utilisation": 0.35,
+      "compaction_cycles": 0.0,
+      "health_score": 100.0,
+      "risk_probability": 0.0,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u2-c1",
+      "utilisation": 0.35,
+      "compaction_cycles": 1.0,
+      "health_score": 94.0,
+      "risk_probability": 0.06000000000000005,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u2-c2",
+      "utilisation": 0.35,
+      "compaction_cycles": 2.0,
+      "health_score": 88.0,
+      "risk_probability": 0.12,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": false,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u2-c3",
+      "utilisation": 0.35,
+      "compaction_cycles": 3.0,
+      "health_score": 82.0,
+      "risk_probability": 0.18000000000000005,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u2-c4",
+      "utilisation": 0.35,
+      "compaction_cycles": 4.0,
+      "health_score": 76.0,
+      "risk_probability": 0.24,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u2-c5",
+      "utilisation": 0.35,
+      "compaction_cycles": 5.0,
+      "health_score": 70.0,
+      "risk_probability": 0.30000000000000004,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u2-c6",
+      "utilisation": 0.35,
+      "compaction_cycles": 6.0,
+      "health_score": 70.0,
+      "risk_probability": 0.30000000000000004,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": false,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u2-c7",
+      "utilisation": 0.35,
+      "compaction_cycles": 7.0,
+      "health_score": 70.0,
+      "risk_probability": 0.30000000000000004,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u2-c8",
+      "utilisation": 0.35,
+      "compaction_cycles": 8.0,
+      "health_score": 70.0,
+      "risk_probability": 0.30000000000000004,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u2-c9",
+      "utilisation": 0.35,
+      "compaction_cycles": 9.0,
+      "health_score": 70.0,
+      "risk_probability": 0.30000000000000004,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u2-c10",
+      "utilisation": 0.35,
+      "compaction_cycles": 10.0,
+      "health_score": 70.0,
+      "risk_probability": 0.30000000000000004,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u3-c0",
+      "utilisation": 0.5,
+      "compaction_cycles": 0.0,
+      "health_score": 88.75,
+      "risk_probability": 0.11250000000000004,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u3-c1",
+      "utilisation": 0.5,
+      "compaction_cycles": 1.0,
+      "health_score": 82.75,
+      "risk_probability": 0.1725,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u3-c2",
+      "utilisation": 0.5,
+      "compaction_cycles": 2.0,
+      "health_score": 76.75,
+      "risk_probability": 0.23250000000000004,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": false,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u3-c3",
+      "utilisation": 0.5,
+      "compaction_cycles": 3.0,
+      "health_score": 70.75,
+      "risk_probability": 0.2925,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u3-c4",
+      "utilisation": 0.5,
+      "compaction_cycles": 4.0,
+      "health_score": 64.75,
+      "risk_probability": 0.35250000000000004,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u3-c5",
+      "utilisation": 0.5,
+      "compaction_cycles": 5.0,
+      "health_score": 58.75,
+      "risk_probability": 0.4125,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u3-c6",
+      "utilisation": 0.5,
+      "compaction_cycles": 6.0,
+      "health_score": 58.75,
+      "risk_probability": 0.4125,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u3-c7",
+      "utilisation": 0.5,
+      "compaction_cycles": 7.0,
+      "health_score": 58.75,
+      "risk_probability": 0.4125,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": true,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u3-c8",
+      "utilisation": 0.5,
+      "compaction_cycles": 8.0,
+      "health_score": 58.75,
+      "risk_probability": 0.4125,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u3-c9",
+      "utilisation": 0.5,
+      "compaction_cycles": 9.0,
+      "health_score": 58.75,
+      "risk_probability": 0.4125,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": false,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u3-c10",
+      "utilisation": 0.5,
+      "compaction_cycles": 10.0,
+      "health_score": 58.75,
+      "risk_probability": 0.4125,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u4-c0",
+      "utilisation": 0.65,
+      "compaction_cycles": 0.0,
+      "health_score": 77.5,
+      "risk_probability": 0.22499999999999998,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u4-c1",
+      "utilisation": 0.65,
+      "compaction_cycles": 1.0,
+      "health_score": 71.5,
+      "risk_probability": 0.28500000000000003,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u4-c2",
+      "utilisation": 0.65,
+      "compaction_cycles": 2.0,
+      "health_score": 65.5,
+      "risk_probability": 0.345,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u4-c3",
+      "utilisation": 0.65,
+      "compaction_cycles": 3.0,
+      "health_score": 59.5,
+      "risk_probability": 0.405,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u4-c4",
+      "utilisation": 0.65,
+      "compaction_cycles": 4.0,
+      "health_score": 53.5,
+      "risk_probability": 0.46499999999999997,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u4-c5",
+      "utilisation": 0.65,
+      "compaction_cycles": 5.0,
+      "health_score": 47.5,
+      "risk_probability": 0.525,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u4-c6",
+      "utilisation": 0.65,
+      "compaction_cycles": 6.0,
+      "health_score": 47.5,
+      "risk_probability": 0.525,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u4-c7",
+      "utilisation": 0.65,
+      "compaction_cycles": 7.0,
+      "health_score": 47.5,
+      "risk_probability": 0.525,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u4-c8",
+      "utilisation": 0.65,
+      "compaction_cycles": 8.0,
+      "health_score": 47.5,
+      "risk_probability": 0.525,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u4-c9",
+      "utilisation": 0.65,
+      "compaction_cycles": 9.0,
+      "health_score": 47.5,
+      "risk_probability": 0.525,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u4-c10",
+      "utilisation": 0.65,
+      "compaction_cycles": 10.0,
+      "health_score": 47.5,
+      "risk_probability": 0.525,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u5-c0",
+      "utilisation": 0.8,
+      "compaction_cycles": 0.0,
+      "health_score": 66.25,
+      "risk_probability": 0.3375,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": true,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u5-c1",
+      "utilisation": 0.8,
+      "compaction_cycles": 1.0,
+      "health_score": 60.25,
+      "risk_probability": 0.39749999999999996,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": false,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u5-c2",
+      "utilisation": 0.8,
+      "compaction_cycles": 2.0,
+      "health_score": 54.25,
+      "risk_probability": 0.4575,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u5-c3",
+      "utilisation": 0.8,
+      "compaction_cycles": 3.0,
+      "health_score": 48.25,
+      "risk_probability": 0.5175000000000001,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": true,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u5-c4",
+      "utilisation": 0.8,
+      "compaction_cycles": 4.0,
+      "health_score": 42.25,
+      "risk_probability": 0.5775,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u5-c5",
+      "utilisation": 0.8,
+      "compaction_cycles": 5.0,
+      "health_score": 36.25,
+      "risk_probability": 0.6375,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": false,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u5-c6",
+      "utilisation": 0.8,
+      "compaction_cycles": 6.0,
+      "health_score": 36.25,
+      "risk_probability": 0.6375,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u5-c7",
+      "utilisation": 0.8,
+      "compaction_cycles": 7.0,
+      "health_score": 36.25,
+      "risk_probability": 0.6375,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": false,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u5-c8",
+      "utilisation": 0.8,
+      "compaction_cycles": 8.0,
+      "health_score": 36.25,
+      "risk_probability": 0.6375,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": false,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u5-c9",
+      "utilisation": 0.8,
+      "compaction_cycles": 9.0,
+      "health_score": 36.25,
+      "risk_probability": 0.6375,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u5-c10",
+      "utilisation": 0.8,
+      "compaction_cycles": 10.0,
+      "health_score": 36.25,
+      "risk_probability": 0.6375,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u6-c0",
+      "utilisation": 0.95,
+      "compaction_cycles": 0.0,
+      "health_score": 55.0,
+      "risk_probability": 0.44999999999999996,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u6-c1",
+      "utilisation": 0.95,
+      "compaction_cycles": 1.0,
+      "health_score": 49.0,
+      "risk_probability": 0.51,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": true,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u6-c2",
+      "utilisation": 0.95,
+      "compaction_cycles": 2.0,
+      "health_score": 43.0,
+      "risk_probability": 0.5700000000000001,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": false,
+        "wrong_decision_followed": true,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u6-c3",
+      "utilisation": 0.95,
+      "compaction_cycles": 3.0,
+      "health_score": 37.0,
+      "risk_probability": 0.63,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u6-c4",
+      "utilisation": 0.95,
+      "compaction_cycles": 4.0,
+      "health_score": 31.0,
+      "risk_probability": 0.69,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": true,
+        "task_continued": false
+      }
+    },
+    {
+      "scenario_id": "synthetic-u6-c5",
+      "utilisation": 0.95,
+      "compaction_cycles": 5.0,
+      "health_score": 25.0,
+      "risk_probability": 0.75,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u6-c6",
+      "utilisation": 0.95,
+      "compaction_cycles": 6.0,
+      "health_score": 25.0,
+      "risk_probability": 0.75,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": true,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u6-c7",
+      "utilisation": 0.95,
+      "compaction_cycles": 7.0,
+      "health_score": 25.0,
+      "risk_probability": 0.75,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": true,
+        "task_continued": false
+      }
+    },
+    {
+      "scenario_id": "synthetic-u6-c8",
+      "utilisation": 0.95,
+      "compaction_cycles": 8.0,
+      "health_score": 25.0,
+      "risk_probability": 0.75,
+      "true_labels": {
+        "lost_constraint": true,
+        "lost_evidence": true,
+        "wrong_decision_followed": true,
+        "task_continued": false
+      }
+    },
+    {
+      "scenario_id": "synthetic-u6-c9",
+      "utilisation": 0.95,
+      "compaction_cycles": 9.0,
+      "health_score": 25.0,
+      "risk_probability": 0.75,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": false,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    },
+    {
+      "scenario_id": "synthetic-u6-c10",
+      "utilisation": 0.95,
+      "compaction_cycles": 10.0,
+      "health_score": 25.0,
+      "risk_probability": 0.75,
+      "true_labels": {
+        "lost_constraint": false,
+        "lost_evidence": true,
+        "wrong_decision_followed": false,
+        "task_continued": true
+      }
+    }
+  ]
+}
