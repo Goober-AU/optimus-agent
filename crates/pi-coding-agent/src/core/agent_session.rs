@@ -1184,7 +1184,12 @@ const COMPACTION_SKIPPED_ERROR_MESSAGE: &str =
     "Session is too short to compact — try again once it grows";
 /// `CompactionSkippedError("Already compacted")` (agent-session.ts:8245).
 const COMPACTION_ALREADY_COMPACTED_ERROR_MESSAGE: &str = "Already compacted";
-
+/// D18: custom type of the live, model-visible notice for a failed automatic
+/// compaction. The durable `compaction_outcome` entry is deliberately excluded
+/// from provider context (`convert_single_message` drops that custom type),
+/// so this separate bounded notice is what the model actually sees when an
+/// automatic compaction fails.
+const AUTO_COMPACTION_FAILURE_NOTICE_CUSTOM_TYPE: &str = "auto_compaction_failure_notice";
 /// `turnExecutionPoliciesEqual`.
 pub fn turn_execution_policies_equal(
     left: &TurnExecutionPolicy,
@@ -17170,7 +17175,40 @@ impl AgentSession {
             custom_instructions,
             Some(&evidence),
         );
+        // D18: the failure must also reach the model (the outcome entry is
+        // excluded from provider context), so the next turn can adapt.
+        self.surface_auto_compaction_failure_notice(&message);
         self.resume_auto_compaction_after_failure(reason, should_continue_after_compaction);
+    }
+
+    /// D18: a failed automatic compaction must be visible to the model, not only
+    /// to the user. The persisted `compaction_outcome` entry is excluded from
+    /// provider context by design, so without a live notice the model keeps
+    /// answering as if nothing happened while the context stays over the
+    /// compaction boundary. One notice lives in the conversation at a time:
+    /// each failure replaces the previous notice, so repeated failures cannot
+    /// grow the context. A successful compaction rebuilds the conversation
+    /// from the durable session file, which drops the notice (it is a
+    /// live-session hint; the durable record is the outcome entry).
+    fn surface_auto_compaction_failure_notice(&self, message: &str) {
+        let notice = create_custom_message(
+            AUTO_COMPACTION_FAILURE_NOTICE_CUSTOM_TYPE.to_string(),
+            CustomMessageContent::Text(auto_compaction_failure_notice_text(message)),
+            false,
+            None,
+            &now_iso(),
+        );
+        let agent_message = custom_message_agent_message(&notice);
+        self.agent.update_state(Box::new(move |state| {
+            state.messages.retain(|message| {
+                !matches!(
+                    message,
+                    AgentMessage::Custom(CustomAgentMessage::Custom { custom_type, .. })
+                        if custom_type == AUTO_COMPACTION_FAILURE_NOTICE_CUSTOM_TYPE
+                )
+            });
+            state.messages.push(agent_message);
+        }));
     }
 
     /// The TS `resumeAfterFailure` closure (agent-session.ts:9594-9602).
@@ -17419,6 +17457,22 @@ fn agent_message_from_value(value: &Value) -> AgentMessage {
             timestamp: 0,
         })
     })
+}
+
+/// D18: bounded text for the model-visible compaction failure notice. The
+/// excerpt keeps the notice small even for pathological provider errors; the
+/// full text stays in the durable outcome entry for the user.
+fn auto_compaction_failure_notice_text(message: &str) -> String {
+    let mut excerpt = String::new();
+    for character in message.chars().take(240) {
+        excerpt.push(character);
+    }
+    if message.chars().count() > 240 {
+        excerpt.push('…');
+    }
+    format!(
+        "System notice: compaction failed and this conversation was not compacted - the full context remains in place and may still be near the context limit. Keep responses and tool output short until compaction succeeds. Failure detail: {excerpt}"
+    )
 }
 
 /// `CustomMessage` as the `AgentMessage` the agent state and events carry.
@@ -23212,6 +23266,120 @@ mod post_compaction_continuation_tests {
                     .iter()
                     .any(|entry| entry.get("type").and_then(|value| value.as_str()) == Some("compaction")),
                 "a refused handoff never becomes the durable context head"
+            );
+            session.dispose_async(Some(false)).await;
+        }
+
+        /// D18: a failed automatic compaction surfaces exactly one bounded,
+        /// model-visible notice in the live conversation; a second failure
+        /// replaces it instead of accumulating, and skipped or cancelled
+        /// attempts produce none.
+        #[tokio::test]
+        async fn d18_failure_notice_is_model_visible_and_bounded() {
+            let agent = ScriptedAgent::new(vec![]);
+            let session = test_session(agent);
+            let failure = "Summarization returned an unusable handoff (missing, empty or incomplete handoff sections); existing conversation preserved. Retry compaction or select another summarization model.";
+            let notice_count = || {
+                session
+                    .agent
+                    .state()
+                    .messages
+                    .iter()
+                    .filter(|message| {
+                        matches!(
+                            message,
+                            AgentMessage::Custom(CustomAgentMessage::Custom { custom_type, .. })
+                                if custom_type == AUTO_COMPACTION_FAILURE_NOTICE_CUSTOM_TYPE
+                        )
+                    })
+                    .count()
+            };
+            let notice_text = || {
+                session
+                    .agent
+                    .state()
+                    .messages
+                    .iter()
+                    .find_map(|message| {
+                        match message {
+                            AgentMessage::Custom(CustomAgentMessage::Custom {
+                                custom_type,
+                                content: CustomMessageContent::Text(text),
+                                ..
+                            }) if custom_type == AUTO_COMPACTION_FAILURE_NOTICE_CUSTOM_TYPE => {
+                                Some(text.clone())
+                            }
+                            _ => None,
+                        }
+                    })
+                    .unwrap_or_default()
+            };
+
+            // A skipped attempt is a non-event, not a failure notice.
+            session.handle_auto_compaction_failure(
+                COMPACTION_REASON_THRESHOLD,
+                COMPACTION_SKIPPED_ERROR_MESSAGE,
+                None,
+                false,
+                &[],
+                None,
+            );
+            assert_eq!(notice_count(), 0, "a skipped compaction surfaces no notice");
+
+            // A cancelled attempt is a user action, not a failure notice.
+            session.handle_auto_compaction_failure(
+                COMPACTION_REASON_THRESHOLD,
+                COMPACTION_CANCELLED_ERROR_MESSAGE,
+                None,
+                false,
+                &[],
+                None,
+            );
+            assert_eq!(notice_count(), 0, "a cancelled compaction surfaces no notice");
+
+            // The first real failure surfaces exactly one notice whose text
+            // states the bounded contract: not compacted, context remains.
+            session.handle_auto_compaction_failure(
+                COMPACTION_REASON_THRESHOLD,
+                failure,
+                None,
+                false,
+                &[],
+                None,
+            );
+            assert_eq!(notice_count(), 1, "a failed compaction surfaces one notice");
+            let first_notice = notice_text();
+            assert!(
+                first_notice.contains("not compacted"),
+                "the notice must state the conversation was not compacted: {first_notice}"
+            );
+            assert!(
+                first_notice.contains("full context remains"),
+                "the notice must state the context remains in place: {first_notice}"
+            );
+            assert!(
+                first_notice.contains("Auto-compaction failed"),
+                "the notice carries the failure detail: {first_notice}"
+            );
+            assert!(
+                first_notice.chars().count() <= 600,
+                "the notice stays bounded: {} chars",
+                first_notice.chars().count()
+            );
+
+            // A second failure replaces the notice instead of accumulating.
+            session.handle_auto_compaction_failure(
+                COMPACTION_REASON_THRESHOLD,
+                failure,
+                None,
+                false,
+                &[],
+                None,
+            );
+            assert_eq!(
+                notice_count(),
+                1,
+                "repeated failures replace the notice, never accumulate"
             );
             session.dispose_async(Some(false)).await;
         }
