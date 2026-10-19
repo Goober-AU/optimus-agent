@@ -48,3 +48,30 @@ Base for this campaign: 6000d6bc1 (v0.1.36 + #181/#182).
 | HF2 | cut must immediately precede a user turn (unusable-handoff error otherwise) | documented; adapter uses a cut ladder |
 | HF3 | tail sizing ~ chars/4 + 0.6 per message | documented; adapter mirrors it |
 | HF6 | ledger lines carry per-session entry hashes; output deterministic modulo them | documented |
+
+## 4. W35 red-team findings (typed-state v2 adversarial review, rot2/w35-redteam)
+
+All findings are present on this base (integration tip f8ad670c8, typed commits
+338b920c3/40bead288/4be9623b0). No production fixes applied (report only);
+each defect has a failing-first adversarial test in
+crates/pi-coding-agent/tests/rot2_typed_adversarial.rs carrying an
+`#[ignore = "Dnn: ..."]` note, runnable red with `cargo test -- --ignored`.
+Status vocabulary as above; all are VERIFIED-OPEN pending integrator routing.
+
+| # | severity | status r2 | finding |
+| --- | --- | --- | --- |
+| D22 | MED | VERIFIED-OPEN | `typed_state::record_line` (typed_state.rs:1318) matches the `UserCorrection \| CurrentTask` arm before the `status == Superseded` arm, so a superseded correction or task renders `(supersedes [X])` with X = the record that retired it: the retirement direction is inverted. The render is what the summarizer copies (tier-8 SUPERSEDED section, `render_hot_state`), teaching the model that the retired record supersedes its replacer. Red: `superseded_corrections_and_tasks_render_the_retirement_direction` renders `- [CO-6947ab] [@u2] Correction: ... (supersedes [CO-be885a])` for a record that CO-be885a retired. |
+| D23 | MED | VERIFIED-OPEN | User text containing a bracketed ticket-style token (`[JX-4f1c2a]`: two capitals, dash, six lowercase hex; also entry-shaped `[a-z]+\d+` like `[issue42]`) collides with the verifier's reference grammar (typed_state.rs:1455, 1573). The summarizer is instructed to copy constraints verbatim, so the summary carries the token; `verify` reports an unresolved reference, the finding is not a missing item, so the bounded repair does not apply, and the episode fails (`...not represented: 0 missing, 0 mis-superseded, 1 unresolved references...`). Fail-closed, but compaction is permanently blocked while the record lives in the ledger — and per D25 it never leaves. Red: `bracketed_ticket_ids_in_user_text_fail_typed_verification`. |
+| D24 | MED | VERIFIED-OPEN | Tool-derived records keep the latest text on restatement (typed_state.rs:969) but the id is recomputed from the current text at the next reconcile (typed_state.rs:977), so an evolving repository/subagent/evidence record changes its id across cycles, violating the documented "same fact ... resolves to the same id" contract. Red: `evolving_tool_state_records_keep_a_stable_id_across_merges` shows `RS-920746` becoming `RS-1cdf29`. Consequence: `[id]` references carried by earlier summaries go stale; a later model faithfully copying a previous summary's refs fails verification (unresolved, unrepairable). |
+| D25 | MED-HIGH | VERIFIED-OPEN | `RecordScope` is decorative: `scope()` is assigned (typed_state.rs:201) but never read by `reconcile`, `allocate` or `merge`. Step-scoped `PENDING_ACTION`s stay CURRENT forever (red: 4 distinct pending actions, all CURRENT, after 4 merges) and are `required_present` (typed_state.rs:1461) in every later summary; the missing-item repair re-appends them unbudgeted. Both the durable ledger (persisted as `details.typedState` each cycle) and every summary grow without bound, and accumulated mandatory material eventually exceeds the 2048-token hot-state budget, turning compaction into a permanent unsafe-allocation failure. Long sessions degrade over cycles. Red: `pending_actions_do_not_accumulate_forever_across_merges`. |
+| D26 | MED | VERIFIED-OPEN | A `details.typedState` payload that fails to deserialize is silently dropped: prepare_compaction (compaction.rs:2060) reads it through `.and_then(...ok())`, so every durable record below that boundary vanishes without a warning and the ledger rebuilds from the current window only. Red: one malformed field (`ordinal: "zero"`) drops the cycle-1 constraint entirely (`malformed_typed_state_payload_silently_drops_durable_records`). Schema drift between versions or a partially written JSONL line silently discards protected state. |
+| D27 | LOW | VERIFIED-OPEN | The fabricated-verified-claim check exempts all-caps lines: `is_heading_line` (typed_state.rs:1625) treats `trimmed == trimmed.to_uppercase()` as a heading, so a summary line `ALL TESTS VERIFIED PASSING` with no reference evades the check (the heuristic exists to skip rendered headings like `VERIFIED EVIDENCE`). Red: `all_caps_verified_claims_cannot_evade_the_fabricated_check`. |
+| D28 | LOW-MED | VERIFIED-OPEN (code-cited, no test; native fixture outside this worker's file map) | The native provider-compaction path returns early with `typed_state: None` (compaction.rs:2936-2941, "v1 parity"). With a compaction-capable provider (`supports_compaction`), one native compaction silently resets the typed durable chain: the next cycle merges `previous = None`, and everything below that boundary is lost from the ledger (it survives only as prose in the server summary). The typed chain is the feature's core claim, so the reset is more significant than its v1 counterpart. |
+
+Observations recorded without D entries (see the W35 report): the starved-budget
+error path persists nothing, so `details.typedVerification` cannot record it
+(the failure surfaces only through the error channel, the pre-existing D18
+pattern); subagent-state lines clip at `ITEM_TEXT_MAX` (320) while the module
+doc promises 200 for tool-derived lines; `format_file_operations` output is
+appended to the summary after verification, so the persisted text is not
+byte-identical to the verified artifact.
