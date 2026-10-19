@@ -37,15 +37,18 @@ to a ContextBench leaderboard result or to upstream-scored runs.
    selection and not for distractors.
 5. Size rationale: the live smoke measured 1.75-2.25 summarizer HTTP
    requests per fired compaction cycle (parallel window chunks plus
-   ladder rungs) at a ~0.85 fire rate, i.e. ~8.5 wire calls per
-   (instance, arm) pair; 30 instances x 2 arms x 5 cycles keep the
-   expected total (~510) under the 600-request hard cap with headroom.
-   The cap is enforced: the runner refuses to start a new attempt once
-   reached and records the stop.
+   ladder rungs); the corrected run is 26 instances x 2 arms x 4 cycles
+   = 208 cycle attempts, which used 439 requests (measured 1.64-2.1 per
+   fired cycle, 206/208 fired). The cap is enforced: the runner refuses
+   to start a new attempt once reached and records the stop (none
+   triggered).
 
-Selected slice: 30 instances, 15 repos, 7 languages
-(python 6, go 5, javascript 5, typescript 5, c 4, rust 3, cpp 2);
-the exact instance ids are in `run_config.json`.
+Selected slice: 26 instances, 15 repos, 7 languages
+(python 5, go 4, javascript 4, typescript 4, c 4, rust 3, cpp 2);
+the exact instance ids are in `run_config.json`. The first attempt
+selected 30 instances x 5 cycles; it was invalidated mid-run (section 5)
+and the corrected slice is the 26-instance prefix of the same
+deterministic order, sized into the remaining wire-call budget.
 
 ## 3. Method: retention through compaction, not free exploration
 
@@ -110,24 +113,83 @@ should retain gold context differently from arm A. Both arms share the
 identical transcript, settings and seeds (matched pairs), so per-instance
 deltas isolate the policy effect.
 
-## 5. Wire-call accounting
+## 5. Wire-call accounting (all requests against the endpoint)
 
 | phase | requests |
 | --- | --- |
 | endpoint PONG verification | 2 (`GET /models`, one PONG chat) |
-| live smoke (2 instances, arm A) | 17 |
-| main run | see `run_config.json` (hard cap 583 for the main run; 17 + 583 = 600 total) |
+| live smoke (2 instances, arm A, 5 cycles) | 17 |
+| first main attempt - INVALIDATED | 123 (15/60 pairs; see below) |
+| corrected main run (26 x 2 x 4) | 439 |
+| **total** | **581 / 600 hard cap** |
 
-`raw-calls.jsonl` records every main-run request: purpose, arm, instance,
-cycle, attempt, maxTokens, httpStatus, latencyMs, transportRetries,
-finishReason, token usage, content/reasoning char counts, error. No
-content, no file paths, no credentials are logged.
+The invalidated attempt: the first main run (30 instances x 5 cycles)
+used W10's `dataset.load_rows` column list, which does not select
+`problem_statement` - the transcripts carried no issue text, so the
+relevance signal the distractors probe was absent. Detected from the
+model's own summaries ("The issue body was blank..."), stopped after 15
+pairs, moved to `runs/w27-live-blind-invalid/` (gitignored), and counted
+against the cap. The loader fix and a selftest guard are committed; the
+corrected run is the one reported here.
 
-## 6. Results
+`raw-calls.jsonl` records every corrected-run request: purpose, arm,
+instance, cycle, attempt, maxTokens, httpStatus, latencyMs,
+transportRetries, finishReason, token usage, content/reasoning char
+counts, error. No content, no file paths, no credentials are logged.
+Observed: 439 requests, mean latency 20.4 s (median 12.9 s, max 143.8 s),
+0 transport-retry events, 0 error calls, 47 max_tokens ladder climbs,
+finish reasons 388 stop / 51 length (every ladder eventually landed
+stop).
 
-See `results.json` (per-item records, per-arm aggregates, paired
-statistics, call stats) and the LIVE section of
-`reports/context-rot-r2/CONTEXTBENCH-RESULTS.md` for the verdict tables.
+## 6. Results (26 paired instances; per-item records in `results.json`)
+
+Arm aggregates (W10 mirror semantics; micro-averaged final metrics,
+macro-averaged trajectory metrics):
+
+| metric | arm A baseline | arm B task-state-ledger | paired delta B-A | sign test p | Wilcoxon p |
+| --- | --- | --- | --- | --- | --- |
+| final file coverage | 0.974 | 0.974 | +0.000 (0+/0-) | 1.000 | 1.000 |
+| final file precision | 0.357 | 0.326 | -0.029 (3+/11-) | 0.057 | 0.064 |
+| final line coverage | 0.852 | 0.916 | +0.069 (10+/6-) | 0.455 | 0.196 |
+| final line precision | 0.320 | 0.586 | +0.097 (18+/4-) | **0.004** | **0.003** |
+| AUC coverage (file) | 0.860 | 0.863 | +0.003 | 0.625 | 0.715 |
+| AUC coverage (line) | 0.583 | 0.605 | +0.022 | 0.815 | 0.420 |
+| redundancy (file) | 0.672 | 0.661 | -0.011 | 0.629 | 0.190 |
+| redundancy (line) | 0.587 | 0.605 | +0.017 | 1.000 | 0.954 |
+| EditLoc recall / precision | 0.046 / 1.000 | 0.046 / 1.000 | 0 (gold-patch fallback, arm-independent) | - | - |
+
+Reading (practice-run observations, not confirmatory claims):
+
+- **Gold files survive compaction almost fully in both arms**
+  (file coverage 0.974): the summarizer keeps naming every file it saw,
+  gold or not, so file-granularity retention barely separates arms.
+- **Line-granularity retention separates them**: arm B retains a
+  significantly larger fraction of gold lines among its retained lines
+  (precision 0.586 vs 0.320; 18 wins / 4 losses, sign p = 0.004) and
+  numerically more gold lines overall (coverage 0.916 vs 0.852). With the
+  protected task-state instructions in the prompt, the summary leans
+  toward the issue-relevant spans; without them, retained lines are
+  dominated by distractor spans.
+- **Distractors are the precision payload**: the transcripts interleave
+  gold reads with same-repo distractor reads, so precision measures
+  relevance filtering under compaction. By raw retained-line counts arm A
+  ends 47% gold / 53% non-gold; arm B ends 69% gold / 31% non-gold -
+  arm B drops proportionally far more distractor material.
+- **Ledger engagement is partial**: the parsed task-state ledger
+  populated in 34 of 104 arm-B cycles; the arm-B effect observed here is
+  the prompt-level Protected Task State instructions, not a fully
+  populated ledger.
+- **Both arms lose line detail over cycles**: line coverage 0.85-0.92
+  after 4 cycles with ~60% line redundancy across cycles
+  (re-mentioned spans).
+- **EditLoc is a dataset constant here** (gold-patch fallback): recall
+  0.046 / precision 1.000 - for most of this slice the gold patch's
+  deleted lines fall outside the gold context spans; reported for
+  completeness, carries no arm information.
+
+Full paired statistics (per-instance deltas, exact sign test,
+tie-corrected Wilcoxon normal approximation) are in `results.json`
+(`comparisons`); per-item records are under `records.A` / `records.B`.
 
 ## 7. Metric citations
 
