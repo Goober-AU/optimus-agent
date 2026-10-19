@@ -1,0 +1,26 @@
+## Typed Protected State (deterministic, provenance-tagged)
+Derived from the transcript by fixed provenance rules; no item is inferred or invented. Copy every item below into the matching summary section without paraphrasing identifiers, paths, numbers or error codes. Items under SUPERSEDED are history, not current requirements.
+
+USER CORRECTIONS
+- [CO-9c384a] [@453d150f-070f-83ee-8eff-d15ecad3f4e8] Use the saga pattern with compensating transactions instead.
+- [CO-9dea27] [@453d150f-070f-83ee-8eff-d15ecad3f4e8] CORRECTION: scrap that plan - blocking round-trips stall the checkout path under load. (supersedes [VD-76361d]) (provenance pairing)
+
+PENDING ACTIONS
+- [PA-a48451] [@3e2a4bce-a884-7792-61b3-88da041059a4] Two-phase commit coordinator wired in; running the payments load test next.
+
+VERIFIED EVIDENCE
+- [VT-174e04] [@3871f0ef-5dd7-6ad5-e52b-b24e72c40a15] cargo test --lib telemetry::tests_02: test result: 18 passed; 0 failed
+- [VT-25d467] [@6a66e638-7f5e-3f1f-5d08-1936815d5491] cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed
+- [VT-2632d8] [@25360f43-ba43-3190-b8c0-ab0d951fa6f8] cargo test --lib telemetry::tests_00: test result: 18 passed; 0 failed
+
+REPOSITORY STATE
+- [RS-de76ff] [@25360f43-ba43-3190-b8c0-ab0d951fa6f8] 2 files changed
+
+LOW-PRIORITY EPISODES
+- [LP-8261a0] [@7ba90097-c92c-65bb-2c6c-0663f0299cb4] unrelated historical discussion.
+- [LP-8c9ce5] [@7ba90097-c92c-65bb-2c6c-0663f0299cb4] status update 0.0: sprint notes.
+- [LP-693e66] [@2b5abe9c-a58d-8d92-a0f0-4d4644b76ae6] TASK GOAL: eliminate double-charges in the payments flow of billing-api before the Friday release.
+- [LP-540c05] [@49173e53-e2b3-b81a-ece8-79fd3754c64a] Understood - switching to the saga pattern with compensating transactions on the billing service.
+
+SUPERSEDED (HISTORY, NOT CURRENT)
+- [VD-76361d] [@805eb310-b613-45b0-75a6-48ba55b30cf8] unverified: Decision: resolve the double-charges with a two-phase commit coordinator. (provenance pairing)

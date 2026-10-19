@@ -1,0 +1,111 @@
+{
+ "cell": "task-e-idchain",
+ "scenario": "r2-e3-task-e",
+ "arm": "typed",
+ "cycles": [
+  {
+   "cycle": 1,
+   "records": 11,
+   "retiredRefs": 0,
+   "droppedByCap": 0,
+   "sentinelId": "VT-1cfcd1",
+   "sentinelPresent": true,
+   "sentinelText": "test result: 55 passed; 1 failed",
+   "hotTokensUsed": 310,
+   "hotBudgetTokens": 800,
+   "renderVerifies": true,
+   "renderVerification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "previousRenderUnresolvedRefs": []
+  },
+  {
+   "cycle": 2,
+   "records": 11,
+   "retiredRefs": 6,
+   "droppedByCap": 0,
+   "sentinelId": "VT-1cfcd1",
+   "sentinelPresent": true,
+   "sentinelText": "cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed",
+   "hotTokensUsed": 328,
+   "hotBudgetTokens": 800,
+   "renderVerifies": true,
+   "renderVerification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "previousRenderUnresolvedRefs": [
+    "[@d09cc350-1fca-fd47-2c1e-c846c52d436a]",
+    "[VT-25d467]"
+   ]
+  },
+  {
+   "cycle": 3,
+   "records": 14,
+   "retiredRefs": 6,
+   "droppedByCap": 0,
+   "sentinelId": "VT-1cfcd1",
+   "sentinelPresent": true,
+   "sentinelText": "cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed",
+   "hotTokensUsed": 421,
+   "hotBudgetTokens": 800,
+   "renderVerifies": true,
+   "renderVerification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "previousRenderUnresolvedRefs": []
+  },
+  {
+   "cycle": 4,
+   "records": 17,
+   "retiredRefs": 6,
+   "droppedByCap": 0,
+   "sentinelId": "VT-1cfcd1",
+   "sentinelPresent": true,
+   "sentinelText": "cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed",
+   "hotTokensUsed": 514,
+   "hotBudgetTokens": 800,
+   "renderVerifies": true,
+   "renderVerification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "previousRenderUnresolvedRefs": []
+  },
+  {
+   "cycle": 5,
+   "records": 20,
+   "retiredRefs": 6,
+   "droppedByCap": 0,
+   "sentinelId": "VT-1cfcd1",
+   "sentinelPresent": true,
+   "sentinelText": "cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed",
+   "hotTokensUsed": 607,
+   "hotBudgetTokens": 800,
+   "renderVerifies": true,
+   "renderVerification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "previousRenderUnresolvedRefs": []
+  }
+ ],
+ "sentinelStableAllCycles": true
+}

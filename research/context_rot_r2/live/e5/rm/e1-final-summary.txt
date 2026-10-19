@@ -1,0 +1,42 @@
+## Goal
+Continue the user's task per the retained state.
+## Constraints & Preferences
+- [SB-dba467] [@fa7b2445-2384-80aa-06a1-bbc6b8d81df5] CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-0ccb211f
+- [UC-b1db37] [@fa7b2445-2384-80aa-06a1-bbc6b8d81df5] CONSTRAINT: the validator migration must be reversible R2-CONS-16a686a8
+- [UC-8cfca9] [@fa7b2445-2384-80aa-06a1-bbc6b8d81df5] CONSTRAINT: keep the auth protocol version at v2 R2-CONS-770fb97f
+- [UC-338283] [@fa7b2445-2384-80aa-06a1-bbc6b8d81df5] CONSTRAINT: do not modify files under gateway/ without review R2-CONS-7e788238
+- [UC-4b013c] [@fa7b2445-2384-80aa-06a1-bbc6b8d81df5] CONSTRAINT: always run the reporting suite before publishing R2-CONS-00794a36
+- [CO-c75aff] [@de9d5a8c-0768-7173-e12b-41c423a70eb9] CORRECTION: forget that; use architecture B for the indexer module instead R2-CORR-8f9f48e9. (supersedes [VD-cb8ea5]) (token-overlap pairing)
+- [CO-923697] [@3c360a59-06fe-1bb3-b92c-dd0bda2eda0d] CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-0fadc376. (supersedes [VD-8ed3c0]) (token-overlap pairing)
+- [CO-b7088c] [@fa7b2445-2384-80aa-06a1-bbc6b8d81df5] CONSTRAINT: never drop the billing ledger R2-CONS-d3596a7d
+- [TK-b8436f] [@fa7b2445-2384-80aa-06a1-bbc6b8d81df5] TASK GOAL: migrate the billing service to API v2 before Friday.
+## Progress
+### Done
+- [x] Prior turns summarized (lossy).
+
+### In Progress
+- [ ] Continuing the task.
+
+### Blocked
+- None.
+## Key Decisions
+- [VD-a474b5] [@f6fc5aa3-6aba-3e99-98dc-3b9b1307ec12] unverified: Decision: the payments fix lands behind a feature flag R2-DECI-9ff2548a
+- [VD-2eda6a] [@4788bdcc-6cbf-614b-e5b8-baa6a184cc10] unverified: Decision: reject the scheduler rewrite; extend instead R2-DECI-2f64a58a
+- [VD-752ff5] [@dec97968-7960-e18e-e8b6-1fe9ceca8264] unverified: Decision: keep the validator client in-process R2-DECI-5beb324a
+- [VD-ad14ee] [@f7353a8d-3ea1-df45-1806-1bcca37862eb] unverified: Decision: use architecture auth for the parser R2-DECI-cc252ba5
+## Next Steps
+1. Continue the task from the retained state.
+## Critical Context
+- [VT-5e3860] [@d25d8a6a-c388-5662-4763-f0f93b3927c1] cargo test: 4000 passed; 0 failed. Verified evidence R2-EVID-2bd29adb
+- [HF-a07498] [@3c360a59-06fe-1bb3-b92c-dd0bda2eda0d] The earlier A decision is superseded.
+- [LP-8261a0] [@0d91ffd3-cfdc-36f6-8403-518b866a70e4] unrelated historical discussion.
+- [LP-5ea181] [@0d91ffd3-cfdc-36f6-8403-518b866a70e4] status update 0.0: integration notes.
+- [VD-cb8ea5] [@8b3f5732-3e68-6517-cff9-938f20c69944] unverified: Decision: use architecture A for the indexer module R2-SUPE-9c85aba4 (token-overlap pairing)
+- [VD-8ed3c0] [@4cb08050-389c-53c4-74eb-4fc295dff45e] unverified: Decision: use architecture A for the reconciler module R2-SUPE-f84389ce (token-overlap pairing)
+(decayed prior summary) ## Goal
+Continue the user's task per the retained state.
+## Constraints & Preferences
+- [SB-dba467] [@fa7b2445-2384-80aa-06a1-bbc6b8d81df5] CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-0ccb211f
+- [UC-b1db37] [@fa7b2445-2384-80aa-06a1-bbc6b8d81df5] CONSTRAINT: the validator migration must be reversible R2-CONS-16a686a8
+- [UC-8cfca9] [@fa7b2445-2384-80aa-06a1-bbc6b8d81df5] C...
+(lossy excerpt) [User]: status update 3.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (3). / [User]: status update 4.1: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (4).

@@ -1,0 +1,402 @@
+{
+ "cell": "e1-fixture-typedarm",
+ "scenario": "r2-e1-multicycle",
+ "arm": "typed",
+ "retained": 13,
+ "probesTotal": 19,
+ "byKind": {
+  "constraint": {
+   "total": 8,
+   "retained": 6
+  },
+  "decision": {
+   "total": 4,
+   "retained": 4
+  },
+  "evidence": {
+   "total": 4,
+   "retained": 1
+  },
+  "supersession": {
+   "total": 2,
+   "retained": 2
+  },
+  "task": {
+   "total": 1,
+   "retained": 0
+  }
+ },
+ "meanRequestChars": 20498.0,
+ "failures": [],
+ "cycles": [
+  {
+   "cycle": 0,
+   "ran": true,
+   "firstKeptEntryId": "23ddb2aa-db00-c59d-6b2d-61065982f29e",
+   "summarizedEntries": 21,
+   "retainedEntries": 2,
+   "summaryChars": 3604,
+   "summarizerRequestChars": 16044,
+   "summarizerCalls": 1,
+   "compactedContextTokens": 30.0,
+   "ledgerPresent": false,
+   "ledgerItems": 0,
+   "anchorsPresent": [
+    "q-constraint-0",
+    "q-constraint-1",
+    "q-constraint-2",
+    "q-constraint-3",
+    "q-constraint-4",
+    "q-constraint-5",
+    "q-constraint-6",
+    "q-constraint-7",
+    "q-decision-0",
+    "q-decision-1",
+    "q-decision-2",
+    "q-decision-3",
+    "q-evidence-0",
+    "q-correction-0",
+    "q-correction-1"
+   ],
+   "summarizerUsage": {
+    "promptTokens": 0,
+    "completionTokens": 0,
+    "reasoningTokens": 0
+   },
+   "typedLedgerPresent": true,
+   "typedLedgerRecords": 23,
+   "typedAllocationTokens": 777,
+   "typedIncludedItems": 23,
+   "typedVerification": {
+    "passed": true,
+    "repaired": false,
+    "missing": 0,
+    "misSuperseded": 0,
+    "unresolvedRefs": 0,
+    "fabricated": 0
+   }
+  },
+  {
+   "cycle": 1,
+   "ran": true,
+   "firstKeptEntryId": "166f4ee6-ec5d-43a8-c34f-e69d60dc41af",
+   "summarizedEntries": 6,
+   "retainedEntries": 2,
+   "summaryChars": 3678,
+   "summarizerRequestChars": 21556,
+   "summarizerCalls": 1,
+   "compactedContextTokens": 30.0,
+   "ledgerPresent": false,
+   "ledgerItems": 0,
+   "anchorsPresent": [
+    "q-constraint-0",
+    "q-constraint-1",
+    "q-constraint-2",
+    "q-constraint-3",
+    "q-constraint-4",
+    "q-constraint-5",
+    "q-decision-0",
+    "q-decision-1",
+    "q-decision-2",
+    "q-decision-3",
+    "q-evidence-0",
+    "q-correction-0",
+    "q-correction-1"
+   ],
+   "summarizerUsage": {
+    "promptTokens": 0,
+    "completionTokens": 0,
+    "reasoningTokens": 0
+   },
+   "typedLedgerPresent": true,
+   "typedLedgerRecords": 19,
+   "typedAllocationTokens": 665,
+   "typedIncludedItems": 19,
+   "typedVerification": {
+    "passed": true,
+    "repaired": false,
+    "missing": 0,
+    "misSuperseded": 0,
+    "unresolvedRefs": 0,
+    "fabricated": 0
+   }
+  },
+  {
+   "cycle": 2,
+   "ran": true,
+   "firstKeptEntryId": "3b1bca49-c84a-5e15-f49b-4e3022ef4ae1",
+   "summarizedEntries": 6,
+   "retainedEntries": 2,
+   "summaryChars": 3678,
+   "summarizerRequestChars": 21630,
+   "summarizerCalls": 1,
+   "compactedContextTokens": 30.0,
+   "ledgerPresent": false,
+   "ledgerItems": 0,
+   "anchorsPresent": [
+    "q-constraint-0",
+    "q-constraint-1",
+    "q-constraint-2",
+    "q-constraint-3",
+    "q-constraint-4",
+    "q-constraint-5",
+    "q-decision-0",
+    "q-decision-1",
+    "q-decision-2",
+    "q-decision-3",
+    "q-evidence-0",
+    "q-correction-0",
+    "q-correction-1"
+   ],
+   "summarizerUsage": {
+    "promptTokens": 0,
+    "completionTokens": 0,
+    "reasoningTokens": 0
+   },
+   "typedLedgerPresent": true,
+   "typedLedgerRecords": 19,
+   "typedAllocationTokens": 665,
+   "typedIncludedItems": 19,
+   "typedVerification": {
+    "passed": true,
+    "repaired": false,
+    "missing": 0,
+    "misSuperseded": 0,
+    "unresolvedRefs": 0,
+    "fabricated": 0
+   }
+  },
+  {
+   "cycle": 3,
+   "ran": true,
+   "firstKeptEntryId": "88dac952-4ee3-d783-54db-1f78e7ae6941",
+   "summarizedEntries": 6,
+   "retainedEntries": 2,
+   "summaryChars": 3678,
+   "summarizerRequestChars": 21630,
+   "summarizerCalls": 1,
+   "compactedContextTokens": 30.0,
+   "ledgerPresent": false,
+   "ledgerItems": 0,
+   "anchorsPresent": [
+    "q-constraint-0",
+    "q-constraint-1",
+    "q-constraint-2",
+    "q-constraint-3",
+    "q-constraint-4",
+    "q-constraint-5",
+    "q-decision-0",
+    "q-decision-1",
+    "q-decision-2",
+    "q-decision-3",
+    "q-evidence-0",
+    "q-correction-0",
+    "q-correction-1"
+   ],
+   "summarizerUsage": {
+    "promptTokens": 0,
+    "completionTokens": 0,
+    "reasoningTokens": 0
+   },
+   "typedLedgerPresent": true,
+   "typedLedgerRecords": 19,
+   "typedAllocationTokens": 665,
+   "typedIncludedItems": 19,
+   "typedVerification": {
+    "passed": true,
+    "repaired": false,
+    "missing": 0,
+    "misSuperseded": 0,
+    "unresolvedRefs": 0,
+    "fabricated": 0
+   }
+  },
+  {
+   "cycle": 4,
+   "ran": true,
+   "firstKeptEntryId": "7b05f462-9bbf-a898-5011-2ef0f0f13f56",
+   "summarizedEntries": 6,
+   "retainedEntries": 2,
+   "summaryChars": 3678,
+   "summarizerRequestChars": 21630,
+   "summarizerCalls": 1,
+   "compactedContextTokens": 30.0,
+   "ledgerPresent": false,
+   "ledgerItems": 0,
+   "anchorsPresent": [
+    "q-constraint-0",
+    "q-constraint-1",
+    "q-constraint-2",
+    "q-constraint-3",
+    "q-constraint-4",
+    "q-constraint-5",
+    "q-decision-0",
+    "q-decision-1",
+    "q-decision-2",
+    "q-decision-3",
+    "q-evidence-0",
+    "q-correction-0",
+    "q-correction-1"
+   ],
+   "summarizerUsage": {
+    "promptTokens": 0,
+    "completionTokens": 0,
+    "reasoningTokens": 0
+   },
+   "typedLedgerPresent": true,
+   "typedLedgerRecords": 19,
+   "typedAllocationTokens": 665,
+   "typedIncludedItems": 19,
+   "typedVerification": {
+    "passed": true,
+    "repaired": false,
+    "missing": 0,
+    "misSuperseded": 0,
+    "unresolvedRefs": 0,
+    "fabricated": 0
+   }
+  }
+ ],
+ "probes": [
+  {
+   "id": "q-constraint-0",
+   "anchor": "R2-CONS-d3596a7d",
+   "retained": true,
+   "foundIn": [
+    "summary"
+   ]
+  },
+  {
+   "id": "q-constraint-1",
+   "anchor": "R2-CONS-00794a36",
+   "retained": true,
+   "foundIn": [
+    "summary"
+   ]
+  },
+  {
+   "id": "q-constraint-2",
+   "anchor": "R2-CONS-7e788238",
+   "retained": true,
+   "foundIn": [
+    "summary"
+   ]
+  },
+  {
+   "id": "q-constraint-3",
+   "anchor": "R2-CONS-770fb97f",
+   "retained": true,
+   "foundIn": [
+    "summary"
+   ]
+  },
+  {
+   "id": "q-constraint-4",
+   "anchor": "R2-CONS-16a686a8",
+   "retained": true,
+   "foundIn": [
+    "summary"
+   ]
+  },
+  {
+   "id": "q-constraint-5",
+   "anchor": "R2-CONS-0ccb211f",
+   "retained": true,
+   "foundIn": [
+    "summary"
+   ]
+  },
+  {
+   "id": "q-constraint-6",
+   "anchor": "R2-CONS-c2a59f1d",
+   "retained": false,
+   "foundIn": []
+  },
+  {
+   "id": "q-constraint-7",
+   "anchor": "R2-CONS-ec33ebdf",
+   "retained": false,
+   "foundIn": []
+  },
+  {
+   "id": "q-decision-0",
+   "anchor": "R2-DECI-cc252ba5",
+   "retained": true,
+   "foundIn": [
+    "summary"
+   ]
+  },
+  {
+   "id": "q-decision-1",
+   "anchor": "R2-DECI-5beb324a",
+   "retained": true,
+   "foundIn": [
+    "summary"
+   ]
+  },
+  {
+   "id": "q-decision-2",
+   "anchor": "R2-DECI-2f64a58a",
+   "retained": true,
+   "foundIn": [
+    "summary"
+   ]
+  },
+  {
+   "id": "q-decision-3",
+   "anchor": "R2-DECI-9ff2548a",
+   "retained": true,
+   "foundIn": [
+    "summary"
+   ]
+  },
+  {
+   "id": "q-evidence-0",
+   "anchor": "R2-EVID-2bd29adb",
+   "retained": true,
+   "foundIn": [
+    "summary"
+   ]
+  },
+  {
+   "id": "q-evidence-1",
+   "anchor": "R2-EVID-6e6ee09f",
+   "retained": false,
+   "foundIn": []
+  },
+  {
+   "id": "q-evidence-2",
+   "anchor": "R2-EVID-6456ae54",
+   "retained": false,
+   "foundIn": []
+  },
+  {
+   "id": "q-evidence-3",
+   "anchor": "R2-EVID-3e6062d8",
+   "retained": false,
+   "foundIn": []
+  },
+  {
+   "id": "q-correction-0",
+   "anchor": "R2-CORR-0fadc376",
+   "retained": true,
+   "foundIn": [
+    "summary"
+   ]
+  },
+  {
+   "id": "q-correction-1",
+   "anchor": "R2-CORR-8f9f48e9",
+   "retained": true,
+   "foundIn": [
+    "summary"
+   ]
+  },
+  {
+   "id": "q-subagent",
+   "anchor": "evidence/reviewer-1.json",
+   "retained": false,
+   "foundIn": []
+  }
+ ]
+}
