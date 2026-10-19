@@ -6,8 +6,10 @@ needed):
     python research/context_rot_r2/compactbench_adapter/probe_harness_behavior.py
 
 Findings against the FIXED binary (commit 49f473d8d: continue_recent session
-persistence, non-zero usage anchors, flush-on-append). Findings marked
-REVERSED contradict the W6 probe that ran against the pre-fix binary:
+persistence, non-zero usage anchors, flush-on-append); the F3 threshold
+sweep was re-pinned at HEAD for D5 (commit 3b08e3f2e: the clamped rows now
+pin the no-op). Findings marked REVERSED contradict the W6 probe that ran
+against the pre-fix binary:
 
 F1  [REVERSED] Sessions persist across invocations. continue_recent reopens
     the most recent session file in the session dir; entries accumulate
@@ -22,7 +24,10 @@ F3  [refined] Tail sizing: walking backwards, message j joins the kept tail
     per message) is <= keepRecentTokens; the cut sits before the first
     message that does not fit. On a session with a previous compaction the
     walk CLAMPS at the previous firstKeptEntryId: an oversized
-    keepRecentTokens keeps the whole live window and summarizes nothing.
+    keepRecentTokens empties the summarize window, which since D5
+    (3b08e3f2e) resolves to a no-op (status ok, "no compaction prepared"
+    warning, nothing summarized, nothing appended) instead of the pre-D5
+    empty-window summary-of-summary.
 F4  [REVERSED] tokensBefore/compactedContextTokens are non-zero: assistant
     turns carry a conservative ceil(chars/4) usage anchor (the estimator
     anchors on the last assistant turn, undercounting prior user turns).
@@ -206,12 +211,16 @@ def finding_f3_tail_estimator(root: str) -> None:
     cumulative = cum_estimates(extended)
     bad = (cumulative[9] + cumulative[10]) / 2 - 5.0
     invoke(request(case, CONTINUATIONS[:2], bad, first_id=8))
-    for keep_recent, expect_error, expected_kept in (
-        (cumulative[9] - 0.5, True, None),          # below cum[9]: tail=[9] (assistant) -> error
-        (cumulative[9] + 0.5, False, [8, 9]),      # above cum[9]: tail = [8, 9]
-        (cumulative[8] + 0.5, False, [7, 8, 9]),    # above cum[8]: tail = [7, 8, 9]
-        (cumulative[6] + 0.5, False, [5, 6, 7, 8, 9]),  # above cum[6]: clamped at window start
-        (500.0, False, [5, 6, 7, 8, 9]),           # far beyond: still clamped
+    # Row kinds: "error" = unusable handoff; "tail" = lands with that kept
+    # tail; "noop" = the clamped cut empties the summarize window, which
+    # since D5 (3b08e3f2e) resolves to a no-op instead of the pre-D5
+    # empty-window summary-of-summary.
+    for keep_recent, kind, expected_kept in (
+        (cumulative[9] - 0.5, "error", None),       # below cum[9]: tail=[9] (assistant) -> error
+        (cumulative[9] + 0.5, "tail", [8, 9]),      # above cum[9]: tail = [8, 9]
+        (cumulative[8] + 0.5, "tail", [7, 8, 9]),   # above cum[8]: tail = [7, 8, 9]
+        (cumulative[6] + 0.5, "noop", None),        # above cum[6]: clamped at window start
+        (500.0, "noop", None),                      # far beyond: still clamped
     ):
         probe = os.path.join(root, f"f3-delta-{keep_recent:.2f}").replace("\\", "/")
         shutil.copytree(case, probe)
@@ -225,15 +234,21 @@ def finding_f3_tail_estimator(root: str) -> None:
             with open(path, "w", encoding="utf-8", newline="\n") as handle:
                 handle.write("\n".join(lines) + "\n")
         resp = invoke(request(probe, [], keep_recent, first_id=8))
-        if expect_error:
+        if kind == "error":
             check(resp["status"] == "error",
                   f"K={keep_recent:.2f} errors (cut lands before the new assistant turn)")
-        else:
+        elif kind == "tail":
             check(resp["status"] == "ok" and resp["keptTurnIds"] == expected_kept,
                   f"K={keep_recent:.2f} keeps {expected_kept}")
-            if expected_kept == [5, 6, 7, 8, 9]:
-                check(any("empty summarize window" in w for w in resp["warnings"]),
-                      "clamped cut reports the empty-summarize-window warning")
+        else:
+            whole_session = list(range(10))
+            check(resp["status"] == "ok" and resp["summarizedTurnIds"] == []
+                  and resp["summary"] == "" and resp["keptTurnIds"] == whole_session,
+                  f"K={keep_recent:.2f} is a D5 no-op: nothing summarized, "
+                  f"the whole session stays live")
+            check(any("no compaction prepared" in w for w in resp["warnings"])
+                  and entry_types(session_files(probe)[0]).count("compaction") == 1,
+                  f"K={keep_recent:.2f} warns no-compaction-prepared and appends nothing")
     print()
 
 
