@@ -6,6 +6,13 @@ same policy the Rust pipeline executes:
 
 - `crates/pi-coding-agent/src/core/compaction/typed_state.rs`
   (classification, reconcile, merge, allocate, render_allocation, verify);
+  the D29 provenance-based supersession pairing (branch rot2/w41-d29,
+  commit "fix(compaction): provenance-based supersession pairing"):
+  two-tier token targets (non-correction kinds outrank corrections,
+  typed_state.rs:1107) plus the provenance fallback
+  (`provenance_target`, typed_state.rs:978) and the `retirePath` field
+  (token | provenance) rendered as a pairing annotation
+  (typed_state.rs:261/269/1770);
 - `crates/pi-coding-agent/src/core/compaction/compaction.rs`
   (TYPED_STATE_INSTRUCTION, typed_hot_state_budget_tokens, the unsafe
   allocation failure, the deterministic missing-item repair and the
@@ -139,6 +146,15 @@ def is_mandatory(kind: str) -> bool:
 
 CURRENT = "current"
 SUPERSEDED = "superseded"
+
+# typed_state.rs SupersessionPath (D29, typed_state.rs:261): which pairing
+# path matched when a correction retired a record.
+TOKEN = "token"
+PROVENANCE = "provenance"
+
+# SupersessionPath::pairing_note (typed_state.rs:269): the annotation
+# render_allocation appends after a paired record's line.
+_PAIRING_NOTE = {TOKEN: "token-overlap pairing", PROVENANCE: "provenance pairing"}
 
 VERIFIED = "verified"
 CORROBORATED = "corroborated"
@@ -485,6 +501,7 @@ def new_record(kind: str, entry_id: str, role: str, ordinal: int, text: str, ord
         "verification": verification,
         "revision": {"entryId": entry_id, "order": order},
         "link": None,
+        "retirePath": None,
     }
 
 
@@ -541,6 +558,41 @@ def supersession_target_kinds(kind: str) -> bool:
     )
 
 
+def provenance_target(out: List[Dict[str, Any]], slot: int) -> Optional[int]:
+    """typed_state.rs provenance_target() (D29, typed_state.rs:978): the most
+    recent prior CURRENT decision, when the correction is the only un-retired
+    correction introduced since that decision and no other decision
+    intervened between them. The correction's position after the decision is
+    the pairing evidence, not token overlap; the two guards keep the path
+    from firing when the positional evidence is ambiguous."""
+    correction_ordinal = out[slot]["ordinal"]
+    candidates = [
+        (candidate_slot, record)
+        for candidate_slot, record in enumerate(out)
+        if record["kind"] == VERIFIED_DECISION
+        and record["status"] == CURRENT
+        and record["ordinal"] < correction_ordinal
+    ]
+    if not candidates:
+        return None
+    target_slot, target = max(candidates, key=lambda pair: pair[1]["ordinal"])
+    target_ordinal = target["ordinal"]
+    decision_intervened = any(
+        record["kind"] == VERIFIED_DECISION
+        and target_ordinal < record["ordinal"] < correction_ordinal
+        for record in out
+    )
+    sibling_correction = any(
+        record["kind"] == USER_CORRECTION
+        and record["status"] == CURRENT
+        and target_ordinal < record["ordinal"] < correction_ordinal
+        for record in out
+    )
+    if decision_intervened or sibling_correction:
+        return None
+    return target_slot
+
+
 def reconcile(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     """typed_state.rs reconcile(): ids, dedupe, supersession, succession,
     revival, corroboration, rationale links."""
@@ -574,6 +626,7 @@ def reconcile(records: List[Dict[str, Any]]) -> Dict[str, Any]:
                 existing["text"] = record["text"]
             existing["status"] = record["status"]
             existing["link"] = record["link"]
+            existing["retirePath"] = record.get("retirePath")
             restated[slot].append(record["ordinal"])
         else:
             record = dict(record)
@@ -601,7 +654,11 @@ def reconcile(records: List[Dict[str, Any]]) -> Dict[str, Any]:
                 attempt += 1
         used[out[slot]["id"]] = slot
 
-    # Supersession: a user correction retires the best earlier CURRENT record.
+    # Supersession (D29, typed_state.rs:1088): a user correction retires the
+    # best earlier CURRENT record by token overlap, or by provenance position
+    # when no token target qualifies. Corrections never outrank other kinds as
+    # token targets, so a later correction retires its stale decision or
+    # requirement instead of swallowing the previous correction.
     correction_slots = [
         slot for slot, record in enumerate(out)
         if record["kind"] == USER_CORRECTION and record["link"] is None
@@ -612,7 +669,11 @@ def reconcile(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         correction_id = out[slot]["id"]
         correction_toks = scoring_tokens(correction_text)
         correction_anchors = anchors(correction_text)
-        best: Optional[Tuple[int, int]] = None
+        # Best token target per tier (typed_state.rs:1107): non-correction
+        # kinds outrank corrections, so the sibling-correction overlap never
+        # wins while a qualifying decision or requirement stays CURRENT.
+        best_primary: Optional[Tuple[int, int]] = None
+        best_correction: Optional[Tuple[int, int]] = None
         for candidate_slot, candidate in enumerate(out):
             if (
                 candidate_slot == slot
@@ -635,14 +696,32 @@ def reconcile(records: List[Dict[str, Any]]) -> Dict[str, Any]:
             shared_anchors = len(correction_anchors & anchors(candidate["text"]))
             score = 3 * shared_anchors + len(shared)
             qualifies = (shared_anchors >= 1 and score >= 4) or (specific >= 1 and len(shared) >= 2)
-            if qualifies and score > (best[1] if best else 0):
-                best = (candidate_slot, score)
-        if best is not None:
-            target_slot = best[0]
-            target_id = out[target_slot]["id"]
-            out[target_slot]["status"] = SUPERSEDED
-            out[target_slot]["link"] = correction_id
-            out[slot]["link"] = target_id
+            if not qualifies:
+                continue
+            best = best_correction if candidate["kind"] == USER_CORRECTION else best_primary
+            if score > (best[1] if best else 0):
+                if candidate["kind"] == USER_CORRECTION:
+                    best_correction = (candidate_slot, score)
+                else:
+                    best_primary = (candidate_slot, score)
+        token_target = best_primary if best_primary is not None else best_correction
+        if token_target is not None:
+            target_slot = token_target[0]
+            path = TOKEN
+        else:
+            # No token target (typed_state.rs:1152): retire the most recent
+            # prior decision the correction positionally replaces.
+            provenance = provenance_target(out, slot)
+            if provenance is None:
+                continue
+            target_slot = provenance
+            path = PROVENANCE
+        target_id = out[target_slot]["id"]
+        out[target_slot]["status"] = SUPERSEDED
+        out[target_slot]["link"] = correction_id
+        out[target_slot]["retirePath"] = path
+        out[slot]["link"] = target_id
+        out[slot]["retirePath"] = path
 
     # Task succession: a newer user CURRENT_TASK retires earlier CURRENT_TASKs.
     task_slots = [
@@ -679,6 +758,7 @@ def reconcile(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         if any(ordinal > retiring_ordinal for ordinal in restated[slot]):
             out[slot]["status"] = CURRENT
             out[slot]["link"] = None
+            out[slot]["retirePath"] = None
 
     # Corroboration: an assistant decision a later verified tool record supports.
     for slot in range(len(out)):
@@ -822,6 +902,7 @@ def allocate(state: Dict[str, Any], budget_tokens: int) -> Dict[str, Any]:
                     "tokens": estimate_tokens(line),
                     "section": section,
                     "line": line,
+                    "retirePath": record.get("retirePath"),
                 }
             )
         else:
@@ -1016,7 +1097,13 @@ def render_allocation(allocation: Dict[str, Any]) -> str:
         if item["section"] != current_section:
             out += "\n" + item["section"] + "\n"
             current_section = item["section"]
-        out += item["line"] + "\n"
+        out += item["line"]
+        retire_path = item.get("retirePath")
+        if retire_path is not None:
+            # typed_state.rs render_allocation (D29, typed_state.rs:1770):
+            # the pairing annotation after a paired record's line.
+            out += f" ({_PAIRING_NOTE[retire_path]})"
+        out += "\n"
     return out
 
 
