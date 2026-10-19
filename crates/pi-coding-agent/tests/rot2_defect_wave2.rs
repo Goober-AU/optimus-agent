@@ -1,4 +1,4 @@
-//! ROT2 wave-2 defect tests: D18/D19 verification and regression coverage.
+//! ROT2 wave-2 defect tests: D18/D19/D20 verification and regression coverage.
 //!
 //! Owner: `core/agent_session.rs` (the three deferred audit defects).
 //! - D18 (LOW): a failed auto-compaction is invisible to the model; the
@@ -6,6 +6,7 @@
 //!   and failed, so the model cannot adapt (e.g. keep its output short).
 //! - D19 (MED): live-list producers (`unpersisted_outcomes`,
 //!   `pending_next_turn_messages`) had no drain or cap.
+//! - D20 (MED): the summarizer request is not the request the model saw.
 //!
 //! All scenarios run offline on the faux provider through a real
 //! `AgentSession` (same contract as `compaction_recovery.rs`): summary wire
@@ -20,7 +21,14 @@ use pi_ai::providers::faux::{
     FauxAssistantMessageOptions, FauxModelDefinition, FauxResponseFactory, FauxResponseStep,
     RegisterFauxProviderOptions,
 };
+use pi_agent_core::types::{AgentMessage, CustomAgentMessage};
 use pi_ai::types::{Context, Message, Model};
+use pi_coding_agent::core::compaction::compaction::{
+    default_compaction_settings, estimate_context_tokens, prepare_compaction,
+    CompactionSessionEntry,
+};
+use pi_coding_agent::core::compaction::utils::serialize_conversation;
+use pi_coding_agent::core::messages::convert_to_llm;
 use pi_coding_agent::core::agent_session::AgentSession;
 use pi_coding_agent::core::agent_session_services::{
     create_agent_session_from_services, create_agent_session_services,
@@ -309,6 +317,101 @@ fn turn_requests(fixture: &Wave2Fixture) -> Vec<String> {
         .collect()
 }
 
+fn summary_requests(fixture: &Wave2Fixture) -> Vec<String> {
+    fixture
+        .requests
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|request| request.summary_call)
+        .map(|request| request.text.clone())
+        .collect()
+}
+
+/// Mirrors the production converter (`compaction_session_entry_from`,
+/// core/agent_session.rs): a session-file entry becomes the
+/// `CompactionSessionEntry` the compaction kernel consumes. Same shape as
+/// `compaction_recovery.rs`.
+fn compaction_entry(
+    entry: &serde_json::Map<String, Value>,
+) -> Option<CompactionSessionEntry> {
+    use pi_agent_core::types::CustomMessageContent;
+
+    let entry_type = entry.get("type").and_then(Value::as_str)?;
+    let id = entry.get("id").and_then(Value::as_str)?.to_string();
+    let parent_id = entry
+        .get("parentId")
+        .and_then(Value::as_str)
+        .map(str::to_string);
+    match entry_type {
+        "message" => Some(CompactionSessionEntry::Message {
+            id,
+            parent_id,
+            message: serde_json::from_value::<AgentMessage>(
+                entry.get("message").cloned().unwrap_or(Value::Null),
+            )
+            .ok()?,
+        }),
+        "custom_message" => Some(CompactionSessionEntry::CustomMessage {
+            id,
+            parent_id,
+            custom_type: entry
+                .get("customType")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_string(),
+            content: serde_json::from_value(entry.get("content").cloned().unwrap_or(Value::Null))
+                .unwrap_or(CustomMessageContent::Text(String::new())),
+            details: entry.get("details").cloned(),
+            display: entry
+                .get("display")
+                .and_then(Value::as_bool)
+                .unwrap_or(false),
+            timestamp: entry
+                .get("timestamp")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+                .unwrap_or_default(),
+        }),
+        "compaction" => Some(CompactionSessionEntry::Compaction {
+            id,
+            parent_id,
+            summary: entry
+                .get("summary")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_string(),
+            first_kept_entry_id: entry
+                .get("firstKeptEntryId")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_string(),
+            tokens_before: entry
+                .get("tokensBefore")
+                .and_then(Value::as_f64)
+                .unwrap_or(0.0),
+            details: entry.get("details").cloned(),
+            from_hook: entry.get("fromHook").and_then(Value::as_bool),
+            custom_instructions: entry
+                .get("customInstructions")
+                .and_then(Value::as_str)
+                .map(str::to_string),
+            harness_digest: entry
+                .get("harnessDigest")
+                .and_then(Value::as_str)
+                .map(str::to_string),
+            timestamp: entry
+                .get("timestamp")
+                .map(|value| value.to_string())
+                .unwrap_or_default(),
+        }),
+        _ => Some(CompactionSessionEntry::Other {
+            id,
+            parent_id,
+            entry_type: entry_type.to_string(),
+        }),
+    }
+}
 
 /// The oversized prompt that pushes the faux usage estimate past the
 /// compaction trigger boundary.
@@ -406,5 +509,139 @@ async fn d18_successful_compaction_does_not_surface_a_failure_notice() {
     assert!(
         !last.contains("Auto-compaction failed"),
         "a successful compaction must not surface a failure notice"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// D20: the summarizer request vs the request the model saw
+// ---------------------------------------------------------------------------
+
+/// D20: the summarizer's captured wire request must be the serialized
+/// conversation form of exactly what the model saw - the same
+/// `convert_to_llm` + `serialize_conversation` pipeline, with no silently
+/// dropped entries between the model-visible conversation and the summary
+/// input. (The verified-open residue of D20 is recorded in the campaign
+/// ledger: the serialized text form cannot carry image blocks the model
+/// received, and native-compaction providers receive the
+/// `compaction_provider_context` rebuild instead of the provider-seam
+/// transforms - both live outside agent_session.rs.)
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn d20_summarizer_request_equals_the_serialized_model_visible_conversation() {
+    let fixture = wave2_fixture("d20-fidelity", Summarizer::Valid).await;
+    let session = &fixture.session;
+
+    session
+        .prompt_and_wait(&oversized_prompt(), None)
+        .await
+        .expect("prompt accepted");
+    let compacted = wait_until("compaction entry", Duration::from_secs(90), || {
+        session
+            .session_manager
+            .lock()
+            .unwrap()
+            .get_branch(None)
+            .iter()
+            .any(|entry| entry.get("type").and_then(Value::as_str) == Some("compaction"))
+    })
+    .await;
+    assert!(compacted, "auto-compaction never produced a durable entry");
+
+    // The turn wire request and the summary wire calls both exist.
+    let turns = turn_requests(&fixture);
+    assert!(!turns.is_empty(), "no turn request was recorded");
+    let chunks = summary_requests(&fixture);
+    assert!(!chunks.is_empty(), "the auto-compaction made no summary wire calls");
+
+    // The summarizer request is the serialized conversation form, and every
+    // anchor the model saw reaches the summary input (no silent drops).
+    let joined = chunks.join("\n<chunk>\n");
+    for anchor in [
+        "TASK GOAL: ship the migration report",
+        "CONSTRAINT: never drop the payments ledger",
+        "Evidence reference: reports/migration-audit.md",
+    ] {
+        assert!(
+            turns[0].contains(anchor),
+            "anchor {anchor} missing from the model-visible request"
+        );
+        assert!(
+            joined.contains(anchor),
+            "anchor {anchor} missing from the summarizer request"
+        );
+    }
+    assert!(
+        chunks.iter().all(|chunk| chunk.contains("<conversation>")),
+        "the summary wire calls are the serialized conversation form"
+    );
+
+    // Byte-exact contract: rebuilding the model-visible serialization of the
+    // summarized region (convert_to_llm + serialize_conversation over the
+    // same preparation the session used) must reproduce the chunk bodies the
+    // provider captured, once the chunk wrappers are stripped.
+    let entries = session.session_manager.lock().unwrap().get_branch(None);
+    let path_entries: Vec<CompactionSessionEntry> = entries
+        .iter()
+        .take_while(|entry| {
+            entry.get("type").and_then(Value::as_str) != Some("compaction")
+        })
+        .filter_map(compaction_entry)
+        .collect();
+    let mut settings = default_compaction_settings();
+    settings.reserve_tokens = 512.0;
+    settings.keep_recent_tokens = 5.0;
+    let live: Vec<AgentMessage> = path_entries
+        .iter()
+        .filter_map(|entry| match entry {
+            CompactionSessionEntry::Message { message, .. } => Some(message.clone()),
+            CompactionSessionEntry::CustomMessage {
+                custom_type,
+                content,
+                details,
+                display,
+                ..
+            } => Some(AgentMessage::Custom(CustomAgentMessage::Custom {
+                custom_type: custom_type.clone(),
+                content: content.clone(),
+                display: *display,
+                details: details.clone(),
+                timestamp: 0,
+            })),
+            _ => None,
+        })
+        .collect();
+    let tokens = estimate_context_tokens(&live).tokens;
+    let preparation =
+        prepare_compaction(&path_entries, &settings, &|_| tokens)
+            .expect("the same preparation the session used must resolve");
+    // The summarized region: the plain messages, or the split turn's prefix.
+    let mut region = preparation.messages_to_summarize.clone();
+    region.extend(preparation.turn_prefix_messages.iter().cloned());
+    let serialized_model_visible =
+        serialize_conversation(&convert_to_llm(&region, &Default::default()));
+    // Each wire chunk is "<conversation>\n{slice}</conversation>" plus the
+    // chaining/instruction wrappers; the slices concatenate to the full
+    // serialized region.
+    let chunk_slices = chunks
+        .iter()
+        .map(|chunk| {
+            let body = chunk
+                .strip_prefix("<conversation>\n")
+                .unwrap_or(chunk);
+            match body.find("\n</conversation>") {
+                Some(end) => &body[..end],
+                None => body,
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("");
+    assert_eq!(
+        serialized_model_visible.len(),
+        chunk_slices.len(),
+        "the captured summarizer request must cover the serialized model-visible conversation"
+    );
+    assert_eq!(
+        serialized_model_visible,
+        chunk_slices,
+        "the captured summarizer request must equal the serialized model-visible conversation"
     );
 }
