@@ -15,8 +15,12 @@
 //!   present in the summarized window instead of always rendering an empty
 //!   `<read-files>` block.
 
+use std::sync::Arc;
+
 use pi_agent_core::types::AgentMessage;
-use pi_ai::types::{Message, UserContent, UserMessage};
+use pi_ai::types::{
+    AssistantMessage, ContentBlock, Message, Model, TextContent, ToolCall, UserContent, UserMessage,
+};
 use pi_coding_agent::core::compaction::compaction::{
     default_compaction_settings, prepare_compaction, CompactionSessionEntry, CompactionSettings,
 };
@@ -244,4 +248,152 @@ fn fallback_only_history_yields_no_previous_summary() {
     );
     assert_eq!(preparation.first_kept_entry_id, "new-1");
     assert!(!preparation.messages_to_summarize.is_empty());
+}
+
+// ---------------------------------------------------------------------------
+// D14: the read-files inventory is always empty
+// ---------------------------------------------------------------------------
+
+fn assistant_tool_call_entry(
+    id: &str,
+    calls: &[(&str, serde_json::Value)],
+) -> CompactionSessionEntry {
+    let content = calls
+        .iter()
+        .enumerate()
+        .map(|(index, (name, arguments))| {
+            ContentBlock::ToolCall(ToolCall::new(
+                &format!("call-{index}"),
+                *name,
+                serde_json::from_value::<serde_json::Map<String, Value>>(arguments.clone())
+                    .unwrap_or_default(),
+            ))
+        })
+        .collect();
+    CompactionSessionEntry::Message {
+        id: id.into(),
+        parent_id: None,
+        message: AgentMessage::Message(Message::Assistant(AssistantMessage {
+            content,
+            stop_reason: "toolUse".into(),
+            ..Default::default()
+        })),
+    }
+}
+
+/// D14 regression: tool calls that reference files without modifying them
+/// (attach_image `paths`, an arbitrary `read_file`-style `path`) must land in
+/// the read inventory, and the inventory must render `<read-files>`.
+#[test]
+fn non_edit_path_tool_calls_populate_the_read_inventory() {
+    use pi_coding_agent::core::compaction::utils::{
+        compute_file_lists, format_file_operations,
+    };
+
+    let entries = vec![
+        user_entry("u1", "Inspect and attach the chart."),
+        assistant_tool_call_entry(
+            "a1",
+            &[
+                ("attach_image", json!({"paths": ["chart.png", "shot.png"]})),
+                ("read_file", json!({"path": "src/parser.rs"})),
+                ("edit", json!({"path": "src/main.rs", "edits": []})),
+                ("bash", json!({"command": "ls"})),
+            ],
+        ),
+        user_entry("u2", "Now summarize."),
+    ];
+    let preparation = prepare_compaction(&entries, &settings_with(1.0), &|_| 250_000.0)
+        .expect("history exists, so a preparation must resolve");
+    // The bash call carries no file argument and must not contribute.
+    let (read_files, modified_files) = compute_file_lists(&preparation.file_ops);
+    assert_eq!(
+        read_files,
+        vec!["chart.png".to_string(), "shot.png".to_string(), "src/parser.rs".to_string()],
+        "path/paths arguments of non-edit calls must be recorded as reads"
+    );
+    assert_eq!(modified_files, vec!["src/main.rs".to_string()]);
+    let rendered = format_file_operations(&read_files, &modified_files);
+    assert!(rendered.contains("<read-files>"), "{rendered}");
+    assert!(rendered.contains("chart.png"), "{rendered}");
+    assert!(rendered.contains("<modified-files>"), "{rendered}");
+    assert!(rendered.contains("src/main.rs"), "{rendered}");
+}
+
+/// D14 regression end to end: the persisted CompactionDetails.read_files and
+/// the appended summary inventory reflect the reads actually present in the
+/// summarized window.
+#[tokio::test]
+async fn compact_persists_a_non_empty_read_files_inventory() {
+    use pi_ai::api_registry::{register_api_provider_simple, ApiProviderSimple};
+    use pi_ai::utils::event_stream::AssistantMessageEventStream;
+    use pi_coding_agent::core::compaction::compaction::{
+        compact, default_summary_call_runner,
+    };
+
+    register_api_provider_simple(
+        ApiProviderSimple {
+            api: "compaction-summary-path-d14".into(),
+            stream: Arc::new(|_, _, _| panic!("unexpected base stream")),
+            stream_simple: Arc::new(|_, _, _| {
+                let stream = AssistantMessageEventStream::new();
+                stream.push(pi_ai::types::AssistantMessageEvent::Done {
+                    reason: "stop".into(),
+                    message: AssistantMessage {
+                        content: vec![ContentBlock::Text(TextContent::new(SUMMARY))],
+                        stop_reason: "stop".into(),
+                        ..Default::default()
+                    },
+                });
+                stream
+            }),
+            compact: None,
+            supports_compaction: None,
+        },
+        None,
+    );
+    let mut model = Model::new(
+        "fixture",
+        "fixture",
+        "compaction-summary-path-d14",
+        "fixture",
+        "https://fixture.invalid",
+    );
+    model.context_window = 200_000.0;
+    model.max_tokens = 32_000.0;
+
+    let entries = vec![
+        user_entry("u1", "Attach the chart and edit the entry point."),
+        assistant_tool_call_entry(
+            "a1",
+            &[
+                ("attach_image", json!({"paths": ["chart.png"]})),
+                ("edit", json!({"path": "src/main.rs", "edits": []})),
+            ],
+        ),
+        user_entry("u2", "Now compact."),
+    ];
+    let preparation = prepare_compaction(&entries, &settings_with(1.0), &|_| 250_000.0)
+        .expect("history exists, so a preparation must resolve");
+    let result = compact(
+        &preparation,
+        &model,
+        "unused",
+        None,
+        None,
+        None,
+        default_summary_call_runner(None),
+        None,
+        None,
+    )
+    .await
+    .expect("fixture summarizer succeeds");
+
+    let details = result.details.expect("compaction details");
+    assert_eq!(details.read_files, vec!["chart.png".to_string()]);
+    assert_eq!(details.modified_files, vec!["src/main.rs".to_string()]);
+    assert!(result.summary.contains("<read-files>"), "{}", result.summary);
+    assert!(result.summary.contains("chart.png"), "{}", result.summary);
+    assert!(result.summary.contains("<modified-files>"), "{}", result.summary);
+    assert!(result.summary.contains("src/main.rs"), "{}", result.summary);
 }
