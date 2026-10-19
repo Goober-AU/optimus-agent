@@ -39,6 +39,7 @@ In flight at this writing and NOT in this tree: the D30 and cycle-5
 budget-caveat recovery (W46; `rot2/w46-d30` has no commits over this head)
 and the W16 supersession work (`rot2/w16-supersession`, no commits over this
 head).
+f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 
 ## 1. Hypotheses
 
@@ -47,6 +48,7 @@ head).
 | H-r2-1 | the default summary-of-summary path loses protected information over repeated compactions on the production path | R2-E1: 19 anchors, 5 cycles, deterministic lossy summarizer; E-INC-1/2a: 8 cycles, 2 seeds | supported as a worst-case bound (0/19 after 5 cycles, 0/19 already after 2); NOT confirmed live - R2-E2's real summarizer retained 19/19 and 37/37 anchors at every cycle |
 | H-r2-2 | the v1 ledger does not safely protect state | R2-E2 base+hard (live GLM 5.3); E-INC-2b/2c (W9-F2 id collisions, W9-F4 mutual retirement); the W8 calibration (the health heuristic, AUC 0.604, is no safety net either); R2-E3ADV (adversarial corrections, live); R2-E2-RM (post-W11 renders, offline) | strongly supported: the ledger can invert a user correction (pre-W11, live); retention is seed- and placement-dependent; nothing else predicts the loss. Post-W11 it either renders clean (E2-RM base) or caps the corrections out of the rendered ACTIVE list (E2-RM hard, D21); when supersession cannot pair at all it does nothing and the model argues the stale item down (E3ADV, 30/30 both arms at +1.5k-1.9k request chars/cycle) |
 | H-r2-3 | provenance-aware typed state fixes the mechanism | typed_state v2 module (design + 74 unit tests at this tip, `c948905a3` + the wave); the W15 integration wiring (`338b920c3`, `40bead288`, `4be9623b0`); W11's content-derived id and correction-safe supersession fixes in v1 (`1754a3e1b`), re-measured offline on the live corpus by R2-E2-RM (`2fbb14f33`); R2-E5 (the typed-arm measurement, `EXPERIMENT-LEDGER.md`); the W35 red team and the D21-D29 fix wave (section 4.4) | partially supported: wired end to end, verifier-gated, and R2-E5 part 1 beats control B on the fixture (15/19 vs 14/19) with live parts 2-3 correct where they ran; the first live run also falsified two pre-registrations (TASK-E halt, the D24 id-churn mechanism; no SUPERSEDED render in E3ADV C1, the D29 token-overlap pairing) - both now fixed, with D29 live-confirmed on the C1 cell (`621dc462f`); the red team then found D22-D28, all fixed, leaving D30 and the cycle-5 budget caveat open (W46). The E3ADV structural goal is achieved post-D29; no full post-fix R2-E5 re-run exists |
+f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 | H-r2-4 | pressure/cycle health does not predict semantic loss | W8 calibration corpus: 66 labelled cases scored by the production scorer | supported on synthetic labels: ROC-AUC 0.604 against `lost_constraint` |
 
 ## 2. What was measured
@@ -250,6 +252,7 @@ max summarizer latency 45.3 s, 209 wire calls (155 probes, 53 summarizers, 1
 pong). The typed arm was a deliberate stub in this run (`--arm typed` exits 2
 with a loud message, never a silent substitution); the typed-arm run
 (R2-E5) has since been executed and recorded in `EXPERIMENT-LEDGER.md`.
+f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 
 ### 3.10 R2-E3ADV: when supersession cannot pair, the ledger does nothing and the model argues it down
 
@@ -292,7 +295,9 @@ retired by their corrections, 17 spurious pairs -> 4) but with a new
 render-level defect: with the churn gone, 26 constraints are active and
 CONSTRAINTS_CAP=12 omits the four corrections from the rendered ACTIVE list
 (they appear only as SUPERSEDED replacement texts; 9 of 20 constraint lines
-are also omitted) - defect candidate D21, fix in flight (section 5.9).
+are also omitted) - defect candidate D21, since fixed by the correction-carrier
+cap exemption (`a9035ce8a`; the replay re-measured strict containment 20/20,
+`0b824f358`; see section 5.9 for the refreshed status).
 Pre-existing and W11-independent: `EVIDENCE_RE` never matched this corpus's
 evidence shapes, so the VERIFIED EVIDENCE section is empty in every render
 pre and post; the W11 id-collision half is not exercised by this corpus.
@@ -561,6 +566,7 @@ live-confirmed on the E3ADV C1 cell only.
    are the documented environment pair (uv missing on the test child's PATH;
    the scheduling-sensitive painted-frame tray test that passes serialized)
    and predate this campaign.
+f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 3. R2-E2 is a Python mirror, not the Rust binary: it was validated byte-for-byte
    against the stored R2-E1 fixture result, but the live run documents seven
    deviations (`live/README.md` "Deviations from the Rust path"): summarizer budget
@@ -603,6 +609,7 @@ live-confirmed on the E3ADV C1 cell only.
    and retire at the first merge, `7bec70f09`) and the W41 cycle-5
    budget-overflow caveat (`621dc462f`); W46 (`rot2/w46-d30`) is in flight
    with no commits over this head.
+f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 
 ## 6. Recommendation for defaults
 
@@ -610,6 +617,7 @@ live-confirmed on the E3ADV C1 cell only.
 | --- | --- | --- | --- |
 | `compaction.taskState` v1 ledger | `off` (unchanged) | KEEP OFF | iteration-1: no recall gain, +913..1 751 tokens/cycle; R2-E2: the ledger inverted a user correction under a live model (89/95 vs default 95/95) and its summarizer calls burn 8k-32k reasoning tokens with latency up to 137.8 s; E3ADV: when its supersession cannot pair it does nothing and the model argues the stale item down (+1.5k-1.9k request chars/cycle); the W11 fix renders clean offline on the base corpus (E2-RM) but caps corrections out of the hard render (D21) and is unproven live (the D21 cap was later fixed by `a9035ce8a`, W32; the KEEP OFF verdict rests on the inversion, the cost and the E3ADV dead-weight result, all unchanged by that fix) |
 | typed state v2 | `off`; opt-in via `compaction.taskState = "typed"` | OPT-IN; measured and red-teamed, not a default | wired end to end (`338b920c3`, `40bead288`, `4be9623b0`; section 4.2) and measured: R2-E5 part 1 beats control B on the fixture (typed 15/19 vs v1 14/19 vs default 0/19; verifier 5/5 cycles, stable 777/800 hot-token budget, +886 mean request chars) and parts 2-3 are live-correct wherever they ran, but TASK-E halted at cycle 2 pre-fix (the D24 id-churn mechanism, since fixed) and the E3ADV C1 cell showed no SUPERSEDED render pre-D29 (since fixed and live-confirmed `621dc462f`). The W35 red team then found seven more defects (D22-D28), all fixed (section 4.4), with the W49 battery green at `71e770c5e`. Still open: D30 and the cycle-5 budget caveat (W46 in flight); a full post-fix R2-E5 live re-run was NOT executed. Other evidence remains prompt-level or v1-level (W26, W27, E2-RM). No default change before D30 lands and the full re-run beats control B at comparable or lower token cost |
+f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 | defect fixes D1/D5/D6/D8/D9/D10/D11/D12/D13/D14/D16/D17 + W11 ids + harness F1/F4/F5 | always on | KEEP | correctness fixes with regression guards, not policies; none adds a model call |
 | evidence-recovery tool excerpt (iteration-1) | always on | KEEP | 0/4 -> 4/4 at the same budget (iteration-1 E4); unchanged this campaign |
 | CONTEXT HEALTH indicator | display only | KEEP, DO NOT GATE | calibration AUC 0.604: the pressure/cycle heuristic does not predict semantic loss, so it must not gate any compaction decision |
@@ -635,6 +643,7 @@ live-confirmed on the E3ADV C1 cell only.
   defects in the typed path after the wiring (D22-D28), all fixed
   (section 4.4), with D30 and the cycle-5 budget caveat still open. The
   W26/W27 live results are prompt-level ledger effects, not typed-arm
+f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
   evidence.
 - R2-E1/E-INC numbers are pipeline mechanics under a deliberately lossy
   deterministic fixture: worst-case bounds on what the pipeline alone protects, not
@@ -656,6 +665,7 @@ live-confirmed on the E3ADV C1 cell only.
   entries and (D30) decisions stated in user text, which the committed
   classifier still does not handle (section 4.2). D18/D19/D20 landed (W30),
   D21-D29 landed (W32-W41, section 4.4).
+f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
 - Not reproducible from the drivers alone: item seeds derive from salted blake2b
   digests recorded per row (iteration-1 M5, fixed for r2; `scenario.py`).
 
@@ -665,7 +675,11 @@ live-confirmed on the E3ADV C1 cell only.
   labels, the R2-E1 numbers, the inherited iteration-1 context, the TypeCompact
   reproduction baseline (W14).
 - `BUG-LEDGER.md` - D1-D20 status on this base, the new findings N1-N3, the W9
-  findings, the harness findings HF1-HF6.
+  findings, the harness findings HF1-HF6, and section 4's W35 red-team wave
+  (D22-D29, all fixed; D30 open).
+- `REVIEW-AUDIT.md` - the W42 pre-PR hostile-reviewer pass (blocker B1, should-fix
+  S1-S7, nits) plus the W45 appendix: the D22-D29 red-team wave record and the
+  integrator's commit-subject options.
 - `CODING-TASK-RESULTS.md` - what coding-task evaluation exists (ContextBench
   pipeline, CompactBench custom runs) and the exact blockers for everything else.
 - `COMPATION-CORRECTNESS.md` - the D-defect narrative: what is fixed on the branch,
@@ -688,3 +702,4 @@ live-confirmed on the E3ADV C1 cell only.
   worker; the W19 PR draft (`PR-BODY.md`, integrated at `483e6de35`) predates the
   post-W22 results and needs its own refresh. If a file named here is missing at
   read time, the experiment ledger and the cited artefacts hold its content.
+f638de7b9 (docs(context-rot): refresh PR-BODY and FINAL-REPORT to the landed fixes)
