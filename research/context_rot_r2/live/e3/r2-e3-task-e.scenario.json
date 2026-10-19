@@ -1,0 +1,313 @@
+{
+ "name": "r2-e3-task-e",
+ "family": "coding-task",
+ "arms": [
+  "default",
+  "taskState"
+ ],
+ "cycles": 5,
+ "contextWindow": 20000.0,
+ "reserveTokens": 4000.0,
+ "keepRecentTokens": 20.0,
+ "seedEntries": [
+  {
+   "kind": "user",
+   "text": "TASK GOAL: make the orders-api integration suite green before the release cut."
+  },
+  {
+   "kind": "assistant",
+   "text": "Running the full suite now.",
+   "usageInput": 18.0
+  }
+ ],
+ "cycleEntries": [
+  [
+   {
+    "kind": "user",
+    "text": "status update 0.0: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (0).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_00: test result: 18 passed; 0 failed",
+    "toolCallId": "call-filler-0-0",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 0.1: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (0).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed",
+    "toolCallId": "call-filler-0-1",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 0.2: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (0).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_02: test result: 18 passed; 0 failed",
+    "toolCallId": "call-filler-0-2",
+    "toolName": "bash"
+   },
+   {
+    "kind": "assistant",
+    "text": "Suite finished: one failure - details next.",
+    "usageInput": 20.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib\nrunning 56 tests\ntest result: 55 passed; 1 failed\n\nfailures:\n\n---- parser::tests::parse_nested stdout ----\nthread 'parser::tests::parse_nested' panicked at src/parser.rs:198:\nassertion failed: depth == 4096 (got 3072)\nnote: run with `RUST_BACKTRACE=1` for a full backtrace",
+    "toolCallId": "call-e-suite",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 0.final: moving to the next batch. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   }
+  ],
+  [
+   {
+    "kind": "user",
+    "text": "status update 1.0: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (1).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_10: test result: 19 passed; 0 failed",
+    "toolCallId": "call-filler-1-0",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 1.1: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (1).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_11: test result: 19 passed; 0 failed",
+    "toolCallId": "call-filler-1-1",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 1.2: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (1).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_12: test result: 19 passed; 0 failed",
+    "toolCallId": "call-filler-1-2",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 1.final: moving to the next batch. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   }
+  ],
+  [
+   {
+    "kind": "user",
+    "text": "status update 2.0: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (2).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_20: test result: 20 passed; 0 failed",
+    "toolCallId": "call-filler-2-0",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 2.1: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (2).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_21: test result: 20 passed; 0 failed",
+    "toolCallId": "call-filler-2-1",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 2.2: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (2).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_22: test result: 20 passed; 0 failed",
+    "toolCallId": "call-filler-2-2",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 2.final: moving to the next batch. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   }
+  ],
+  [
+   {
+    "kind": "user",
+    "text": "status update 3.0: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (3).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_30: test result: 21 passed; 0 failed",
+    "toolCallId": "call-filler-3-0",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 3.1: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (3).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_31: test result: 21 passed; 0 failed",
+    "toolCallId": "call-filler-3-1",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 3.2: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (3).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_32: test result: 21 passed; 0 failed",
+    "toolCallId": "call-filler-3-2",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 3.final: moving to the next batch. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   }
+  ],
+  [
+   {
+    "kind": "user",
+    "text": "status update 4.0: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (4).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_40: test result: 22 passed; 0 failed",
+    "toolCallId": "call-filler-4-0",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 4.1: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (4).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_41: test result: 22 passed; 0 failed",
+    "toolCallId": "call-filler-4-1",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 4.2: sprint notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   },
+   {
+    "kind": "assistant",
+    "text": "Noted; continuing (4).",
+    "usageInput": 30.0
+   },
+   {
+    "kind": "toolResult",
+    "text": "cargo test --lib telemetry::tests_42: test result: 22 passed; 0 failed",
+    "toolCallId": "call-filler-4-2",
+    "toolName": "bash"
+   },
+   {
+    "kind": "user",
+    "text": "status update 4.final: moving to the next batch. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. "
+   }
+  ]
+ ],
+ "probes": [
+  {
+   "id": "q-e-error",
+   "kind": "action-error",
+   "anchor": "assertion failed: depth == 4096 (got 3072)",
+   "authority": "tool",
+   "question": "What exact error must you fix? Quote the exact failing assertion.",
+   "gold": "assertion failed: depth == 4096 (got 3072)",
+   "requiredNumbers": [
+    "4096",
+    "3072"
+   ],
+   "numberGapChars": 60,
+   "keywords": [
+    "assert",
+    "depth",
+    "panic"
+   ]
+  }
+ ],
+ "restartAfterCycle": null,
+ "scoringVersion": "r2.3+e3-v1"
+}
