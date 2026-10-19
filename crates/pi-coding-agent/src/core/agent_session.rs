@@ -4803,35 +4803,52 @@ impl AgentSession {
         true
     }
 
+    /// The gate `_checkCompaction` applies before `_runAutoCompaction("threshold")`
+    /// can run: both enable flags, the model, the assistant anchor with its
+    /// compaction-timestamp fence, the token estimate against the trigger and
+    /// the retry cooldown. The turn-end stop hook must consult the same
+    /// predicate so a turn is only ever stopped for a compaction that will
+    /// actually run (D1: the hook used to gate on `settings.enabled` alone, so
+    /// a runtime-disabled auto compaction stopped turns past the trigger with
+    /// nothing compacting).
+    fn threshold_auto_compaction_ready(
+        &self,
+        settings: &CompactionSettings,
+        assistant: &pi_ai::types::AssistantMessage,
+    ) -> bool {
+        if !settings.enabled || !self.auto_compaction_enabled.load(Ordering::SeqCst) {
+            return false;
+        }
+        let Some(model) = self.model() else {
+            return false;
+        };
+        let compaction_timestamp = self.active_compaction_timestamp();
+        if let Some(compaction_timestamp) = compaction_timestamp {
+            if (assistant.timestamp as f64) <= compaction_timestamp {
+                return false;
+            }
+        }
+        let Some(context_tokens) =
+            self.get_threshold_context_tokens(assistant, compaction_timestamp)
+        else {
+            return false;
+        };
+        if !should_compact_for_model(context_tokens, &model, settings) {
+            return false;
+        }
+        // Bounded retry pacing: during the cooldown the automatic threshold
+        // path is skipped; queued session input still runs and the next turn
+        // end re-evaluates.
+        !self.threshold_compaction_retry_in_cooldown()
+    }
+
     /// `_thresholdCompactionNeeded(context)`.
     async fn threshold_compaction_needed(
         self: &Arc<Self>,
         context: &ShouldStopAfterTurnContext,
     ) -> bool {
         let settings = self.compaction_settings();
-        if !settings.enabled {
-            return false;
-        }
-
-        let compaction_timestamp = self.active_compaction_timestamp();
-        if let Some(compaction_timestamp) = compaction_timestamp {
-            if (context.message.timestamp as f64) <= compaction_timestamp {
-                return false;
-            }
-        }
-
-        let Some(context_tokens) =
-            self.get_threshold_context_tokens(&context.message, compaction_timestamp)
-        else {
-            return false;
-        };
-        let Some(model) = self.model() else {
-            return false;
-        };
-        if !should_compact_for_model(context_tokens, &model, &settings) {
-            return false;
-        }
-        if self.threshold_compaction_retry_in_cooldown() {
+        if !self.threshold_auto_compaction_ready(&settings, &context.message) {
             return false;
         }
 
@@ -16495,28 +16512,13 @@ impl AgentSession {
                 .run_auto_compaction(COMPACTION_REASON_REQUESTED, false)
                 .await);
         }
-        if !settings.enabled || !self.auto_compaction_enabled.load(Ordering::SeqCst) {
-            return Ok(false);
-        }
-        let Some(model) = self.model() else {
-            return Ok(false);
-        };
         let Some(assistant) = self.find_last_assistant_message() else {
             return Ok(false);
         };
-        let Some(tokens) =
-            self.get_threshold_context_tokens(&assistant, self.active_compaction_timestamp())
-        else {
-            return Ok(false);
-        };
-        if !should_compact_for_model(tokens, &model, settings) {
-            return Ok(false);
-        }
-        // Bounded retry pacing: a failing summary call must not be re-attacked on
-        // a fixed cadence. During the cooldown the automatic threshold path is
-        // skipped; queued session input still runs and the next turn end
-        // re-evaluates. Requested and overflow compaction are never gated.
-        if self.threshold_compaction_retry_in_cooldown() {
+        // The shared gate keeps the turn-end stop hook and this executor in
+        // agreement: a stopped turn always has a compaction that will run.
+        // Requested and overflow compaction are never gated by it.
+        if !self.threshold_auto_compaction_ready(settings, &assistant) {
             return Ok(false);
         }
         // TS 9492-9509: the agent-end threshold case queues the RLM child / goal /
