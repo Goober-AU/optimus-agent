@@ -1,0 +1,1 @@
+- Fixed the compaction-count footer regression test to account for different available space in idle and streaming layouts.
