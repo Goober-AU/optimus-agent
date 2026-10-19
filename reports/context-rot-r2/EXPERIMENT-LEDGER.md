@@ -153,7 +153,6 @@ practice suites (W12 mock, W26 live) and the ContextBench live practice run (W27
   and R2-E2-RM (below) replayed it offline: the inversion is removed on the base
   corpus, the render cap (D21) is the residual.
 
-HEAD
 ## R2-E3 — coding-task scenario suite (live GLM 5.3, W17)
 
 - Status: EXECUTED (worker branch `rot2/w17-e3`, integrated as `d8e318f81` +
