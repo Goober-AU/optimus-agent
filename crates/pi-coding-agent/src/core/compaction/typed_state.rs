@@ -1708,12 +1708,12 @@ pub fn verify(compact_artifact: &str, state: &TypedStateLedger) -> TypedStateVer
         for capture in REF_SCAN_RE.captures_iter(&record.text) {
             quoted_tokens.insert(capture.get(0).expect("whole match").as_str().to_string());
         }
+    }
     // D25: ids and entry ids retired at a step boundary or by the durable
     // cap stay resolvable; the previous summary may still quote them.
     for reference in &state.retired_refs {
         known_record_ids.insert(reference.as_str());
         known_entry_ids.insert(reference.as_str());
-a6da817e3 (fix(compaction): enforce the typed ledger step boundary and durable cap (D25))
     }
 
     let mut verification = TypedStateVerification {
