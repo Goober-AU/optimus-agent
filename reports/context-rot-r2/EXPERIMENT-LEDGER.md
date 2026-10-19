@@ -125,6 +125,7 @@ run the real Rust pipeline (`prepare_compaction` -> `compact` ->
 - the W11 fixes (stable ids, retirement by identity, corrections must not supersede each
   other) target exactly this mechanism; W7's raw-calls.jsonl is the regression corpus.
 
+HEAD
 ## R2-E3ADV — adversarial correction suite (live GLM 5.3)
 
 - Status: EXECUTED (branch rot2/w23-adv, commits 76eefbf9f + 754bb75a1; artifacts
@@ -157,3 +158,44 @@ run the real Rust pipeline (`prepare_compaction` -> `compact` ->
   role/provenance supersession remains the fix direction.
 - Budget: 124 wire calls (93 probes, 30 summarizers, 1 pong; cap 250). 0 HTTP retries;
   all summarizers finished at 8192 (no ladder steps).
+
+## R2-E2-RM — offline re-measure: post-W11 v1 ledger on the R2-E2 live corpus (W24)
+
+- PRODUCTION-PATH-MIRROR: a Python port of the CURRENT Rust ledger (w11_port.py, commit
+  1754a3e1b: content-derived ids + correction-safe supersession) replayed over the committed
+  W7 corpus (raw-calls.jsonl). Not the binary. No model calls.
+- Fixture gate PASS: the pre-W11 mirror replay byte-matched every corpus summarizer request
+  (5 cycles x 2 arms x 2 scenarios + ladder retries) and reproduced every cycle field of the
+  committed results.json (entry ids, cut points, summary lengths, ledger item counts, final
+  summaries). 4 corpus records left unconsumed = the abandoned first-run chain.
+- Post-W11 pass: cut points/windows asserted identical to the fixture pass; the ledger never
+  reads summaries, so the post-W11 ledgers are exact with the corpus summaries held fixed.
+
+### Verdict (W22 open question 3: does W11 remove the R2-E2 inversion?)
+- base (the scenario with the live failure): YES. Pre-W11 both corrections were inverted at
+  every cycle (mutual supersession pair; A decisions stayed current) -> live incorrect at
+  points 3-5 ("architecture A"). Post-W11: clean at every cycle — corrections ACTIVE and
+  rendered (12/12 within cap), A decisions retired to SUPERSEDED with the correction as the
+  replacement; the module-scoped live-v1 matcher passes at every cycle. Constraint churn
+  (C8->C2->C3) also gone. Prediction (model-dependent): live corrections answered correctly
+  at every point.
+- hard: structurally YES (mutual pair gone, all four A decisions retired by their
+  corrections, 17 spurious pairs -> 4 correct pairs) — but a NEW render-level defect
+  candidate: with the churn gone, 26 constraints are active and CONSTRAINTS_CAP=12 omits
+  the four corrections from the rendered ACTIVE list (visible only as SUPERSEDED replacement
+  texts; 9 of 20 constraint lines also omitted). Not an inversion; a render-cap fidelity gap
+  for authoritative corrections. Suggested direction: exempt correction carriers from the
+  section caps.
+- mechanism validation: the same scoring on the PRE-W11 renders reproduces the live failure
+  exactly (inverted at every cycle where the live run failed at points 3-5; the live points
+  1-2 passes were summary-chain inertia, which the render-level metric does not model).
+- secondary (W11-independent): EVIDENCE_RE never matched this corpus's evidence shapes
+  ("cargo test: N passed", "build succeeded with N warnings", "audit ... findings",
+  "benchmark p95 Nms"), so VERIFIED EVIDENCE was empty in every render pre and post; live
+  evidence correctness came from the summary chain. The task/subagent probe is outside the
+  ledger's contract. The W11 id-collision half (W9-F2/F5) is NOT exercised by this corpus
+  (no replanted retired content in later windows).
+
+Artifacts: research/context_rot_r2/live/remeasure/{w11_port.py, replay.py, results.json,
+README.md} (three-column verdict table, per-correction renders, port diff with Rust lines).
+19add7970 (research(context-rot): r2-e2-rm offline re-measure of the w11 ledger fix)
