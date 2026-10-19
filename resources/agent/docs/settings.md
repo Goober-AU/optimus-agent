@@ -119,6 +119,7 @@ prime-agent --offline
 | `compaction.reserveTokens` | number | `16384` | Tokens reserved for LLM response |
 | `compaction.keepRecentTokens` | number | `20000` | Recent tokens to keep (not summarized) |
 | `compaction.summaryUpdatePolicy` | string | `"off"` | Optional `"consolidate-repeated-v1"` update prompt; disabled until semantic retention is proven |
+| `compaction.taskState` | string | `"off"` | Optional `"prompt"` protected task-state ledger; see below |
 
 ```json
 {
@@ -132,6 +133,8 @@ prime-agent --offline
 ```
 
 The optional `consolidate-repeated-v1` policy changes only the existing iterative update prompt. It does not add a model pass or a segment ledger, and it keeps the selected model and reasoning level. It tells the summarizer to consolidate demonstrable repeats and superseded status while retaining constraints, reasons, blockers, artifact anchors, errors, kernel state, and harness facts. There is no arbitrary summary-size cap. Its semantic-quality evaluation is a live gate, so the default is `"off"`. The equivalent process-local opt-in is `PRIME_AGENT_SUMMARY_UPDATE_POLICY=consolidate-repeated-v1`.
+
+The optional `compaction.taskState` mode `"prompt"` prepends a deterministic ledger of active goals, constraints, decisions, artifacts, errors, and open questions to the summarizer prompt, and persists it on the compaction entry. It is `"off"` by default because a matched multi-cycle benchmark measured no recall gain over the legacy prompt. The ledger costs roughly 600-800 estimated tokens per summarizer request. Superseded items are replaced, not appended, so the ledger does not grow with the number of compactions. The equivalent process-local opt-in is `PRIME_AGENT_COMPACTION_TASK_STATE=prompt`.
 
 ### Model-facing repeated tool output
 

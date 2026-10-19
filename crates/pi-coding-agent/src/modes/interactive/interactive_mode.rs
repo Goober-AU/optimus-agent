@@ -19,6 +19,7 @@ use pi_agent_core::types::{AgentMessage, ThinkingLevel};
 use pi_ai::types::{ImageContent, Model, ServiceTier};
 
 use crate::config::VERSION;
+use crate::core::context_health::{self, ContextHealth, ContextHealthInput};
 use crate::core::settings_manager::ChatDetail;
 use crate::utils::paths::get_cwd_relative_path;
 
@@ -2386,8 +2387,8 @@ impl InteractiveMode {
     /// Port of `getTrayContextLabel`, minus the usage counter.
     ///
     /// Goal and heartbeat labels keep their own line above the tray row; the
-    /// context usage counter moved onto the tray row itself, right-aligned
-    /// beside the model/effort label (`get_tray_context_usage_text`).
+    /// context health indicator moved onto the tray row itself, right-aligned
+    /// beside the model/effort label (`get_tray_context_health_text`).
     pub fn get_tray_context_label(&self) -> Option<String> {
         let goal_label = self.get_tray_goal_label();
         let heartbeat_label = self.get_tray_heartbeat_label();
@@ -2402,20 +2403,51 @@ impl InteractiveMode {
         }
     }
 
-    /// The context usage counter for the tray row: `146k (14%)`.
+    /// The context health indicator for the tray row:
+    /// `CONTEXT HEALTH 92 · 146k (14%)`.
     ///
-    /// `None` while the connection has no usage snapshot: unknown is never
-    /// rendered as zero, and no setting is changed to produce a value.
-    pub fn get_tray_context_usage_text(&self) -> Option<String> {
-        let usage = self.get_connection_context_usage()?;
-        match (usage.tokens, usage.percent) {
+    /// `None` while nothing is known about the context (no usage snapshot and no
+    /// compaction history): unknown is never rendered as zero, and no setting is
+    /// changed to produce a value. A compacted session without a token snapshot
+    /// still renders the score alone.
+    pub fn get_tray_context_health_text(&self) -> Option<String> {
+        let health = self.get_tray_context_health()?;
+        let usage = self.get_connection_context_usage();
+        let tokens = usage.as_ref().and_then(|usage| usage.tokens).filter(|tokens| tokens.is_finite());
+        let percent = usage.as_ref().and_then(|usage| usage.percent).filter(|percent| percent.is_finite());
+        match (tokens, percent) {
             (Some(tokens), Some(percent)) => Some(format!(
-                "{} ({}%)",
+                "{} \u{b7} {} ({}%)",
+                context_health::label(&health),
                 format_token_count(tokens),
                 percent.round() as i64
             )),
-            _ => None,
+            _ => Some(context_health::label(&health)),
         }
+    }
+
+    /// Health of the working context, or `None` when nothing is known.
+    ///
+    /// `None` when there is neither a token count nor a compaction count, so a
+    /// fresh session renders no indicator at all.
+    pub fn get_tray_context_health(&self) -> Option<ContextHealth> {
+        let usage = self.get_connection_context_usage();
+        let state = self.connection_state.as_ref();
+        let compaction_cycles = state.map(|state| state.compaction_count).unwrap_or(0.0);
+        let has_tokens = usage
+            .as_ref()
+            .and_then(|usage| usage.tokens)
+            .is_some_and(|tokens| tokens.is_finite());
+        if !has_tokens && !(compaction_cycles > 0.0) {
+            return None;
+        }
+        let input = ContextHealthInput {
+            tokens: usage.as_ref().and_then(|usage| usage.tokens),
+            context_window: usage.as_ref().map(|usage| usage.context_window).unwrap_or(0.0),
+            compaction_cycles,
+            is_compacting: state.map(|state| state.is_compacting).unwrap_or(false),
+        };
+        Some(context_health::context_health(&input))
     }
 
     /// Port of `getModelTrayLabel`.
@@ -5013,6 +5045,34 @@ mod tests {
         let usage = mode.get_connection_context_usage().expect("usage");
         assert_eq!(usage.tokens, Some(100.0));
         assert_eq!(usage.percent, Some(10.0));
+    }
+
+    #[test]
+    fn tray_context_health_text_composes_the_score_with_the_counter() {
+        let mut mode = test_mode();
+        // No snapshot and no compaction history: nothing is known, nothing renders.
+        assert_eq!(mode.get_tray_context_health_text(), None);
+        mode.connection_state = Some(AgentConnectionState {
+            context_usage: ContextUsage {
+                tokens: Some(146_000.0),
+                context_window: 1_000_000.0,
+                percent: Some(14.0),
+            },
+            ..Default::default()
+        });
+        assert_eq!(
+            mode.get_tray_context_health_text().as_deref(),
+            Some("CONTEXT HEALTH 100 \u{b7} 146k (14%)")
+        );
+        // Two compaction cycles cost twelve points at the same utilisation.
+        mode.connection_state.as_mut().expect("state").compaction_count = 2.0;
+        assert_eq!(
+            mode.get_tray_context_health_text().as_deref(),
+            Some("CONTEXT HEALTH 88 \u{b7} 146k (14%)")
+        );
+        // A compacted session without a token snapshot renders the score alone.
+        mode.connection_state.as_mut().expect("state").context_usage = ContextUsage::default();
+        assert_eq!(mode.get_tray_context_health_text().as_deref(), Some("CONTEXT HEALTH 88"));
     }
 
     #[test]

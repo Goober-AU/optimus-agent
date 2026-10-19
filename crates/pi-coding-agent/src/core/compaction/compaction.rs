@@ -41,6 +41,9 @@ use crate::core::compaction::parallel::{
 };
 use crate::core::compaction::checkpoint::has_provider_checkpoint;
 use crate::core::compaction::metrics::CompactionMetrics;
+use crate::core::compaction::task_state::{
+    build_ledger, render_ledger, TaskStateLedger, LEDGER_INSTRUCTION,
+};
 use crate::core::compaction::utils::{
     compute_file_lists, create_file_ops, extract_file_ops_from_message, format_file_operations,
     serialize_conversation, strip_file_operations, FileOperations, SUMMARIZATION_SYSTEM_PROMPT,
@@ -65,6 +68,10 @@ pub struct CompactionDetails {
     /// pre-A7 entry, so deserialization stays compatible.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deadline_fallback: Option<bool>,
+    /// Protected task-state ledger carried by this compaction. Absent when the
+    /// feature is off or the window held nothing the rules recognise.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub task_state: Option<TaskStateLedger>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -664,6 +671,35 @@ pub fn resolve_summary_update_policy(
 // B2: compaction prompt variant (`compaction.prompt = "legacy" | "v2"`)
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Context-rot campaign: protected task-state ledger (`compaction.taskState`)
+// ---------------------------------------------------------------------------
+
+pub const TASK_STATE_MODE_OFF: &str = "off";
+pub const TASK_STATE_MODE_PROMPT: &str = "prompt";
+pub const TASK_STATE_ENV: &str = "PRIME_AGENT_COMPACTION_TASK_STATE";
+pub type TaskStateMode = String;
+
+/// Resolves the ledger mode with the same precedence as the other compaction
+/// switches: an explicit setting wins, then the environment, then `off`. An
+/// unrecognized configured value fails safe to `off` without consulting the
+/// environment.
+pub fn resolve_task_state_mode(configured: Option<&str>, environment: Option<&str>) -> TaskStateMode {
+    match configured {
+        Some(TASK_STATE_MODE_PROMPT) => return TASK_STATE_MODE_PROMPT.to_string(),
+        Some(_) => return TASK_STATE_MODE_OFF.to_string(),
+        None => {}
+    }
+    let environment = environment
+        .map(str::to_string)
+        .or_else(|| std::env::var(TASK_STATE_ENV).ok());
+    if environment.as_deref() == Some(TASK_STATE_MODE_PROMPT) {
+        TASK_STATE_MODE_PROMPT.to_string()
+    } else {
+        TASK_STATE_MODE_OFF.to_string()
+    }
+}
+
 pub const COMPACTION_PROMPT_LEGACY: &str = "legacy";
 pub const COMPACTION_PROMPT_V2: &str = "v2";
 pub const COMPACTION_PROMPT_ENV: &str = "PRIME_AGENT_COMPACTION_PROMPT";
@@ -1035,6 +1071,11 @@ pub struct CompactionSettings {
     /// A7: hard deadline in milliseconds for the model-driven summary phase of
     /// a compaction episode. `0` disables the deadline. Default 300,000 (5 min).
     pub deadline_ms: f64,
+    /// Context-rot campaign: deterministic protected task-state ledger.
+    /// `"off"` (default) keeps the historical summarizer input byte-identical.
+    /// `"prompt"` feeds the ledger to the summarizer and persists it on the
+    /// compaction entry.
+    pub task_state: Option<TaskStateMode>,
 }
 
 pub fn default_compaction_settings() -> CompactionSettings {
@@ -1047,6 +1088,7 @@ pub fn default_compaction_settings() -> CompactionSettings {
         summary_budget_mode: Some(SUMMARY_BUDGET_MODE_LEGACY.to_string()),
         trigger_threshold: None,
         deadline_ms: DEFAULT_COMPACTION_DEADLINE_MS,
+        task_state: Some(TASK_STATE_MODE_OFF.to_string()),
     }
 }
 
@@ -1402,6 +1444,26 @@ pub struct CutPointResult {
     pub is_split_turn: bool,
 }
 
+/// Token cost of an entry the cut-point walk must pay for.
+fn entry_token_cost(entry: &CompactionSessionEntry) -> Option<f64> {
+    match entry {
+        CompactionSessionEntry::Message { message, .. } => Some(estimate_tokens(message)),
+        CompactionSessionEntry::CustomMessage { content, .. } => Some(match content {
+            CustomMessageContent::Text(text) => ceil_div4(count_chars(text)),
+            CustomMessageContent::Blocks(blocks) => blocks
+                .iter()
+                .map(|block| match block {
+                    pi_agent_core::types::ContentBlock::Text(text) => count_chars(&text.text),
+                    pi_agent_core::types::ContentBlock::Image(_) => 4096,
+                })
+                .sum::<usize>() as f64
+                / 4.0,
+        }),
+        CompactionSessionEntry::BranchSummary { summary, .. } => Some(ceil_div4(count_chars(summary))),
+        CompactionSessionEntry::Compaction { .. } | CompactionSessionEntry::Other { .. } => None,
+    }
+}
+
 /// Find the cut point in session entries that keeps approximately `keepRecentTokens`.
 ///
 /// Algorithm: Walk backwards from newest, accumulating estimated message sizes.
@@ -1432,10 +1494,14 @@ pub fn find_cut_point(
     if end_index > start_index {
         for index in (start_index..end_index).rev() {
             let entry = &entries[index];
-            let CompactionSessionEntry::Message { message, .. } = entry else {
-                continue;
-            };
-            accumulated_tokens += estimate_tokens(message);
+            // Custom messages (memory digests, kernel state, queued agent messages)
+            // and branch summaries are real context the model receives. Skipping
+            // them made keep_recent_tokens a lower bound only: an injected block
+            // cost zero, so the retained tail could exceed its budget by its whole
+            // size while the summarized region shrank.
+            if let Some(tokens) = entry_token_cost(entry) {
+                accumulated_tokens += tokens;
+            }
             if accumulated_tokens >= keep_recent_tokens {
                 // No cut point at/after i (trailing tool results): keep only the final turn, not everything.
                 cut_index = *cut_points.last().unwrap();
@@ -1497,6 +1563,10 @@ pub struct CompactionPreparation {
     pub file_ops: FileOperations,
     /// Compaction settions from settings.jsonl
     pub settings: CompactionSettings,
+    /// Protected task-state ledger for this episode. `None` when the feature is
+    /// off; the field is carried here so the summarizer prompt and the persisted
+    /// compaction entry use one deterministic artefact.
+    pub task_state: Option<TaskStateLedger>,
 }
 
 /// Byte lower bound of the entry slice the preparation extracts (text
@@ -1643,6 +1713,31 @@ pub fn prepare_compaction(
     }
 
     let retained_state_anchor = retained_state_anchor(&path_entries[cut_point.first_kept_entry_index..]);
+    // Context-rot campaign: derive the protected ledger from the entries that
+    // are leaving the model's window, then merge it with the ledger carried by
+    // the previous compaction so repeated cycles cannot erode an old fact.
+    let task_state = if resolve_task_state_mode(settings.task_state.as_deref(), None)
+        == TASK_STATE_MODE_PROMPT
+    {
+        let previous_ledger = if prev_compaction_index >= 0 {
+            match &path_entries[prev_compaction_index as usize] {
+                CompactionSessionEntry::Compaction { details, .. } => details
+                    .as_ref()
+                    .and_then(|details| details.get("taskState"))
+                    .and_then(|value| serde_json::from_value::<TaskStateLedger>(value.clone()).ok()),
+                _ => None,
+            }
+        } else {
+            None
+        };
+        let ledger = build_ledger(
+            &path_entries[boundary_start..history_end],
+            previous_ledger.as_ref(),
+        );
+        (!ledger.is_empty()).then_some(ledger)
+    } else {
+        None
+    };
     Some(CompactionPreparation {
         first_kept_entry_id,
         messages_to_summarize,
@@ -1653,6 +1748,7 @@ pub fn prepare_compaction(
         retained_state_anchor,
         file_ops,
         settings: settings.clone(),
+        task_state,
     })
 }
 
@@ -1733,7 +1829,7 @@ pub async fn generate_summary(
     generate_summary_with_options(current_messages, model, reserve_tokens, api_key, signal,
         custom_instructions, previous_summary, thinking_level, retry, summary_call,
         summary_update_policy, None, &CompactionMetrics::new(None, model),
-        &COMPACTION_PROMPT_LEGACY.to_string(), (0.8 * reserve_tokens).floor()).await
+        &COMPACTION_PROMPT_LEGACY.to_string(), (0.8 * reserve_tokens).floor(), None).await
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1745,9 +1841,11 @@ async fn generate_summary_with_options(
     summary_update_policy: &SummaryUpdatePolicy, request_options: Option<&CompactionOptions>,
     metrics: &CompactionMetrics,
     prompt_version: &CompactionPromptVersion, summary_budget_tokens: f64,
+    protected_state: Option<&str>,
 ) -> Result<SummarySlice, String> {
     let instructions = {
         let custom_instructions = custom_instructions.map(str::to_string);
+        let protected_state = protected_state.map(str::to_string);
         let summary_update_policy = summary_update_policy.clone();
         let prompt_version = prompt_version.clone();
         let summary_budget_tokens = if summary_budget_tokens.is_finite()
@@ -1758,13 +1856,22 @@ async fn generate_summary_with_options(
             None
         };
         move |previous: Option<&str>| {
-            build_summarization_prompt(
+            let prompt = build_summarization_prompt(
                 custom_instructions.as_deref(),
                 previous,
                 &summary_update_policy,
                 &prompt_version,
                 summary_budget_tokens,
-            )
+            );
+            // The ledger is protected material, not user instructions: it is
+            // appended outside the <user-instructions> block and states how to
+            // copy it without paraphrasing.
+            match &protected_state {
+                Some(state) if !state.trim().is_empty() => {
+                    format!("{prompt}\n\n{state}\n\n{LEDGER_INSTRUCTION}")
+                }
+                _ => prompt,
+            }
         }
     };
     generate_bounded_summary(
@@ -2350,7 +2457,12 @@ pub async fn compact_with_metrics(
         retained_state_anchor,
         file_ops,
         settings,
+        task_state,
     } = preparation;
+    let task_state_block = task_state
+        .as_ref()
+        .map(render_ledger)
+        .filter(|block| !block.trim().is_empty());
     let mut native_compaction_unsupported = false;
     if let Some((context, options)) = provider_context {
         if supports_compaction(model) {
@@ -2443,6 +2555,7 @@ pub async fn compact_with_metrics(
                         modified_files,
                         provider_checkpoint: Some(remote.checkpoint),
                         deadline_fallback: None,
+                        task_state: None,
                     }),
                 });
             }
@@ -2510,6 +2623,7 @@ pub async fn compact_with_metrics(
                         metrics,
                         &prompt_version,
                         summary_budget_tokens,
+                        task_state_block.as_deref(),
                     )
                     .await
                 } else {
@@ -2557,6 +2671,7 @@ pub async fn compact_with_metrics(
                 metrics,
                 &prompt_version,
                 summary_budget_tokens,
+                task_state_block.as_deref(),
             )
             .await?;
             summary = result.summary.clone();
@@ -2607,6 +2722,7 @@ pub async fn compact_with_metrics(
             modified_files,
             provider_checkpoint: None,
             deadline_fallback: None,
+            task_state: task_state.clone(),
         }),
         usage,
     })
@@ -2639,6 +2755,7 @@ fn deadline_truncation_result(
             modified_files,
             provider_checkpoint: None,
             deadline_fallback: Some(true),
+            task_state: preparation.task_state.clone(),
         }),
         usage: None,
     }
@@ -3218,6 +3335,7 @@ mod summary_retry_safety_tests {
             previous_summary: None,
             file_ops: crate::core::compaction::utils::create_file_ops(),
             settings: default_compaction_settings(),
+            task_state: None,
         }
     }
 
@@ -3510,5 +3628,44 @@ mod summary_retry_safety_tests {
             classify_summary_failure(&error),
             SummaryFailureKind::FilteredOrRefused
         );
+    }
+}
+
+#[cfg(test)]
+mod task_state_mode_tests {
+    use super::*;
+
+    #[test]
+    fn task_state_mode_precedence_is_explicit_then_environment_then_off() {
+        // A configured mode is authoritative in both directions.
+        assert_eq!(
+            resolve_task_state_mode(Some(TASK_STATE_MODE_PROMPT), Some(TASK_STATE_MODE_OFF)),
+            TASK_STATE_MODE_PROMPT
+        );
+        assert_eq!(
+            resolve_task_state_mode(Some(TASK_STATE_MODE_OFF), Some(TASK_STATE_MODE_PROMPT)),
+            TASK_STATE_MODE_OFF
+        );
+        // An unrecognized configured value fails safe without reading the
+        // environment, so a typo cannot silently enable the ledger.
+        assert_eq!(
+            resolve_task_state_mode(Some("on"), Some(TASK_STATE_MODE_PROMPT)),
+            TASK_STATE_MODE_OFF
+        );
+        assert_eq!(
+            resolve_task_state_mode(Some(""), Some(TASK_STATE_MODE_PROMPT)),
+            TASK_STATE_MODE_OFF
+        );
+        // Unconfigured: the environment decides, and anything but `prompt`
+        // stays off.
+        assert_eq!(
+            resolve_task_state_mode(None, Some(TASK_STATE_MODE_PROMPT)),
+            TASK_STATE_MODE_PROMPT
+        );
+        assert_eq!(
+            resolve_task_state_mode(None, Some(TASK_STATE_MODE_OFF)),
+            TASK_STATE_MODE_OFF
+        );
+        assert_eq!(resolve_task_state_mode(None, Some("enabled")), TASK_STATE_MODE_OFF);
     }
 }

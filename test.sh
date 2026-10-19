@@ -3,4 +3,6 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 cargo test --locked --workspace --lib -- --test-threads=1
 python3 -m unittest discover -s tests -p 'test_*.py'
+# Offline context-rot research harness: deterministic scoring only, no model calls.
+python3 -m unittest discover -s research/context_rot/tests -t . -p 'test_*.py'
 uv run --locked --project prime-agent-runtime python -m unittest discover -s prime-agent-runtime/test
