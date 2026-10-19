@@ -133,6 +133,23 @@ pub fn compose_tray_row(row: TrayRow, width: usize) -> String {
     assemble(row.left, &[], row.right, width, Some(left_budget))
 }
 
+/// Add optional detail only when it fits without shortening existing labels.
+pub fn compose_tray_row_with_detail(
+    row: TrayRow,
+    width: usize,
+    detailed_right: Option<&str>,
+) -> String {
+    if row.right.is_some() {
+        if let Some(right) = detailed_right {
+            let (full_segments, _) = segment_forms(&row);
+            if fits(row.left, &full_segments, Some(right), visible_width(right), width.max(1)) {
+                return assemble(row.left, &full_segments, Some(right), width.max(1), None);
+            }
+        }
+    }
+    compose_tray_row(row, width)
+}
+
 /// True when the left label, the segments and (optionally) the counter all fit
 /// on one `width`-column row with at least one separator column before the
 /// counter.
@@ -525,5 +542,57 @@ mod tests {
         let plain = strip_ansi(&compose_tray_row(row, 80));
         assert!(plain.contains(DECISION_ON), "{plain:?}");
         assert!(plain.contains("\u{25cf} Jev compact off"), "{plain:?}");
+    }
+
+    #[test]
+    fn optional_detail_uses_spare_room_without_compacting_jev() {
+        let left = colored(DIM, "模型 GPT-6 Astra xhigh");
+        let decision = colored(GREEN, DECISION_ON);
+        let decision_short = colored(GREEN, "Jev C On");
+        let compaction = colored(GREEN, COMPACTION_ON);
+        let usage = colored(DIM, "[━·········] 130k (12%)");
+        let detail = format!("{}  {usage}", colored(DIM, "Compactions: 3"));
+        let row = TrayRow {
+            left: &left,
+            jev_decision: segment(&decision, Some(&decision_short)),
+            jev_compaction: segment(&compaction, None),
+            right: Some(&usage),
+        };
+        let boundary = visible_width(&left) + 2 + visible_width(&decision)
+            + 2 + visible_width(&compaction) + 1 + visible_width(&detail);
+        let plain = strip_ansi(&compose_tray_row_with_detail(row, boundary, Some(&detail)));
+        assert!(plain.ends_with("Compactions: 3  [━·········] 130k (12%)"), "{plain}");
+        assert!(plain.contains(DECISION_ON) && plain.contains(COMPACTION_ON));
+        assert_eq!(visible_width(&plain), boundary);
+        for width in 1..boundary {
+            assert_eq!(
+                compose_tray_row_with_detail(row, width, Some(&detail)),
+                compose_tray_row(row, width),
+                "width={width}"
+            );
+        }
+        for width in 1..=boundary + 10 {
+            assert_eq!(
+                compose_tray_row_with_detail(row, width, None),
+                compose_tray_row(row, width)
+            );
+            let rendered = compose_tray_row_with_detail(row, width, Some(&detail));
+            assert!(!rendered.contains('\n'));
+            assert!(visible_width(&rendered) <= width);
+        }
+    }
+
+    #[test]
+    fn optional_detail_does_not_invent_a_missing_context_reading() {
+        let row = TrayRow {
+            left: "session",
+            jev_decision: None,
+            jev_compaction: None,
+            right: None,
+        };
+        assert_eq!(
+            compose_tray_row_with_detail(row, 120, Some("Compactions: 0")),
+            compose_tray_row(row, 120)
+        );
     }
 }

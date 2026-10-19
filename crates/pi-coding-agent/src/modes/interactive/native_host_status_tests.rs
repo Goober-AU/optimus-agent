@@ -179,6 +179,7 @@ fn heartbeat_neon_and_classic_painted_footer_keeps_status_beside_context() {
                 let frame = h.paint();
                 // The context health indicator narrows with the terminal: the
                 // compact score at 20 columns, the full score and counter above.
+                // The compaction count joins only where the full row still fits.
                 let expected = if width >= 36 { "146k (15%)" } else { "CTX HEALTH 100" };
                 let footer = frame
                     .iter()
@@ -186,6 +187,17 @@ fn heartbeat_neon_and_classic_painted_footer_keeps_status_beside_context() {
                     .unwrap_or_else(|| panic!("missing usage {style}/{width}: {frame:?}"));
                 assert!(footer.contains("HB"), "{style}/{width}: {footer}");
                 assert!(footer.trim_end().ends_with(expected), "{footer}");
+                // The count sits left of the indicator and is the first part to
+                // go: kept at 80+ columns, dropped at 36 and below.
+                let count = footer.contains("Compactions: 0");
+                assert_eq!(count, width >= 80, "{style}/{width}: {footer}");
+                // In neon the count precedes the meter, so the meter stays glued
+                // to the reading it measures.
+                if style == "neon" && width >= 100 {
+                    let meter_at = footer.find('[').unwrap_or(usize::MAX);
+                    let count_at = footer.find("Compactions: 0").unwrap_or(usize::MAX);
+                    assert!(count_at < meter_at, "{width}: {footer}");
+                }
                 assert!(
                     frame.iter().all(|row| visible_width(row) <= width),
                     "{style}/{width}: {frame:?}"
@@ -199,6 +211,50 @@ fn heartbeat_neon_and_classic_painted_footer_keeps_status_beside_context() {
                 .heartbeat = None;
             assert!(!h.paint().join("\n").contains("HB"));
         }
+    }
+}
+
+#[test]
+fn compaction_count_stays_before_the_meter_with_goal_and_heartbeat() {
+    use crate::core::goals::{GoalState, GoalStatus};
+    for style in ["neon", "prime"] {
+        let h = super::super::ui_tests::FrameHarness::new("heartbeat-fixture");
+        *h.mode.borrow_mut() = mode();
+        crate::modes::interactive::theme::theme::init_theme(Some(style), false);
+        h.mode.borrow_mut().fullscreen_enabled = true;
+        h.mode.borrow_mut().patch_connection_state(|state| {
+            state.goal = GoalState {
+                active: true,
+                status: GoalStatus::Active,
+                goal_id: Some("count-goal".into()),
+                time_used_seconds: 65.0,
+                ..Default::default()
+            };
+            state.heartbeat = Some(job("u", "heartbeat", "active", "heartbeat-fixture"));
+        });
+        h.width.set(200);
+        for count in [0.0, 3.0, 4.0] {
+            h.mode.borrow_mut().patch_connection_state(|state| state.compaction_count = count);
+            let frame = h.paint();
+            let footer = frame.iter().find(|row| row.contains("146k (15%)")).unwrap();
+            let label = format!("Compactions: {count:.0}");
+            assert_eq!(footer.matches(&label).count(), 1, "{style}: {footer}");
+            let count_at = footer.find(&label).unwrap();
+            assert!(footer.find("HB user on").unwrap() < count_at, "{footer}");
+            assert!(footer.find("Pursuing Goal").unwrap() < count_at, "{footer}");
+            if style == "neon" {
+                assert!(count_at < footer.find("[━").unwrap(), "{footer}");
+            }
+            assert!(footer.trim_end().ends_with("146k (15%)"), "{footer}");
+            assert!(frame.iter().all(|row| visible_width(row) <= 200));
+        }
+        h.mode.borrow_mut().patch_connection_state(|state| {
+            state.compaction_count = 3.0;
+            state.context_usage = local::ContextUsage::default();
+        });
+        let frame = h.paint();
+        assert!(frame.iter().any(|row| row.contains("Compactions: 3  CONTEXT HEALTH 82")));
+        assert!(!frame.join("\n").contains("146k"));
     }
 }
 

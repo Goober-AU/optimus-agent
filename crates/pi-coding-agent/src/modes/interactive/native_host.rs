@@ -866,7 +866,14 @@ impl Tray {
             native_neon::context_meter(mode.get_connection_context_usage().as_ref(), text, width as usize)
         } else { theme().fg(context_colour, text) });
         let right = native_status::right_status(&mode, usage_themed.as_deref(), width as usize);
-        let composed = tray_row::compose_tray_row(
+        // Preserve the existing heartbeat/goal labels. Insert the count just before the meter.
+        let detailed_right = right.as_deref().zip(usage_themed.as_deref())
+            .zip(mode.get_tray_compactions_text())
+            .and_then(|((right, usage), count)| {
+                right.strip_suffix(usage)
+                    .map(|prefix| format!("{prefix}{}  {usage}", theme().fg("dim", &count)))
+            });
+        let composed = tray_row::compose_tray_row_with_detail(
             tray_row::TrayRow {
                 left: &left_themed,
                 jev_decision: jev_decision
@@ -876,6 +883,7 @@ impl Tray {
                 right: right.as_deref(),
             },
             width as usize,
+            detailed_right.as_deref(),
         );
         let mut lines = Vec::new();
         if let Some(context) = mode.get_tray_context_label() {
@@ -2612,7 +2620,7 @@ async fn run_terminal(
                     if event.type_name() == "session_action_update" {
                         queue_runtime.observe_queue_change();
                     }
-                    let finished = matches!(event.type_name(), "agent_end" | "session_action_update");
+                    let refresh_state = native_state::event_requires_snapshot_refresh(event.type_name());
                     let renamed = matches!(
                         &event,
                         wire::AgentConnectionSessionEvent::SessionInfoChanged { .. }
@@ -2624,7 +2632,7 @@ async fn run_terminal(
                     if renamed {
                         refresh_terminal_title(&mode, &ui);
                     }
-                    if finished {
+                    if refresh_state {
                         state_refresh.request(connection.clone(), current_session_id.clone());
                     }
                 }

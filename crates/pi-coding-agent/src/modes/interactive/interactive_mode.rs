@@ -2426,6 +2426,15 @@ impl InteractiveMode {
         }
     }
 
+    /// Completed compactions reported by the current session's runtime.
+    pub fn get_tray_compactions_text(&self) -> Option<String> {
+        let count = self.connection_state.as_ref()?.compaction_count;
+        if !count.is_finite() || count < 0.0 || count.fract() != 0.0 {
+            return None;
+        }
+        Some(format!("Compactions: {count:.0}"))
+    }
+
     /// Health of the working context, or `None` when nothing is known.
     ///
     /// `None` when there is neither a token count nor a compaction count, so a
@@ -5073,6 +5082,27 @@ mod tests {
         // A compacted session without a token snapshot renders the score alone.
         mode.connection_state.as_mut().expect("state").context_usage = ContextUsage::default();
         assert_eq!(mode.get_tray_context_health_text().as_deref(), Some("CONTEXT HEALTH 88"));
+    }
+
+    #[test]
+    fn tray_compactions_text_counts_the_sessions_compactions() {
+        let mut mode = test_mode();
+        // No connection state: no count, rather than an invented zero.
+        assert_eq!(mode.get_tray_compactions_text(), None);
+        mode.connection_state = Some(AgentConnectionState::default());
+        // A connected session that never compacted still reports its count.
+        assert_eq!(mode.get_tray_compactions_text().as_deref(), Some("Compactions: 0"));
+        mode.connection_state.as_mut().expect("state").compaction_count = 3.0;
+        assert_eq!(mode.get_tray_compactions_text().as_deref(), Some("Compactions: 3"));
+        for invalid in [f64::NAN, f64::INFINITY, -1.0, 2.5] {
+            mode.connection_state.as_mut().expect("state").compaction_count = invalid;
+            assert_eq!(mode.get_tray_compactions_text(), None);
+        }
+        mode.connection_state = Some(AgentConnectionState {
+            session_id: "another-session".into(),
+            ..Default::default()
+        });
+        assert_eq!(mode.get_tray_compactions_text().as_deref(), Some("Compactions: 0"));
     }
 
     #[test]
