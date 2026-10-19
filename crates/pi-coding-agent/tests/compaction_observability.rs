@@ -98,6 +98,7 @@ fn preparation(split: bool) -> CompactionPreparation {
         file_ops: create_file_ops(),
         settings: default_compaction_settings(),
         task_state: None,
+        typed_state: None,
     }
 }
 fn push(stream: &AssistantMessageEventStream, response: AssistantMessage) {

@@ -45,6 +45,11 @@ use crate::core::compaction::request_tokens::IMAGE_BLOCK_CHARS;
 use crate::core::compaction::task_state::{
     build_ledger, render_ledger, TaskStateLedger, LEDGER_INSTRUCTION,
 };
+use crate::core::compaction::typed_state::{
+    allocate, build_typed_state, merge, render_allocation, verify, TypedInformationKind,
+    TypedStateLedger, TypedStateRecord, TypedStateVerification, UnsafeCompaction,
+    VerificationFinding,
+};
 use crate::core::compaction::utils::{
     compute_file_lists, create_file_ops, extract_file_ops_from_message, format_file_operations,
     serialize_conversation, strip_file_operations, FileOperations, SUMMARIZATION_SYSTEM_PROMPT,
@@ -73,6 +78,32 @@ pub struct CompactionDetails {
     /// feature is off or the window held nothing the rules recognise.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub task_state: Option<TaskStateLedger>,
+    /// W15: typed (v2) protected-state ledger carried by this compaction.
+    /// Absent when the mode is `off`/`prompt` or the window held nothing the
+    /// classifier recognises. A distinct field, never overloading the v1
+    /// `taskState` payload, so entries written by either mode stay readable.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub typed_state: Option<TypedStateLedger>,
+    /// W15: verifier outcome of the typed ledger against the accepted
+    /// summary. Absent when the mode is `off`/`prompt` or no model summary
+    /// was produced (deadline fallback).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub typed_verification: Option<TypedVerificationRecord>,
+}
+
+/// W15: persisted outcome of `typed_state::verify` for one compaction
+/// episode. The counts are the finding totals of the final verification
+/// run, i.e. after the deterministic repair when one ran.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct TypedVerificationRecord {
+    pub passed: bool,
+    /// True when the deterministic missing-item repair amended the summary.
+    pub repaired: bool,
+    pub missing: usize,
+    pub mis_superseded: usize,
+    pub unresolved_refs: usize,
+    pub fabricated: usize,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -678,6 +709,9 @@ pub fn resolve_summary_update_policy(
 
 pub const TASK_STATE_MODE_OFF: &str = "off";
 pub const TASK_STATE_MODE_PROMPT: &str = "prompt";
+/// W15: `taskState = "typed"` selects the v2 typed protected-state
+/// implementation (`typed_state.rs`); `"prompt"` keeps the v1 keyword ledger.
+pub const TASK_STATE_MODE_TYPED: &str = "typed";
 pub const TASK_STATE_ENV: &str = "PRIME_AGENT_COMPACTION_TASK_STATE";
 pub type TaskStateMode = String;
 
@@ -688,17 +722,203 @@ pub type TaskStateMode = String;
 pub fn resolve_task_state_mode(configured: Option<&str>, environment: Option<&str>) -> TaskStateMode {
     match configured {
         Some(TASK_STATE_MODE_PROMPT) => return TASK_STATE_MODE_PROMPT.to_string(),
+        Some(TASK_STATE_MODE_TYPED) => return TASK_STATE_MODE_TYPED.to_string(),
         Some(_) => return TASK_STATE_MODE_OFF.to_string(),
         None => {}
     }
     let environment = environment
         .map(str::to_string)
         .or_else(|| std::env::var(TASK_STATE_ENV).ok());
-    if environment.as_deref() == Some(TASK_STATE_MODE_PROMPT) {
-        TASK_STATE_MODE_PROMPT.to_string()
-    } else {
-        TASK_STATE_MODE_OFF.to_string()
+    match environment.as_deref() {
+        Some(TASK_STATE_MODE_PROMPT) => TASK_STATE_MODE_PROMPT.to_string(),
+        Some(TASK_STATE_MODE_TYPED) => TASK_STATE_MODE_TYPED.to_string(),
+        _ => TASK_STATE_MODE_OFF.to_string(),
     }
+}
+
+// ---------------------------------------------------------------------------
+// W15: typed (v2) protected-state integration helpers
+// ---------------------------------------------------------------------------
+
+/// Instruction appended after the typed protected block when it is supplied
+/// to the summarizer. Mirrors the v1 `LEDGER_INSTRUCTION` placement and role:
+/// recovered state, not a new instruction.
+pub const TYPED_STATE_INSTRUCTION: &str = "Copy every ACTIVE CONSTRAINT, SAFETY BOUNDARY, ACCEPTANCE \
+CRITERION, CURRENT TASK and PENDING ACTION item into the matching summary section without \
+paraphrasing identifiers, paths, numbers or error codes, keeping each [id] and [@entry] reference. \
+Keep SUPERSEDED items out of the current state; mention a superseded item only as history together \
+with the record that retired it.";
+
+/// W15: the typed hot-state block budget, derived from the summarizer's own
+/// output budget (`summary_output_budget`) so the protected block always fits
+/// alongside the summary the same request produces: one quarter of the
+/// summary output budget, capped at 2048 tokens.
+///
+/// Rationale: the hot block shares the compaction request with the summary,
+/// so it must not crowd out the model's own output; a quarter share bounds it
+/// to a minor fraction of the same budget, and the 2048-token cap keeps the
+/// prompt growth within the range the v1 ledger measured (+913..1751 prompt
+/// tokens per cycle). Mandatory material that still does not fit is never
+/// silently dropped: the allocator reports it and the episode fails before
+/// any model call (see `typed_allocation_failure`).
+pub fn typed_hot_state_budget_tokens(summary_budget_tokens: f64) -> usize {
+    let quarter = if summary_budget_tokens.is_finite() && summary_budget_tokens > 0.0 {
+        (summary_budget_tokens / 4.0).floor().min(2048.0)
+    } else {
+        0.0
+    };
+    quarter.max(0.0) as usize
+}
+
+/// W15: failure text for an unsafe allocation. Mirrors the
+/// `validate_summary` failure channel and phrasing ("existing conversation
+/// preserved") so the episode aborts exactly like an unusable summary
+/// instead of compacting with silently dropped mandatory material.
+fn typed_allocation_failure(unsafe_: &UnsafeCompaction, budget_tokens: usize) -> String {
+    let dropped = unsafe_
+        .mandatory_dropped
+        .iter()
+        .map(|entry| format!("{} ({})", entry.id, entry.kind.label()))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "Typed protected state did not fit the hot-state budget ({budget_tokens} tokens; \
+mandatory material dropped: {dropped}); existing conversation preserved. Raise the summary \
+budget or reduce the protected window before retrying compaction."
+    )
+}
+
+/// W15: failure text for a summary the typed verifier rejects even after the
+/// bounded repair. Uses the `validate_summary` failure wrapper so it surfaces
+/// through the same channel and retry classification as a structurally
+/// unusable handoff.
+fn typed_verification_failure(verification: &TypedStateVerification) -> String {
+    format!(
+        "Summarization returned an unusable handoff (typed protected state not represented: \
+{} missing, {} mis-superseded, {} unresolved references, {} unbacked verified claims); existing \
+conversation preserved. Retry compaction or select another summarization model.",
+        verification.missing.len(),
+        verification.mis_superseded.len(),
+        verification.unresolved_refs.len(),
+        verification.fabricated.len()
+    )
+}
+
+/// Summary section a required typed record is repaired into, mirroring the
+/// summarizer prompt's own section semantics.
+fn typed_summary_section(kind: TypedInformationKind) -> &'static str {
+    match kind {
+        TypedInformationKind::CurrentTask => "Goal",
+        TypedInformationKind::UserConstraint
+        | TypedInformationKind::SafetyOrPermissionBoundary
+        | TypedInformationKind::AcceptanceCriterion
+        | TypedInformationKind::UserCorrection => "Constraints & Preferences",
+        TypedInformationKind::PendingAction => "Next Steps",
+        TypedInformationKind::VerifiedDecision => "Key Decisions",
+        _ => "Critical Context",
+    }
+}
+
+/// The protected line for a required record, in the same shape
+/// `typed_state::render_allocation` emits (record id, entry reference, text)
+/// so the repaired summary satisfies the verifier by record id.
+fn typed_protected_line(record: &TypedStateRecord) -> String {
+    let entry_ref = format!("[@{}]", record.source_entry_id);
+    match &record.link {
+        Some(target) => format!(
+            "- [{}] {} {} (supersedes [{}])",
+            record.id, entry_ref, record.text, target
+        ),
+        None => format!("- [{}] {} {}", record.id, entry_ref, record.text),
+    }
+}
+
+/// Byte offset where `section`'s body ends: the start of the next heading
+/// line outside code fences, or the end of the summary. Fence and heading
+/// matching mirror `summary_sections_complete`.
+fn summary_section_insert_offset(summary: &str, section: &str) -> Option<usize> {
+    let mut fence: Option<&str> = None;
+    let mut in_section = false;
+    let mut offset = 0usize;
+    for line in summary.split_inclusive('\n') {
+        let line_start = offset;
+        offset += line.len();
+        let trimmed = line.trim();
+        if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
+            let marker = &trimmed[..3];
+            if fence == Some(marker) {
+                fence = None;
+            } else if fence.is_none() {
+                fence = Some(marker);
+            }
+            continue;
+        }
+        if fence.is_none() {
+            let heading = trimmed.trim_start_matches('#');
+            if heading.len() != trimmed.len() && heading.starts_with(char::is_whitespace) {
+                let heading = heading
+                    .trim()
+                    .trim_end_matches('#')
+                    .trim()
+                    .trim_matches('*')
+                    .trim()
+                    .trim_end_matches(':');
+                if heading.eq_ignore_ascii_case(section) {
+                    in_section = true;
+                } else if in_section {
+                    return Some(line_start);
+                }
+                continue;
+            }
+        }
+    }
+    in_section.then(|| summary.len())
+}
+
+/// W15: the bounded deterministic repair for a summary that only lacks
+/// required protected items. The missing records are appended verbatim (id,
+/// entry reference, text) to their matching summary sections; no model call
+/// is made. Insertions are applied from the last section back so earlier
+/// byte offsets stay valid.
+fn append_missing_protected_items(
+    summary: &str,
+    state: &TypedStateLedger,
+    missing: &[VerificationFinding],
+) -> String {
+    // (section, lines) in first-appearance order of the findings.
+    let mut sections: Vec<(&'static str, Vec<String>)> = Vec::new();
+    for finding in missing {
+        let Some(record) = state
+            .records
+            .iter()
+            .find(|record| record.id == finding.subject)
+        else {
+            continue;
+        };
+        let section = typed_summary_section(record.kind);
+        let line = typed_protected_line(record);
+        match sections.iter_mut().find(|(name, _)| *name == section) {
+            Some((_, lines)) => lines.push(line),
+            None => sections.push((section, vec![line])),
+        }
+    }
+    let mut insertions: Vec<(usize, String)> = Vec::new();
+    for (section, lines) in sections {
+        let Some(offset) = summary_section_insert_offset(summary, section) else {
+            continue;
+        };
+        let mut text = String::from("\n");
+        text.push_str(&lines.join("\n"));
+        text.push('\n');
+        insertions.push((offset, text));
+    }
+    // Apply from the back so earlier offsets stay valid.
+    insertions.sort_by(|a, b| b.0.cmp(&a.0));
+    let mut out = summary.to_string();
+    for (offset, text) in insertions {
+        out.insert_str(offset, &text);
+    }
+    out
 }
 
 pub const COMPACTION_PROMPT_LEGACY: &str = "legacy";
@@ -1074,8 +1294,10 @@ pub struct CompactionSettings {
     pub deadline_ms: f64,
     /// Context-rot campaign: deterministic protected task-state ledger.
     /// `"off"` (default) keeps the historical summarizer input byte-identical.
-    /// `"prompt"` feeds the ledger to the summarizer and persists it on the
-    /// compaction entry.
+    /// `"prompt"` feeds the v1 keyword ledger to the summarizer and persists it
+    /// on the compaction entry. `"typed"` (W15) selects the v2 typed
+    /// protected-state implementation: a provenance-typed ledger, an explicit
+    /// budget allocator and a deterministic verifier gating acceptance.
     pub task_state: Option<TaskStateMode>,
 }
 
@@ -1612,6 +1834,11 @@ pub struct CompactionPreparation {
     /// off; the field is carried here so the summarizer prompt and the persisted
     /// compaction entry use one deterministic artefact.
     pub task_state: Option<TaskStateLedger>,
+    /// W15: typed (v2) protected-state ledger for this episode. `None` when
+    /// the mode is not `typed`; carried here so the summarizer prompt, the
+    /// verifier and the persisted compaction entry use one deterministic
+    /// artefact.
+    pub typed_state: Option<TypedStateLedger>,
 }
 
 /// Byte lower bound of the entry slice the preparation extracts (text
@@ -1798,9 +2025,10 @@ pub fn prepare_compaction(
     // Context-rot campaign: derive the protected ledger from the entries that
     // are leaving the model's window, then merge it with the ledger carried by
     // the previous compaction so repeated cycles cannot erode an old fact.
-    let task_state = if resolve_task_state_mode(settings.task_state.as_deref(), None)
-        == TASK_STATE_MODE_PROMPT
-    {
+    // `taskState` selects the implementation: `prompt` builds the v1 keyword
+    // ledger, `typed` (W15) builds the v2 provenance-typed ledger.
+    let task_state_mode = resolve_task_state_mode(settings.task_state.as_deref(), None);
+    let task_state = if task_state_mode == TASK_STATE_MODE_PROMPT {
         let previous_ledger = if prev_compaction_index >= 0 {
             match &path_entries[prev_compaction_index as usize] {
                 CompactionSessionEntry::Compaction { details, .. } => details
@@ -1820,6 +2048,28 @@ pub fn prepare_compaction(
     } else {
         None
     };
+    // W15: the typed (v2) ledger over the same leaving window, merged with
+    // the ledger persisted by the previous compaction under
+    // `details.typedState` (never the v1 field) so durable records carry
+    // forward as canonical state instead of being re-derived from a summary.
+    let typed_state = if task_state_mode == TASK_STATE_MODE_TYPED {
+        let previous_ledger = if prev_compaction_index >= 0 {
+            match &path_entries[prev_compaction_index as usize] {
+                CompactionSessionEntry::Compaction { details, .. } => details
+                    .as_ref()
+                    .and_then(|details| details.get("typedState"))
+                    .and_then(|value| serde_json::from_value::<TypedStateLedger>(value.clone()).ok()),
+                _ => None,
+            }
+        } else {
+            None
+        };
+        let window = build_typed_state(&path_entries[boundary_start..history_end]);
+        let merged = merge(previous_ledger.as_ref(), window);
+        (!merged.is_empty()).then_some(merged)
+    } else {
+        None
+    };
     Some(CompactionPreparation {
         first_kept_entry_id,
         messages_to_summarize,
@@ -1831,6 +2081,7 @@ pub fn prepare_compaction(
         file_ops,
         settings: settings.clone(),
         task_state,
+        typed_state,
     })
 }
 
@@ -1923,11 +2174,12 @@ async fn generate_summary_with_options(
     summary_update_policy: &SummaryUpdatePolicy, request_options: Option<&CompactionOptions>,
     metrics: &CompactionMetrics,
     prompt_version: &CompactionPromptVersion, summary_budget_tokens: f64,
-    protected_state: Option<&str>,
+    protected_state: Option<(&str, &'static str)>,
 ) -> Result<SummarySlice, String> {
     let instructions = {
         let custom_instructions = custom_instructions.map(str::to_string);
-        let protected_state = protected_state.map(str::to_string);
+        let protected_state = protected_state
+            .map(|(state, instruction)| (state.to_string(), instruction));
         let summary_update_policy = summary_update_policy.clone();
         let prompt_version = prompt_version.clone();
         let summary_budget_tokens = if summary_budget_tokens.is_finite()
@@ -1945,12 +2197,14 @@ async fn generate_summary_with_options(
                 &prompt_version,
                 summary_budget_tokens,
             );
-            // The ledger is protected material, not user instructions: it is
-            // appended outside the <user-instructions> block and states how to
-            // copy it without paraphrasing.
+            // The protected block is recovered state, not user instructions:
+            // it is appended outside the <user-instructions> block and the
+            // mode-selected instruction states how to copy it without
+            // paraphrasing (v1 `LEDGER_INSTRUCTION`, W15
+            // `TYPED_STATE_INSTRUCTION`).
             match &protected_state {
-                Some(state) if !state.trim().is_empty() => {
-                    format!("{prompt}\n\n{state}\n\n{LEDGER_INSTRUCTION}")
+                Some((state, instruction)) if !state.trim().is_empty() => {
+                    format!("{prompt}\n\n{state}\n\n{instruction}")
                 }
                 _ => prompt,
             }
@@ -2581,6 +2835,7 @@ pub async fn compact_with_metrics(
         file_ops,
         settings,
         task_state,
+        typed_state,
     } = preparation;
     let task_state_block = task_state
         .as_ref()
@@ -2679,6 +2934,11 @@ pub async fn compact_with_metrics(
                         provider_checkpoint: Some(remote.checkpoint),
                         deadline_fallback: None,
                         task_state: None,
+                        // W15: native server-side compaction produces no
+                        // model-written summary, so there is no typed
+                        // artefact to protect or verify (v1 parity).
+                        typed_state: None,
+                        typed_verification: None,
                     }),
                 });
             }
@@ -2704,6 +2964,34 @@ pub async fn compact_with_metrics(
         .unwrap_or_else(|| SUMMARY_BUDGET_MODE_LEGACY.to_string());
     let summary_budget_tokens =
         summary_output_budget(settings.reserve_tokens, &summary_budget_mode, *tokens_before);
+    // W15: budget the typed hot block from the summarizer's own output budget
+    // (see `typed_hot_state_budget_tokens`). An unsafe allocation stops the
+    // episode before any model call: mandatory material that cannot fit is
+    // surfaced through the same failure channel as an unusable summary, never
+    // silently truncated. The rendered block is the budgeted allocation, so
+    // the model only ever sees material the allocator could fit.
+    let typed_allocation = typed_state
+        .as_ref()
+        .map(|state| allocate(state, typed_hot_state_budget_tokens(summary_budget_tokens)));
+    if let Some(allocation) = &typed_allocation {
+        if let Some(unsafe_) = &allocation.unsafe_compaction {
+            return Err(typed_allocation_failure(unsafe_, allocation.budget_tokens));
+        }
+    }
+    let typed_state_block = typed_allocation
+        .as_ref()
+        .map(render_allocation)
+        .filter(|block| !block.trim().is_empty());
+    // The mode selects the block and its copy instruction; the modes are
+    // mutually exclusive, so at most one block is present.
+    let protected_state: Option<(&str, &'static str)> = task_state_block
+        .as_deref()
+        .map(|block| (block, LEDGER_INSTRUCTION))
+        .or_else(|| {
+            typed_state_block
+                .as_deref()
+                .map(|block| (block, TYPED_STATE_INSTRUCTION))
+        });
     // B1: text-summary model override. Native compaction above always uses the
     // session model; only the summarizer calls route to the override.
     let (text_model, text_api_key) = match summary_model {
@@ -2746,7 +3034,7 @@ pub async fn compact_with_metrics(
                         metrics,
                         &prompt_version,
                         summary_budget_tokens,
-                        task_state_block.as_deref(),
+                        protected_state,
                     )
                     .await
                 } else {
@@ -2794,7 +3082,7 @@ pub async fn compact_with_metrics(
                 metrics,
                 &prompt_version,
                 summary_budget_tokens,
-                task_state_block.as_deref(),
+                protected_state,
             )
             .await?;
             summary = result.summary.clone();
@@ -2802,7 +3090,7 @@ pub async fn compact_with_metrics(
         }
         Ok::<_, String>((slices, summary))
     };
-    let (slices, summary) = match deadline {
+    let (mut slices, mut summary) = match deadline {
         None => text_summary_phase.await?,
         Some(deadline) => {
             let deadline_signal = summary_signal.clone();
@@ -2818,6 +3106,62 @@ pub async fn compact_with_metrics(
             }
         }
     };
+    // W15: verify the model-written conversation summary against the typed
+    // ledger before anything is persisted. `slices[0]` is the conversation
+    // summary in both the plain and the split-turn shapes (the protected
+    // block is only ever attached to that call). A failure whose findings
+    // are only missing required items gets one bounded, deterministic
+    // repair: the missing protected lines are appended verbatim to their
+    // matching summary sections, with no model call, and the amended text is
+    // re-verified. Any other failure, or a repair that still fails, is a
+    // summary-validation failure and surfaces through the same channel.
+    let mut typed_verification: Option<TypedVerificationRecord> = None;
+    if let Some(state) = &typed_state {
+        let artifact = slices
+            .first()
+            .map(|slice| slice.summary.clone())
+            .unwrap_or_else(|| summary.clone());
+        let mut verification = verify(&artifact, state);
+        let mut repaired = false;
+        let mut repaired_text = artifact.clone();
+        if !verification.passed
+            && verification.mis_superseded.is_empty()
+            && verification.unresolved_refs.is_empty()
+            && verification.fabricated.is_empty()
+        {
+            repaired_text = append_missing_protected_items(&artifact, state, &verification.missing);
+            verification = verify(&repaired_text, state);
+            repaired = true;
+        }
+        if !verification.passed {
+            return Err(typed_verification_failure(&verification));
+        }
+        if repaired {
+            if let Some(slice) = slices.first_mut() {
+                slice.summary = repaired_text.clone();
+            }
+            if *is_split_turn {
+                let prefix = slices
+                    .get(1)
+                    .map(|slice| slice.summary.clone())
+                    .unwrap_or_default();
+                summary = format!(
+                    "{}\n\n---\n\n**Turn Context (split turn):**\n\n{}",
+                    repaired_text, prefix
+                );
+            } else {
+                summary = repaired_text;
+            }
+        }
+        typed_verification = Some(TypedVerificationRecord {
+            passed: true,
+            repaired,
+            missing: verification.missing.len(),
+            mis_superseded: verification.mis_superseded.len(),
+            unresolved_refs: verification.unresolved_refs.len(),
+            fabricated: verification.fabricated.len(),
+        });
+    }
     let (read_files, modified_files) = compute_file_lists(file_ops);
     let mut summary = summary + &format_file_operations(&read_files, &modified_files);
     if native_compaction_unsupported {
@@ -2846,6 +3190,8 @@ pub async fn compact_with_metrics(
             provider_checkpoint: None,
             deadline_fallback: None,
             task_state: task_state.clone(),
+            typed_state: typed_state.clone(),
+            typed_verification,
         }),
         usage,
     })
@@ -2879,6 +3225,10 @@ fn deadline_truncation_result(
             provider_checkpoint: None,
             deadline_fallback: Some(true),
             task_state: preparation.task_state.clone(),
+            // W15: the deadline fallback keeps the ledger (the next cycle
+            // merges it), but no summary was produced to verify.
+            typed_state: preparation.typed_state.clone(),
+            typed_verification: None,
         }),
         usage: None,
     }
@@ -3459,6 +3809,7 @@ mod summary_retry_safety_tests {
             file_ops: crate::core::compaction::utils::create_file_ops(),
             settings: default_compaction_settings(),
             task_state: None,
+            typed_state: None,
         }
     }
 
