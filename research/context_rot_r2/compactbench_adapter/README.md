@@ -4,7 +4,7 @@ Python-side adapter that drives the REAL Optimus Rust compaction pipeline
 through the committed harness binary
 (`crates/pi-coding-agent/src/bin/compaction_harness.rs`) under the official
 CompactBench runner, plus the offline validation runs. Since W12 the adapter
-runs in DELTA-APPEND mode against the fixed binary (commit 49f4738d8d:
+runs in DELTA-APPEND mode against the fixed binary (commit 49f473d8d:
 `SessionManager::continue_recent`, usage anchors, flush-on-append).
 
 Design source: `research/context_rot_r2/COMPACTBENCH-ADAPTER-DESIGN.md`
@@ -91,9 +91,10 @@ includes exactly `[j, end)` in the tail. Candidates are tried most aggressive
 (shortest tail) first, capped at 10 spawns per call; the used value and every
 failed attempt are recorded in `methodMetadata`, and a multi-attempt landing
 is surfaced as a warning. On a session with a previous compaction the walk
-clamps at the previous `firstKeptEntryId`, so an oversized candidate keeps
-the whole live window (degenerate, treated as not-landed) rather than
-re-folding old turns.
+clamps at the previous `firstKeptEntryId`, so an oversized candidate
+empties the summarize window; since D5 that resolves to a no-op (status
+ok, `no compaction prepared` warning, nothing appended) rather than
+re-folding old turns, and the ladder treats it as not-landed.
 
 ## Harness findings (all reproduced by `probe_harness_behavior.py`)
 
@@ -113,8 +114,10 @@ contradict the W6 probe that ran against the pre-fix binary.
 - **F3 Tail sizing, refined.** Message `j` joins the kept tail iff
   `cum[j+1] <= keepRecentTokens` (`chars/4 + 0.6` per message, measured from
   the end). Predicted tails matched `keptTurnIds` exactly on the starter
-  templates and on delta sessions (probe F3 threshold sweep), including the
-  clamp at the live-window start.
+  templates and on delta sessions (probe F3 threshold sweep). The walk still
+  clamps at the live-window start, but since D5 (3b08e3f2e) an oversized
+  `keepRecentTokens` resolves to a no-op (see the F3 sweep re-pin below)
+  instead of an empty-window compaction.
 - **F4 [REVERSED] Token accounting is non-zero with the fixture.**
   `tokensBefore` and `compactedContextTokens` come back positive because
   assistant turns carry a conservative `ceil(chars/4)` usage anchor; the
@@ -136,6 +139,40 @@ contradict the W6 probe that ran against the pre-fix binary.
   forward across calls, the summary embeds the decayed previous summary,
   and one session file serves the whole case.
 
+## F3 sweep re-pin at HEAD (W40)
+
+W12 pinned the F3 threshold sweep against the 49f473d8d binary. Post-W12
+library fixes moved one behavior: D5 (r2 ledger, commit 3b08e3f2e, "skip
+no-op compaction when nothing new can be summarized") dropped the
+`previous_summary.is_none()` condition from the empty-window guard, so the
+two clamped/oversized `keepRecentTokens` rows no longer land the pre-D5
+empty-window compaction. W26's live run documented the four red checks
+(`live/README.md`, section 2); W40 re-verified them offline at HEAD
+(bea924fd3, isolated build) and re-pinned them. Verdicts (evidence rule:
+the r2 defect ledger decides):
+
+| failing probe check (pre-D5 expectation) | behavior at HEAD | verdict | cites |
+| --- | --- | --- | --- |
+| `K=cum[6]+0.5 keeps [5, 6, 7, 8, 9]` | no compaction: status ok, `summarizedTurnIds=[]`, empty summary, `keptTurnIds` = the whole cumulative turn map | expectation-updated | D5 FIXED (W2), 3b08e3f2e |
+| same row, `clamped cut reports the empty-summarize-window warning` | warning is now `no compaction prepared (nothing new to summarize)`; the session file gains no entry (still exactly one compaction entry) | expectation-updated | D5 FIXED (W2), 3b08e3f2e |
+| `K=500.00 keeps [5, 6, 7, 8, 9]` | same no-op as the `cum[6]+0.5` row | expectation-updated | D5 FIXED (W2), 3b08e3f2e |
+| same row, `clamped cut reports the empty-summarize-window warning` | same warning and no-append as above | expectation-updated | D5 FIXED (W2), 3b08e3f2e |
+
+All four verdicts are expectation-updated; no production fix was needed.
+The observed no-op matches the fixed D5 spec exactly (r2 ledger: "a
+threshold re-trigger with zero new material is a no-op"; commit message:
+"no model call, no turn stop, no appended entry" — the probe now asserts
+the empty summary, the empty summarized list, the no-compaction-prepared
+warning and the unchanged session file). The adapter was already safe:
+`_DEGENERATE_WARNING_MARKERS` has carried `no compaction prepared` since
+the W12 delta-append commit (1ac57fe3c), so the cut ladder treats the
+no-op as not-landed and tries the next candidate — which is why W26's
+live run was unaffected. The other post-W12 compaction commits (D6 guard,
+D9 deadline walk-back, D11 digest prune in flight, D18/D19 notices+caps)
+did not move any probe finding: F1/F2/F4/F5/D1 and the six non-clamped F3
+checks (three boundary rows, the error row, both mid-tail rows) pass
+unchanged at HEAD.
+
 ## Mode decision (W12): delta-append
 
 The W6 adapter sent the full transcript to a fresh session dir per call
@@ -152,7 +189,7 @@ in `test_optimus_compactor.py`.
 
 | variable | default | effect |
 | --- | --- | --- |
-| `HARNESS` / `ROT2_HARNESS_BIN` | shared debug build | harness binary path (must be a build with 49f4738d8d for delta mode) |
+| `HARNESS` / `ROT2_HARNESS_BIN` | shared debug build | harness binary path (needs the 49f473d8d session fixes or newer; the D5 no-op is re-pinned at HEAD) |
 | `ROT2_RESERVE_TOKENS` | `4000` | passed through as `settings.reserveTokens` |
 | `ROT2_KEEP_RECENT_TOKENS` | unset (auto ladder) | pin the value: exactly one attempt, then fallback |
 | `ROT2_HARNESS_TIMEOUT_S` | `120` | per-attempt subprocess timeout |
@@ -162,7 +199,9 @@ in `test_optimus_compactor.py`.
 
 Adapter checks: **13/13 passed** (delta round trip, three-cycle partition,
 retry-after-failure, resync, plus the W6 contract checks), and all probe
-checks pass, against the worktree build of the fixed binary:
+checks pass. Originally validated against the worktree build of the fixed
+binary (49f473d8d); re-verified at HEAD (bea924fd3) in W40 after the F3
+sweep re-pin, with the same 13/13 and a fully green probe:
 
 ```
 CBV=C:/Users/openclawuser/optimus-rot2-w5-research/refs/cb-venv/Scripts/python.exe
