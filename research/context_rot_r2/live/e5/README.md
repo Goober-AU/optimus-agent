@@ -163,7 +163,7 @@ Per-probe (typed arm; v1 differs only where marked):
 
 | probe | default | taskState v1 | typed | note |
 |---|---|---|---|---|
-| q-constraint-0..7 (8) | lost | retained | retained | typed classifies c0/c5 as USER_CORRECTION / c6 as SAFETY (no new deps without approval), c1-c4 as USER_CONSTRAINT, c7 as LOW_PRIORITY_EPISODE — all retained within budget |
+| q-constraint-0..7 (8) | lost | retained | retained | typed classifies c0/c5 as USER_CORRECTION, c1-c4 as USER_CONSTRAINT, c6/c7 as LOW_PRIORITY_EPISODE (Step scope; the post-D25 step boundary retires both at the first non-restating merge)ITY_EPISODE — all retained within budget |
 | q-decision-0..3 (4) | lost | retained | retained | DECISIONS (CURRENT), unverified (no tool corroboration) |
 | q-evidence-0 | lost | lost | **retained** | `cargo test: 4000 passed; 0 failed` — the `(?i)FAILED` match v1's case-sensitive regex missed |
 | q-evidence-1..3 | lost | lost | lost | build/audit/benchmark lines match no typed tool category (classifier scoping, both arms) |

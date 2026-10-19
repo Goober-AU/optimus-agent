@@ -153,7 +153,7 @@ After the green integration, a dedicated adversarial self-review of the typed
 mode found eight defects that the positive tests missed. Each was reproduced
 by a failing-first test committed in
 `crates/pi-coding-agent/tests/rot2_typed_adversarial.rs` (written red under
-`#[ignore = "Dnn: ..."]`, then un-ignored by its fix; 23 tests green, zero
+`#[ignore = "Dnn: ..."]`, then un-ignored by its fix; 24 tests green, zero
 ignored, at this head):
 
 | # | one-line finding | fix |
@@ -519,7 +519,7 @@ were not run (experiment drivers; the committed runs under
 `research/context_rot_r2/runs/` and `live/` are the campaign data).
 
 Known environment-bound failures (pre-existing on the base, documented at
-`reports/context-rot/REGRESSION-GATES.md` and r2's section 4): the
+`reports/context-rot/REGRESSION-GATES.md` and r2's section 5): the
 `enabled_skill_is_importable` test needs `uv` on the test child's PATH (absent
 on this host), and the painted-frame tray test is scheduling-sensitive and
 passes serialized. Neither file is touched by this campaign.
