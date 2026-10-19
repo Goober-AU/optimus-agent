@@ -162,6 +162,11 @@ durable" panics).
   (larger post-compaction transcript or a smaller `keep_recent_tokens`)
   so the second window is non-empty. The file is outside this worker's
   file map, so it is recorded here for the integrator.
+- Fixed in `04c6463c9` (`rot2/w43-parityfix`, W43): one 2000-token
+  post-compaction turn before the fresh-usage turn keeps the second
+  compaction's summarize window non-empty; the suite is 14/14 at the tip
+  with that fixture update (same mechanism as W40's probe F3 re-pin,
+  `1d1b1fa8a`).
 
 ## 7. `cargo check -p pi-coding-agent --all-targets`: warnings vs base
 
