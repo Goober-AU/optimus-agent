@@ -3282,12 +3282,26 @@ fn migrate_v1_to_v2(entries: &mut Vec<FileEntry>) {
                 .get("firstKeptEntryIndex")
                 .and_then(is_safe_integer);
             if let Some(first_kept_index) = first_kept_index {
-                if let Some(target) = entries.get(first_kept_index.max(0) as usize) {
-                    if entry_type(target) != "session" {
-                        let target_id = entry_id(target);
-                        entries[index]
-                            .insert("firstKeptEntryId".to_string(), Value::String(target_id));
-                    }
+                // Resolve the legacy index to an id. When the target is
+                // missing, out of bounds, or the session header, fall back to
+                // the first entry after this compaction instead of dropping
+                // the boundary: prepare_compaction treats a missing
+                // firstKeptEntryId as "re-summarize everything after the
+                // compaction", which silently re-summarizes retained
+                // material on every later compaction.
+                let resolved = entries
+                    .get(first_kept_index.max(0) as usize)
+                    .filter(|target| entry_type(target) != "session")
+                    .map(entry_id)
+                    .or_else(|| {
+                        entries
+                            .get(index + 1)
+                            .filter(|target| entry_type(target) != "session")
+                            .map(entry_id)
+                    });
+                if let Some(target_id) = resolved {
+                    entries[index]
+                        .insert("firstKeptEntryId".to_string(), Value::String(target_id));
                 }
                 entries[index].shift_remove("firstKeptEntryIndex");
             }
@@ -6511,6 +6525,69 @@ mod tests {
             Some(entries[1]["id"].as_str().unwrap())
         );
         assert!(!migrate_to_current_version(&mut entries));
+    }
+
+    #[test]
+    fn migration_keeps_a_durable_boundary_when_first_kept_index_is_out_of_bounds() {
+        // D8 regression: the legacy index cannot resolve, so the migration
+        // must still write a durable firstKeptEntryId (the first entry after
+        // the compaction) instead of silently dropping the boundary.
+        let mut entries: Vec<FileEntry> = vec![
+            serde_json::json!({"type": "session", "id": "s", "timestamp": "t", "cwd": "/w"})
+                .as_object()
+                .cloned()
+                .unwrap(),
+            serde_json::json!({"type": "message", "id": "m1", "message": {"role": "user"}})
+                .as_object()
+                .cloned()
+                .unwrap(),
+            serde_json::json!({"type": "compaction", "summary": "s", "firstKeptEntryIndex": 9})
+                .as_object()
+                .cloned()
+                .unwrap(),
+            serde_json::json!({"type": "message", "id": "m2", "message": {"role": "assistant"}})
+                .as_object()
+                .cloned()
+                .unwrap(),
+        ];
+        assert!(migrate_to_current_version(&mut entries));
+        let compaction = &entries[2];
+        assert!(compaction.get("firstKeptEntryIndex").is_none());
+        assert_eq!(
+            compaction["firstKeptEntryId"].as_str(),
+            Some("m2"),
+            "out-of-bounds index must fall back to the entry after the compaction"
+        );
+    }
+
+    #[test]
+    fn migration_ignores_a_boundary_pointing_at_the_session_header() {
+        // D8 companion: an index that resolves to the session header must not
+        // adopt the header as the boundary. Nothing follows this compaction,
+        // so the field stays absent and prepare_compaction's own fallback
+        // (empty summarize window) governs.
+        let mut entries: Vec<FileEntry> = vec![
+            serde_json::json!({"type": "session", "id": "s", "timestamp": "t", "cwd": "/w"})
+                .as_object()
+                .cloned()
+                .unwrap(),
+            serde_json::json!({"type": "message", "id": "m1", "message": {"role": "user"}})
+                .as_object()
+                .cloned()
+                .unwrap(),
+            serde_json::json!({"type": "compaction", "summary": "s", "firstKeptEntryIndex": 0})
+                .as_object()
+                .cloned()
+                .unwrap(),
+        ];
+        assert!(migrate_to_current_version(&mut entries));
+        let compaction = &entries[2];
+        assert!(compaction.get("firstKeptEntryIndex").is_none());
+        assert_ne!(
+            compaction.get("firstKeptEntryId").and_then(Value::as_str),
+            Some("s"),
+            "the session header must not become the boundary"
+        );
     }
 
     #[test]
