@@ -43,9 +43,53 @@ static CONSTRAINT_RE: Lazy<Regex> = Lazy::new(|| {
 static DECISION_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)\bdecision\b|\bchosen\b|\bchose\b|\bwe will use\b").unwrap()
 });
+/// Loose replacement-vocabulary trigger. It only widens CLAUSE CAPTURE: a
+/// message carrying any of these tokens also surrenders its keyword-less
+/// clauses (W9-F1: "preserve the ledger audit trail verbatim" rides along
+/// with "never drop the scheduler ledger" in the same message). It must NOT
+/// be used to classify a clause as a correction; use `is_correction_clause`.
 static SUPERSEDE_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)\b(drop|instead|change of plan|no longer|rather than|replace[sd]?|revert|withdraw|supersed\w*)\b").unwrap()
 });
+/// Explicit correction cues: a clause is a correction only when it states
+/// that an earlier choice is being displaced.
+static CORRECTION_CUE_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(concat!(
+        r"(?i)\b(?:",
+        r"correction|change of plan|forget that|scratch that|on second thought|",
+        r"instead|rather than|no longer|",
+        r"supersed\w*|drop\w*|replac\w*|revert\w*|withdraw\w*",
+        r")\b"
+    )).unwrap()
+});
+/// Negated cue verbs: "never drop the scheduler ledger", "do not replace
+/// the gateway config" and friends are standing prohibitions about the
+/// future, not corrections of the past. They are scrubbed before correction
+/// classification so the same verb can serve both intents.
+static PROHIBITION_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(concat!(
+        r"(?i)\b(?:never|do not|don't|dont|must not|cannot|can't|should not|",
+        r"shall not|no)\s+(?:supersed\w*|drop\w*|replac\w*|revert\w*|withdraw\w*)\b"
+    )).unwrap()
+});
+
+/// Frame words that state THAT a correction, decision or constraint exists,
+/// never WHICH subject it is about. Two items sharing only scaffold words do
+/// not share a subject, so scaffold words never anchor a retirement.
+const SCAFFOLD: &[&str] = &[
+    "instead", "rather", "longer", "change", "plan", "forget", "scratch", "correction",
+    "superseded", "supersede", "supersedes", "superseding", "drop", "dropped", "replace",
+    "replaced", "replaces", "revert", "reverted", "withdraw", "withdrawn", "idea", "decision",
+    "constraint", "earlier", "previous", "prior", "current", "latest",
+];
+
+/// A clause classifies as a correction when an explicit correction cue
+/// survives after standing prohibitions are scrubbed. Deterministic, no
+/// model call.
+fn is_correction_clause(clause: &str) -> bool {
+    let scrubbed = PROHIBITION_RE.replace_all(clause, "keep");
+    CORRECTION_CUE_RE.is_match(&scrubbed)
+}
 static EVIDENCE_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"test result:|error\[E\d+\]|\d+ files changed|panicked at|FAILED").unwrap()
 });
@@ -84,8 +128,9 @@ pub struct TaskStateItem {
     /// Reason attached by the user in the same message (`Rationale: ...`).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub why: Vec<String>,
-    /// True when the item carries a user correction. Corrections are
-    /// authoritative user statements and never serve as supersession targets.
+    /// True when this item is a user correction of an earlier item. A
+    /// correction is the newest user statement on its subject, so it is
+    /// never a retirement target and never lands in SUPERSEDED.
     #[serde(default, skip_serializing_if = "is_false")]
     pub correction: bool,
 }
@@ -339,7 +384,7 @@ pub fn build_ledger(
         let entry_id = entry.id().to_string();
 
         if role == Role::User {
-            let is_correction = SUPERSEDE_RE.is_match(&text);
+            let capture_wide = SUPERSEDE_RE.is_match(&text);
             for sentence in sentences(&text) {
                 for clause in split_clauses(&sentence) {
                     if RATIONALE_RE.is_match(&clause) {
@@ -355,7 +400,8 @@ pub fn build_ledger(
                         }
                         continue;
                     }
-                    if !(is_correction || CONSTRAINT_RE.is_match(&clause)) {
+                    let is_correction = is_correction_clause(&clause);
+                    if !(capture_wide || CONSTRAINT_RE.is_match(&clause)) {
                         continue;
                     }
                     if clause.chars().count() < 12 {
@@ -896,6 +942,27 @@ mod tests {
         let rendered = render_ledger(&ledger);
         assert!(rendered.contains("SUPERSEDED (history, not current)"));
         assert!(rendered.contains("inline in the transcript instead"));
+    }
+
+    #[test]
+    fn standing_prohibitions_are_not_corrections_but_cues_are() {
+        // W7/W9 root cause 1: the same verbs serve both intents. A standing
+        // prohibition about the future is not a correction of the past.
+        assert!(!is_correction_clause(
+            "CONSTRAINT: never drop the scheduler ledger R2-CONS-bc725595"
+        ));
+        assert!(!is_correction_clause("Do not replace the gateway config without review"));
+        assert!(!is_correction_clause("must not revert the protocol change"));
+        // Explicit correction cues classify, including after a prohibition in
+        // the same clause.
+        assert!(is_correction_clause(
+            "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5."
+        ));
+        assert!(is_correction_clause("The earlier A decision is superseded."));
+        assert!(is_correction_clause("Drop the sidecar checkpoint idea."));
+        assert!(is_correction_clause(
+            "Never drop the audit log; persist it inline instead."
+        ));
     }
 
     #[test]
