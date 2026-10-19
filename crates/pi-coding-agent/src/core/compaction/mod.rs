@@ -4,5 +4,6 @@ pub mod checkpoint;
 pub mod compaction;
 pub mod metrics;
 pub mod parallel;
+pub mod request_tokens;
 pub mod task_state;
 pub mod utils;
