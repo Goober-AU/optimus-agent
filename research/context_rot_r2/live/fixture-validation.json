@@ -1,0 +1,205 @@
+{
+ "scenario": "r2-e1-multicycle",
+ "arms": {
+  "default": {
+   "cycles": [
+    {
+     "ran": true,
+     "skipReason": null,
+     "summarizedEntries": 21,
+     "retainedEntries": 2,
+     "summaryChars": 739,
+     "summarizerRequestChars": 11991,
+     "compactedContextTokens": 30.0,
+     "ledgerPresent": false,
+     "anchorsPresent": [
+      "q-constraint-0"
+     ]
+    },
+    {
+     "ran": true,
+     "skipReason": null,
+     "summarizedEntries": 6,
+     "retainedEntries": 2,
+     "summaryChars": 1236,
+     "summarizerRequestChars": 15086,
+     "compactedContextTokens": 30.0,
+     "ledgerPresent": false,
+     "anchorsPresent": []
+    },
+    {
+     "ran": true,
+     "skipReason": null,
+     "summarizedEntries": 6,
+     "retainedEntries": 2,
+     "summaryChars": 1236,
+     "summarizerRequestChars": 15583,
+     "compactedContextTokens": 30.0,
+     "ledgerPresent": false,
+     "anchorsPresent": []
+    },
+    {
+     "ran": true,
+     "skipReason": null,
+     "summarizedEntries": 6,
+     "retainedEntries": 2,
+     "summaryChars": 1236,
+     "summarizerRequestChars": 15583,
+     "compactedContextTokens": 30.0,
+     "ledgerPresent": false,
+     "anchorsPresent": []
+    },
+    {
+     "ran": true,
+     "skipReason": null,
+     "summarizedEntries": 6,
+     "retainedEntries": 2,
+     "summaryChars": 1236,
+     "summarizerRequestChars": 15583,
+     "compactedContextTokens": 30.0,
+     "ledgerPresent": false,
+     "anchorsPresent": []
+    }
+   ],
+   "probesMatch": true,
+   "finalSummaryMatch": true
+  },
+  "taskState": {
+   "cycles": [
+    {
+     "ran": true,
+     "skipReason": null,
+     "summarizedEntries": 21,
+     "retainedEntries": 2,
+     "summaryChars": 2353,
+     "summarizerRequestChars": 14364,
+     "compactedContextTokens": 30.0,
+     "ledgerPresent": true,
+     "anchorsPresent": [
+      "q-constraint-0",
+      "q-constraint-1",
+      "q-constraint-2",
+      "q-constraint-3",
+      "q-constraint-4",
+      "q-constraint-5",
+      "q-constraint-6",
+      "q-constraint-7",
+      "q-decision-0",
+      "q-decision-1",
+      "q-decision-2",
+      "q-decision-3",
+      "q-correction-0",
+      "q-correction-1"
+     ]
+    },
+    {
+     "ran": true,
+     "skipReason": null,
+     "summarizedEntries": 6,
+     "retainedEntries": 2,
+     "summaryChars": 2850,
+     "summarizerRequestChars": 19073,
+     "compactedContextTokens": 30.0,
+     "ledgerPresent": true,
+     "anchorsPresent": [
+      "q-constraint-0",
+      "q-constraint-1",
+      "q-constraint-2",
+      "q-constraint-3",
+      "q-constraint-4",
+      "q-constraint-5",
+      "q-constraint-6",
+      "q-constraint-7",
+      "q-decision-0",
+      "q-decision-1",
+      "q-decision-2",
+      "q-decision-3",
+      "q-correction-0",
+      "q-correction-1"
+     ]
+    },
+    {
+     "ran": true,
+     "skipReason": null,
+     "summarizedEntries": 6,
+     "retainedEntries": 2,
+     "summaryChars": 2850,
+     "summarizerRequestChars": 19570,
+     "compactedContextTokens": 30.0,
+     "ledgerPresent": true,
+     "anchorsPresent": [
+      "q-constraint-0",
+      "q-constraint-1",
+      "q-constraint-2",
+      "q-constraint-3",
+      "q-constraint-4",
+      "q-constraint-5",
+      "q-constraint-6",
+      "q-constraint-7",
+      "q-decision-0",
+      "q-decision-1",
+      "q-decision-2",
+      "q-decision-3",
+      "q-correction-0",
+      "q-correction-1"
+     ]
+    },
+    {
+     "ran": true,
+     "skipReason": null,
+     "summarizedEntries": 6,
+     "retainedEntries": 2,
+     "summaryChars": 2850,
+     "summarizerRequestChars": 19570,
+     "compactedContextTokens": 30.0,
+     "ledgerPresent": true,
+     "anchorsPresent": [
+      "q-constraint-0",
+      "q-constraint-1",
+      "q-constraint-2",
+      "q-constraint-3",
+      "q-constraint-4",
+      "q-constraint-5",
+      "q-constraint-6",
+      "q-constraint-7",
+      "q-decision-0",
+      "q-decision-1",
+      "q-decision-2",
+      "q-decision-3",
+      "q-correction-0",
+      "q-correction-1"
+     ]
+    },
+    {
+     "ran": true,
+     "skipReason": null,
+     "summarizedEntries": 6,
+     "retainedEntries": 2,
+     "summaryChars": 2850,
+     "summarizerRequestChars": 19570,
+     "compactedContextTokens": 30.0,
+     "ledgerPresent": true,
+     "anchorsPresent": [
+      "q-constraint-0",
+      "q-constraint-1",
+      "q-constraint-2",
+      "q-constraint-3",
+      "q-constraint-4",
+      "q-constraint-5",
+      "q-constraint-6",
+      "q-constraint-7",
+      "q-decision-0",
+      "q-decision-1",
+      "q-decision-2",
+      "q-decision-3",
+      "q-correction-0",
+      "q-correction-1"
+     ]
+    }
+   ],
+   "probesMatch": true,
+   "finalSummaryMatch": true
+  }
+ },
+ "mismatches": []
+}
