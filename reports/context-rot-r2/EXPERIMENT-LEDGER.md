@@ -470,3 +470,67 @@ re-pin `31ce39b84` holds at this tip).
 - a full post-fix R2-E5 live re-run was NOT executed: only the D29 C1 cell
   was re-run live (`621dc462f`).
 78ccdf254 (docs(context-rot): cross-report consistency sweep at the W50 tip)
+
+
+
+## R2-E5-RM — typed-arm re-run on the fixed implementation (fixture + live)
+
+Branch `rot2/w47-e5rm` (integration tip 71e770c5e). The committed R2-E5
+results measured the W15 typed implementation before D24 (stable ids) and
+D29 (provenance pairing) landed; E5's two negative findings were the
+TASK-E cycle-2 halt (unresolved refs from id churn) and the E3ADV C1
+no-SUPERSEDED render. This re-run updates the record for the affected
+cells on the fixed tree. Artifacts: `research/context_rot_r2/live/e5/rm/`
+(README with the full tables, offline cell results, render snapshots,
+live results and raw calls).
+
+Method: the typed mirror was ported to the tip's typed_state.rs first
+(commit 0bd183a5e: D22 render direction, D23 verify grammar, D24 id
+carrying, D25 merge step boundary + retiredRefs + durable cap, D27
+heading shape; D26 salvage out of scope for well-formed payloads; D29
+was already ported). Validation: the pre-port mirror reproduced the
+committed E5 numbers exactly (E1 15/19 via run_arm_e3 + the lossy fixture
+summarizer; the C1 offline cell byte-matched d29-c1-offline-results.json;
+the TASK-E chain reproduced the Finding 2 churn); post-port the e3/e3adv
+selftests (14+15) stay green.
+
+- Part 1 (PRODUCTION-PATH-MIRROR, offline, deterministic):
+  - E1 19-probe fixture, typed arm: **13/19** (was 15/19 at E5).
+    constraints 6/8, decisions 4/4, evidence 1/4, supersession 2/2, task
+    0/1; verifier passed 5/5, ledger 23 then 19 records. The two-probe
+    drop (q-constraint-6/7) is the D25 step boundary retiring the two
+    LOW_PRIORITY_EPISODE-classified constraint probes at the first
+    merge that does not restate them — a tip behavior, not a D24/D29
+    regression; every probe the v1 ledger protected minus those two,
+    plus the cargo-test evidence line.
+  - E3ADV C1 offline: D29 holds on the tip — the decision retires by
+    provenance at every cycle, and the SUPERSEDED section renders at
+    all five cycles (the W41 run's cycle-5 tier-8 overflow is gone: the
+    step boundary keeps the ledger 3 records smaller, 697/800 hot).
+  - TASK-E id chain: the D24 sentinel (VT-1cfcd1) is present at every
+    cycle 1-5; previous-render refs resolve at cycles 3-5; cycle 2
+    strands exactly two refs ([VT-25d467], [@d09cc350]) — the
+    restatement-absorbed tests_01 record, recorded as a defect candidate
+    (no tombstone for absorbed ids; distinct from D24/D25).
+- Part 2 (LIVE-MODEL, GLM 5.3, 46 wire calls of the <= 120 budget,
+  pre-registrations in the rm/README written before the calls):
+  - TASK-E typed: **5/5 cycles, no halt** (was: halt at cycle 2). The
+    verifier passed every cycle (cycles 1-2 via the deterministic
+    missing-item repair; 0 unresolved refs anywhere; was 5/3/3/3 at E5).
+    Probe q-e-error correct at every cycle point + baseline, 3/3 strict
+    reps; the exact assertion survives verbatim. The pre-registered
+    residual risk (absorbed-record refs) did not trigger: GLM cites the
+    absorbed record as `[VT-25d467 @d09cc350-...]`, a bracket containing
+    a space, outside the verifier reference grammar.
+  - E3ADV C1 typed: **SUPERSEDED rendered at every cycle 1-5** (W41:
+    cycles 1-4), decision retired by provenance every cycle, every
+    accepted summary copies the retirement (no GLM reconciliation
+    needed), verifier passed every cycle with zero findings/repairs and
+    zero retries (W41 needed retries on two cycles), probes 5/5 +
+    baseline 3/3 strict, anchor SGA-KX1 retained.
+- Verdict: both E5 negative findings are resolved on the integrated tip —
+  D24 removes the TASK-E halt (live-confirmed end to end) and D29 renders
+  the C1 retirement (live-confirmed, now at all five cycles). The typed
+  arm's fixture score on the tip is 13/19 (D25 trades the two
+  step-scoped constraint episodes for a smaller, budget-stable ledger);
+  the absorbed-record stranding is the one open defect candidate.

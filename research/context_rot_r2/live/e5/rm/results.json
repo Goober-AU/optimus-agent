@@ -1,0 +1,137 @@
+{
+ "experiment": "r2-e5-rm",
+ "model": "glm-5.3",
+ "baseUrl": "https://a8349d0f-f602-991e-52c5-963eb2f2e949-in-docker-k3.apps.launchpad.nvidia.com/v1",
+ "config": {
+  "temperature": 0.0,
+  "summarizerMaxTokens": 8192,
+  "probeMaxTokens": 4000,
+  "promptVersion": "v2",
+  "summaryBudgetTokens": 3200,
+  "taskStateLedger": "typed (W15 + D22/D23/D24/D25/D27/D29, the integrated tip)",
+  "probePlan": {
+   "baseline": 1,
+   "cycles 1-5": 3
+  }
+ },
+ "cells": {
+  "task-e": {
+   "cyclesRun": 5,
+   "failures": [],
+   "rounds": {
+    "1": {
+     "probes": 1,
+     "correct": 1,
+     "incorrect": 0,
+     "extractionFailures": 0,
+     "strictCorrect": 1
+    },
+    "2": {
+     "probes": 1,
+     "correct": 1,
+     "incorrect": 0,
+     "extractionFailures": 0,
+     "strictCorrect": 1
+    },
+    "3": {
+     "probes": 1,
+     "correct": 1,
+     "incorrect": 0,
+     "extractionFailures": 0,
+     "strictCorrect": 1
+    },
+    "4": {
+     "probes": 1,
+     "correct": 1,
+     "incorrect": 0,
+     "extractionFailures": 0,
+     "strictCorrect": 1
+    },
+    "5": {
+     "probes": 1,
+     "correct": 1,
+     "incorrect": 0,
+     "extractionFailures": 0,
+     "strictCorrect": 1
+    }
+   },
+   "baseline": {
+    "probes": 1,
+    "correct": 1,
+    "incorrect": 0,
+    "extractionFailures": 0,
+    "strictCorrect": 1
+   },
+   "retention": {
+    "retained": 1,
+    "total": 1
+   },
+   "usage": {
+    "promptTokens": 49416,
+    "completionTokens": 43968,
+    "reasoningTokens": 35540
+   }
+  },
+  "c1": {
+   "cyclesRun": 5,
+   "failures": [],
+   "rounds": {
+    "1": {
+     "probes": 1,
+     "correct": 1,
+     "incorrect": 0,
+     "extractionFailures": 0,
+     "strictCorrect": 1
+    },
+    "2": {
+     "probes": 1,
+     "correct": 1,
+     "incorrect": 0,
+     "extractionFailures": 0,
+     "strictCorrect": 1
+    },
+    "3": {
+     "probes": 1,
+     "correct": 1,
+     "incorrect": 0,
+     "extractionFailures": 0,
+     "strictCorrect": 1
+    },
+    "4": {
+     "probes": 1,
+     "correct": 1,
+     "incorrect": 0,
+     "extractionFailures": 0,
+     "strictCorrect": 1
+    },
+    "5": {
+     "probes": 1,
+     "correct": 1,
+     "incorrect": 0,
+     "extractionFailures": 0,
+     "strictCorrect": 1
+    }
+   },
+   "baseline": {
+    "probes": 1,
+    "correct": 1,
+    "incorrect": 0,
+    "extractionFailures": 0,
+    "strictCorrect": 1
+   },
+   "retention": {
+    "retained": 1,
+    "total": 1
+   },
+   "usage": {
+    "promptTokens": 45285,
+    "completionTokens": 27156,
+    "reasoningTokens": 20356
+   }
+  }
+ },
+ "budget": {
+  "maxCalls": 120,
+  "used": 46
+ }
+}

@@ -199,7 +199,71 @@ committed state untouched).
 
 ## Part 2 (LIVE-MODEL) — results
 
-(filled after the runs)
+GLM 5.3, typed arm only, 5 cycles x 3 reps per cycle point + 1-rep
+baseline, temperature 0, ladder 8192->65536, PONG first. Artifacts:
+`raw-calls.jsonl` (46 wire calls: 1 pong, 13 summarizer records incl.
+ladder/validation resamples, 32 probe records), `live-task-e-results.json`,
+`live-c1-results.json`, `results.json`. Budget: **46 of the <= 120 calls**.
+
+### P1 — TASK-E typed: 5/5 cycles, no halt (the E5 Finding 2 failure is gone)
+
+| measure | committed E5 (W15) | R2-E5-RM (tip) |
+|---|---|---|
+| cycles run | 1 of 5 (halt at cycle 2) | **5 of 5** |
+| verifier | failed cycles 2-5 (unresolved refs 5, 3, 3, 3) | **passed every cycle** (cycles 1-2 via the deterministic missing-item repair, cycles 3-5 clean; 0 unresolved refs anywhere) |
+| probe q-e-error | cycle 1 point correct only | **correct at every cycle point 1-5 + baseline, 3/3 strict reps** |
+| exact assertion in final summary | yes (cycle-1 context frozen) | yes |
+| ledger records / hot tokens per cycle | 11 -> halted | 11/11/14/17/20, 310-607 of 800 |
+| summarizer wire records | 35 (halt retries) | 8 (2 ladder steps at 16384 on cycles 2-3, 1 validation resample on cycle 2) |
+| usage (prompt/completion/reasoning) | - | 49,416 / 43,968 / 35,540 |
+
+Pre-registration verdict: P1.1 CONFIRMED — the D24 fix holds live, the
+sentinel id stays VT-1cfcd1 and its citations resolve; no cycle failed.
+P1.2 (the residual absorbed-record risk) did NOT materialize: GLM's
+cycle-2+ summaries cite the absorbed tests_01 record in the compact form
+`[VT-25d467 @d09cc350-...]` — one bracket containing a space, which is
+outside the verifier's reference grammar — so the two offline-stranded
+refs never register as unresolved references. The residual defect itself
+(no tombstone for a restatement-absorbed record's id/entry) remains real
+and is recorded below as a defect candidate; on this run it was dodged
+by the citation shape, not fixed. P1.3 CONFIRMED. P1.4 CONFIRMED (the
+16384 ladder step fired on cycles 2-3; reasoning tokens billed against
+max_tokens).
+
+### P2 — E3ADV C1 typed: SUPERSEDED at every cycle, retirement copied
+
+| measure | committed E5 (pre-D29) | W41 live (D29 branch) | R2-E5-RM (tip) |
+|---|---|---|---|
+| decision retired by provenance | never | every cycle | **every cycle** |
+| SUPERSEDED section in the request | never | cycles 1-4 | **cycles 1-5** |
+| pairing annotation + supersedes link in the request | - | every cycle | every cycle |
+| verifier | passed | passed (2 cycles needed a retry) | **passed every cycle, zero findings, zero repairs, zero retries** |
+| probe q-c1-approach | 5/5 + baseline, 3/3 strict | 5/5 + baseline, 3/3 strict | **5/5 + baseline, 3/3 strict** ("Saga pattern with compensating transactions"; 2PC never asserted) |
+| anchor SGA-KX1 in final summary | yes | yes | yes |
+| ledger records / hot tokens per cycle | 12-25 / up to 795 | 12-25 / 408-761 (cycle 5 overflow) | 12/13/16/19/22 / 408-697, no overflow |
+| wire calls | 21 | 22 | 21 |
+| usage (prompt/completion/reasoning) | - | - | 45,285 / 27,156 / 20,356 |
+
+Pre-registration verdict: P2.1-P2.4 all CONFIRMED. Every accepted summary
+copies the retirement faithfully ("Superseded (history, not current):
+[VD-76361d] ... retired by [CO-9dea27]"); no GLM reconciliation in its
+own words was needed, and the D25 step boundary removes the W41 run's
+cycle-5 budget caveat (the section renders at all five cycles).
+
+## Defect candidate (offline-observed, not triggered live)
+
+Restatement absorption strands the absorbed record's references. At the
+TASK-E cycle-2 merge, reconcile absorbs the cycle-1 tests_01 record into
+the sentinel record (its 8-token key supersets the failing line's 4-token
+key) and keeps no tombstone for the absorbed id/entry, so `[VT-25d467]`
+and `[@d09cc350...]` — cited by the cycle-1 render — resolve in neither
+the record set nor retiredRefs (`task-e-idchain-results.json`, cycle 2:
+exactly these two refs). Distinct from D24 (the churn is fixed; the id
+survives) and from D25 (step-boundary retirement tombstones its refs).
+Not triggered live because GLM's compact citation shape falls outside
+the reference grammar. Suggested fix direction: retire the absorbed
+record's id and entry into retiredRefs when the dedupe loop merges it
+away.
 
 ## Files
 
