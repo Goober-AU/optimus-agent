@@ -177,16 +177,15 @@ fn heartbeat_neon_and_classic_painted_footer_keeps_status_beside_context() {
             for width in [20, 36, 80, 120] {
                 h.width.set(width);
                 let frame = h.paint();
-                // The context health indicator narrows with the terminal: the
-                // compact score at 20 columns, the full score and counter above.
-                // The compaction count joins only where the full row still fits.
-                let expected = if width >= 36 { "146k (15%)" } else { "CTX HEALTH 100" };
+                // Capacity remains visible; health is reserved for the agents bar.
+                let expected = "146k (15%)";
                 let footer = frame
                     .iter()
                     .find(|row| row.contains(expected))
                     .unwrap_or_else(|| panic!("missing usage {style}/{width}: {frame:?}"));
                 assert!(footer.contains("HB"), "{style}/{width}: {footer}");
                 assert!(footer.trim_end().ends_with(expected), "{footer}");
+                assert!(!footer.contains("HEALTH"), "{style}/{width}: {footer}");
                 // Streaming hides shortcut hints, so the 80-column row can
                 // have more room than the idle row. Pin only the fixed extremes.
                 let count = footer.contains("Compactions: 0");
@@ -258,9 +257,23 @@ fn compaction_count_stays_before_the_meter_with_goal_and_heartbeat() {
             state.context_usage = local::ContextUsage::default();
         });
         let frame = h.paint();
-        assert!(frame.iter().any(|row| row.contains("Compactions: 3  CONTEXT HEALTH 82")));
+        assert!(frame.iter().any(|row| row.contains("Compactions: 3")));
+        assert!(!frame.join("\n").contains("CONTEXT HEALTH 82"));
         assert!(!frame.join("\n").contains("146k"));
     }
+}
+
+#[test]
+fn footer_capacity_ignores_missing_or_invalid_usage() {
+    for value in [None, Some(-1.0), Some(f64::NAN), Some(f64::INFINITY)] {
+        for usage in [
+            local::ContextUsage { tokens: value, percent: Some(15.0), ..Default::default() },
+            local::ContextUsage { tokens: Some(146_000.0), percent: value, ..Default::default() },
+        ] {
+            assert_eq!(context_usage_text(Some(&usage)), None);
+        }
+    }
+    assert_eq!(context_usage_text(None), None);
 }
 
 #[test]
