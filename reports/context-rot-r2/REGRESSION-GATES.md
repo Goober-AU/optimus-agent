@@ -276,3 +276,169 @@ defect-`#[ignore]` is left in the adversarial suite. The typed mode's known
 open items after the wave are D30 and the cycle-5 budget-overflow caveat,
 both assigned to W46 (`rot2/w46-d30`, no commits over this head at this
 writing).
+
+## 11. LANDED-TIP BATTERY (90fcd17db) — RED (W63)
+
+W63 ran the campaign's full gate list at the landed integration tip
+`90fcd17db` (= `improve/context-rot-iteration-2` head at run time, 143
+commits over base `6000d6bc1`; D31 and D32 FIXED, D33 VERIFIED-OPEN in
+BUG-LEDGER), so the reports carry a concrete landed-tip battery record
+ahead of the post-D33 final matrix. The battery is RED on exactly one
+deterministic failure — the `rot2_multicycle` typed-arm smoke, filed as
+D34 with fix ownership W71 — and green on everything else that ran: the
+other eleven `rot2_*` suites, all thirteen `compaction_*` suites, all six
+lib filters (32 of the 33 recorded steps). The run was stopped on the real
+failure per the gate protocol, so the six Python research suites were not
+run and the workspace check was interrupted (partial numbers below).
+Runner: W55's `run_matrix.sh` (its prep survived the stalled wait loop),
+adapted for worker paths plus one latent fix — the CompactBench
+adapter's `HARNESS` value uses the Windows-style path because the
+adapter passes it verbatim to Windows python; W55's unix-style value
+would not resolve (W55 never executed its script). Run window
+2026-10-19T23:23Z-2026-10-20T00:00Z; every step logged under
+`C:/Users/openclawuser/rot2-w63-gates/` (`logs/<key>.log`, `results.tsv`).
+
+### 11.1 Environment
+
+| item | value |
+| --- | --- |
+| host | Windows, git-bash |
+| worktree | `C:/Users/openclawuser/optimus-rot2-w63-gates`, branch `rot2/w63-gates` at `90fcd17db`, clean at run time (the report edit is this worker's only change) |
+| toolchain | rustc 1.98.1 (48a229cea 2026-09-01), cargo 1.98.1 (797e8a9bc 2026-08-05); `RUSTUP_HOME`/`CARGO_HOME` under `C:/Users/openclawuser/optimus-rust-toolchain/` |
+| cargo target | ISOLATED `C:/Users/openclawuser/rot2-w63-target` (fresh full `cargo test -p pi-coding-agent --no-run` = 1 765 s, harness bin build 28 s) |
+| base tree for comparisons | W55's `git archive 6000d6bc1` export at `C:/Users/openclawuser/rot2-w55-gates/base-export`, built with ISOLATED `C:/Users/openclawuser/rot2-w55-target-base` (W55's completed base check and base test binaries; this pass reused them for the environmental-pair verification) |
+| python (research tests) | system python 3.11.15 (not reached: the battery stopped first) |
+| python (adapter + ContextBench integration tests) | campaign cb-venv 3.11.15, `C:/Users/openclawuser/optimus-rot2-w5-research/refs/cb-venv` (not reached) |
+
+### 11.2 rot2_* suites (`cargo test -p pi-coding-agent --test <name>`)
+
+| suite | result | notes |
+| --- | --- | --- |
+| `rot2_typed_adversarial` | 24 passed, 0 failed, 0 ignored (0.75 s) | grew from 23 at the W49 pass (`71e770c5e`); the D30 wave added the user-stated-decision pin |
+| `rot2_wave_adversarial` | 9 passed, 0 failed, 0 ignored (21.0 s) | |
+| `rot2_typed_integration` | 9 passed, 0 failed, 0 ignored (0.38 s) | |
+| `rot2_native_typed_chain` | 2 passed, 0 failed, 0 ignored (0.34 s) | |
+| `rot2_multicycle` | **4 passed, 1 FAILED**, 1 ignored (0.41 s) | the red: the typed-arm smoke, section 11.7 (D34); the ignored test is the research adapter entry point |
+| `rot2_render_cap` | 7 passed, 0 failed, 0 ignored (0.06 s) | |
+| `rot2_ledger_fixes` | 7 passed, 0 failed, 0 ignored (0.07 s) | |
+| `rot2_defect_wave2` | 3 passed, 0 failed, 0 ignored (2.27 s) | |
+| `rot2_harness_digest` | 2 passed, 0 failed, 0 ignored (2.75 s) | |
+| `rot2_branch_summary` | 2 passed, 0 failed, 0 ignored (0.06 s) | |
+| `rot2_subagent_constraints` | 3 passed, 0 failed, 0 ignored (2.84 s) | |
+| `rot2_supersession` | 4 passed, 0 failed, 0 ignored (0.52 s) | |
+
+### 11.3 compaction_* suites (`cargo test -p pi-coding-agent --test <name>`)
+
+| suite | result | notes |
+| --- | --- | --- |
+| `compaction_turn_flow` | 3 passed, 0 failed (3.12 s) | |
+| `compaction_recovery` | 9 passed, 0 failed (3.00 s) | |
+| `compaction_model_threshold` | 10 passed, 0 failed | |
+| `compaction_fidelity` | 1 passed, 0 failed (0.39 s) | |
+| `compaction_summary_guard` | 2 passed, 0 failed (0.11 s) | |
+| `compaction_observability` | 7 passed, 0 failed (0.24 s) | |
+| `compaction_kernel_parity` | 23 passed, 0 failed (0.12 s) | |
+| `compaction_parallel_fallback` | 2 passed, 0 failed (3.62 s) | |
+| `compaction_length_recovery` | 7 passed, 0 failed (0.22 s) | |
+| `compaction_chat_length_recovery` | 4 passed, 0 failed (0.38 s) | |
+| `compaction_anthropic_length_recovery` | 4 passed, 0 failed (0.82 s) | |
+| `compaction_summary_path` | 8 passed, 0 failed (0.13 s) | |
+| `compaction_parity_suite` | 14 passed, 0 failed (8.97 s) | the W43 T05.4 fixture re-pin holds at this tip |
+
+### 11.4 lib filters (`cargo test -p pi-coding-agent --lib <filter>`)
+
+| filter | result | notes |
+| --- | --- | --- |
+| `core::compaction` | 168 passed, 0 failed, 3 759 filtered out (3.05 s) | grew from 160 at the W49 pass; the D30/D31/D32 waves added units |
+| `typed_state` | 78 passed, 0 failed, 3 849 filtered out (2.76 s) | grew from 74 at the W49 pass |
+| `compaction::task_state` | 17 passed, 0 failed, 3 910 filtered out (0.07 s) | |
+| `core::context_health_calibration` | 17 passed, 0 failed, 3 910 filtered out (0.02 s) | |
+| `core::settings_manager` | 62 passed, 0 failed, 3 865 filtered out (0.60 s) | |
+| `settings` | 100 passed, 0 failed, 3 827 filtered out (1.28 s) | |
+
+### 11.5 `cargo check --workspace --all-targets`: interrupted, partial numbers only
+
+The battery was stopped on the D34 failure while this step ran; cargo was
+killed with the runner and the log truncates mid-diagnostic at
+2026-10-19T23:58:09Z with no `Finished` line. What the partial log holds:
+289 `Checking` lines (275 distinct crates — every crate the base check
+covered, plus the r2 branch's additions), 0 `error:` lines, and 198
+warning diagnostics as a lower bound (210 `warning:` lines minus 12
+summary lines, count method as before). Base comparison from W55's
+completed base run of the same command (same toolchain, same count
+method): 0 errors, 576 warning diagnostics. No complete tip-vs-base
+warning comparison exists from this battery; the successor's final matrix
+must re-run this step.
+
+### 11.6 Python research suites: not run
+
+The battery stopped on the D34 failure before the Python steps (offline
+unittest discovery, ContextBench integration self-check, the live-pipeline
+selftest, the E3 and E3ADV selftests, the CompactBench adapter checks).
+No W63 numbers exist for them at this tip; the landed record for their
+content is the W25 pass (section 4, at `29f1f0c92`). The successor's
+final matrix must run them.
+
+### 11.7 The red: `rot2_multicycle::rot2_smoke_typed_arm_persists_typed_ledger_and_verifies` (D34)
+
+- Suite result: 4 passed, 1 FAILED, 1 ignored (the research adapter);
+  exit 101. Panic at `crates/pi-coding-agent/tests/rot2_multicycle.rs:751`
+  (`lossy summarizer fixture succeeds`):
+  `Summarization returned an unusable handoff (typed protected state not
+  represented: 0 missing, 0 mis-superseded, 0 unresolved references, 1
+  unbacked verified claims); existing conversation preserved. Retry
+  compaction or select another summarization model.`
+- Determinism: an isolated direct test-binary rerun (`--exact`, no
+  cargo, the binary this battery built) fails identically — not a
+  threading flake, not environment-dependent (the fixture is in-process).
+- Not one of the known environmental pair: neither appeared anywhere in
+  this battery (the lib filters do not match them), and both were
+  re-verified at base in this pass (section 11.8).
+- First-failure range: green in the W49 battery at `71e770c5e` (5 passed,
+  1 ignored, typed-arm smoke among the five); red at `90fcd17db`; 40
+  commits between. The last commit touching the suite file is `10e2b36e6`
+  (D30), which added a user-stated decision seed (ARCH-DECISION-C,
+  `verified` provenance) to the smoke scenario; its commit message's test
+  list does not include the typed-arm smoke. Co-suspect `6041f71c9` (D31,
+  retired ids no longer vouch for verified claims) matches the failure
+  signature "1 unbacked verified claims".
+- D34 mechanism (integrator ruling): the user-stated
+  VERIFIED_DECISION seed retires at a step boundary; the lossy
+  summarizer's handoff then cites it as an unbacked verified claim; D31's
+  strictness correctly refuses to vouch via the retired record, and the
+  verification hard-fails the compaction with the existing conversation
+  preserved. Fix ownership: W71. No diagnosis beyond this was attempted
+  by W63 per its brief.
+- Artifacts: `logs/test_rot2_multicycle.log`, `results.tsv`, and the
+  isolated rerun transcript `isolated_rerun_typed_arm_smoke.log`, all
+  under `C:/Users/openclawuser/rot2-w63-gates/`.
+
+### 11.8 Environmental-pair verification at base (this pass)
+
+Both known environmental failures were re-verified at the base
+`6000d6bc1` (W55's base-export tree and base test binaries, serialized
+`--test-threads=1`), and both behaved exactly as documented:
+
+1. `core::agent_session::post_compaction_continuation_tests::enabled_skill_is_importable`
+   FAILS at base serialized with the identical panic
+   (`uv pip install runs: Error { kind: NotFound, message: "program not
+   found" }` — uv not on the test child's PATH; 251.89 s). Environmental.
+2. `modes::interactive::...::native_status::tests::compaction_count_stays_before_the_meter_with_goal_and_heartbeat`
+   PASSES at base serialized (1 passed, 3 804 filtered out, 2.92 s) — the
+   documented painted-frame/threshold-meter flake under default
+   threading. Environmental.
+
+Neither appeared in this battery: no failure besides the D34 typed-arm
+smoke was recorded in any of the 33 steps that ran.
+
+### 11.9 Verdict
+
+RED, on the typed-arm smoke only. At the landed tip `90fcd17db` the full
+gate list that ran is green — eleven of twelve `rot2_*` suites, all
+thirteen `compaction_*` suites, all six lib filters — and the single
+failure is the deterministic D34 (`rot2_smoke_typed_arm_persists_typed_ledger_and_verifies`, section 11.7), filed for W71 with its artifacts
+preserved. The two known environmental failures were verified at base and
+did not appear. Not run because of the stop: the six Python research
+suites and the complete workspace check (partial: 0 errors, >=198
+warning diagnostics). The successor's final matrix (after D33 and the
+D34 fix land) supersedes this record.
