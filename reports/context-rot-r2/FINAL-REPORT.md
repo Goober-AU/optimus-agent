@@ -874,7 +874,7 @@ single-model practice-scale), and the health heuristic must not gate anything
 
 ## 9. Report index
 
-Every file in `reports/context-rot-r2/` at this writing (23 files):
+Every file in `reports/context-rot-r2/` at this writing (24 files):
 
 - `BASELINE.md` - report writer W14, status-passed by the later sweeps:
   the commit under test, the measurement frame, the category labels, the
@@ -971,6 +971,7 @@ Every file in `reports/context-rot-r2/` at this writing (23 files):
   prior-audit disposition check and the verification spot-runs at the
   final tip.
 - `SAFETY-SCAN.md` - worker W87: the final pre-push diff safety scan
+- `PUSH-REHEARSAL.md` - the push dry-run rehearsal (W90): the exact command sequence for the integrator, hook/LFS/auth behavior, PR-open verification.
   (secrets, private hostnames, machine-local resolver defaults, large
   files, junk) - no blocking secret leak; the three SHOULD-FIX items
   (the private endpoint default, the stray `.bak` files, the clippy

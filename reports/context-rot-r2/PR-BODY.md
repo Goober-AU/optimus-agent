@@ -3,7 +3,7 @@
 Branch: `improve/context-rot-iteration-2` (base `6000d6bc1`, v0.1.36 + #181/#182).
 Campaign reports live in `reports/context-rot-r2/`; every number below cites a
 committed artefact. This body was finalized at the integration tip
-`9471eb055` (186 commits over base) after the D33 and D34 fixes, the W63
+`2cb92378d` (191 commits over base; the final docs pass follows this anchor) after the D33 and D34 fixes, the W63
 landed-tip battery (REGRESSION-GATES section 11), the W72 landed-tip
 Python-suite record (section 11.10), the W65/W70 audit passes and the W81
 final-tip matrix (REGRESSION-GATES section 12, GREEN) landed;

@@ -14,7 +14,7 @@ account, or use the web fallback at the end.
 
 - [ ] `git -C C:/Users/openclawuser/optimus-rot2-20261020 status` is clean and
       the head descends from the assembly tip `90fcd17db`, with
-      `git log --oneline 90fcd17db..HEAD` listing only docs commits.
+      `git log --oneline 90fcd17db..HEAD` - after 90fcd17db the D33/D34 fixes, the clippy cleanup, test pins and doc passes landed; all are disclosed in the PR body. Confirm nothing NEW appeared beyond the intended set.
 - [ ] `BUG-LEDGER.md` carries no VERIFIED-OPEN row except the documented open
       set (D7 deferred, D10 "never retry" sub-item, D12 soft-fence residual,
       D17 production wiring follow-up, D20 residue) and D34 (the W63 battery
