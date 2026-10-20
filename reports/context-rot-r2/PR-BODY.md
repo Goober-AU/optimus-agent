@@ -12,7 +12,7 @@ documented deferrals and residues). The integrator adjusts if later
 commits land before merge. One practical note up
 c9009c703 (docs(context-rot): final five-document coherence read (W85))
 front: five live-run raw-call logs under `research/context_rot_r2/` are
-git-LFS pointers - run `git lfs pull` after checkout or they stay ~130-byte
+regular git blobs on this branch (an earlier revision used LFS pointers; the fork could not receive LFS uploads, so the logs were re-committed as ordinary content)
 stubs (details in "What is NOT claimed").
 
 ## Summary

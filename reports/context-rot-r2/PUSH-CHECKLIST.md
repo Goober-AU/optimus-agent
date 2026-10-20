@@ -41,7 +41,7 @@ Fast-forward only; never force-push (the branch is linear over the base).
 ## 2. Push the LFS objects (must accompany step 1 or the pointers dangle)
 
 ```
-git lfs push fork --all
+# (LFS removed: the raw-call logs are now regular git objects after the fork LFS upload was unavailable)
 ```
 
 The five raw-call logs were converted to LFS pointers by the W45 audit wave
