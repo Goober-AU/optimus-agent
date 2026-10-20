@@ -414,6 +414,28 @@ final matrix must run them.
 - Artifacts: `logs/test_rot2_multicycle.log`, `results.tsv`, and the
   isolated rerun transcript `isolated_rerun_typed_arm_smoke.log`, all
   under `C:/Users/openclawuser/rot2-w63-gates/`.
+- 2026-10-20 update (W82, the D34 ripple): D34 is FIXED on the integration
+  branch - W71's bounded repair `6894f6a6d` ("fix(compaction): bounded
+  repair downgrades unbacked verified claims (D34)", ledger row
+  `08f34308b`): typed_state gains `annotate_unbacked_verified_claims`
+  and the `UNVERIFIED_CLAIM_MARKER` suffix, `verify` exempts a line
+  already carrying the marker, and the deterministic repair gate widens
+  to fabricated-only findings, so an unbacked verified claim is
+  downgraded in place (content kept, re-verified, recorded as repaired)
+  instead of failing the handoff; a claim citing an id nothing knows
+  stays unrecoverable and still fails the episode. Mechanism correction
+  from the fix (dump-confirmed): the retiree was the assistant pending
+  action "Section 3 verified; publishing next." (Step-scoped, retired at
+  the cycle-1 merge by the D25 boundary), not the D30 user-stated seed
+  the ruling above suspected - D31's strict vouching behaved correctly
+  throughout. Guards: `unbacked_verified_claim_from_a_retired_record_repairs_to_unverified`
+  and `annotate_unbacked_verified_claims_leaves_backed_lines_alone`
+  (lib), the smoke's repaired-cycle assertions, and the fail-closed pin
+  moved to an unresolvable-reference shape. The battery record above
+  stands as the landed-tip record (the W63 battery ran at `90fcd17db`,
+  below the fix); the final matrix (W81) re-runs the gate list at the
+  final tip - pending at this writing (section 12 of this file when it
+  lands).
 
 ### 11.8 Environmental-pair verification at base (this pass)
 

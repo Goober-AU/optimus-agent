@@ -18,7 +18,8 @@ with its `rot2_supersession` suite at 4/4 - closes the misclassification
 family, but the ledger's live token cost and its E3ADV dead-weight behaviour
 stand, so it stays off and is documented as legacy). Of the campaign's
 numbered defects, every fixable one is closed at this tip except D7
-(documented-deferred) and D34 (the battery-found regression, fix in flight):
+(documented-deferred) - D34, the battery-found regression, is fixed by W71
+(`6894f6a6d`) after this pass:
 the thirteen audited defects of the W34 refresh - twelve with behaviour
 changes and regression guards, D2 verified intact and pinned by tests - the
 D18/D19/D20 recovery (W30), the D21-D29 fix wave, D30 with the cycle-5 budget
@@ -647,8 +648,8 @@ rot2_render_cap 7/7).
    seven defects D22-D28 filed, six of them red-first). Every defect the
    measurements and the red teams surfaced in the typed path is fixed at
    this tip (D21-D29, section 4.4; D30 by W46 `10e2b36e6`; D31 by W52
-   `6041f71c9`; D32 by W53 `53ab2e3d9`; D33 by W54 `cea3a4496`) except D34
-   (fix in flight, W71). The W49 battery is the
+   `6041f71c9`; D32 by W53 `53ab2e3d9`; D33 by W54 `cea3a4496`; D34 by
+   W71 `6894f6a6d`). The W49 battery is the
    recorded green run at `71e770c5e` (REGRESSION-GATES.md section 10):
    adversarial 23/0/0, integration 9/0, native 2/0, multicycle 5+1,
    render_cap 7/0, ledger_fixes 7/0, lib typed_state 74/0, lib
@@ -717,16 +718,16 @@ rot2_render_cap 7/7).
    fixed (section 4.4), D30 is fixed (W46 `10e2b36e6`, user-text decisions
    now classify as VERIFIED_DECISION with Task scope) with the W41 cycle-5
    budget-overflow caveat accepted-and-pinned (`d00ff2067`), and the
-   post-wave findings D31 (W52 `6041f71c9`), D32 (W53 `53ab2e3d9`) and
-   D33 (W54 `cea3a4496`) are fixed - leaving D34 (the W63 battery
-   regression) the typed mode's one open item (fix in flight on W71).
+   post-wave findings D31 (W52 `6041f71c9`), D32 (W53 `53ab2e3d9`),
+   D33 (W54 `cea3a4496`) and D34 (W71 `6894f6a6d`) are fixed - the typed
+   mode carries no open post-wave item at this tip.
 
 ## 6. Recommendation for defaults
 
 | mechanism | default | decision | reason |
 | --- | --- | --- | --- |
 | `compaction.taskState` v1 ledger | `off` (unchanged) | KEEP OFF | iteration-1: no recall gain, +913..1 751 tokens/cycle; R2-E2: the ledger inverted a user correction under a live model (89/95 vs default 95/95) and its summarizer calls burn 8k-32k reasoning tokens with latency up to 137.8 s; E3ADV: when its supersession cannot pair it does nothing and the model argues the stale item down (+1.5k-1.9k request chars/cycle); the W11 fix renders clean offline on the base corpus (E2-RM), the D21 cap it exposed is fixed (`a9035ce8a`, W32) and the W16 clause-level refinement (W51, `rot2_supersession` 4/4) closes the W9-F1/F3/F4 misclassification family - but the E3ADV corpus was never re-run on the repaired ledger, the token cost stands, and the mode is documented as legacy in the settings reference; the KEEP OFF verdict rests on the live inversion, the live cost and the E3ADV dead-weight result, none retracted by any fix |
-| typed state v2 | `off`; opt-in via `compaction.taskState = "typed"` | OPT-IN; measured and red-teamed, not a default | wired end to end (`338b920c3`, `40bead288`, `4be9623b0`; section 4.2) and measured: R2-E5 part 1 beats control B on the fixture at the pre-D25 implementation (typed 15/19 vs v1 14/19 vs default 0/19; verifier 5/5 cycles, stable 777/800 hot-token budget, +886 mean request chars) and scores 13/19 on the integrated tip (W46/W47 re-measurements: the D25 step boundary correctly retires two Step-scoped episode-classified probes; decisions 4/4, evidence 1/4, supersession 2/2 unchanged; verifier 5/5 both - the two probes are Step-scoped episodes by classifier design, not a regression). Live parts 2-3: TASK-E halted at cycle 2 pre-fix (the D24 id-churn mechanism) and the E3ADV C1 cell showed no SUPERSEDED render pre-D29 - both resolved live by the E5-RM re-measure (W47): TASK-E 5/5 cycles, no halt, verifier passed every cycle; SUPERSEDED rendered at every cycle 1-5 with the retirement copied. The W35 red team then found seven more defects (D22-D28), all fixed (section 4.4), with the W49 battery green at `71e770c5e`; D30 is fixed (W46 `10e2b36e6`) and the cycle-5 budget caveat is accepted-and-pinned (`d00ff2067`). Open at this tip: D34 only (the typed-arm smoke regression found by the W63 landed-tip battery, fix in flight, W71) - D31, D32 and D33 are fixed (W52 `6041f71c9`, W53 `53ab2e3d9`, W54 `cea3a4496`). Other evidence remains prompt-level or v1-level (W26, W27, E2-RM). No default change on this evidence: the live record is one model at practice scale, and the tip fixture count sits below control B (13/19 vs 14/19, the two-probe delta being the D25 step boundary retiring Step-scoped episode-classified probes - honest scoping: the fixture measures pipeline protection under the deterministic lossy summarizer, and the two retired probes are episodes by classifier design, not a regression). The opt-in is what ships: the README and the settings reference document `compaction.taskState = "typed"` as the non-default mode (`a5362aa63`, `0a35fbfa6`) |
+| typed state v2 | `off`; opt-in via `compaction.taskState = "typed"` | OPT-IN; measured and red-teamed, not a default | wired end to end (`338b920c3`, `40bead288`, `4be9623b0`; section 4.2) and measured: R2-E5 part 1 beats control B on the fixture at the pre-D25 implementation (typed 15/19 vs v1 14/19 vs default 0/19; verifier 5/5 cycles, stable 777/800 hot-token budget, +886 mean request chars) and scores 13/19 on the integrated tip (W46/W47 re-measurements: the D25 step boundary correctly retires two Step-scoped episode-classified probes; decisions 4/4, evidence 1/4, supersession 2/2 unchanged; verifier 5/5 both - the two probes are Step-scoped episodes by classifier design, not a regression). Live parts 2-3: TASK-E halted at cycle 2 pre-fix (the D24 id-churn mechanism) and the E3ADV C1 cell showed no SUPERSEDED render pre-D29 - both resolved live by the E5-RM re-measure (W47): TASK-E 5/5 cycles, no halt, verifier passed every cycle; SUPERSEDED rendered at every cycle 1-5 with the retirement copied. The W35 red team then found seven more defects (D22-D28), all fixed (section 4.4), with the W49 battery green at `71e770c5e`; D30 is fixed (W46 `10e2b36e6`) and the cycle-5 budget caveat is accepted-and-pinned (`d00ff2067`). No open typed-path defect at this tip - D31, D32, D33 and D34 are fixed (W52 `6041f71c9`, W53 `53ab2e3d9`, W54 `cea3a4496`, W71 `6894f6a6d`; D34 is the typed-arm smoke regression found by the W63 landed-tip battery). Other evidence remains prompt-level or v1-level (W26, W27, E2-RM). No default change on this evidence: the live record is one model at practice scale, and the tip fixture count sits below control B (13/19 vs 14/19, the two-probe delta being the D25 step boundary retiring Step-scoped episode-classified probes - honest scoping: the fixture measures pipeline protection under the deterministic lossy summarizer, and the two retired probes are episodes by classifier design, not a regression). The opt-in is what ships: the README and the settings reference document `compaction.taskState = "typed"` as the non-default mode (`a5362aa63`, `0a35fbfa6`) |
 | defect fixes D1/D5/D6/D8/D9/D10/D11/D12/D13/D14/D16/D17 + W11 ids + harness F1/F4/F5 | always on | KEEP | correctness fixes with regression guards, not policies; none adds a model call |
 | evidence-recovery tool excerpt (iteration-1) | always on | KEEP | 0/4 -> 4/4 at the same budget (iteration-1 E4); unchanged this campaign |
 | CONTEXT HEALTH indicator | display only | KEEP, DO NOT GATE | calibration AUC 0.604: the pressure/cycle heuristic does not predict semantic loss, so it must not gate any compaction decision |
@@ -754,8 +755,8 @@ rot2_render_cap 7/7).
   re-measure, W47: 5/5 cycles, no halt). The red team found eight more
   defects in the typed path after the wiring (D22-D28), all fixed
   (section 4.4; D30 fixed and the cycle-5 budget caveat accepted-and-pinned
-  by W46; D31, D32 and D33 fixed by W52/W53/W54, leaving D34 (W63 battery)
-  the one open post-wave finding, its fix in flight). The
+  by W46; D31, D32, D33 and D34 fixed by W52/W53/W54/W71 - no open
+  post-wave finding remains). The
 1476ea8d9 (docs(context-rot): flip every D33-open claim to fixed (W74))
   W26/W27 live results are prompt-level ledger effects, not typed-arm
   evidence.
@@ -772,8 +773,8 @@ rot2_render_cap 7/7).
   Python mirror of the Rust path (fixture-validated; deviations listed in section
   5.3). The W26 and W27 practice runs DID use the built harness binary on the
   production path, at practice scale.
-- Not a claim that all audited defects are fixed: D7 (deferred), D34 (the
-  battery-found regression, fix in flight) and D10's "never retry" sub-item
+- Not a claim that all audited defects are fixed: D7 (deferred) and D10's
+  "never retry" sub-item
   remain open, and D12/D17/D20 carry disclosed partial-fix residues (section
   8.2 has the closed count). The typed path's post-wave findings D31 (W52),
   D32 (W53) and D33 (W54) are fixed; D30 landed with
@@ -794,7 +795,8 @@ rot2_render_cap 7/7).
 This is the campaign's closing record; the counts below were verified against
 BUG-LEDGER.md and the tree at the tip of this pass (`90fcd17db`), with the
 D33 fix and its ledger flip landed since (W54: `cea3a4496` + pin
-`6d85cc48f` + ledger row `510fd168d`) and D34 filed above that tip.
+`6d85cc48f` + ledger row `510fd168d`) and D34 filed above that tip, since
+fixed by W71 (`6894f6a6d`, ledger row `08f34308b`).
 
 ### 8.1 The worker roster (what the eight waves delivered)
 
@@ -823,11 +825,15 @@ they can only change how the record is presented, not what was found.
 Verified against BUG-LEDGER.md at this tip: 32 numbered defects recorded
 (D1-D34; iteration-1's D3 and D15 carried no r2 scope).
 
-- 26 FIXED with regression guards: D1, D5, D6, D8, D9, D10, D11, D13, D14,
+- 27 FIXED with regression guards: D1, D5, D6, D8, D9, D10, D11, D13, D14,
   D16, D17 (estimator), D18, D19, D21, D22, D23, D24, D25, D26, D27, D28,
   D29, D30, D31, D32, D33 (the restatement-absorbed record's id and source
   entry id retire into `retired_refs` at the absorption site; guard
-  `absorption_then_citation_resolves`, `6d85cc48f`).
+  `absorption_then_citation_resolves`, `6d85cc48f`) and D34 (W71
+  `6894f6a6d`: the bounded repair downgrades an unbacked verified claim in
+  place to an explicit unverified annotation instead of failing the
+  handoff; guards `unbacked_verified_claim_from_a_retired_record_repairs_to_unverified`
+  and `annotate_unbacked_verified_claims_leaves_backed_lines_alone`).
 - D2 VERIFIED-GUARDED (already intact on this base; pinned by tests).
 - D4 CONFIRMED on the production path - the rot mechanism itself, the finding
   the typed design exists to address, not a code fix.
@@ -836,10 +842,13 @@ Verified against BUG-LEDGER.md at this tip: 32 numbered defects recorded
   agent_session.rs), D10's "never retry" sub-item.
 - D7 VERIFIED-OPEN, fix DEFERRED (the incompatible-checkpoint replay is a
   heavy fallback, not a lossy one; the fix needs dedicated restore coverage).
-- D34 VERIFIED-OPEN (the W63 landed-tip battery): the typed-arm smoke fails
-  deterministically - the lossy summarizer handoff reports unbacked verified
-  claims and the verification fails the compaction; suspected D30-seed /
-  D31-strict-vouching interaction, fix in flight on W71.
+- D34 FIXED (W71 `6894f6a6d`, ledger row `08f34308b`) - the typed-arm smoke
+  failed deterministically at the W63 battery: the lossy summarizer handoff
+  reported an unbacked verified claim and the verification failed the
+  compaction. The dump-confirmed retiree was the assistant pending action
+  (Step-scoped, retired at the D25 boundary), not the suspected D30 seed;
+  the bounded repair downgrades the stale claim in place instead of failing
+  the handoff.
 - The non-D families: N1-N3 (v1 design constraints, closed in typed v2 by
   role-based classification), W9-F2/F5 fixed by W11, W9-F1/F3/F4 fixed by the
   W16 refinement, HF1/HF4/HF5 fixed, HF2/HF3/HF6 documented.
@@ -848,26 +857,21 @@ Verified against BUG-LEDGER.md at this tip: 32 numbered defects recorded
 
 1. D7 (deferred): an incompatible or null provider checkpoint replays
    pre-compaction messages after restore - a heavy fallback, not a lossy one.
-2. D34 (open, fix in flight on W71): the typed-arm smoke fails
-   deterministically at the landed tip - the lossy summarizer handoff
-   reports unbacked verified claims and the verification fails the
-   compaction; suspected D30-seed / D31-strict-vouching interaction
-   (BUG-LEDGER row; W63 battery artifacts).
-3. D17 production wiring (follow-up): the request-aware estimator is verified
+2. D17 production wiring (follow-up): the request-aware estimator is verified
    and adapter-exercised, but the six production estimator call sites still
    use the message-only path (usage anchors win where present either way).
-4. No official scorecard is authorized: every CompactBench and ContextBench
+3. No official scorecard is authorized: every CompactBench and ContextBench
    number in this campaign is CUSTOM-OPTIMUS practice-scale (custom adapters
    and settings, scorer 2.0.0, single-draw live runs, synthetic retention
    trajectories); no leaderboard-comparable number exists, none is claimed,
    and RepoQA, SWE-bench and Terminal-Bench were not attempted.
-5. The ContextBench holdout is untouched: 192 instances over disjoint repos,
+4. The ContextBench holdout is untouched: 192 instances over disjoint repos,
    no repository checkouts exist under the offline waiver, and patch_success
    is UNAVAILABLE by construction.
-6. The disclosed partial-fix residues of 8.2 (D10's sub-item, D12's soft
+5. The disclosed partial-fix residues of 8.2 (D10's sub-item, D12's soft
    fence, D20's residue) and the single-model scope of every live number
    (GLM 5.3, one endpoint, temperature 0 - section 7).
-7. Operational: the five live raw-call logs ride git-lfs; the first push of
+6. Operational: the five live raw-call logs ride git-lfs; the first push of
    this branch must carry `git lfs push` (REVIEW-AUDIT.md S5/R8).
 
 The campaign's verdicts stand as recorded: repeated compaction loses
@@ -889,8 +893,8 @@ D
   reproduction baseline.
 - `BUG-LEDGER.md` - the defect ledger and the campaign's status source of
   truth, opened with the first fix wave's verified statuses and appended
-  to by every fix wave since: D1-D34 rows (D33 fixed by W54, D34
-  verified-open from the W63 battery), the new findings N1-N3, the W9
+  to by every fix wave since: D1-D34 rows (D33 fixed by W54, D34 fixed by
+  W71 after the W63 battery filing), the new findings N1-N3, the W9
   findings, the harness findings HF1-HF6, section 4's W35 red-team wave
   (D22-D30, all fixed) and section 5's W48 post-wave audit (D31/D32).
 - `CITATION-INTEGRITY.md` - worker W70: every test name cited by the r2
