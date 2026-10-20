@@ -266,11 +266,11 @@ pub fn lossy_summary(request: &str) -> String {
             continue;
         }
         if in_block {
-            if line.starts_with("## ") || line.starts_with("Copy every ACTIVE CONSTRAINT") {
-                if !line.starts_with("## Protected") {
-                    in_block = false;
-                    continue;
-                }
+            if (line.starts_with("## ") || line.starts_with("Copy every ACTIVE CONSTRAINT"))
+                && !line.starts_with("## Protected")
+            {
+                in_block = false;
+                continue;
             }
             if line.starts_with("- ") {
                 match section.as_str() {

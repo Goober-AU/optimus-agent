@@ -52,13 +52,11 @@ const INVALID_SUMMARY: &str = "this summary is deliberately unusable";
 /// its own three sections exactly like `compaction_recovery.rs`.
 fn summary_text(request_text: &str) -> String {
     if request_text.contains("This is the PREFIX of a turn") {
-        return format!(
-            "## Original Request\nTASK GOAL: ship the migration report before Friday.\n## Early Progress\n- Section 1 audited.\n## Context for Suffix\n- reports/migration-audit.md stays available."
-        );
+        return "## Original Request\nTASK GOAL: ship the migration report before Friday.\n## Early Progress\n- Section 1 audited.\n## Context for Suffix\n- reports/migration-audit.md stays available."
+            .to_string();
     }
-    format!(
-        "## Goal\nTASK GOAL: ship the migration report before Friday.\n## Constraints & Preferences\nCONSTRAINT: never drop the payments ledger.\n## Progress\n### Done\n- [x] Section 1 audited.\n\n### In Progress\n- [ ] Section 2.\n\n### Blocked\n- None.\n\n## Key Decisions\n- Incremental rollout.\n## Next Steps\n1. Publish the report.\n## Critical Context\nEvidence reference: reports/migration-audit.md."
-    )
+    "## Goal\nTASK GOAL: ship the migration report before Friday.\n## Constraints & Preferences\nCONSTRAINT: never drop the payments ledger.\n## Progress\n### Done\n- [x] Section 1 audited.\n\n### In Progress\n- [ ] Section 2.\n\n### Blocked\n- None.\n\n## Key Decisions\n- Incremental rollout.\n## Next Steps\n1. Publish the report.\n## Critical Context\nEvidence reference: reports/migration-audit.md."
+        .to_string()
 }
 
 fn unique_tag() -> String {

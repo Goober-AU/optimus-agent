@@ -154,7 +154,7 @@ fn extension_summary_guard_rejects_empty_files_only_and_unsectioned_summaries() 
         "Plain prose without sections.",
         "## Goal\nOnly a goal.",
         "## Goal\nGoal.\n## Constraints & Preferences\nNone.\n## Progress\nDone.\n## Key Decisions\nWait.\n## Next Steps\nReview.\n## Critical Context\n",
-        &format!("```\nUnfenced body only.\n```"),
+        "```\nUnfenced body only.\n```",
     ] {
         let error = validate_extension_compaction_summary(rejected)
             .err()
@@ -263,7 +263,7 @@ fn assistant_tool_call_entry(
         .enumerate()
         .map(|(index, (name, arguments))| {
             ContentBlock::ToolCall(ToolCall::new(
-                &format!("call-{index}"),
+                format!("call-{index}"),
                 *name,
                 serde_json::from_value::<serde_json::Map<String, Value>>(arguments.clone())
                     .unwrap_or_default(),

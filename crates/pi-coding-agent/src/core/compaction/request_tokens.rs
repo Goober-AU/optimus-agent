@@ -192,7 +192,7 @@ mod tests {
             pi_ai::types::ImageOrTextContent::Text(pi_ai::types::TextContent::new("caption")),
             pi_ai::types::ImageOrTextContent::Image(Default::default()),
         ]);
-        let estimate = estimate_request_tokens(&[image_message.clone()], "", &[]);
+        let estimate = estimate_request_tokens(std::slice::from_ref(&image_message), "", &[]);
         assert_eq!(estimate.messages_tokens, estimate_tokens(&image_message));
         assert_eq!(estimate.total, estimate.messages_tokens);
     }

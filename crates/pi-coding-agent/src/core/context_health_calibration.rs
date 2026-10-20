@@ -688,17 +688,14 @@ mod tests {
             .join("context_rot_r2")
             .join("health")
             .join("context_health_calibration.json");
-        match std::fs::read_to_string(&tracked) {
-            Ok(existing) => {
-                let normalized_existing = existing.replace("\r\n", "\n");
-                if normalized_existing != json {
-                    eprintln!(
-                        "warning: committed calibration artifact is stale; set ROT2_HEALTH_CALIBRATION_OUT={} to regenerate it",
-                        tracked.display()
-                    );
-                }
+        if let Ok(existing) = std::fs::read_to_string(&tracked) {
+            let normalized_existing = existing.replace("\r\n", "\n");
+            if normalized_existing != json {
+                eprintln!(
+                    "warning: committed calibration artifact is stale; set ROT2_HEALTH_CALIBRATION_OUT={} to regenerate it",
+                    tracked.display()
+                );
             }
-            Err(_) => {}
         }
         std::fs::write(&path, &json).expect("write the calibration artifact");
         assert!(path.is_file());

@@ -1103,17 +1103,13 @@ fn provenance_target(out: &[TypedStateRecord], slot: usize) -> Option<usize> {
     Some(target_slot)
 }
 
-/// Turn classified records into the canonical ledger: assign ids, dedupe by
-/// (kind, key), resolve supersession, task succession, revival and
-/// corroboration. Deterministic for a given record sequence.
-
 /// Turn classified records into the canonical ledger: assign ids to
 /// first-seen records (an id a record already carries survives, so identity
 /// is stable across merges), dedupe by (kind, key), resolve supersession,
 /// task succession, revival and corroboration. Deterministic for a given
 /// record sequence.
 fn reconcile(mut records: Vec<TypedStateRecord>) -> TypedStateLedger {
-    records.sort_by(|a, b| a.ordinal.cmp(&b.ordinal));
+    records.sort_by_key(|a| a.ordinal);
 
     // Dedupe by (kind, key), keeping first-seen identity and merging later
     // restatements. Tool-derived kinds keep the latest text (state
@@ -1186,27 +1182,27 @@ fn reconcile(mut records: Vec<TypedStateRecord>) -> TypedStateLedger {
 
     // Resolve id collisions deterministically (distinct keys, same 6 hex).
     let mut used: BTreeMap<String, usize> = BTreeMap::new();
-    for slot in 0..out.len() {
-        let id = out[slot].id.clone();
+    for (slot, record) in out.iter_mut().enumerate() {
+        let id = record.id.clone();
         if used.get(&id).copied().is_some_and(|owner| owner != slot) {
-            let key = content_key(&out[slot].text);
+            let key = content_key(&record.text);
             let mut attempt = 1u32;
             loop {
                 let digest = Sha256::digest(format!(
                     "{}:{}#{}",
-                    out[slot].kind.prefix(),
+                    record.kind.prefix(),
                     key,
                     attempt
                 ));
-                let candidate = format!("{}-{}", out[slot].kind.prefix(), hex_prefix(&digest));
+                let candidate = format!("{}-{}", record.kind.prefix(), hex_prefix(&digest));
                 if !used.contains_key(&candidate) {
-                    out[slot].id = candidate;
+                    record.id = candidate;
                     break;
                 }
                 attempt += 1;
             }
         }
-        used.insert(out[slot].id.clone(), slot);
+        used.insert(record.id.clone(), slot);
     }
 
     // Supersession (D29): a user correction retires the best earlier CURRENT
@@ -1462,7 +1458,7 @@ pub fn merge(
         combined.push(record.clone());
     }
     let mut new_records = new.records;
-    new_records.sort_by(|a, b| a.ordinal.cmp(&b.ordinal));
+    new_records.sort_by_key(|a| a.ordinal);
     for (offset, mut record) in new_records.into_iter().enumerate() {
         record.ordinal = base + offset;
         // D33: the window's records enter the merge anonymously. Identity
@@ -3871,7 +3867,7 @@ mod tests {
     fn verify_reports_unresolved_refs() {
         let ledger = build_typed_state(&[user_entry("u1", "All tests must run offline.")]);
         let artifact = "The evidence is in [@t99] and the constraint is [UC-deadbe].";
-        let verification = verify(&artifact, &ledger);
+        let verification = verify(artifact, &ledger);
         assert!(!verification.passed);
         assert_eq!(verification.unresolved_refs.len(), 2, "{verification:?}");
     }
@@ -3970,7 +3966,7 @@ mod tests {
     fn verify_reports_fabricated_verified_claims() {
         let ledger = build_typed_state(&[assistant_entry("a1", "Decision: store checkpoints in a sidecar file.")]);
         let artifact = "The parser is verified working at 99 percent accuracy.";
-        let verification = verify(&artifact, &ledger);
+        let verification = verify(artifact, &ledger);
         assert!(!verification.passed);
         assert_eq!(verification.fabricated.len(), 1, "{verification:?}");
     }

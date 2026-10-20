@@ -880,7 +880,7 @@ fn summary_section_insert_offset(summary: &str, section: &str) -> Option<usize> 
             }
         }
     }
-    in_section.then(|| summary.len())
+    in_section.then_some(summary.len())
 }
 
 /// W15: the bounded deterministic repair for a summary that only lacks
@@ -921,7 +921,7 @@ fn append_missing_protected_items(
         insertions.push((offset, text));
     }
     // Apply from the back so earlier offsets stay valid.
-    insertions.sort_by(|a, b| b.0.cmp(&a.0));
+    insertions.sort_by_key(|a| std::cmp::Reverse(a.0));
     let mut out = summary.to_string();
     for (offset, text) in insertions {
         out.insert_str(offset, &text);
