@@ -26,6 +26,8 @@
 //! 7. D28 + D26: native provider compaction over a malformed prior ledger.
 //! 8. D22: a supersession chain (A retired by B, B retired by C) rendered
 //!    end to end.
+//! 9. D33 (W54): a restatement-absorbed record's citations, the E5-RM
+//!    TASK-E cycle-2 shape, resolved through retired_refs tombstones.
 //!
 //! No network. Unit-level attacks drive `typed_state` directly; the D28
 //! attack drives the real native arm of `compact_with_metrics` through a
@@ -887,5 +889,122 @@ fn superseded_chain_renders_the_direct_superseder() {
     // The chain render verifies: each superseded line is presented together
     // with the record that retired it.
     let verification = verify(&render, &ledger);
+    assert!(verification.passed, "findings: {verification:?}");
+}
+
+// ---------------------------------------------------------------------------
+// Attack 9: D33 restatement absorption strands the absorbed record's refs
+// ---------------------------------------------------------------------------
+
+/// The E5-RM TASK-E cycle-2 shape (W47 offline cell,
+/// research/context_rot_r2/live/e5/rm/): three telemetry tool lines and a
+/// multiline failing-suite result in window one. The failing line
+/// ("test result: 55 passed; 1 failed", a 4-token content key) is a subset
+/// restatement of each telemetry line's 8-token key, so reconcile absorbs
+/// it into the first telemetry slot: that slot is the sentinel (D24 keeps
+/// its id, the tool text becomes the failing line), and the content-derived
+/// ids reproduce the field observation exactly (VT-1cfcd1 sentinel,
+/// VT-25d467 tests_01, VT-174e04 tests_02). The cycle-one render cites all
+/// three. At the cycle-two merge the carried tests_01 record is now a
+/// superset restatement of the sentinel's failing-line text, so reconcile
+/// absorbs it into the sentinel: the absorbed id and source entry leave the
+/// ledger. Before the D33 fix exactly [VT-25d467] and [@t01] failed
+/// unresolved-ref resolution; the fix retires them into retired_refs, and a
+/// cycle-two summary that preserves the cycle-one citations verifies clean.
+#[test]
+fn absorption_then_citation_resolves() {
+    let tests_00_line = "cargo test --lib telemetry::tests_00: test result: 18 passed; 0 failed";
+    let tests_01_line = "cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed";
+    let tests_02_line = "cargo test --lib telemetry::tests_02: test result: 18 passed; 0 failed";
+    let first = build_typed_state(&[
+        tool_entry("t00", tests_00_line),
+        tool_entry("t01", tests_01_line),
+        tool_entry("t02", tests_02_line),
+        tool_entry(
+            "t03",
+            "cargo test --lib\n\
+             running 56 tests\n\
+             test result: 55 passed; 1 failed\n\
+             \n\
+             failures:\n\
+             \n\
+             ---- parser::tests::parse_nested stdout ----\n\
+             thread 'parser::tests::parse_nested' panicked at src/parser.rs:198:\n\
+             assertion failed: depth == 4096 (got 3072)\n\
+             note: run with `RUST_BACKTRACE=1` for a full backtrace",
+        ),
+    ]);
+    // Window one: the failing line absorbed into the tests_00 slot (the
+    // sentinel holds it under the id derived from the telemetry shape),
+    // and tests_01/tests_02 stay separate records.
+    let sentinel = record_with_text(&first, "55 passed; 1 failed").clone();
+    assert_eq!(sentinel.kind, TypedInformationKind::VerifiedToolResult);
+    assert_eq!(sentinel.id, "VT-1cfcd1");
+    assert_eq!(sentinel.source_entry_id, "t00");
+    let tests_01 = record_with_text(&first, "telemetry::tests_01").clone();
+    let tests_02 = record_with_text(&first, "telemetry::tests_02").clone();
+    assert_eq!(tests_01.id, "VT-25d467");
+    assert_ne!(tests_02.id, sentinel.id);
+    let render_one = render_hot_state(&first);
+    assert!(render_one.contains(&format!("- [{}] [@t01]", tests_01.id)));
+    assert!(verify(&render_one, &first).passed);
+
+    // Cycle two: the merge absorbs the carried tests_01 record into the
+    // sentinel (its 8-token key supersets the sentinel's 4-token failing
+    // key). The sentinel keeps its id and takes the tests_01 text (D24);
+    // the absorbed record leaves the ledger as a tombstone.
+    let merged = merge(
+        Some(&first),
+        build_typed_state(&[user_entry(
+            "u9",
+            "status update: second window filler content.",
+        )]),
+    );
+    let sentinel_two = merged
+        .records
+        .iter()
+        .find(|record| record.id == sentinel.id)
+        .expect("the sentinel keeps its id across the merge (D24)")
+        .clone();
+    assert_eq!(sentinel_two.text, tests_01_line);
+    assert!(merged
+        .records
+        .iter()
+        .any(|record| record.id == tests_02.id));
+    assert!(!merged.records.iter().any(|record| record.id == tests_01.id));
+    assert!(merged.retired_refs.contains(&tests_01.id));
+    assert!(merged.retired_refs.contains(&"t01".to_string()));
+
+    // A cycle-two summary that preserves the cycle-one citations (the
+    // E5-RM live shape) verifies clean: both absorbed references resolve
+    // through the tombstones.
+    let verification = verify(&render_one, &merged);
+    assert!(
+        verification.unresolved_refs.is_empty(),
+        "the absorbed record's citations must resolve: {verification:?}"
+    );
+    assert!(verification.passed, "{verification:?}");
+    let citation = format!("Prior evidence: [{}] [@t01] {}", tests_01.id, tests_01_line);
+    let verification = verify(&citation, &merged);
+    assert!(
+        verification.unresolved_refs.is_empty(),
+        "the isolated absorbed citations must resolve: {verification:?}"
+    );
+    assert!(verification.passed, "{verification:?}");
+
+    // A third cycle carries the tombstones forward (the E5-RM chain had
+    // zero stranded references from cycle three on), and the cycle-two
+    // render still verifies against it.
+    let merged_three = merge(
+        Some(&merged),
+        build_typed_state(&[user_entry(
+            "u10",
+            "status update: third window filler content.",
+        )]),
+    );
+    assert!(merged_three.retired_refs.contains(&tests_01.id));
+    assert!(merged_three.retired_refs.contains(&"t01".to_string()));
+    let render_two = render_hot_state(&merged);
+    let verification = verify(&render_two, &merged_three);
     assert!(verification.passed, "findings: {verification:?}");
 }
