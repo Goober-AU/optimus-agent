@@ -1,0 +1,15 @@
+{
+  "scores": {
+    "optimus-rust-task-state": 0.684375,
+    "optimus-rust-plain": 0.4906249999999999,
+    "echo-first-n": 0.653125,
+    "full-transcript-oracle": 0.5781250000000001
+  },
+  "rust_gap": 0.19375000000000003,
+  "rust_within_0_05": false,
+  "rust_ranking_matters": true,
+  "bracket_gap": 0.07499999999999984,
+  "bracket_ranking_matters": false,
+  "extend": false,
+  "rationale": "task-state vs plain differ by more than 0.05 -> no extension"
+}

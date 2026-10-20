@@ -1,0 +1,740 @@
+{
+  "arms": {
+    "optimus-rust-task-state": {
+      "file": "optimus-rust-task-state.jsonl",
+      "cases": 8,
+      "overall": 0.684375,
+      "drift_resistance": 0.9895833333333334,
+      "constraint_retention": 0.8,
+      "contradiction_rate": 0.09375,
+      "compression_ratio": 0.6723576728409448,
+      "token_usage": {
+        "prompt_tokens": 114042,
+        "completion_tokens": 97322,
+        "cached_prompt_tokens": 0,
+        "call_count": 112
+      },
+      "per_case": [
+        {
+          "case_id": "buried_constraint_starter_v1:s11867860834414882168:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.55,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s9025223305253734493:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 0.625,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "buried_constraint_starter_v1:s13158114715760784332:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 1.0,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s10003479816131666570:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 1.0,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s6361384698513171374:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.6,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s7668404800527066411:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.75,
+          "drift_resistance": 0.9166666666666667,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s12038049786280247141:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.4,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s3283561723896357442:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.5499999999999999,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        }
+      ],
+      "target_provider": "glm-live",
+      "target_model": "glm-5.3",
+      "endpoint_kind": "custom",
+      "summarizer": {
+        "requests": 38,
+        "latency_ms_mean": 19022,
+        "latency_ms_p95": 39083,
+        "max_tokens_rungs": {
+          "8192.0": 36,
+          "16384.0": 2
+        },
+        "finish_reasons": {
+          "stop": 36,
+          "length": 2
+        },
+        "reasoning_tokens_total": 122151.0,
+        "completion_tokens_total": 154553.0,
+        "prompt_tokens_total": 62292.0
+      },
+      "task": {
+        "requests": 253,
+        "purposes": {
+          "eval": 100,
+          "continuation": 153
+        },
+        "max_tokens_rungs": {
+          "2048": 167,
+          "8192": 86
+        },
+        "latency_ms_mean": 8315,
+        "backoff_events": 0
+      }
+    },
+    "optimus-rust-plain": {
+      "file": "optimus-rust-plain.jsonl",
+      "cases": 8,
+      "overall": 0.4906249999999999,
+      "drift_resistance": 0.7569444444444444,
+      "constraint_retention": 0.65,
+      "contradiction_rate": 0.171875,
+      "compression_ratio": 0.7185098976926327,
+      "token_usage": {
+        "prompt_tokens": 110072,
+        "completion_tokens": 89318,
+        "cached_prompt_tokens": 0,
+        "call_count": 112
+      },
+      "per_case": [
+        {
+          "case_id": "buried_constraint_starter_v1:s11867860834414882168:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.44999999999999996,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "buried_constraint_starter_v1:s13158114715760784332:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.85,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s10003479816131666570:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 0.625,
+          "drift_resistance": 0.5,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s9025223305253734493:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 0.5,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s6361384698513171374:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.15,
+          "drift_resistance": 0.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s7668404800527066411:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.39999999999999997,
+          "drift_resistance": 0.5555555555555556,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s3283561723896357442:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.55,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s12038049786280247141:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.4,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        }
+      ],
+      "target_provider": "glm-live",
+      "target_model": "glm-5.3",
+      "endpoint_kind": "custom",
+      "summarizer": {
+        "requests": 32,
+        "latency_ms_mean": 17212,
+        "latency_ms_p95": 35649,
+        "max_tokens_rungs": {
+          "8192.0": 32
+        },
+        "finish_reasons": {
+          "stop": 32
+        },
+        "reasoning_tokens_total": 72886.0,
+        "completion_tokens_total": 102128.0,
+        "prompt_tokens_total": 49715.0
+      },
+      "task": {
+        "requests": 112,
+        "purposes": {
+          "eval": 88,
+          "continuation": 24
+        },
+        "max_tokens_rungs": {
+          "8192": 112
+        },
+        "latency_ms_mean": 5411,
+        "backoff_events": 0
+      }
+    },
+    "echo-first-n": {
+      "file": "echo-first-n.jsonl",
+      "cases": 8,
+      "overall": 0.653125,
+      "drift_resistance": 0.8333333333333333,
+      "constraint_retention": 0.8,
+      "contradiction_rate": 0.09375,
+      "compression_ratio": 1.6031325928531912,
+      "token_usage": {
+        "prompt_tokens": 53663,
+        "completion_tokens": 93232,
+        "cached_prompt_tokens": 0,
+        "call_count": 112
+      },
+      "per_case": [
+        {
+          "case_id": "buried_constraint_starter_v1:s13158114715760784332:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.625,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "buried_constraint_starter_v1:s11867860834414882168:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.4,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s9025223305253734493:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 1.0,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s10003479816131666570:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 0.75,
+          "drift_resistance": 0.6666666666666666,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s7668404800527066411:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.44999999999999996,
+          "drift_resistance": 0.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s6361384698513171374:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.6,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s3283561723896357442:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.85,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s12038049786280247141:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.55,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        }
+      ],
+      "target_provider": "glm-live",
+      "target_model": "glm-5.3",
+      "endpoint_kind": "custom",
+      "summarizer": {
+        "requests": 0,
+        "latency_ms_mean": null,
+        "latency_ms_p95": null,
+        "max_tokens_rungs": {},
+        "finish_reasons": {},
+        "reasoning_tokens_total": 0,
+        "completion_tokens_total": 0,
+        "prompt_tokens_total": 0
+      },
+      "task": {
+        "requests": 112,
+        "purposes": {
+          "eval": 88,
+          "continuation": 24
+        },
+        "max_tokens_rungs": {
+          "8192": 112
+        },
+        "latency_ms_mean": 5627,
+        "backoff_events": 0
+      }
+    },
+    "full-transcript-oracle": {
+      "file": "full-transcript-oracle.jsonl",
+      "cases": 8,
+      "overall": 0.5781250000000001,
+      "drift_resistance": 0.7208333333333333,
+      "constraint_retention": 0.65,
+      "contradiction_rate": 0.078125,
+      "compression_ratio": 0.9175767028926486,
+      "token_usage": {
+        "prompt_tokens": 80366,
+        "completion_tokens": 84600,
+        "cached_prompt_tokens": 0,
+        "call_count": 112
+      },
+      "per_case": [
+        {
+          "case_id": "buried_constraint_starter_v1:s13158114715760784332:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.5499999999999999,
+          "drift_resistance": 0.4000000000000001,
+          "cycles": 4
+        },
+        {
+          "case_id": "buried_constraint_starter_v1:s11867860834414882168:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.775,
+          "drift_resistance": 0.7000000000000001,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s10003479816131666570:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 0.5,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s9025223305253734493:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 0.75,
+          "drift_resistance": 0.6666666666666666,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s6361384698513171374:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.6,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s7668404800527066411:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.5,
+          "drift_resistance": 0.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s12038049786280247141:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.5499999999999999,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s3283561723896357442:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.4,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        }
+      ],
+      "target_provider": "glm-live",
+      "target_model": "glm-5.3",
+      "endpoint_kind": "custom",
+      "summarizer": {
+        "requests": 0,
+        "latency_ms_mean": null,
+        "latency_ms_p95": null,
+        "max_tokens_rungs": {},
+        "finish_reasons": {},
+        "reasoning_tokens_total": 0,
+        "completion_tokens_total": 0,
+        "prompt_tokens_total": 0
+      },
+      "task": {
+        "requests": 112,
+        "purposes": {
+          "eval": 88,
+          "continuation": 24
+        },
+        "max_tokens_rungs": {
+          "8192": 112
+        },
+        "latency_ms_mean": 5361,
+        "backoff_events": 0
+      }
+    }
+  },
+  "smoke": {
+    "file": "smoke.jsonl",
+    "cases": 1,
+    "overall": 0.1,
+    "drift_resistance": 0.0,
+    "constraint_retention": 0.0,
+    "contradiction_rate": 0.5,
+    "compression_ratio": 0.3563636363636364,
+    "token_usage": {
+      "prompt_tokens": 1300,
+      "completion_tokens": 891,
+      "cached_prompt_tokens": 0,
+      "call_count": 3
+    },
+    "per_case": [
+      {
+        "case_id": "buried_constraint_starter_v1:s13158114715760784332:dmedium",
+        "template": "buried_constraint_starter_v1",
+        "case_score": 0.1,
+        "drift_resistance": 0.0,
+        "cycles": 1
+      }
+    ],
+    "target_provider": "glm-live",
+    "target_model": "glm-5.3",
+    "endpoint_kind": "custom"
+  },
+  "mock_at_head": {
+    "optimus-rust-task-state": {
+      "file": "mock-optimus-rust-task-state.jsonl",
+      "cases": 8,
+      "overall": 0.37500000000000006,
+      "drift_resistance": 1.0,
+      "constraint_retention": 0.4,
+      "contradiction_rate": 0.0,
+      "compression_ratio": 0.45825555715965477,
+      "token_usage": {
+        "prompt_tokens": 42593,
+        "completion_tokens": 112,
+        "cached_prompt_tokens": 0,
+        "call_count": 112
+      },
+      "per_case": [
+        {
+          "case_id": "buried_constraint_starter_v1:s13158114715760784332:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "buried_constraint_starter_v1:s11867860834414882168:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s9025223305253734493:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 0.5,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s10003479816131666570:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 0.5,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s6361384698513171374:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.6,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s7668404800527066411:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.6,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s12038049786280247141:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s3283561723896357442:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        }
+      ],
+      "target_provider": "mock",
+      "target_model": "mock-deterministic",
+      "endpoint_kind": "default"
+    },
+    "optimus-rust-plain": {
+      "file": "mock-optimus-rust-plain.jsonl",
+      "cases": 8,
+      "overall": 0.37500000000000006,
+      "drift_resistance": 1.0,
+      "constraint_retention": 0.4,
+      "contradiction_rate": 0.0,
+      "compression_ratio": 0.5599421199310806,
+      "token_usage": {
+        "prompt_tokens": 38209,
+        "completion_tokens": 112,
+        "cached_prompt_tokens": 0,
+        "call_count": 112
+      },
+      "per_case": [
+        {
+          "case_id": "buried_constraint_starter_v1:s13158114715760784332:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "buried_constraint_starter_v1:s11867860834414882168:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s9025223305253734493:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 0.5,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s10003479816131666570:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 0.5,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s6361384698513171374:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.6,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s7668404800527066411:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.6,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s12038049786280247141:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s3283561723896357442:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        }
+      ],
+      "target_provider": "mock",
+      "target_model": "mock-deterministic",
+      "endpoint_kind": "default"
+    },
+    "echo-first-n": {
+      "file": "mock-echo-first-n.jsonl",
+      "cases": 8,
+      "overall": 0.37500000000000006,
+      "drift_resistance": 1.0,
+      "constraint_retention": 0.4,
+      "contradiction_rate": 0.0,
+      "compression_ratio": 0.8334545889142182,
+      "token_usage": {
+        "prompt_tokens": 30423,
+        "completion_tokens": 112,
+        "cached_prompt_tokens": 0,
+        "call_count": 112
+      },
+      "per_case": [
+        {
+          "case_id": "buried_constraint_starter_v1:s13158114715760784332:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "buried_constraint_starter_v1:s11867860834414882168:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s9025223305253734493:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 0.5,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s10003479816131666570:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 0.5,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s6361384698513171374:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.6,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s7668404800527066411:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.6,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s12038049786280247141:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s3283561723896357442:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        }
+      ],
+      "target_provider": "mock",
+      "target_model": "mock-deterministic",
+      "endpoint_kind": "default"
+    },
+    "full-transcript-oracle": {
+      "file": "mock-full-transcript-oracle.jsonl",
+      "cases": 8,
+      "overall": 0.37500000000000006,
+      "drift_resistance": 1.0,
+      "constraint_retention": 0.4,
+      "contradiction_rate": 0.0,
+      "compression_ratio": 0.7763286816687792,
+      "token_usage": {
+        "prompt_tokens": 31388,
+        "completion_tokens": 112,
+        "cached_prompt_tokens": 0,
+        "call_count": 112
+      },
+      "per_case": [
+        {
+          "case_id": "buried_constraint_starter_v1:s13158114715760784332:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "buried_constraint_starter_v1:s11867860834414882168:dmedium",
+          "template": "buried_constraint_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s9025223305253734493:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 0.5,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "decision_override_starter_v1:s10003479816131666570:dmedium",
+          "template": "decision_override_starter_v1",
+          "case_score": 0.5,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s6361384698513171374:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.6,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "entity_confusion_starter_v1:s7668404800527066411:dmedium",
+          "template": "entity_confusion_starter_v1",
+          "case_score": 0.6,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s12038049786280247141:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        },
+        {
+          "case_id": "reference_resolution_starter_v1:s3283561723896357442:dmedium",
+          "template": "reference_resolution_starter_v1",
+          "case_score": 0.2,
+          "drift_resistance": 1.0,
+          "cycles": 4
+        }
+      ],
+      "target_provider": "mock",
+      "target_model": "mock-deterministic",
+      "endpoint_kind": "default"
+    }
+  }
+}

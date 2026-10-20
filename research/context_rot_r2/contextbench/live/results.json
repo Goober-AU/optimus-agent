@@ -1,0 +1,6650 @@
+{
+  "label": "CUSTOM-OPTIMUS LIVE-MODEL practice run (not an official scorecard)",
+  "runRoot": "runs\\w27-live",
+  "missingPairs": [],
+  "aggregate": {
+    "A": {
+      "num_valid": 26,
+      "num_total": 26,
+      "final_file": {
+        "coverage": 0.974025974025974,
+        "precision": 0.35714285714285715
+      },
+      "final_line": {
+        "coverage": 0.8515595640736565,
+        "precision": 0.3197403696909835
+      },
+      "traj_auc_file": 0.8598557692307692,
+      "traj_redundancy_file": 0.6720362328055667,
+      "traj_auc_line": 0.5833480663270755,
+      "traj_redundancy_line": 0.5873022395502857,
+      "editloc": {
+        "recall": 0.046223224351747465,
+        "precision": 1.0
+      }
+    },
+    "B": {
+      "num_valid": 26,
+      "num_total": 26,
+      "final_file": {
+        "coverage": 0.974025974025974,
+        "precision": 0.32608695652173914
+      },
+      "final_line": {
+        "coverage": 0.9158211198797445,
+        "precision": 0.5859581630199567
+      },
+      "traj_auc_file": 0.8631410256410257,
+      "traj_redundancy_file": 0.6612698313229597,
+      "traj_auc_line": 0.6053459605853987,
+      "traj_redundancy_line": 0.604714552114327,
+      "editloc": {
+        "recall": 0.046223224351747465,
+        "precision": 1.0
+      }
+    }
+  },
+  "comparisons": {
+    "final.file.coverage": {
+      "metric_path": [
+        "final",
+        "file",
+        "coverage"
+      ],
+      "n_pairs": 26,
+      "pairs": [
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+          "a": 0.6,
+          "b": 0.6,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__da598baa",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        }
+      ],
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "positives": 0,
+      "negatives": 0,
+      "zeros": 26,
+      "sign_test_pvalue": 1.0,
+      "wilcoxon": {
+        "w": 0.0,
+        "n": 0,
+        "p_value": 1.0
+      }
+    },
+    "final.file.precision": {
+      "metric_path": [
+        "final",
+        "file",
+        "precision"
+      ],
+      "n_pairs": 26,
+      "pairs": [
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+          "a": 0.3,
+          "b": 0.3333333333333333,
+          "delta": 0.033333333333333326
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+          "a": 0.36363636363636365,
+          "b": 0.36363636363636365,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+          "a": 0.45454545454545453,
+          "b": 0.3125,
+          "delta": -0.14204545454545453
+        },
+        {
+          "instance_id": "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+          "a": 0.6666666666666666,
+          "b": 0.6666666666666666,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+          "a": 0.2857142857142857,
+          "b": 0.2,
+          "delta": -0.08571428571428569
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+          "a": 0.42857142857142855,
+          "b": 0.3333333333333333,
+          "delta": -0.09523809523809523
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+          "a": 0.5,
+          "b": 0.5,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+          "a": 0.25,
+          "b": 0.2222222222222222,
+          "delta": -0.02777777777777779
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+          "a": 0.2,
+          "b": 0.16666666666666666,
+          "delta": -0.033333333333333354
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+          "a": 0.75,
+          "b": 0.6666666666666666,
+          "delta": -0.08333333333333337
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+          "a": 0.25,
+          "b": 0.2,
+          "delta": -0.04999999999999999
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+          "a": 0.375,
+          "b": 0.42857142857142855,
+          "delta": 0.05357142857142855
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+          "a": 0.14285714285714285,
+          "b": 0.14285714285714285,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+          "a": 0.5,
+          "b": 0.5,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+          "a": 0.07692307692307693,
+          "b": 0.16666666666666666,
+          "delta": 0.08974358974358973
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+          "a": 0.14285714285714285,
+          "b": 0.14285714285714285,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+          "a": 0.25,
+          "b": 0.25,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+          "a": 0.1111111111111111,
+          "b": 0.1,
+          "delta": -0.0111111111111111
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+          "a": 0.3333333333333333,
+          "b": 0.3333333333333333,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+          "a": 0.2,
+          "b": 0.2,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+          "a": 0.375,
+          "b": 0.3333333333333333,
+          "delta": -0.041666666666666685
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+          "a": 0.25,
+          "b": 0.25,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+          "a": 0.6666666666666666,
+          "b": 0.6666666666666666,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+          "a": 0.35714285714285715,
+          "b": 0.3333333333333333,
+          "delta": -0.023809523809523836
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+          "a": 0.42857142857142855,
+          "b": 0.42857142857142855,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__da598baa",
+          "a": 0.5,
+          "b": 0.17647058823529413,
+          "delta": -0.32352941176470584
+        }
+      ],
+      "mean_delta": -0.028496563140228297,
+      "median_delta": 0.0,
+      "positives": 3,
+      "negatives": 11,
+      "zeros": 12,
+      "sign_test_pvalue": 0.057373046875,
+      "wilcoxon": {
+        "w": 23.0,
+        "n": 14,
+        "p_value": 0.06403929052055468
+      }
+    },
+    "final.line.coverage": {
+      "metric_path": [
+        "final",
+        "line",
+        "coverage"
+      ],
+      "n_pairs": 26,
+      "pairs": [
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+          "a": 0.819047619047619,
+          "b": 0.8666666666666667,
+          "delta": 0.04761904761904767
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+          "a": 0.991869918699187,
+          "b": 0.991869918699187,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+          "a": 0.47368421052631576,
+          "b": 1.0,
+          "delta": 0.5263157894736843
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+          "a": 0.8942307692307693,
+          "b": 0.8557692307692307,
+          "delta": -0.03846153846153855
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+          "a": 0.2608695652173913,
+          "b": 0.391304347826087,
+          "delta": 0.13043478260869568
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+          "a": 0.9939393939393939,
+          "b": 0.9393939393939394,
+          "delta": -0.05454545454545445
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+          "a": 0.9879518072289156,
+          "b": 1.0,
+          "delta": 0.012048192771084376
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+          "a": 0.8324022346368715,
+          "b": 1.0,
+          "delta": 0.16759776536312854
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+          "a": 1.0,
+          "b": 0.2631578947368421,
+          "delta": -0.736842105263158
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+          "a": 0.6,
+          "b": 0.6,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+          "a": 0.19402985074626866,
+          "b": 0.9552238805970149,
+          "delta": 0.7611940298507462
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+          "a": 0.87,
+          "b": 0.87,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+          "a": 0.5714285714285714,
+          "b": 0.9642857142857143,
+          "delta": 0.3928571428571429
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+          "a": 0.9326923076923077,
+          "b": 0.7403846153846154,
+          "delta": -0.1923076923076923
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+          "a": 1.0,
+          "b": 0.8938053097345132,
+          "delta": -0.10619469026548678
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+          "a": 0.31213872832369943,
+          "b": 1.0,
+          "delta": 0.6878612716763006
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+          "a": 0.7769784172661871,
+          "b": 0.9496402877697842,
+          "delta": 0.17266187050359705
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+          "a": 0.875,
+          "b": 0.875,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+          "a": 1.0,
+          "b": 0.8793103448275862,
+          "delta": -0.12068965517241381
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+          "a": 0.890625,
+          "b": 0.890625,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__da598baa",
+          "a": 0.8532110091743119,
+          "b": 0.9908256880733946,
+          "delta": 0.13761467889908263
+        }
+      ],
+      "mean_delta": 0.06873705521564485,
+      "median_delta": 0.0,
+      "positives": 10,
+      "negatives": 6,
+      "zeros": 10,
+      "sign_test_pvalue": 0.454498291015625,
+      "wilcoxon": {
+        "w": 43.0,
+        "n": 16,
+        "p_value": 0.19610818609418712
+      }
+    },
+    "final.line.precision": {
+      "metric_path": [
+        "final",
+        "line",
+        "precision"
+      ],
+      "n_pairs": 26,
+      "pairs": [
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+          "a": 0.34959349593495936,
+          "b": 0.36254980079681276,
+          "delta": 0.012956304861853396
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+          "a": 0.8,
+          "b": 0.8,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+          "a": 0.740072202166065,
+          "b": 0.8070866141732284,
+          "delta": 0.0670144120071634
+        },
+        {
+          "instance_id": "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+          "a": 0.055079006772009026,
+          "b": 0.6288659793814433,
+          "delta": 0.5737869726094342
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+          "a": 0.3,
+          "b": 0.5205479452054794,
+          "delta": 0.22054794520547943
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+          "a": 0.5166666666666667,
+          "b": 0.5266272189349113,
+          "delta": 0.009960552268244549
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+          "a": 0.12244897959183673,
+          "b": 0.17307692307692307,
+          "delta": 0.05062794348508634
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+          "a": 0.640625,
+          "b": 0.7416267942583732,
+          "delta": 0.10100179425837319
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+          "a": 0.6776859504132231,
+          "b": 0.564625850340136,
+          "delta": -0.11306010007308709
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+          "a": 0.8097826086956522,
+          "b": 0.895,
+          "delta": 0.0852173913043478
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+          "a": 0.08172043010752689,
+          "b": 0.38461538461538464,
+          "delta": 0.30289495450785775
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+          "a": 0.5,
+          "b": 0.5172413793103449,
+          "delta": 0.017241379310344862
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+          "a": 0.20967741935483872,
+          "b": 0.5614035087719298,
+          "delta": 0.35172608941709105
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+          "a": 0.4860335195530726,
+          "b": 0.5058139534883721,
+          "delta": 0.01978043393529949
+        },
+        {
+          "instance_id": "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+          "a": 0.13559322033898305,
+          "b": 0.34615384615384615,
+          "delta": 0.2105606258148631
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+          "a": 0.5271739130434783,
+          "b": 0.4695121951219512,
+          "delta": -0.05766171792152708
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+          "a": 0.8432835820895522,
+          "b": 0.8145161290322581,
+          "delta": -0.028767453057294112
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+          "a": 0.2903225806451613,
+          "b": 0.5672131147540984,
+          "delta": 0.2768905341089371
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+          "a": 0.6923076923076923,
+          "b": 0.7333333333333333,
+          "delta": 0.04102564102564099
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+          "a": 0.5573770491803278,
+          "b": 0.5573770491803278,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+          "a": 0.40869565217391307,
+          "b": 0.40869565217391307,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+          "a": 0.2978723404255319,
+          "b": 0.2727272727272727,
+          "delta": -0.025145067698259194
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+          "a": 0.713527851458886,
+          "b": 0.713527851458886,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+          "a": 0.29292929292929293,
+          "b": 0.4015748031496063,
+          "delta": 0.10864551022031338
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+          "a": 0.30978260869565216,
+          "b": 0.5643564356435643,
+          "delta": 0.25457382694791214
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__da598baa",
+          "a": 0.4246575342465753,
+          "b": 0.46153846153846156,
+          "delta": 0.036880927291886245
+        }
+      ],
+      "mean_delta": 0.09679611153192157,
+      "median_delta": 0.03895328415876362,
+      "positives": 18,
+      "negatives": 4,
+      "zeros": 4,
+      "sign_test_pvalue": 0.004343509674072266,
+      "wilcoxon": {
+        "w": 36.0,
+        "n": 22,
+        "p_value": 0.003301864483880923
+      }
+    },
+    "trajectory.auc_coverage.file": {
+      "metric_path": [
+        "trajectory",
+        "auc_coverage",
+        "file"
+      ],
+      "n_pairs": 26,
+      "pairs": [
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+          "a": 0.8125,
+          "b": 0.8125,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+          "a": 0.5,
+          "b": 0.5,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+          "a": 0.75,
+          "b": 0.75,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+          "a": 1.0,
+          "b": 0.9166666666666666,
+          "delta": -0.08333333333333337
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+          "a": 0.6666666666666666,
+          "b": 0.9166666666666666,
+          "delta": 0.25
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+          "a": 0.625,
+          "b": 0.625,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+          "a": 0.75,
+          "b": 0.75,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+          "a": 0.45000000000000007,
+          "b": 0.4,
+          "delta": -0.050000000000000044
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+          "a": 0.75,
+          "b": 0.75,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+          "a": 0.9166666666666666,
+          "b": 0.9166666666666666,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+          "a": 0.71875,
+          "b": 0.6875,
+          "delta": -0.03125
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+          "a": 0.75,
+          "b": 0.75,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+          "a": 0.8333333333333333,
+          "b": 0.8333333333333333,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__da598baa",
+          "a": 0.8333333333333333,
+          "b": 0.8333333333333333,
+          "delta": 0.0
+        }
+      ],
+      "mean_delta": 0.0032852564102564073,
+      "median_delta": 0.0,
+      "positives": 1,
+      "negatives": 3,
+      "zeros": 22,
+      "sign_test_pvalue": 0.625,
+      "wilcoxon": {
+        "w": 4.0,
+        "n": 4,
+        "p_value": 0.7150006546880892
+      }
+    },
+    "trajectory.auc_coverage.line": {
+      "metric_path": [
+        "trajectory",
+        "auc_coverage",
+        "line"
+      ],
+      "n_pairs": 26,
+      "pairs": [
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+          "a": 0.5952380952380952,
+          "b": 0.6071428571428572,
+          "delta": 0.011904761904761973
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+          "a": 0.7821969696969697,
+          "b": 0.7821969696969697,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+          "a": 0.36829268292682926,
+          "b": 0.36829268292682926,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+          "a": 0.5792682926829268,
+          "b": 0.5548780487804877,
+          "delta": -0.024390243902439046
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+          "a": 0.35526315789473684,
+          "b": 0.48684210526315785,
+          "delta": 0.13157894736842102
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+          "a": 0.6875,
+          "b": 0.6153846153846154,
+          "delta": -0.07211538461538458
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+          "a": 0.7391304347826086,
+          "b": 0.7717391304347826,
+          "delta": 0.03260869565217395
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+          "a": 0.8045454545454546,
+          "b": 0.7954545454545454,
+          "delta": -0.00909090909090915
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+          "a": 0.6716867469879518,
+          "b": 0.7680722891566265,
+          "delta": 0.09638554216867468
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+          "a": 0.5684357541899441,
+          "b": 0.6103351955307262,
+          "delta": 0.04189944134078216
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+          "a": 0.33223684210526316,
+          "b": 0.14802631578947367,
+          "delta": -0.1842105263157895
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+          "a": 0.30333333333333334,
+          "b": 0.30333333333333334,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+          "a": 0.2947761194029851,
+          "b": 0.582089552238806,
+          "delta": 0.2873134328358209
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+          "a": 0.605,
+          "b": 0.605,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+          "a": 0.75,
+          "b": 0.7767857142857143,
+          "delta": 0.0267857142857143
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+          "a": 0.6706730769230769,
+          "b": 0.6225961538461539,
+          "delta": -0.04807692307692302
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+          "a": 0.8761061946902655,
+          "b": 0.7964601769911505,
+          "delta": -0.07964601769911506
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+          "a": 0.3713872832369942,
+          "b": 0.676300578034682,
+          "delta": 0.3049132947976878
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+          "a": 0.64568345323741,
+          "b": 0.6636690647482014,
+          "delta": 0.017985611510791366
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+          "a": 0.7573529411764706,
+          "b": 0.7573529411764706,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+          "a": 0.6808510638297872,
+          "b": 0.6648936170212766,
+          "delta": -0.015957446808510634
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+          "a": 0.6354166666666667,
+          "b": 0.6354166666666667,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+          "a": 0.5659851301115242,
+          "b": 0.5659851301115242,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+          "a": 0.5431034482758621,
+          "b": 0.4870689655172413,
+          "delta": -0.056034482758620774
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+          "a": 0.5546875,
+          "b": 0.5546875,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__da598baa",
+          "a": 0.4288990825688074,
+          "b": 0.5389908256880733,
+          "delta": 0.11009174311926595
+        }
+      ],
+      "mean_delta": 0.021997894258323165,
+      "median_delta": 0.0,
+      "positives": 10,
+      "negatives": 8,
+      "zeros": 8,
+      "sign_test_pvalue": 0.8145294189453125,
+      "wilcoxon": {
+        "w": 67.0,
+        "n": 18,
+        "p_value": 0.42042647358374063
+      }
+    },
+    "trajectory.redundancy.file": {
+      "metric_path": [
+        "trajectory",
+        "redundancy",
+        "file"
+      ],
+      "n_pairs": 26,
+      "pairs": [
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+          "a": 0.6857142857142857,
+          "b": 0.6774193548387097,
+          "delta": -0.008294930875575979
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+          "a": 0.6451612903225806,
+          "b": 0.6451612903225806,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+          "a": 0.5862068965517242,
+          "b": 0.5277777777777778,
+          "delta": -0.05842911877394641
+        },
+        {
+          "instance_id": "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+          "a": 0.6363636363636364,
+          "b": 0.6363636363636364,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+          "a": 0.7307692307692308,
+          "b": 0.736842105263158,
+          "delta": 0.006072874493927127
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+          "a": 0.6956521739130435,
+          "b": 0.6896551724137931,
+          "delta": -0.0059970014992503096
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+          "a": 0.6666666666666667,
+          "b": 0.7142857142857143,
+          "delta": 0.04761904761904756
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+          "a": 0.6521739130434783,
+          "b": 0.5238095238095238,
+          "delta": -0.12836438923395443
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+          "a": 0.736842105263158,
+          "b": 0.7391304347826086,
+          "delta": 0.0022883295194506825
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+          "a": 0.6363636363636364,
+          "b": 0.6153846153846154,
+          "delta": -0.020979020979020935
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+          "a": 0.6538461538461539,
+          "b": 0.625,
+          "delta": -0.028846153846153855
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+          "a": 0.6923076923076923,
+          "b": 0.6111111111111112,
+          "delta": -0.08119658119658113
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+          "a": 0.631578947368421,
+          "b": 0.631578947368421,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+          "a": 0.6842105263157895,
+          "b": 0.6388888888888888,
+          "delta": -0.04532163742690065
+        },
+        {
+          "instance_id": "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+          "a": 0.6486486486486487,
+          "b": 0.65,
+          "delta": 0.0013513513513513375
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+          "a": 0.6956521739130435,
+          "b": 0.6956521739130435,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+          "a": 0.7333333333333334,
+          "b": 0.7333333333333334,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+          "a": 0.6538461538461539,
+          "b": 0.6428571428571428,
+          "delta": -0.010989010989011061
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+          "a": 0.7,
+          "b": 0.7,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+          "a": 0.6666666666666667,
+          "b": 0.6666666666666667,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+          "a": 0.6799999999999999,
+          "b": 0.6896551724137931,
+          "delta": 0.009655172413793212
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+          "a": 0.6799999999999999,
+          "b": 0.6799999999999999,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+          "a": 0.631578947368421,
+          "b": 0.6285714285714286,
+          "delta": -0.003007518796992459
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+          "a": 0.641025641025641,
+          "b": 0.6511627906976745,
+          "delta": 0.010137149672033496
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+          "a": 0.7083333333333333,
+          "b": 0.7083333333333333,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__da598baa",
+          "a": 0.7,
+          "b": 0.734375,
+          "delta": 0.034375000000000044
+        }
+      ],
+      "mean_delta": -0.010766401482607067,
+      "median_delta": 0.0,
+      "positives": 7,
+      "negatives": 10,
+      "zeros": 9,
+      "sign_test_pvalue": 0.629058837890625,
+      "wilcoxon": {
+        "w": 49.0,
+        "n": 17,
+        "p_value": 0.19298546891685997
+      }
+    },
+    "trajectory.redundancy.line": {
+      "metric_path": [
+        "trajectory",
+        "redundancy",
+        "line"
+      ],
+      "n_pairs": 26,
+      "pairs": [
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+          "a": 0.6625514403292181,
+          "b": 0.6580381471389646,
+          "delta": -0.004513293190253509
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+          "a": 0.6597938144329897,
+          "b": 0.6597938144329897,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+          "a": 0.40709812108559496,
+          "b": 0.4429824561403509,
+          "delta": 0.03588433505475597
+        },
+        {
+          "instance_id": "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+          "a": 0.740632318501171,
+          "b": 0.5717439293598234,
+          "delta": -0.16888838914134752
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+          "a": 0.6319018404907976,
+          "b": 0.5567567567567567,
+          "delta": -0.07514508373404083
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+          "a": 0.6298449612403101,
+          "b": 0.6047008547008548,
+          "delta": -0.025144106539455313
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+          "a": 0.5771812080536913,
+          "b": 0.5657894736842105,
+          "delta": -0.011391734369480822
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+          "a": 0.6510416666666667,
+          "b": 0.6044520547945205,
+          "delta": -0.046589611872146275
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+          "a": 0.6369047619047619,
+          "b": 0.6630196936542669,
+          "delta": 0.026114931749505077
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+          "a": 0.6454720616570327,
+          "b": 0.6,
+          "delta": -0.04547206165703277
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+          "a": 0.0935672514619883,
+          "b": 0.6486486486486487,
+          "delta": 0.5550813971866604
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+          "a": 0.5609756097560976,
+          "b": 0.5628140703517588,
+          "delta": 0.0018384605956611733
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+          "a": 0.4512195121951219,
+          "b": 0.594306049822064,
+          "delta": 0.14308653762694212
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+          "a": 0.6780575539568345,
+          "b": 0.6867030965391621,
+          "delta": 0.008645542582327526
+        },
+        {
+          "instance_id": "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+          "a": 0.579520697167756,
+          "b": 0.6320754716981132,
+          "delta": 0.05255477453035717
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+          "a": 0.6573556797020483,
+          "b": 0.6827852998065764,
+          "delta": 0.025429620104528095
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+          "a": 0.6928104575163399,
+          "b": 0.6812933025404158,
+          "delta": -0.011517154975924093
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+          "a": 0.34114583333333337,
+          "b": 0.34922089825847846,
+          "delta": 0.008075064925145092
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+          "a": 0.6929133858267716,
+          "b": 0.6477495107632094,
+          "delta": -0.04516387506356223
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+          "a": 0.655367231638418,
+          "b": 0.6411764705882352,
+          "delta": -0.014190761050182799
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+          "a": 0.6814404432132963,
+          "b": 0.6787709497206704,
+          "delta": -0.0026694934926259073
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+          "a": 0.656934306569343,
+          "b": 0.6673866090712743,
+          "delta": 0.010452302501931299
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+          "a": 0.5782997762863535,
+          "b": 0.5782997762863535,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+          "a": 0.5686274509803921,
+          "b": 0.6412429378531073,
+          "delta": 0.07261548687271513
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+          "a": 0.6260162601626016,
+          "b": 0.5344827586206897,
+          "delta": -0.09153350154191187
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__da598baa",
+          "a": 0.513184584178499,
+          "b": 0.5683453237410072,
+          "delta": 0.05516073956250822
+        }
+      ],
+      "mean_delta": 0.01741231256404128,
+      "median_delta": 0.0,
+      "positives": 12,
+      "negatives": 12,
+      "zeros": 2,
+      "sign_test_pvalue": 1.0,
+      "wilcoxon": {
+        "w": 148.0,
+        "n": 24,
+        "p_value": 0.9544313971136809
+      }
+    },
+    "editloc.recall": {
+      "metric_path": [
+        "editloc",
+        "recall"
+      ],
+      "n_pairs": 26,
+      "pairs": [
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+          "a": 0.0,
+          "b": 0.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+          "a": 0.0,
+          "b": 0.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__da598baa",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        }
+      ],
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "positives": 0,
+      "negatives": 0,
+      "zeros": 26,
+      "sign_test_pvalue": 1.0,
+      "wilcoxon": {
+        "w": 0.0,
+        "n": 0,
+        "p_value": 1.0
+      }
+    },
+    "editloc.precision": {
+      "metric_path": [
+        "editloc",
+        "precision"
+      ],
+      "n_pairs": 26,
+      "pairs": [
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+          "a": 0.0,
+          "b": 0.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+          "a": 0.0,
+          "b": 0.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        },
+        {
+          "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__da598baa",
+          "a": 1.0,
+          "b": 1.0,
+          "delta": 0.0
+        }
+      ],
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "positives": 0,
+      "negatives": 0,
+      "zeros": 26,
+      "sign_test_pvalue": 1.0,
+      "wilcoxon": {
+        "w": 0.0,
+        "n": 0,
+        "p_value": 1.0
+      }
+    }
+  },
+  "records": {
+    "A": [
+      {
+        "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+        "original_inst_id": "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.3,
+            "intersection": 3,
+            "gold_size": 3,
+            "pred_size": 10
+          },
+          "line": {
+            "coverage": 0.819047619047619,
+            "precision": 0.34959349593495936,
+            "intersection": 86,
+            "gold_size": 105,
+            "pred_size": 246
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.21904761904761905
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.5238095238095238
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.819047619047619
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.819047619047619
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.5952380952380952
+          },
+          "redundancy": {
+            "file": 0.6857142857142857,
+            "line": 0.6625514403292181
+          }
+        },
+        "tool_calls": 18,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 2,
+          "gold_size": 105,
+          "pred_size": 2
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+        "original_inst_id": "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.36363636363636365,
+            "intersection": 4,
+            "gold_size": 4,
+            "pred_size": 11
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.8,
+            "intersection": 132,
+            "gold_size": 132,
+            "pred_size": 165
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.75,
+                "line": 0.3409090909090909
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.75,
+                "line": 0.8939393939393939
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.75,
+                "line": 0.8939393939393939
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.8125,
+            "line": 0.7821969696969697
+          },
+          "redundancy": {
+            "file": 0.6451612903225806,
+            "line": 0.6597938144329897
+          }
+        },
+        "tool_calls": 13,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 7,
+          "gold_size": 132,
+          "pred_size": 7
+        }
+      },
+      {
+        "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+        "original_inst_id": "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.45454545454545453,
+            "intersection": 5,
+            "gold_size": 5,
+            "pred_size": 11
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.740072202166065,
+            "intersection": 205,
+            "gold_size": 205,
+            "pred_size": 277
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.2,
+                "line": 0.14634146341463414
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.2,
+                "line": 0.14634146341463414
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.6,
+                "line": 0.18048780487804877
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.5,
+            "line": 0.36829268292682926
+          },
+          "redundancy": {
+            "file": 0.5862068965517242,
+            "line": 0.40709812108559496
+          }
+        },
+        "tool_calls": 13,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 2,
+          "gold_size": 205,
+          "pred_size": 2
+        }
+      },
+      {
+        "instance_id": "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+        "original_inst_id": "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.6666666666666666,
+            "intersection": 4,
+            "gold_size": 4,
+            "pred_size": 6
+          },
+          "line": {
+            "coverage": 0.991869918699187,
+            "precision": 0.055079006772009026,
+            "intersection": 122,
+            "gold_size": 123,
+            "pred_size": 2215
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.5,
+                "line": 0.056910569105691054
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.75,
+                "line": 0.5691056910569106
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.75,
+                "line": 0.6991869918699187
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.991869918699187
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.75,
+            "line": 0.5792682926829268
+          },
+          "redundancy": {
+            "file": 0.6363636363636364,
+            "line": 0.740632318501171
+          }
+        },
+        "tool_calls": 14,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 5,
+          "gold_size": 123,
+          "pred_size": 5
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+        "original_inst_id": "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.2857142857142857,
+            "intersection": 2,
+            "gold_size": 2,
+            "pred_size": 7
+          },
+          "line": {
+            "coverage": 0.47368421052631576,
+            "precision": 0.3,
+            "intersection": 18,
+            "gold_size": 38,
+            "pred_size": 60
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.15789473684210525
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.3157894736842105
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.47368421052631576
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.47368421052631576
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.35526315789473684
+          },
+          "redundancy": {
+            "file": 0.7307692307692308,
+            "line": 0.6319018404907976
+          }
+        },
+        "tool_calls": 12,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 0.0,
+          "precision": 0.0,
+          "intersection": 0,
+          "gold_size": 38,
+          "pred_size": 0
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+        "original_inst_id": "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.42857142857142855,
+            "intersection": 3,
+            "gold_size": 3,
+            "pred_size": 7
+          },
+          "line": {
+            "coverage": 0.8942307692307693,
+            "precision": 0.5166666666666667,
+            "intersection": 93,
+            "gold_size": 104,
+            "pred_size": 180
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.4326923076923077
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.5673076923076923
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.75
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.6875
+          },
+          "redundancy": {
+            "file": 0.6956521739130435,
+            "line": 0.6298449612403101
+          }
+        },
+        "tool_calls": 18,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 7,
+          "gold_size": 104,
+          "pred_size": 7
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+        "original_inst_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.5,
+            "intersection": 3,
+            "gold_size": 3,
+            "pred_size": 6
+          },
+          "line": {
+            "coverage": 0.2608695652173913,
+            "precision": 0.12244897959183673,
+            "intersection": 6,
+            "gold_size": 23,
+            "pred_size": 49
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.3333333333333333,
+                "line": 0.6086956521739131
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.6086956521739131
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.8695652173913043
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8695652173913043
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.6666666666666666,
+            "line": 0.7391304347826086
+          },
+          "redundancy": {
+            "file": 0.6666666666666667,
+            "line": 0.5771812080536913
+          }
+        },
+        "tool_calls": 8,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 0.0,
+          "precision": 0.0,
+          "intersection": 0,
+          "gold_size": 23,
+          "pred_size": 0
+        }
+      },
+      {
+        "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+        "original_inst_id": "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.25,
+            "intersection": 2,
+            "gold_size": 2,
+            "pred_size": 8
+          },
+          "line": {
+            "coverage": 0.9939393939393939,
+            "precision": 0.640625,
+            "intersection": 164,
+            "gold_size": 165,
+            "pred_size": 256
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.5333333333333333
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6848484848484848
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.8045454545454546
+          },
+          "redundancy": {
+            "file": 0.6521739130434783,
+            "line": 0.6510416666666667
+          }
+        },
+        "tool_calls": 16,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 3,
+          "gold_size": 165,
+          "pred_size": 3
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+        "original_inst_id": "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.2,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 5
+          },
+          "line": {
+            "coverage": 0.9879518072289156,
+            "precision": 0.6776859504132231,
+            "intersection": 82,
+            "gold_size": 83,
+            "pred_size": 121
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.07228915662650602
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6144578313253012
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.6716867469879518
+          },
+          "redundancy": {
+            "file": 0.736842105263158,
+            "line": 0.6369047619047619
+          }
+        },
+        "tool_calls": 10,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 2,
+          "gold_size": 83,
+          "pred_size": 2
+        }
+      },
+      {
+        "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+        "original_inst_id": "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.75,
+            "intersection": 6,
+            "gold_size": 6,
+            "pred_size": 8
+          },
+          "line": {
+            "coverage": 0.8324022346368715,
+            "precision": 0.8097826086956522,
+            "intersection": 149,
+            "gold_size": 179,
+            "pred_size": 184
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.16666666666666666,
+                "line": 0.20670391061452514
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.5,
+                "line": 0.46368715083798884
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.8333333333333334,
+                "line": 0.770949720670391
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8324022346368715
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.625,
+            "line": 0.5684357541899441
+          },
+          "redundancy": {
+            "file": 0.6363636363636364,
+            "line": 0.6454720616570327
+          }
+        },
+        "tool_calls": 15,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 1,
+          "gold_size": 179,
+          "pred_size": 1
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+        "original_inst_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.25,
+            "intersection": 2,
+            "gold_size": 2,
+            "pred_size": 8
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.08172043010752689,
+            "intersection": 76,
+            "gold_size": 76,
+            "pred_size": 930
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.5,
+                "line": 0.07894736842105263
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.5,
+                "line": 0.07894736842105263
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.17105263157894737
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.75,
+            "line": 0.33223684210526316
+          },
+          "redundancy": {
+            "file": 0.6538461538461539,
+            "line": 0.0935672514619883
+          }
+        },
+        "tool_calls": 8,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 2,
+          "gold_size": 76,
+          "pred_size": 2
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+        "original_inst_id": "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 0.6,
+            "precision": 0.375,
+            "intersection": 3,
+            "gold_size": 5,
+            "pred_size": 8
+          },
+          "line": {
+            "coverage": 0.6,
+            "precision": 0.5,
+            "intersection": 45,
+            "gold_size": 75,
+            "pred_size": 90
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.4,
+                "line": 0.09333333333333334
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.4,
+                "line": 0.2
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.4,
+                "line": 0.32
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 0.6,
+                "line": 0.6
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.45000000000000007,
+            "line": 0.30333333333333334
+          },
+          "redundancy": {
+            "file": 0.6923076923076923,
+            "line": 0.5609756097560976
+          }
+        },
+        "tool_calls": 15,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 10,
+          "gold_size": 75,
+          "pred_size": 10
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+        "original_inst_id": "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.14285714285714285,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 7
+          },
+          "line": {
+            "coverage": 0.19402985074626866,
+            "precision": 0.20967741935483872,
+            "intersection": 13,
+            "gold_size": 67,
+            "pred_size": 62
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.19402985074626866
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.19402985074626866
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.29850746268656714
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.4925373134328358
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.2947761194029851
+          },
+          "redundancy": {
+            "file": 0.631578947368421,
+            "line": 0.4512195121951219
+          }
+        },
+        "tool_calls": 15,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 5,
+          "gold_size": 67,
+          "pred_size": 5
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+        "original_inst_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.5,
+            "intersection": 6,
+            "gold_size": 6,
+            "pred_size": 12
+          },
+          "line": {
+            "coverage": 0.87,
+            "precision": 0.4860335195530726,
+            "intersection": 87,
+            "gold_size": 100,
+            "pred_size": 179
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.3333333333333333,
+                "line": 0.12
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.62
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.81
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.87
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.75,
+            "line": 0.605
+          },
+          "redundancy": {
+            "file": 0.6842105263157895,
+            "line": 0.6780575539568345
+          }
+        },
+        "tool_calls": 18,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 7,
+          "gold_size": 100,
+          "pred_size": 7
+        }
+      },
+      {
+        "instance_id": "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+        "original_inst_id": "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.07692307692307693,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 13
+          },
+          "line": {
+            "coverage": 0.5714285714285714,
+            "precision": 0.13559322033898305,
+            "intersection": 16,
+            "gold_size": 28,
+            "pred_size": 118
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6428571428571429
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6428571428571429
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8571428571428571
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8571428571428571
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.75
+          },
+          "redundancy": {
+            "file": 0.6486486486486487,
+            "line": 0.579520697167756
+          }
+        },
+        "tool_calls": 10,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 10,
+          "gold_size": 28,
+          "pred_size": 10
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+        "original_inst_id": "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.14285714285714285,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 7
+          },
+          "line": {
+            "coverage": 0.9326923076923077,
+            "precision": 0.5271739130434783,
+            "intersection": 97,
+            "gold_size": 104,
+            "pred_size": 184
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.5384615384615384
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.5384615384615384
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6730769230769231
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.9326923076923077
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.6706730769230769
+          },
+          "redundancy": {
+            "file": 0.6956521739130435,
+            "line": 0.6573556797020483
+          }
+        },
+        "tool_calls": 10,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 1,
+          "gold_size": 104,
+          "pred_size": 1
+        }
+      },
+      {
+        "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+        "original_inst_id": "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.25,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 4
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.8432835820895522,
+            "intersection": 113,
+            "gold_size": 113,
+            "pred_size": 134
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.7433628318584071
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8495575221238938
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.911504424778761
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.8761061946902655
+          },
+          "redundancy": {
+            "file": 0.7333333333333334,
+            "line": 0.6928104575163399
+          }
+        },
+        "tool_calls": 10,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 1,
+          "gold_size": 113,
+          "pred_size": 1
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+        "original_inst_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.1111111111111111,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 9
+          },
+          "line": {
+            "coverage": 0.31213872832369943,
+            "precision": 0.2903225806451613,
+            "intersection": 54,
+            "gold_size": 173,
+            "pred_size": 186
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.08092485549132948
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.08092485549132948
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6242774566473989
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6994219653179191
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.3713872832369942
+          },
+          "redundancy": {
+            "file": 0.6538461538461539,
+            "line": 0.34114583333333337
+          }
+        },
+        "tool_calls": 13,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 4,
+          "gold_size": 173,
+          "pred_size": 4
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+        "original_inst_id": "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.3333333333333333,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 3
+          },
+          "line": {
+            "coverage": 0.7769784172661871,
+            "precision": 0.6923076923076923,
+            "intersection": 108,
+            "gold_size": 139,
+            "pred_size": 156
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.5467625899280576
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.5971223021582733
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6618705035971223
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.7769784172661871
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.64568345323741
+          },
+          "redundancy": {
+            "file": 0.7,
+            "line": 0.6929133858267716
+          }
+        },
+        "tool_calls": 17,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 21,
+          "gold_size": 139,
+          "pred_size": 21
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+        "original_inst_id": "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.2,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 5
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.5573770491803278,
+            "intersection": 34,
+            "gold_size": 34,
+            "pred_size": 61
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.2647058823529412
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8823529411764706
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8823529411764706
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.7573529411764706
+          },
+          "redundancy": {
+            "file": 0.6666666666666667,
+            "line": 0.655367231638418
+          }
+        },
+        "tool_calls": 8,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 4,
+          "gold_size": 34,
+          "pred_size": 4
+        }
+      },
+      {
+        "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+        "original_inst_id": "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.375,
+            "intersection": 3,
+            "gold_size": 3,
+            "pred_size": 8
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.40869565217391307,
+            "intersection": 47,
+            "gold_size": 47,
+            "pred_size": 115
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.3404255319148936
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6595744680851063
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.723404255319149
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.9166666666666666,
+            "line": 0.6808510638297872
+          },
+          "redundancy": {
+            "file": 0.6799999999999999,
+            "line": 0.6814404432132963
+          }
+        },
+        "tool_calls": 10,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 6,
+          "gold_size": 47,
+          "pred_size": 6
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+        "original_inst_id": "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.25,
+            "intersection": 2,
+            "gold_size": 2,
+            "pred_size": 8
+          },
+          "line": {
+            "coverage": 0.875,
+            "precision": 0.2978723404255319,
+            "intersection": 42,
+            "gold_size": 48,
+            "pred_size": 141
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.2708333333333333
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.5208333333333334
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.875
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.875
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.6354166666666667
+          },
+          "redundancy": {
+            "file": 0.6799999999999999,
+            "line": 0.656934306569343
+          }
+        },
+        "tool_calls": 14,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 6,
+          "gold_size": 48,
+          "pred_size": 6
+        }
+      },
+      {
+        "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+        "original_inst_id": "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.6666666666666666,
+            "intersection": 8,
+            "gold_size": 8,
+            "pred_size": 12
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.713527851458886,
+            "intersection": 269,
+            "gold_size": 269,
+            "pred_size": 377
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.375,
+                "line": 0.06319702602230483
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.625,
+                "line": 0.27137546468401486
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.875,
+                "line": 0.929368029739777
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.71875,
+            "line": 0.5659851301115242
+          },
+          "redundancy": {
+            "file": 0.631578947368421,
+            "line": 0.5782997762863535
+          }
+        },
+        "tool_calls": 15,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 1,
+          "gold_size": 269,
+          "pred_size": 1
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+        "original_inst_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.35714285714285715,
+            "intersection": 5,
+            "gold_size": 5,
+            "pred_size": 14
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.29292929292929293,
+            "intersection": 58,
+            "gold_size": 58,
+            "pred_size": 198
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.6,
+                "line": 0.20689655172413793
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.6,
+                "line": 0.43103448275862066
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.8,
+                "line": 0.5344827586206896
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.75,
+            "line": 0.5431034482758621
+          },
+          "redundancy": {
+            "file": 0.641025641025641,
+            "line": 0.5686274509803921
+          }
+        },
+        "tool_calls": 14,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 4,
+          "gold_size": 58,
+          "pred_size": 4
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+        "original_inst_id": "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.42857142857142855,
+            "intersection": 3,
+            "gold_size": 3,
+            "pred_size": 7
+          },
+          "line": {
+            "coverage": 0.890625,
+            "precision": 0.30978260869565216,
+            "intersection": 57,
+            "gold_size": 64,
+            "pred_size": 184
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.21875
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.21875
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.890625
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.890625
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.8333333333333333,
+            "line": 0.5546875
+          },
+          "redundancy": {
+            "file": 0.7083333333333333,
+            "line": 0.6260162601626016
+          }
+        },
+        "tool_calls": 14,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 10,
+          "gold_size": 64,
+          "pred_size": 10
+        }
+      },
+      {
+        "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__da598baa",
+        "original_inst_id": "SWE-Bench-Verified__python__maintenance__bugfix__da598baa",
+        "arm": "A",
+        "arm_name": "baseline",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.5,
+            "intersection": 3,
+            "gold_size": 3,
+            "pred_size": 6
+          },
+          "line": {
+            "coverage": 0.8532110091743119,
+            "precision": 0.4246575342465753,
+            "intersection": 93,
+            "gold_size": 109,
+            "pred_size": 219
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.05504587155963303
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.24770642201834864
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.42201834862385323
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.9908256880733946
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.8333333333333333,
+            "line": 0.4288990825688074
+          },
+          "redundancy": {
+            "file": 0.7,
+            "line": 0.513184584178499
+          }
+        },
+        "tool_calls": 16,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 2,
+          "gold_size": 109,
+          "pred_size": 2
+        }
+      }
+    ],
+    "B": [
+      {
+        "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+        "original_inst_id": "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.3333333333333333,
+            "intersection": 3,
+            "gold_size": 3,
+            "pred_size": 9
+          },
+          "line": {
+            "coverage": 0.8666666666666667,
+            "precision": 0.36254980079681276,
+            "intersection": 91,
+            "gold_size": 105,
+            "pred_size": 251
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.21904761904761905
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.5238095238095238
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.819047619047619
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8666666666666667
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.6071428571428572
+          },
+          "redundancy": {
+            "file": 0.6774193548387097,
+            "line": 0.6580381471389646
+          }
+        },
+        "tool_calls": 18,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 2,
+          "gold_size": 105,
+          "pred_size": 2
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+        "original_inst_id": "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.36363636363636365,
+            "intersection": 4,
+            "gold_size": 4,
+            "pred_size": 11
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.8,
+            "intersection": 132,
+            "gold_size": 132,
+            "pred_size": 165
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.75,
+                "line": 0.3409090909090909
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.75,
+                "line": 0.8939393939393939
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.75,
+                "line": 0.8939393939393939
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.8125,
+            "line": 0.7821969696969697
+          },
+          "redundancy": {
+            "file": 0.6451612903225806,
+            "line": 0.6597938144329897
+          }
+        },
+        "tool_calls": 13,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 7,
+          "gold_size": 132,
+          "pred_size": 7
+        }
+      },
+      {
+        "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+        "original_inst_id": "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.3125,
+            "intersection": 5,
+            "gold_size": 5,
+            "pred_size": 16
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.8070866141732284,
+            "intersection": 205,
+            "gold_size": 205,
+            "pred_size": 254
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.2,
+                "line": 0.14634146341463414
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.2,
+                "line": 0.14634146341463414
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.6,
+                "line": 0.18048780487804877
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.5,
+            "line": 0.36829268292682926
+          },
+          "redundancy": {
+            "file": 0.5277777777777778,
+            "line": 0.4429824561403509
+          }
+        },
+        "tool_calls": 13,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 2,
+          "gold_size": 205,
+          "pred_size": 2
+        }
+      },
+      {
+        "instance_id": "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+        "original_inst_id": "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.6666666666666666,
+            "intersection": 4,
+            "gold_size": 4,
+            "pred_size": 6
+          },
+          "line": {
+            "coverage": 0.991869918699187,
+            "precision": 0.6288659793814433,
+            "intersection": 122,
+            "gold_size": 123,
+            "pred_size": 194
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.5,
+                "line": 0.056910569105691054
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.75,
+                "line": 0.4715447154471545
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.75,
+                "line": 0.6991869918699187
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.991869918699187
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.75,
+            "line": 0.5548780487804877
+          },
+          "redundancy": {
+            "file": 0.6363636363636364,
+            "line": 0.5717439293598234
+          }
+        },
+        "tool_calls": 14,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 5,
+          "gold_size": 123,
+          "pred_size": 5
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+        "original_inst_id": "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.2,
+            "intersection": 2,
+            "gold_size": 2,
+            "pred_size": 10
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.5205479452054794,
+            "intersection": 38,
+            "gold_size": 38,
+            "pred_size": 73
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.15789473684210525
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.3157894736842105
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.47368421052631576
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.48684210526315785
+          },
+          "redundancy": {
+            "file": 0.736842105263158,
+            "line": 0.5567567567567567
+          }
+        },
+        "tool_calls": 12,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 0.0,
+          "precision": 0.0,
+          "intersection": 0,
+          "gold_size": 38,
+          "pred_size": 0
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+        "original_inst_id": "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.3333333333333333,
+            "intersection": 3,
+            "gold_size": 3,
+            "pred_size": 9
+          },
+          "line": {
+            "coverage": 0.8557692307692307,
+            "precision": 0.5266272189349113,
+            "intersection": 89,
+            "gold_size": 104,
+            "pred_size": 169
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.33653846153846156
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.4519230769230769
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.7307692307692307
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.9423076923076923
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.9166666666666666,
+            "line": 0.6153846153846154
+          },
+          "redundancy": {
+            "file": 0.6896551724137931,
+            "line": 0.6047008547008548
+          }
+        },
+        "tool_calls": 18,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 7,
+          "gold_size": 104,
+          "pred_size": 7
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+        "original_inst_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.5,
+            "intersection": 3,
+            "gold_size": 3,
+            "pred_size": 6
+          },
+          "line": {
+            "coverage": 0.391304347826087,
+            "precision": 0.17307692307692307,
+            "intersection": 9,
+            "gold_size": 23,
+            "pred_size": 52
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.6086956521739131
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6086956521739131
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8695652173913043
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.9166666666666666,
+            "line": 0.7717391304347826
+          },
+          "redundancy": {
+            "file": 0.7142857142857143,
+            "line": 0.5657894736842105
+          }
+        },
+        "tool_calls": 8,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 0.0,
+          "precision": 0.0,
+          "intersection": 0,
+          "gold_size": 23,
+          "pred_size": 0
+        }
+      },
+      {
+        "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+        "original_inst_id": "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.2222222222222222,
+            "intersection": 2,
+            "gold_size": 2,
+            "pred_size": 9
+          },
+          "line": {
+            "coverage": 0.9393939393939394,
+            "precision": 0.7416267942583732,
+            "intersection": 155,
+            "gold_size": 165,
+            "pred_size": 209
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6242424242424243
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6242424242424243
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.9393939393939394
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.9939393939393939
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.7954545454545454
+          },
+          "redundancy": {
+            "file": 0.5238095238095238,
+            "line": 0.6044520547945205
+          }
+        },
+        "tool_calls": 16,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 3,
+          "gold_size": 165,
+          "pred_size": 3
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+        "original_inst_id": "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.16666666666666666,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 6
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.564625850340136,
+            "intersection": 83,
+            "gold_size": 83,
+            "pred_size": 147
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.07228915662650602
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.7680722891566265
+          },
+          "redundancy": {
+            "file": 0.7391304347826086,
+            "line": 0.6630196936542669
+          }
+        },
+        "tool_calls": 10,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 2,
+          "gold_size": 83,
+          "pred_size": 2
+        }
+      },
+      {
+        "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+        "original_inst_id": "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.6666666666666666,
+            "intersection": 6,
+            "gold_size": 6,
+            "pred_size": 9
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.895,
+            "intersection": 179,
+            "gold_size": 179,
+            "pred_size": 200
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.16666666666666666,
+                "line": 0.20670391061452514
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.5,
+                "line": 0.46368715083798884
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.8333333333333334,
+                "line": 0.770949720670391
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.625,
+            "line": 0.6103351955307262
+          },
+          "redundancy": {
+            "file": 0.6153846153846154,
+            "line": 0.6
+          }
+        },
+        "tool_calls": 15,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 1,
+          "gold_size": 179,
+          "pred_size": 1
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+        "original_inst_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.2,
+            "intersection": 2,
+            "gold_size": 2,
+            "pred_size": 10
+          },
+          "line": {
+            "coverage": 0.2631578947368421,
+            "precision": 0.38461538461538464,
+            "intersection": 20,
+            "gold_size": 76,
+            "pred_size": 52
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.5,
+                "line": 0.07894736842105263
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.5,
+                "line": 0.07894736842105263
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.17105263157894737
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.2631578947368421
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.75,
+            "line": 0.14802631578947367
+          },
+          "redundancy": {
+            "file": 0.625,
+            "line": 0.6486486486486487
+          }
+        },
+        "tool_calls": 8,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 2,
+          "gold_size": 76,
+          "pred_size": 2
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+        "original_inst_id": "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 0.6,
+            "precision": 0.42857142857142855,
+            "intersection": 3,
+            "gold_size": 5,
+            "pred_size": 7
+          },
+          "line": {
+            "coverage": 0.6,
+            "precision": 0.5172413793103449,
+            "intersection": 45,
+            "gold_size": 75,
+            "pred_size": 87
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.2,
+                "line": 0.09333333333333334
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.4,
+                "line": 0.2
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.4,
+                "line": 0.32
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 0.6,
+                "line": 0.6
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.4,
+            "line": 0.30333333333333334
+          },
+          "redundancy": {
+            "file": 0.6111111111111112,
+            "line": 0.5628140703517588
+          }
+        },
+        "tool_calls": 15,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 10,
+          "gold_size": 75,
+          "pred_size": 10
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+        "original_inst_id": "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.14285714285714285,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 7
+          },
+          "line": {
+            "coverage": 0.9552238805970149,
+            "precision": 0.5614035087719298,
+            "intersection": 64,
+            "gold_size": 67,
+            "pred_size": 114
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.1791044776119403
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.3880597014925373
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8059701492537313
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.9552238805970149
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.582089552238806
+          },
+          "redundancy": {
+            "file": 0.631578947368421,
+            "line": 0.594306049822064
+          }
+        },
+        "tool_calls": 15,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 5,
+          "gold_size": 67,
+          "pred_size": 5
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+        "original_inst_id": "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.5,
+            "intersection": 6,
+            "gold_size": 6,
+            "pred_size": 12
+          },
+          "line": {
+            "coverage": 0.87,
+            "precision": 0.5058139534883721,
+            "intersection": 87,
+            "gold_size": 100,
+            "pred_size": 172
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.3333333333333333,
+                "line": 0.12
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.62
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.81
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.87
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.75,
+            "line": 0.605
+          },
+          "redundancy": {
+            "file": 0.6388888888888888,
+            "line": 0.6867030965391621
+          }
+        },
+        "tool_calls": 18,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 7,
+          "gold_size": 100,
+          "pred_size": 7
+        }
+      },
+      {
+        "instance_id": "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+        "original_inst_id": "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.16666666666666666,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 6
+          },
+          "line": {
+            "coverage": 0.9642857142857143,
+            "precision": 0.34615384615384615,
+            "intersection": 27,
+            "gold_size": 28,
+            "pred_size": 78
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6428571428571429
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.75
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.75
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.9642857142857143
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.7767857142857143
+          },
+          "redundancy": {
+            "file": 0.65,
+            "line": 0.6320754716981132
+          }
+        },
+        "tool_calls": 10,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 10,
+          "gold_size": 28,
+          "pred_size": 10
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+        "original_inst_id": "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.14285714285714285,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 7
+          },
+          "line": {
+            "coverage": 0.7403846153846154,
+            "precision": 0.4695121951219512,
+            "intersection": 77,
+            "gold_size": 104,
+            "pred_size": 164
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.5384615384615384
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.5384615384615384
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6730769230769231
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.7403846153846154
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.6225961538461539
+          },
+          "redundancy": {
+            "file": 0.6956521739130435,
+            "line": 0.6827852998065764
+          }
+        },
+        "tool_calls": 10,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 1,
+          "gold_size": 104,
+          "pred_size": 1
+        }
+      },
+      {
+        "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+        "original_inst_id": "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.25,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 4
+          },
+          "line": {
+            "coverage": 0.8938053097345132,
+            "precision": 0.8145161290322581,
+            "intersection": 101,
+            "gold_size": 113,
+            "pred_size": 124
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.7433628318584071
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.7433628318584071
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8053097345132744
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8938053097345132
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.7964601769911505
+          },
+          "redundancy": {
+            "file": 0.7333333333333334,
+            "line": 0.6812933025404158
+          }
+        },
+        "tool_calls": 10,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 1,
+          "gold_size": 113,
+          "pred_size": 1
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+        "original_inst_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.1,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 10
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.5672131147540984,
+            "intersection": 173,
+            "gold_size": 173,
+            "pred_size": 305
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.08092485549132948
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6242774566473989
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.676300578034682
+          },
+          "redundancy": {
+            "file": 0.6428571428571428,
+            "line": 0.34922089825847846
+          }
+        },
+        "tool_calls": 13,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 4,
+          "gold_size": 173,
+          "pred_size": 4
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+        "original_inst_id": "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.3333333333333333,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 3
+          },
+          "line": {
+            "coverage": 0.9496402877697842,
+            "precision": 0.7333333333333333,
+            "intersection": 132,
+            "gold_size": 139,
+            "pred_size": 180
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.5467625899280576
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.5467625899280576
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6115107913669064
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.9496402877697842
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.6636690647482014
+          },
+          "redundancy": {
+            "file": 0.7,
+            "line": 0.6477495107632094
+          }
+        },
+        "tool_calls": 17,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 21,
+          "gold_size": 139,
+          "pred_size": 21
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+        "original_inst_id": "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.2,
+            "intersection": 1,
+            "gold_size": 1,
+            "pred_size": 5
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.5573770491803278,
+            "intersection": 34,
+            "gold_size": 34,
+            "pred_size": 61
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.2647058823529412
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8823529411764706
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8823529411764706
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.7573529411764706
+          },
+          "redundancy": {
+            "file": 0.6666666666666667,
+            "line": 0.6411764705882352
+          }
+        },
+        "tool_calls": 8,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 4,
+          "gold_size": 34,
+          "pred_size": 4
+        }
+      },
+      {
+        "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+        "original_inst_id": "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.3333333333333333,
+            "intersection": 3,
+            "gold_size": 3,
+            "pred_size": 9
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.40869565217391307,
+            "intersection": 47,
+            "gold_size": 47,
+            "pred_size": 115
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.3404255319148936
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6595744680851063
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.6595744680851063
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.9166666666666666,
+            "line": 0.6648936170212766
+          },
+          "redundancy": {
+            "file": 0.6896551724137931,
+            "line": 0.6787709497206704
+          }
+        },
+        "tool_calls": 10,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 6,
+          "gold_size": 47,
+          "pred_size": 6
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+        "original_inst_id": "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.25,
+            "intersection": 2,
+            "gold_size": 2,
+            "pred_size": 8
+          },
+          "line": {
+            "coverage": 0.875,
+            "precision": 0.2727272727272727,
+            "intersection": 42,
+            "gold_size": 48,
+            "pred_size": 154
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.2708333333333333
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.5208333333333334
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.875
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.875
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 1.0,
+            "line": 0.6354166666666667
+          },
+          "redundancy": {
+            "file": 0.6799999999999999,
+            "line": 0.6673866090712743
+          }
+        },
+        "tool_calls": 14,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 6,
+          "gold_size": 48,
+          "pred_size": 6
+        }
+      },
+      {
+        "instance_id": "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+        "original_inst_id": "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.6666666666666666,
+            "intersection": 8,
+            "gold_size": 8,
+            "pred_size": 12
+          },
+          "line": {
+            "coverage": 1.0,
+            "precision": 0.713527851458886,
+            "intersection": 269,
+            "gold_size": 269,
+            "pred_size": 377
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.25,
+                "line": 0.06319702602230483
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.625,
+                "line": 0.27137546468401486
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.875,
+                "line": 0.929368029739777
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 1.0
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.6875,
+            "line": 0.5659851301115242
+          },
+          "redundancy": {
+            "file": 0.6285714285714286,
+            "line": 0.5782997762863535
+          }
+        },
+        "tool_calls": 15,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 1,
+          "gold_size": 269,
+          "pred_size": 1
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+        "original_inst_id": "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.3333333333333333,
+            "intersection": 5,
+            "gold_size": 5,
+            "pred_size": 15
+          },
+          "line": {
+            "coverage": 0.8793103448275862,
+            "precision": 0.4015748031496063,
+            "intersection": 51,
+            "gold_size": 58,
+            "pred_size": 127
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.6,
+                "line": 0.20689655172413793
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.6,
+                "line": 0.3275862068965517
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 0.8,
+                "line": 0.5344827586206896
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.8793103448275862
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.75,
+            "line": 0.4870689655172413
+          },
+          "redundancy": {
+            "file": 0.6511627906976745,
+            "line": 0.6412429378531073
+          }
+        },
+        "tool_calls": 14,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 4,
+          "gold_size": 58,
+          "pred_size": 4
+        }
+      },
+      {
+        "instance_id": "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+        "original_inst_id": "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.42857142857142855,
+            "intersection": 3,
+            "gold_size": 3,
+            "pred_size": 7
+          },
+          "line": {
+            "coverage": 0.890625,
+            "precision": 0.5643564356435643,
+            "intersection": 57,
+            "gold_size": 64,
+            "pred_size": 101
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.21875
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.21875
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.890625
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.890625
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.8333333333333333,
+            "line": 0.5546875
+          },
+          "redundancy": {
+            "file": 0.7083333333333333,
+            "line": 0.5344827586206897
+          }
+        },
+        "tool_calls": 14,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 10,
+          "gold_size": 64,
+          "pred_size": 10
+        }
+      },
+      {
+        "instance_id": "SWE-Bench-Verified__python__maintenance__bugfix__da598baa",
+        "original_inst_id": "SWE-Bench-Verified__python__maintenance__bugfix__da598baa",
+        "arm": "B",
+        "arm_name": "task-state-ledger",
+        "final": {
+          "file": {
+            "coverage": 1.0,
+            "precision": 0.17647058823529413,
+            "intersection": 3,
+            "gold_size": 3,
+            "pred_size": 17
+          },
+          "line": {
+            "coverage": 0.9908256880733946,
+            "precision": 0.46153846153846156,
+            "intersection": 108,
+            "gold_size": 109,
+            "pred_size": 234
+          }
+        },
+        "trajectory": {
+          "steps": [
+            {
+              "step": 1,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.11926605504587157
+              }
+            },
+            {
+              "step": 2,
+              "coverage": {
+                "file": 0.6666666666666666,
+                "line": 0.24770642201834864
+              }
+            },
+            {
+              "step": 3,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.7981651376146789
+              }
+            },
+            {
+              "step": 4,
+              "coverage": {
+                "file": 1.0,
+                "line": 0.9908256880733946
+              }
+            }
+          ],
+          "auc_coverage": {
+            "file": 0.8333333333333333,
+            "line": 0.5389908256880733
+          },
+          "redundancy": {
+            "file": 0.734375,
+            "line": 0.5683453237410072
+          }
+        },
+        "tool_calls": 16,
+        "patch_success": {
+          "status": "UNAVAILABLE",
+          "reason": "requires a live model run and the f2p test harness"
+        },
+        "editloc": {
+          "recall": 1.0,
+          "precision": 1.0,
+          "intersection": 2,
+          "gold_size": 109,
+          "pred_size": 2
+        }
+      }
+    ]
+  },
+  "pairMeta": {
+    "A:SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        327.7,
+        327.7,
+        327.7,
+        327.7
+      ],
+      "summaryChars": [
+        3470,
+        5710,
+        8392,
+        9549
+      ],
+      "stops": [],
+      "calls": 12
+    },
+    "B:SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        327.7,
+        327.7,
+        327.7,
+        327.7
+      ],
+      "summaryChars": [
+        3566,
+        7009,
+        10391,
+        11363
+      ],
+      "stops": [],
+      "calls": 12
+    },
+    "A:Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        272.5,
+        272.5,
+        272.5,
+        272.5
+      ],
+      "summaryChars": [
+        3762,
+        4952,
+        6755,
+        7876
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "B:Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        272.5,
+        272.5,
+        272.5,
+        272.5
+      ],
+      "summaryChars": [
+        4405,
+        6428,
+        8525,
+        9668
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "A:SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        317.0,
+        317.0,
+        317.0,
+        317.0
+      ],
+      "summaryChars": [
+        4035,
+        4523,
+        6661,
+        8686
+      ],
+      "stops": [],
+      "calls": 9
+    },
+    "B:SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        317.0,
+        317.0,
+        317.0,
+        317.0
+      ],
+      "summaryChars": [
+        4866,
+        5840,
+        7353,
+        9998
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "A:SWE-PolyBench__typescript__maintenance__bugfix__42165c4e": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        254.5,
+        254.5,
+        254.5,
+        254.5
+      ],
+      "summaryChars": [
+        4210,
+        5654,
+        8375,
+        8657
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "B:SWE-PolyBench__typescript__maintenance__bugfix__42165c4e": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        254.5,
+        254.5,
+        254.5,
+        254.5
+      ],
+      "summaryChars": [
+        3780,
+        5903,
+        8847,
+        8958
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "A:Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        158.5,
+        158.5,
+        158.5,
+        158.5
+      ],
+      "summaryChars": [
+        3117,
+        5165,
+        7047,
+        9296
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "B:Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        158.5,
+        158.5,
+        158.5,
+        158.5
+      ],
+      "summaryChars": [
+        2487,
+        4718,
+        6131,
+        7136
+      ],
+      "stops": [],
+      "calls": 7
+    },
+    "A:Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        364.3,
+        364.3,
+        364.3,
+        364.3
+      ],
+      "summaryChars": [
+        3812,
+        5184,
+        5776,
+        7623
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "B:Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        364.3,
+        364.3,
+        364.3,
+        364.3
+      ],
+      "summaryChars": [
+        1134,
+        4735,
+        5322,
+        6924
+      ],
+      "stops": [],
+      "calls": 10
+    },
+    "A:Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        136.6,
+        136.6,
+        136.6,
+        136.6
+      ],
+      "summaryChars": [
+        3917,
+        4425,
+        5269,
+        6325
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "B:Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        136.6,
+        136.6,
+        136.6,
+        136.6
+      ],
+      "summaryChars": [
+        3731,
+        5051,
+        6642,
+        7484
+      ],
+      "stops": [],
+      "calls": 9
+    },
+    "A:SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        401.9,
+        401.9,
+        401.9,
+        401.9
+      ],
+      "summaryChars": [
+        5312,
+        5906,
+        8817,
+        8657
+      ],
+      "stops": [],
+      "calls": 9
+    },
+    "B:SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        401.9,
+        401.9,
+        401.9,
+        401.9
+      ],
+      "summaryChars": [
+        4824,
+        1051,
+        6525,
+        7596
+      ],
+      "stops": [],
+      "calls": 10
+    },
+    "A:Multi-SWE-Bench__go__maintenance__bugfix__d129d52f": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        227.3,
+        227.3,
+        227.3,
+        227.3
+      ],
+      "summaryChars": [
+        3305,
+        4929,
+        6931,
+        8064
+      ],
+      "stops": [],
+      "calls": 9
+    },
+    "B:Multi-SWE-Bench__go__maintenance__bugfix__d129d52f": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        227.3,
+        227.3,
+        227.3,
+        227.3
+      ],
+      "summaryChars": [
+        4121,
+        5718,
+        7578,
+        8927
+      ],
+      "stops": [],
+      "calls": 9
+    },
+    "A:SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        332.3,
+        332.3,
+        332.3,
+        332.3
+      ],
+      "summaryChars": [
+        4148,
+        5963,
+        9560,
+        10864
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "B:SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        332.3,
+        332.3,
+        332.3,
+        332.3
+      ],
+      "summaryChars": [
+        4553,
+        6867,
+        8635,
+        9545
+      ],
+      "stops": [],
+      "calls": 10
+    },
+    "A:Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        150.2,
+        150.2,
+        150.2,
+        150.2
+      ],
+      "summaryChars": [
+        3479,
+        5259,
+        6317,
+        7871
+      ],
+      "stops": [],
+      "calls": 9
+    },
+    "B:Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        150.2,
+        150.2,
+        150.2,
+        150.2
+      ],
+      "summaryChars": [
+        3325,
+        4523,
+        5381,
+        5695
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "A:Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        182.8,
+        182.8,
+        182.8,
+        182.8
+      ],
+      "summaryChars": [
+        2266,
+        4658,
+        5184,
+        7148
+      ],
+      "stops": [],
+      "calls": 7
+    },
+    "B:Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        182.8,
+        182.8,
+        182.8,
+        182.8
+      ],
+      "summaryChars": [
+        1955,
+        4197,
+        4803,
+        6540
+      ],
+      "stops": [],
+      "calls": 7
+    },
+    "A:Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        188.7,
+        188.7,
+        188.7,
+        188.7
+      ],
+      "summaryChars": [
+        4118,
+        5948,
+        7760,
+        9740
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "B:Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        188.7,
+        188.7,
+        188.7,
+        188.7
+      ],
+      "summaryChars": [
+        3887,
+        6187,
+        8584,
+        8666
+      ],
+      "stops": [],
+      "calls": 10
+    },
+    "A:Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        314.6,
+        314.6,
+        314.6,
+        314.6
+      ],
+      "summaryChars": [
+        4270,
+        5594,
+        8471,
+        9967
+      ],
+      "stops": [],
+      "calls": 10
+    },
+    "B:Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        314.6,
+        314.6,
+        314.6,
+        314.6
+      ],
+      "summaryChars": [
+        3626,
+        5719,
+        8051,
+        9117
+      ],
+      "stops": [],
+      "calls": 9
+    },
+    "A:SWE-PolyBench__python__maintenance__bugfix__40f09c26": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        214.3,
+        214.3,
+        214.3,
+        214.3
+      ],
+      "summaryChars": [
+        4271,
+        5746,
+        6836,
+        7074
+      ],
+      "stops": [],
+      "calls": 9
+    },
+    "B:SWE-PolyBench__python__maintenance__bugfix__40f09c26": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        214.3,
+        214.3,
+        214.3,
+        214.3
+      ],
+      "summaryChars": [
+        3671,
+        5054,
+        6494,
+        7456
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "A:Multi-SWE-Bench__go__maintenance__bugfix__8d23605c": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        218.9,
+        218.9,
+        218.9,
+        218.9
+      ],
+      "summaryChars": [
+        3404,
+        5308,
+        5443,
+        6602
+      ],
+      "stops": [],
+      "calls": 7
+    },
+    "B:Multi-SWE-Bench__go__maintenance__bugfix__8d23605c": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        218.9,
+        218.9,
+        218.9,
+        218.9
+      ],
+      "summaryChars": [
+        3186,
+        4184,
+        3978,
+        5302
+      ],
+      "stops": [],
+      "calls": 7
+    },
+    "A:SWE-PolyBench__javascript__maintenance__bugfix__27e1903f": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        168.4,
+        168.4,
+        168.4,
+        168.4
+      ],
+      "summaryChars": [
+        5236,
+        4922,
+        7009,
+        7822
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "B:SWE-PolyBench__javascript__maintenance__bugfix__27e1903f": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        168.4,
+        168.4,
+        168.4,
+        168.4
+      ],
+      "summaryChars": [
+        5112,
+        5088,
+        7628,
+        8671
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "A:Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        356.4,
+        356.4,
+        356.4,
+        356.4
+      ],
+      "summaryChars": [
+        4054,
+        5464,
+        7262,
+        9066
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "B:Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        356.4,
+        356.4,
+        356.4,
+        356.4
+      ],
+      "summaryChars": [
+        3978,
+        5896,
+        9103,
+        9526
+      ],
+      "stops": [],
+      "calls": 11
+    },
+    "A:Multi-SWE-Bench__c__maintenance__bugfix__6b844996": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        323.5,
+        323.5,
+        323.5,
+        323.5
+      ],
+      "summaryChars": [
+        4357,
+        6683,
+        7960,
+        11929
+      ],
+      "stops": [],
+      "calls": 9
+    },
+    "B:Multi-SWE-Bench__c__maintenance__bugfix__6b844996": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        323.5,
+        323.5,
+        323.5,
+        323.5
+      ],
+      "summaryChars": [
+        3758,
+        5860,
+        6547,
+        9643
+      ],
+      "stops": [],
+      "calls": 7
+    },
+    "A:Multi-SWE-Bench__rust__maintenance__bugfix__c363219b": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        103.3,
+        103.3,
+        103.3,
+        103.3
+      ],
+      "summaryChars": [
+        1134,
+        3467,
+        5496,
+        6428
+      ],
+      "stops": [],
+      "calls": 9
+    },
+    "B:Multi-SWE-Bench__rust__maintenance__bugfix__c363219b": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        103.3,
+        103.3,
+        103.3,
+        103.3
+      ],
+      "summaryChars": [
+        1134,
+        3297,
+        4395,
+        5664
+      ],
+      "stops": [],
+      "calls": 9
+    },
+    "A:SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        246.0,
+        246.0,
+        246.0,
+        246.0
+      ],
+      "summaryChars": [
+        4966,
+        6800,
+        8962,
+        10665
+      ],
+      "stops": [],
+      "calls": 9
+    },
+    "B:SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        246.0,
+        246.0,
+        246.0,
+        246.0
+      ],
+      "summaryChars": [
+        4687,
+        6083,
+        7373,
+        8825
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "A:Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        183.9,
+        183.9,
+        183.9,
+        183.9
+      ],
+      "summaryChars": [
+        3391,
+        5529,
+        7083,
+        7959
+      ],
+      "stops": [],
+      "calls": 9
+    },
+    "B:Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        183.9,
+        183.9,
+        183.9,
+        183.9
+      ],
+      "summaryChars": [
+        3559,
+        5154,
+        6560,
+        7277
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "A:SWE-PolyBench__javascript__maintenance__bugfix__59dd675b": {
+      "cycles": 4,
+      "firedCycles": 3,
+      "keepUsed": [
+        427.6,
+        427.6,
+        427.6,
+        427.6
+      ],
+      "summaryChars": [
+        3689,
+        5997,
+        9531,
+        9531
+      ],
+      "stops": [],
+      "calls": 6
+    },
+    "B:SWE-PolyBench__javascript__maintenance__bugfix__59dd675b": {
+      "cycles": 4,
+      "firedCycles": 3,
+      "keepUsed": [
+        427.6,
+        427.6,
+        427.6,
+        427.6
+      ],
+      "summaryChars": [
+        4204,
+        6382,
+        10572,
+        10572
+      ],
+      "stops": [],
+      "calls": 7
+    },
+    "A:Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        206.0,
+        206.0,
+        206.0,
+        206.0
+      ],
+      "summaryChars": [
+        3739,
+        5959,
+        6953,
+        7812
+      ],
+      "stops": [],
+      "calls": 7
+    },
+    "B:Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        206.0,
+        206.0,
+        206.0,
+        206.0
+      ],
+      "summaryChars": [
+        4500,
+        6283,
+        8035,
+        7517
+      ],
+      "stops": [],
+      "calls": 7
+    },
+    "A:Multi-SWE-Bench__c__maintenance__bugfix__b9b45262": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        296.2,
+        296.2,
+        296.2,
+        296.2
+      ],
+      "summaryChars": [
+        3271,
+        5341,
+        8042,
+        8568
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "B:Multi-SWE-Bench__c__maintenance__bugfix__b9b45262": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        296.2,
+        296.2,
+        296.2,
+        296.2
+      ],
+      "summaryChars": [
+        4090,
+        6151,
+        9083,
+        10169
+      ],
+      "stops": [],
+      "calls": 9
+    },
+    "A:SWE-Bench-Verified__python__maintenance__bugfix__da598baa": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        373.9,
+        373.9,
+        373.9,
+        373.9
+      ],
+      "summaryChars": [
+        2648,
+        4248,
+        5973,
+        7414
+      ],
+      "stops": [],
+      "calls": 8
+    },
+    "B:SWE-Bench-Verified__python__maintenance__bugfix__da598baa": {
+      "cycles": 4,
+      "firedCycles": 4,
+      "keepUsed": [
+        373.9,
+        373.9,
+        373.9,
+        373.9
+      ],
+      "summaryChars": [
+        3275,
+        5198,
+        6501,
+        7516
+      ],
+      "stops": [],
+      "calls": 7
+    }
+  },
+  "callStats": {
+    "overall": {
+      "count": 439,
+      "latencyMsMean": 20374.0,
+      "latencyMsMedian": 12892,
+      "latencyMsMax": 143824,
+      "transportRetryEvents": 0,
+      "ladderClimbs": 47,
+      "errorCalls": 0,
+      "finishReasons": {
+        "stop": 388,
+        "length": 51
+      }
+    },
+    "A": {
+      "count": 218,
+      "latencyMsMean": 19218.0,
+      "latencyMsMedian": 12956.5,
+      "latencyMsMax": 115193,
+      "transportRetryEvents": 0,
+      "ladderClimbs": 22,
+      "errorCalls": 0,
+      "finishReasons": {
+        "stop": 195,
+        "length": 23
+      }
+    },
+    "B": {
+      "count": 221,
+      "latencyMsMean": 21514.3,
+      "latencyMsMedian": 12569,
+      "latencyMsMax": 143824,
+      "transportRetryEvents": 0,
+      "ladderClimbs": 25,
+      "errorCalls": 0,
+      "finishReasons": {
+        "stop": 193,
+        "length": 28
+      }
+    }
+  }
+}

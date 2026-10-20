@@ -119,7 +119,7 @@ prime-agent --offline
 | `compaction.reserveTokens` | number | `16384` | Tokens reserved for LLM response |
 | `compaction.keepRecentTokens` | number | `20000` | Recent tokens to keep (not summarized) |
 | `compaction.summaryUpdatePolicy` | string | `"off"` | Optional `"consolidate-repeated-v1"` update prompt; disabled until semantic retention is proven |
-| `compaction.taskState` | string | `"off"` | Optional `"prompt"` protected task-state ledger; see below |
+| `compaction.taskState` | string | `"off"` | Optional `"prompt"` (v1, legacy) or `"typed"` (v2) protected task-state ledger; see below |
 
 ```json
 {
@@ -134,7 +134,7 @@ prime-agent --offline
 
 The optional `consolidate-repeated-v1` policy changes only the existing iterative update prompt. It does not add a model pass or a segment ledger, and it keeps the selected model and reasoning level. It tells the summarizer to consolidate demonstrable repeats and superseded status while retaining constraints, reasons, blockers, artifact anchors, errors, kernel state, and harness facts. There is no arbitrary summary-size cap. Its semantic-quality evaluation is a live gate, so the default is `"off"`. The equivalent process-local opt-in is `PRIME_AGENT_SUMMARY_UPDATE_POLICY=consolidate-repeated-v1`.
 
-The optional `compaction.taskState` mode `"prompt"` prepends a deterministic ledger of active goals, constraints, decisions, artifacts, errors, and open questions to the summarizer prompt, and persists it on the compaction entry. It is `"off"` by default because a matched multi-cycle benchmark measured no recall gain over the legacy prompt. The ledger costs roughly 600-800 estimated tokens per summarizer request. Superseded items are replaced, not appended, so the ledger does not grow with the number of compactions. The equivalent process-local opt-in is `PRIME_AGENT_COMPACTION_TASK_STATE=prompt`.
+The optional `compaction.taskState` mode `"prompt"` prepends a deterministic ledger of active goals, constraints, decisions, artifacts, errors, and open questions to the summarizer prompt, and persists it on the compaction entry. The mode `"typed"` (v2) builds a provenance-aware typed ledger instead (verified decisions, corrections, user constraints, pending actions), merges it with the previous compaction's persisted ledger, and renders it into a protected block sized from the summary output budget (one quarter, capped at 2,048 tokens) ahead of the summarizer call; mandatory material that cannot fit that budget fails the compaction before any model call instead of being silently dropped. The summarized output is verified against the ledger: missing protected lines are appended back deterministically, an unbacked verified claim is downgraded in place to an explicit unverified annotation, and a still-deficient handoff fails the compaction with the existing conversation preserved. The setting is `"off"` by default: a matched multi-cycle benchmark measured no recall gain for the v1 keyword ledger over the plain summarizer prompt, and the typed mode ships opt-in. The v1 ledger costs roughly 600-800 estimated tokens per summarizer request, with superseded items replaced rather than appended so it does not grow with the number of compactions. The equivalent process-local opt-in is `PRIME_AGENT_COMPACTION_TASK_STATE=prompt` or `PRIME_AGENT_COMPACTION_TASK_STATE=typed`.
 
 ### Model-facing repeated tool output
 

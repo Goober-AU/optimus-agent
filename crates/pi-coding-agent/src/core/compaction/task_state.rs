@@ -10,10 +10,20 @@
 //! The ledger is carried forward across compactions (merged, not re-derived from a
 //! summary) so repeated cycles cannot erode it. It is fed to the summarizer as protected
 //! material and persisted on the compaction entry under `details.taskState`.
+//!
+//! Item ids are content-derived, so a merge never renumbers them and a retired id
+//! can only ever suppress the exact content it was assigned to.
+//!
+//! Supersession semantics: a user correction is the newest statement on its subject,
+//! so it is always current. It may retire only an older, non-correction item that
+//! shares a subject anchor, and the render then shows the retired item as history
+//! with a "replaced by" link to the correction. A correction itself never lands in
+//! SUPERSEDED, and ordinary constraint lines never create supersession pairs.
 
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use super::compaction::CompactionSessionEntry;
 use pi_agent_core::types::AgentMessage;
@@ -39,9 +49,53 @@ static CONSTRAINT_RE: Lazy<Regex> = Lazy::new(|| {
 static DECISION_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)\bdecision\b|\bchosen\b|\bchose\b|\bwe will use\b").unwrap()
 });
+/// Loose replacement-vocabulary trigger. It only widens CLAUSE CAPTURE: a
+/// message carrying any of these tokens also surrenders its keyword-less
+/// clauses (W9-F1: "preserve the ledger audit trail verbatim" rides along
+/// with "never drop the scheduler ledger" in the same message). It must NOT
+/// be used to classify a clause as a correction; use `is_correction_clause`.
 static SUPERSEDE_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)\b(drop|instead|change of plan|no longer|rather than|replace[sd]?|revert|withdraw|supersed\w*)\b").unwrap()
 });
+/// Explicit correction cues: a clause is a correction only when it states
+/// that an earlier choice is being displaced.
+static CORRECTION_CUE_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(concat!(
+        r"(?i)\b(?:",
+        r"correction|change of plan|forget that|scratch that|on second thought|",
+        r"instead|rather than|no longer|",
+        r"supersed\w*|drop\w*|replac\w*|revert\w*|withdraw\w*",
+        r")\b"
+    )).unwrap()
+});
+/// Negated cue verbs: "never drop the scheduler ledger", "do not replace
+/// the gateway config" and friends are standing prohibitions about the
+/// future, not corrections of the past. They are scrubbed before correction
+/// classification so the same verb can serve both intents.
+static PROHIBITION_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(concat!(
+        r"(?i)\b(?:never|do not|don't|dont|must not|cannot|can't|should not|",
+        r"shall not|no)\s+(?:supersed\w*|drop\w*|replac\w*|revert\w*|withdraw\w*)\b"
+    )).unwrap()
+});
+
+/// Frame words that state THAT a correction, decision or constraint exists,
+/// never WHICH subject it is about. Two items sharing only scaffold words do
+/// not share a subject, so scaffold words never anchor a retirement.
+const SCAFFOLD: &[&str] = &[
+    "instead", "rather", "longer", "change", "plan", "forget", "scratch", "correction",
+    "superseded", "supersede", "supersedes", "superseding", "drop", "dropped", "replace",
+    "replaced", "replaces", "revert", "reverted", "withdraw", "withdrawn", "idea", "decision",
+    "constraint", "earlier", "previous", "prior", "current", "latest",
+];
+
+/// A clause classifies as a correction when an explicit correction cue
+/// survives after standing prohibitions are scrubbed. Deterministic, no
+/// model call.
+fn is_correction_clause(clause: &str) -> bool {
+    let scrubbed = PROHIBITION_RE.replace_all(clause, "keep");
+    CORRECTION_CUE_RE.is_match(&scrubbed)
+}
 static EVIDENCE_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"test result:|error\[E\d+\]|\d+ files changed|panicked at|FAILED").unwrap()
 });
@@ -67,7 +121,11 @@ static DIGITS_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\d+").unwrap());
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct TaskStateItem {
-    /// Stable within the ledger, e.g. `C3`.
+    /// Content-derived: the section prefix plus the first 8 hex chars of the
+    /// SHA-256 of the item's dedupe key, e.g. `C-a1b2c3d4`. Ids are stable across
+    /// merges, so a retired id can never be re-issued to different content.
+    /// Ledgers persisted before this scheme carry positional ids like `C3`;
+    /// those are treated as opaque strings.
     pub id: String,
     /// Verbatim (clipped) statement.
     pub text: String,
@@ -76,6 +134,11 @@ pub struct TaskStateItem {
     /// Reason attached by the user in the same message (`Rationale: ...`).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub why: Vec<String>,
+    /// True when this item is a user correction of an earlier item. A
+    /// correction is the newest user statement on its subject, so it is
+    /// never a retirement target and never lands in SUPERSEDED.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub correction: bool,
 }
 
 /// An earlier item replaced by a later user correction.
@@ -85,6 +148,10 @@ pub struct Supersession {
     /// Id of the retired item.
     pub old_id: String,
     pub old_entry: String,
+    /// Verbatim text of the retired item, so the render can show what is
+    /// history. Empty in ledgers persisted before this field existed.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub old_text: String,
     /// Id of the item that now carries the requirement.
     pub new_id: String,
     /// Verbatim correction text.
@@ -107,6 +174,10 @@ pub struct EvidenceItem {
 
 fn is_one(value: &u32) -> bool {
     *value <= 1
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 /// The ledger.
@@ -244,6 +315,14 @@ fn dedupe_key(text: &str) -> String {
     tokens(text).into_iter().collect::<Vec<_>>().join(" ")
 }
 
+/// Content-derived item id: the section prefix plus the first 8 hex chars of
+/// the SHA-256 of the dedupe key.
+fn content_id(prefix: &str, key: &str) -> String {
+    let digest = Sha256::digest(key.as_bytes());
+    let head = u32::from_be_bytes([digest[0], digest[1], digest[2], digest[3]]);
+    format!("{prefix}-{head:08x}")
+}
+
 fn short_id(entry_id: &str) -> String {
     if entry_id.is_empty() {
         "summary".to_string()
@@ -294,6 +373,12 @@ pub fn build_ledger(
     }
 
     let mut corrections: Vec<TaskStateItem> = Vec::new();
+    // Capture order of the items this window adds, so supersession targets can
+    // be restricted to older items. Items carried in from `previous` are absent
+    // from the map and always count as older.
+    let mut capture_order: std::collections::HashMap<String, usize> =
+        std::collections::HashMap::new();
+    let mut captured: usize = 0;
     let mut evidence_seen: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
     for (index, item) in ledger.evidence.iter().enumerate() {
         evidence_seen.insert(evidence_key(&item.text), index);
@@ -309,7 +394,7 @@ pub fn build_ledger(
         let entry_id = entry.id().to_string();
 
         if role == Role::User {
-            let is_correction = SUPERSEDE_RE.is_match(&text);
+            let capture_wide = SUPERSEDE_RE.is_match(&text);
             for sentence in sentences(&text) {
                 for clause in split_clauses(&sentence) {
                     if RATIONALE_RE.is_match(&clause) {
@@ -325,23 +410,27 @@ pub fn build_ledger(
                         }
                         continue;
                     }
-                    if !(is_correction || CONSTRAINT_RE.is_match(&clause)) {
+                    let is_correction = is_correction_clause(&clause);
+                    if !(capture_wide || CONSTRAINT_RE.is_match(&clause)) {
                         continue;
                     }
                     if clause.chars().count() < 12 {
                         continue;
                     }
                     let key = dedupe_key(&clause);
-                    if key.is_empty() || !seen.insert(key) {
+                    if key.is_empty() || !seen.insert(key.clone()) {
                         continue;
                     }
-                    let id = format!("C{}", ledger.constraints.len() + 1);
+                    let id = content_id("C", &key);
                     let item = TaskStateItem {
                         id,
                         text: clip(&clause, ITEM_TEXT_MAX),
                         entry: short_id(&entry_id),
                         why: Vec::new(),
+                        correction: is_correction,
                     };
+                    capture_order.insert(item.id.clone(), captured);
+                    captured += 1;
                     if is_correction {
                         corrections.push(item.clone());
                     }
@@ -354,10 +443,11 @@ pub fn build_ledger(
             for sentence in sentences(&text) {
                 if role == Role::Assistant && RETRACTION_RE.is_match(&sentence) {
                     ledger.retractions.push(TaskStateItem {
-                        id: format!("R{}", ledger.retractions.len() + 1),
+                        id: content_id("R", &dedupe_key(&sentence)),
                         text: clip(&sentence, 240),
                         entry: short_id(&entry_id),
                         why: Vec::new(),
+                        correction: false,
                     });
                     continue;
                 }
@@ -365,15 +455,18 @@ pub fn build_ledger(
                     continue;
                 }
                 let key = dedupe_key(&sentence);
-                if key.is_empty() || !seen.insert(key) {
+                if key.is_empty() || !seen.insert(key.clone()) {
                     continue;
                 }
-                let id = format!("D{}", ledger.decisions.len() + 1);
+                let id = content_id("D", &key);
+                capture_order.insert(id.clone(), captured);
+                captured += 1;
                 ledger.decisions.push(TaskStateItem {
                     id,
                     text: clip(&sentence, ITEM_TEXT_MAX),
                     entry: short_id(&entry_id),
                     why: Vec::new(),
+                    correction: false,
                 });
             }
             for capture in ANCHOR_RE.captures_iter(&text) {
@@ -405,7 +498,7 @@ pub fn build_ledger(
                 }
             } else {
                 let item = EvidenceItem {
-                    id: format!("E{}", ledger.evidence.len() + 1),
+                    id: content_id("E", &key),
                     text: clip(line, 200),
                     entry: short_id(&entry_id),
                     repeats: 1,
@@ -417,10 +510,18 @@ pub fn build_ledger(
         }
     }
 
-    // Supersession: a later user correction retires the best earlier item that shares a
-    // specific anchor (identifier, path, digit-bearing token). Shared generic words alone
-    // never retire a constraint.
+    // Supersession: a later user correction retires the best earlier item about
+    // the same subject. Three gates make retirement directional and anchored:
+    //   1. The target is older: captured before the correction in this
+    //      window, or carried by the previous ledger (earlier windows).
+    //   2. The target is not itself a correction, so retirement can never be
+    //      mutual and a correction always stays current.
+    //   3. The pair shares a subject anchor: a specific token (path,
+    //      identifier, digit-bearing or long word) or enough non-scaffold
+    //      content words. Frame words that merely state that a correction
+    //      happened never count.
     for correction in &corrections {
+        let correction_order = capture_order.get(&correction.id).copied().unwrap_or(0);
         let correction_tokens = tokens(&correction.text);
         let mut best: Option<((bool, usize), i32)> = None;
         let candidates = ledger
@@ -436,21 +537,32 @@ pub fn build_ledger(
                     .map(|(index, item)| (false, index, item)),
             );
         for (is_decision, index, item) in candidates {
-            if item.id == correction.id {
+            if item.id == correction.id || item.correction {
+                continue;
+            }
+            if capture_order
+                .get(&item.id)
+                .is_some_and(|order| *order >= correction_order)
+            {
                 continue;
             }
             let item_tokens = tokens(&item.text);
             let shared: Vec<&String> = correction_tokens.intersection(&item_tokens).collect();
+            let anchors = shared
+                .iter()
+                .filter(|token| !SCAFFOLD.contains(&token.as_str()))
+                .count();
             let specific = shared
                 .iter()
                 .filter(|token| {
-                    token.contains('_')
-                        || token.contains('/')
-                        || token.chars().any(|c| c.is_ascii_digit())
-                        || token.chars().count() > 8
+                    !SCAFFOLD.contains(&token.as_str())
+                        && (token.contains('_')
+                            || token.contains('/')
+                            || token.chars().any(|c| c.is_ascii_digit())
+                            || token.chars().count() > 8)
                 })
                 .count();
-            let score = (specific as i32) * 3 + shared.len() as i32;
+            let score = (specific as i32) * 3 + anchors as i32;
             if score > best.map(|(_, current)| current).unwrap_or(0) {
                 best = Some(((is_decision, index), score));
             }
@@ -466,12 +578,20 @@ pub fn build_ledger(
         } else {
             &ledger.constraints[index]
         };
-        if ledger.superseded.iter().any(|existing| existing.old_id == old.id) {
+        if let Some(existing) = ledger
+            .superseded
+            .iter_mut()
+            .find(|existing| existing.old_id == old.id)
+        {
+            existing.new_id = correction.id.clone();
+            existing.new_text = correction.text.clone();
+            existing.new_entry = correction.entry.clone();
             continue;
         }
         ledger.superseded.push(Supersession {
             old_id: old.id.clone(),
             old_entry: old.entry.clone(),
+            old_text: old.text.clone(),
             new_id: correction.id.clone(),
             new_text: correction.text.clone(),
             new_entry: correction.entry.clone(),
@@ -501,6 +621,7 @@ pub fn build_ledger(
             text: clip(&text, 240),
             entry: short_id(entry.id()),
             why: Vec::new(),
+            correction: false,
         };
         let key = dedupe_key(&candidate.text);
         if !seen.contains(&key) {
@@ -590,7 +711,9 @@ pub fn summary_section<'a>(summary: &'a str, name: &str) -> Option<&'a str> {
 /// Render the ledger for the summarizer prompt.
 ///
 /// Bounded: lower-priority sections lose their tail first, and a dropped item is counted
-/// in the same block. Every line names the entry it came from.
+/// in the same block. Every line names the entry it came from. Correction carriers are
+/// exempt from the section caps: they always render in ACTIVE CONSTRAINTS, ahead of the
+/// non-correction items, and the caps apply to the remaining slots after them.
 pub fn render_ledger(ledger: &TaskStateLedger) -> String {
     if ledger.is_empty() {
         return String::new();
@@ -604,23 +727,43 @@ pub fn render_ledger(ledger: &TaskStateLedger) -> String {
     );
 
     let mut dropped: Vec<(usize, &'static str)> = Vec::new();
-    push_items(&mut out, "ACTIVE CONSTRAINTS", &ledger.constraints, CONSTRAINTS_CAP, &mut dropped, |item| {
+    // A cap must never drop the line that carries the user's latest word while the
+    // statement it corrected stays visible as a SUPERSEDED replacement text, so the
+    // correction carriers render first and the cap applies to what is left.
+    let (constraints, omitted_constraints) = prioritize_corrections(&ledger.constraints, CONSTRAINTS_CAP);
+    let protected_corrections = ledger.constraints.iter().filter(|item| item.correction).count();
+    push_items(&mut out, "ACTIVE CONSTRAINTS", &constraints, omitted_constraints, &mut dropped, |item| {
         let mut line = format!("{} [{}]: {}", item.id, item.entry, item.text);
         if !item.why.is_empty() {
             line.push_str(&format!(" (why: {})", item.why.join("; ")));
         }
         line
     });
-    push_items(&mut out, "DECISIONS (current)", &ledger.decisions, DECISIONS_CAP, &mut dropped, |item| {
+    let (decisions, omitted_decisions) = prioritize_corrections(&ledger.decisions, DECISIONS_CAP);
+    push_items(&mut out, "DECISIONS (current)", &decisions, omitted_decisions, &mut dropped, |item| {
         format!("{} [{}]: {}", item.id, item.entry, item.text)
     });
     if !ledger.superseded.is_empty() {
         out.push_str("\n**SUPERSEDED (history, not current)**\n");
         for item in ledger.superseded.iter().take(SUPERSEDED_CAP) {
-            out.push_str(&format!(
-                "- {} [{}] replaced by {} [{}]: {}\n",
-                item.old_id, item.old_entry, item.new_id, item.new_entry, item.new_text
-            ));
+            // The retired item is the history; the replacement link points at
+            // the correction, which renders as a current item in its own
+            // section. The correction's own text never appears here.
+            if item.old_text.is_empty() {
+                out.push_str(&format!(
+                    "- {} [{}] replaced by {} [{}] (current)\n",
+                    item.old_id, item.old_entry, item.new_id, item.new_entry
+                ));
+            } else {
+                out.push_str(&format!(
+                    "- {} [{}]: {} (replaced by {} [{}], current)\n",
+                    item.old_id,
+                    item.old_entry,
+                    item.old_text,
+                    item.new_id,
+                    item.new_entry
+                ));
+            }
         }
         if ledger.superseded.len() > SUPERSEDED_CAP {
             dropped.push((ledger.superseded.len() - SUPERSEDED_CAP, "supersession"));
@@ -651,7 +794,8 @@ pub fn render_ledger(ledger: &TaskStateLedger) -> String {
             out.push_str(&format!("- [{}] {}\n", item.entry, item.text));
         }
     }
-    push_items(&mut out, "OPEN WORK", &ledger.open_work, OPEN_WORK_CAP, &mut dropped, |item| {
+    let (open_work, omitted_open_work) = prioritize_corrections(&ledger.open_work, OPEN_WORK_CAP);
+    push_items(&mut out, "OPEN WORK", &open_work, omitted_open_work, &mut dropped, |item| {
         format!("[{}] {}", item.entry, item.text)
     });
     if !dropped.is_empty() {
@@ -661,8 +805,16 @@ pub fn render_ledger(ledger: &TaskStateLedger) -> String {
             .map(|(count, label)| format!("{count} {label}(s)"))
             .collect::<Vec<_>>()
             .join(", ");
+        // When the constraints cap protected correction carriers, the count is
+        // stated, because it explains why these items were omitted while the
+        // corrections stayed in the rendered ACTIVE list.
+        let protected = if protected_corrections > 0 && omitted_constraints > 0 {
+            format!("{protected_corrections} protected correction(s) rendered; ")
+        } else {
+            String::new()
+        };
         out.push_str(&format!(
-            "\n_({total} lower-priority item(s) omitted from this block: {detail}; the full ledger is persisted on the compaction entry.)_\n"
+            "\n_({protected}{total} lower-priority item(s) omitted from this block: {detail}; the full ledger is persisted on the compaction entry.)_\n"
         ));
     }
     if out.len() > RENDER_MAX_CHARS {
@@ -681,11 +833,35 @@ fn truncate_ledger(mut out: String, max: usize) -> String {
     out
 }
 
+/// Order a section for rendering under a cap, corrections first.
+///
+/// A correction carrier is the authoritative line for the requirement it restates, so it
+/// outranks every non-correction item: it is exempt from the cap and always renders, ahead
+/// of the rest, and the cap then applies to the remaining slots. Returns the render order
+/// (corrections in capture order, then the leading non-correction items) and the number of
+/// non-correction items the cap left out. A section without corrections behaves exactly
+/// like a plain head-take of `cap` items.
+pub fn prioritize_corrections(items: &[TaskStateItem], cap: usize) -> (Vec<&TaskStateItem>, usize) {
+    let mut corrections: Vec<&TaskStateItem> = Vec::new();
+    let mut plain: Vec<&TaskStateItem> = Vec::new();
+    for item in items {
+        if item.correction {
+            corrections.push(item);
+        } else {
+            plain.push(item);
+        }
+    }
+    let slots = cap.saturating_sub(corrections.len());
+    let omitted = plain.len().saturating_sub(slots);
+    corrections.extend(plain.into_iter().take(slots));
+    (corrections, omitted)
+}
+
 fn push_items<F>(
     out: &mut String,
     title: &str,
-    items: &[TaskStateItem],
-    cap: usize,
+    items: &[&TaskStateItem],
+    omitted: usize,
     dropped: &mut Vec<(usize, &'static str)>,
     render: F,
 ) where
@@ -695,19 +871,19 @@ fn push_items<F>(
         return;
     }
     out.push_str(&format!("\n**{title}**\n"));
-    for item in items.iter().take(cap) {
+    for item in items.iter().copied() {
         out.push_str("- ");
         out.push_str(&render(item));
         out.push('\n');
     }
-    if items.len() > cap {
+    if omitted > 0 {
         let label = match title {
             "ACTIVE CONSTRAINTS" => "active constraint",
             "DECISIONS (current)" => "current decision",
             "OPEN WORK" => "open-work item",
             _ => "item",
         };
-        dropped.push((items.len() - cap, label));
+        dropped.push((omitted, label));
     }
 }
 
@@ -802,6 +978,124 @@ mod tests {
     }
 
     #[test]
+    fn standing_prohibitions_are_not_corrections_but_cues_are() {
+        // W7/W9 root cause 1: the same verbs serve both intents. A standing
+        // prohibition about the future is not a correction of the past.
+        assert!(!is_correction_clause(
+            "CONSTRAINT: never drop the scheduler ledger R2-CONS-bc725595"
+        ));
+        assert!(!is_correction_clause("Do not replace the gateway config without review"));
+        assert!(!is_correction_clause("must not revert the protocol change"));
+        // Explicit correction cues classify, including after a prohibition in
+        // the same clause.
+        assert!(is_correction_clause(
+            "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5."
+        ));
+        assert!(is_correction_clause("The earlier A decision is superseded."));
+        assert!(is_correction_clause("Drop the sidecar checkpoint idea."));
+        assert!(is_correction_clause(
+            "Never drop the audit log; persist it inline instead."
+        ));
+    }
+
+    #[test]
+    fn two_corrections_never_retire_each_other() {
+        // W7 root cause 2/W9-F4: the reporting and validator corrections share
+        // more frame tokens with each other than with their targets, so the
+        // old pairing retired them mutually. Corrections are excluded as
+        // targets, so each retires only its own older decision.
+        let entries = vec![
+            assistant_entry(
+                "a1",
+                "Decision: use architecture A for the reporting module R2-SUPE-48258b00.",
+            ),
+            user_entry(
+                "u2",
+                "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.",
+            ),
+            user_entry(
+                "u3",
+                "CORRECTION: forget that; use architecture B for the validator module instead R2-CORR-72a6f7e4.",
+            ),
+        ];
+        let ledger = build_ledger(&entries, None);
+        assert!(
+            ledger
+                .constraints
+                .iter()
+                .any(|item| item.text.contains("B for the reporting module")),
+            "the reporting correction must stay active: {:?}",
+            ledger.constraints
+        );
+        assert!(
+            ledger
+                .constraints
+                .iter()
+                .any(|item| item.text.contains("B for the validator module")),
+            "the validator correction must stay active: {:?}",
+            ledger.constraints
+        );
+        assert!(
+            ledger
+                .decisions
+                .iter()
+                .all(|item| !item.text.contains("architecture A")),
+            "the A decision must be retired: {:?}",
+            ledger.decisions
+        );
+        assert_eq!(ledger.superseded.len(), 1, "{:?}", ledger.superseded);
+    }
+
+    #[test]
+    fn a_correction_cannot_retire_a_newer_decision() {
+        // Ordinal gate: only older items are retirement targets.
+        let entries = vec![
+            user_entry(
+                "u1",
+                "CORRECTION: forget that; use architecture B for the reporting module instead R2-CORR-9d2f87f5.",
+            ),
+            assistant_entry(
+                "a2",
+                "Decision: use architecture A for the reporting module R2-SUPE-48258b00.",
+            ),
+        ];
+        let ledger = build_ledger(&entries, None);
+        assert!(ledger.superseded.is_empty(), "{:?}", ledger.superseded);
+        assert!(
+            ledger
+                .decisions
+                .iter()
+                .any(|item| item.text.contains("architecture A")),
+            "the newer decision stays current: {:?}",
+            ledger.decisions
+        );
+    }
+
+    #[test]
+    fn the_split_off_superseded_sentence_retires_nothing() {
+        // W7 root cause 3 evidence: "The earlier A decision is superseded."
+        // shares only frame words with the A decision, so it must not retire
+        // it (or anything else).
+        let entries = vec![
+            assistant_entry(
+                "a1",
+                "Decision: use architecture A for the reporting module R2-SUPE-48258b00.",
+            ),
+            user_entry("u2", "The earlier A decision is superseded."),
+        ];
+        let ledger = build_ledger(&entries, None);
+        assert!(ledger.superseded.is_empty(), "{:?}", ledger.superseded);
+        assert!(
+            ledger
+                .decisions
+                .iter()
+                .any(|item| item.text.contains("architecture A")),
+            "the A decision stays current: {:?}",
+            ledger.decisions
+        );
+    }
+
+    #[test]
     fn a_correction_without_a_predecessor_is_still_recorded() {
         let entries = vec![user_entry(
             "u1",
@@ -885,12 +1179,14 @@ mod tests {
                 text: "\u{0436}".repeat(200),
                 entry: "e".to_string(),
                 why: Vec::new(),
+                correction: false,
             });
             ledger.decisions.push(TaskStateItem {
                 id: format!("D{index}"),
                 text: "\u{0436}".repeat(200),
                 entry: "e".to_string(),
                 why: Vec::new(),
+                correction: false,
             });
         }
         let rendered = render_ledger(&ledger);

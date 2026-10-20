@@ -26,6 +26,20 @@ pub fn create_file_ops() -> FileOperations {
 }
 
 /// Extract file operations from tool calls in an assistant message.
+///
+/// `edit` is the one name-based rule (the durable built-in that modifies
+/// files, matched since the first port); its `path` argument records an
+/// edit. Every other tool call that references files through a `path` string
+/// or a `paths` array (the attach_image shape) records a read, so new tools
+/// are tracked structurally instead of through a static name allowlist -
+/// the legacy `read`/`write` name cases were dropped together with those
+/// tools and left both sets permanently empty. Write evidence from tool
+/// results (ipython `diffs`) still lands in `edited`, and
+/// `compute_file_lists` subtracts modified paths from the read list, so a
+/// path that is read in one window and edited in a later one moves to the
+/// modified inventory. `written` keeps no producer: no current tool writes
+/// through a file argument, and a write-misclassified-as-read stays a mild
+/// inventory inaccuracy rather than a false modification claim.
 pub fn extract_file_ops_from_message(message: &AgentMessage, file_ops: &mut FileOperations) {
     if let AgentMessage::Message(Message::ToolResult(result)) = message {
         if result.tool_name == "ipython" {
@@ -47,18 +61,31 @@ pub fn extract_file_ops_from_message(message: &AgentMessage, file_ops: &mut File
             continue;
         };
         let args: &serde_json::Map<String, Value> = &tool_call.arguments;
-        let path = match args.get("path") {
-            Some(Value::String(path)) => path.clone(),
-            _ => continue,
-        };
-        if path.is_empty() {
+        let mut paths: Vec<&str> = Vec::new();
+        if let Some(path) = args.get("path").and_then(Value::as_str).filter(|path| !path.is_empty()) {
+            paths.push(path);
+        }
+        if let Some(list) = args.get("paths").and_then(Value::as_array) {
+            for path in list.iter().filter_map(Value::as_str) {
+                if !path.is_empty() {
+                    paths.push(path);
+                }
+            }
+        }
+        if paths.is_empty() {
             continue;
         }
         match tool_call.name.as_str() {
             "edit" => {
-                file_ops.edited.insert(path);
+                for path in paths {
+                    file_ops.edited.insert(path.to_string());
+                }
             }
-            _ => {}
+            _ => {
+                for path in paths {
+                    file_ops.read.insert(path.to_string());
+                }
+            }
         }
     }
 }
@@ -568,12 +595,14 @@ mod tests {
     }
 
     #[test]
-    fn edit_tool_calls_record_edited_paths_only() {
+    fn path_arguments_of_non_edit_tool_calls_record_reads() {
         let mut ops = create_file_ops();
         extract_file_ops_from_message(
             &assistant_with_tool_call("edit", Some("src/a.ts")),
             &mut ops,
         );
+        // D14: any non-edit tool call that references files through a `path`
+        // argument records a read, whatever the tool is named.
         extract_file_ops_from_message(
             &assistant_with_tool_call("read", Some("src/b.ts")),
             &mut ops,
@@ -583,8 +612,34 @@ mod tests {
             ops.edited.iter().cloned().collect::<Vec<_>>(),
             vec!["src/a.ts"]
         );
-        assert!(ops.read.is_empty());
+        assert_eq!(
+            ops.read.iter().cloned().collect::<Vec<_>>(),
+            vec!["src/b.ts"]
+        );
         assert!(ops.written.is_empty());
+        // `paths` array arguments (attach_image shape) record reads too.
+        let mut arguments = serde_json::Map::new();
+        arguments.insert("paths".to_string(), json!(["img/one.png", "", 4, "img/two.png"]));
+        let attach = AgentMessage::Message(Message::Assistant(AssistantMessage {
+            content: vec![ContentBlock::ToolCall(ToolCall::new("call-2", "attach_image", arguments))],
+            ..Default::default()
+        }));
+        extract_file_ops_from_message(&attach, &mut ops);
+        assert_eq!(
+            ops.read.iter().cloned().collect::<Vec<_>>(),
+            vec!["img/one.png".to_string(), "img/two.png".to_string(), "src/b.ts".to_string()]
+        );
+        // A file that is read and later edited moves to the modified list.
+        extract_file_ops_from_message(
+            &assistant_with_tool_call("edit", Some("src/b.ts")),
+            &mut ops,
+        );
+        let (read_files, modified_files) = compute_file_lists(&ops);
+        assert_eq!(read_files, vec!["img/one.png".to_string(), "img/two.png".to_string()]);
+        assert_eq!(
+            modified_files,
+            vec!["src/a.ts".to_string(), "src/b.ts".to_string()]
+        );
     }
 
     #[test]

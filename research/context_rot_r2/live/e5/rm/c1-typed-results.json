@@ -1,0 +1,189 @@
+{
+ "cell": "e3adv-c1-typed",
+ "scenario": "r2-e3adv-c1",
+ "arm": "typed",
+ "cycles": [
+  {
+   "cycle": 1,
+   "checks": {
+    "decisionSuperseded": true,
+    "decisionReplacedBy": true,
+    "retirePathProvenance": true,
+    "correctionCurrent": true,
+    "approachRenders": true,
+    "verifierPasses": true
+   },
+   "renderChecks": {
+    "renderSupersededSection": true,
+    "renderReplacedByLink": true,
+    "renderPairingNote": true,
+    "hotBudgetOverflowed": false
+   },
+   "records": 12,
+   "retiredRefs": 0,
+   "droppedByCap": 0,
+   "hotBudgetTokens": 800,
+   "hotTokensUsed": 408,
+   "decision": {
+    "id": "VD-76361d",
+    "status": "superseded",
+    "link": "CO-9dea27",
+    "retirePath": "provenance"
+   },
+   "verification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "hotBlockChars": 1978
+  },
+  {
+   "cycle": 2,
+   "checks": {
+    "decisionSuperseded": true,
+    "decisionReplacedBy": true,
+    "retirePathProvenance": true,
+    "correctionCurrent": true,
+    "approachRenders": true,
+    "verifierPasses": true
+   },
+   "renderChecks": {
+    "renderSupersededSection": true,
+    "renderReplacedByLink": true,
+    "renderPairingNote": true,
+    "hotBudgetOverflowed": false
+   },
+   "records": 13,
+   "retiredRefs": 6,
+   "droppedByCap": 0,
+   "hotBudgetTokens": 800,
+   "hotTokensUsed": 418,
+   "decision": {
+    "id": "VD-76361d",
+    "status": "superseded",
+    "link": "CO-9dea27",
+    "retirePath": "provenance"
+   },
+   "verification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "hotBlockChars": 2021
+  },
+  {
+   "cycle": 3,
+   "checks": {
+    "decisionSuperseded": true,
+    "decisionReplacedBy": true,
+    "retirePathProvenance": true,
+    "correctionCurrent": true,
+    "approachRenders": true,
+    "verifierPasses": true
+   },
+   "renderChecks": {
+    "renderSupersededSection": true,
+    "renderReplacedByLink": true,
+    "renderPairingNote": true,
+    "hotBudgetOverflowed": false
+   },
+   "records": 16,
+   "retiredRefs": 6,
+   "droppedByCap": 0,
+   "hotBudgetTokens": 800,
+   "hotTokensUsed": 511,
+   "decision": {
+    "id": "VD-76361d",
+    "status": "superseded",
+    "link": "CO-9dea27",
+    "retirePath": "provenance"
+   },
+   "verification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "hotBlockChars": 2396
+  },
+  {
+   "cycle": 4,
+   "checks": {
+    "decisionSuperseded": true,
+    "decisionReplacedBy": true,
+    "retirePathProvenance": true,
+    "correctionCurrent": true,
+    "approachRenders": true,
+    "verifierPasses": true
+   },
+   "renderChecks": {
+    "renderSupersededSection": true,
+    "renderReplacedByLink": true,
+    "renderPairingNote": true,
+    "hotBudgetOverflowed": false
+   },
+   "records": 19,
+   "retiredRefs": 6,
+   "droppedByCap": 0,
+   "hotBudgetTokens": 800,
+   "hotTokensUsed": 604,
+   "decision": {
+    "id": "VD-76361d",
+    "status": "superseded",
+    "link": "CO-9dea27",
+    "retirePath": "provenance"
+   },
+   "verification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "hotBlockChars": 2771
+  },
+  {
+   "cycle": 5,
+   "checks": {
+    "decisionSuperseded": true,
+    "decisionReplacedBy": true,
+    "retirePathProvenance": true,
+    "correctionCurrent": true,
+    "approachRenders": true,
+    "verifierPasses": true
+   },
+   "renderChecks": {
+    "renderSupersededSection": true,
+    "renderReplacedByLink": true,
+    "renderPairingNote": true,
+    "hotBudgetOverflowed": false
+   },
+   "records": 22,
+   "retiredRefs": 6,
+   "droppedByCap": 0,
+   "hotBudgetTokens": 800,
+   "hotTokensUsed": 697,
+   "decision": {
+    "id": "VD-76361d",
+    "status": "superseded",
+    "link": "CO-9dea27",
+    "retirePath": "provenance"
+   },
+   "verification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "hotBlockChars": 3146
+  }
+ ],
+ "passed": true,
+ "failures": []
+}

@@ -1,0 +1,23 @@
+## Typed Protected State (deterministic, provenance-tagged)
+Derived from the transcript by fixed provenance rules; no item is inferred or invented. Copy every item below into the matching summary section without paraphrasing identifiers, paths, numbers or error codes. Items under SUPERSEDED are history, not current requirements.
+
+PENDING ACTIONS
+- [PA-42d2e9] [@24f356c8-b9f9-2aa2-7cb2-e387ef79c1fc] Suite finished: one failure - details next.
+
+VERIFIED EVIDENCE
+- [VT-c2f9b6] [@1b141b64-fc82-a2c8-1440-405508c72551] assertion failed: depth == 4096 (got 3072)
+- [VT-61907a] [@1b141b64-fc82-a2c8-1440-405508c72551] thread 'parser::tests::parse_nested' panicked at src/parser.rs:198:
+
+SOURCE EVIDENCE
+- [SE-017881] [@1b141b64-fc82-a2c8-1440-405508c72551] ---- parser::tests::parse_nested stdout ----
+
+VERIFIED EVIDENCE
+- [VT-174e04] [@fbb04977-7aa4-eca1-a178-300832f1085e] cargo test --lib telemetry::tests_02: test result: 18 passed; 0 failed
+- [VT-25d467] [@dda0637b-52f1-84a7-2cce-a7b56b3aa686] cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed
+- [VT-1cfcd1] [@4ec0dccc-ea13-2794-f436-b641157e5fef] test result: 55 passed; 1 failed
+
+LOW-PRIORITY EPISODES
+- [LP-8261a0] [@496830ab-5415-db9c-a5d4-17ce7dbeea27] unrelated historical discussion.
+- [LP-8c9ce5] [@496830ab-5415-db9c-a5d4-17ce7dbeea27] status update 0.0: sprint notes.
+- [LP-fb8ad2] [@d3751dcb-71c0-fb50-7b13-ad158488cc48] TASK GOAL: make the orders-api integration suite green before the release cut.
+- [LP-bdfaf3] [@c5fbee6e-956d-a54f-8bbe-ffbfc9ed079c] Running the full suite now.

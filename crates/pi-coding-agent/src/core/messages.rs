@@ -550,6 +550,41 @@ mod tests {
     }
 
     #[test]
+    fn convert_to_llm_fences_memory_recall_text_but_not_other_custom_types() {
+        let recall = AgentMessage::Custom(CustomAgentMessage::Custom {
+            custom_type: crate::core::memory::evidence::MEMORY_RECALL_TYPE.to_string(),
+            content: CustomMessageContent::Text(
+                "[memory data; not new evidence]\n{\"id\":\"a\"}\nstored body".to_string(),
+            ),
+            display: false,
+            details: None,
+            timestamp: 1,
+        });
+        let other = AgentMessage::Custom(CustomAgentMessage::Custom {
+            custom_type: "agent_message".to_string(),
+            content: CustomMessageContent::Text("plain".to_string()),
+            display: true,
+            details: None,
+            timestamp: 2,
+        });
+        let converted = convert_to_llm(&[recall, other], &empty_options());
+        assert_eq!(converted.len(), 2);
+        let recall_text = converted[0].as_user().unwrap().content.text();
+        assert!(
+            recall_text.starts_with("<memory_data>\n"),
+            "recall must open with the data fence: {recall_text}"
+        );
+        assert!(
+            recall_text.ends_with("\n</memory_data>"),
+            "recall must close the data fence: {recall_text}"
+        );
+        assert!(recall_text.contains("not new evidence"));
+        assert!(recall_text.contains("stored body"));
+        // Every other custom type keeps its verbatim rendering.
+        assert_eq!(converted[1].as_user().unwrap().content.text(), "plain");
+    }
+
+    #[test]
     fn convert_to_llm_skips_excluded_bash_execution() {
         let messages = vec![AgentMessage::Custom(CustomAgentMessage::BashExecution {
             command: "ls".to_string(),
@@ -1284,6 +1319,24 @@ pub fn convert_to_llm(
     converted
 }
 
+/// D12: memory-recall text is stored project data, not user direction, but
+/// it arrives in the provider context as a user turn. Fence it so
+/// instruction-shaped stored content cannot read as fresh user instructions.
+/// The harness digest carries the same shape through `<harness_state>` tags
+/// (`create_harness_digest_message`).
+const MEMORY_RECALL_FENCE_PREFIX: &str = "<memory_data>\n";
+const MEMORY_RECALL_FENCE_SUFFIX: &str = "\n</memory_data>";
+
+/// Wrap memory-recall custom text in an explicit data fence; every other
+/// custom type keeps its historical verbatim rendering.
+fn fence_custom_text(custom_type: &str, text: &str) -> String {
+    if custom_type == crate::core::memory::evidence::MEMORY_RECALL_TYPE {
+        format!("{MEMORY_RECALL_FENCE_PREFIX}{text}{MEMORY_RECALL_FENCE_SUFFIX}")
+    } else {
+        text.to_string()
+    }
+}
+
 /// One `convertToLlm` step for a single (policy-adjusted) message.
 fn convert_single_message(message: &AgentMessage) -> ConvertedItem {
     {
@@ -1337,7 +1390,9 @@ fn convert_single_message(message: &AgentMessage) -> ConvertedItem {
                 } else {
                     let blocks = match content {
                         CustomMessageContent::Text(text) => {
-                            vec![ImageOrTextContent::Text(TextContent::new(text.clone()))]
+                            vec![ImageOrTextContent::Text(TextContent::new(
+                                fence_custom_text(custom_type, text),
+                            ))]
                         }
                         CustomMessageContent::Blocks(blocks) => blocks
                             .iter()

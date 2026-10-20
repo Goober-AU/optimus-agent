@@ -324,6 +324,17 @@ fn system_prompt_and_tools_from_state(
     )
 }
 
+/// D11: a live harness-digest custom (the provider-context snapshot that
+/// `create_harness_digest_message` shapes). Superseded ones are pruned from
+/// the live provider context; the durable transcript keeps them.
+fn is_harness_digest_custom(message: &AgentMessage) -> bool {
+    matches!(
+        message,
+        AgentMessage::Custom(CustomAgentMessage::Custom { custom_type, .. })
+            if custom_type == HARNESS_DIGEST_CUSTOM_TYPE
+    )
+}
+
 pub trait AgentHandle: Send + Sync {
     /// Snapshot the live callbacks copied by TypeScript's standalone side agent.
     fn side_question_options(&self) -> Option<pi_agent_core::agent::AgentOptions> {
@@ -1173,6 +1184,20 @@ const COMPACTION_SKIPPED_ERROR_MESSAGE: &str =
     "Session is too short to compact — try again once it grows";
 /// `CompactionSkippedError("Already compacted")` (agent-session.ts:8245).
 const COMPACTION_ALREADY_COMPACTED_ERROR_MESSAGE: &str = "Already compacted";
+/// D18: custom type of the live, model-visible notice for a failed automatic
+/// compaction. The durable `compaction_outcome` entry is deliberately excluded
+/// from provider context (`convert_single_message` drops that custom type),
+/// so this separate bounded notice is what the model actually sees when an
+/// automatic compaction fails.
+const AUTO_COMPACTION_FAILURE_NOTICE_CUSTOM_TYPE: &str = "auto_compaction_failure_notice";
+/// D19: bounded retention for the live in-session disclosure lists
+/// (`unpersisted_outcomes`, the deferred `pending_next_turn_messages`
+/// producer). Repeated failures must not grow those lists - and through them
+/// the provider context - without bound.
+const LIVE_DISCLOSURE_RETENTION: usize = 200;
+/// D19: custom type of the dropped-count marker kept at the front of a live
+/// disclosure list once eviction has started.
+const LIVE_DISCLOSURE_DROPPED_CUSTOM_TYPE: &str = "live_disclosure_dropped";
 
 /// `turnExecutionPoliciesEqual`.
 pub fn turn_execution_policies_equal(
@@ -4803,35 +4828,52 @@ impl AgentSession {
         true
     }
 
+    /// The gate `_checkCompaction` applies before `_runAutoCompaction("threshold")`
+    /// can run: both enable flags, the model, the assistant anchor with its
+    /// compaction-timestamp fence, the token estimate against the trigger and
+    /// the retry cooldown. The turn-end stop hook must consult the same
+    /// predicate so a turn is only ever stopped for a compaction that will
+    /// actually run (D1: the hook used to gate on `settings.enabled` alone, so
+    /// a runtime-disabled auto compaction stopped turns past the trigger with
+    /// nothing compacting).
+    fn threshold_auto_compaction_ready(
+        &self,
+        settings: &CompactionSettings,
+        assistant: &pi_ai::types::AssistantMessage,
+    ) -> bool {
+        if !settings.enabled || !self.auto_compaction_enabled.load(Ordering::SeqCst) {
+            return false;
+        }
+        let Some(model) = self.model() else {
+            return false;
+        };
+        let compaction_timestamp = self.active_compaction_timestamp();
+        if let Some(compaction_timestamp) = compaction_timestamp {
+            if (assistant.timestamp as f64) <= compaction_timestamp {
+                return false;
+            }
+        }
+        let Some(context_tokens) =
+            self.get_threshold_context_tokens(assistant, compaction_timestamp)
+        else {
+            return false;
+        };
+        if !should_compact_for_model(context_tokens, &model, settings) {
+            return false;
+        }
+        // Bounded retry pacing: during the cooldown the automatic threshold
+        // path is skipped; queued session input still runs and the next turn
+        // end re-evaluates.
+        !self.threshold_compaction_retry_in_cooldown()
+    }
+
     /// `_thresholdCompactionNeeded(context)`.
     async fn threshold_compaction_needed(
         self: &Arc<Self>,
         context: &ShouldStopAfterTurnContext,
     ) -> bool {
         let settings = self.compaction_settings();
-        if !settings.enabled {
-            return false;
-        }
-
-        let compaction_timestamp = self.active_compaction_timestamp();
-        if let Some(compaction_timestamp) = compaction_timestamp {
-            if (context.message.timestamp as f64) <= compaction_timestamp {
-                return false;
-            }
-        }
-
-        let Some(context_tokens) =
-            self.get_threshold_context_tokens(&context.message, compaction_timestamp)
-        else {
-            return false;
-        };
-        let Some(model) = self.model() else {
-            return false;
-        };
-        if !should_compact_for_model(context_tokens, &model, &settings) {
-            return false;
-        }
-        if self.threshold_compaction_retry_in_cooldown() {
+        if !self.threshold_auto_compaction_ready(&settings, &context.message) {
             return false;
         }
 
@@ -9673,10 +9715,13 @@ impl AgentSession {
         if self.disposed.load(Ordering::SeqCst) || self.disposing.load(Ordering::SeqCst) {
             return Ok(());
         }
-        self.pending_next_turn_messages
-            .lock()
-            .unwrap()
-            .push(clone_custom_message(&message));
+        {
+            let mut pending = self.pending_next_turn_messages.lock().unwrap();
+            // D19: the defer path can outpace the flusher while input
+            // admission is paused; bound the live list before pushing.
+            cap_live_disclosure_list(&mut pending, LIVE_DISCLOSURE_RETENTION);
+            pending.push(clone_custom_message(&message));
+        }
         self.flush_deferred_rlm_terminal_notices();
         Ok(())
     }
@@ -11894,6 +11939,13 @@ impl AgentSession {
                         now_ms_i64(),
                     ))),
                 );
+                // D11: the incoming digest supersedes every digest custom
+                // already in the live provider context.
+                self.prune_superseded_harness_digests(true);
+            } else {
+                // The harness changed back: the newest digest custom is
+                // current again, older ones stay superseded.
+                self.prune_superseded_harness_digests(false);
             }
         }
         let first_id = turns[0].id.clone();
@@ -16206,6 +16258,30 @@ impl AgentSession {
         None
     }
 
+    /// D11: harness digest customs are superseded once a newer digest exists,
+    /// but `append_harness_digest_if_stale` compares only the last one, so
+    /// without this prune k harness changes leave k digest user turns in the
+    /// provider context (k-1 stale). `drop_all` marks every digest custom as
+    /// superseded (the turn being committed carries the newest digest);
+    /// otherwise the newest digest custom stays (it is current again) and
+    /// older ones are dropped. Only the live `state().messages` view is
+    /// pruned; the durable session transcript keeps the full digest history.
+    fn prune_superseded_harness_digests(&self, drop_all: bool) {
+        self.agent.update_state(Box::new(move |state| {
+            let Some(last) = state.messages.iter().rposition(is_harness_digest_custom) else {
+                return;
+            };
+            let mut kept: Vec<AgentMessage> = Vec::with_capacity(state.messages.len());
+            for (index, message) in state.messages.drain(..).enumerate() {
+                if is_harness_digest_custom(&message) && (drop_all || index != last) {
+                    continue;
+                }
+                kept.push(message);
+            }
+            state.messages = kept;
+        }));
+    }
+
     /// `_harnessDigest()`.
     fn harness_digest(&self) -> String {
         let tools = self.get_active_tool_names();
@@ -16495,28 +16571,13 @@ impl AgentSession {
                 .run_auto_compaction(COMPACTION_REASON_REQUESTED, false)
                 .await);
         }
-        if !settings.enabled || !self.auto_compaction_enabled.load(Ordering::SeqCst) {
-            return Ok(false);
-        }
-        let Some(model) = self.model() else {
-            return Ok(false);
-        };
         let Some(assistant) = self.find_last_assistant_message() else {
             return Ok(false);
         };
-        let Some(tokens) =
-            self.get_threshold_context_tokens(&assistant, self.active_compaction_timestamp())
-        else {
-            return Ok(false);
-        };
-        if !should_compact_for_model(tokens, &model, settings) {
-            return Ok(false);
-        }
-        // Bounded retry pacing: a failing summary call must not be re-attacked on
-        // a fixed cadence. During the cooldown the automatic threshold path is
-        // skipped; queued session input still runs and the next turn end
-        // re-evaluates. Requested and overflow compaction are never gated.
-        if self.threshold_compaction_retry_in_cooldown() {
+        // The shared gate keeps the turn-end stop hook and this executor in
+        // agreement: a stopped turn always has a compaction that will run.
+        // Requested and overflow compaction are never gated by it.
+        if !self.threshold_auto_compaction_ready(settings, &assistant) {
             return Ok(false);
         }
         // TS 9492-9509: the agent-end threshold case queues the RLM child / goal /
@@ -16733,10 +16794,12 @@ impl AgentSession {
                 false,
                 now_ms_i64(),
             );
-            self.unpersisted_outcomes
-                .lock()
-                .unwrap()
-                .push(message.clone());
+            {
+                let mut outcomes = self.unpersisted_outcomes.lock().unwrap();
+                // D19: the live list has no drain; bound it before pushing.
+                cap_live_disclosure_list(&mut outcomes, LIVE_DISCLOSURE_RETENTION);
+                outcomes.push(message.clone());
+            }
         }
         // TS 9568-9570: message_start AND message_end, unlike a plain append.
         let agent_message = AgentMessage::Custom(CustomAgentMessage::Custom {
@@ -17126,7 +17189,40 @@ impl AgentSession {
             custom_instructions,
             Some(&evidence),
         );
+        // D18: the failure must also reach the model (the outcome entry is
+        // excluded from provider context), so the next turn can adapt.
+        self.surface_auto_compaction_failure_notice(&message);
         self.resume_auto_compaction_after_failure(reason, should_continue_after_compaction);
+    }
+
+    /// D18: a failed automatic compaction must be visible to the model, not only
+    /// to the user. The persisted `compaction_outcome` entry is excluded from
+    /// provider context by design, so without a live notice the model keeps
+    /// answering as if nothing happened while the context stays over the
+    /// compaction boundary. One notice lives in the conversation at a time:
+    /// each failure replaces the previous notice, so repeated failures cannot
+    /// grow the context. A successful compaction rebuilds the conversation
+    /// from the durable session file, which drops the notice (it is a
+    /// live-session hint; the durable record is the outcome entry).
+    fn surface_auto_compaction_failure_notice(&self, message: &str) {
+        let notice = create_custom_message(
+            AUTO_COMPACTION_FAILURE_NOTICE_CUSTOM_TYPE.to_string(),
+            CustomMessageContent::Text(auto_compaction_failure_notice_text(message)),
+            false,
+            None,
+            &now_iso(),
+        );
+        let agent_message = custom_message_agent_message(&notice);
+        self.agent.update_state(Box::new(move |state| {
+            state.messages.retain(|message| {
+                !matches!(
+                    message,
+                    AgentMessage::Custom(CustomAgentMessage::Custom { custom_type, .. })
+                        if custom_type == AUTO_COMPACTION_FAILURE_NOTICE_CUSTOM_TYPE
+                )
+            });
+            state.messages.push(agent_message);
+        }));
     }
 
     /// The TS `resumeAfterFailure` closure (agent-session.ts:9594-9602).
@@ -17375,6 +17471,68 @@ fn agent_message_from_value(value: &Value) -> AgentMessage {
             timestamp: 0,
         })
     })
+}
+
+/// D18: bounded text for the model-visible compaction failure notice. The
+/// excerpt keeps the notice small even for pathological provider errors; the
+/// full text stays in the durable outcome entry for the user.
+fn auto_compaction_failure_notice_text(message: &str) -> String {
+    let mut excerpt = String::new();
+    for character in message.chars().take(240) {
+        excerpt.push(character);
+    }
+    if message.chars().count() > 240 {
+        excerpt.push('…');
+    }
+    format!(
+        "System notice: compaction failed and this conversation was not compacted - the full context remains in place and may still be near the context limit. Keep responses and tool output short until compaction succeeds. Failure detail: {excerpt}"
+    )
+}
+
+/// D19: cap a live disclosure list so one more entry can be pushed without
+/// exceeding `retention` (marker included). When the list is at capacity the
+/// oldest entries are evicted and their count folds into a single
+/// `live_disclosure_dropped` marker kept at the front, so the eviction stays
+/// observable instead of silently losing disclosures. The marker's timestamp
+/// is the first evicted entry's, so timestamp-ordered merges keep it ahead of
+/// the surviving entries.
+fn cap_live_disclosure_list(list: &mut Vec<CustomMessage>, retention: usize) {
+    if list.len() < retention {
+        return;
+    }
+    let mut marker = match list
+        .iter()
+        .position(|entry| entry.custom_type == LIVE_DISCLOSURE_DROPPED_CUSTOM_TYPE)
+    {
+        Some(index) => list.remove(index),
+        None => custom_message_baseline(),
+    };
+    let mut dropped = marker
+        .details
+        .as_ref()
+        .and_then(|details| details.get("dropped"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    let mut marker_timestamp = marker.timestamp;
+    while list.len() + 1 >= retention {
+        let Some(evicted) = list.first() else {
+            break;
+        };
+        if dropped == 0 {
+            marker_timestamp = evicted.timestamp;
+        }
+        dropped += 1;
+        list.remove(0);
+    }
+    marker.role = "custom".to_string();
+    marker.custom_type = LIVE_DISCLOSURE_DROPPED_CUSTOM_TYPE.to_string();
+    marker.content = CustomMessageContent::Text(format!(
+        "{dropped} older entries were dropped to keep this bounded in-session list at {retention} entries."
+    ));
+    marker.display = false;
+    marker.details = Some(serde_json::json!({ "dropped": dropped }));
+    marker.timestamp = marker_timestamp;
+    list.insert(0, marker);
 }
 
 /// `CustomMessage` as the `AgentMessage` the agent state and events carry.
@@ -18171,19 +18329,44 @@ impl AgentSession {
             let result = match extension_compaction {
                 // TS 8282-8283: an extension compaction replaces the summary call, the
                 // context and the options entirely.
-                Some(compaction) => crate::core::compaction::compaction::CompactionResult {
-                    summary: compaction.summary,
-                    first_kept_entry_id: compaction.first_kept_entry_id,
-                    tokens_before: compaction.tokens_before,
-                    details: compaction
-                        .details
-                        .clone()
-                        .and_then(|details| serde_json::from_value(details).ok()),
-                    usage: compaction
-                        .usage
-                        .clone()
-                        .and_then(|usage| serde_json::from_value(usage).ok()),
-                },
+                Some(compaction) => {
+                    // D6: an extension-supplied summary must pass the same
+                    // structural guard as the model-generated one before it
+                    // replaces the prefix; a rejected hook output keeps the
+                    // prior context instead of appending an empty replacement.
+                    if let Err(guard_error) =
+                        crate::core::compaction::compaction::validate_extension_compaction_summary(
+                            &compaction.summary,
+                        )
+                    {
+                        let reason = format!(
+                            "extension compaction rejected by the summary guard: {guard_error}"
+                        );
+                        self.end_compaction_unsuccessfully(
+                            "extension_summary_guard",
+                            "failed",
+                            &reason,
+                            false,
+                            None,
+                            None,
+                            None,
+                        );
+                        return Err(reason);
+                    }
+                    crate::core::compaction::compaction::CompactionResult {
+                        summary: compaction.summary,
+                        first_kept_entry_id: compaction.first_kept_entry_id,
+                        tokens_before: compaction.tokens_before,
+                        details: compaction
+                            .details
+                            .clone()
+                            .and_then(|details| serde_json::from_value(details).ok()),
+                        usage: compaction
+                            .usage
+                            .clone()
+                            .and_then(|usage| serde_json::from_value(usage).ok()),
+                    }
+                }
                 None => {
                     let provider_context =
                         self.compaction_provider_context(&messages, &signal).await;
@@ -23145,6 +23328,190 @@ mod post_compaction_continuation_tests {
                 "a refused handoff never becomes the durable context head"
             );
             session.dispose_async(Some(false)).await;
+        }
+
+        /// D18: a failed automatic compaction surfaces exactly one bounded,
+        /// model-visible notice in the live conversation; a second failure
+        /// replaces it instead of accumulating, and skipped or cancelled
+        /// attempts produce none.
+        #[tokio::test]
+        async fn d18_failure_notice_is_model_visible_and_bounded() {
+            let agent = ScriptedAgent::new(vec![]);
+            let session = test_session(agent);
+            let failure = "Summarization returned an unusable handoff (missing, empty or incomplete handoff sections); existing conversation preserved. Retry compaction or select another summarization model.";
+            let notice_count = || {
+                session
+                    .agent
+                    .state()
+                    .messages
+                    .iter()
+                    .filter(|message| {
+                        matches!(
+                            message,
+                            AgentMessage::Custom(CustomAgentMessage::Custom { custom_type, .. })
+                                if custom_type == AUTO_COMPACTION_FAILURE_NOTICE_CUSTOM_TYPE
+                        )
+                    })
+                    .count()
+            };
+            let notice_text = || {
+                session
+                    .agent
+                    .state()
+                    .messages
+                    .iter()
+                    .find_map(|message| {
+                        match message {
+                            AgentMessage::Custom(CustomAgentMessage::Custom {
+                                custom_type,
+                                content: CustomMessageContent::Text(text),
+                                ..
+                            }) if custom_type == AUTO_COMPACTION_FAILURE_NOTICE_CUSTOM_TYPE => {
+                                Some(text.clone())
+                            }
+                            _ => None,
+                        }
+                    })
+                    .unwrap_or_default()
+            };
+
+            // A skipped attempt is a non-event, not a failure notice.
+            session.handle_auto_compaction_failure(
+                COMPACTION_REASON_THRESHOLD,
+                COMPACTION_SKIPPED_ERROR_MESSAGE,
+                None,
+                false,
+                &[],
+                None,
+            );
+            assert_eq!(notice_count(), 0, "a skipped compaction surfaces no notice");
+
+            // A cancelled attempt is a user action, not a failure notice.
+            session.handle_auto_compaction_failure(
+                COMPACTION_REASON_THRESHOLD,
+                COMPACTION_CANCELLED_ERROR_MESSAGE,
+                None,
+                false,
+                &[],
+                None,
+            );
+            assert_eq!(notice_count(), 0, "a cancelled compaction surfaces no notice");
+
+            // The first real failure surfaces exactly one notice whose text
+            // states the bounded contract: not compacted, context remains.
+            session.handle_auto_compaction_failure(
+                COMPACTION_REASON_THRESHOLD,
+                failure,
+                None,
+                false,
+                &[],
+                None,
+            );
+            assert_eq!(notice_count(), 1, "a failed compaction surfaces one notice");
+            let first_notice = notice_text();
+            assert!(
+                first_notice.contains("not compacted"),
+                "the notice must state the conversation was not compacted: {first_notice}"
+            );
+            assert!(
+                first_notice.contains("full context remains"),
+                "the notice must state the context remains in place: {first_notice}"
+            );
+            assert!(
+                first_notice.contains("Auto-compaction failed"),
+                "the notice carries the failure detail: {first_notice}"
+            );
+            assert!(
+                first_notice.chars().count() <= 600,
+                "the notice stays bounded: {} chars",
+                first_notice.chars().count()
+            );
+
+            // A second failure replaces the notice instead of accumulating.
+            session.handle_auto_compaction_failure(
+                COMPACTION_REASON_THRESHOLD,
+                failure,
+                None,
+                false,
+                &[],
+                None,
+            );
+            assert_eq!(
+                notice_count(),
+                1,
+                "repeated failures replace the notice, never accumulate"
+            );
+            session.dispose_async(Some(false)).await;
+        }
+
+        /// D19: the live disclosure lists are bounded - at capacity the
+        /// oldest entries evict into a single dropped-count marker while the
+        /// newest survive, and a short list is untouched.
+        #[test]
+        fn d19_live_disclosure_lists_are_bounded_with_a_dropped_marker() {
+            let entry = |index: i64| CustomMessage {
+                role: "custom".to_string(),
+                custom_type: "compaction_outcome".to_string(),
+                content: CustomMessageContent::Text(format!("outcome {index}")),
+                display: false,
+                details: None,
+                timestamp: index,
+            };
+            let text_of = |message: &CustomMessage| match &message.content {
+                CustomMessageContent::Text(text) => text.clone(),
+                CustomMessageContent::Blocks(_) => String::new(),
+            };
+
+            // A short list is untouched.
+            let mut short = vec![entry(0), entry(1)];
+            cap_live_disclosure_list(&mut short, LIVE_DISCLOSURE_RETENTION);
+            assert_eq!(short.len(), 2, "a list below the cap is untouched");
+
+            // 250 entries at capacity: the cap makes room for one push and
+            // folds the 52 evicted oldest entries into the marker.
+            let mut list: Vec<CustomMessage> = (0..250).map(entry).collect();
+            cap_live_disclosure_list(&mut list, LIVE_DISCLOSURE_RETENTION);
+            assert_eq!(
+                list.len(),
+                LIVE_DISCLOSURE_RETENTION - 1,
+                "the cap leaves room for exactly one more push"
+            );
+            list.push(entry(250));
+            assert_eq!(list.len(), LIVE_DISCLOSURE_RETENTION);
+            let marker = &list[0];
+            assert_eq!(marker.custom_type, LIVE_DISCLOSURE_DROPPED_CUSTOM_TYPE);
+            assert_eq!(
+                marker
+                    .details
+                    .as_ref()
+                    .and_then(|details| details.get("dropped"))
+                    .and_then(Value::as_u64),
+                Some(52),
+                "the marker counts the evicted entries"
+            );
+            assert_eq!(marker.timestamp, 0, "the marker keeps the evicted head's slot");
+            let joined = list.iter().map(text_of).collect::<Vec<_>>().join("\n");
+            assert!(
+                !joined.contains("outcome 51"),
+                "the oldest plain entries are evicted"
+            );
+            assert!(joined.contains("outcome 52"), "the first survivor stays");
+            assert!(joined.contains("outcome 249"), "the newest survivor stays");
+            assert!(joined.contains("outcome 250"), "the pushed entry stays");
+
+            // A second cap round folds the marker's own count forward.
+            cap_live_disclosure_list(&mut list, LIVE_DISCLOSURE_RETENTION);
+            assert_eq!(list.len(), LIVE_DISCLOSURE_RETENTION - 1);
+            let marker = &list[0];
+            assert_eq!(
+                marker
+                    .details
+                    .as_ref()
+                    .and_then(|details| details.get("dropped"))
+                    .and_then(Value::as_u64),
+                Some(53),
+                "a second round folds the previous marker count forward"
+            );
         }
     }
 

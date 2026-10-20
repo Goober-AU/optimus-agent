@@ -1,0 +1,340 @@
+{
+ "scenario": "r2-e1-multicycle",
+ "scoringVersion": "r2.1",
+ "arms": [
+  {
+   "arm": "default",
+   "probesTotal": 19,
+   "retained": 0,
+   "retentionRate": 0.0,
+   "byKind": {
+    "constraint": {
+     "total": 8,
+     "retained": 0,
+     "lost": 8
+    },
+    "decision": {
+     "total": 4,
+     "retained": 0,
+     "lost": 4
+    },
+    "evidence": {
+     "total": 4,
+     "retained": 0,
+     "lost": 4
+    },
+    "supersession": {
+     "total": 2,
+     "retained": 0,
+     "lost": 2
+    },
+    "task": {
+     "total": 1,
+     "retained": 0,
+     "lost": 1
+    }
+   },
+   "cyclesRun": 5,
+   "ledgerCycles": 0,
+   "meanRequestChars": 14765.2,
+   "meanContextTokens": 30.0,
+   "probes": [
+    {
+     "id": "q-constraint-0",
+     "anchor": "R2-CONS-d3596a7d",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-constraint-1",
+     "anchor": "R2-CONS-00794a36",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-constraint-2",
+     "anchor": "R2-CONS-7e788238",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-constraint-3",
+     "anchor": "R2-CONS-770fb97f",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-constraint-4",
+     "anchor": "R2-CONS-16a686a8",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-constraint-5",
+     "anchor": "R2-CONS-0ccb211f",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-constraint-6",
+     "anchor": "R2-CONS-c2a59f1d",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-constraint-7",
+     "anchor": "R2-CONS-ec33ebdf",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-decision-0",
+     "anchor": "R2-DECI-cc252ba5",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-decision-1",
+     "anchor": "R2-DECI-5beb324a",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-decision-2",
+     "anchor": "R2-DECI-2f64a58a",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-decision-3",
+     "anchor": "R2-DECI-9ff2548a",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-evidence-0",
+     "anchor": "R2-EVID-2bd29adb",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-evidence-1",
+     "anchor": "R2-EVID-6e6ee09f",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-evidence-2",
+     "anchor": "R2-EVID-6456ae54",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-evidence-3",
+     "anchor": "R2-EVID-3e6062d8",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-correction-0",
+     "anchor": "R2-CORR-0fadc376",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-correction-1",
+     "anchor": "R2-CORR-8f9f48e9",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-subagent",
+     "anchor": "evidence/reviewer-1.json",
+     "retained": false,
+     "foundIn": []
+    }
+   ]
+  },
+  {
+   "arm": "taskState",
+   "probesTotal": 19,
+   "retained": 14,
+   "retentionRate": 0.7368,
+   "byKind": {
+    "constraint": {
+     "total": 8,
+     "retained": 8,
+     "lost": 0
+    },
+    "decision": {
+     "total": 4,
+     "retained": 4,
+     "lost": 0
+    },
+    "evidence": {
+     "total": 4,
+     "retained": 0,
+     "lost": 4
+    },
+    "supersession": {
+     "total": 2,
+     "retained": 2,
+     "lost": 0
+    },
+    "task": {
+     "total": 1,
+     "retained": 0,
+     "lost": 1
+    }
+   },
+   "cyclesRun": 5,
+   "ledgerCycles": 5,
+   "meanRequestChars": 18429.4,
+   "meanContextTokens": 30.0,
+   "probes": [
+    {
+     "id": "q-constraint-0",
+     "anchor": "R2-CONS-d3596a7d",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    },
+    {
+     "id": "q-constraint-1",
+     "anchor": "R2-CONS-00794a36",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    },
+    {
+     "id": "q-constraint-2",
+     "anchor": "R2-CONS-7e788238",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    },
+    {
+     "id": "q-constraint-3",
+     "anchor": "R2-CONS-770fb97f",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    },
+    {
+     "id": "q-constraint-4",
+     "anchor": "R2-CONS-16a686a8",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    },
+    {
+     "id": "q-constraint-5",
+     "anchor": "R2-CONS-0ccb211f",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    },
+    {
+     "id": "q-constraint-6",
+     "anchor": "R2-CONS-c2a59f1d",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    },
+    {
+     "id": "q-constraint-7",
+     "anchor": "R2-CONS-ec33ebdf",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    },
+    {
+     "id": "q-decision-0",
+     "anchor": "R2-DECI-cc252ba5",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    },
+    {
+     "id": "q-decision-1",
+     "anchor": "R2-DECI-5beb324a",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    },
+    {
+     "id": "q-decision-2",
+     "anchor": "R2-DECI-2f64a58a",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    },
+    {
+     "id": "q-decision-3",
+     "anchor": "R2-DECI-9ff2548a",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    },
+    {
+     "id": "q-evidence-0",
+     "anchor": "R2-EVID-2bd29adb",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-evidence-1",
+     "anchor": "R2-EVID-6e6ee09f",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-evidence-2",
+     "anchor": "R2-EVID-6456ae54",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-evidence-3",
+     "anchor": "R2-EVID-3e6062d8",
+     "retained": false,
+     "foundIn": []
+    },
+    {
+     "id": "q-correction-0",
+     "anchor": "R2-CORR-0fadc376",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    },
+    {
+     "id": "q-correction-1",
+     "anchor": "R2-CORR-8f9f48e9",
+     "retained": true,
+     "foundIn": [
+      "summary"
+     ]
+    },
+    {
+     "id": "q-subagent",
+     "anchor": "evidence/reviewer-1.json",
+     "retained": false,
+     "foundIn": []
+    }
+   ]
+  }
+ ]
+}

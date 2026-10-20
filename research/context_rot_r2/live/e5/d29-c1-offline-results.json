@@ -1,0 +1,173 @@
+{
+ "scenario": "r2-e3adv-c1",
+ "arm": "typed",
+ "cycles": [
+  {
+   "cycle": 1,
+   "checks": {
+    "decisionSuperseded": true,
+    "decisionReplacedBy": true,
+    "retirePathProvenance": true,
+    "correctionCurrent": true,
+    "approachRenders": true,
+    "verifierPasses": true
+   },
+   "renderChecks": {
+    "renderSupersededSection": true,
+    "renderReplacedByLink": true,
+    "renderPairingNote": true,
+    "hotBudgetOverflowed": false
+   },
+   "hotBudgetTokens": 800,
+   "hotTokensUsed": 408,
+   "decision": {
+    "id": "VD-76361d",
+    "status": "superseded",
+    "link": "CO-9dea27",
+    "retirePath": "provenance"
+   },
+   "verification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "hotBlockChars": 1978
+  },
+  {
+   "cycle": 2,
+   "checks": {
+    "decisionSuperseded": true,
+    "decisionReplacedBy": true,
+    "retirePathProvenance": true,
+    "correctionCurrent": true,
+    "approachRenders": true,
+    "verifierPasses": true
+   },
+   "renderChecks": {
+    "renderSupersededSection": true,
+    "renderReplacedByLink": true,
+    "renderPairingNote": true,
+    "hotBudgetOverflowed": false
+   },
+   "hotBudgetTokens": 800,
+   "hotTokensUsed": 527,
+   "decision": {
+    "id": "VD-76361d",
+    "status": "superseded",
+    "link": "CO-9dea27",
+    "retirePath": "provenance"
+   },
+   "verification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "hotBlockChars": 2456
+  },
+  {
+   "cycle": 3,
+   "checks": {
+    "decisionSuperseded": true,
+    "decisionReplacedBy": true,
+    "retirePathProvenance": true,
+    "correctionCurrent": true,
+    "approachRenders": true,
+    "verifierPasses": true
+   },
+   "renderChecks": {
+    "renderSupersededSection": true,
+    "renderReplacedByLink": true,
+    "renderPairingNote": true,
+    "hotBudgetOverflowed": false
+   },
+   "hotBudgetTokens": 800,
+   "hotTokensUsed": 620,
+   "decision": {
+    "id": "VD-76361d",
+    "status": "superseded",
+    "link": "CO-9dea27",
+    "retirePath": "provenance"
+   },
+   "verification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "hotBlockChars": 2831
+  },
+  {
+   "cycle": 4,
+   "checks": {
+    "decisionSuperseded": true,
+    "decisionReplacedBy": true,
+    "retirePathProvenance": true,
+    "correctionCurrent": true,
+    "approachRenders": true,
+    "verifierPasses": true
+   },
+   "renderChecks": {
+    "renderSupersededSection": true,
+    "renderReplacedByLink": true,
+    "renderPairingNote": true,
+    "hotBudgetOverflowed": false
+   },
+   "hotBudgetTokens": 800,
+   "hotTokensUsed": 713,
+   "decision": {
+    "id": "VD-76361d",
+    "status": "superseded",
+    "link": "CO-9dea27",
+    "retirePath": "provenance"
+   },
+   "verification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "hotBlockChars": 3206
+  },
+  {
+   "cycle": 5,
+   "checks": {
+    "decisionSuperseded": true,
+    "decisionReplacedBy": true,
+    "retirePathProvenance": true,
+    "correctionCurrent": true,
+    "approachRenders": true,
+    "verifierPasses": true
+   },
+   "renderChecks": {
+    "renderSupersededSection": false,
+    "renderReplacedByLink": true,
+    "renderPairingNote": true,
+    "hotBudgetOverflowed": true
+   },
+   "hotBudgetTokens": 800,
+   "hotTokensUsed": 761,
+   "decision": {
+    "id": "VD-76361d",
+    "status": "superseded",
+    "link": "CO-9dea27",
+    "retirePath": "provenance"
+   },
+   "verification": {
+    "passed": true,
+    "missing": [],
+    "misSuperseded": [],
+    "unresolvedRefs": [],
+    "fabricated": []
+   },
+   "hotBlockChars": 3385
+  }
+ ],
+ "passed": true,
+ "failures": []
+}

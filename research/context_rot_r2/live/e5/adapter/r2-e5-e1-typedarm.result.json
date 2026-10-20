@@ -1,0 +1,851 @@
+{
+  "scenario": "r2-e1-multicycle",
+  "arms": [
+    {
+      "arm": "default",
+      "cycles": [
+        {
+          "cycle": 0,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "b2ad892b",
+          "summarizedEntries": 21,
+          "retainedEntries": 2,
+          "summaryChars": 739,
+          "summarizerRequestChars": 11991,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": [
+            "q-constraint-0"
+          ]
+        },
+        {
+          "cycle": 1,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "ccf0fde0",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 1236,
+          "summarizerRequestChars": 15086,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": []
+        },
+        {
+          "cycle": 2,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "c6da1286",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 1236,
+          "summarizerRequestChars": 15583,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": []
+        },
+        {
+          "cycle": 3,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "0fe09f14",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 1236,
+          "summarizerRequestChars": 15583,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": []
+        },
+        {
+          "cycle": 4,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "f6ec41bb",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 1236,
+          "summarizerRequestChars": 15583,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": false,
+          "ledgerItems": "0",
+          "anchorsPresent": []
+        }
+      ],
+      "probes": [
+        {
+          "id": "q-constraint-0",
+          "anchor": "R2-CONS-d3596a7d",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-1",
+          "anchor": "R2-CONS-00794a36",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-2",
+          "anchor": "R2-CONS-7e788238",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-3",
+          "anchor": "R2-CONS-770fb97f",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-4",
+          "anchor": "R2-CONS-16a686a8",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-5",
+          "anchor": "R2-CONS-0ccb211f",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-6",
+          "anchor": "R2-CONS-c2a59f1d",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-constraint-7",
+          "anchor": "R2-CONS-ec33ebdf",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-decision-0",
+          "anchor": "R2-DECI-cc252ba5",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-decision-1",
+          "anchor": "R2-DECI-5beb324a",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-decision-2",
+          "anchor": "R2-DECI-2f64a58a",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-decision-3",
+          "anchor": "R2-DECI-9ff2548a",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-0",
+          "anchor": "R2-EVID-2bd29adb",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-1",
+          "anchor": "R2-EVID-6e6ee09f",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-2",
+          "anchor": "R2-EVID-6456ae54",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-3",
+          "anchor": "R2-EVID-3e6062d8",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-correction-0",
+          "anchor": "R2-CORR-0fadc376",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-correction-1",
+          "anchor": "R2-CORR-8f9f48e9",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-subagent",
+          "anchor": "evidence/reviewer-1.json",
+          "retained": false,
+          "foundIn": []
+        }
+      ],
+      "finalContextMessages": [
+        "## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- None retained by the protected block.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- None recorded by the protected block.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prior summary) ## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- None retained by the protected block.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- None recorded by the protected block.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prio...\n(lossy excerpt) [User]: status update 3.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (3). / [User]: status update 4.1: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (4).",
+        "status update 4.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. ",
+        "Noted; continuing (4)."
+      ],
+      "finalSummary": "## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- None retained by the protected block.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- None recorded by the protected block.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prior summary) ## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- None retained by the protected block.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- None recorded by the protected block.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prio...\n(lossy excerpt) [User]: status update 3.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (3). / [User]: status update 4.1: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (4)."
+    },
+    {
+      "arm": "taskState",
+      "cycles": [
+        {
+          "cycle": 0,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "91edd1fa",
+          "summarizedEntries": 21,
+          "retainedEntries": 2,
+          "summaryChars": 2504,
+          "summarizerRequestChars": 14515,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": true,
+          "ledgerItems": "22",
+          "anchorsPresent": [
+            "q-constraint-0",
+            "q-constraint-1",
+            "q-constraint-2",
+            "q-constraint-3",
+            "q-constraint-4",
+            "q-constraint-5",
+            "q-constraint-6",
+            "q-constraint-7",
+            "q-decision-0",
+            "q-decision-1",
+            "q-decision-2",
+            "q-decision-3",
+            "q-correction-0",
+            "q-correction-1"
+          ]
+        },
+        {
+          "cycle": 1,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "60cf2593",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 3001,
+          "summarizerRequestChars": 19375,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": true,
+          "ledgerItems": "22",
+          "anchorsPresent": [
+            "q-constraint-0",
+            "q-constraint-1",
+            "q-constraint-2",
+            "q-constraint-3",
+            "q-constraint-4",
+            "q-constraint-5",
+            "q-constraint-6",
+            "q-constraint-7",
+            "q-decision-0",
+            "q-decision-1",
+            "q-decision-2",
+            "q-decision-3",
+            "q-correction-0",
+            "q-correction-1"
+          ]
+        },
+        {
+          "cycle": 2,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "cb24f34c",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 3001,
+          "summarizerRequestChars": 19872,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": true,
+          "ledgerItems": "22",
+          "anchorsPresent": [
+            "q-constraint-0",
+            "q-constraint-1",
+            "q-constraint-2",
+            "q-constraint-3",
+            "q-constraint-4",
+            "q-constraint-5",
+            "q-constraint-6",
+            "q-constraint-7",
+            "q-decision-0",
+            "q-decision-1",
+            "q-decision-2",
+            "q-decision-3",
+            "q-correction-0",
+            "q-correction-1"
+          ]
+        },
+        {
+          "cycle": 3,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "4b45d470",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 3001,
+          "summarizerRequestChars": 19872,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": true,
+          "ledgerItems": "22",
+          "anchorsPresent": [
+            "q-constraint-0",
+            "q-constraint-1",
+            "q-constraint-2",
+            "q-constraint-3",
+            "q-constraint-4",
+            "q-constraint-5",
+            "q-constraint-6",
+            "q-constraint-7",
+            "q-decision-0",
+            "q-decision-1",
+            "q-decision-2",
+            "q-decision-3",
+            "q-correction-0",
+            "q-correction-1"
+          ]
+        },
+        {
+          "cycle": 4,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "220a28f4",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 3001,
+          "summarizerRequestChars": 19872,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": true,
+          "ledgerItems": "22",
+          "anchorsPresent": [
+            "q-constraint-0",
+            "q-constraint-1",
+            "q-constraint-2",
+            "q-constraint-3",
+            "q-constraint-4",
+            "q-constraint-5",
+            "q-constraint-6",
+            "q-constraint-7",
+            "q-decision-0",
+            "q-decision-1",
+            "q-decision-2",
+            "q-decision-3",
+            "q-correction-0",
+            "q-correction-1"
+          ]
+        }
+      ],
+      "probes": [
+        {
+          "id": "q-constraint-0",
+          "anchor": "R2-CONS-d3596a7d",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-1",
+          "anchor": "R2-CONS-00794a36",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-2",
+          "anchor": "R2-CONS-7e788238",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-3",
+          "anchor": "R2-CONS-770fb97f",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-4",
+          "anchor": "R2-CONS-16a686a8",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-5",
+          "anchor": "R2-CONS-0ccb211f",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-6",
+          "anchor": "R2-CONS-c2a59f1d",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-7",
+          "anchor": "R2-CONS-ec33ebdf",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-decision-0",
+          "anchor": "R2-DECI-cc252ba5",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-decision-1",
+          "anchor": "R2-DECI-5beb324a",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-decision-2",
+          "anchor": "R2-DECI-2f64a58a",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-decision-3",
+          "anchor": "R2-DECI-9ff2548a",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-evidence-0",
+          "anchor": "R2-EVID-2bd29adb",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-1",
+          "anchor": "R2-EVID-6e6ee09f",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-2",
+          "anchor": "R2-EVID-6456ae54",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-3",
+          "anchor": "R2-EVID-3e6062d8",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-correction-0",
+          "anchor": "R2-CORR-0fadc376",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-correction-1",
+          "anchor": "R2-CORR-8f9f48e9",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-subagent",
+          "anchor": "evidence/reviewer-1.json",
+          "retained": false,
+          "foundIn": []
+        }
+      ],
+      "finalContextMessages": [
+        "## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- C-d39f7377 [fb81aba9]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-911ea4fd [fb81aba9]: CONSTRAINT: never drop the billing ledger R2-CONS-d3596a7d\n- C-ee7266a5 [fb81aba9]: CONSTRAINT: always run the reporting suite before publishing R2-CONS-00794a36\n- C-121b367a [fb81aba9]: CONSTRAINT: do not modify files under gateway/ without review R2-CONS-7e788238\n- C-d6653518 [fb81aba9]: CONSTRAINT: keep the auth protocol version at v2 R2-CONS-770fb97f\n- C-70490ec2 [fb81aba9]: CONSTRAINT: the validator migration must be reversible R2-CONS-16a686a8\n- C-e1998ad0 [fb81aba9]: CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-0ccb211f\n- C-d43e03fc [fb81aba9]: CONSTRAINT: preserve the payments audit trail verbatim R2-CONS-c2a59f1d\n- C-b48b84bd [fb81aba9]: CONSTRAINT: the archiver service stays single-writer R2-CONS-ec33ebdf\n- C-126aea15 [4d8bba84]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-0fadc376.\n- C-a8d7bb8a [4d8bba84]: The earlier A decision is superseded.\n- C-fc7ee9b5 [15002ee9]: CORRECTION: forget that; use architecture B for the indexer module instead R2-CORR-8f9f48e9.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- D-4446afa7 [e0d57b58]: Decision: use architecture auth for the parser R2-DECI-cc252ba5\n- D-6493c45e [94e79a80]: Decision: keep the validator client in-process R2-DECI-5beb324a\n- D-74d2bac4 [1da9f16a]: Decision: reject the scheduler rewrite; extend instead R2-DECI-2f64a58a\n- D-95cca2c3 [3bf97183]: Decision: the payments fix lands behind a feature flag R2-DECI-9ff2548a\n- D-95cbd439 [aae9fbea] replaced by C-126aea15 [4d8bba84]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-0fadc376.\n- D-8af5b5bb [9b67272c] replaced by C-fc7ee9b5 [15002ee9]: CORRECTION: forget that; use architecture B for the indexer module instead R2-CORR-8f9f48e9.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prior summary) ## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- C-d39f7377 [fb81aba9]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-911ea4fd [fb81aba9]: CONSTRAINT: never drop the billing ledger R2-CONS-d3596a7d\n- C-ee7266a5 [fb81aba9]: CONSTRAINT: always run the reporting suite before publishing R2-CONS-00794a36\n- C-121b367a [fb81aba9]: CONSTRAINT: d...\n(lossy excerpt) [User]: status update 3.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (3). / [User]: status update 4.1: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (4).",
+        "status update 4.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. ",
+        "Noted; continuing (4)."
+      ],
+      "finalSummary": "## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- C-d39f7377 [fb81aba9]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-911ea4fd [fb81aba9]: CONSTRAINT: never drop the billing ledger R2-CONS-d3596a7d\n- C-ee7266a5 [fb81aba9]: CONSTRAINT: always run the reporting suite before publishing R2-CONS-00794a36\n- C-121b367a [fb81aba9]: CONSTRAINT: do not modify files under gateway/ without review R2-CONS-7e788238\n- C-d6653518 [fb81aba9]: CONSTRAINT: keep the auth protocol version at v2 R2-CONS-770fb97f\n- C-70490ec2 [fb81aba9]: CONSTRAINT: the validator migration must be reversible R2-CONS-16a686a8\n- C-e1998ad0 [fb81aba9]: CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-0ccb211f\n- C-d43e03fc [fb81aba9]: CONSTRAINT: preserve the payments audit trail verbatim R2-CONS-c2a59f1d\n- C-b48b84bd [fb81aba9]: CONSTRAINT: the archiver service stays single-writer R2-CONS-ec33ebdf\n- C-126aea15 [4d8bba84]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-0fadc376.\n- C-a8d7bb8a [4d8bba84]: The earlier A decision is superseded.\n- C-fc7ee9b5 [15002ee9]: CORRECTION: forget that; use architecture B for the indexer module instead R2-CORR-8f9f48e9.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- D-4446afa7 [e0d57b58]: Decision: use architecture auth for the parser R2-DECI-cc252ba5\n- D-6493c45e [94e79a80]: Decision: keep the validator client in-process R2-DECI-5beb324a\n- D-74d2bac4 [1da9f16a]: Decision: reject the scheduler rewrite; extend instead R2-DECI-2f64a58a\n- D-95cca2c3 [3bf97183]: Decision: the payments fix lands behind a feature flag R2-DECI-9ff2548a\n- D-95cbd439 [aae9fbea] replaced by C-126aea15 [4d8bba84]: CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-0fadc376.\n- D-8af5b5bb [9b67272c] replaced by C-fc7ee9b5 [15002ee9]: CORRECTION: forget that; use architecture B for the indexer module instead R2-CORR-8f9f48e9.\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n(decayed prior summary) ## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- C-d39f7377 [fb81aba9]: TASK GOAL: migrate the billing service to API v2 before Friday.\n- C-911ea4fd [fb81aba9]: CONSTRAINT: never drop the billing ledger R2-CONS-d3596a7d\n- C-ee7266a5 [fb81aba9]: CONSTRAINT: always run the reporting suite before publishing R2-CONS-00794a36\n- C-121b367a [fb81aba9]: CONSTRAINT: d...\n(lossy excerpt) [User]: status update 3.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (3). / [User]: status update 4.1: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (4)."
+    },
+    {
+      "arm": "typed",
+      "cycles": [
+        {
+          "cycle": 0,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "33d8706c",
+          "summarizedEntries": 21,
+          "retainedEntries": 2,
+          "summaryChars": 2864,
+          "summarizerRequestChars": 15113,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": true,
+          "ledgerItems": "23",
+          "anchorsPresent": [
+            "q-constraint-0",
+            "q-constraint-1",
+            "q-constraint-2",
+            "q-constraint-3",
+            "q-constraint-4",
+            "q-constraint-5",
+            "q-constraint-6",
+            "q-constraint-7",
+            "q-decision-0",
+            "q-decision-1",
+            "q-decision-2",
+            "q-decision-3",
+            "q-evidence-0",
+            "q-correction-0",
+            "q-correction-1"
+          ],
+          "typedVerification": {
+            "passed": true,
+            "repaired": false,
+            "missing": 0,
+            "misSuperseded": 0,
+            "unresolvedRefs": 0,
+            "fabricated": 0
+          }
+        },
+        {
+          "cycle": 1,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "c97865a0",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 3361,
+          "summarizerRequestChars": 20333,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": true,
+          "ledgerItems": "23",
+          "anchorsPresent": [
+            "q-constraint-0",
+            "q-constraint-1",
+            "q-constraint-2",
+            "q-constraint-3",
+            "q-constraint-4",
+            "q-constraint-5",
+            "q-constraint-6",
+            "q-constraint-7",
+            "q-decision-0",
+            "q-decision-1",
+            "q-decision-2",
+            "q-decision-3",
+            "q-evidence-0",
+            "q-correction-0",
+            "q-correction-1"
+          ],
+          "typedVerification": {
+            "passed": true,
+            "repaired": false,
+            "missing": 0,
+            "misSuperseded": 0,
+            "unresolvedRefs": 0,
+            "fabricated": 0
+          }
+        },
+        {
+          "cycle": 2,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "4b697b9d",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 3361,
+          "summarizerRequestChars": 20830,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": true,
+          "ledgerItems": "23",
+          "anchorsPresent": [
+            "q-constraint-0",
+            "q-constraint-1",
+            "q-constraint-2",
+            "q-constraint-3",
+            "q-constraint-4",
+            "q-constraint-5",
+            "q-constraint-6",
+            "q-constraint-7",
+            "q-decision-0",
+            "q-decision-1",
+            "q-decision-2",
+            "q-decision-3",
+            "q-evidence-0",
+            "q-correction-0",
+            "q-correction-1"
+          ],
+          "typedVerification": {
+            "passed": true,
+            "repaired": false,
+            "missing": 0,
+            "misSuperseded": 0,
+            "unresolvedRefs": 0,
+            "fabricated": 0
+          }
+        },
+        {
+          "cycle": 3,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "a4a89da8",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 3361,
+          "summarizerRequestChars": 20830,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": true,
+          "ledgerItems": "23",
+          "anchorsPresent": [
+            "q-constraint-0",
+            "q-constraint-1",
+            "q-constraint-2",
+            "q-constraint-3",
+            "q-constraint-4",
+            "q-constraint-5",
+            "q-constraint-6",
+            "q-constraint-7",
+            "q-decision-0",
+            "q-decision-1",
+            "q-decision-2",
+            "q-decision-3",
+            "q-evidence-0",
+            "q-correction-0",
+            "q-correction-1"
+          ],
+          "typedVerification": {
+            "passed": true,
+            "repaired": false,
+            "missing": 0,
+            "misSuperseded": 0,
+            "unresolvedRefs": 0,
+            "fabricated": 0
+          }
+        },
+        {
+          "cycle": 4,
+          "ran": true,
+          "skipReason": null,
+          "firstKeptEntryId": "5dd8dfe0",
+          "summarizedEntries": 6,
+          "retainedEntries": 2,
+          "summaryChars": 3361,
+          "summarizerRequestChars": 20830,
+          "compactedContextTokens": 30.0,
+          "ledgerPresent": true,
+          "ledgerItems": "23",
+          "anchorsPresent": [
+            "q-constraint-0",
+            "q-constraint-1",
+            "q-constraint-2",
+            "q-constraint-3",
+            "q-constraint-4",
+            "q-constraint-5",
+            "q-constraint-6",
+            "q-constraint-7",
+            "q-decision-0",
+            "q-decision-1",
+            "q-decision-2",
+            "q-decision-3",
+            "q-evidence-0",
+            "q-correction-0",
+            "q-correction-1"
+          ],
+          "typedVerification": {
+            "passed": true,
+            "repaired": false,
+            "missing": 0,
+            "misSuperseded": 0,
+            "unresolvedRefs": 0,
+            "fabricated": 0
+          }
+        }
+      ],
+      "probes": [
+        {
+          "id": "q-constraint-0",
+          "anchor": "R2-CONS-d3596a7d",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-1",
+          "anchor": "R2-CONS-00794a36",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-2",
+          "anchor": "R2-CONS-7e788238",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-3",
+          "anchor": "R2-CONS-770fb97f",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-4",
+          "anchor": "R2-CONS-16a686a8",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-5",
+          "anchor": "R2-CONS-0ccb211f",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-6",
+          "anchor": "R2-CONS-c2a59f1d",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-constraint-7",
+          "anchor": "R2-CONS-ec33ebdf",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-decision-0",
+          "anchor": "R2-DECI-cc252ba5",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-decision-1",
+          "anchor": "R2-DECI-5beb324a",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-decision-2",
+          "anchor": "R2-DECI-2f64a58a",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-decision-3",
+          "anchor": "R2-DECI-9ff2548a",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-evidence-0",
+          "anchor": "R2-EVID-2bd29adb",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-evidence-1",
+          "anchor": "R2-EVID-6e6ee09f",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-2",
+          "anchor": "R2-EVID-6456ae54",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-evidence-3",
+          "anchor": "R2-EVID-3e6062d8",
+          "retained": false,
+          "foundIn": []
+        },
+        {
+          "id": "q-correction-0",
+          "anchor": "R2-CORR-0fadc376",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-correction-1",
+          "anchor": "R2-CORR-8f9f48e9",
+          "retained": true,
+          "foundIn": [
+            "summary"
+          ]
+        },
+        {
+          "id": "q-subagent",
+          "anchor": "evidence/reviewer-1.json",
+          "retained": false,
+          "foundIn": []
+        }
+      ],
+      "finalContextMessages": [
+        "## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- [SB-dba467] [@262109b8] CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-0ccb211f\n- [UC-b1db37] [@262109b8] CONSTRAINT: the validator migration must be reversible R2-CONS-16a686a8\n- [UC-8cfca9] [@262109b8] CONSTRAINT: keep the auth protocol version at v2 R2-CONS-770fb97f\n- [UC-338283] [@262109b8] CONSTRAINT: do not modify files under gateway/ without review R2-CONS-7e788238\n- [UC-4b013c] [@262109b8] CONSTRAINT: always run the reporting suite before publishing R2-CONS-00794a36\n- [CO-c75aff] [@a43411b4] CORRECTION: forget that; use architecture B for the indexer module instead R2-CORR-8f9f48e9. (supersedes [CO-923697])\n- [CO-b7088c] [@262109b8] CONSTRAINT: never drop the billing ledger R2-CONS-d3596a7d\n- [TK-b8436f] [@262109b8] TASK GOAL: migrate the billing service to API v2 before Friday.\n- [PA-e46b37] [@0074f1af] Section 3 verified; publishing next.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- [VD-cb8ea5] [@a88a90c1] unverified: Decision: use architecture A for the indexer module R2-SUPE-9c85aba4\n- [VD-a474b5] [@df52a014] unverified: Decision: the payments fix lands behind a feature flag R2-DECI-9ff2548a\n- [VD-2eda6a] [@c0374807] unverified: Decision: reject the scheduler rewrite; extend instead R2-DECI-2f64a58a\n- [VD-752ff5] [@af3c1490] unverified: Decision: keep the validator client in-process R2-DECI-5beb324a\n- [VD-ad14ee] [@aeedecf7] unverified: Decision: use architecture auth for the parser R2-DECI-cc252ba5\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n- [VT-5e3860] [@e7f39ab3] cargo test: 4000 passed; 0 failed. Verified evidence R2-EVID-2bd29adb\n- [HF-a07498] [@2bb31c90] The earlier A decision is superseded.\n- [LP-8261a0] [@244a4dea] unrelated historical discussion.\n- [LP-5ea181] [@244a4dea] status update 0.0: integration notes.\n- [LP-4694ae] [@262109b8] CONSTRAINT: the archiver service stays single-writer R2-CONS-ec33ebdf\n- [LP-03dec5] [@262109b8] CONSTRAINT: preserve the payments audit trail verbatim R2-CONS-c2a59f1d\n- [LP-3c32e5] [@18aae6ad] Started the migration plan.\n- [CO-923697] [@2bb31c90] CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-0fadc376. (supersedes [CO-c75aff])\n- [VD-8ed3c0] [@e98a9a00] unverified: Decision: use architecture A for the reconciler module R2-SUPE-f84389ce\n(decayed prior summary) ## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- [SB-dba467] [@262109b8] CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-0ccb211f\n- [UC-b1db37] [@262109b8] CONSTRAINT: the validator migration must be reversible R2-CONS-16a686a8\n- [UC-8cfca9] [@262109b8] CONSTRAINT: keep the auth protocol version at v2 R2-CONS-770fb97f\n- [UC-338283] [@262...\n(lossy excerpt) [User]: status update 3.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (3). / [User]: status update 4.1: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (4).",
+        "status update 4.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. ",
+        "Noted; continuing (4)."
+      ],
+      "finalSummary": "## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- [SB-dba467] [@262109b8] CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-0ccb211f\n- [UC-b1db37] [@262109b8] CONSTRAINT: the validator migration must be reversible R2-CONS-16a686a8\n- [UC-8cfca9] [@262109b8] CONSTRAINT: keep the auth protocol version at v2 R2-CONS-770fb97f\n- [UC-338283] [@262109b8] CONSTRAINT: do not modify files under gateway/ without review R2-CONS-7e788238\n- [UC-4b013c] [@262109b8] CONSTRAINT: always run the reporting suite before publishing R2-CONS-00794a36\n- [CO-c75aff] [@a43411b4] CORRECTION: forget that; use architecture B for the indexer module instead R2-CORR-8f9f48e9. (supersedes [CO-923697])\n- [CO-b7088c] [@262109b8] CONSTRAINT: never drop the billing ledger R2-CONS-d3596a7d\n- [TK-b8436f] [@262109b8] TASK GOAL: migrate the billing service to API v2 before Friday.\n- [PA-e46b37] [@0074f1af] Section 3 verified; publishing next.\n## Progress\n### Done\n- [x] Prior turns summarized (lossy).\n\n### In Progress\n- [ ] Continuing the task.\n\n### Blocked\n- None.\n## Key Decisions\n- [VD-cb8ea5] [@a88a90c1] unverified: Decision: use architecture A for the indexer module R2-SUPE-9c85aba4\n- [VD-a474b5] [@df52a014] unverified: Decision: the payments fix lands behind a feature flag R2-DECI-9ff2548a\n- [VD-2eda6a] [@c0374807] unverified: Decision: reject the scheduler rewrite; extend instead R2-DECI-2f64a58a\n- [VD-752ff5] [@af3c1490] unverified: Decision: keep the validator client in-process R2-DECI-5beb324a\n- [VD-ad14ee] [@aeedecf7] unverified: Decision: use architecture auth for the parser R2-DECI-cc252ba5\n## Next Steps\n1. Continue the task from the retained state.\n## Critical Context\n- [VT-5e3860] [@e7f39ab3] cargo test: 4000 passed; 0 failed. Verified evidence R2-EVID-2bd29adb\n- [HF-a07498] [@2bb31c90] The earlier A decision is superseded.\n- [LP-8261a0] [@244a4dea] unrelated historical discussion.\n- [LP-5ea181] [@244a4dea] status update 0.0: integration notes.\n- [LP-4694ae] [@262109b8] CONSTRAINT: the archiver service stays single-writer R2-CONS-ec33ebdf\n- [LP-03dec5] [@262109b8] CONSTRAINT: preserve the payments audit trail verbatim R2-CONS-c2a59f1d\n- [LP-3c32e5] [@18aae6ad] Started the migration plan.\n- [CO-923697] [@2bb31c90] CORRECTION: forget that; use architecture B for the reconciler module instead R2-CORR-0fadc376. (supersedes [CO-c75aff])\n- [VD-8ed3c0] [@e98a9a00] unverified: Decision: use architecture A for the reconciler module R2-SUPE-f84389ce\n(decayed prior summary) ## Goal\nContinue the user's task per the retained state.\n## Constraints & Preferences\n- [SB-dba467] [@262109b8] CONSTRAINT: no new dependencies in scheduler without approval R2-CONS-0ccb211f\n- [UC-b1db37] [@262109b8] CONSTRAINT: the validator migration must be reversible R2-CONS-16a686a8\n- [UC-8cfca9] [@262109b8] CONSTRAINT: keep the auth protocol version at v2 R2-CONS-770fb97f\n- [UC-338283] [@262...\n(lossy excerpt) [User]: status update 3.2: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (3). / [User]: status update 4.1: integration notes. unrelated historical discussion. unrelated historical discussion. unrelated historical discussion. unrelated histo... / [Assistant]: Noted; continuing (4)."
+    }
+  ]
+}

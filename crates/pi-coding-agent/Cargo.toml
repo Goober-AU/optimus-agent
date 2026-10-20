@@ -53,5 +53,9 @@ windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_
 name = "optimus-rust"
 path = "src/bin/optimus_rust.rs"
 
+[[bin]]
+name = "compaction-harness"
+path = "src/bin/compaction_harness.rs"
+
 [dev-dependencies]
 rusqlite = { version = "=0.40.2", features = ["bundled"] }

@@ -1,0 +1,141 @@
+{
+  "label": "CUSTOM-OPTIMUS LIVE-MODEL practice run (not an official scorecard)",
+  "worker": "rot2 W27",
+  "endpoint": {
+    "baseUrl": "<live-endpoint-removed; set ROT2_GLM_BASE_URL>",
+    "model": "glm-5.3",
+    "temperature": 0.0,
+    "maxTokensLadder": [
+      8192,
+      16384,
+      32768,
+      65536
+    ],
+    "transport": "3 retries, 2/4/8 s backoff on 429/5xx/network; non-retryable statuses terminal",
+    "verification": "PONG-verified before launch (GET /models 200 listing glm-5.3; one-chat PONG, finish_reason stop)",
+    "credentials": "resolved at runtime from the two PowerShell helpers; never logged or written to artifacts"
+  },
+  "productionPath": {
+    "binary": "compaction-harness (crates/pi-coding-agent/src/bin/compaction_harness.rs, this worktree)",
+    "wiring": "summarizer 'live' + ROT2_LIVE_* env (W26 pattern ported verbatim; content-identical to W26's working copy modulo line endings)",
+    "pipeline": "prepare_compaction -> compact -> append_compaction -> SessionManager restore, delta-append sessions"
+  },
+  "slice": {
+    "rule": "dev-side instances of the committed repo-level split with 4..12 gold items and 1200..9000 gold content chars; within language ordered by blake2b('contextbench|w27-live-slice|w27.1|' + instance_id); languages round-robin by descending candidate count; never touches the holdout",
+    "seedParts": [
+      "contextbench",
+      "w27-live-slice",
+      "w27.1"
+    ],
+    "size": 26,
+    "languages": {
+      "python": 5,
+      "go": 4,
+      "javascript": 4,
+      "typescript": 4,
+      "c": 4,
+      "rust": 3,
+      "cpp": 2
+    },
+    "candidatePoolSize": 110,
+    "instanceIds": [
+      "SWE-Bench-Verified__python__maintenance__bugfix__c923cfa8",
+      "Multi-SWE-Bench__go__maintenance__bugfix__2fea5f6b",
+      "SWE-PolyBench__javascript__maintenance__bugfix__11e78a8d",
+      "SWE-PolyBench__typescript__maintenance__bugfix__42165c4e",
+      "Multi-SWE-Bench__c__maintenance__bugfix__8bffb1b1",
+      "Multi-SWE-Bench__rust__maintenance__bugfix__0e4346f7",
+      "Multi-SWE-Bench__cpp__maintenance__bugfix__4a37a167",
+      "SWE-Bench-Verified__python__maintenance__bugfix__f3695f8d",
+      "Multi-SWE-Bench__go__maintenance__bugfix__d129d52f",
+      "SWE-PolyBench__javascript__maintenance__bugfix__9ca0e415",
+      "Multi-SWE-Bench__typescript__maintenance__bugfix__0b0f1e0e",
+      "Multi-SWE-Bench__c__maintenance__bugfix__f9bb5442",
+      "Multi-SWE-Bench__rust__maintenance__bugfix__aa16b8b2",
+      "Multi-SWE-Bench__cpp__maintenance__bugfix__e43d9aa5",
+      "SWE-PolyBench__python__maintenance__bugfix__40f09c26",
+      "Multi-SWE-Bench__go__maintenance__bugfix__8d23605c",
+      "SWE-PolyBench__javascript__maintenance__bugfix__27e1903f",
+      "Multi-SWE-Bench__typescript__maintenance__bugfix__41a5a6f5",
+      "Multi-SWE-Bench__c__maintenance__bugfix__6b844996",
+      "Multi-SWE-Bench__rust__maintenance__bugfix__c363219b",
+      "SWE-Bench-Verified__python__maintenance__bugfix__abfdb2c5",
+      "Multi-SWE-Bench__go__maintenance__bugfix__3deeea9c",
+      "SWE-PolyBench__javascript__maintenance__bugfix__59dd675b",
+      "Multi-SWE-Bench__typescript__maintenance__bugfix__05c53458",
+      "Multi-SWE-Bench__c__maintenance__bugfix__b9b45262",
+      "SWE-Bench-Verified__python__maintenance__bugfix__da598baa"
+    ],
+    "note": "26 (not 30) after the invalidated first attempt consumed part of the wire-call budget; the 26-slice is a prefix of the same deterministic order"
+  },
+  "arms": {
+    "A": "baseline: production compaction, taskState off",
+    "B": "task-state-ledger: production compaction, taskState prompt (protected task-state ledger on); substitutes W10's offline arm B (jev-relevance), which the compaction surface cannot express",
+    "matched": "identical transcripts, seeds, budgets and cycle structure; only taskState differs"
+  },
+  "cycles": {
+    "count": 4,
+    "chunking": "reads split into 4 near-equal chunks, one chunk appended per cycle, compaction after each append",
+    "budgets": "reserveTokens = max(200, 0.30 x estimated transcript tokens), keepRecentTokens = max(60, 0.10 x estimated), harness estimator chars/4 + 0.6 per message"
+  },
+  "wireCalls": {
+    "hardCapTotal": 600,
+    "pongVerification": 2,
+    "liveSmoke": 17,
+    "invalidatedBlindRun": 123,
+    "mainRun": 439,
+    "total": 581,
+    "note": "the first main attempt ran blind transcripts (the W10 row loader dropped problem_statement); stopped after 15/60 pairs, invalidated, documented in README section 5"
+  },
+  "callStats": {
+    "overall": {
+      "count": 439,
+      "latencyMsMean": 20374.0,
+      "latencyMsMedian": 12892,
+      "latencyMsMax": 143824,
+      "transportRetryEvents": 0,
+      "ladderClimbs": 47,
+      "errorCalls": 0,
+      "finishReasons": {
+        "stop": 388,
+        "length": 51
+      }
+    },
+    "A": {
+      "count": 218,
+      "latencyMsMean": 19218.0,
+      "latencyMsMedian": 12956.5,
+      "latencyMsMax": 115193,
+      "transportRetryEvents": 0,
+      "ladderClimbs": 22,
+      "errorCalls": 0,
+      "finishReasons": {
+        "stop": 195,
+        "length": 23
+      }
+    },
+    "B": {
+      "count": 221,
+      "latencyMsMean": 21514.3,
+      "latencyMsMedian": 12569,
+      "latencyMsMax": 143824,
+      "transportRetryEvents": 0,
+      "ladderClimbs": 25,
+      "errorCalls": 0,
+      "finishReasons": {
+        "stop": 193,
+        "length": 28
+      }
+    }
+  },
+  "evaluation": {
+    "metrics": "W10 mirror (research/context_rot_r2/contextbench/): evaluate_task per record, summarize_arm aggregates, compare_arms paired exact sign test + Wilcoxon signed-rank normal approximation",
+    "patchSuccess": "UNAVAILABLE in every record (needs checkouts + f2p harness)",
+    "editloc": "gold-patch fallback (records carry no model patch); arm-independent by construction"
+  },
+  "dataset": {
+    "parquet": "data/contextbench_verified.parquet (pinned checkout, sha256 e9dcfd504cbfb849ac815a79040c793d0d92f94eecc9b5a4ee3e1445a2f8a791)",
+    "upstream": "https://github.com/EuniAI/ContextBench @ 1436c28a8eb95496da4ea69ad458b9f8a8eb7d61 (Apache-2.0)"
+  },
+  "dataHygiene": "committed artifacts carry instance ids and numbers only; gold annotations, transcript contents, summaries and credentials stay in the gitignored runs/ tree"
+}

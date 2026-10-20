@@ -1,0 +1,27 @@
+## Typed Protected State (deterministic, provenance-tagged)
+Derived from the transcript by fixed provenance rules; no item is inferred or invented. Copy every item below into the matching summary section without paraphrasing identifiers, paths, numbers or error codes. Items under SUPERSEDED are history, not current requirements.
+
+USER CORRECTIONS
+- [CO-b59b48] [@4293ef41-c2ac-f8b7-32b9-dda6a3dfc6bc] Use idempotency keys on the request handler instead.
+- [CO-310f6f] [@4293ef41-c2ac-f8b7-32b9-dda6a3dfc6bc] CORRECTION: forget the synchronous lock - it serializes every checkout and the p99 collapses. (supersedes [VD-5dedff])
+
+PENDING ACTIONS
+- [PA-121b6a] [@0f5ff0b8-c00a-2fa9-797e-4f9544652d5b] Lock wrapper is in; running the checkout load test next.
+
+VERIFIED EVIDENCE
+- [VT-174e04] [@abd65ccb-718d-3f29-0357-a64e9950f37a] cargo test --lib telemetry::tests_02: test result: 18 passed; 0 failed
+- [VT-25d467] [@3f6a9013-9aee-af73-e1a2-b56b1ae749dd] cargo test --lib telemetry::tests_01: test result: 18 passed; 0 failed
+- [VT-2632d8] [@f63809c2-28b2-6fc7-9edd-1124507dc2c4] cargo test --lib telemetry::tests_00: test result: 18 passed; 0 failed
+
+REPOSITORY STATE
+- [RS-de76ff] [@f63809c2-28b2-6fc7-9edd-1124507dc2c4] 2 files changed
+
+LOW-PRIORITY EPISODES
+- [LP-8261a0] [@5934dacf-24f6-fc50-f2ae-df392c0d40dd] unrelated historical discussion.
+- [LP-8c9ce5] [@5934dacf-24f6-fc50-f2ae-df392c0d40dd] status update 0.0: sprint notes.
+- [LP-ff9bc8] [@4293ef41-c2ac-f8b7-32b9-dda6a3dfc6bc] The synchronous-lock approach is rejected.
+- [LP-6b38da] [@bca3cb37-7cd3-6a4c-c961-153c7672a8e5] TASK GOAL: fix duplicate orders in the checkout flow of orders-api before the Friday release.
+- [LP-f9e73c] [@add48c55-928d-acf2-4cbf-12def220d4e6] Understood - switching the fix to idempotency keys on the request handler.
+
+SUPERSEDED (HISTORY, NOT CURRENT)
+- [VD-5dedff] [@e66fe28a-5ecd-2be4-7199-784d7bc46ffd] unverified: Decision: fix the duplicates with a synchronous lock on the order table.

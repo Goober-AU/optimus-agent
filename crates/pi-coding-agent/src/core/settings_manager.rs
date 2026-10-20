@@ -95,7 +95,7 @@ pub struct CompactionSettings {
     /// B4: compaction trigger threshold, fraction of the context limit in (0, 1].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trigger_threshold: Option<f64>,
-    /// Context-rot campaign: protected task-state ledger mode, `"off"` (default) or `"prompt"`.
+    /// Context-rot campaign: protected task-state ledger mode, `"off"` (default), `"prompt"` (v1, legacy) or `"typed"` (v2).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub task_state: Option<String>,
     /// A7: episode deadline for the model-driven summary phase, in ms. 0 disables.
@@ -345,7 +345,7 @@ pub struct ResolvedCompactionSettings {
     pub summary_budget_mode: String,
     /// B4: explicit trigger threshold (fraction of the context limit), `None` = current behavior.
     pub trigger_threshold: Option<f64>,
-    /// Context-rot campaign: `"off"` (default) or `"prompt"`.
+    /// Context-rot campaign: `"off"` (default), `"prompt"` (v1, legacy) or `"typed"` (v2).
     pub task_state: String,
     /// A7: episode deadline for the model-driven summary phase, in ms. 0 disables.
     pub deadline_ms: f64,
@@ -2052,15 +2052,13 @@ impl SettingsManager {
     /// setting wins, then `PRIME_AGENT_COMPACTION_TASK_STATE`, then `"off"`.
     pub fn get_compaction_task_state(&self) -> String {
         let configured = nested_string(&self.settings, keys::COMPACTION, "taskState");
-        match configured.as_deref() {
-            Some("prompt") => return "prompt".to_string(),
-            Some(_) => return "off".to_string(),
-            None => {}
-        }
-        if env_flag("PRIME_AGENT_COMPACTION_TASK_STATE").as_deref() == Some("prompt") {
-            return "prompt".to_string();
-        }
-        "off".to_string()
+        // Mirrors resolve_task_state_mode (compaction.rs): the three modes
+        // are "off" (default), "prompt" (v1 ledger) and "typed" (v2 typed
+        // protected state); any other value fails safe to "off".
+        crate::core::compaction::compaction::resolve_task_state_mode(
+            configured.as_deref(),
+            env_flag("PRIME_AGENT_COMPACTION_TASK_STATE").as_deref(),
+        )
     }
 
     /// B4: explicit compaction trigger threshold, a fraction of the context
@@ -3878,5 +3876,32 @@ mod local_gateway_tests {
                 start_timeout_ms: 20000,
             }
         );
+    }
+
+    #[test]
+    fn compaction_task_state_accepts_typed_and_fails_safe() {
+        let storage = Arc::new(InMemorySettingsStorage::new());
+        storage.with_lock(SETTINGS_SCOPE_GLOBAL, &mut |_| {
+            Some(r#"{"compaction":{"taskState":"typed"}}"#.to_string())
+        });
+        let manager = SettingsManager::from_storage(storage);
+        assert_eq!(manager.get_compaction_task_state(), "typed");
+    }
+
+    #[test]
+    fn compaction_task_state_unknown_value_fails_safe_to_off() {
+        let storage = Arc::new(InMemorySettingsStorage::new());
+        storage.with_lock(SETTINGS_SCOPE_GLOBAL, &mut |_| {
+            Some(r#"{"compaction":{"taskState":"bogus"}}"#.to_string())
+        });
+        let manager = SettingsManager::from_storage(storage);
+        assert_eq!(manager.get_compaction_task_state(), "off");
+    }
+
+    #[test]
+    fn compaction_task_state_defaults_to_off() {
+        let storage = Arc::new(InMemorySettingsStorage::new());
+        let manager = SettingsManager::from_storage(storage);
+        assert_eq!(manager.get_compaction_task_state(), "off");
     }
 }
