@@ -42,6 +42,7 @@ pi-tui = { workspace = true }
 pi-jev = { workspace = true }
 mermansi = "=0.1.6"
 pulldown-cmark = { workspace = true }
+sysinfo = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
