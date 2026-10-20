@@ -29,7 +29,6 @@ post-fix by R2-E5-RM, W47), red-teamed (the W35 adversarial suite pinned eight
 guarantees and filed seven defects, D22-D28, all fixed) and documented for
 users (the README and the settings reference). D10's "never retry" sub-item and
 the D12/D20 partial-fix residues stay disclosed in the bug ledger.
-1f2fb793e (docs(context-rot): final-report closing pass (W62))
 
 Base `6000d6bc1` (v0.1.36 + #181/#182). First written on branch `rot2/w22-final`
 at `021678796` (40 commits over base); refreshed on branch `rot2/w34-reportrefresh`
@@ -54,7 +53,6 @@ the W59 audit resolution and the W60 experiment-ledger verification. This
 closing pass is on branch `rot2/w62-finalreport` at the integration tip
 `90fcd17db` (143 commits over base, `git rev-list --count 6000d6bc1..HEAD`).
 In flight at this writing and NOT in this tree: the D33 fix (`rot2/w54-d33`).
-1f2fb793e (docs(context-rot): final-report closing pass (W62))
 
 ## 1. Hypotheses
 
@@ -632,7 +630,6 @@ supersession refinement landed between the waves (W51: `a112034dc` +
 `611d2312c` + `3de7ef222`) and closes the W9-F1/F3/F4 family in the v1
 ledger (rot2_supersession 4/4, lib task_state 21/21, rot2_ledger_fixes 7/7,
 rot2_render_cap 7/7).
-1f2fb793e (docs(context-rot): final-report closing pass (W62))
 
 ## 5. What a reviewer should check
 
@@ -664,7 +661,6 @@ rot2_render_cap 7/7).
    reference `resources/agent/docs/settings.md` and the settings-manager doc
    comments `0a35fbfa6`), and the v1 ledger's W9-F1/F3/F4 family is closed
    by the W16 refinement (W51, `rot2_supersession` 4/4).
-1f2fb793e (docs(context-rot): final-report closing pass (W62))
 2. Gate coverage: `REGRESSION-GATES.md` records the full W25 pass at
    `29f1f0c92` (with per-suite SHAs back to `f7bc6306c`) and the wave-2
    battery at the final tip `71e770c5e` (W49, section 10): the wave suites
@@ -756,7 +752,6 @@ rot2_render_cap 7/7).
   (section 4.4; D30 fixed and the cycle-5 budget caveat accepted-and-pinned
   by W46; D31 and D32 fixed by W52/W53, D33 by W54 `f0b125a84`, leaving D34 (W63 battery) the one open post-wave
   finding, its fix in flight). The
-1f2fb793e (docs(context-rot): final-report closing pass (W62))
   W26/W27 live results are prompt-level ledger effects, not typed-arm
   evidence.
 - R2-E1/E-INC numbers are pipeline mechanics under a deliberately lossy
@@ -784,7 +779,6 @@ rot2_render_cap 7/7).
   stated in user text are handled since the D30 fix, W46 `10e2b36e6`).
   D18/D19/D20 landed (W30), D21-D29 landed (W32-W41, section 4.4), D30
   landed (W46), D31-D32 landed (W52/W53).
-1f2fb793e (docs(context-rot): final-report closing pass (W62))
 - Not reproducible from the drivers alone: item seeds derive from salted blake2b
   digests recorded per row (iteration-1 M5, fixed for r2; `scenario.py`).
 
@@ -873,54 +867,102 @@ single-model practice-scale), and the health heuristic must not gate anything
 
 ## 9. Report index
 
-Every file in `reports/context-rot-r2/` at this writing (15 files):
+Every file in `reports/context-rot-r2/` at this writing (20 files):
 
-- `BASELINE.md` - the commit under test, the measurement frame, the category
-  labels, the R2-E1 numbers, the inherited iteration-1 context, the TypeCompact
-  reproduction baseline (W14).
-- `BUG-LEDGER.md` - the defect ledger, closed: D1-D21 status on this base, the
-  new findings N1-N3, the W9 findings, the harness findings HF1-HF6, section
-  4's W35 red-team wave (D22-D30, all fixed) and section 5's W48 post-wave
-  audit (D31/D32 fixed, D33 open).
-- `REVIEW-AUDIT.md` - the W42 pre-PR hostile-reviewer pass (blocker B1, should-fix
-  S1-S7, nits), the W45 appendix (the D22-D29 red-team wave record and the
-  integrator's commit-subject options) and the W59 final resolution (the B1 and
-  S1-S7 dispositions, the PR-BODY cross-check, the residual-risk list R1-R8).
-- `CODING-TASK-RESULTS.md` - what coding-task evaluation exists (ContextBench
-  pipeline, CompactBench custom runs) and the exact blockers for everything else.
-- `COMPACTBENCH-RESULTS.md` - the CompactBench family consolidated: the W6 adapter
-  validation runs, the W12 mock practice suites and the W26 live practice run
-  (W21 scorecard, staleness-fixed).
-- `COMPACTION-CORRECTNESS.md` - the D-defect narrative: what is fixed on the branch,
+- `BASELINE.md` - report writer W14, status-passed by the later sweeps:
+  the commit under test, the measurement frame, the category labels, the
+  R2-E1 numbers, the inherited iteration-1 context and the TypeCompact
+  reproduction baseline.
+- `BUG-LEDGER.md` - the defect ledger and the campaign's status source of
+  truth, opened with the first fix wave's verified statuses and appended
+  to by every fix wave since: D1-D34 rows (D33 fixed by W54, D34
+  verified-open from the W63 battery), the new findings N1-N3, the W9
+  findings, the harness findings HF1-HF6, section 4's W35 red-team wave
+  (D22-D30, all fixed) and section 5's W48 post-wave audit (D31/D32).
+- `CITATION-INTEGRITY.md` - worker W70: every test name cited by the r2
+  reports checked against the tip's test inventory - 16 report files, 114
+  distinct citations, 113 verified; the one miss
+  (`absorption_then_citation_resolves`) was the then-unlanded W54 D33 pin,
+  on the tree since `6d85cc48f`.
+- `CODING-TASK-RESULTS.md` - report writer W14 (refreshed by W34,
+  reconciled by the W50 sweep): what coding-task evaluation exists (the
+  ContextBench pipeline, the CompactBench custom runs) and the exact
+  blockers for everything else.
+- `COMPACTBENCH-RESULTS.md` - report writer W21 (scope updated by W34):
+  the CompactBench family consolidated - the W6 adapter validation runs,
+  the W12 mock practice suites and the W26 live practice run.
+- `COMPACTION-CORRECTNESS.md` - report writer W14 (refreshed by W34,
+  reconciled by W50): the D-defect narrative - what is fixed on the branch,
+b2c0a435a (docs(context-rot): refresh the report index to the full 20-file set and strip the W62 paste debris (W78))
   what sat on worker branches at its writing, what remains open, and the
-  fix-to-guard map.
-- `CONTEXT-HEALTH-CALIBRATION.md` - the W8 calibration corpus, metric definitions
-  and verdict for the context-health score.
-- `CONTEXTBENCH-RESULTS.md` - the W10 offline pipeline, its blocked records, and
-  the W27 live practice run.
-- `EXPERIMENT-LEDGER.md` - every arm and every NOT-EXECUTED item, including
-  the post-W22 sections (R2-E3, R2-E3ADV, R2-E2-RM, the W26 live CompactBench
-  run, the W27 live ContextBench run, R2-E5 and R2-E5-RM) with Status lines
-  citing their commits and artifact paths.
-- `FINAL-REPORT.md` - this file, the campaign entry point.
-- `KNOWLEDGE-TRIAGE-REPRODUCTION.md` - the TypeCompact reproduction: setup,
-  substitutions, numbers, and the kind-mapping to typed_state v2 (W21).
-- `MULTICYCLE-DRIFT.md` - the offline multicycle runs consolidated: decay regimes,
-  growth model, late material, late supersession, token cost (W14).
-- `REGRESSION-GATES.md` - the test-suite state: the W25 full pass at `29f1f0c92`
-  (per-suite SHAs back to `f7bc6306c`) plus the W49 wave-2 battery at `71e770c5e`
-  (section 10).
-- `PR-BODY.md` - the PR body: the summary, the per-defect fix map, the testing
-  section and the reviewer checklist (refreshed through the W50/W57/W59/W60
-  passes; the final assembly is the closing workers').
-- `RETRIEVAL-SCORECARD.md` - the consolidated retrieval scorecard, iteration 1
-  to r2 (W21; W10's offline draft kept in place under `research/`).
-- Landed on this branch since the W49 writing: the D30 and cycle-5
-  budget-caveat recovery (W46, `10e2b36e6` + `d00ff2067`), the typed-arm
-  re-measure R2-E5-RM (W47, section 3.14), the W16 supersession work (W51,
-  section 8.2) and the D31/D32 fixes (W52/W53). In flight: the D33 fix
-  (`rot2/w54-d33`) and the closing passes (the PR assembly, the landed-tip
-  gate battery, the reviewer, hygiene and scorecard passes). If a file named
-  here is missing at read time, the experiment ledger and the cited artefacts
-  hold its content.
-1f2fb793e (docs(context-rot): final-report closing pass (W62))
+  fix-to-guard map. A W76 pass renames this file to
+  `COMPACTION-CORRECTNESS.md` (the HYGIENE-AUDIT L3 typo repair); this
+  index uses the name on disk at its writing.
+- `CONTEXT-HEALTH-CALIBRATION.md` - report writer W21 (the instrument is
+  W8's): the calibration corpus, metric definitions and verdict for the
+  context-health score.
+- `CONTEXTBENCH-RESULTS.md` - report writer W21 (the pipeline is W10's;
+  sections 3 and 5 updated by W34): the W10 offline pipeline, its blocked
+  records, and the W27 live practice run.
+- `EXPERIMENT-LEDGER.md` - every arm and every NOT-EXECUTED item, opened
+  with the R2-E1 harness landing (`3eeed6f3f`) and kept current by the
+  wave refreshes: the post-W22 sections (R2-E3, R2-E3ADV, R2-E2-RM, the
+  W26 live CompactBench run, the W27 live ContextBench run, R2-E5 and
+  R2-E5-RM) with Status lines citing their commits and artifact paths,
+  the DEFECT-WAVE-2 tables, and the W60 verification pass (every sha
+  resolves, every artifact path exists).
+- `FINAL-REPORT.md` - this file, the campaign entry point: first edition
+  in wave 3, the W62 closing pass, the W64-blocker resolution and this
+  W78 index pass.
+- `HYGIENE-AUDIT.md` - worker W65: the AGENTS.md-compliance and
+  commit-hygiene audit at `90fcd17db` (clippy, rustfmt,
+  `git diff --check`, marker and secret scans; no HIGH findings, two
+  MEDIUM, four LOW, five informational).
+- `KNOWLEDGE-TRIAGE-REPRODUCTION.md` - report writer W21 (the reproduced
+  experiment is W5's): the TypeCompact reproduction - setup, substitutions,
+  numbers, and the kind-mapping to typed_state v2.
+- `MULTICYCLE-DRIFT.md` - report writer W14: the offline multicycle runs
+  consolidated - decay regimes, growth model, late material, late
+  supersession, token cost.
+- `PR-BODY.md` - the PR body, drafted in wave 3 (`483e6de35`) and
+  assembled by W61 at `90fcd17db`: the summary, the per-defect fix map,
+  the testing section and the reviewer checklist.
+- `PRE-PUSH-VERIFICATION.md` - worker W68: the pre-push technical
+  verification at `cab09bdd2` - branch topology, LFS, worktree hygiene,
+  changelog-fragment format, PR-body size and the gh-absent web fallback;
+  every item PASS.
+- `PUSH-CHECKLIST.md` - worker W61: the integrator-only push checklist -
+  preconditions, the push and PR-open commands, and the web fallback.
+- `REGRESSION-GATES.md` - worker W25 (the restart pass): the test-suite
+  state - the W25 full pass at `29f1f0c92` (per-suite SHAs back to
+  `f7bc6306c`), the W49 wave-2 battery at `71e770c5e` (section 10), the
+  W63 landed-tip battery at `90fcd17db` (section 11, RED on the D34
+  smoke) and the W72 python suites at the landed tip (section 11.10,
+  green).
+- `RETRIEVAL-SCORECARD.md` - report writer W21: the consolidated retrieval
+  scorecard, iteration 1 to r2 (W10's offline draft kept in place under
+  `research/`).
+- `REVIEW-AUDIT.md` - worker W42: the pre-PR hostile-reviewer pass
+  (blocker B1, should-fix S1-S7, nits), the W45 appendix (the D22-D29
+  red-team wave record and the integrator's commit-subject options) and
+  the W59 final resolution (the B1 and S1-S7 dispositions, the PR-BODY
+  cross-check, the residual-risk list R1-R8).
+- `REVIEWER-PASS.md` - worker W64: the whole-diff hostile review at
+  `90fcd17db` - the B1-B4 blockers (paste debris, stale D31-D33 statuses,
+  fragment duplication, the W16 misstatement), should-fix S1-S8, the
+  prior-audit disposition check and the verification spot-runs at the
+  final tip.
+
+Landed on this branch since the W62 closing pass: the D33 fix (W54; on
+`rot2/w54-d33` as `f0b125a84` + `1de36e893`, integrated as `cea3a4496` +
+`6d85cc48f` with the ledger row `510fd168d`), the PR assembly and push
+checklist (W61), the pre-push technical verification (W68), the
+whole-diff reviewer pass (W64), the hygiene audit (W65), the
+citation-integrity pass (W70) and the W63/W72 gate records - the closing
+tail that section 8.1 recorded as running alongside this document has all
+landed. In flight at this writing: the W76 filename repair
+(`COMPACTION-CORRECTNESS.md` to `COMPACTION-CORRECTNESS.md`), the W69
+production-path trace (`PRODUCTION-PATH-TRACE.md`, not yet on this branch)
+and the tail passes after them; this index uses the names on disk at its
+writing. If a file named here is missing at read time, the experiment
+ledger and the cited artefacts hold its content.
