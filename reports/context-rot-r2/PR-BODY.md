@@ -2,10 +2,13 @@
 
 Branch: `improve/context-rot-iteration-2` (base `6000d6bc1`, v0.1.36 + #181/#182).
 Campaign reports live in `reports/context-rot-r2/`; every number below cites a
-committed artefact. This body was assembled at the final integration tip
-`90fcd17db` (143 commits over base) after the last defect-fix and
-supersession waves landed; `BUG-LEDGER.md` is the status source of truth. The
-integrator adjusts if later commits land before merge. One practical note up
+committed artefact. This body was finalized at the integration tip
+`da98f27bd` (159 commits over base) after the D33 fix, the W63 landed-tip
+battery (REGRESSION-GATES section 11), the W72 landed-tip Python-suite record
+(section 11.10) and the W65/W70 audit passes landed; `BUG-LEDGER.md` is the
+status source of truth (D1-D33 fixed except the documented deferrals and
+residues; D34 verified-open, fix in flight). The integrator adjusts if later
+commits land before merge. One practical note up
 front: five live-run raw-call logs under `research/context_rot_r2/` are
 git-LFS pointers - run `git lfs pull` after checkout or they stay ~130-byte
 stubs (details in "What is NOT claimed").
@@ -101,17 +104,21 @@ campaigns is listed.
 | D30 (MED): a decision stated in plain USER text classified as a step-scoped LowPriorityEpisode and retired at the first merge, while the same sentence from the assistant classified as VerifiedDecision | FIXED (W46) | `10e2b36e6` (a user unit matching DECISION_RE classifies as VerifiedDecision with `verified` provenance; the assistant path remains the corroboration path) + `d00ff2067` (the W41 cycle-5 budget pin) | `user_stated_decision_is_a_verified_decision_with_task_scope`, `user_stated_decision_survives_the_step_boundary_merge`, `user_correction_retires_a_user_stated_decision`, `tight_budget_drops_superseded_history_but_keeps_the_pairing_line` (lib), the smoke seed `7bec70f09` (probe q4) |
 | D31 (MED): the D25 retired-reference tombstones polluted the verifier's fabricated-claim check - a "verified" line citing only a retired record id passed while nothing vouched for the text | FIXED (W52) | `6041f71c9` (W52; ledger row `e6e909e16`): the resolver used by the fabricated check builds from `state.records` only (carried record and entry ids), and its non-sigil branch accepts record ids alone - the renderer grammar emits entry references only with the `@` sigil (D23), so a bare `[entry]` token is prose, not a reference; the unresolved-refs check keeps the widened sets (records + `retired_refs`), so references earlier summaries still quote stay resolvable | `retired_ids_do_not_vouch_for_verified_claims` (`tests/rot2_wave_adversarial.rs`, un-ignored); the W35 pin `retired_step_records_keep_summary_references_resolvable` stays green |
 | D32 (LOW-MED): the D28 native compaction arm carried the salvaged records through but dropped the D26 diagnostics - a native compaction observing a malformed prior ledger left no trace of the salvage | FIXED (W53) | `53ab2e3d9` (the native arm returns a minimal `typed_verification` carrying the `malformedPriorLedger` flag) | `native_compaction_reports_the_salvage_of_a_malformed_prior_ledger` (`tests/rot2_wave_adversarial.rs`, un-ignored); the D28 carry-through pin (`rot2_native_typed_chain` 2/2) stays green |
-| D33 (LOW-MED): a restatement-absorbed tool record stranded references - the absorbed record's id and entry id gained no `retiredRefs` tombstone, so a later summary citing them failed unresolved-ref resolution (observed at cycle 2 of the E5-RM TASK-E offline chain) | VERIFIED-OPEN, fix in flight (W54) | planned: retire the absorbed record's id and entry id into `retiredRefs` at absorption time (in flight, W54; the integrator flips this row at final review) | `absorption_then_citation_resolves` (`tests/rot2_wave_adversarial.rs`, lands with W54); the D24 stable-id and D25 tombstone pins stay green |
+| D33 (LOW-MED): a restatement-absorbed tool record stranded references - the absorbed record's id and entry id gained no `retiredRefs` tombstone, so a later summary citing them failed unresolved-ref resolution (observed at cycle 2 of the E5-RM TASK-E offline chain) | FIXED (W54) | `cea3a4496`: the absorption site in `reconcile` retires the absorbed record's id and source entry into `retiredRefs` (the D25 step-boundary treatment); `merge` unions the absorbed tombstones with the step-boundary ones instead of dropping them | `absorption_then_citation_resolves` (`tests/rot2_wave_adversarial.rs`, landed with the fix in `6d85cc48f`: the E5-RM chain shape with the field-exact ids, red on the pre-fix tree, green with the fix) - the suite carries ten tests, zero `#[ignore]`d, at this tip (the W63 battery recorded the pre-pin nine green, REGRESSION-GATES section 11.2; the pending final matrix re-runs the ten); the D24 stable-id and D25 tombstone pins stay green |
+| D34 (MED): the typed-arm smoke (`rot2_multicycle::rot2_smoke_typed_arm_persists_typed_ledger_and_verifies`) fails deterministically at the landed tip with "1 unbacked verified claims" - suspected mechanism, the integrator ruling in REGRESSION-GATES section 11.7: the D30 user-stated decision retires at a step boundary, the lossy-fixture handoff still cites it as a verified claim, the D31 strict-vouching fix correctly refuses the retired id, and the unbacked-claim check has no repair path (missing items get appended back; unbacked claims hard-fail), so the verification refuses the compaction with the conversation preserved | VERIFIED-OPEN, fix in flight (W71) | filed from the W63 landed-tip battery (section 11.7; first-failure range `71e770c5e..90fcd17db` - green in the W49 battery, red at the landed tip; the D30 seed `10e2b36e6` and the D31 strict-vouching `6041f71c9` are the co-suspects); fix direction: the fixture stops asserting the retired record as verified, or the claim check gains a bounded repair - the fix worker decides with the mechanism confirmed | the red is pinned by the battery record itself (deterministic on an isolated rerun; `rot2_multicycle` 4 passed / 1 failed / 1 ignored at `90fcd17db`); the guard test lands with the D34 fix in the fix worker's branch, not this tip |
 | harness F1/F4/F5: the harness binary forked a session per invocation, read 0 tokens, lost appends on error paths | FIXED | `49f473d8d` (`continue_recent` session persistence, chars/4 usage anchors, flush-on-append) | `probe_harness_behavior.py` + the 13 adapter checks (`research/context_rot_r2/compactbench_adapter/`) |
 
 Open after the final wave, all documented in `BUG-LEDGER.md`: D7 (deferred
 with rationale), D10's "never retry" sub-item, D12's soft-fence residual,
 D17's production call-site wiring (follow-up), D20's documented residue, and
-D33 (restatement-absorbed ids stranding references; fix in flight on W54,
-the integrator flips the row at final review). N1/N2 (the v1 evidence-regex
-and custom-entry gaps R2-E1 measured) are the design constraints typed v2
-exists to remove (the W9-F1 clause-capture gap is fixed by the W51
-refinement, table above).
+D34 (the typed-arm smoke red at the landed tip: the lossy-fixture handoff
+cites the step-retired D30 user-stated decision as an unbacked verified
+claim and the D31 strict-vouching fix correctly refuses it; deterministic,
+filed from the W63 battery, fix in flight on W71). D33 (restatement-absorbed
+ids stranding references) is fixed on this tip (`cea3a4496`, table above).
+N1/N2 (the v1 evidence-regex and custom-entry gaps R2-E1 measured) are the
+design constraints typed v2 exists to remove (the W9-F1 clause-capture gap
+is fixed by the W51 refinement, table above).
 
 ## The typed-state v2 mode (opt-in, wired)
 
@@ -203,10 +210,13 @@ Two surfaces failed red and became defects D31 (retired ids vouching for
 fabricated "verified" claims) and D32 (the native arm dropping the D26
 salvage diagnostics); both are fixed (W52/W53, table above), their red tests
 un-ignored and green. A third defect, D33 (restatement-absorbed record ids
-stranding references), was found by the E5-RM offline re-measure (W47); its
-fix is in flight (W54) and the integrator flips the row at final review.
-Every adversarial test in both suites is green with zero `#[ignore]d
-defects at this tip (the D33 guard lands with W54).
+stranding references), was found by the E5-RM offline re-measure (W47) and is
+fixed on this tip (`cea3a4496`, its guard landed with it, table above). Every
+adversarial test in both suites is green with zero `#[ignore]d defects at
+this tip (the D33 pin's green is its landing commit's record - the W63
+battery predates it - and the pending final matrix re-runs the suite). The
+one red at the landed-tip battery sits outside both suites: the
+`rot2_multicycle` typed-arm smoke, filed as D34 (table above).
 
 ## Experiment results
 
@@ -496,8 +506,8 @@ artifacts `research/context_rot_r2/live/e5/rm/`):
 - The offline TASK-E id chain still stranded exactly two references at the
   cycle-2 merge - the restatement-absorbed record's ids gain no tombstone -
   filed as D33 (the live cells did not trigger it: GLM's compact citation
-  shape falls outside the verifier reference grammar); its fix is in flight
-  (W54, table above).
+  shape falls outside the verifier reference grammar); fixed on this tip by
+  `cea3a4496`, pinned by `absorption_then_citation_resolves` (table above).
 
 What this shows: on the fixture the typed arm protects everything the v1
 ledger protects minus the two step-scoped episode probes the D25 boundary
@@ -532,6 +542,12 @@ to flip a default.
   live TASK-E 5/5 no halt, E3ADV C1 SUPERSEDED at all five cycles), on one
   model, at practice scale. The default stays `"off"` pending cross-model
   and longer-session evidence.
+- No green typed-arm smoke is claimed at the landed tip: the W63 battery is
+  red on exactly that one deterministic test (D34, REGRESSION-GATES section
+  11.7; the failure is fail-safe - the compaction is refused with the
+  conversation preserved - and the fix is in flight on W71). The battery's
+  32 green steps and the six green Python suites (section 11.10) are the
+  landed record; the pending final matrix is what settles the smoke.
 - The W11 ledger fix is validated offline on the live corpus (R2-E2-RM), not
   by a fresh live run; the model-dependent prediction (live corrections
   answered correctly at every point) is stated as a prediction in the
@@ -557,10 +573,14 @@ to flip a default.
 ## Testing
 
 Every number in this section cites the committed gate record
-(`reports/context-rot-r2/REGRESSION-GATES.md`); the campaign's final-tip
-matrix is pending as section 11 there (W55's successor is running; the
-last landed battery is section 10, the W49 wave-2 pass at `71e770c5e`).
-The landed record:
+(`reports/context-rot-r2/REGRESSION-GATES.md`). The landed-tip battery is
+section 11 there (the W63 full gate list at `90fcd17db`: 32 of the 33
+recorded steps green - the other eleven `rot2_*` suites, all thirteen
+`compaction_*` suites, all six lib filters - with the single red the
+deterministic D34 typed-arm smoke, section 11.7), the six Python research
+suites are green at the landed tip (section 11.10, W72, closing the gap
+the stopped battery left), and the final-tip matrix is still pending
+(W67's successor runs it after the D34 fix lands). The landed record:
 
 - The W25 full pass at `29f1f0c92` (with per-suite SHAs back to `f7bc6306c`):
   the three lib filters (`core::compaction` 146, `typed_state` 60,
@@ -577,23 +597,43 @@ The landed record:
   `--lib typed_state` 74, `--lib core::compaction` 160, plus the
   `compaction_summary_path` 8/8 and `compaction_parity_suite` 14/14 spot
   checks (the W43 T05.4 fixture re-pin `31ce39b84` holds).
+- The W63 landed-tip battery at `90fcd17db` (REGRESSION-GATES section 11):
+  the full gate list, 33 recorded steps, 32 green - `rot2_typed_adversarial`
+  24/0/0 (grew from 23 with the D30 pin), `rot2_wave_adversarial` 9/0/0
+  (before the D33 pin landed; ten tests at this tip), the typed integration
+  9, the native typed chain 2, `rot2_multicycle` 4 passed / 1 failed /
+  1 ignored (the D34 red: the typed-arm smoke, deterministic on an isolated
+  rerun), render_cap 7, ledger_fixes 7, defect_wave2 3, harness_digest 2,
+  branch_summary 2, subagent_constraints 3, supersession 4, all thirteen
+  `compaction_*` suites, and the six lib filters (`core::compaction` 168,
+  `typed_state` 78, `task_state` 17, `context_health_calibration` 17,
+  `settings_manager` 62, `settings` 100). The battery stopped on the real
+  failure per the gate protocol, so its Python steps and the complete
+  workspace check did not run there; W72 closed the Python gap at the
+  landed tip (section 11.10: all six suites green - the 138-test discovery,
+  the ContextBench integration self-check 127, the W27 live-pipeline
+  selftest 24, E3 14, E3ADV 15, the adapter checks 13/13).
 - The post-wave suites: the W48 `rot2_wave_adversarial` suite (the eight
-  wave tests plus the D31 companion pin, nine green and zero ignored at this
-  tip; the D31/D32 red tests un-ignored and green after their fixes; the D33
-  pin lands with W54), the D30 guards (`10e2b36e6`:
+  wave tests plus the D31 companion pin and the D33 absorption pin, ten
+  tests and zero ignored at this tip; the D31/D32 red tests un-ignored and
+  green after their fixes; the D33 pin landed with its fix, `6d85cc48f`),
+  the D30 guards (`10e2b36e6`:
   four lib tests + corpus cases + the smoke seed), and the
   `rot2_supersession` suite for the v1 refinement (W51).
 - Known environment-bound failures, verified at the base in the W25 pass
-  (REGRESSION-GATES section 5): `enabled_skill_is_importable` needs `uv` on
-  the test child's PATH (absent on this host) and the painted-frame tray
-  test is scheduling-sensitive and passes serialized. Neither file is
-  touched by this campaign.
+  (REGRESSION-GATES section 5) and re-verified at base by the W63 battery
+  (section 11.8, neither appearing in its 33 steps): `enabled_skill_is_importable`
+  needs `uv` on the test child's PATH (absent on this host) and the
+  painted-frame tray test is scheduling-sensitive and passes serialized.
+  Neither file is touched by this campaign.
 
 The workspace-wide `cargo check --workspace --all-targets` record: 0 errors
 at the integration heads checked during the campaign (908 warnings at
 `f8ad670c8` vs 903 at the base; the four campaign-added warnings were
-dropped by the W42 cleanup `fa3634b7a`); the final-tip error and warning
-counts land with the pending section-11 matrix (see above). The campaign's code footprint is one
+dropped by the W42 cleanup `fa3634b7a`); the W63 battery's tip check was
+interrupted on the D34 stop with partial numbers only (0 errors, at least
+198 warning diagnostics, REGRESSION-GATES section 11.5), so the final-tip
+error and warning counts land with the pending final matrix (see above). The campaign's code footprint is one
 crate: `git diff --name-only` base..tip lists files under
 `crates/pi-coding-agent` plus `.changes/`, `reports/context-rot-r2/`,
 `research/context_rot_r2/`, `.gitattributes` and README-adjacent docs only
@@ -621,8 +661,17 @@ crate: `git diff --name-only` base..tip lists files under
   the mechanism is replaced in typed v2 by the D29 provenance-based pairing.
 - The defect table above is the verification map: every FIXED row names its
   commit and its guard test; the open rows (D7, D10 sub-item, D12 residual,
-  D17 wiring, D20 residue) state what is open and where it is documented.
-  `reports/context-rot-r2/BUG-LEDGER.md` is the source of truth for statuses.
+  D17 wiring, D20 residue, D34) state what is open and where it is
+  documented. `reports/context-rot-r2/BUG-LEDGER.md` is the source of truth
+  for statuses.
+- The D34 gate to close before approving: the typed-arm smoke
+  (`rot2_multicycle::rot2_smoke_typed_arm_persists_typed_ledger_and_verifies`)
+  is the one deterministic red at the landed-tip battery (REGRESSION-GATES
+  section 11.7, the W63 record at `90fcd17db`; fix in flight on W71, and its
+  guard test lands with the fix in the fix worker's branch, not this tip).
+  Either verify the smoke is green in the final-tip matrix, or accept the
+  disclosed red with the D34 row as its record - it must not be assumed
+  green unobserved.
 - D17 detail: `ContextUsageEstimate.system_prompt_tokens` /
   `tool_schema_tokens` are non-zero only on the no-usage fallback path - the
   usage-anchored path keeps 0.0 to avoid double-counting provider-reported
