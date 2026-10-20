@@ -1106,7 +1106,7 @@ fn details_with_both_v1_and_typed_payloads_keep_both_and_the_mode_selects() {
 /// below that compaction boundary. The record below the boundary exists
 /// only in that payload; the new window cannot rebuild it.
 #[test]
-fn malformed_typed_state_payload_silently_drops_durable_records() {
+fn malformed_typed_state_payload_does_not_silently_drop_durable_records() {
     let mut payload = serde_json::to_value(build_typed_state(&[user_entry(
         "u1",
         "CONSTRAINT: never delete the payments ledger ARCH-TYPED-KEEP.",
