@@ -891,7 +891,7 @@ Every file in `reports/context-rot-r2/` at this writing (15 files):
 - `COMPACTBENCH-RESULTS.md` - the CompactBench family consolidated: the W6 adapter
   validation runs, the W12 mock practice suites and the W26 live practice run
   (W21 scorecard, staleness-fixed).
-- `COMPATION-CORRECTNESS.md` - the D-defect narrative: what is fixed on the branch,
+- `COMPACTION-CORRECTNESS.md` - the D-defect narrative: what is fixed on the branch,
   what sat on worker branches at its writing, what remains open, and the
   fix-to-guard map.
 - `CONTEXT-HEALTH-CALIBRATION.md` - the W8 calibration corpus, metric definitions

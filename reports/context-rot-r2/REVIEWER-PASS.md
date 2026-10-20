@@ -125,12 +125,12 @@ render with the retired text); see the W9-F1/F3/F4 ledger row."
 
 ## 2. Should-fix (post-PR acceptable, none change code behavior)
 
-### S1. FINAL-REPORT and COMPATION-CORRECTNESS misstate the W16 supersession status
+### S1. FINAL-REPORT and COMPACTION-CORRECTNESS misstate the W16 supersession status
 
 `reports/context-rot-r2/FINAL-REPORT.md:44` — "In flight at this writing and
 NOT in this tree: the W16 supersession work (`rot2/w16-supersession`, no
 commits over this head)". Written by the W49/W50 refresh, false since the
-W51 integration landed. `reports/context-rot-r2/COMPATION-CORRECTNESS.md:216-217`
+W51 integration landed. `reports/context-rot-r2/COMPACTION-CORRECTNESS.md:216-217`
 — "the `rot2/w16-supersession` v1 rework never carried commits and holds
 nothing in flight - the supersession mechanism moved to typed v2 (D29)"
 contradicts the BUG-LEDGER row and the tree for the same reason. Both files
@@ -231,9 +231,11 @@ auditing D26 greps for it and reads a contradiction. Rename to
 - N1. `typed_state.rs:1097-1105` — `reconcile` carries two consecutive doc
   comments (the stale pre-D24 paragraph followed by the current one);
   rustdoc renders both. Delete the first paragraph.
-- N2. `reports/context-rot-r2/COMPATION-CORRECTNESS.md` — filename and H1
-  typo ("COMPATION"). Renaming breaks citations in three reports; do it in
-  the same integrator pass or leave with a note.
+- N2. `reports/context-rot-r2/COMPACTION-CORRECTNESS.md` — filename and H1
+  typo (the former name dropped the N from "COMPACTION"). Renaming breaks
+  citations in three reports; do it in the same integrator pass or leave
+  with a note. RESOLVED by W76 (`rot2/w76-rename`): the file and its H1 are
+  renamed and every citation updated.
 - N3. Stale counts in the headline reports: FINAL-REPORT H-r2-3 says "74 unit
   tests" for typed_state (78 at HEAD); PR-BODY:472 says "29 files under
   crates/pi-coding-agent" (36 at HEAD, `git diff --name-only` over

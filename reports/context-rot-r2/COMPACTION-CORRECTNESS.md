@@ -1,4 +1,4 @@
-# COMPATION-CORRECTNESS — the D-defect ledger narrative for the r2 branch
+# COMPACTION-CORRECTNESS — the D-defect ledger narrative for the r2 branch
 
 Scope: what the r2 campaign's integrated branch fixes, what is still in
 flight, and what remains open, narrated from the verified ledger and the

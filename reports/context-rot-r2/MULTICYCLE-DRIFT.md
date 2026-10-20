@@ -251,7 +251,7 @@ fixed filler describes this fixture's pipeline mechanics, not live behaviour
 arm at 14/19 (evidence regex, subagent custom messages) are defects N1/N2
 in `reports/context-rot-r2/BUG-LEDGER.md`; the W9-F1..F5 mechanisms are
 candidates for the same ledger and are narrated in
-COMPATION-CORRECTNESS.md (the W9-F1/F3/F4 family is fixed in v1 by the W16
+COMPACTION-CORRECTNESS.md (the W9-F1/F3/F4 family is fixed in v1 by the W16
 supersession refinement, integrated by W51; W9-F2/F5 by the W11 content-id
 fixes). For the record beyond this fixture: the typed-state v2 arm scored
 15/19 on this scenario at the pre-D25 implementation (W29, committed E5)
