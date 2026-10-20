@@ -286,7 +286,7 @@ fn resource_full_frame_keeps_one_context_health_indicator_and_a_live_header() {
         h.ui.borrow_mut()
             .exit_fullscreen(pi_tui::tui::ExitFullscreenOptions {
                 flush: false,
-                ..Default::default()
+                leave_alt_screen: true,
             });
         super::super::super::native_settings::fullscreen(
             true,
