@@ -261,6 +261,7 @@ fn resource_full_frame_keeps_one_context_health_indicator_and_a_live_header() {
     for style in ["neon", "prime"] {
         let h = super::super::super::ui_tests::FrameHarness::new("root");
         crate::modes::interactive::theme::theme::init_theme(Some(style), false);
+        h.mode.borrow_mut().options.return_to_agents_view = true;
         h.mode.borrow_mut().patch_connection_state(|state| {
             state.session_id = "root".into();
             state.active_session_id = Some("active-root".into());
