@@ -81,7 +81,10 @@
 //! smaller set is contained in the larger with at least three shared tokens,
 //! are one record (a restatement). Statement kinds keep the first text
 //! verbatim; tool-derived kinds keep the latest text. A restatement after a
-//! supersession revives the target.
+//! supersession revives the target. A record the dedupe absorbs that
+//! arrived with a persisted id (D33) is tombstoned in `retired_refs` with
+//! its source entry, so references the summary of the cycle that rendered
+//! it still quotes keep resolving.
 //!
 //! Step boundary (D25): a `RecordScope::Step` record (pending action,
 //! low-priority episode) describes the window it was classified from. The
@@ -398,11 +401,12 @@ pub struct TypedStateLedger {
     #[serde(default)]
     pub records: Vec<TypedStateRecord>,
     /// D25: record ids and source entry ids of records retired from the
-    /// ledger (the merge step boundary or the durable-record cap). Not
-    /// records: they carry no text, are never required, rendered or
-    /// superseded. They keep bracketed `[id]` and `[@entry]` references that
-    /// earlier summaries still quote resolvable. Bounded to the
-    /// `RETIRED_REFS_MAX` most recent retirements.
+    /// ledger (the merge step boundary, the durable-record cap, or the
+    /// restatement dedupe in `reconcile`, D33). Not records: they carry no
+    /// text, are never required, rendered or superseded. They keep
+    /// bracketed `[id]` and `[@entry]` references that earlier summaries
+    /// still quote resolvable. Bounded to the `RETIRED_REFS_MAX` most
+    /// recent retirements.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub retired_refs: Vec<String>,
     /// D25: cumulative count of records dropped by `MAX_DURABLE_RECORDS`.
@@ -1109,9 +1113,16 @@ fn reconcile(mut records: Vec<TypedStateRecord>) -> TypedStateLedger {
     // Dedupe by (kind, key), keeping first-seen identity and merging later
     // restatements. Tool-derived kinds keep the latest text (state
     // snapshots evolve); statement kinds keep the first text verbatim.
+    // D33: the dedupe absorbs the restating record, so its identity leaves
+    // the ledger. A record that arrived with a persisted id was renderable
+    // by the cycle that persisted it, so its id and source entry retire
+    // into `absorbed_refs` here (the D25 step-boundary treatment, applied
+    // at the absorption site); a fresh sighting (empty id) was never
+    // rendered, and absorbing it strands nothing.
     let mut index: BTreeMap<(TypedInformationKind, String), usize> = BTreeMap::new();
     let mut out: Vec<TypedStateRecord> = Vec::new();
     let mut restated: Vec<Vec<usize>> = Vec::new();
+    let mut absorbed_refs: Vec<String> = Vec::new();
     for record in records {
         let key = content_key(&record.text);
         if key.is_empty() {
@@ -1129,6 +1140,10 @@ fn reconcile(mut records: Vec<TypedStateRecord>) -> TypedStateLedger {
             });
         match slot {
             Some(slot) => {
+                if !record.id.is_empty() {
+                    retire_ref(&mut absorbed_refs, &record.id);
+                    retire_ref(&mut absorbed_refs, &record.source_entry_id);
+                }
                 let existing = &mut out[slot];
                 existing.revision = record.revision.clone();
                 existing.verification = existing.verification.strongest(record.verification);
@@ -1364,6 +1379,7 @@ fn reconcile(mut records: Vec<TypedStateRecord>) -> TypedStateLedger {
 
     TypedStateLedger {
         records: out,
+        retired_refs: absorbed_refs,
         ..Default::default()
     }
 }
@@ -1397,6 +1413,13 @@ pub fn build_typed_state(entries: &[CompactionSessionEntry]) -> TypedStateLedger
 /// verification as unresolved; the records themselves are gone, so they are
 /// never re-required or re-appended. Durable records (Session and Task
 /// scope) are unaffected.
+///
+/// D33: the restatement dedupe inside the merge's `reconcile` can absorb a
+/// record carried from `previous` into another carried record (a subset
+/// restatement between two persisted records). The absorbed record's id and
+/// source entry retire into `retired_refs` there, so references the
+/// previous summary still quotes keep resolving while the surviving record
+/// carries the identity (D24).
 ///
 /// D25 hard bound: the returned ledger is capped at `MAX_DURABLE_RECORDS`
 /// (see `enforce_durable_cap`), so no merge sequence grows the durable
@@ -1437,9 +1460,23 @@ pub fn merge(
     new_records.sort_by(|a, b| a.ordinal.cmp(&b.ordinal));
     for (offset, mut record) in new_records.into_iter().enumerate() {
         record.ordinal = base + offset;
+        // D33: the window's records enter the merge anonymously. Identity
+        // is assigned at first sight (D24), and the id the window's own
+        // reconcile gave them is an artifact of that pass (recomputed here
+        // to the same value when the record survives), not a persisted
+        // identity an earlier summary could have cited. Clearing it keeps
+        // "arrives with an id" meaning "persisted from a previous cycle",
+        // which is what the absorption tombstone in `reconcile` keys on.
+        record.id = String::new();
         combined.push(record);
     }
     let mut merged = reconcile(combined);
+    // D33: the tombstones reconcile collected for restatement-absorbed
+    // records join the step-boundary tombstones (duplicate-free, oldest
+    // first) instead of being dropped.
+    for reference in std::mem::take(&mut merged.retired_refs) {
+        retire_ref(&mut retired_refs, &reference);
+    }
     merged.retired_refs = retired_refs;
     merged.dropped_by_cap = previous.dropped_by_cap;
     // D26: the salvage rider is metadata about reading `previous`, so it
