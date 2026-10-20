@@ -3,12 +3,12 @@
 Branch: `improve/context-rot-iteration-2` (base `6000d6bc1`, v0.1.36 + #181/#182).
 Campaign reports live in `reports/context-rot-r2/`; every number below cites a
 committed artefact. This body was finalized at the integration tip
-`08f34308b` (175 commits over base) after the D33 and D34 fixes, the W63
+`ac5edde2b` (177 commits over base) after the D33 and D34 fixes, the W63
 landed-tip battery (REGRESSION-GATES section 11), the W72 landed-tip
 Python-suite record (section 11.10) and the W65/W70 audit passes landed;
-`BUG-LEDGER.md` is the status source of truth (D1-D34 fixed except the
-documented deferrals and residues). The integrator adjusts if later
-commits land before merge. One practical note up
+`BUG-LEDGER.md` is the status source of truth (D1-D34 fixed, guarded or
+measured except the documented deferrals and residues). The integrator
+adjusts if later commits land before merge. One practical note up
 front: five live-run raw-call logs under `research/context_rot_r2/` are
 git-LFS pointers - run `git lfs pull` after checkout or they stay ~130-byte
 stubs (details in "What is NOT claimed").
@@ -54,11 +54,12 @@ does four things:
    under a lossy summarizer; the v1 ledger mitigates the kinds it captures but
    is unsafe on corrections (live inversion in R2-E2, argued-down dead weight
    in R2-E3ADV); the W11 id/supersession fix removes the measured inversion
-   mechanisms on the live corpus offline (R2-E2-RM); the typed arm measures
-   one step over v1 on the fixture (15/19 at the pre-D25 implementation, 13/19
-   on this tip - the D25 step boundary correctly retires two step-scoped
-   episode-classified probes - against v1's 14/19 and default 0/19) and its
-   two live availability defects are fixed and live-confirmed (E5-RM: TASK-E
+   mechanisms on the live corpus offline (R2-E2-RM); the typed arm protects
+   on the fixture everything the v1 ledger protects minus the two step-scoped
+   episode-classified probes the D25 boundary correctly retires, plus the
+   cargo-test evidence line the v1 regex misses (15/19 at the pre-D25
+   implementation, 13/19 on this tip, against v1's 14/19 and default 0/19)
+   and its two live availability defects are fixed and live-confirmed (E5-RM: TASK-E
    5/5 cycles with no halt, E3ADV C1 SUPERSEDED at all five cycles); the
    shipped default (`taskState = "off"`) stays correct pending cross-model
    and longer-session evidence.
@@ -173,7 +174,8 @@ mode found eight defects that the positive tests missed. Each was reproduced
 by a failing-first test committed in
 `crates/pi-coding-agent/tests/rot2_typed_adversarial.rs` (written red under
 `#[ignore = "Dnn: ..."]`, then un-ignored by its fix; 23 tests green, zero
-ignored, at the W49 battery):
+ignored, at the W49 battery, and 24 after the D30 pin at the W63
+battery):
 
 | # | one-line finding | fix |
 | --- | --- | --- |
@@ -210,7 +212,7 @@ salvage diagnostics); both are fixed (W52/W53, table above), their red tests
 un-ignored and green. A third defect, D33 (restatement-absorbed record ids
 stranding references), was found by the E5-RM offline re-measure (W47) and is
 fixed on this tip (`cea3a4496`, its guard landed with it, table above). Every
-adversarial test in both suites is green with zero `#[ignore]d defects at
+adversarial test in both suites is green with zero `#[ignore]`d defects at
 this tip (the D33 pin's green is its landing commit's record - the W63
 battery predates it - and the final-tip matrix re-ran the suite green, REGRESSION-GATES section 12). The
 one red at the landed-tip battery sat outside both suites: the
@@ -253,8 +255,9 @@ ledger fully protects the kinds it captures (14/14) at about +916 tokens per
 cycle, but is blind to tool-result evidence (regex gap N1) and subagent custom
 entries (N2). The 8-cycle, 2-seed extension (E-INC, `research/context_rot_r2/
 incremental/`) confirms: default decays to 0/19 after two compactions and stays
-there; taskState holds 14/19 flat through 8 cycles; runs are deterministic and
-path-independent; the ledger costs +995 tokens/cycle steady state.
+there; taskState stays flat at 14/19 and 13/19 across all 8 cycles; runs are
+deterministic and path-independent; the ledger costs +995 tokens/cycle
+steady state.
 
 ### R2-E2 - live-model multicycle (LIVE-MODEL, GLM 5.3 only)
 
@@ -439,19 +442,23 @@ are synthetic explorations built from the gold annotations and the metrics
 measure RETENTION of gold context through compaction, not free-form agent
 exploration; `patch_success` stays UNAVAILABLE in every record.
 
-| metric | A baseline | B task-state-ledger | delta B-A | sign p | Wilcoxon p |
+| metric | A baseline | B task-state-ledger | paired delta B-A | sign p | Wilcoxon p |
 | --- | --- | --- | --- | --- | --- |
 | final file coverage | 0.974 | 0.974 | +0.000 | 1.000 | 1.000 |
+| final file precision | 0.357 | 0.326 | - | 0.057 | 0.064 |
 | final line coverage | 0.852 | 0.916 | +0.069 | 0.455 | 0.196 |
 | final line precision | 0.320 | 0.586 | +0.097 | 0.004 | 0.003 |
 
-Gold file references survive compaction almost fully in both arms (file
-coverage 0.974); gold LINE retention separates them (line precision 0.586 vs
-0.320, sign p = 0.004; by raw counts arm B ends 69% gold / 31% distractor
-lines vs 47% / 53% in arm A). The parsed ledger itself populated in only 34
-of 104 arm-B cycles, so the observed effect is prompt-level. Summarizer
-cost: 439 requests for 208 cycle attempts, mean latency 20.4 s, 47
-max_tokens ladder climbs, 0 error calls.
+The delta column carries the recorded paired statistics, not the difference
+of the rounded arm means (the ledger records +0.097 for line precision,
+18+/4-). Gold file references survive compaction almost fully in both arms
+(file coverage 0.974); file-level precision does not separate the arms (B
+0.326 vs A 0.357, sign p = 0.057); gold LINE retention separates them
+(line precision 0.586 vs 0.320, sign p = 0.004; by raw counts arm B ends 69%
+gold / 31% distractor lines vs 47% / 53% in arm A). The parsed ledger
+itself populated in only 34 of 104 arm-B cycles, so the observed effect is
+prompt-level. Summarizer cost: 439 requests for 208 cycle attempts, mean
+latency 20.4 s, 47 max_tokens ladder climbs, 0 error calls.
 
 ### R2-E5 and R2-E5-RM - the typed arm, measured and re-measured (fixture + live)
 
@@ -565,8 +572,9 @@ to flip a default.
 
 ## Testing
 
-Every number in this section cites the committed gate record
-(`reports/context-rot-r2/REGRESSION-GATES.md`). The landed-tip battery is
+Every number in this section cites its committed record - the gate record
+(`reports/context-rot-r2/REGRESSION-GATES.md`) unless a sentence names its
+own. The landed-tip battery is
 section 11 there (the W63 full gate list at `90fcd17db`: 32 of the 33
 recorded steps green - the other eleven `rot2_*` suites, all thirteen
 `compaction_*` suites, all six lib filters - with the single red the
@@ -622,15 +630,18 @@ is REGRESSION-GATES section 12, FINAL TIP MATRIX (dba588938) - GREEN (W81), reco
 
 The workspace-wide `cargo check --workspace --all-targets` record: 0 errors
 at the integration heads checked during the campaign (908 warnings at
-`f8ad670c8` vs 903 at the base; the four campaign-added warnings were
-dropped by the W42 cleanup `fa3634b7a`); the W63 battery's tip check was
+`f8ad670c8` vs 903 at the base, recorded at the typed-wiring-tip refresh
+`1502eb9a7`; the four campaign-added warnings were dropped by the W42
+cleanup `fa3634b7a`); the W63 battery's tip check was
 interrupted on the D34 stop with partial numbers only (0 errors, at least
 198 warning diagnostics, REGRESSION-GATES section 11.5), so the final-tip
+D
 error and warning counts are recorded there (0 errors; 576 warnings = the base count). The campaign's code footprint is one
 crate: `git diff --name-only` base..tip lists files under
 `crates/pi-coding-agent` plus `.changes/`, `reports/context-rot-r2/`,
 `research/context_rot_r2/`, `.gitattributes` and README-adjacent docs only
 - no other workspace crate is touched, so no other crate's tests were re-run.
+cfda54e12 (docs(context-rot): PR-body full read-through coherence fixes (W83))
 
 ## Reviewer notes
 
