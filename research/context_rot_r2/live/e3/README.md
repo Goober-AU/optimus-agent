@@ -82,7 +82,7 @@ One matcher per probe kind (`probe.py`); each rep gets two scores:
 detail includes the full path set of the answer. `action-approach` (C, F):
 positives (`idempot`; `cdc`/`change data capture`/`capture`/`event driven`)
 vs forbidden (`lock`; `nightly`). `action-error` (E): required numbers
-`4096` then `3072`, ordered, <= 60 chars apart, plus a keyword. 
+`4096` then `3072`, ordered, <= 60 chars apart, plus a keyword.
 `action-acceptable` (H): >= 1 of fragment/materialized/rollup present and
 `blob` not asserted; per-answer coverage of the three acceptable options is
 recorded. Round status: majority over the 3 reps; extraction failures
