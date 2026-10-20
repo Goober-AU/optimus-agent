@@ -442,3 +442,61 @@ did not appear. Not run because of the stop: the six Python research
 suites and the complete workspace check (partial: 0 errors, >=198
 warning diagnostics). The successor's final matrix (after D33 and the
 D34 fix land) supersedes this record.
+
+### 11.10 PYTHON SUITES AT THE LANDED TIP (W72)
+
+W72 closed the gap section 11.6 records: the six Python research suites
+W63's stopped battery never reached, run at the landed tip on 2026-10-20.
+All six are green, with exactly the shapes the W25 record (section 4, at
+`29f1f0c92`) carries — the Python research path is proven green at the
+tip ahead of W67's final matrix, and this pass is its comparison point.
+
+Environment: worktree `C:/Users/openclawuser/optimus-rot2-w72-python`,
+branch `rot2/w72-python` at `6c6015ce8` (= integration head at run time,
+148 commits over base `6000d6bc1`), clean at run time (`git status
+--porcelain` empty; the report edit below is this worker's only change).
+`6c6015ce8` differs from W63's battery tip `90fcd17db` in report files
+only (`git diff --name-only 90fcd17db..HEAD -- crates/ research/` is
+empty), so this pass exercised byte-identical suite sources and the same
+harness source W63's battery built. Commands: the six `py_*` steps of
+W63's runner (`C:/Users/openclawuser/rot2-w63-gates/run_matrix.sh`),
+verbatim and in W63's order, from that worktree. Interpreters: system
+python 3.11.15 (discovery, live selftest, E3, E3ADV) and the campaign
+cb-venv 3.11.15 with pyarrow 26.0.0 + compactbench (ContextBench,
+adapter). Artifacts: `C:/Users/openclawuser/rot2-w72-gates/`
+(`run_python_suites.sh`, `logs/<key>.log`, `results.tsv`); run window
+2026-10-20T00:31:45Z-00:32:26Z.
+
+| suite | command | exit | result |
+| --- | --- | --- | --- |
+| offline unittest discovery | `cd research && python -m unittest discover -s context_rot_r2 -t . -p "test_*.py"` | 0 | 138 tests, OK (3 skipped; 0.13 s) — scenario/scoring (5), W9 incremental variants (6), ContextBench suite (124 run, the 3 parquet-gated skipped) |
+| ContextBench integration self-check | cb-venv python + `CB_REFS_ROOT=C:/Users/openclawuser/optimus-rot2-w5-research/refs/ContextBench`, `-m unittest discover -s research/context_rot_r2/contextbench/tests -t .` | 0 | 127 tests, OK, 0 skipped (9.32 s) — the 3 gated tests ran against the pinned parquet |
+| W27 live-pipeline selftest | `python -m research.context_rot_r2.contextbench.live.selftest` | 0 | 24 tests, OK (0.01 s) |
+| E3 offline selftest | `cd research && python -m unittest context_rot_r2.live.e3.selftest` | 0 | 14 tests, OK (1.46 s) |
+| E3ADV offline selftest | `cd research && python -m unittest context_rot_r2.live.e3adv.e3adv_selftest` | 0 | 15 tests, OK (0.69 s) |
+| CompactBench adapter checks | cb-venv python + `HARNESS=C:/Users/openclawuser/rot2-w63-target/debug/compaction-harness.exe`, `research/context_rot_r2/compactbench_adapter/test_optimus_compactor.py` | 0 | 13/13 checks passed (18 s) — cut ladder, ledger mapping, both arms, starter-shaped transcript, determinism, delta round-trip, three-cycle partition, retry-after-failure, resync, small-transcript fallback, missing-binary degradation, controls |
+
+Two invocation notes, both verified on this host before the runs:
+
+1. `CB_REFS_ROOT` was set only for the ContextBench step, Windows-style,
+   as the W25 record shows. W63's runner exported it script-wide in
+   unix style; git-bash hands such values to the Windows interpreters
+   converted (`C:/...`, verified), so the script-wide export would also
+   have run the three parquet-gated tests inside the discovery step,
+   under the system python, which has no pyarrow (`import pyarrow` fails
+   there) — an environmental red the recorded invocation avoids; the
+   gated trio is the cb-venv step's job (hence W25's "3 skipped"
+   discovery shape, reproduced exactly here).
+2. `HARNESS` keeps W63's Windows-style fix and points at W63's
+   `compaction-harness.exe` built at `90fcd17db` (the adapter's default
+   would be the shared-target build of unknown provenance). With
+   `crates/` byte-identical to this tip, that binary is this tip's
+   harness; the adapter checks ran it through both arms, the delta
+   round-trip and the missing-binary degradation.
+
+Verdict: green across all six suites — zero failures, zero unexpected
+skips (the only skips are the 3 documented parquet-gated tests in the
+system-python discovery run, which run green through the cb-venv step
+immediately after). The W63 gap (section 11.6) is closed at the landed
+tip; W67's final matrix re-runs these suites at the final tip.
+
