@@ -215,7 +215,7 @@ this tip (the D33 pin's green is its landing commit's record - the W63
 battery predates it - and the final-tip matrix re-ran the suite green, REGRESSION-GATES section 12). The
 one red at the landed-tip battery sat outside both suites: the
 `rot2_multicycle` typed-arm smoke, filed as D34 and fixed by W71
-(`6894f6a6d`, table above; the pending final matrix re-runs it).
+(`6894f6a6d`, table above; the final-tip matrix re-ran it green, REGRESSION-GATES section 12).
 
 ## Experiment results
 
