@@ -1070,6 +1070,44 @@ async fn rot2_smoke_typed_arm_persists_typed_ledger_and_verifies() {
             probe.id, probe.found_in
         );
     }
+    // D34: the fixture's previous-summary decay carries the retired pending
+    // action's rendered line ("Section 3 verified; publishing next.") into
+    // the cycle-1 artifact. The strict vouching rule (D31) refuses the
+    // retired id, and the bounded repair downgrades that stale claim to an
+    // explicit unverified annotation instead of failing the handoff; the
+    // repair must be recorded on the repaired cycle's verification.
+    let repaired_cycle = typed_arm
+        .cycles
+        .iter()
+        .find(|cycle| {
+            cycle
+                .typed_verification
+                .as_ref()
+                .and_then(|verification| verification.get("repaired"))
+                .and_then(Value::as_bool)
+                == Some(true)
+        })
+        .expect("the bounded unbacked-claim repair must run on the cycle whose decayed prior summary quotes the retired record");
+    assert_eq!(
+        repaired_cycle
+            .typed_verification
+            .as_ref()
+            .unwrap()
+            .get("passed")
+            .and_then(Value::as_bool),
+        Some(true),
+        "the repaired handoff must verify"
+    );
+    assert_eq!(
+        repaired_cycle
+            .typed_verification
+            .as_ref()
+            .unwrap()
+            .get("fabricated")
+            .and_then(Value::as_u64),
+        Some(0),
+        "the re-verification after the repair must be clean"
+    );
 }
 
 #[tokio::test]

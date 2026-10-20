@@ -27,7 +27,12 @@
 //! - A deterministic verifier (`verify`) checks a compact artifact (the
 //!   summary) against the ledger: required material present, superseded
 //!   material not presented as current, references resolving to known
-//!   records and entry ids, and no fabricated "verified" claims.
+//!   records and entry ids, and no fabricated "verified" claims. A summary
+//!   whose only failures are unbacked "verified" claims has a bounded
+//!   deterministic repair (`annotate_unbacked_verified_claims`, D34): each
+//!   offending line keeps its content and gains an explicit unverified-claim
+//!   annotation, so a stale quote of a record that retired at a step
+//!   boundary does not fail the routine handoff.
 //! - Rendering (`render_hot_state`, `render_durable_index`) is stable and
 //!   carries record ids (`[UC-1a2b3c]`) and entry references (`[@t42]`).
 //! - `merge` carries durable records forward as canonical state, not by
@@ -1975,7 +1980,9 @@ fn artifact_mentions(artifact: &str, record: &TypedStateRecord) -> bool {
 /// - a line mentioning the word "verified" maps to a verified or corroborated
 ///   record by reference or text; the reference resolver for that mapping is
 ///   restricted to the records the ledger carries (D31: a retired id resolves
-///   a reference but vouches for no claim).
+///   a reference but vouches for no claim). A line already carrying the
+///   `UNVERIFIED_CLAIM_MARKER` is exempt (D34): the bounded repair appended
+///   it, so the line no longer asserts verified material.
 pub fn verify(compact_artifact: &str, state: &TypedStateLedger) -> TypedStateVerification {
     // D31: the fabricated-claim check below resolves a "verified" line only
     // against ids the ledger still carries, so the carried sets are built
@@ -2100,22 +2107,18 @@ pub fn verify(compact_artifact: &str, state: &TypedStateLedger) -> TypedStateVer
         if trimmed.is_empty() || is_heading_line(trimmed) || !VERIFIED_WORD_RE.is_match(trimmed) {
             continue;
         }
-        let line_norm = normalized(trimmed);
-        // D31: only ids the ledger still carries vouch, and only through the
-        // renderer's grammar: `[id]` for a record, `[@entry]` for a source
-        // entry. A retired tombstone resolves a reference (the loop above)
-        // but vouches for no claim, and a bare entry id without the `@`
-        // sigil is prose, not evidence.
-        let maps = REF_SCAN_RE.captures_iter(trimmed).any(|capture| {
-            let sigil = capture.get(1).expect("sigil").as_str();
-            let token = capture.get(2).expect("token").as_str();
-            if sigil == "@" {
-                carried_entry_ids.contains(token)
-            } else {
-                carried_record_ids.contains(token)
-            }
-        }) || verified_texts.iter().any(|text| line_norm.contains(text.as_str()));
-        if !maps {
+        // D34: a line the bounded repair already annotated as an unverified
+        // claim no longer asserts verified material; the annotation itself
+        // states the claim is unbacked.
+        if trimmed.contains(UNVERIFIED_CLAIM_MARKER) {
+            continue;
+        }
+        if !verified_claim_is_backed(
+            trimmed,
+            &carried_record_ids,
+            &carried_entry_ids,
+            &verified_texts,
+        ) {
             verification.fabricated.push(VerificationFinding {
                 subject: clip(trimmed, 80),
                 detail: "line claims verified material without a resolvable reference".to_string(),
@@ -2128,6 +2131,96 @@ pub fn verify(compact_artifact: &str, state: &TypedStateLedger) -> TypedStateVer
         && verification.unresolved_refs.is_empty()
         && verification.fabricated.is_empty();
     verification
+}
+
+/// D34: suffix the bounded unbacked-claim repair appends to a summary line
+/// that claims verified material no live record backs. The routine lossy
+/// handoff hits this when the previous summary's decayed head still quotes
+/// a rendered line whose record has since retired at a step boundary: the
+/// strict vouching rule (D31) correctly refuses the retired id, but
+/// refusing the whole handoff for that stale quote would fail every
+/// routine compaction. `verify` exempts a line carrying this marker because
+/// the annotation itself states the claim is unbacked, so the line no
+/// longer asserts verified material. A model cannot use the marker to
+/// smuggle a claim: marking a line as an unverified claim is exactly the
+/// honest presentation the check demands.
+pub const UNVERIFIED_CLAIM_MARKER: &str =
+    " (downgraded: unverified claim - no live record backs this line)";
+
+/// D31/D34: does this trimmed summary line map its "verified" wording to
+/// material the ledger still carries? Only carried ids vouch, and only
+/// through the renderer's grammar: `[id]` for a record, `[@entry]` for a
+/// source entry. A retired tombstone resolves a reference (the
+/// unresolved-refs check) but vouches for no claim, and a bare entry id
+/// without the `@` sigil is prose, not evidence. Otherwise the line must
+/// contain a verified or corroborated record's text.
+fn verified_claim_is_backed(
+    trimmed: &str,
+    carried_record_ids: &BTreeSet<&str>,
+    carried_entry_ids: &BTreeSet<&str>,
+    verified_texts: &[String],
+) -> bool {
+    let line_norm = normalized(trimmed);
+    REF_SCAN_RE.captures_iter(trimmed).any(|capture| {
+        let sigil = capture.get(1).expect("sigil").as_str();
+        let token = capture.get(2).expect("token").as_str();
+        if sigil == "@" {
+            carried_entry_ids.contains(token)
+        } else {
+            carried_record_ids.contains(token)
+        }
+    }) || verified_texts.iter().any(|text| line_norm.contains(text.as_str()))
+}
+
+/// D34: bounded deterministic repair for a summary whose only typed-state
+/// failures are unbacked "verified" claims (the `fabricated` findings).
+/// Every offending line keeps its content byte-identical and gains the
+/// `UNVERIFIED_CLAIM_MARKER` suffix, which `verify` treats as an explicit
+/// downgrade, so the repaired handoff verifies while an unannotated
+/// fabricated claim still fails. Pure and deterministic; no model call.
+pub fn annotate_unbacked_verified_claims(
+    compact_artifact: &str,
+    state: &TypedStateLedger,
+) -> String {
+    let carried_record_ids: BTreeSet<&str> =
+        state.records.iter().map(|record| record.id.as_str()).collect();
+    let carried_entry_ids: BTreeSet<&str> = state
+        .records
+        .iter()
+        .map(|record| record.source_entry_id.as_str())
+        .collect();
+    let verified_texts: Vec<String> = state
+        .records
+        .iter()
+        .filter(|record| {
+            record.verification != Verification::Unverified && !record.text.trim().is_empty()
+        })
+        .map(|record| normalized(&record.text))
+        .collect();
+    let mut out = String::with_capacity(compact_artifact.len());
+    for line in compact_artifact.split_inclusive('\n') {
+        let (body, newline) = match line.strip_suffix('\n') {
+            Some(body) => (body, "\n"),
+            None => (line, ""),
+        };
+        let trimmed = body.trim();
+        let unbacked = !trimmed.is_empty()
+            && !is_heading_line(trimmed)
+            && VERIFIED_WORD_RE.is_match(trimmed)
+            && !trimmed.contains(UNVERIFIED_CLAIM_MARKER)
+            && !verified_claim_is_backed(
+                trimmed,
+                &carried_record_ids,
+                &carried_entry_ids,
+                &verified_texts,
+            );
+        out.push_str(body);
+        if unbacked {
+            out.push_str(UNVERIFIED_CLAIM_MARKER);
+        }
+        out.push_str(newline);
+    }
+    out
 }
 
 /// The render's section titles: the all-caps lines `render_allocation`
@@ -3942,6 +4035,82 @@ mod tests {
         );
         let verification = verify(&artifact, &ledger);
         assert!(verification.fabricated.is_empty(), "{verification:?}");
+    }
+
+    #[test]
+    fn unbacked_verified_claim_from_a_retired_record_repairs_to_unverified() {
+        // D34: the routine lossy handoff quotes a rendered line whose record
+        // retired at the step boundary (the previous summary's decayed head
+        // still carries it). The strict vouching rule (D31) refuses the
+        // retired id as backing, so the quote fails the fabricated-claim
+        // check; the bounded repair downgrades the line to an explicit
+        // unverified claim, keeps its content, and the amended artifact
+        // verifies.
+        let first = build_typed_state(&[
+            user_entry("u1", "TASK GOAL: migrate the billing service R2-W48-A1."),
+            assistant_entry("a1", "Section 3 verified; publishing next."),
+        ]);
+        let task = first
+            .records
+            .iter()
+            .find(|record| record.kind == TypedInformationKind::CurrentTask)
+            .expect("the task record")
+            .clone();
+        let pending = first
+            .records
+            .iter()
+            .find(|record| record.kind == TypedInformationKind::PendingAction)
+            .expect("the assistant statement classifies as a pending action")
+            .clone();
+        let second = build_typed_state(&[user_entry(
+            "u2",
+            "Thanks, that explanation makes sense.",
+        )]);
+        let merged = merge(Some(&first), second);
+        assert!(merged.retired_refs.contains(&pending.id));
+
+        // The stale quote rides the decayed head of the previous summary.
+        let artifact = format!(
+            "## Goal\n- [{}] {}\n\n(decayed prior summary) - [{}] [@{}] Section 3 verified; publishing next.\n",
+            task.id, task.text, pending.id, pending.source_entry_id
+        );
+        let strict = verify(&artifact, &merged);
+        assert!(!strict.passed, "the retired id must not vouch (D31)");
+        assert_eq!(strict.fabricated.len(), 1, "{strict:?}");
+        assert_eq!(strict.missing.len(), 0, "{strict:?}");
+
+        let repaired = annotate_unbacked_verified_claims(&artifact, &merged);
+        // The claim content survives byte-identical, downgraded in place.
+        assert!(
+            repaired.contains(&format!(
+                "- [{}] [@{}] Section 3 verified; publishing next.",
+                pending.id, pending.source_entry_id
+            )),
+            "the repaired line keeps the claim content: {repaired}"
+        );
+        assert!(repaired.contains(UNVERIFIED_CLAIM_MARKER));
+        let after = verify(&repaired, &merged);
+        assert!(after.passed, "the downgraded claim must verify: {after:?}");
+    }
+
+    #[test]
+    fn annotate_unbacked_verified_claims_leaves_backed_lines_alone() {
+        // D34 positive control: a "verified" line citing a LIVE record is
+        // not downgraded, and lines that claim nothing are untouched, so
+        // the repair never rewrites honest material.
+        let ledger = build_typed_state(&[
+            user_entry("u1", "TASK GOAL: migrate the billing service R2-W48-A1."),
+            tool_entry("t1", "test result: ok. 4785 passed; 0 failed"),
+        ]);
+        let task = &ledger.records[0];
+        let evidence = &ledger.records[1];
+        let artifact = format!(
+            "## Goal\n- [{}] {}\n\n## Critical Context\n- The suite is verified: [{}] says {}.\n",
+            task.id, task.text, evidence.id, evidence.text
+        );
+        let repaired = annotate_unbacked_verified_claims(&artifact, &ledger);
+        assert_eq!(repaired, artifact, "no line is amended");
+        assert!(!repaired.contains(UNVERIFIED_CLAIM_MARKER));
     }
 
     #[test]

@@ -712,10 +712,13 @@ CONSTRAINT: every commit must reference ticket [JX-4f1c2a] in the message.",
     );
 }
 
-/// The repair bound is fail-closed: the deterministic repair only re-appends
-/// missing items, so a summary that also carries an unbacked verified claim
-/// still fails re-verification and the episode fails with exactly one model
-/// call (no second attempt).
+/// The repair bound is fail-closed. D34 widened the bounded repair to
+/// downgrade an unbacked "verified" claim (a stale quote of a retired
+/// record riding the previous summary's decayed head), so a missing item
+/// plus an unbacked claim now recovers deterministically. A claim citing
+/// a record id nothing knows is still unrecoverable: no deterministic
+/// repair can invent backing for an unknown id, so the episode fails with
+/// exactly one model call (no second attempt).
 #[tokio::test]
 async fn repair_that_still_fails_verification_fails_the_episode() {
     let (mut manager, _root) = new_manager("rot2-adv-repair-fail-");
@@ -729,15 +732,19 @@ CONSTRAINT: every commit must reference ticket [JX-4f1c2a] in the message.",
     let (model, captured) = fabricating_summarizer_fixture(
         "rot2-adv-repair-fail",
         Some("JX-4f1c2a".to_string()),
-        "The flaky retry integration test is verified fixed on the staging cluster.",
+        "The flaky retry integration test is verified fixed on the staging cluster [VD-0badca].",
     );
 
     let error = run_compaction(&mut manager, &typed_settings(), &model)
         .await
         .expect_err("a repair whose output still fails verification must fail the episode");
     assert!(
+        error.contains("unresolved references"),
+        "the unresolvable reference must block the bounded repair: {error}"
+    );
+    assert!(
         error.contains("unbacked verified claims"),
-        "the re-verification failure must be reported: {error}"
+        "the fabricated claim is still counted: {error}"
     );
     assert!(
         error.contains("existing conversation preserved"),

@@ -46,9 +46,9 @@ use crate::core::compaction::task_state::{
     build_ledger, render_ledger, TaskStateLedger, LEDGER_INSTRUCTION,
 };
 use crate::core::compaction::typed_state::{
-    allocate, build_typed_state, merge, parse_typed_state, render_allocation, verify,
-    TypedInformationKind, TypedStateLedger, TypedStateRecord, TypedStateSalvage,
-    TypedStateVerification, UnsafeCompaction, VerificationFinding,
+    allocate, annotate_unbacked_verified_claims, build_typed_state, merge, parse_typed_state,
+    render_allocation, verify, TypedInformationKind, TypedStateLedger, TypedStateRecord,
+    TypedStateSalvage, TypedStateVerification, UnsafeCompaction, VerificationFinding,
 };
 use crate::core::compaction::utils::{
     compute_file_lists, create_file_ops, extract_file_ops_from_message, format_file_operations,
@@ -98,7 +98,9 @@ pub struct CompactionDetails {
 #[serde(rename_all = "camelCase")]
 pub struct TypedVerificationRecord {
     pub passed: bool,
-    /// True when the deterministic missing-item repair amended the summary.
+    /// True when a deterministic repair amended the summary: the
+    /// missing-item append, or the D34 downgrade of an unbacked "verified"
+    /// claim to an explicit unverified annotation.
     pub repaired: bool,
     pub missing: usize,
     pub mis_superseded: usize,
@@ -3150,11 +3152,13 @@ pub async fn compact_with_metrics(
     // ledger before anything is persisted. `slices[0]` is the conversation
     // summary in both the plain and the split-turn shapes (the protected
     // block is only ever attached to that call). A failure whose findings
-    // are only missing required items gets one bounded, deterministic
-    // repair: the missing protected lines are appended verbatim to their
-    // matching summary sections, with no model call, and the amended text is
-    // re-verified. Any other failure, or a repair that still fails, is a
-    // summary-validation failure and surfaces through the same channel.
+    // are only missing required items or unbacked "verified" claims gets
+    // one bounded, deterministic repair: the missing protected lines are
+    // appended verbatim to their matching summary sections, and an unbacked
+    // "verified" claim is downgraded to an explicit unverified annotation
+    // (D34), with no model call, and the amended text is re-verified. Any
+    // other failure, or a repair that still fails, is a summary-validation
+    // failure and surfaces through the same channel.
     let mut typed_verification: Option<TypedVerificationRecord> = None;
     if let Some(state) = &typed_state {
         let artifact = slices
@@ -3167,9 +3171,24 @@ pub async fn compact_with_metrics(
         if !verification.passed
             && verification.mis_superseded.is_empty()
             && verification.unresolved_refs.is_empty()
-            && verification.fabricated.is_empty()
         {
-            repaired_text = append_missing_protected_items(&artifact, state, &verification.missing);
+            // D34: the bounded repair covers unbacked "verified" claims too.
+            // A routine lossy handoff still quotes a rendered line whose
+            // record retired at the step boundary (the previous summary's
+            // decayed head carries it); the strict vouching rule (D31)
+            // correctly refuses the retired id, so the claim is downgraded
+            // to an explicit unverified annotation instead of failing the
+            // episode. Missing protected items are still appended back.
+            // Both repairs are deterministic, with no model call; the
+            // amended text is re-verified.
+            let mut amended = artifact.clone();
+            if !verification.fabricated.is_empty() {
+                amended = annotate_unbacked_verified_claims(&amended, state);
+            }
+            if !verification.missing.is_empty() {
+                amended = append_missing_protected_items(&amended, state, &verification.missing);
+            }
+            repaired_text = amended;
             verification = verify(&repaired_text, state);
             repaired = true;
         }
