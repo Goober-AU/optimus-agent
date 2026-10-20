@@ -525,3 +525,167 @@ system-python discovery run, which run green through the cb-venv step
 immediately after). The W63 gap (section 11.6) is closed at the landed
 tip; W67's final matrix re-runs these suites at the final tip.
 
+
+## 12. FINAL TIP MATRIX (ac5edde2b) — GREEN (W81)
+
+W81 ran the campaign's definitive final gate matrix at the final
+integration tip `ac5edde2b924e86188722b20d8e8770a669fb234`
+(`improve/context-rot-iteration-2` head at run time, 177 commits over
+base `6000d6bc1`; D34 FIXED in BUG-LEDGER — W71's bounded repair
+`6894f6a6d` integrated, ledger rows `08f34308b`/`b0fdcde69`/
+`ac5edde2b`). Every step is green: all twelve `rot2_*` suites, all
+thirteen `compaction_*` suites, all six lib filters, the complete
+workspace check, and all six Python research suites — zero failed tests
+anywhere, and the workspace warning count equals the base. This record
+supersedes W63's RED battery (section 11) as the landed-tip battery of
+record, and it closes the two gaps that battery left open (sections 11.5
+and 11.6).
+
+Execution note: the matrix ran detached (WMI `Win32_Process.Create`, so
+the runner sits outside the agent session's process tree) after an
+agent-session restart killed the first launch mid-build; the relaunch
+re-ran every step from a fresh preflight. Run window
+2026-10-20T02:25:23Z-02:35:47Z; 40 steps, all exit 0. Runner: W63's
+`run_matrix.sh` adapted for this worker — W81 paths, `HARNESS` as the
+Windows-style path to this worker's isolated target's
+`compaction-harness.exe`, and W72's `CB_REFS_ROOT` split (set only for
+the ContextBench step, Windows-style; see section 11.10 note 1). The
+harness binary was rebuilt at the final tip by the matrix's own
+`build_harness` step (24 281 088 bytes, 02:30:42Z, before every test
+step). Artifacts under `C:/Users/openclawuser/rot2-w81-gates/`
+(`run_matrix.sh`, `logs/<key>.log`, `results.tsv`, `matrix_run.log`).
+Warm build: 1 174 s at the pre-D34 tip `83b3719c3` into the ISOLATED
+target `C:/Users/openclawuser/rot2-w81-target`; the final-tip
+incremental test build added 473 s plus the 4.7 s harness build.
+
+### 12.1 Environment
+
+| item | value |
+| --- | --- |
+| host | Windows, git-bash; runner detached via WMI (cmd -> git-bash) |
+| worktree | `C:/Users/openclawuser/optimus-rot2-w81-matrix`, branch `rot2/w81-matrix` at `ac5edde2b`, clean at run time (the report edit below is this worker's only change) |
+| toolchain | rustc 1.98.1 (48a229cea 2026-09-01), cargo 1.98.1 (797e8a9bc 2026-08-05); `RUSTUP_HOME`/`CARGO_HOME` under `C:/Users/openclawuser/optimus-rust-toolchain/` |
+| cargo target | ISOLATED `C:/Users/openclawuser/rot2-w81-target` |
+| python (ContextBench + adapter) | campaign cb-venv 3.11.15, `C:/Users/openclawuser/optimus-rot2-w5-research/refs/cb-venv` (pyarrow 26.0.0, compactbench import ok) |
+| python (other four suites) | 3.14.3 as resolved in the detached runner's PATH; re-verified under the 3.11.15 interpreter W72 recorded — identical shapes, `logs/py_*_311.log` |
+
+### 12.2 rot2_* suites (`cargo test -p pi-coding-agent --test <name>`)
+
+| suite | result | notes |
+| --- | --- | --- |
+| `rot2_typed_adversarial` | 24 passed, 0 failed, 0 ignored (0.23 s) | unchanged from W63's red battery; the D34 fix moved the adversarial repair-bound pin to the still-unrecoverable `[VD-0badca]` shape inside the existing count |
+| `rot2_wave_adversarial` | 10 passed, 0 failed, 0 ignored (13.80 s) | grew from W63's 9: the D33 absorption pin `6d85cc48f` landed after that battery, as its table note predicted |
+| `rot2_typed_integration` | 9 passed, 0 failed, 0 ignored (0.30 s) | |
+| `rot2_native_typed_chain` | 2 passed, 0 failed, 0 ignored (0.24 s) | |
+| `rot2_multicycle` | **5 passed, 0 failed, 1 ignored** (0.34 s) | the D34 gate: green (section 12.7); the ignored test is the research adapter entry point |
+| `rot2_render_cap` | 7 passed, 0 failed, 0 ignored (0.06 s) | |
+| `rot2_ledger_fixes` | 7 passed, 0 failed, 0 ignored (0.06 s) | |
+| `rot2_defect_wave2` | 3 passed, 0 failed, 0 ignored (0.91 s) | |
+| `rot2_harness_digest` | 2 passed, 0 failed, 0 ignored (0.56 s) | |
+| `rot2_branch_summary` | 2 passed, 0 failed, 0 ignored (0.01 s) | |
+| `rot2_subagent_constraints` | 3 passed, 0 failed, 0 ignored (1.45 s) | |
+| `rot2_supersession` | 4 passed, 0 failed, 0 ignored (0.27 s) | |
+
+Totals: 78 passed, 0 failed, 1 ignored (the documented research adapter).
+
+### 12.3 compaction_* suites (`cargo test -p pi-coding-agent --test <name>`)
+
+| suite | result | notes |
+| --- | --- | --- |
+| `compaction_turn_flow` | 3 passed, 0 failed (0.87 s) | |
+| `compaction_recovery` | 9 passed, 0 failed (0.83 s) | |
+| `compaction_model_threshold` | 10 passed, 0 failed (0.00 s) | |
+| `compaction_fidelity` | 1 passed, 0 failed (0.01 s) | |
+| `compaction_summary_guard` | 2 passed, 0 failed (0.01 s) | |
+| `compaction_observability` | 7 passed, 0 failed (0.01 s) | |
+| `compaction_kernel_parity` | 23 passed, 0 failed (0.03 s) | |
+| `compaction_parallel_fallback` | 2 passed, 0 failed (2.96 s) | |
+| `compaction_length_recovery` | 7 passed, 0 failed (0.01 s) | |
+| `compaction_chat_length_recovery` | 4 passed, 0 failed (0.03 s) | |
+| `compaction_anthropic_length_recovery` | 4 passed, 0 failed (0.03 s) | |
+| `compaction_summary_path` | 8 passed, 0 failed (0.01 s) | |
+| `compaction_parity_suite` | 14 passed, 0 failed (4.26 s) | the W43 T05.4 fixture re-pin holds |
+
+Totals: 94 passed, 0 failed — identical counts to W63's battery; the D34
+repair path added no `compaction_*` integration case (its guards are the
+lib units and the multicycle smoke, below).
+
+### 12.4 lib filters (`cargo test -p pi-coding-agent --lib <filter>`)
+
+| filter | result | notes |
+| --- | --- | --- |
+| `core::compaction` | 170 passed, 0 failed, 3 759 filtered out (2.28 s) | grew from W63's 168: the D34 fix's two repair units |
+| `typed_state` | 80 passed, 0 failed, 3 849 filtered out (2.18 s) | grew from W63's 78: `annotate_unbacked_verified_claims` units |
+| `compaction::task_state` | 17 passed, 0 failed, 3 912 filtered out (0.06 s) | |
+| `core::context_health_calibration` | 17 passed, 0 failed, 3 912 filtered out (0.02 s) | |
+| `core::settings_manager` | 62 passed, 0 failed, 3 867 filtered out (0.25 s) | |
+| `settings` | 100 passed, 0 failed, 3 829 filtered out (3.56 s) | |
+
+Totals: 446 passed, 0 failed. The two known environmental failures
+(section 11.8) are matched by none of these six filters and appeared in
+no step of this matrix.
+
+### 12.5 `cargo check --workspace --all-targets`
+
+Complete this time (W63's was interrupted, section 11.5): exit 0,
+`Finished dev profile in 52.16 s`, 0 `error:` lines, 576 warning
+diagnostics (604 `warning:` lines minus 28 crate-summary lines, W55's
+count method). W55's base run of the same command at `6000d6bc1` with
+the same toolchain and method: 0 errors, 576 warning diagnostics. The
+campaign's net warning delta at the final tip is therefore 0 — every
+warning any wave introduced was cleaned up before landing.
+
+### 12.6 Python research suites
+
+All six green, shapes identical to W72's section 11.10 record:
+
+| suite | exit | result |
+| --- | --- | --- |
+| offline unittest discovery | 0 | 138 tests, OK (3 skipped; 0.08 s) — also OK (3 skipped) under 3.11.15 |
+| ContextBench integration self-check (cb-venv + `CB_REFS_ROOT`) | 0 | 127 tests, OK, 0 skipped (1.99 s) — the 3 gated tests ran against the pinned parquet |
+| W27 live-pipeline selftest | 0 | 24 tests, OK (0.006 s) — also OK under 3.11.15 |
+| E3 offline selftest | 0 | 14 tests, OK (1.96 s) — also OK under 3.11.15 |
+| E3ADV offline selftest | 0 | 15 tests, OK (0.31 s) — also OK under 3.11.15 |
+| CompactBench adapter checks (cb-venv + `HARNESS`) | 0 | 13/13 checks passed (4 s) — ran the tip-built harness through both arms |
+
+Interpreter note: the detached runner's PATH resolves `python` to
+3.14.3, not the 3.11.15 W72 recorded; the four system-python suites
+were re-run under 3.11.15 from this worktree with identical shapes and
+exit 0 (`logs/py_discovery_311.log`, `py_live_selftest_311.log`,
+`py_e3_selftest_311.log`, `py_e3adv_selftest_311.log`), and the two
+cb-venv suites pin their interpreter explicitly, so the recorded
+invocation matches W72's either way.
+
+### 12.7 The D34 gate: `rot2_multicycle` at the final tip
+
+Six tests ran; five passed and one was ignored:
+
+```
+test rot2_production_multicycle ... ignored, research adapter: requires ROT2_SCENARIO/ROT2_RESULT env
+test rot2_lossy_summarizer_keeps_protected_block_verbatim_and_drops_middle ... ok
+test rot2_user_image_blocks_cost_tokens_d16 ... ok
+test rot2_request_level_estimate_adds_system_prompt_and_tools_d17 ... ok
+test rot2_smoke_typed_arm_persists_typed_ledger_and_verifies ... ok
+test rot2_smoke_multicycle_runs_all_cycles_and_reports_probes ... ok
+```
+
+`rot2_smoke_typed_arm_persists_typed_ledger_and_verifies` — the
+deterministic D34 red of W63's battery (section 11.7: 4 passed, 1
+FAILED, 1 ignored, exit 101, "1 unbacked verified claims") — is green
+at the final tip, and the suite result is exactly the post-fix shape
+the D34 ledger row records (5+1 ignored, the smoke asserting the
+repaired cycle exists and re-verifies clean). The fail-closed bound the
+fix must not weaken is still pinned in the green
+`rot2_typed_adversarial` (the unresolvable `[VD-0badca]` reference
+blocks the repair) and in the two lib units sections 12.2/12.4 count.
+
+### 12.8 Verdict
+
+GREEN. At the final tip `ac5edde2b` the campaign's full gate list
+passes with zero failed tests: 78 `rot2_*` + 94 `compaction_*`
+integration tests, 446 lib-filter tests, the workspace check at base
+warning parity (0 errors, 576 warnings), and all six Python research
+suites. The D34 fix is verified green by the battery that caught it,
+on the same hardware and toolchain, with the runner's every step logged
+(`C:/Users/openclawuser/rot2-w81-gates/logs/`, `results.tsv`). The
+branch's final gate evidence is this section.
