@@ -17,14 +17,14 @@ authoritative corrections out of the render - defect D21), at the W34 refresh th
 audited defects were addressed - twelve with behaviour changes and regression
 guards, D2 verified intact and pinned by tests - and since then the
 D18/D19/D20 recovery (W30) and the D21-D29 fix wave landed, leaving D7, D10's
-"never retry" sub-item and the post-wave findings D31-D33 as the open items
+"never retry" sub-item and the post-wave findings D33 and D34 as the open items
 (D30 fixed and the cycle-5 budget caveat accepted-and-pinned since, W46);
 and the designed replacement (typed state
 v2) is wired end to end as an opt-in mode, measured live (R2-E5, re-measured
 post-fix by R2-E5-RM, W47), then red-teamed: the W35 adversarial suite pinned
 eight guarantees and filed seven defects (D22-D28), and the D21-D29 fix wave
 that followed left only D30 and the cycle-5 budget caveat open - both since
-resolved by W46, with D31-D33 the open post-wave findings.
+resolved by W46, with D33/D34 open and D31/D32 fixed (W52/W53).
 
 Base `6000d6bc1` (v0.1.36 + #181/#182). First written on branch `rot2/w22-final`
 at `021678796` (40 commits over base); refreshed on branch `rot2/w34-reportrefresh`
@@ -40,9 +40,11 @@ recovery (W30), the D21 render-cap fix (W32) and the D22-D29 red-team fixes;
 landed since the W49/W50 refreshes: the D30 fix with the cycle-5 budget
 caveat accepted-and-pinned (W46, `10e2b36e6` + `d00ff2067`) and the
 typed-arm re-measure R2-E5-RM (W47, section 3.14: fixture 13/19 on the
-integrated tip, TASK-E no halt, E3ADV C1 SUPERSEDED at every cycle). In
-flight at this writing and NOT in this tree: the W16 supersession work
-(`rot2/w16-supersession`, no commits over this head).
+integrated tip, TASK-E no halt, E3ADV C1 SUPERSEDED at every cycle). IN THIS
+TREE: the W16 supersession refinement, integrated by W51 (clause-level
+correction classification, prohibition scrubbing, scaffold-aware pairing
+anchor scoring, retired-item SUPERSEDED history render;
+`tests/rot2_supersession.rs` 4/4, `task_state.rs` lib 21/21).
 
 ## 1. Hypotheses
 
@@ -608,7 +610,7 @@ scope) and the caveat accepted-and-pinned (`d00ff2067`,
 `tight_budget_drops_superseded_history_but_keeps_the_pairing_line`). The
 affected E5 cells were re-measured by R2-E5-RM (W47, section 3.14); the
 D29 fix was already live-confirmed on the E3ADV C1 cell (`621dc462f`). The
-W48/W47 post-wave audits filed D31-D33 (open).
+W48/W47 post-wave audits filed D31-D33 (D31/D32 fixed in W52/W53; D33 in flight; D34 filed from the final battery).
 
 ## 5. What a reviewer should check
 
@@ -631,7 +633,7 @@ W48/W47 post-wave audits filed D31-D33 (open).
    no halt (verifier passed every cycle, 0 unresolved refs) and the E3ADV
    C1 cell rendering SUPERSEDED at every cycle 1-5 with the retirement
    copied; the unaffected A/C live cells stand at their committed 5/5. The
-   post-wave findings D31-D33 remain open.
+   post-wave finding D33 remains open (D31/D32 fixed).
 2. Gate coverage: `REGRESSION-GATES.md` records the full W25 pass at
    `29f1f0c92` (with per-suite SHAs back to `f7bc6306c`) and the wave-2
    battery at the final tip `71e770c5e` (W49, section 10): the wave suites
@@ -719,7 +721,7 @@ W48/W47 post-wave audits filed D31-D33 (open).
   re-measure, W47: 5/5 cycles, no halt). The red team found eight more
   defects in the typed path after the wiring (D22-D28), all fixed
   (section 4.4; D30 fixed and the cycle-5 budget caveat accepted-and-pinned
-  by W46, with D31-D33 the open post-wave findings). The
+  by W46, with D33/D34 open and D31/D32 fixed (W52/W53)). The
   W26/W27 live results are prompt-level ledger effects, not typed-arm
   evidence.
 - R2-E1/E-INC numbers are pipeline mechanics under a deliberately lossy
@@ -736,7 +738,7 @@ W48/W47 post-wave audits filed D31-D33 (open).
   5.3). The W26 and W27 practice runs DID use the built harness binary on the
   production path, at practice scale.
 - Not a claim that all audited defects are fixed: D7 and D10's "never retry"
-  sub-item remain open; the typed path's D31-D33 are open (D30 fixed and the
+  sub-item remain open; the typed path's D33/D34 are open (D30/D31/D32 fixed and the
   cycle-5 budget caveat accepted-and-pinned by W46); W9-F1 (keyword-less
   constraint capture) is a v1 design gap that typed v2 removes by classifying
   on role - except custom `agent_message` entries, which the committed
@@ -785,8 +787,8 @@ Every file in `reports/context-rot-r2/` at this writing (15 files):
   (section 10).
 - In flight at the W49 writing and since landed on this branch: the D30 and
   cycle-5 budget-caveat recovery (W46, `10e2b36e6` + `d00ff2067`) and the
-  typed-arm re-measure R2-E5-RM (W47, section 3.14). Not in this tree: the
-  W16 supersession work (no commits over this head). The W21 scorecards were
+  typed-arm re-measure R2-E5-RM (W47, section 3.14). In this tree: the
+  W16 supersession work (integrated by W51; `rot2_supersession.rs` 4/4). The W21 scorecards were
   integrated at `7263a58c5` and their factual staleness is refreshed by this
   worker; the W19 PR draft (`PR-BODY.md`, integrated at `483e6de35`) predates the
   post-W22 results and needs its own refresh. If a file named here is missing at

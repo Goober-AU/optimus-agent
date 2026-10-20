@@ -68,7 +68,6 @@ typed-arm re-measure R2-E5-RM (W47: the E1 fixture on the integrated tip plus
 the two affected live cells), the CompactBench practice suites (W12 mock, W26
 live) and the ContextBench live practice run (W27) — sections below. Still not
 executed:
-712791dd8 (docs(context-rot): verify the experiment ledger against the artifacts (W60))
 - any official / leaderboard-comparable number: every CompactBench run is
   CUSTOM-OPTIMUS (public practice suites, custom adapter, scorer 2.0.0; the W26
   live run is 8 of 20 starter cases per arm, one live draw per case); every
@@ -79,7 +78,6 @@ executed:
 - the unaffected E5 live cells re-run post-fix (e3 tasks A/C: E5-RM re-ran the
   affected cells only; A/C scored 5/5 in the committed run and are id-stable
   there, e5/README.md Finding 2).
-712791dd8 (docs(context-rot): verify the experiment ledger against the artifacts (W60))
 - re-running the iteration-1 retrieval surfaces on a second model: the r2 live
   family ran on GLM 5.3, but the iteration-1 surfaces themselves were not re-run.
 
@@ -399,7 +397,6 @@ Integrated as `2fbb14f33` (worker branch `rot2/w24-remeasure`, worker commit 19a
   benchmark was NOT executed at that writing; R2-E5-RM (W47, below) has since
   re-measured the affected cells on the fixed tree (fixture 13/19, TASK-E no
   halt, C1 SUPERSEDED at every cycle).
-712791dd8 (docs(context-rot): verify the experiment ledger against the artifacts (W60))
 
 ## DEFECT-WAVE-2 — the typed-state red team and the D21-D29 fix wave (verified W49)
 
@@ -505,7 +502,6 @@ re-pin `31ce39b84` holds at this tip).
 - a full post-fix R2-E5 live re-run was NOT executed at that writing: only
   the D29 C1 cell was re-run live (`621dc462f`); R2-E5-RM (W47, below) has
   since re-measured the affected cells on the fixed tree.
-712791dd8 (docs(context-rot): verify the experiment ledger against the artifacts (W60))
 
 ## R2-E5-RM — typed-arm re-run on the fixed implementation (fixture + live)
 
