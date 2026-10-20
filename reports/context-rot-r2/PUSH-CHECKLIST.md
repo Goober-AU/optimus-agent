@@ -17,10 +17,10 @@ account, or use the web fallback at the end.
       `git log --oneline 90fcd17db..HEAD` listing only docs commits.
 - [ ] `BUG-LEDGER.md` carries no VERIFIED-OPEN row except the documented open
       set (D7 deferred, D10 "never retry" sub-item, D12 soft-fence residual,
-      D17 production wiring follow-up, D20 residue) and D33 (fix in flight on
-      W54 at assembly time; flip the ledger row, the PR body's D33 row and its
-      fragment bullet when it lands, or keep it listed as open if it does
-      not).
+      D17 production wiring follow-up, D20 residue) and D34 (the W63 battery
+      regression, fix in flight on W71). D33 landed (W54, `cea3a4496` + pin
+      `6d85cc48f` + ledger row `510fd168d`): its ledger row, the PR body's D33
+      row and the fragment bullet are flipped, as this checklist prescribed.
 - [ ] `git lfs ls-files --size` lists exactly five raw-call logs, all with
       real sizes (not 130-byte pointers):
       `research/context_rot_r2/live/raw-calls.jsonl` (~8.1 MB),

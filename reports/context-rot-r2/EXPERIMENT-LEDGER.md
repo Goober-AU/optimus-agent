@@ -572,7 +572,10 @@ selftests (14+15) stay green.
   the C1 retirement (live-confirmed, now at all five cycles). The typed
   arm's fixture score on the tip is 13/19 (D25 trades the two
   step-scoped constraint episodes for a smaller, budget-stable ledger);
-  the absorbed-record stranding is the one open defect candidate.
+  the absorbed-record stranding this run filed as the one open defect
+  candidate became D33, since fixed (W54, `cea3a4496`: the absorbed
+  record's ids retire into the tombstones at the absorption site; guard
+  `absorption_then_citation_resolves`).
 
 ## EVIDENCE INDEX
 

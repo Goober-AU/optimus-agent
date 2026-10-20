@@ -20,8 +20,8 @@ the evidence. Nothing was modified outside this report.
 Overall: every technical precondition for the push holds. The integrator can
 push `improve/context-rot-iteration-2` to the fork and open the PR as
 documented in `PUSH-CHECKLIST.md` without surprises. Only housekeeping
-decisions remain (dirty worktrees, the fragment's trailing `---`, the D33
-in-flight fix on W54).
+decisions remain (dirty worktrees, the fragment's trailing `---`; the D33
+fix this pass found in flight has since landed, W54 `cea3a4496`).
 
 ## 1. Branch topology
 
@@ -89,7 +89,7 @@ Four are dirty - reported for the cleanup list, not touched:
 
 | Worktree | State | Note |
 |---|---|---|
-| `optimus-rot2-w54-d33` | modified `crates/pi-coding-agent/tests/rot2_wave_adversarial.rs` (+119 lines vs its own HEAD) | the in-flight D33 fix. Does NOT match the integration tip; D33 is still VERIFIED-OPEN in BUG-LEDGER.md and the PR body, which is the checklist's documented open set. Integrator decision: land W54's fix and flip ledger/body/fragment, or push with D33 listed open. |
+| `optimus-rot2-w54-d33` | modified `crates/pi-coding-agent/tests/rot2_wave_adversarial.rs` (+119 lines vs its own HEAD) | was the in-flight D33 fix at this pass. The fix has since landed on the integration branch (W54: `cea3a4496` + pin `6d85cc48f` + ledger row `510fd168d`); BUG-LEDGER.md, the PR body and the fragment are flipped. Only this worktree's own uncommitted edits are stale debris now. |
 | `optimus-rot2-w16-supersession` | modified `crates/pi-coding-agent/src/core/compaction/task_state.rs` (+260/-21 vs its own HEAD), untracked `crates/pi-coding-agent/tests/rot2_supersession.rs` | the branch's commits are fully integrated; the uncommitted edits are unaccounted for. Likely stale debris, but only the integrator can confirm. |
 | `optimus-rot2-w5-research` | untracked `refs/` directory | stray directory, no tracked changes. |
 | `optimus-rot2-w69-trace` | untracked `nul` file | stray Windows device-name artifact. |
@@ -154,11 +154,12 @@ only this file plus its commit.
 
 ## Reminders carried from the checklist (already in a good state)
 
-- The checklist's BUG-LEDGER precondition holds: D33 is the only
-  VERIFIED-OPEN row consistent with "fix in flight on W54"; the PR body's
-  D33 row and the fragment bullet match that status. If W54's fix is landed
-  before the push, flip the ledger row, the PR body row and the fragment
-  bullet together, as the checklist prescribes.
+- The checklist's BUG-LEDGER precondition now resolves to D34: W54's D33
+  fix landed (`cea3a4496` + pin `6d85cc48f` + ledger row `510fd168d`) and
+  the ledger row, the PR body row and the fragment bullet are flipped
+  together, as the checklist prescribed. The one VERIFIED-OPEN row left is
+  D34 (the W63 battery regression, fix in flight on W71), which the PR
+  body's open set lists.
 - Push order matters: `git push fork improve/context-rot-iteration-2` and
   `git lfs push fork --all` must go out together, or the five raw-call
   pointers dangle on the remote until the LFS push lands.

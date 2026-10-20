@@ -282,8 +282,10 @@ writing).
 W63 ran the campaign's full gate list at the landed integration tip
 `90fcd17db` (= `improve/context-rot-iteration-2` head at run time, 143
 commits over base `6000d6bc1`; D31 and D32 FIXED, D33 VERIFIED-OPEN in
-BUG-LEDGER), so the reports carry a concrete landed-tip battery record
-ahead of the post-D33 final matrix. The battery is RED on exactly one
+BUG-LEDGER at that tip - the D33 fix landed ten commits above it:
+W54 `cea3a4496` + pin `6d85cc48f` + ledger row `510fd168d`), so the
+reports carry a concrete landed-tip battery record ahead of the post-D33
+final matrix. The battery is RED on exactly one
 deterministic failure — the `rot2_multicycle` typed-arm smoke, filed as
 D34 with fix ownership W71 — and green on everything else that ran: the
 other eleven `rot2_*` suites, all thirteen `compaction_*` suites, all six
@@ -315,7 +317,7 @@ would not resolve (W55 never executed its script). Run window
 | suite | result | notes |
 | --- | --- | --- |
 | `rot2_typed_adversarial` | 24 passed, 0 failed, 0 ignored (0.75 s) | grew from 23 at the W49 pass (`71e770c5e`); the D30 wave added the user-stated-decision pin |
-| `rot2_wave_adversarial` | 9 passed, 0 failed, 0 ignored (21.0 s) | |
+| `rot2_wave_adversarial` | 9 passed, 0 failed, 0 ignored (21.0 s) | the D33 absorption pin `6d85cc48f` landed after this run; the suite re-verifies 10/0 at the landed tip |
 | `rot2_typed_integration` | 9 passed, 0 failed, 0 ignored (0.38 s) | |
 | `rot2_native_typed_chain` | 2 passed, 0 failed, 0 ignored (0.34 s) | |
 | `rot2_multicycle` | **4 passed, 1 FAILED**, 1 ignored (0.41 s) | the red: the typed-arm smoke, section 11.7 (D34); the ignored test is the research adapter entry point |
@@ -440,8 +442,9 @@ failure is the deterministic D34 (`rot2_smoke_typed_arm_persists_typed_ledger_an
 preserved. The two known environmental failures were verified at base and
 did not appear. Not run because of the stop: the six Python research
 suites and the complete workspace check (partial: 0 errors, >=198
-warning diagnostics). The successor's final matrix (after D33 and the
-D34 fix land) supersedes this record.
+warning diagnostics). The successor's final matrix (after the
+D34 fix lands; D33 landed after this battery, W54 `cea3a4496`) supersedes
+this record.
 
 ### 11.10 PYTHON SUITES AT THE LANDED TIP (W72)
 

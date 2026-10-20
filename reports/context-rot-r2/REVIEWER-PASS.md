@@ -49,7 +49,9 @@ At HEAD the BUG-LEDGER rows are current and contradict both files:
 
 - D31 FIXED (`6041f71c9`, marked `e6e909e16`),
 - D32 FIXED (`53ab2e3d9`, marked `b12560575`),
-- D33 VERIFIED-OPEN (correctly disclosed everywhere).
+- D33 FIXED (`cea3a4496`, marked `510fd168d`; landed by W54 after this
+  pass - every D33 "fix in flight" claim in the push-facing documents was
+  flipped by the final review, as prescribed).
 
 I re-ran the guard suite at the final tip (section 5):
 `retired_ids_do_not_vouch_for_verified_claims` (D31) and
@@ -282,7 +284,9 @@ auditing D26 greps for it and reads a contradiction. Rename to
 - W42 S7: RESOLVED — no `set_var`/`remove_var` remains in
   `rot2_typed_adversarial.rs`.
 - W59 R5 (D31 open): RESOLVED by `6041f71c9`; verified green (section 5).
-- W59 R6 (D33): still open, correctly disclosed as VERIFIED-OPEN.
+- W59 R6 (D33): RESOLVED by W54 (`cea3a4496` + pin `6d85cc48f` +
+  ledger row `510fd168d`); `rot2_wave_adversarial` is 10/0 zero ignored at
+  the landed tip, the guard included.
 - W59 R7 (disclosed open set: D7, D12 soft fence, D20 residue, D10
   "never retry", W9-F1 v1 capture gap, D17 wiring): unchanged and still
   disclosed.

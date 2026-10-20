@@ -319,8 +319,9 @@ in the report set.
   test un-ignored in `tests/rot2_wave_adversarial.rs`); the ledger-marking
   commit is `b12560575`. The D32 row's cited `aab8e4c58` is the worker-tree
   original, not an ancestor of this branch (see R3).
-- D33 OPEN (filed by `2e727e0b6`; fix direction in the row: retire absorbed
-  ids into `retiredRefs` at absorption time).
+- D33 FIXED (W54, integrated `cea3a4496`; the filed direction was adopted:
+  retire absorbed ids into `retiredRefs` at absorption time, pinned by
+  `absorption_then_citation_resolves`, `6d85cc48f`).
 - Post-audit docs work: the typed mode is now user-documented (`a5362aa63`
   README, `0a35fbfa6` settings reference and settings-manager doc comments).
 
@@ -374,7 +375,8 @@ R3. BUG-LEDGER.md debris: a stray `D` line (112) between the D31/D32 rows;
 R4. Fragment debris and the missing D30 bullet (the S2 residuals).
 R5. D31 open (in flight on `rot2/w52`): the typed verifier's
     fabricated-claim check accepts retired-id citations.
-R6. D33 open: absorbed-record reference stranding.
+R6. D33 open: absorbed-record reference stranding. RESOLVED since by W54
+    (`cea3a4496`, pin `6d85cc48f`, ledger row `510fd168d`).
 R7. Disclosed open/deferred, unchanged: D7, D12 partial (soft fence), D20
     residue, D10 "never retry" sub-item, W9-F1 v1 capture gap, D17
     production wiring follow-up.
