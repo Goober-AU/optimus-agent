@@ -282,6 +282,12 @@ fn resource_full_frame_keeps_one_context_health_indicator_and_a_live_header() {
                 .collect(),
         )));
         h.transcript.borrow_mut().subagents = Some(bar.clone());
+        // The harness mounts a dock at construction; re-enter to mount this roster.
+        h.ui.borrow_mut()
+            .exit_fullscreen(pi_tui::tui::ExitFullscreenOptions {
+                flush: false,
+                ..Default::default()
+            });
         super::super::super::native_settings::fullscreen(
             true,
             &h.mode,
