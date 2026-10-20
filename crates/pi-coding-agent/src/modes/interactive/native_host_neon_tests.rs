@@ -126,6 +126,10 @@ fn resource_strip_is_compact_and_left_aligned_below_telemus_brand() {
     ];
     let data = HeaderData { cwd: "/fixture", session: "Resources", model: "fixture-model",
         execution: None, phase: "WORKING", jev: None, clock: "12:34:56", resources: &resources };
+    let column = |row: &str, label: &str| {
+        let row = strip_ansi(row);
+        visible_width(&row[..row.find(label).unwrap()])
+    };
     for style in ["neon", "prime"] {
         crate::modes::interactive::theme::theme::init_theme(Some(style), false);
         for width in [1, 20, 40, 80, 120, 160] {
@@ -137,8 +141,8 @@ fn resource_strip_is_compact_and_left_aligned_below_telemus_brand() {
                     let brand = rows.iter().position(|row| strip_ansi(row).contains("telemus.ai")).unwrap();
                     let metric = rows.iter().position(|row| strip_ansi(row).contains("MAIN* CPU 12%")).unwrap();
                     assert_eq!(metric, brand + 1);
-                    assert_eq!(strip_ansi(&rows[metric]).find("MAIN*"),
-                        strip_ansi(&rows[brand]).find("telemus.ai"));
+                    assert_eq!(column(&rows[metric], "MAIN*"),
+                        column(&rows[brand], "telemus.ai"));
                     assert!(rows[metric].contains("\x1b[1;38;5;39m"));
                     assert!(strip_ansi(&rows.join("\n")).contains("fixture-model"));
                 }

@@ -400,10 +400,14 @@ fn resource_full_frame_keeps_one_context_health_indicator_and_a_live_header() {
             .iter()
             .position(|line| line.contains("telemus.ai"))
             .unwrap();
+        let column = |row: &str, label: &str| {
+            let row = strip_ansi(row);
+            visible_width(&row[..row.find(label).unwrap()])
+        };
         assert_eq!(metric, brand + 1, "{text}");
         assert_eq!(
-            strip_ansi(&frame[metric]).find("MAIN"),
-            strip_ansi(&frame[brand]).find("telemus.ai"),
+            column(&frame[metric], "MAIN"),
+            column(&frame[brand], "telemus.ai"),
             "{text}"
         );
         assert!(
