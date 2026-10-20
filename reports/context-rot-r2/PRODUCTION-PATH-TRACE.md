@@ -276,6 +276,20 @@ verifier -> persisted entry -> next cycle's merge input.
     `task_state = Some("typed")` (`arm_settings`, `rot2_multicycle.rs:623-636`)
     and asserts every cycle persists the ledger, records a passed
     verification, and retains every planted probe across the cycles.
+    RUN RESULT at tip `cab09bdd2` (this wave, focused run): FAILS
+    deterministically — `compact` rejects the lossy fixture's summary with
+    "typed protected state not represented: 0 missing, 0 mis-superseded,
+    0 unresolved references, 1 unbacked verified claims"
+    (`rot2_multicycle.rs:751`). Pre-existing at the tip (this worktree has no
+    source changes; the report commit is docs-only) and isolated to the
+    typed arm: the sibling smoke test over the same scenario
+    (`rot2_smoke_multicycle_runs_all_cycles_and_reports_probes`, default +
+    prompt arms) passes. The interaction is between the typed verifier's
+    fabricated-verified-claim scan (`typed_state.rs:2053-2087`) and the
+    deterministic lossy summarizer after D30 (`10e2b36e6`) added the
+    user-stated verified-decision seed; this read-only wave did not
+    root-cause it. All other typed-path pins (16 tests across five binaries)
+    pass at the tip; see "Test run evidence" below.
 
 ## The environment-variable path
 
@@ -319,8 +333,20 @@ verifier -> persisted entry -> next cycle's merge input.
 | 7 | mode gates typed build/merge in prepare | compaction.rs:2037, 2067-2084 | rot2_typed_integration.rs:491/558; rot2_typed_adversarial.rs:1017/1109 | wired, pinned |
 | 8 | budget/allocate/render/attach/verify/persist | compaction.rs:3005-3239 | rot2_typed_integration.rs:666/79/558/798/854 + adversarial | wired, pinned |
 | 9 | native arm D28 carry + D32 salvage | compaction.rs:2943-2983 | rot2_native_typed_chain.rs:468/591; rot2_wave_adversarial.rs:716 | wired, pinned |
-| 10 | persist entry; next cycle reads typedState | agent_session.rs:18448-18462; compaction.rs:1926-1934, 2072 | round trips + rot2_multicycle.rs:1039 | wired, pinned |
+| 10 | persist entry; next cycle reads typedState | agent_session.rs:18448-18462; compaction.rs:1926-1934, 2072 | round trips (pass); rot2_multicycle.rs:1039 FAILS at tip | wired, pinned by round trips; smoke pin failing at tip (pre-existing) |
 | env | PRIME_AGENT_COMPACTION_TASK_STATE | settings_manager.rs:2060; compaction.rs:735-737 | resolver matrix only | wired, FLAGGED |
+
+## Test run evidence (this wave, focused runs at tip `cab09bdd2`)
+
+| Run | Result |
+|-----|--------|
+| `cargo test -p pi-coding-agent --lib compaction_task_state` | 3 passed |
+| `cargo test -p pi-coding-agent --lib task_state_mode` | 1 passed |
+| `cargo test -p pi-coding-agent --test rot2_typed_integration` | 9 passed |
+| `cargo test -p pi-coding-agent --test rot2_native_typed_chain` | 2 passed |
+| `cargo test -p pi-coding-agent --test rot2_wave_adversarial native_compaction_reports` | 1 passed |
+| `cargo test -p pi-coding-agent --test rot2_multicycle rot2_smoke_typed_arm` | FAILED (pre-existing at tip, typed-arm only; see hop 10) |
+| `cargo test -p pi-coding-agent --test rot2_multicycle rot2_smoke_multicycle` (sibling, same scenario, default+prompt arms) | 1 passed |
 
 ## Flags (no wiring defect found)
 
@@ -333,6 +359,14 @@ verifier -> persisted entry -> next cycle's merge input.
    `compaction.rs:3246-3276`) carries `typed_state` (line 3271) and skips
    verification, mirroring the D28 native carry — that carry is code-verified
    but has no dedicated pin (the native carry does).
+4. Pre-existing test failure at the tip (not a trace finding, but a reviewer
+   must know): `rot2_smoke_typed_arm_persists_typed_ledger_and_verifies`
+   fails deterministically on "1 unbacked verified claim" while its sibling
+   default+prompt smoke passes; the always-on typed-path pins
+   (`rot2_typed_integration`, `rot2_native_typed_chain`, the adversarial
+   suites) all pass. Needs a follow-up wave to root-cause the
+   verifier/fixture interaction introduced or exposed by D30
+   (`10e2b36e6`).
 
 ## Reviewer one-liner
 
