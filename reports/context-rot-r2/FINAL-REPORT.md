@@ -811,8 +811,8 @@ they can only change how the record is presented, not what was found.
 
 ### 8.2 The defect ledger, closed
 
-Verified against BUG-LEDGER.md at this tip: 31 numbered defects recorded
-(D1-D33; iteration-1's D3 and D15 carried no r2 scope).
+Verified against BUG-LEDGER.md at this tip: 32 numbered defects recorded
+(D1-D34; iteration-1's D3 and D15 carried no r2 scope).
 
 - 25 FIXED with regression guards: D1, D5, D6, D8, D9, D10, D11, D13, D14,
   D16, D17 (estimator), D18, D19, D21, D22, D23, D24, D25, D26, D27, D28,
