@@ -118,11 +118,18 @@ fn neon_header_and_timeline_fit_unicode_and_tiny_windows() {
 }
 
 #[test]
-fn resource_strip_paints_above_brand_and_keeps_model_and_editor_space() {
+fn resource_strip_is_compact_and_left_aligned_below_telemus_brand() {
     let _mode = mode();
-    let resources = vec!["\x1b[1;38;5;39mMAIN CPU 12% RAM 512MiB TPS 50.0 │ worker CPU 3% RAM 128MiB TPS ~75.0\x1b[22;39m".into()];
+    let resources = vec![
+        "\x1b[1;38;5;39mMAIN* CPU 12% RAM 512M TPS 50.0\x1b[22;39m".into(),
+        "\x1b[1;38;5;39mworker* CPU 12% RAM 512M TPS ~75.0 [1/4]\x1b[22;39m".into(),
+    ];
     let data = HeaderData { cwd: "/fixture", session: "Resources", model: "fixture-model",
         execution: None, phase: "WORKING", jev: None, clock: "12:34:56", resources: &resources };
+    let column = |row: &str, label: &str| {
+        let row = strip_ansi(row);
+        visible_width(&row[..row.find(label).unwrap()])
+    };
     for style in ["neon", "prime"] {
         crate::modes::interactive::theme::theme::init_theme(Some(style), false);
         for width in [1, 20, 40, 80, 120, 160] {
@@ -131,12 +138,18 @@ fn resource_strip_paints_above_brand_and_keeps_model_and_editor_space() {
                 assert!(rows.len() <= budget);
                 assert!(rows.iter().all(|row| visible_width(row) == width));
                 if width >= 80 && budget >= 3 {
-                    assert!(strip_ansi(&rows[0]).contains("MAIN CPU 12%"));
-                    assert!(rows[0].contains("\x1b[1;38;5;39m"));
+                    let brand = rows.iter().position(|row| strip_ansi(row).contains("telemus.ai")).unwrap();
+                    let metric = rows.iter().position(|row| strip_ansi(row).contains("MAIN* CPU 12%")).unwrap();
+                    assert_eq!(metric, brand + 1);
+                    assert_eq!(column(&rows[metric], "MAIN*"),
+                        column(&rows[brand], "telemus.ai"));
+                    assert!(rows[metric].contains("\x1b[1;38;5;39m"));
                     assert!(strip_ansi(&rows.join("\n")).contains("fixture-model"));
                 }
                 if width >= 120 && budget >= 7 {
-                    assert!(strip_ansi(&rows[1]).contains("telemus.ai"));
+                    assert!(strip_ansi(&rows[0]).contains("telemus.ai"));
+                    assert!(strip_ansi(&rows[2]).contains("worker* CPU 12%"));
+                    assert!(rows.len() <= 6, "resources must fit inside the existing brand block");
                 }
             }
         }

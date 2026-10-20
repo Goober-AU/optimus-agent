@@ -323,10 +323,10 @@ impl TuiComponent for Header {
             .and_then(|t| t.borrow().subagents.clone())
             .and_then(|bar| bar.borrow().compact_jev_status());
         let execution = execution_label(&mode);
-        let resource_budget = if height >= 8 { (height - 6).min(3) } else { usize::from(height >= 3) };
+        let (resource_width, resource_budget) = resource_space(width as usize, height);
         let resources = self.1.upgrade()
             .and_then(|t| t.borrow().subagents.clone())
-            .map(|bar| bar.borrow().resource_rows(width as usize, resource_budget))
+            .map(|bar| bar.borrow().resource_rows(resource_width, resource_budget))
             .unwrap_or_default();
         render_header(
             width as usize,
@@ -396,6 +396,14 @@ fn paired(left: &str, right: &str, width: usize) -> String {
     format!("{}  {}", fit(left, width - right_width - 2), right)
 }
 
+fn resource_space(width: usize, budget: usize) -> (usize, usize) {
+    if width >= 110 && budget >= 7 {
+        (width.saturating_sub(if width >= 160 { 75 } else { 39 }).min(60), 2)
+    } else {
+        (width.saturating_sub(2), budget.saturating_sub(2).min(2))
+    }
+}
+
 pub(super) fn render_header(width: usize, budget: usize, data: &HeaderData<'_>) -> Vec<String> {
     if budget == 0 || width == 0 {
         return Vec::new();
@@ -429,12 +437,11 @@ pub(super) fn render_header(width: usize, budget: usize, data: &HeaderData<'_>) 
         palette.fg(color, &format!("{dot} {}", clean_label(label)))
     });
     let mut rows = Vec::new();
-    if budget >= 3 && !data.resources.is_empty() {
-        rows.extend(data.resources.iter().take(budget.saturating_sub(2)).cloned());
-    } else if budget >= 4 {
+    let has_resources = !data.resources.is_empty() && budget >= 3;
+    if !has_resources && budget >= 4 {
         rows.push(String::new());
     }
-    if budget >= 7 + rows.len().saturating_sub(1) && width >= 110 {
+    if budget >= 7 && width >= 110 {
         const LOGO: [&str; 3] = [
             "█▀▀█ █▀▀█ ▀▀█▀▀ ▀█▀ █▀▄▀█ █  █ █▀▀",
             "█  █ █▀▀▀   █    █  █ ▀ █ █  █ ▀▀█",
@@ -460,12 +467,24 @@ pub(super) fn render_header(width: usize, budget: usize, data: &HeaderData<'_>) 
                 fit(&format!(" {}", palette.fg("accent", LOGO[i])), brand_width),
                 caption,
             );
-            let right = match i {
-                0 => format!("{}  {}", palette.bold(&palette.fg("accent", "telemus.ai")), palette.fg("dim", &format!("v{}", crate::config::VERSION))),
-                1 => String::new(),
-                _ => format!("SYSTEM // {status}"),
-            };
-            rows.push(paired(&brand, &format!("{right} "), width));
+            let brand_label = format!("{}  {}", palette.bold(&palette.fg("accent", "telemus.ai")), palette.fg("dim", &format!("v{}", crate::config::VERSION)));
+            if has_resources {
+                let panel_width = resource_space(width, budget).0;
+                let right = if i == 0 {
+                    format!("{brand_label}  {status}  {}", palette.fg("dim", "*shared CPU/RAM"))
+                } else {
+                    data.resources.get(i - 1).cloned().unwrap_or_default()
+                };
+                // Fixed column: labels and samples share the brand's left edge.
+                rows.push(format!("{}{}", fit(&brand, width - panel_width - 1), fit(&right, panel_width)));
+            } else {
+                let right = match i {
+                    0 => brand_label,
+                    1 => String::new(),
+                    _ => format!("SYSTEM // {status}"),
+                };
+                rows.push(paired(&brand, &format!("{right} "), width));
+            }
         }
         if caption_width == 0 {
             rows.push(paired(
@@ -476,10 +495,14 @@ pub(super) fn render_header(width: usize, budget: usize, data: &HeaderData<'_>) 
         }
     } else if budget >= 3 {
         rows.push(paired(
-            &format!("{} {}", palette.fg("accent", " OPTIMUS  //  BUILT FOR WHAT'S NEXT"), palette.fg("dim", &format!("v{}", crate::config::VERSION))),
+            &format!("{} {}", palette.fg("accent", if has_resources { " telemus.ai" } else { " OPTIMUS  //  BUILT FOR WHAT'S NEXT" }), palette.fg("dim", &format!("v{}", crate::config::VERSION))),
             &format!("{status} "),
             width,
         ));
+        if has_resources {
+            rows.extend(data.resources.iter().take(resource_space(width, budget).1)
+                .map(|row| format!(" {row}")));
+        }
     }
     let session = if budget == 2 {
         format!("OPTIMUS v{} · {}", crate::config::VERSION, clean_label(data.session))

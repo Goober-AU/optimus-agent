@@ -21,6 +21,7 @@ struct Target {
     session: String,
     active: String,
     pid: u32,
+    owner: String,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -43,7 +44,7 @@ struct State {
     request: Request,
     measured_request: Request,
     measured_at: Option<Instant>,
-    readings: BTreeMap<u32, Reading>,
+    readings: BTreeMap<String, Reading>,
 }
 
 #[derive(Default)]
@@ -79,6 +80,11 @@ fn target(row: &SessionSummary) -> Target {
     Target {
         session: row.session_id.clone(),
         active: row.active_session_id.clone().unwrap_or_default(),
+        owner: if live {
+            row.active_session_id.clone().unwrap_or_default()
+        } else {
+            String::new()
+        },
         pid: if live {
             row.worker_pid
                 .and_then(|pid| u32::try_from(pid).ok())
@@ -87,6 +93,33 @@ fn target(row: &SessionSummary) -> Target {
             0
         },
     }
+}
+
+fn worker_owner<'a>(
+    row: &'a SessionSummary,
+    rows: &BTreeMap<String, &'a SessionSummary>,
+) -> String {
+    use crate::modes::agents_view::agents_view_state::get_parent_keys;
+    let mut current = row;
+    let mut seen = BTreeSet::new();
+    while current.runtime_kind.as_deref() == Some("subagent") {
+        if !seen.insert(current.session_id.as_str()) {
+            return String::new();
+        }
+        let keys = get_parent_keys(&linkage_row_for_roster_summary(current));
+        let Some(parent) = keys.iter().find_map(|key| rows.get(key).copied()) else {
+            break;
+        };
+        if current
+            .worker_pid
+            .zip(parent.worker_pid)
+            .is_some_and(|(child, parent)| child > 0 && parent > 0 && child != parent)
+        {
+            break;
+        }
+        current = parent;
+    }
+    target(current).owner
 }
 
 /// Same parent-key contract as the agents list, including nested descendants.
@@ -133,7 +166,7 @@ fn family<'a>(rows: &'a [SessionSummary], parent: &RosterParent) -> Vec<&'a Sess
 }
 
 impl Monitor {
-    pub(super) fn start(&self, agent_dir: String) {
+    pub(super) fn start(&self, agent_dir: String, on_update: Arc<dyn Fn() + Send + Sync>) {
         if self.started.get() {
             return;
         }
@@ -144,7 +177,6 @@ impl Monitor {
                 .spawn(move || {
                     let mut system = System::new();
                     let mut previous_pids = Vec::new();
-                    let mut verified = BTreeMap::new();
                     loop {
                         let Some(state) = weak.upgrade() else {
                             break;
@@ -155,18 +187,27 @@ impl Monitor {
                             .request
                             .clone();
                         drop(state);
-                        let pids: Vec<_> = request
+                        // Roster pushes omit workerPid. Resolve verified local descriptors
+                        // by their root active-session identity, then share the root's PID.
+                        let workers = local_worker_pids(&agent_dir, &request.owners);
+                        let resolved: Vec<_> = request
                             .targets
                             .iter()
-                            .filter(|t| t.pid > 0)
-                            .map(|t| Pid::from_u32(t.pid))
+                            .filter_map(|target| {
+                                let pid = *workers.get(&target.owner)?;
+                                (target.pid == 0 || target.pid == pid)
+                                    .then_some((target.session.clone(), pid))
+                            })
+                            .collect();
+                        let pids: Vec<_> = resolved
+                            .iter()
+                            .map(|(_, pid)| Pid::from_u32(*pid))
                             .collect::<BTreeSet<_>>()
                             .into_iter()
                             .collect();
                         if pids != previous_pids {
                             // sysinfo retains unrequested processes; bound its cache to this family.
                             system = System::new();
-                            verified.clear();
                             previous_pids = pids.clone();
                         }
                         let old_starts: BTreeMap<_, _> = pids
@@ -183,24 +224,8 @@ impl Monitor {
                         let mut readings = BTreeMap::new();
                         for pid in &pids {
                             let Some(process) = system.process(*pid) else {
-                                verified.remove(pid);
                                 continue;
                             };
-                            let identity = (
-                                process.start_time(),
-                                request
-                                    .owners
-                                    .iter()
-                                    .filter(|t| t.pid == pid.as_u32())
-                                    .cloned()
-                                    .collect::<Vec<_>>(),
-                            );
-                            if verified.get(pid) != Some(&identity) {
-                                if !verify_local_worker(&agent_dir, pid.as_u32(), &identity.1) {
-                                    continue;
-                                }
-                                verified.insert(*pid, identity);
-                            }
                             let cpu = process.cpu_usage();
                             readings.insert(
                                 pid.as_u32(),
@@ -219,12 +244,26 @@ impl Monitor {
                         {
                             let mut state = state.lock().unwrap_or_else(|e| e.into_inner());
                             if state.request == request {
-                                state.readings = readings;
-                                state.measured_request = request;
+                                state.readings = resolved
+                                    .iter()
+                                    .filter_map(|(session, pid)| {
+                                        readings
+                                            .get(pid)
+                                            .map(|reading| (session.clone(), reading.clone()))
+                                    })
+                                    .collect();
+                                state.measured_request = request.clone();
                                 state.measured_at = Some(Instant::now());
                             }
                         }
                         drop(state);
+                        if request
+                            .targets
+                            .iter()
+                            .any(|target| !target.owner.is_empty())
+                        {
+                            on_update();
+                        }
                         std::thread::park_timeout(Duration::from_secs(1));
                     }
                 })
@@ -241,18 +280,33 @@ impl Monitor {
         let root = parent.session_id.clone().unwrap_or_default();
         let selected = family(rows, parent);
         self.omitted = selected.len().saturating_sub(MAX_AGENTS);
-        let mut counts = BTreeMap::<u32, usize>::new();
-        let mut owners: Vec<_> = rows.iter().map(target).filter(|t| t.pid > 0).collect();
+        let mut counts = BTreeMap::<String, usize>::new();
+        let mut indexed = BTreeMap::new();
+        for row in rows {
+            for key in summary_keys(row) {
+                indexed.entry(key).or_insert(row);
+            }
+        }
+        let mut owners: Vec<_> = rows
+            .iter()
+            .map(target)
+            .filter(|t| !t.owner.is_empty())
+            .collect();
         owners.sort_by(|a, b| (&a.session, &a.active, a.pid).cmp(&(&b.session, &b.active, b.pid)));
         owners.dedup();
-        for owner in &owners {
-            *counts.entry(owner.pid).or_default() += 1;
+        for row in rows {
+            if !target(row).owner.is_empty() {
+                *counts.entry(worker_owner(row, &indexed)).or_default() += 1;
+            }
         }
         self.agents = selected
             .into_iter()
             .take(MAX_AGENTS)
             .map(|row| {
-                let target = target(row);
+                let mut target = target(row);
+                if !target.owner.is_empty() {
+                    target.owner = worker_owner(row, &indexed);
+                }
                 Agent {
                     label: if row.session_id == root {
                         "MAIN".into()
@@ -266,7 +320,8 @@ impl Monitor {
                         clean_label(name)
                     },
                     rate: throughput.session_rate(&row.session_id),
-                    shared: counts.get(&target.pid).is_some_and(|count| *count > 1),
+                    shared: !target.owner.is_empty()
+                        && counts.get(&target.owner).is_some_and(|count| *count > 1),
                     target,
                 }
             })
@@ -320,7 +375,7 @@ impl Monitor {
             .iter()
             .map(|agent| {
                 let reading = fresh
-                    .then(|| state.readings.get(&agent.target.pid))
+                    .then(|| state.readings.get(&agent.target.session))
                     .flatten();
                 agent_label(agent, reading)
             })
@@ -338,7 +393,7 @@ fn clean_label(label: &str) -> String {
         .chars()
         .map(|c| if c.is_control() { ' ' } else { c })
         .collect();
-    truncate_to_width(&clean, 16.0, "…", false)
+    truncate_to_width(&clean, 12.0, "…", false)
 }
 
 fn agent_label(agent: &Agent, reading: Option<&Reading>) -> String {
@@ -350,9 +405,9 @@ fn agent_label(agent: &Agent, reading: Option<&Reading>) -> String {
         .and_then(|r| r.ram)
         .map(|bytes| {
             if bytes >= 1024 * 1024 * 1024 {
-                format!("{:.1}GiB", bytes as f64 / (1024.0 * 1024.0 * 1024.0))
+                format!("{:.1}G", bytes as f64 / (1024.0 * 1024.0 * 1024.0))
             } else {
-                format!("{:.0}MiB", bytes as f64 / (1024.0 * 1024.0))
+                format!("{:.0}M", bytes as f64 / (1024.0 * 1024.0))
             }
         })
         .unwrap_or("—".into());
@@ -363,7 +418,7 @@ fn agent_label(agent: &Agent, reading: Option<&Reading>) -> String {
     format!(
         "{}{} CPU {cpu} RAM {ram} TPS {tps}",
         agent.label,
-        if agent.shared { " [shared]" } else { "" }
+        if agent.shared { "*" } else { "" }
     )
 }
 
@@ -383,11 +438,7 @@ fn layout(
     let mut pages = vec![vec![main.clone()]];
     for label in children {
         let rows = pages.last_mut().unwrap();
-        let last = rows.last_mut().unwrap();
-        if visible_width(last) + 3 + visible_width(label) <= width {
-            last.push_str(" │ ");
-            last.push_str(label);
-        } else if rows.len() < budget {
+        if rows.len() < budget {
             rows.push(label.clone());
         } else {
             // One-row terminals rotate workers with MAIN; otherwise pin MAIN.
@@ -442,13 +493,18 @@ struct WorkerIdentity {
     pid: u32,
     process_start_id: Option<String>,
     root_active_session_id: String,
+    root_session_id: Option<String>,
 }
 
-fn verify_local_worker(agent_dir: &str, pid: u32, owners: &[Target]) -> bool {
+fn local_worker_pids(agent_dir: &str, owners: &[Target]) -> BTreeMap<String, u32> {
     use std::io::Read;
+    let mut verified = BTreeMap::new();
+    if owners.is_empty() {
+        return verified;
+    }
     let root = Path::new(agent_dir).join("daemon-workers");
     let Ok(dirs) = std::fs::read_dir(root) else {
-        return false;
+        return verified;
     };
     for dir in dirs.flatten().take(MAX_AGENTS) {
         let Ok(files) = std::fs::read_dir(dir.path()) else {
@@ -468,19 +524,25 @@ fn verify_local_worker(agent_dir: &str, pid: u32, owners: &[Target]) -> bool {
             let Ok(identity) = serde_json::from_slice::<WorkerIdentity>(&bytes) else {
                 continue;
             };
-            if identity.pid == pid
-                && owners
-                    .iter()
-                    .any(|owner| owner.active == identity.root_active_session_id)
+            if identity.pid > 0
+                && owners.iter().any(|owner| {
+                    !owner.owner.is_empty()
+                        && owner.active == identity.root_active_session_id
+                        && (owner.pid == 0 || owner.pid == identity.pid)
+                        && identity
+                            .root_session_id
+                            .as_ref()
+                            .is_none_or(|session| session == &owner.session)
+                })
                 && identity.process_start_id.is_some()
                 && identity.process_start_id
-                    == crate::core::session_lease::get_process_start_id(i64::from(pid))
+                    == crate::core::session_lease::get_process_start_id(i64::from(identity.pid))
             {
-                return true;
+                verified.insert(identity.root_active_session_id, identity.pid);
             }
         }
     }
-    false
+    verified
 }
 
 #[cfg(test)]
