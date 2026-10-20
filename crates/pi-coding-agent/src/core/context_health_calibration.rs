@@ -610,11 +610,12 @@ mod tests {
     // -- the calibration measurement itself --------------------------------
 
     /// Prints the per-case table and the headline metrics, and writes the
-    /// JSON artifact. The write goes to `$ROT2_HEALTH_CALIBRATION_OUT` when
-    /// set, otherwise to `research/context_rot_r2/health/` at the repo root
-    /// (next to the crate manifest's grandparent). A stale committed copy
-    /// only warns: the committed artifact documents the current generator,
-    /// and a read-only checkout must not fail the measurement.
+    /// JSON artifact to `$ROT2_HEALTH_CALIBRATION_OUT` when set (point it at
+    /// the tracked repo path to regenerate the committed artifact), otherwise
+    /// to a throwaway temp dir, so a plain test run never dirties the tracked
+    /// copy. A stale committed copy only warns: the committed artifact
+    /// documents the current generator, and a read-only checkout must not
+    /// fail the measurement.
     #[test]
     fn current_heuristic_scores_poorly_against_semantic_constraint_loss() {
         let cases = synthetic_calibration_corpus();
@@ -663,34 +664,37 @@ mod tests {
         let ece = report.expected_calibration_error.unwrap();
         assert!(ece >= 0.1, "ECE {ece} must expose the miscalibration");
 
-        // Write the JSON artifact.
+        // Write the JSON artifact: to `$ROT2_HEALTH_CALIBRATION_OUT` when
+        // set, otherwise to a throwaway temp dir. The tracked repo copy is
+        // never written by default; it is only compared, read-only, to warn
+        // when the committed artifact has drifted from the generator.
         let json = calibration_report_json(&report);
         let parsed: serde_json::Value =
             serde_json::from_str(&json).expect("the artifact must parse back");
         assert_eq!(parsed["corpus"], "SYNTHETIC-CALIBRATION");
         assert_eq!(parsed["cases"], cases.len());
+        let scratch = tempfile::tempdir().expect("create the calibration scratch dir");
         let path = std::env::var_os("ROT2_HEALTH_CALIBRATION_OUT")
             .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| {
-                std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                    .ancestors()
-                    .nth(2)
-                    .expect("repo root above crates/pi-coding-agent")
-                    .join("research")
-                    .join("context_rot_r2")
-                    .join("health")
-                    .join("context_health_calibration.json")
-            });
+            .unwrap_or_else(|| scratch.path().join("context_health_calibration.json"));
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).expect("create health artifact directory");
         }
-        match std::fs::read_to_string(&path) {
+        let tracked = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .nth(2)
+            .expect("repo root above crates/pi-coding-agent")
+            .join("research")
+            .join("context_rot_r2")
+            .join("health")
+            .join("context_health_calibration.json");
+        match std::fs::read_to_string(&tracked) {
             Ok(existing) => {
                 let normalized_existing = existing.replace("\r\n", "\n");
                 if normalized_existing != json {
                     eprintln!(
-                        "warning: committed calibration artifact is stale; regenerate {}",
-                        path.display()
+                        "warning: committed calibration artifact is stale; set ROT2_HEALTH_CALIBRATION_OUT={} to regenerate it",
+                        tracked.display()
                     );
                 }
             }
