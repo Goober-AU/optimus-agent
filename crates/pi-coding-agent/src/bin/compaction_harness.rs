@@ -1141,8 +1141,3 @@ async fn run(request: HarnessRequest) -> HarnessResponse {
         error: None,
     }
 }
-
-#[allow(dead_code)]
-fn unused_json() -> Value {
-    json!({})
-}
