@@ -3,12 +3,14 @@
 Branch: `improve/context-rot-iteration-2` (base `6000d6bc1`, v0.1.36 + #181/#182).
 Campaign reports live in `reports/context-rot-r2/`; every number below cites a
 committed artefact. This body was finalized at the integration tip
-`ac5edde2b` (177 commits over base) after the D33 and D34 fixes, the W63
+`9471eb055` (186 commits over base) after the D33 and D34 fixes, the W63
 landed-tip battery (REGRESSION-GATES section 11), the W72 landed-tip
-Python-suite record (section 11.10) and the W65/W70 audit passes landed;
-`BUG-LEDGER.md` is the status source of truth (D1-D34 fixed, guarded or
-measured except the documented deferrals and residues). The integrator
-adjusts if later commits land before merge. One practical note up
+Python-suite record (section 11.10), the W65/W70 audit passes and the W81
+final-tip matrix (REGRESSION-GATES section 12, GREEN) landed;
+`BUG-LEDGER.md` is the status source of truth (D1-D34 fixed except the
+documented deferrals and residues). The integrator adjusts if later
+commits land before merge. One practical note up
+c9009c703 (docs(context-rot): final five-document coherence read (W85))
 front: five live-run raw-call logs under `research/context_rot_r2/` are
 git-LFS pointers - run `git lfs pull` after checkout or they stay ~130-byte
 stubs (details in "What is NOT claimed").
@@ -572,16 +574,16 @@ to flip a default.
 
 ## Testing
 
-Every number in this section cites its committed record - the gate record
-(`reports/context-rot-r2/REGRESSION-GATES.md`) unless a sentence names its
-own. The landed-tip battery is
+Every number in this section cites the committed gate record
+(`reports/context-rot-r2/REGRESSION-GATES.md`). The W63 landed-tip battery is
+c9009c703 (docs(context-rot): final five-document coherence read (W85))
 section 11 there (the W63 full gate list at `90fcd17db`: 32 of the 33
 recorded steps green - the other eleven `rot2_*` suites, all thirteen
 `compaction_*` suites, all six lib filters - with the single red the
 deterministic D34 typed-arm smoke, section 11.7, since fixed by W71), the
 six Python research suites are green at the landed tip (section 11.10,
 W72, closing the gap the stopped battery left), and the final-tip matrix
-is REGRESSION-GATES section 12, FINAL TIP MATRIX (dba588938) - GREEN (W81), recorded before the final docs passes. The landed record:
+is REGRESSION-GATES section 12, FINAL TIP MATRIX (ac5edde2b) - GREEN (W81), recorded before the final docs passes. The landed record:
 
 - The W25 full pass at `29f1f0c92` (with per-suite SHAs back to `f7bc6306c`):
   the three lib filters (`core::compaction` 146, `typed_state` 60,
@@ -630,9 +632,9 @@ is REGRESSION-GATES section 12, FINAL TIP MATRIX (dba588938) - GREEN (W81), reco
 
 The workspace-wide `cargo check --workspace --all-targets` record: 0 errors
 at the integration heads checked during the campaign (908 warnings at
-`f8ad670c8` vs 903 at the base, recorded at the typed-wiring-tip refresh
-`1502eb9a7`; the four campaign-added warnings were dropped by the W42
-cleanup `fa3634b7a`); the W63 battery's tip check was
+`f8ad670c8` vs 903 at the base; the four distinct campaign-added
+diagnostics were dropped by the W42 cleanup `fa3634b7a`); the W63 battery's tip check was
+c9009c703 (docs(context-rot): final five-document coherence read (W85))
 interrupted on the D34 stop with partial numbers only (0 errors, at least
 198 warning diagnostics, REGRESSION-GATES section 11.5), so the final-tip
 D

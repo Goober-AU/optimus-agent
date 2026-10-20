@@ -433,9 +433,8 @@ final matrix must run them.
   (lib), the smoke's repaired-cycle assertions, and the fail-closed pin
   moved to an unresolvable-reference shape. The battery record above
   stands as the landed-tip record (the W63 battery ran at `90fcd17db`,
-  below the fix); the final matrix (W81) re-runs the gate list at the
-  final tip - pending at this writing (section 12 of this file when it
-  lands).
+  below the fix); the final matrix (W81) re-ran the gate list at the
+  final tip green - section 12 of this file, the battery of record.
 
 ### 11.8 Environmental-pair verification at base (this pass)
 

@@ -874,7 +874,7 @@ single-model practice-scale), and the health heuristic must not gate anything
 
 ## 9. Report index
 
-Every file in `reports/context-rot-r2/` at this writing (20 files):
+Every file in `reports/context-rot-r2/` at this writing (23 files):
 
 - `BASELINE.md` - report writer W14, status-passed by the later sweeps:
   the commit under test, the measurement frame, the category labels, the
@@ -891,6 +891,12 @@ Every file in `reports/context-rot-r2/` at this writing (20 files):
   distinct citations, 113 verified; the one miss
   (`absorption_then_citation_resolves`) was the then-unlanded W54 D33 pin,
   on the tree since `6d85cc48f`.
+- `DEBRIS-ASSESSMENT.md` - worker W86: the read-only verdict on the
+  unaccounted dead-worktree residue W68's preflight flagged (the w16
+  uncommitted `task_state.rs` drafting edits, the w16 untracked
+  `rot2_supersession.rs` and the w5 untracked `refs/`) - all three items
+  already integrated or rebuildable at the tip: safe to discard, nothing
+  modified.
 - `CODING-TASK-RESULTS.md` - report writer W14 (refreshed by W34,
   reconciled by the W50 sweep): what coding-task evaluation exists (the
   ContextBench pipeline, the CompactBench custom runs) and the exact
@@ -918,8 +924,8 @@ Every file in `reports/context-rot-r2/` at this writing (20 files):
   the DEFECT-WAVE-2 tables, and the W60 verification pass (every sha
   resolves, every artifact path exists).
 - `FINAL-REPORT.md` - this file, the campaign entry point: first edition
-  in wave 3, the W62 closing pass, the W64-blocker resolution and this
-  W78 index pass.
+  in wave 3, the W62 closing pass, the W64-blocker resolution, the W78
+  index pass and the W85 final coherence read.
 - `HYGIENE-AUDIT.md` - worker W65: the AGENTS.md-compliance and
   commit-hygiene audit at `90fcd17db` (clippy, rustfmt,
   `git diff --check`, marker and secret scans; no HIGH findings, two
@@ -937,14 +943,20 @@ Every file in `reports/context-rot-r2/` at this writing (20 files):
   verification at `cab09bdd2` - branch topology, LFS, worktree hygiene,
   changelog-fragment format, PR-body size and the gh-absent web fallback;
   every item PASS.
+- `PRODUCTION-PATH-TRACE.md` - worker W69: the end-to-end production-path
+  trace of `compaction.taskState = "typed"` from the settings files through
+  the kernel (each hop with file, function, line and the test that pins it,
+  code-read at `cab09bdd2`), plus the smoke-test failure and run evidence.
 - `PUSH-CHECKLIST.md` - worker W61: the integrator-only push checklist -
   preconditions, the push and PR-open commands, and the web fallback.
 - `REGRESSION-GATES.md` - worker W25 (the restart pass): the test-suite
   state - the W25 full pass at `29f1f0c92` (per-suite SHAs back to
   `f7bc6306c`), the W49 wave-2 battery at `71e770c5e` (section 10), the
   W63 landed-tip battery at `90fcd17db` (section 11, RED on the D34
-  smoke) and the W72 python suites at the landed tip (section 11.10,
-  green).
+  smoke), the W72 python suites at the landed tip (section 11.10, green)
+  and the W81 final-tip matrix at `ac5edde2b` (section 12, GREEN - the
+  battery of record: all 40 steps green, zero failed tests, workspace
+  warning parity with the base).
 - `RETRIEVAL-SCORECARD.md` - report writer W21: the consolidated retrieval
   scorecard, iteration 1 to r2 (W10's offline draft kept in place under
   `research/`).
@@ -958,6 +970,11 @@ Every file in `reports/context-rot-r2/` at this writing (20 files):
   fragment duplication, the W16 misstatement), should-fix S1-S8, the
   prior-audit disposition check and the verification spot-runs at the
   final tip.
+- `SAFETY-SCAN.md` - worker W87: the final pre-push diff safety scan
+  (secrets, private hostnames, machine-local resolver defaults, large
+  files, junk) - no blocking secret leak; the three SHOULD-FIX items
+  (the private endpoint default, the stray `.bak` files, the clippy
+  cleanup) applied by the integrator.
 
 Landed on this branch since the W62 closing pass: the D33 fix (W54; on
 `rot2/w54-d33` as `f0b125a84` + `1de36e893`, integrated as `cea3a4496` +
@@ -966,10 +983,12 @@ checklist (W61), the pre-push technical verification (W68), the
 whole-diff reviewer pass (W64), the hygiene audit (W65), the
 citation-integrity pass (W70) and the W63/W72 gate records - the closing
 tail that section 8.1 recorded as running alongside this document has all
-landed. Landed since this writing: the W76 filename repair
+landed. Landed since the W78 index pass: the W76 filename repair
 (`COMPATION-CORRECTNESS.md` to `COMPACTION-CORRECTNESS.md`, the HYGIENE-AUDIT
-L3 typo fix) and the W69 production-path trace (`PRODUCTION-PATH-TRACE.md`,
-`83aaecf03` + `00c3735cc`). In flight at this writing: the tail passes
-after them; this index uses the names on disk at its writing. If a file
-named here is missing at read time, the experiment
-ledger and the cited artefacts hold its content.
+L3 typo fix), the W69 production-path trace (`83aaecf03` + `00c3735cc`),
+the W81 final-tip matrix (REGRESSION-GATES.md section 12, GREEN), the W87
+final safety scan with its integrator follow-ups (the `.bak` removals, the
+fail-closed endpoint default, the M2 clippy cleanup) and the W84 PR-body
+matrix-flip. This index was completed by the W85 final coherence read; if a
+file named here is missing at read time, the experiment ledger and the
+cited artefacts hold its content.
