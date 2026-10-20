@@ -839,13 +839,6 @@ Verified against BUG-LEDGER.md at this tip: 32 numbered defects recorded
   agent_session.rs), D10's "never retry" sub-item.
 - D7 VERIFIED-OPEN, fix DEFERRED (the incompatible-checkpoint replay is a
   heavy fallback, not a lossy one; the fix needs dedicated restore coverage).
-- D34 FIXED (W71 `6894f6a6d`, ledger row `08f34308b`) - the typed-arm smoke
-  failed deterministically at the W63 battery: the lossy summarizer handoff
-  reported an unbacked verified claim and the verification failed the
-  compaction. The dump-confirmed retiree was the assistant pending action
-  (Step-scoped, retired at the D25 boundary), not the suspected D30 seed;
-  the bounded repair downgrades the stale claim in place instead of failing
-  the handoff.
 - The non-D families: N1-N3 (v1 design constraints, closed in typed v2 by
   role-based classification), W9-F2/F5 fixed by W11, W9-F1/F3/F4 fixed by the
   W16 refinement, HF1/HF4/HF5 fixed, HF2/HF3/HF6 documented.
@@ -883,7 +876,6 @@ single-model practice-scale), and the health heuristic must not gate anything
 
 Every file in `reports/context-rot-r2/` at this writing (20 files):
 
-D
 - `BASELINE.md` - report writer W14, status-passed by the later sweeps:
   the commit under test, the measurement frame, the category labels, the
   R2-E1 numbers, the inherited iteration-1 context and the TypeCompact
@@ -908,7 +900,6 @@ D
   the W12 mock practice suites and the W26 live practice run.
 - `COMPACTION-CORRECTNESS.md` - report writer W14 (refreshed by W34,
   reconciled by W50): the D-defect narrative - what is fixed on the branch,
-b2c0a435a (docs(context-rot): refresh the report index to the full 20-file set and strip the W62 paste debris (W78))
   what sat on worker branches at its writing, what remains open, and the
   fix-to-guard map. A W76 pass renames this file to
   `COMPACTION-CORRECTNESS.md` (the HYGIENE-AUDIT L3 typo repair); this
@@ -975,9 +966,10 @@ checklist (W61), the pre-push technical verification (W68), the
 whole-diff reviewer pass (W64), the hygiene audit (W65), the
 citation-integrity pass (W70) and the W63/W72 gate records - the closing
 tail that section 8.1 recorded as running alongside this document has all
-landed. In flight at this writing: the W76 filename repair
-(`COMPACTION-CORRECTNESS.md` to `COMPACTION-CORRECTNESS.md`), the W69
-production-path trace (`PRODUCTION-PATH-TRACE.md`, not yet on this branch)
-and the tail passes after them; this index uses the names on disk at its
-writing. If a file named here is missing at read time, the experiment
+landed. Landed since this writing: the W76 filename repair
+(`COMPATION-CORRECTNESS.md` to `COMPACTION-CORRECTNESS.md`, the HYGIENE-AUDIT
+L3 typo fix) and the W69 production-path trace (`PRODUCTION-PATH-TRACE.md`,
+`83aaecf03` + `00c3735cc`). In flight at this writing: the tail passes
+after them; this index uses the names on disk at its writing. If a file
+named here is missing at read time, the experiment
 ledger and the cited artefacts hold its content.

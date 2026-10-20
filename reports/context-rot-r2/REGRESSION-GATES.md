@@ -474,7 +474,7 @@ W72 closed the gap section 11.6 records: the six Python research suites
 W63's stopped battery never reached, run at the landed tip on 2026-10-20.
 All six are green, with exactly the shapes the W25 record (section 4, at
 `29f1f0c92`) carries — the Python research path is proven green at the
-tip ahead of W67's final matrix, and this pass is its comparison point.
+tip ahead of W81's final matrix, and this pass is its comparison point.
 
 Environment: worktree `C:/Users/openclawuser/optimus-rot2-w72-python`,
 branch `rot2/w72-python` at `6c6015ce8` (= integration head at run time,
@@ -523,7 +523,7 @@ Verdict: green across all six suites — zero failures, zero unexpected
 skips (the only skips are the 3 documented parquet-gated tests in the
 system-python discovery run, which run green through the cb-venv step
 immediately after). The W63 gap (section 11.6) is closed at the landed
-tip; W67's final matrix re-runs these suites at the final tip.
+tip; W81's final matrix re-runs these suites at the final tip.
 
 
 ## 12. FINAL TIP MATRIX (ac5edde2b) — GREEN (W81)
