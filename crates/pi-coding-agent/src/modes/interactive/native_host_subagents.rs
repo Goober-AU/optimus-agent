@@ -15,6 +15,8 @@ mod communication_activity;
 mod generation_throughput;
 #[path = "context_health_indicator.rs"]
 mod context_health_indicator;
+#[path = "resource_status.rs"]
+mod resource_status;
 
 #[derive(Default)]
 struct JevBarState {
@@ -59,6 +61,7 @@ pub(super) struct Bar {
     jev_task: RefCell<Option<tokio::task::JoinHandle<()>>>,
     communication: communication_activity::ActivityState,
     throughput: generation_throughput::Throughput,
+    resources: resource_status::Monitor,
     pulse_task: Option<tokio::task::JoinHandle<()>>,
     pulse_deadline: Option<std::time::Instant>,
     render_send: RefCell<Option<mpsc::Sender<HostEvent>>>,
@@ -78,6 +81,7 @@ impl Bar {
             jev_task: RefCell::new(None),
             communication: communication_activity::ActivityState::default(),
             throughput: generation_throughput::Throughput::default(),
+            resources: resource_status::Monitor::default(),
             pulse_task: None,
             pulse_deadline: None,
             render_send: RefCell::new(None),
@@ -93,11 +97,18 @@ impl Bar {
         state.status.as_ref().map(|status| status.minimal.clone())
     }
 
+    pub(super) fn resource_rows(&self, width: usize, budget: usize) -> Vec<String> {
+        let mode = self.mode.borrow();
+        let root = mode.connection_state.as_ref().map(|state| state.session_id.as_str()).unwrap_or("");
+        self.resources.render(root, width, budget, Instant::now())
+    }
+
     pub(super) fn subscribe(
         &self,
         connection: Arc<dyn wire::AgentConnection>,
         send: mpsc::Sender<HostEvent>,
     ) {
+        self.resources.start(crate::config::get_agent_dir());
         *self.render_send.borrow_mut() = Some(send.clone());
         let jev = self.jev.clone();
         let status_connection = connection.clone();
@@ -199,6 +210,8 @@ impl Bar {
             }
         }
         self.throughput.observe(&rows, &parent);
+        let resource_rows = if self.mode.borrow().fullscreen_enabled { rows.as_slice() } else { &[] };
+        self.resources.observe(resource_rows, &parent, &self.throughput);
         let mode = self.mode.borrow();
         let usage = mode.get_connection_context_usage();
         let input = crate::core::context_health::ContextHealthInput {

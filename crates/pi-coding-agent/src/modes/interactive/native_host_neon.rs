@@ -323,6 +323,11 @@ impl TuiComponent for Header {
             .and_then(|t| t.borrow().subagents.clone())
             .and_then(|bar| bar.borrow().compact_jev_status());
         let execution = execution_label(&mode);
+        let resource_budget = if height >= 8 { (height - 6).min(3) } else { usize::from(height >= 3) };
+        let resources = self.1.upgrade()
+            .and_then(|t| t.borrow().subagents.clone())
+            .map(|bar| bar.borrow().resource_rows(width as usize, resource_budget))
+            .unwrap_or_default();
         render_header(
             width as usize,
             height,
@@ -340,6 +345,7 @@ impl TuiComponent for Header {
                 execution: execution.as_deref(),
                 jev: jev.as_deref(),
                 clock: &chrono::Local::now().format("%H:%M:%S").to_string(),
+                resources: &resources,
             },
         )
     }
@@ -354,6 +360,7 @@ pub(super) struct HeaderData<'a> {
     pub phase: &'a str,
     pub jev: Option<&'a str>,
     pub clock: &'a str,
+    pub resources: &'a [String],
 }
 
 fn execution_label(mode: &InteractiveMode) -> Option<String> {
@@ -422,10 +429,12 @@ pub(super) fn render_header(width: usize, budget: usize, data: &HeaderData<'_>) 
         palette.fg(color, &format!("{dot} {}", clean_label(label)))
     });
     let mut rows = Vec::new();
-    if budget >= 4 {
+    if budget >= 3 && !data.resources.is_empty() {
+        rows.extend(data.resources.iter().take(budget.saturating_sub(2)).cloned());
+    } else if budget >= 4 {
         rows.push(String::new());
     }
-    if budget >= 7 && width >= 110 {
+    if budget >= 7 + rows.len().saturating_sub(1) && width >= 110 {
         const LOGO: [&str; 3] = [
             "█▀▀█ █▀▀█ ▀▀█▀▀ ▀█▀ █▀▄▀█ █  █ █▀▀",
             "█  █ █▀▀▀   █    █  █ ▀ █ █  █ ▀▀█",

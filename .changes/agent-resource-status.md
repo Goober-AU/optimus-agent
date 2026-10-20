@@ -1,0 +1,2 @@
+- Added a neon-blue header strip with local worker CPU/RAM and per-agent streaming TPS for the main agent and its subagents, including shared-process labels and rotating pages when space is limited.
+- Changed the native application, resources and Python runtime version to 0.1.37.

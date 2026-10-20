@@ -174,6 +174,15 @@ impl Throughput {
         let rate = rates.fold(first, |total, rate| total + rate);
         rate.is_finite().then_some(rate)
     }
+    pub(super) fn session_rate(&self, id: &str) -> Option<(f64, bool)> {
+        if !self.supported { return None; }
+        let sample = if self.live_overlays.contains(id) {
+            self.samples.get(id)
+        } else {
+            self.finalized.get(id)
+        }?;
+        Some((sample_rate(sample)?, sample.active && sample.estimated))
+    }
     pub(super) fn indicator(&self) -> String {
         let value = self
             .total_rate()
@@ -231,7 +240,7 @@ fn sample_rate(sample: &Snapshot) -> Option<f64> {
     rate.is_finite().then_some(rate)
 }
 
-fn summary_keys(row: &SessionSummary) -> Vec<String> {
+pub(super) fn summary_keys(row: &SessionSummary) -> Vec<String> {
     parent_keys(&RosterParent {
         active_session_id: row.active_session_id.clone(),
         session_id: Some(row.session_id.clone()),
@@ -239,7 +248,7 @@ fn summary_keys(row: &SessionSummary) -> Vec<String> {
     })
 }
 
-fn parent_keys(parent: &RosterParent) -> Vec<String> {
+pub(super) fn parent_keys(parent: &RosterParent) -> Vec<String> {
     let row = SessionSummary {
         parent_active_session_id: parent.active_session_id.clone(),
         parent_session_id: parent.session_id.clone(),
