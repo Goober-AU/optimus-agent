@@ -27,7 +27,7 @@ before merge, four LOW polish items, and informational notes.
 | M2 | medium | 18 new clippy warnings on branch-added lines (AGENTS.md: fix warnings you introduce) |
 | L1 | low | `git diff --check` fails on three lines (2 trailing whitespace, 1 blank line at EOF) |
 | L2 | low | 12 commits use the non-conventional `research` type |
-| L3 | low | Filename typo `COMPATION-CORRECTNESS.md` (5 references) |
+| L3 | low | Filename typo `COMPATION-CORRECTNESS.md` (5 references) | — RESOLVED (W76, 17c9dff41: renamed + 5 references updated)
 | L4 | low | Machine-local absolute paths as defaults in research drivers (tracked as REVIEW-AUDIT S4) |
 | I1 | info | rustfmt drift: branch adds 524 new-content hunks; repo has no fmt gate and baseline is unclean |
 | I2 | info | git-lfs pointers at HEAD; pre-conversion blobs remain in history |
