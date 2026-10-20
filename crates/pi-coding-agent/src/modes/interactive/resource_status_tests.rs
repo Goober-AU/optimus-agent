@@ -48,14 +48,21 @@ fn inject(monitor: &Monitor, now: Instant, pid: u32) {
     let mut state = monitor.state.lock().unwrap();
     state.measured_request = state.request.clone();
     state.measured_at = Some(now);
-    state.readings = [(
-        pid,
-        Reading {
-            cpu: Some(125.0),
-            ram: Some(512 * 1024 * 1024),
-        },
-    )]
-    .into();
+    state.readings = state
+        .request
+        .targets
+        .iter()
+        .filter(|target| target.pid == pid)
+        .map(|target| {
+            (
+                target.session.clone(),
+                Reading {
+                    cpu: Some(125.0),
+                    ram: Some(512 * 1024 * 1024),
+                },
+            )
+        })
+        .collect();
 }
 
 #[test]
@@ -98,6 +105,25 @@ fn resource_family_includes_nested_aliases_and_excludes_duplicates_forks_and_oth
 }
 
 #[test]
+fn resource_owner_resolution_rejects_cycles_and_keeps_other_roots_separate() {
+    let rows = vec![
+        row("a", Some("b"), 0),
+        row("b", Some("a"), 0),
+        row("root", None, 0),
+        row("child", Some("root"), 0),
+        row("other", None, 0),
+    ];
+    let indexed = rows
+        .iter()
+        .flat_map(|row| summary_keys(row).into_iter().map(move |key| (key, row)))
+        .collect();
+    assert!(worker_owner(&rows[0], &indexed).is_empty());
+    assert!(worker_owner(&rows[1], &indexed).is_empty());
+    assert_eq!(worker_owner(&rows[3], &indexed), "active-root");
+    assert_eq!(worker_owner(&rows[4], &indexed), "active-other");
+}
+
+#[test]
 fn resource_rates_are_per_agent_and_preserve_live_estimates_and_missing_samples() {
     let root = row("root", None, 1);
     let mut child = row("child", Some("root"), 2);
@@ -126,7 +152,7 @@ fn resource_readings_expire_and_cannot_cross_sessions_or_worker_restarts() {
     observe(&mut monitor, &[root.clone()], "root");
     inject(&monitor, now, 42);
     let render = |m: &Monitor, root, time| strip_ansi(&m.render(root, 160, 1, time).join("\n"));
-    assert!(render(&monitor, "root", now).contains("CPU 125% RAM 512MiB TPS 50.0"));
+    assert!(render(&monitor, "root", now).contains("CPU 125% RAM 512M TPS 50.0"));
     assert!(
         render(&monitor, "root", now + FRESH_FOR + Duration::from_millis(1))
             .contains("CPU — RAM —")
@@ -179,22 +205,29 @@ fn resource_pages_reach_every_agent_without_overflow_or_losing_neon_blue() {
 
 #[test]
 fn resource_sampler_proves_local_worker_identity_and_collects_real_process_readings() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
     let dir = tempfile::tempdir().unwrap();
     let workers = dir.path().join("daemon-workers/fixture");
     std::fs::create_dir_all(&workers).unwrap();
-    let pid = std::process::id();
+    // Optional read-only diagnostic against an explicitly selected local process.
+    let pid = std::env::var("OPTIMUS_RESOURCE_SAMPLE_PID")
+        .ok()
+        .map(|pid| pid.parse::<u32>().expect("local diagnostic PID"))
+        .unwrap_or_else(std::process::id);
     let start = crate::core::session_lease::get_process_start_id(i64::from(pid)).unwrap();
     let descriptor = workers.join("fixture.json");
     let owner = Target {
         session: "root".into(),
         active: "active-root".into(),
         pid,
+        owner: "active-root".into(),
     };
     let write = |active: &str, start: &str| {
         std::fs::write(
             &descriptor,
             json!({
-                "pid": pid, "rootActiveSessionId": active, "processStartId": start
+                "pid": pid, "rootActiveSessionId": active, "processStartId": start,
+                "rootSessionId": "root"
             })
             .to_string(),
         )
@@ -202,21 +235,53 @@ fn resource_sampler_proves_local_worker_identity_and_collects_real_process_readi
     };
     let path = dir.path().to_string_lossy().to_string();
     write("other-worker", &start);
-    assert!(!verify_local_worker(&path, pid, &[owner.clone()]));
+    assert!(local_worker_pids(&path, &[owner.clone()]).is_empty());
     write("active-root", "stale-pid-identity");
-    assert!(!verify_local_worker(&path, pid, &[owner.clone()]));
+    assert!(local_worker_pids(&path, &[owner.clone()]).is_empty());
     write("active-root", &start);
-    assert!(verify_local_worker(&path, pid, &[owner]));
+    assert_eq!(
+        local_worker_pids(&path, &[owner.clone()]).get("active-root"),
+        Some(&pid)
+    );
+    let mut wrong_owner = owner.clone();
+    wrong_owner.session = "other".into();
+    assert!(local_worker_pids(&path, &[wrong_owner]).is_empty());
+    let mut wrong_pid = owner;
+    wrong_pid.pid = pid.saturating_add(1);
+    assert!(local_worker_pids(&path, &[wrong_pid]).is_empty());
     let mut monitor = Monitor::default();
-    observe(&mut monitor, &[row("root", None, i64::from(pid))], "root");
-    monitor.start(path.clone());
-    monitor.start(path);
+    // Production roster_subscribe omits workerPid, unlike list/get_state.
+    let mut rows = vec![
+        row("root", None, 0),
+        row("child", Some("root"), 0),
+        row("nested", Some("child"), 0),
+        row("passive", Some("root"), 0),
+    ];
+    for row in &mut rows {
+        row.worker_pid = None;
+    }
+    rows[3].active_session_id = None;
+    observe(&mut monitor, &rows, "root");
+    assert_eq!(
+        monitor.agents.iter().filter(|agent| agent.shared).count(),
+        3
+    );
+    let updates = Arc::new(AtomicUsize::new(0));
+    let count = updates.clone();
+    monitor.start(
+        path.clone(),
+        Arc::new(move || {
+            count.fetch_add(1, Ordering::SeqCst);
+        }),
+    );
+    monitor.start(path, Arc::new(|| panic!("sampler must start only once")));
     let deadline = Instant::now() + Duration::from_secs(6);
     loop {
-        let sampled = monitor.state.lock().unwrap().readings.get(&pid).cloned();
+        let sampled = monitor.state.lock().unwrap().readings.get("root").cloned();
         if sampled
             .as_ref()
             .is_some_and(|r| r.cpu.is_some() && r.ram.is_some())
+            && updates.load(Ordering::SeqCst) >= 2
         {
             break;
         }
@@ -226,6 +291,34 @@ fn resource_sampler_proves_local_worker_identity_and_collects_real_process_readi
         );
         std::thread::sleep(Duration::from_millis(20));
     }
+    assert!(
+        updates.load(Ordering::SeqCst) >= 2,
+        "idle views must receive repaint notifications"
+    );
+    let state = monitor.state.lock().unwrap();
+    for session in ["root", "child", "nested"] {
+        let reading = &state.readings[session];
+        assert!(reading.cpu.is_some_and(|cpu| cpu >= 0.0 && cpu.is_finite()));
+        assert!(reading.ram.is_some_and(|ram| ram > 0));
+    }
+    assert!(!state.readings.contains_key("passive"));
+    if let Ok(directory) = std::env::var("OPTIMUS_RESOURCE_CAPTURE_DIR") {
+        std::fs::create_dir_all(&directory).unwrap();
+        let reading = &state.readings["root"];
+        std::fs::write(
+            Path::new(&directory).join("process-sample.json"),
+            json!({"pid":pid, "cpu":reading.cpu, "residentBytes":reading.ram,
+                "sessions":state.readings.len(), "refreshes":updates.load(Ordering::SeqCst)})
+            .to_string(),
+        )
+        .unwrap();
+    }
+    drop(state);
+    let rendered = strip_ansi(&monitor.render("root", 60, 2, Instant::now()).join("\n"));
+    assert!(
+        rendered.contains("MAIN* CPU ") && !rendered.contains("CPU —"),
+        "{rendered}"
+    );
     let weak = Arc::downgrade(&monitor.state);
     drop(monitor);
     while weak.strong_count() > 0 {
@@ -301,13 +394,22 @@ fn resource_full_frame_keeps_one_context_health_indicator_and_a_live_header() {
         let text = frame.join("\n");
         let metric = frame
             .iter()
-            .position(|line| line.contains("MAIN CPU 125% RAM 512MiB TPS 50.0"))
+            .position(|line| line.contains("MAIN CPU 125% RAM 512M TPS 50.0"))
             .unwrap();
         let brand = frame
             .iter()
             .position(|line| line.contains("telemus.ai"))
             .unwrap();
-        assert!(metric < brand, "{text}");
+        assert_eq!(metric, brand + 1, "{text}");
+        assert_eq!(
+            strip_ansi(&frame[metric]).find("MAIN"),
+            strip_ansi(&frame[brand]).find("telemus.ai"),
+            "{text}"
+        );
+        assert!(
+            frame[..brand].iter().all(|line| !line.contains("CPU")),
+            "{text}"
+        );
         assert!(text.contains("tests CPU — RAM — TPS 50.0"), "{text}");
         assert_eq!(text.matches("CTX HEALTH").count(), 1, "{text}");
         assert!(!text.contains("CONTEXT HEALTH"), "{text}");
@@ -321,6 +423,15 @@ fn resource_full_frame_keeps_one_context_health_indicator_and_a_live_header() {
             std::fs::write(
                 Path::new(&directory).join(format!("{style}-160x48.txt")),
                 text,
+            )
+            .unwrap();
+            let mut header = super::super::super::native_neon::Header(
+                h.mode.clone(),
+                Rc::downgrade(&h.transcript),
+            );
+            std::fs::write(
+                Path::new(&directory).join(format!("{style}-header.ansi")),
+                header.render_with_height(160.0, 12).join("\n"),
             )
             .unwrap();
         }

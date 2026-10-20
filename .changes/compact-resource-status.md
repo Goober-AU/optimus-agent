@@ -1,0 +1,3 @@
+- Fixed missing CPU/RAM readings when live roster updates omit worker PIDs; verified local worker identities now resolve main agents and nested subagents.
+- Fixed resource sampling not requesting a repaint while the terminal is idle.
+- Changed the neon-blue resource display to two compact rows left-aligned beneath telemus.ai, with shared-process markers and rotating subagent pages.

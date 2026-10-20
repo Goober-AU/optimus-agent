@@ -108,7 +108,10 @@ impl Bar {
         connection: Arc<dyn wire::AgentConnection>,
         send: mpsc::Sender<HostEvent>,
     ) {
-        self.resources.start(crate::config::get_agent_dir());
+        let resource_send = send.clone();
+        self.resources.start(crate::config::get_agent_dir(), Arc::new(move || {
+            let _ = resource_send.send(HostEvent::Render);
+        }));
         *self.render_send.borrow_mut() = Some(send.clone());
         let jev = self.jev.clone();
         let status_connection = connection.clone();
