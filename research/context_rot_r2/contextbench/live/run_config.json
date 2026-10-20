@@ -2,7 +2,7 @@
   "label": "CUSTOM-OPTIMUS LIVE-MODEL practice run (not an official scorecard)",
   "worker": "rot2 W27",
   "endpoint": {
-    "baseUrl": "https://a8349d0f-f602-991e-52c5-963eb2f2e949-in-docker-k3.apps.launchpad.nvidia.com/v1",
+    "baseUrl": "<live-endpoint-removed; set ROT2_GLM_BASE_URL>",
     "model": "glm-5.3",
     "temperature": 0.0,
     "maxTokensLadder": [

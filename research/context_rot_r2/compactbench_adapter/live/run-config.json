@@ -3,7 +3,7 @@
   "date": "2026-10-19",
   "ruling": "parent Option B: 4 custom arms x starter slots 0-1 (8 cases/arm, deterministic W12 seed prefix), 3 drift cycles, 512 planned logical calls; Amendment-1 extension not triggered (gap 0.194 > 0.05)",
   "endpoint": {
-    "base_url": "https://a8349d0f-f602-991e-52c5-963eb2f2e949-in-docker-k3.apps.launchpad.nvidia.com/v1",
+    "base_url": "<live-endpoint-removed; set ROT2_GLM_BASE_URL>",
     "model": "glm-5.3",
     "auth": "Bearer ROT2_LIVE_API_KEY + X-Pomerium-Authorization ROT2_LIVE_POMERIUM (env; resolved from the DGX K3 credential scripts; never printed)",
     "temperature": 0.0,

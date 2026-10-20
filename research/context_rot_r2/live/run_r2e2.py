@@ -54,7 +54,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 BASE_URL = os.environ.get(
     "R2E2_GLM_BASE",
-    "https://a8349d0f-f602-991e-52c5-963eb2f2e949-in-docker-k3.apps.launchpad.nvidia.com/v1",
+    os.environ.get("ROT2_GLM_BASE_URL", ""),  # required; no default endpoint (fail-closed)
 )
 MODEL_ID = "glm-5.3"
 

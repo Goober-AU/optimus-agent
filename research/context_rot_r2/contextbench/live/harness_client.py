@@ -26,10 +26,9 @@ from typing import Dict, List, Optional, Tuple
 ROT2_GLM_RESOLVER_SCRIPT_ENV = "ROT2_GLM_RESOLVER_SCRIPT"
 ROT2_POMERIUM_RESOLVER_SCRIPT_ENV = "ROT2_POMERIUM_RESOLVER_SCRIPT"
 
-DEFAULT_BASE_URL = (
-    "https://a8349d0f-f602-991e-52c5-963eb2f2e949-in-docker-k3.apps."
-    "launchpad.nvidia.com/v1"
-)
+# No default endpoint: callers must supply the base URL explicitly or via env
+# (fail-closed; the live endpoint is auth-gated and machine-local).
+DEFAULT_BASE_URL = os.environ.get("ROT2_GLM_BASE_URL", "")
 DEFAULT_MODEL = "glm-5.3"
 DEFAULT_HTTP_TIMEOUT_S = 900.0
 
