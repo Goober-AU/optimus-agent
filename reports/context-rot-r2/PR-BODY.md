@@ -104,10 +104,8 @@ campaigns is listed.
 | D30 (MED): a decision stated in plain USER text classified as a step-scoped LowPriorityEpisode and retired at the first merge, while the same sentence from the assistant classified as VerifiedDecision | FIXED (W46) | `10e2b36e6` (a user unit matching DECISION_RE classifies as VerifiedDecision with `verified` provenance; the assistant path remains the corroboration path) + `d00ff2067` (the W41 cycle-5 budget pin) | `user_stated_decision_is_a_verified_decision_with_task_scope`, `user_stated_decision_survives_the_step_boundary_merge`, `user_correction_retires_a_user_stated_decision`, `tight_budget_drops_superseded_history_but_keeps_the_pairing_line` (lib), the smoke seed `7bec70f09` (probe q4) |
 | D31 (MED): the D25 retired-reference tombstones polluted the verifier's fabricated-claim check - a "verified" line citing only a retired record id passed while nothing vouched for the text | FIXED (W52) | `6041f71c9` (W52; ledger row `e6e909e16`): the resolver used by the fabricated check builds from `state.records` only (carried record and entry ids), and its non-sigil branch accepts record ids alone - the renderer grammar emits entry references only with the `@` sigil (D23), so a bare `[entry]` token is prose, not a reference; the unresolved-refs check keeps the widened sets (records + `retired_refs`), so references earlier summaries still quote stay resolvable | `retired_ids_do_not_vouch_for_verified_claims` (`tests/rot2_wave_adversarial.rs`, un-ignored); the W35 pin `retired_step_records_keep_summary_references_resolvable` stays green |
 | D32 (LOW-MED): the D28 native compaction arm carried the salvaged records through but dropped the D26 diagnostics - a native compaction observing a malformed prior ledger left no trace of the salvage | FIXED (W53) | `53ab2e3d9` (the native arm returns a minimal `typed_verification` carrying the `malformedPriorLedger` flag) | `native_compaction_reports_the_salvage_of_a_malformed_prior_ledger` (`tests/rot2_wave_adversarial.rs`, un-ignored); the D28 carry-through pin (`rot2_native_typed_chain` 2/2) stays green |
-D
 | D33 (LOW-MED): a restatement-absorbed tool record stranded references - the absorbed record's id and entry id gained no `retiredRefs` tombstone, so a later summary citing them failed unresolved-ref resolution (observed at cycle 2 of the E5-RM TASK-E offline chain) | FIXED (W54) | `cea3a4496`: the absorption site in `reconcile` retires the absorbed record's id and source entry into `retiredRefs` (the D25 step-boundary treatment); `merge` unions the absorbed tombstones with the step-boundary ones instead of dropping them | `absorption_then_citation_resolves` (`tests/rot2_wave_adversarial.rs`, landed with the fix in `6d85cc48f`: the E5-RM chain shape with the field-exact ids, red on the pre-fix tree, green with the fix) - the suite carries ten tests, zero `#[ignore]`d, at this tip (the W63 battery recorded the pre-pin nine green, REGRESSION-GATES section 11.2; the pending final matrix re-runs the ten); the D24 stable-id and D25 tombstone pins stay green |
 | D34 (MED): the typed-arm smoke (`rot2_multicycle::rot2_smoke_typed_arm_persists_typed_ledger_and_verifies`) failed deterministically at the W63 landed-tip battery with "1 unbacked verified claims" - confirmed mechanism (W71, correcting the section 11.7 suspicion): the assistant seed line "Section 3 verified; publishing next." classifies as a Step-scoped PendingAction and renders into the cycle-0 summary, the cycle-1 merge retires it at the step boundary (D25), the fixture's previous-summary decay still quotes the rendered line, and the D31 strict-vouching fix correctly refuses the retired id, so the unbacked-claim check - which had no repair path (missing items get appended back; unbacked claims hard-failed the episode) - refused the compaction with the conversation preserved; the D30 seed was NOT the retiree (it classifies as VERIFIED_DECISION with Task scope and survives every merge) | FIXED (W71) | `6894f6a6d` (the bounded repair, the fix brief's option b): `annotate_unbacked_verified_claims` plus the `UNVERIFIED_CLAIM_MARKER` suffix land in typed_state, `verify` exempts a line already carrying the marker (annotating a claim as unverified is the honest presentation, so the marker cannot smuggle a claim), and the deterministic repair gate widens to fabricated-only findings - the unbacked lines are downgraded in place (content kept) and the amended text is re-verified with `repaired=true`, matching the missing-item repair contract; a retired-id-citing line still fails `verify` itself (D31 intact), only the repair path accepts the downgrade | `unbacked_verified_claim_from_a_retired_record_repairs_to_unverified` and `annotate_unbacked_verified_claims_leaves_backed_lines_alone` (lib, `typed_state`; the first is end-to-end D25 retire -> D31 refuse -> D34 downgrade -> verify), the smoke itself now asserting the repaired cycle exists and its re-verification is clean (`rot2_multicycle`), and the fail-closed pin `repair_that_still_fails_verification_fails_the_episode` moved to a still-unrecoverable shape - an unresolvable `[VD-0badca]` reference blocks the repair (`rot2_typed_adversarial`) |
-1476ea8d9 (docs(context-rot): flip every D33-open claim to fixed (W74))
 | harness F1/F4/F5: the harness binary forked a session per invocation, read 0 tokens, lost appends on error paths | FIXED | `49f473d8d` (`continue_recent` session persistence, chars/4 usage anchors, flush-on-append) | `probe_harness_behavior.py` + the 13 adapter checks (`research/context_rot_r2/compactbench_adapter/`) |
 
 Open after the final wave, all documented in `BUG-LEDGER.md`: D7 (deferred
@@ -119,7 +117,6 @@ battery) is fixed by W71 (`6894f6a6d`, table above).
 N1/N2 (the v1 evidence-regex and custom-entry gaps R2-E1 measured) are the
 design constraints typed v2 exists to remove (the W9-F1 clause-capture gap
 is fixed by the W51 refinement, table above).
-1476ea8d9 (docs(context-rot): flip every D33-open claim to fixed (W74))
 
 ## The typed-state v2 mode (opt-in, wired)
 
@@ -211,7 +208,6 @@ Two surfaces failed red and became defects D31 (retired ids vouching for
 fabricated "verified" claims) and D32 (the native arm dropping the D26
 salvage diagnostics); both are fixed (W52/W53, table above), their red tests
 un-ignored and green. A third defect, D33 (restatement-absorbed record ids
-D
 stranding references), was found by the E5-RM offline re-measure (W47) and is
 fixed on this tip (`cea3a4496`, its guard landed with it, table above). Every
 adversarial test in both suites is green with zero `#[ignore]d defects at
@@ -220,7 +216,6 @@ battery predates it - and the pending final matrix re-runs the suite). The
 one red at the landed-tip battery sat outside both suites: the
 `rot2_multicycle` typed-arm smoke, filed as D34 and fixed by W71
 (`6894f6a6d`, table above; the pending final matrix re-runs it).
-1476ea8d9 (docs(context-rot): flip every D33-open claim to fixed (W74))
 
 ## Experiment results
 
@@ -510,10 +505,8 @@ artifacts `research/context_rot_r2/live/e5/rm/`):
 - The offline TASK-E id chain still stranded exactly two references at the
   cycle-2 merge - the restatement-absorbed record's ids gain no tombstone -
   filed as D33 (the live cells did not trigger it: GLM's compact citation
-D
   shape falls outside the verifier reference grammar); fixed on this tip by
   `cea3a4496`, pinned by `absorption_then_citation_resolves` (table above).
-1476ea8d9 (docs(context-rot): flip every D33-open claim to fixed (W74))
 
 What this shows: on the fixture the typed arm protects everything the v1
 ledger protects minus the two step-scoped episode probes the D25 boundary
@@ -615,11 +608,9 @@ is still pending (W81 runs it at the final tip). The landed record:
   selftest 24, E3 14, E3ADV 15, the adapter checks 13/13).
 - The post-wave suites: the W48 `rot2_wave_adversarial` suite (the eight
   wave tests plus the D31 companion pin and the D33 absorption pin, ten
-D
   tests and zero ignored at this tip; the D31/D32 red tests un-ignored and
   green after their fixes; the D33 pin landed with its fix, `6d85cc48f`),
   the D30 guards (`10e2b36e6`:
-1476ea8d9 (docs(context-rot): flip every D33-open claim to fixed (W74))
   four lib tests + corpus cases + the smoke seed), and the
   `rot2_supersession` suite for the v1 refinement (W51).
 - Known environment-bound failures, verified at the base in the W25 pass

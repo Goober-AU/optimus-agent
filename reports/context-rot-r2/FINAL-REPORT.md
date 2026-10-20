@@ -56,7 +56,6 @@ closing pass is on branch `rot2/w62-finalreport` at the integration tip
 In flight at that writing and not in that tree: the D33 fix; it landed after
 the pass (W54: `cea3a4496` + the `absorption_then_citation_resolves` pin
 `6d85cc48f` + the ledger row `510fd168d`) and is in this tree.
-1476ea8d9 (docs(context-rot): flip every D33-open claim to fixed (W74))
 
 ## 1. Hypotheses
 
@@ -757,7 +756,6 @@ rot2_render_cap 7/7).
   (section 4.4; D30 fixed and the cycle-5 budget caveat accepted-and-pinned
   by W46; D31, D32, D33 and D34 fixed by W52/W53/W54/W71 - no open
   post-wave finding remains). The
-1476ea8d9 (docs(context-rot): flip every D33-open claim to fixed (W74))
   W26/W27 live results are prompt-level ledger effects, not typed-arm
   evidence.
 - R2-E1/E-INC numbers are pipeline mechanics under a deliberately lossy
@@ -786,7 +784,6 @@ rot2_render_cap 7/7).
   stated in user text are handled since the D30 fix, W46 `10e2b36e6`).
   D18/D19/D20 landed (W30), D21-D29 landed (W32-W41, section 4.4), D30
   landed (W46), D31-D32 landed (W52/W53), D33 landed (W54, `cea3a4496`).
-1476ea8d9 (docs(context-rot): flip every D33-open claim to fixed (W74))
 - Not reproducible from the drivers alone: item seeds derive from salted blake2b
   digests recorded per row (iteration-1 M5, fixed for r2; `scenario.py`).
 
@@ -984,4 +981,3 @@ production-path trace (`PRODUCTION-PATH-TRACE.md`, not yet on this branch)
 and the tail passes after them; this index uses the names on disk at its
 writing. If a file named here is missing at read time, the experiment
 ledger and the cited artefacts hold its content.
-1476ea8d9 (docs(context-rot): flip every D33-open claim to fixed (W74))
