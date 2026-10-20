@@ -20,6 +20,11 @@ Usage (from research/):
   python -m context_rot_r2.live.run_r2e2 --stage hard
   python -m context_rot_r2.live.run_r2e2 --stage aggregate # rebuild results.json
 
+Credential resolvers come from the environment only: R2E2_GLM_RESOLVER and
+R2E2_POMERIUM each name a PowerShell helper that writes one token to stdout,
+and the driver refuses to run without them instead of defaulting into a
+private credential store.
+
 Every model call is appended to raw-calls.jsonl with its request, response,
 usage and latency; completed call ids are reused on restart (resume).
 """
@@ -485,14 +490,19 @@ def count_calls(backend: GlmBackend) -> Dict[str, Any]:
 
 def load_credentials() -> Tuple[str, str]:
     import subprocess
-    resolver = os.environ.get(
-        "R2E2_GLM_RESOLVER",
-        r"C:/Users/openclawuser/Optimus-Assistant/profile/agent/skill-state/dgx-k3-login/glm53-resolvers/cd5ef6501b924449917676c6ddb998a8.ps1",
-    )
-    pomerium = os.environ.get(
-        "R2E2_POMERIUM",
-        r"C:/Users/openclawuser/optimus-rust-test-20260915/profile/agent/credentials/Get-K3PomeriumJwt.ps1",
-    )
+
+    def resolver_path(env_name: str) -> str:
+        """The resolver script path; fails closed when `env_name` is unset."""
+        path = os.environ.get(env_name, "").strip()
+        if not path:
+            raise RuntimeError(
+                f"set {env_name} to the credential-resolver PowerShell script "
+                "(a helper that writes the token to stdout)"
+            )
+        return path
+
+    resolver = resolver_path("R2E2_GLM_RESOLVER")
+    pomerium = resolver_path("R2E2_POMERIUM")
     key = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", resolver],
                          capture_output=True, text=True, timeout=120).stdout.strip()
     jwt = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", pomerium],
