@@ -1,0 +1,1 @@
+- Removed the duplicate numeric context-health score from the bottom tray, retaining the GREEN/AMBER/RED indicator beside STREAM TPS and the tray's capacity, compaction and heartbeat readings.
