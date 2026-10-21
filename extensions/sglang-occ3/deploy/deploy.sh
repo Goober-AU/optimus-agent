@@ -324,6 +324,26 @@ mapfile -t TMPFS       < <(inspect_f '{{range $k, $v := .HostConfig.Tmpfs}}{{pri
 mapfile -t EXTRA_HOSTS < <(inspect_f '{{range .HostConfig.ExtraHosts}}{{println .}}{{end}}')
 mapfile -t NETWORKS    < <(inspect_f '{{range $k, $v := .NetworkSettings.Networks}}{{printf "%s\n" $k}}{{end}}')
 
+# Sanitize: docker 29.x emits a trailing newline even for empty template
+# ranges, so every mapfile above can hold a single EMPTY element. That
+# would defeat the ${#ARR[@]} == 0 checks below (mount fallback) and
+# append empty-valued flags (-v "", --tmpfs "", ...) to the launch line.
+drop_blank() {
+    # usage: drop_blank VAR; filters empty/whitespace-only elements.
+    local -n __arr="$1"
+    local __kept=()
+    local __e
+    for __e in ${__arr[@]+"${__arr[@]}"}; do
+        [[ -n "${__e//[[:space:]]/}" ]] && __kept+=( "$__e" )
+    done
+    __arr=( "${__kept[@]}" )
+}
+drop_blank BINDS
+drop_blank ULIMITS
+drop_blank TMPFS
+drop_blank EXTRA_HOSTS
+drop_blank NETWORKS
+
 # Restart policy: rebuild the docker run argument; a previous attempt's
 # state file keeps the ORIGINAL policy (this deploy sets the preserved
 # container to --restart=no, see the mutation phase).
@@ -484,12 +504,19 @@ fi
 # ---------------------------------------------------------------------------
 # Step 3: build the derived image (additive: base digest + plugin only)
 # ---------------------------------------------------------------------------
-BASE_REF="$(inspect_f '{{range .RepoDigests}}{{println .}}{{end}}' | head -1)"
+BASE_REF="$(inspect_f '{{range .RepoDigests}}{{println .}}{{end}}' 2>/dev/null | head -1 || true)"
 if [[ -z "$BASE_REF" ]]; then
     if [[ "$BASE_IMAGE_REF" == *"@sha256:"* ]]; then
         BASE_REF="$BASE_IMAGE_REF"
+    elif docker image inspect "$BASE_IMAGE_ID" >/dev/null 2>&1; then
+        # Local-only (untagged, never-pulled) image: pin the exact image
+        # ID with a local tag. Same content, no registry involved.
+        if ! docker tag "$BASE_IMAGE_ID" occ3-base:occ3 2>>"$LOG_FILE"; then
+            die "cannot tag the base image id $BASE_IMAGE_ID"
+        fi
+        BASE_REF="occ3-base:occ3"
     else
-        BASE_REF="${BASE_IMAGE_REF%%:*}@$BASE_IMAGE_ID"
+        BASE_REF="$BASE_IMAGE_REF"
     fi
     log "no repo digest found; using fallback base reference $BASE_REF"
 fi
