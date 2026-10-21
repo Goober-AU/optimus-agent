@@ -18,6 +18,7 @@ pub mod mime;
 pub mod paths;
 pub mod photon;
 pub mod pi_user_agent;
+pub mod private_atomic_publish;
 pub mod semaphore;
 pub mod shell;
 pub mod sleep;
