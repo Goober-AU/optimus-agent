@@ -276,6 +276,7 @@ pub mod dialect;
 pub mod dialect_load;
 pub mod occ1;
 pub mod occ2;
+pub mod occ3;
 pub mod prune;
 pub mod selection;
 pub mod session_settings;
