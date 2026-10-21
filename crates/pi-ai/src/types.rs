@@ -1197,6 +1197,52 @@ pub struct NativeCompactionCapability {
     pub validation: NativeCompactionValidation,
 }
 
+/// Validation state for an OCC-3 latent route. Only `live-verified` may
+/// activate latent communication.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Occ3Validation {
+    Unverified,
+    DocumentationVerified,
+    LiveVerified,
+}
+
+pub const OCC3_PROTOCOL_V1: &str = "occ3-v1";
+pub const OCC3_API_VERSION_V1: &str = "v1";
+
+/// Explicit capability for an OCC-3 latent-communication connector route.
+///
+/// Model scoped on purpose (same pattern as [`NativeCompactionCapability`]):
+/// a provider base URL or display name is not evidence that a route hosts a
+/// latent connector. Activation additionally requires a successful live
+/// capability handshake with the connector at `endpoint`; `validation`
+/// records that evidence state.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Occ3Capability {
+    /// `"occ3-v1"`
+    pub protocol: String,
+    /// Connector id, e.g. `sglang`. The generic bridge resolves this to a
+    /// registered connector implementation.
+    pub connector: String,
+    /// Connector base endpoint (HTTPS; authenticated by existing mechanisms).
+    pub endpoint: String,
+    /// `"v1"`
+    #[serde(rename = "apiVersion")]
+    pub api_version: String,
+    /// Latent transfer is same-exact-model only. Must be `true` for v1.
+    #[serde(rename = "sameModelOnly", default = "default_true")]
+    pub same_model_only: bool,
+    pub enabled: bool,
+    pub validation: Occ3Validation,
+    /// Preferred fallback chain, e.g. `["occ2", "occ1", "text"]`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fallback: Vec<String>,
+}
+
+fn default_true() -> bool {
+    true
+}
+
 /// Compatibility settings for OpenAI Responses APIs.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -1498,6 +1544,9 @@ pub struct Model {
     /// Exact, explicitly validated native compaction route. Absent means unsupported.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub native_compaction: Option<NativeCompactionCapability>,
+    /// Exact, explicitly validated OCC-3 latent route. Absent means unsupported.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub occ3: Option<Occ3Capability>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub headers: Option<IndexMap<String, String>>,
     /// Compatibility overrides for OpenAI-compatible APIs. If not set,

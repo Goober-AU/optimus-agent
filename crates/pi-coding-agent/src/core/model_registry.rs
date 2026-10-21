@@ -90,6 +90,8 @@ pub struct ModelDefinition {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub native_compaction: Option<NativeCompactionCapability>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub occ3: Option<pi_ai::types::Occ3Capability>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub headers: Option<IndexMap<String, String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub compat: Option<Compat>,
@@ -369,6 +371,73 @@ fn validate_native_compaction_schema(value: &Value, path: &str, errors: &mut Vec
     }
 }
 
+fn validate_occ3_schema(value: &Value, path: &str, errors: &mut Vec<String>) {
+    let Some(object) = value.as_object() else {
+        errors.push(format!("  - {}: Expected object", path));
+        return;
+    };
+    for key in ["protocol", "connector", "endpoint", "apiVersion"] {
+        match object.get(key) {
+            None => errors.push(format!("  - {}: Expected required property", validation_path(path, key))),
+            Some(entry) => {
+                if key == "protocol" && entry.as_str() != Some("occ3-v1") {
+                    errors.push(format!("  - {}: Expected literal", validation_path(path, key)));
+                } else if key == "apiVersion" && entry.as_str() != Some("v1") {
+                    errors.push(format!("  - {}: Expected literal", validation_path(path, key)));
+                } else if !entry.is_string() {
+                    errors.push(format!("  - {}: Expected string", validation_path(path, key)));
+                }
+            }
+        }
+    }
+    if let Some(entry) = object.get("sameModelOnly") {
+        expect_boolean(entry, &validation_path(path, "sameModelOnly"), errors);
+        // Same-exact-model is a mandatory gate, not an optimisation: a
+        // configured false is rejected at load time.
+        if entry.as_bool() == Some(false) {
+            errors.push(format!(
+                "  - {}: Must be true (same-exact-model only in occ3-v1)",
+                validation_path(path, "sameModelOnly")
+            ));
+        }
+    }
+    if let Some(entry) = object.get("enabled") {
+        expect_boolean(entry, &validation_path(path, "enabled"), errors);
+    } else {
+        errors.push(format!("  - {}: Expected required property", validation_path(path, "enabled")));
+    }
+    match object.get("validation") {
+        Some(entry) => {
+            let valid = matches!(
+                entry.as_str(),
+                Some("unverified") | Some("documentation-verified") | Some("live-verified")
+            );
+            if !valid {
+                errors.push(format!("  - {}: Expected union", validation_path(path, "validation")));
+            }
+        }
+        None => errors.push(format!(
+            "  - {}: Expected required property",
+            validation_path(path, "validation")
+        )),
+    }
+    if let Some(entry) = object.get("fallback") {
+        let Some(items) = entry.as_array() else {
+            errors.push(format!("  - {}: Expected array", validation_path(path, "fallback")));
+            return;
+        };
+        for item in items {
+            let valid = matches!(item.as_str(), Some("occ2") | Some("occ1") | Some("text"));
+            if !valid {
+                errors.push(format!(
+                    "  - {}: Expected one of occ2, occ1, text",
+                    validation_path(path, "fallback")
+                ));
+            }
+        }
+    }
+}
+
 fn validate_model_definition(value: &Value, path: &str, errors: &mut Vec<String>) {
     let Some(object) = value.as_object() else {
         errors.push(format!("  - {}: Expected object", path));
@@ -436,6 +505,9 @@ fn validate_model_definition(value: &Value, path: &str, errors: &mut Vec<String>
     }
     if let Some(entry) = object.get("nativeCompaction") {
         validate_native_compaction_schema(entry, &validation_path(path, "nativeCompaction"), errors);
+    }
+    if let Some(entry) = object.get("occ3") {
+        validate_occ3_schema(entry, &validation_path(path, "occ3"), errors);
     }
     if let Some(entry) = object.get("headers") {
         expect_string_record(entry, &validation_path(path, "headers"), errors);
@@ -1980,6 +2052,7 @@ impl ModelRegistry {
                     default_max_tokens: model_def.default_max_tokens,
                     featured: None,
                     native_compaction: model_def.native_compaction.clone(),
+                    occ3: model_def.occ3.clone(),
                     headers: None,
                     compat,
                 });
@@ -3349,6 +3422,7 @@ impl ModelRegistry {
                     default_max_tokens: model_def.default_max_tokens,
                     featured: None,
                     native_compaction: model_def.native_compaction.clone(),
+                    occ3: model_def.occ3.clone(),
                     headers: None,
                     compat: model_def.compat.clone(),
                 });

@@ -93,6 +93,7 @@ mod tests {
             default_max_tokens: None,
             featured: None,
             native_compaction: None,
+            occ3: None,
             headers: None,
             compat: None,
         }
