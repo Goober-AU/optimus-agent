@@ -47,6 +47,7 @@ pub mod model_resolver;
 pub mod model_tool_output_policy;
 pub mod new_session_command;
 pub mod occ;
+pub mod occ3_connectors;
 pub mod orphan_process_journal;
 pub mod output_guard;
 pub mod package_manager;
