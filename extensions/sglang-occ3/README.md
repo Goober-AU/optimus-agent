@@ -1,92 +1,103 @@
-# occ3-bridge: SGLang plugin for OCC-3 latent communication
+# occ3-bridge: experimental SGLang connector for OCC-3
 
-OCC-3 is latent agent communication: a sender deposits a message as
-GPU-resident model state, and a receiver consumes that state directly
-instead of re-reading text. This package is the SGLang-side connector
-for the generic OCC-3 bridge in `crates/pi-coding-agent/src/core/occ/occ3`.
+This package implements the SGLang side of the generic Optimus OCC-3 bridge
+in `crates/pi-coding-agent/src/core/occ/occ3`. The generic bridge does not
+require other inference engines to use SGLang's implementation.
 
-## How it works (v1 primary arm: KV-radix channel)
+## Status and proof boundary
 
-1. `POST /occ3/v1/send` executes an ordinary generation request whose
-   prompt is the message content, under a channel-scoped
-   `cache_salt` (`occ3-<channel>`). On completion the scheduler
-   inserts the KV row set into the radix tree under that salted
-   namespace. The latent now lives only as KV slots on the GPU.
-2. `POST /occ3/v1/recv` replays the same carrier token ids under the
-   same salt with the receiver's task suffix appended. The radix
-   lookup hands the receiver the sender's KV slots zero-copy; only
-   the suffix is prefilled.
-3. `cached_tokens` in the response verifies the hit deterministically
-   (miss = evicted or racing; the caller resends).
-4. `POST /occ3/v1/release` retires the channel bookkeeping.
+The native hidden-state path is experimental and disabled by default.
+Source overlays, worker/control code, native chat adapters, deployment
+safety code and offline tests are under development. They are not evidence
+of a successful model run, GPU-state transfer, semantic benefit, production
+rollback or deployment readiness.
 
-Because sender and receiver run on the same server, same weights,
-same TP topology and same KV dtype, the receiver consumes exactly the
-KV it would have computed itself: zero representation-space mapping
-error by construction. Cross-model transfer is out of scope for v1
-(strict same-exact-model rule, enforced by identity fingerprints).
+Salted prompt replay and radix-cache hits are a separate cache-reuse
+experiment, not proof of native latent communication. A `cached_tokens`
+count, HTTP 200, health result or imported plugin cannot establish that a
+receiver used a sender's hidden representation. Legacy native-state
+shortcuts must not be used to bypass the current admission gates.
 
-## Containment
+The first isolated native integration uses the process-local experimental
+`occ3_handoff` tool and real family-message authorization. The ordinary
+Python `agent_message.send` path does not yet carry authenticated native
+source-tool provenance. It must not be advertised as a completed native
+latent handoff path.
 
-- The salt namespaces the channel away from all default-namespace
-  traffic; ordinary requests can never observe or reuse channel KV.
-- Receiver suffixes extend the salted branch only.
-- Use a fresh carrier nonce (distinct message content) per round to
-  avoid branch growth.
-- Eviction window: between send and recv the rows are LRU-evictable.
-  Keep the gap short; verify with `cached_tokens`; resend on miss.
+## Intended native path
 
-## Optional latent-row injection (hybrid StateBridge arm)
+1. Authorize the source against the existing authenticated broker and an
+   explicit server-owned session enrollment. Client session labels alone
+   are not authorization.
+2. Capture accepted target-model final-layer pre-normalization predictor
+   states during the original native generation. Do not generate or
+   re-prefill a second text carrier to simulate source state.
+3. Retain bounded rank-local GPU state behind an owner-only opaque handle.
+   Bind it to the exact model, runtime incarnation, source request and
+   completed output. Do not export tensors through control RPC or logs.
+4. Publish an authorized one-shot message through the native family
+   controller. Preserve uncertainty after a lost reply; do not replay an
+   admitted source or fall back to plaintext.
+5. Align the retained state and inject a continuous prefix into one native
+   receiver inference. Keep private KV pages out of shared-cache reuse and
+   fence submitted GPU work before releasing owned pages.
+6. Verify matching native terminal output and backend evidence before
+   making a source lease or receiver completion available to tools.
 
-`POST /occ3/v1/send` accepts `embeds` (rows of floats) and
-`positions`; the plugin injects them into the carrier via
-`positional_embed_overrides` (in-process `PositionalEmbeds`), so the
-channel can carry latent thought content, not just token KV.
+Actual tensor lineage, all-rank synchronization, abort/retirement,
+private-page reuse and semantic behavior still need controlled validation
+on the exact target image and hardware. Offline control-flow doubles and
+optional skipped Torch/CUDA tests do not close those requirements.
 
-## Optional hidden-state capture (dormant)
+## Installation and activation boundary
 
-Set `OCC3_CAPTURE_ENABLED=1` (and optionally `OCC3_CAPTURE_DIR`) in
-the server environment to arm an AROUND hook on
-`run_eagle_verify` that clones accepted-token hidden states for
-observability and the portable StateBridge arm. Off by default.
+Ordinary entry-point discovery uses `sglang.srt.plugins`, but discovery
+alone does not install or enable the native hidden-state path. The native
+implementation requires reviewed raw-hash-pinned source overlays for the
+exact original SGLang source snapshot, fixed packaged profile/source
+artifacts, explicit startup selection, and installed-source/runtime checks.
 
-## Routes
+`deploy.v3.native_package` verifies or stages these artifacts in an
+exclusive disposable tree. Its default startup selection is false.
+Interrupted staging requires discarding that tree, not repairing a live
+server. Generated `native_profile.json` and `native_sources.json` are
+package data; `_native_profile_digest.py` is generated Python metadata.
+Neither their presence nor a successful package build grants live approval.
 
-| Method | Path | Purpose |
-|---|---|---|
-| GET | /occ3/v1/status | plugin version, channel counts, metrics |
-| GET | /occ3/v1/identity | 11-field model identity + fingerprint |
-| GET | /occ3/v1/capabilities | capability advertisement for negotiation |
-| GET | /occ3/v1/channels | channel table (no token ids) |
-| POST | /occ3/v1/send | write a message's KV into a salted channel |
-| POST | /occ3/v1/recv | read a channel as a prefix hit |
-| POST | /occ3/v1/release | retire a channel |
+Do not change server environment, weights, API keys, launch options,
+reasoning effort, token budgets, adaptive MTP or ordinary cache settings to
+make an experimental test pass. The optional hidden-observation dump stays
+disabled unless separately approved. It is not the native transfer path.
 
-All routes sit behind the server's api-key middleware (auth level
-NORMAL; no `/health` prefix so nothing bypasses the key).
+The V3 lifecycle controller remains fail-closed while its native validator
+is unavailable. Real disposable recovery and routing tests are separate
+prerequisites. The historical deployment scripts and an endpoint health
+check are not substitutes for those gates. No automated production swap
+is authorized by this README.
 
-## Installation
+## Resource limits
 
-The package is installed into the SGLang server image (see
-`deploy/Dockerfile`). The SGLang plugin loader discovers it via the
-`sglang.srt.plugins` entry-point group at process start; no source
-patches, no extra launch flags. Optionally restrict to this plugin
-with `SGLANG_PLUGINS=occ3_bridge`.
+Current bounded response handling does not prove compatibility with the
+actual native default of 131072 output tokens or its 262144-token ceiling.
+Do not substitute smaller fixture budgets, silently clamp requested tokens
+or infer capacity from a short timeout estimate. Output-byte, context,
+GPU-memory, rank and deadline limits need independent verification. A
+failed or uncertain operation yields no verified lease or tool dispatch.
 
-Requires: SGLang >= 0.5.21 (positional_embed_overrides, cache_salt,
-plugin framework). The server restart for plugin load is a one-time
-deployment step; see `deploy/README.md`.
+## Offline development
 
-## Development
+Run tests through the extension's documented project Python environment:
 
+```text
+python -m pytest tests/ -q
 ```
-cd extensions/sglang-occ3
-python -m pytest tests/   # offline; no GPU, no sglang install needed
-```
 
-Tests stub the SGLang API surface (`tests/conftest.py`) and verify
-request construction, channel bookkeeping, verification logic and
-route behavior, plus field-order parity with the Rust bridge types.
+Read each test's proof boundary. Some tests execute exact pinned source
+methods with explicit engine, allocator or transport doubles. Optional
+installed-image, Torch, native Linux, CUDA and TP8 tests need separate
+approval and may be skipped locally. Use no real provider credentials or
+model calls for regression tests. The repository also requires
+`bash scripts/check.sh`; a passing offline gate is not live clearance.
 
 ## License
 

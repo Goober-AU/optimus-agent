@@ -20,29 +20,46 @@ def load() -> None:
     global _LOADED
     if _LOADED:
         return
-    _LOADED = True
 
     try:
         import sglang.srt.entrypoints.http_server as http_server
 
         from .api import router
+        from .kv_handles import router as handle_router
 
         app = getattr(http_server, "app", None)
         if app is None:
             raise RuntimeError("http_server.app missing")
         if not getattr(app, "_occ3_router_installed", False):
-            app.include_router(router)
+            previous_routes = list(app.router.routes)
+            try:
+                app.include_router(router)
+                app.include_router(handle_router)
+            except Exception:
+                app.router.routes[:] = previous_routes
+                raise
             app._occ3_router_installed = True
             logger.info(
                 "occ3-bridge: routes mounted under /occ3/v1 (version %s)",
                 __import__("occ3_sglang", fromlist=["__version__"]).__version__,
             )
     except Exception:
-        logger.exception("occ3-bridge: route installation failed")
+        logger.error("occ3-bridge: route installation failed")
+        return
 
     try:
         from .capture import register_capture_hook
 
         register_capture_hook()
     except Exception:
-        logger.exception("occ3-bridge: capture hook registration failed")
+        logger.error("occ3-bridge: capture hook registration failed")
+        return
+    _LOADED = True
+
+
+async def install_native(app, tokenizer_manager, *, experimental_opt_in=False, buffer_profile=None):
+    """Trusted pre-serving bootstrap only; ordinary load() never invokes this."""
+    from .native_install import install_native_runtime
+
+    return await install_native_runtime(app, tokenizer_manager,
+        experimental_opt_in=experimental_opt_in, buffer_profile=buffer_profile)

@@ -1,0 +1,165 @@
+{
+  "schema": "optimus.sglang-occ3.source-patch.v1",
+  "source_revision": "e00930c5489053f26d86b179cee0d087f846acbb",
+  "source_version": "0.5.21",
+  "patch_set": "capture-eager-mtp-v1",
+  "files": [
+    {
+      "path": "models/deepseek_v2.py",
+      "before_sha256": "74f67224cc3d3edcf465bea54af572ebd3b4fb9e784a6a38a445e59db6c58d7b",
+      "after_sha256": "5983a719fb6b75f33e5b6525568d90469915413d1db27d1cc5067bed3f2380e9",
+      "replacements": [
+        {
+          "before": "            if not forward_batch.forward_mode.is_idle():\n                hidden_states = residual_batch.norm(\n                    hidden_states, forward_batch, self.norm\n                )\n\n        if len(aux_hidden_states) == 0:",
+          "after": "            if not forward_batch.forward_mode.is_idle():\n                if getattr(forward_batch, \"occ3_context\", None):\n                    from occ3_sglang.latent_worker import capture_prenorm\n\n                    # residual_batch invokes this on the completed residual,\n                    # before final normalization, including fused add+norm.\n                    hidden_states = residual_batch.norm(\n                        hidden_states,\n                        forward_batch,\n                        self.norm,\n                        capture_output=lambda rows: capture_prenorm(forward_batch, rows),\n                    )\n                else:\n                    hidden_states = residual_batch.norm(\n                        hidden_states, forward_batch, self.norm\n                    )\n\n        if len(aux_hidden_states) == 0:"
+        },
+        {
+          "before": "        if self.pp_group.is_last_rank:\n            return self.logits_processor(\n                input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states\n            )\n        else:\n            return hidden_states",
+          "after": "        if self.pp_group.is_last_rank:\n            logits_output = self.logits_processor(\n                input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states\n            )\n            if getattr(forward_batch, \"occ3_context\", None):\n                # Separate worker-local sidecar. Never replace EAGLE hidden_states.\n                logits_output.occ3_capture_rows = getattr(\n                    forward_batch, \"occ3_capture_rows\", None\n                )\n            return logits_output\n        else:\n            return hidden_states"
+        },
+        {
+          "before": "            if input_embeds is None:\n                hidden_states = self.embed_tokens(input_ids)\n            else:\n                hidden_states = input_embeds\n            residual_batch.start(forward_batch)",
+          "after": "            if input_embeds is None:\n                hidden_states = self.embed_tokens(input_ids)\n            else:\n                hidden_states = input_embeds\n            if getattr(forward_batch, \"occ3_context\", None):\n                from occ3_sglang.latent_worker import inject_target_embeddings\n\n                # Replace only prefix rows in the native lookup allocation.\n                # Do not clone/retain a full prefill embedding buffer in kwargs.\n                inject_target_embeddings(forward_batch, hidden_states)\n            residual_batch.start(forward_batch)"
+        }
+      ]
+    },
+    {
+      "path": "layers/logits_processor.py",
+      "before_sha256": "cfa7d5aaf8b37078a956c2fefd61ca0f069b6a4159f97e0e618c0f0ddf0b4ea9",
+      "after_sha256": "aab4ab76939632445fbb786d8dc00b27a3b8ccf70c6ec0440f82f95fef7059b6",
+      "replacements": [
+        {
+          "before": "    auxiliary_device_output: Optional[DeviceAuxiliaryOutput] = None\n\n    def finalize_input_logprobs",
+          "after": "    auxiliary_device_output: Optional[DeviceAuxiliaryOutput] = None\n\n    # OCC3 worker-local final-prenorm rows. Not an IPC/CPU/logprob output.\n    # The helper owns the GPU allocation and its event-delayed lifetime.\n    occ3_capture_rows: Optional[object] = None\n\n    def finalize_input_logprobs"
+        }
+      ]
+    },
+    {
+      "path": "speculative/eagle_worker_common.py",
+      "before_sha256": "e3a18f474b823339a2054ca783c9e007c231bd8fd53b120b328b9f7be6ac84c9",
+      "after_sha256": "69aecd89686030a245d3d796b10062c320eaf2fc489d9674a054652a4003a77d",
+      "replacements": [
+        {
+          "before": "        uno_target_max_top_k=uno_target_max_top_k,\n    )\n    new_seq_lens = batch.seq_lens + accept_lens",
+          "after": "        uno_target_max_top_k=uno_target_max_top_k,\n    )\n    occ3_capture_stage = None\n    if getattr(verify_forward_batch, \"occ3_context\", None):\n        from occ3_sglang.latent_worker import stage_verify\n\n        # Global accepted-node indices still refer to the uncompacted target\n        # predictor rows and predict[idx], not the draft input tokens. This is\n        # provisional: only scheduler-retained visible output may be committed.\n        occ3_capture_stage = stage_verify(\n            verify_forward_batch,\n            logits_output,\n            predict,\n            accept_lens,\n            accept_index,\n            verify_input.positions,\n        )\n    new_seq_lens = batch.seq_lens + accept_lens"
+        },
+        {
+          "before": "        extra_keep_alive_refs=[verify_forward_batch],\n    )",
+          "after": "        extra_keep_alive_refs=[verify_forward_batch],\n        occ3_capture_stage=occ3_capture_stage,\n    )"
+        }
+      ]
+    },
+    {
+      "path": "speculative/eagle_worker_v2.py",
+      "before_sha256": "38bf99d3208ebecc621a1af739f3dd2906647561a8dfee898a0221f2a85b6e7c",
+      "after_sha256": "e52c32121beee685e6733f3bf0272fa024f63e0777455dcc1f1ef858f12200cf",
+      "replacements": [
+        {
+          "before": "        # Construct input_ids\n        if not batch.forward_mode.is_idle():\n            # Chunked-prefill-aware tail tokens (see PR #26329).",
+          "after": "        # Snapshot immutable geometry before rotating IDs. The helper derives\n        # shifted effective embeddings from these absolute chunk positions.\n        occ3_context = getattr(batch, \"occ3_context\", None)\n        tail_tokens = None\n        # Construct input_ids\n        if not batch.forward_mode.is_idle():\n            # Chunked-prefill-aware tail tokens (see PR #26329)."
+        },
+        {
+          "before": "        forward_batch.return_logprob = False\n        if mm_input_embeds is not None:\n            forward_batch.mm_input_embeds = mm_input_embeds\n\n        # Seed the first draft-decode loop",
+          "after": "        forward_batch.return_logprob = False\n        if occ3_context:\n            from occ3_sglang.latent_types import LatentError\n            from occ3_sglang.latent_worker import draft_input_embeds\n\n            if mm_input_embeds is not None or tail_tokens is None:\n                raise LatentError(\"profile\")\n            forward_batch.occ3_context = occ3_context\n            forward_batch.occ3_force_eager = True\n            # Target replacement coordinates are unshifted. Never let native\n            # scatter apply them a second time to the rotated draft batch.\n            forward_batch.replace_embeds = None\n            forward_batch.replace_positions = None\n            forward_batch.input_embeds = draft_input_embeds(\n                self.draft_runner, forward_batch, batch, tail_tokens\n            )\n        if mm_input_embeds is not None:\n            forward_batch.mm_input_embeds = mm_input_embeds\n\n        # Seed the first draft-decode loop"
+        },
+        {
+          "before": "            capture_hidden_mode=target_capture_mode,\n        )\n\n        # Spec_v2 convention:",
+          "after": "            capture_hidden_mode=target_capture_mode,\n        )\n        if getattr(batch, \"occ3_context\", None):\n            from occ3_sglang.latent_worker import stage_prefill\n\n            # Stage before publication/draft rotation. Intermediate chunks do\n            # not predict a visible sampled output; the helper excludes them.\n            batch_output.occ3_capture_stage = stage_prefill(\n                batch, batch_output.logits_output, batch_output.next_token_ids\n            )\n\n        # Spec_v2 convention:"
+        }
+      ]
+    },
+    {
+      "path": "models/deepseek_nextn.py",
+      "before_sha256": "b59adc7d2b73d89561b8c608e17cadf0ddaabc214215cdaccfee6180ae524912",
+      "after_sha256": "5ffc54da114c644550f02f2e9a3e30d9c2d6a8fd7847ce2e7e679ed724fc832b",
+      "replacements": [
+        {
+          "before": "    def forward(\n        self,\n        input_ids: torch.Tensor,\n        positions: torch.Tensor,\n        forward_batch: ForwardBatch,\n        pp_proxy_tensors: Optional[PPProxyTensors] = None,\n    ) -> torch.Tensor:\n        hidden_states = self.model(input_ids, positions, forward_batch)\n        return self.logits_processor(\n            input_ids, hidden_states, self.lm_head, forward_batch\n        )\n",
+          "after": "    def forward(\n        self,\n        input_ids: torch.Tensor,\n        positions: torch.Tensor,\n        forward_batch: ForwardBatch,\n        pp_proxy_tensors: Optional[PPProxyTensors] = None,\n        input_embeds: Optional[torch.Tensor] = None,\n    ) -> torch.Tensor:\n        if input_embeds is None:\n            hidden_states = self.model(input_ids, positions, forward_batch)\n        else:\n            # Explicit effective draft embeddings; this is not multimodal input\n            # and never replaces the previous target MTP hidden state.\n            hidden_states = self.model(\n                input_ids, positions, forward_batch, input_embeds=input_embeds\n            )\n        return self.logits_processor(\n            input_ids, hidden_states, self.lm_head, forward_batch\n        )\n"
+        }
+      ]
+    },
+    {
+      "path": "model_executor/model_runner.py",
+      "before_sha256": "36e7a69f345cf09f24699eea36a4ab0a2a305acb8b8a7e9b4e975f3fd09527f3",
+      "after_sha256": "65181acd6a9482b46fe099b0c1ade478bf945267f467744d2ede54c09d650035",
+      "replacements": [
+        {
+          "before": "    def _extend_forward_kwargs(\n        self, forward_batch: ForwardBatch, pp_proxy_tensors\n    ) -> dict:\n        \"\"\"Build the extend/prefill model.forward kwargs (pp_proxy_tensors +\n        input_embeds / replace_embeds overrides + get_embedding), shared by the\n        prefill cuda-graph path and the EagerRunner's eager extend path.\"\"\"\n        kwargs = self._pp_kwargs(pp_proxy_tensors)\n        if forward_batch.input_embeds is not None:\n            kwargs[\"input_embeds\"] = forward_batch.input_embeds.bfloat16()\n        if (\n            forward_batch.replace_embeds is not None\n            and forward_batch.replace_positions is not None\n        ):\n            # Token embedding overrides: get base embeddings, scatter replacements\n            if \"input_embeds\" not in kwargs:\n                embed_layer = self.model.get_input_embeddings()\n                kwargs[\"input_embeds\"] = embed_layer(forward_batch.input_ids)\n            kwargs[\"input_embeds\"][forward_batch.replace_positions] = (\n                forward_batch.replace_embeds.to(kwargs[\"input_embeds\"].dtype)\n            )\n        if not self.is_generation:\n            kwargs[\"get_embedding\"] = True\n        return kwargs\n",
+          "after": "    def _extend_forward_kwargs(\n        self, forward_batch: ForwardBatch, pp_proxy_tensors\n    ) -> dict:\n        \"\"\"Build the extend/prefill model.forward kwargs (pp_proxy_tensors +\n        input_embeds / replace_embeds overrides + get_embedding), shared by the\n        prefill cuda-graph path and the EagerRunner's eager extend path.\"\"\"\n        kwargs = self._pp_kwargs(pp_proxy_tensors)\n        if getattr(forward_batch, \"occ3_context\", None):\n            from occ3_sglang.latent_types import LatentError\n\n            if (\n                forward_batch.replace_embeds is not None\n                or forward_batch.replace_positions is not None\n            ):\n                raise LatentError(\"profile\")\n            if self.is_draft_worker:\n                # Already shifted by draft_input_embeds. Preserve native dtype.\n                if forward_batch.input_embeds is not None:\n                    kwargs[\"input_embeds\"] = forward_batch.input_embeds\n            else:\n                from occ3_sglang.latent_worker import target_input_embeds\n\n                if forward_batch.input_embeds is not None:\n                    raise LatentError(\"profile\")\n                input_embeds = target_input_embeds(self, forward_batch)\n                if input_embeds is not None:\n                    kwargs[\"input_embeds\"] = input_embeds\n            if not self.is_generation:\n                raise LatentError(\"profile\")\n            return kwargs\n        if forward_batch.input_embeds is not None:\n            kwargs[\"input_embeds\"] = forward_batch.input_embeds.bfloat16()\n        if (\n            forward_batch.replace_embeds is not None\n            and forward_batch.replace_positions is not None\n        ):\n            # Token embedding overrides: get base embeddings, scatter replacements\n            if \"input_embeds\" not in kwargs:\n                embed_layer = self.model.get_input_embeddings()\n                kwargs[\"input_embeds\"] = embed_layer(forward_batch.input_ids)\n            kwargs[\"input_embeds\"][forward_batch.replace_positions] = (\n                forward_batch.replace_embeds.to(kwargs[\"input_embeds\"].dtype)\n            )\n        if not self.is_generation:\n            kwargs[\"get_embedding\"] = True\n        return kwargs\n"
+        },
+        {
+          "before": "    def _forward_raw(\n        self,\n        forward_batch: ForwardBatch,\n        pp_proxy_tensors: Optional[PPProxyTensors],\n        reinit_attn_backend: bool = False,\n        split_forward_count: int = 1,\n    ) -> ModelRunnerOutput:\n        if has_forward_context():\n            ctx_mgr = contextlib.nullcontext()\n        else:\n            ctx_mgr = forward_context(ForwardContext(attn_backend=self.attn_backend))\n        with ctx_mgr:\n            mode_check = (\n                forward_batch.forward_mode.is_cpu_graph\n                if self.device == \"cpu\"\n                else forward_batch.forward_mode.is_cuda_graph\n            )\n            can_run_graph = bool(\n                mode_check()\n                and self.decode_cuda_graph_runner\n                and self.decode_cuda_graph_runner.can_run_graph(forward_batch)\n            )\n\n            if (\n                forward_batch.forward_mode.is_decode()\n                and self.hisparse_coordinator is not None\n            ):\n                forward_batch.hisparse_coordinator = self.hisparse_coordinator\n                self.hisparse_coordinator.wait_for_pending_backup()\n                self.hisparse_coordinator.num_real_reqs.fill_(forward_batch.batch_size)\n\n            # Replay cuda graph if applicable\n            if can_run_graph:\n                ret = self.decode_cuda_graph_runner.execute(\n                    forward_batch,\n                    pp_proxy_tensors=pp_proxy_tensors,\n                )\n                return ModelRunnerOutput(logits_output=ret, can_run_graph=can_run_graph)\n\n            # DP / MLP-sync padding + attn-tp normalization. Only the decode\n            # cuda-graph path above pre-pads its static buffers and returns\n            # early; split prefill, the prefill cuda graph, and the eager\n            # forward all run the live batch and need this first \u2014 it sets\n            # global_dp_buffer_len / padded token counts that graph eligibility\n            # and the collectives depend on.\n            self._prepare_eager_forward_batch(forward_batch)\n\n            # Deferred mamba COW/clear on the forward stream, before the extend\n            # dispatch below reads the pool.\n            self._maybe_execute_deferred_mamba_cow_and_clear(forward_batch)\n\n            dwdp_mgr = get_global_dwdp_manager()\n            if dwdp_mgr is not None:\n                dwdp_mgr.prefetch_first_layers()\n\n            if forward_batch.forward_mode.is_split_prefill():\n                # Layer-split mode; stays on ModelRunner, not the eager runner.\n                ret = self.forward_split_prefill(\n                    forward_batch,\n                    reinit_attn_backend=reinit_attn_backend,\n                    forward_count=split_forward_count,\n                )\n            elif (\n                forward_batch.forward_mode.is_extend(include_draft_extend_v2=True)\n                and not isinstance(self.prefill_cuda_graph_runner, EagerRunner)\n                and self.prefill_cuda_graph_runner is not None\n                and self.prefill_cuda_graph_runner.can_run_graph(forward_batch)\n                and forward_batch.token_indices_to_pool is None\n                and _prefill_cuda_graph_allows_context_parallel(\n                    self.prefill_cuda_graph_runner, forward_batch\n                )\n            ):\n                # Prefill cuda graph (piecewise).\n                kwargs = self._extend_forward_kwargs(forward_batch, pp_proxy_tensors)\n                category = (\n                    \"target_verify\"\n                    if forward_batch.forward_mode.is_target_verify()\n                    else \"extend\"\n                )\n                # TODO: the timing here is too broad -- it also includes\n                # load_batch time. Move it into the prefill cuda graph runner\n                # to capture only the model.forward part.\n                with device_timer_ctx(self.device_timer, category):\n                    ret = self.prefill_cuda_graph_runner.execute(\n                        forward_batch, **kwargs\n                    )\n                can_run_graph = True\n            else:\n                # Eager: decode / extend / idle dispatched inside the runner.\n                ret = self.eager_runner.execute(\n                    forward_batch, pp_proxy_tensors=pp_proxy_tensors\n                )\n\n            if (\n                forward_batch.global_num_tokens_cpu is not None\n                and self.pp_group.is_last_rank\n            ):\n                forward_batch.post_forward_mlp_sync_batch(ret)\n\n            return ModelRunnerOutput(logits_output=ret, can_run_graph=can_run_graph)\n",
+          "after": "    def _forward_raw(\n        self,\n        forward_batch: ForwardBatch,\n        pp_proxy_tensors: Optional[PPProxyTensors],\n        reinit_attn_backend: bool = False,\n        split_forward_count: int = 1,\n    ) -> ModelRunnerOutput:\n        occ3_context = getattr(forward_batch, \"occ3_context\", None)\n        occ3_force_eager = getattr(forward_batch, \"occ3_force_eager\", False)\n        if bool(occ3_context) != bool(occ3_force_eager):\n            from occ3_sglang.latent_types import LatentError\n\n            raise LatentError(\"state\")\n        if occ3_context:\n            from occ3_sglang.latent_types import LatentError\n\n            if forward_batch.forward_mode.is_split_prefill():\n                raise LatentError(\"profile\")\n            # No previous forward's staging allocation may leak into this one.\n            forward_batch.occ3_capture_rows = None\n        if has_forward_context():\n            ctx_mgr = contextlib.nullcontext()\n        else:\n            ctx_mgr = forward_context(ForwardContext(attn_backend=self.attn_backend))\n        with ctx_mgr:\n            mode_check = (\n                forward_batch.forward_mode.is_cpu_graph\n                if self.device == \"cpu\"\n                else forward_batch.forward_mode.is_cuda_graph\n            )\n            can_run_graph = bool(\n                not occ3_force_eager\n                and mode_check()\n                and self.decode_cuda_graph_runner\n                and self.decode_cuda_graph_runner.can_run_graph(forward_batch)\n            )\n\n            if (\n                forward_batch.forward_mode.is_decode()\n                and self.hisparse_coordinator is not None\n            ):\n                forward_batch.hisparse_coordinator = self.hisparse_coordinator\n                self.hisparse_coordinator.wait_for_pending_backup()\n                self.hisparse_coordinator.num_real_reqs.fill_(forward_batch.batch_size)\n\n            # Replay cuda graph if applicable\n            if can_run_graph:\n                ret = self.decode_cuda_graph_runner.execute(\n                    forward_batch,\n                    pp_proxy_tensors=pp_proxy_tensors,\n                )\n                return ModelRunnerOutput(logits_output=ret, can_run_graph=can_run_graph)\n\n            # DP / MLP-sync padding + attn-tp normalization. Only the decode\n            # cuda-graph path above pre-pads its static buffers and returns\n            # early; split prefill, the prefill cuda graph, and the eager\n            # forward all run the live batch and need this first \u2014 it sets\n            # global_dp_buffer_len / padded token counts that graph eligibility\n            # and the collectives depend on.\n            self._prepare_eager_forward_batch(forward_batch)\n\n            # Deferred mamba COW/clear on the forward stream, before the extend\n            # dispatch below reads the pool.\n            self._maybe_execute_deferred_mamba_cow_and_clear(forward_batch)\n\n            dwdp_mgr = get_global_dwdp_manager()\n            if dwdp_mgr is not None:\n                dwdp_mgr.prefetch_first_layers()\n\n            if forward_batch.forward_mode.is_split_prefill():\n                # Layer-split mode; stays on ModelRunner, not the eager runner.\n                ret = self.forward_split_prefill(\n                    forward_batch,\n                    reinit_attn_backend=reinit_attn_backend,\n                    forward_count=split_forward_count,\n                )\n            elif (\n                not occ3_force_eager\n                and forward_batch.forward_mode.is_extend(include_draft_extend_v2=True)\n                and not isinstance(self.prefill_cuda_graph_runner, EagerRunner)\n                and self.prefill_cuda_graph_runner is not None\n                and self.prefill_cuda_graph_runner.can_run_graph(forward_batch)\n                and forward_batch.token_indices_to_pool is None\n                and _prefill_cuda_graph_allows_context_parallel(\n                    self.prefill_cuda_graph_runner, forward_batch\n                )\n            ):\n                # Prefill cuda graph (piecewise).\n                kwargs = self._extend_forward_kwargs(forward_batch, pp_proxy_tensors)\n                category = (\n                    \"target_verify\"\n                    if forward_batch.forward_mode.is_target_verify()\n                    else \"extend\"\n                )\n                # TODO: the timing here is too broad -- it also includes\n                # load_batch time. Move it into the prefill cuda graph runner\n                # to capture only the model.forward part.\n                with device_timer_ctx(self.device_timer, category):\n                    ret = self.prefill_cuda_graph_runner.execute(\n                        forward_batch, **kwargs\n                    )\n                can_run_graph = True\n            else:\n                # Eager: decode / extend / idle dispatched inside the runner.\n                ret = self.eager_runner.execute(\n                    forward_batch, pp_proxy_tensors=pp_proxy_tensors\n                )\n\n            if occ3_context and not self.is_draft_worker:\n                from occ3_sglang.latent_worker import mark_injection\n\n                # This point is reached only after a successful eager target\n                # forward. Allocation alone is never an injection receipt.\n                mark_injection(forward_batch)\n\n            if (\n                forward_batch.global_num_tokens_cpu is not None\n                and self.pp_group.is_last_rank\n            ):\n                forward_batch.post_forward_mlp_sync_batch(ret)\n\n            return ModelRunnerOutput(logits_output=ret, can_run_graph=can_run_graph)\n"
+        },
+        {
+          "before": "                forward_batch.post_forward_mlp_sync_batch(ret)\n\n            return ModelRunnerOutput(logits_output=ret, can_run_graph=can_run_graph)",
+          "after": "                forward_batch.post_forward_mlp_sync_batch(ret)\n\n            if occ3_context:\n                from occ3_sglang.latent_worker import record_forward_completion\n\n                # Fence every actual target/draft submission, not just prefix\n                # prefill. Abort must not recycle private KV ahead of this work.\n                record_forward_completion(self, forward_batch)\n\n            return ModelRunnerOutput(logits_output=ret, can_run_graph=can_run_graph)"
+        },
+        {
+          "before": "            else:\n                # Eager: decode / extend / idle dispatched inside the runner.\n                ret = self.eager_runner.execute(\n                    forward_batch, pp_proxy_tensors=pp_proxy_tensors\n                )",
+          "after": "            else:\n                # Eager: decode / extend / idle dispatched inside the runner.\n                if occ3_context:\n                    from occ3_sglang.latent_worker import record_forward_start\n\n                    # Register the actual submission stream before dispatch so\n                    # abort can fence partially submitted work after an error.\n                    record_forward_start(self, forward_batch)\n                ret = self.eager_runner.execute(\n                    forward_batch, pp_proxy_tensors=pp_proxy_tensors\n                )"
+        },
+        {
+          "before": "                input_embeds = target_input_embeds(self, forward_batch)\n                if input_embeds is not None:\n                    kwargs[\"input_embeds\"] = input_embeds",
+          "after": "                # Validation only. DeepseekV2Model injects prefix rows in its\n                # fresh native lookup allocation, with no outer fullchunk ref.\n                target_input_embeds(self, forward_batch)"
+        }
+      ]
+    },
+    {
+      "path": "model_executor/runner/decode_cuda_graph_runner.py",
+      "before_sha256": "1ec64d53550012a006d2fb7acbcabeefb6d3a3729864373d870314aed19f94cd",
+      "after_sha256": "260e2fde8c62dcfaf1141ea28662afebb65ceb67628ef8f0e106e90dcfb5e0ed",
+      "replacements": [
+        {
+          "before": "    def can_run_graph(self, forward_batch: ForwardBatch):\n",
+          "after": "    def can_run_graph(self, forward_batch: ForwardBatch):\n        # Request-local only: reject before graph metadata/load/replay work.\n        if getattr(forward_batch, \"occ3_force_eager\", False) or getattr(\n            forward_batch, \"occ3_context\", None\n        ):\n            return False\n\n"
+        }
+      ]
+    },
+    {
+      "path": "model_executor/runner/prefill_cuda_graph_runner.py",
+      "before_sha256": "3f9c35d036ed8c4469c262f6cc00084987deafc9787721d5d3475e93dcafcd6f",
+      "after_sha256": "acdc3858c086a88cf64b91cd4f0b9e7daf82654e8fa5873c97405bb164e3bdf6",
+      "replacements": [
+        {
+          "before": "    def can_run_graph(self, forward_batch: ForwardBatch) -> bool:\n",
+          "after": "    def can_run_graph(self, forward_batch: ForwardBatch) -> bool:\n        # Request-local only: reject before graph metadata/load/replay work.\n        if getattr(forward_batch, \"occ3_force_eager\", False) or getattr(\n            forward_batch, \"occ3_context\", None\n        ):\n            return False\n\n"
+        }
+      ]
+    },
+    {
+      "path": "speculative/eagle_draft_cuda_graph_runner.py",
+      "before_sha256": "cb3d031b739a9aa7f2a1b02bd289b6673652818482502ced101a6f506c7a8e9f",
+      "after_sha256": "6fe337333487ab669b6ee0ca9a67781f577226af2820acfc10a255d4ebf9b63b",
+      "replacements": [
+        {
+          "before": "    def can_run_graph(self, forward_batch: ForwardBatch):\n",
+          "after": "    def can_run_graph(self, forward_batch: ForwardBatch):\n        # Request-local only: reject before graph metadata/load/replay work.\n        if getattr(forward_batch, \"occ3_force_eager\", False) or getattr(\n            forward_batch, \"occ3_context\", None\n        ):\n            return False\n\n"
+        }
+      ]
+    },
+    {
+      "path": "speculative/eagle_draft_extend_cuda_graph_runner.py",
+      "before_sha256": "4b5fe702938aae7d698578c6ffd31fd93766e2ad6c4210c19a75df03ea8a7f09",
+      "after_sha256": "314a986760c9be6559af5b032f6e5c4a6eb6668d5ee6eba4819d9436f2fd8ee7",
+      "replacements": [
+        {
+          "before": "    def can_run_graph(self, forward_batch: ForwardBatch):\n",
+          "after": "    def can_run_graph(self, forward_batch: ForwardBatch):\n        # Request-local only: reject before graph metadata/load/replay work.\n        if getattr(forward_batch, \"occ3_force_eager\", False) or getattr(\n            forward_batch, \"occ3_context\", None\n        ):\n            return False\n\n"
+        }
+      ]
+    },
+    {
+      "path": "managers/utils.py",
+      "before_sha256": "9315ebed347a1fabd9fe6e4d1ce31562fdb50c2e92efaa98af33cf190bd428fd",
+      "after_sha256": "973b45915fe6c61267b03514d2852e39abe048e44104c492732ba7e3555e518a",
+      "replacements": [
+        {
+          "before": "    auxiliary_host_output: Optional[HostAuxiliaryOutput] = None\n\n    @property",
+          "after": "    auxiliary_host_output: Optional[HostAuxiliaryOutput] = None\n\n    # GPU-only provisional predictor/token rows. copy_to_cpu deliberately does\n    # not visit this sidecar; scheduler retained-span commit owns publication.\n    occ3_capture_stage: Optional[object] = None\n\n    @property"
+        }
+      ]
+    }
+  ]
+}

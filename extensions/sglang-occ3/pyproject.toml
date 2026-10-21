@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "occ3-bridge"
 version = "0.1.0"
-description = "OCC-3 latent communication plugin for SGLang: salted KV-radix channels"
+description = "Experimental SGLang connector for the generic Optimus OCC-3 bridge"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -18,6 +18,10 @@ occ3_bridge = "occ3_sglang.plugin:load"
 
 [tool.setuptools.packages.find]
 include = ["occ3_sglang*"]
+
+# Optional, build-generated artifacts. Their presence is not runtime approval.
+[tool.setuptools.package-data]
+occ3_sglang = ["native_profile.json", "native_sources.json"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

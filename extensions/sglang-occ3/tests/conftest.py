@@ -27,6 +27,8 @@ class _RecordedRequest:
         self.rid = obj.rid
         self.return_prompt_token_ids = obj.return_prompt_token_ids
         self.positional_embed_overrides = obj.positional_embed_overrides
+        self.session_id = obj.session_id
+        self.routed_dp_rank = obj.routed_dp_rank
 
 
 @dataclasses.dataclass
@@ -38,6 +40,14 @@ class StubGenerateReqInput:
     rid: str | None = None
     return_prompt_token_ids: bool = False
     positional_embed_overrides: Any = None
+    session_id: str | None = None
+    routed_dp_rank: int | None = None
+
+
+@dataclasses.dataclass
+class StubAbortReq:
+    rid: str = ""
+    abort_all: bool = False
 
 
 class StubPositionalEmbeds:
@@ -61,7 +71,7 @@ class StubTokenizer:
     def __init__(self, vocab=None):
         self._vocab = vocab or {}
 
-    def encode(self, text: str) -> List[int]:
+    def encode(self, text: str, add_special_tokens=True) -> List[int]:
         ids = self._vocab.get(text)
         if ids is not None:
             return list(ids)
@@ -144,6 +154,7 @@ def _install_stubs(http_server_module: StubHttpServer, hook_registry: StubHookRe
 
     io_struct = types.ModuleType("sglang.srt.managers.io_struct")
     io_struct.GenerateReqInput = StubGenerateReqInput
+    io_struct.AbortReq = StubAbortReq
 
     embed_types = types.ModuleType("sglang.srt.managers.embed_types")
     embed_types.PositionalEmbeds = StubPositionalEmbeds
@@ -248,3 +259,78 @@ def stub_tm(stub_http_server):
             yield out
 
     return StubTokenizerManager()
+
+
+@pytest.fixture
+def kv_client(stub_http_server, stub_tm, monkeypatch):
+    """Offline cache-tier simulation, NOT a CUDA or SGLang implementation test."""
+    import copy
+    import json
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from occ3_sglang import api, kv_handles, metrics
+
+    clock = [1000.0]
+    monkeypatch.setattr(kv_handles, "store", kv_handles.CaptureStore(clock=lambda: clock[0]))
+    monkeypatch.setattr(metrics, "_metrics", metrics.Metrics())
+    sys.modules["sglang"].__version__ = "0.5.21"
+    stub_tm.server_args.device = "cuda"
+    stub_tm.server_args.dp_size = 1
+    stub_tm.server_args.disable_radix_cache = False
+    stub_tm.server_args.enable_lora = False
+    stub_tm.server_args.disaggregation_mode = "null"
+
+    class Tokenizer:
+        def encode(self, text, add_special_tokens=True):
+            return list(text.encode("utf-8"))
+    stub_tm.tokenizer = Tokenizer()
+    stub_tm.kv_requests = []
+    stub_tm.kv_cache = {}
+    stub_tm.mutate_output = None
+    stub_tm.fail_generation = False
+    stub_tm.abort_requests = []
+
+    async def abort_dispatch(req):
+        stub_tm.abort_requests.append(req)
+    stub_tm._async_dispatch_to_scheduler = abort_dispatch
+
+    async def fake_generate(obj, request=None):
+        stub_tm.kv_requests.append(copy.deepcopy(obj))
+        clock[0] += 0.4
+        if stub_tm.fail_generation:
+            raise RuntimeError("synthetic-private-server-error")
+        ids = list(obj.input_ids)
+        cached = 0
+        text = "source complete"
+        if obj.rid.startswith("occ3-capture-"):
+            cached = len(stub_tm.kv_cache.get(obj.cache_salt, []))
+            stub_tm.kv_cache[obj.cache_salt] = list(ids)
+        else:
+            source = stub_tm.kv_cache.get(obj.cache_salt, [])
+            if ids[:len(source)] == source:
+                page = stub_tm.server_args.page_size
+                cached = max(0, ((len(source) - 1) // page) * page)
+            decoded = bytes(ids).decode("utf-8", "replace")
+            try:
+                facts, _ = json.JSONDecoder().raw_decode(decoded[decoded.index("{"):])
+                text = json.dumps(facts)
+            except (ValueError, TypeError):
+                text = "receiver fixture"
+        out = {"text": text, "prompt_token_ids": ids, "output_ids": [7],
+               "meta_info": {"cached_tokens": cached,
+                             "cached_tokens_details": {"device": cached, "host": 0},
+                             "prompt_tokens": len(ids), "completion_tokens": 1,
+                             "num_retractions": 0, "dp_rank": 0,
+                             "id": obj.rid, "weight_version": "fixture-weight-v1",
+                             "finish_reason": {"type": "stop"}}}
+        if stub_tm.mutate_output:
+            stub_tm.mutate_output(obj, out)
+        yield out
+    stub_tm.generate_request = fake_generate
+    app = FastAPI()
+    app.include_router(api.router)
+    app.include_router(kv_handles.router)
+    stub_http_server.app = app
+    stub_http_server._global_state = StubState(stub_tm)
+    with TestClient(app) as client:
+        yield client, stub_tm, clock

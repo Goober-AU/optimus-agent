@@ -1,0 +1,340 @@
+{
+ "schema": "optimus.occ3.native-phase-suite-contract.v1",
+ "synthetic": true,
+ "note": "Authoritative frozen contract for the native phase-suite validator, contract_revision 3 (supersedes the revision-2 candidate ee81a63d... and the revision-1 candidate 30279ca9..., both preserved in the private pre-repair snapshots; chain 30279ca9 -> ee81a63d -> this hash). All values are synthetic; no real endpoint, credential, identity, nonce, handle or artifact is present. The Rust harness must produce reports satisfying these exact fieldsets and invariants; the Python adapter is the verifier, never a proof.",
+ "method_id": "statebridge.glm53.final-prenorm-predictor.continuous-prefix.v1",
+ "schemas": {
+  "report": "optimus.occ3.native-phase-suite.v1",
+  "challenge": "optimus.occ3.validator-phase-challenge.v1",
+  "admission": "optimus.occ3.native-admission.v1",
+  "control": [
+   "occ3.sessions.enroll.v1",
+   "occ3.publish.v1",
+   "occ3.publication.status.v1",
+   "occ3.retire.v1"
+  ]
+ },
+ "invariants": [
+  "adapter writes one fresh exclusive per-phase challenge before any waiting; one challenge, one attempt, no replay",
+  "report echoes attempt_id, candidate_id, candidate_started_at and validator_challenge exactly",
+  "report harness binding equals admission-pinned binary sha256, platform and canonical source-manifest digest",
+  "report identity/method/profile/origin bindings equal admission pins; method is statebridge.glm53.final-prenorm-predictor.continuous-prefix.v1 only",
+  "observed runtime/layout fields come from actual native enrollment on the started candidate; ready_ranks equals expected_ranks equals challenge expected_ranks",
+  "positive case: normalized answer hashes to the suite nonce, one delivered message, lease Consumed before tool execution, receiver audit source_facts_absent with max_tokens 131072 and request_count 1",
+  "report publication: the harness must create a uniquely named private staging file in the same filesystem/attempt directory, write exclusively and bounded, flush and fsync, verify the exact complete bytes, then publish atomically at the exact final expected name WITHOUT replacing any existing target; the final report is immutable afterwards; no final name may exist while content is incomplete; failed or partial staging remains private and ineligible; an existing final target means refuse/no-replay, never overwrite (ordinary temp+os.replace alone is NOT proof of no-replace; platform-specific no-replace atomic publication plus ACL proof is future native-harness work)",
+  "no-state case: same suite nonce binding, exact normalized UNKNOWN answer, semantic_nonce_match false, zero messages/consumed/tool calls; an arbitrary non-match is not a pass",
+  "before phase keeps exactly one known captured unpublished/unretired negative control recorded as negative_control_retained with retention_reason planned_restart; logical cleanup covers positive/no-state cases only; no overall GPU-free or all-leases-retired claim",
+  "after phase stale probe: fresh original-session enrollment under the new actual epoch, one attempt, exact 409 error code state; 200, expired, replay, any 401/4xx-auth, 5xx, timeout or malformed never counts",
+  "after phase binds stale artifact digest to the before retained artifact digest and proves a new runtime epoch and generation",
+  "no raw nonce, answer, source handle, credential value or credential-value hash appears anywhere in a report; digests and header names only",
+  "gpu_free_proven is always false; physical GPU free is never claimed from registry release or cleanup",
+  "json encoding and depth bound: all control/admission/report documents are strict UTF-8 only (no autodetect/BOM/replacement; invalid encoding refused as malformed_json) and bounded to nesting depth 32 (MAX_JSON_DEPTH); deeper documents are refused as malformed_json; this is not a model-payload bound and no heap/RSS bound is claimed",
+  "controlled restart profile: this validation profile requires the same candidate container stop/start with the retained native-incarnation counter; the current generation must ADVANCE (strictly greater than the previous), not merely differ; a volatile-reset runtime (lost /tmp record restarting generation at 1) is NOT admitted by this profile; no epoch-only fallback; missing/reset counter fails the attempted validation into ordinary recovery"
+ ],
+ "admission_pinned_inputs": {
+  "method_id": "statebridge.glm53.final-prenorm-predictor.continuous-prefix.v1",
+  "harness_artifact": {
+   "binary_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+   "platform": "windows-x86_64",
+   "build_manifest_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "source_manifest": {
+   "files": {
+    "crates/pi-ai/src/source_capture.rs": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "crates/pi-coding-agent/src/core/agent_session/occ3_state.rs": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "crates/pi-coding-agent/src/core/occ3_connectors/sglang.rs": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   },
+   "cargo_lock_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "interface_versions": {
+   "report": "optimus.occ3.native-phase-suite.v1",
+   "challenge": "optimus.occ3.validator-phase-challenge.v1",
+   "control": [
+    "occ3.sessions.enroll.v1",
+    "occ3.publish.v1",
+    "occ3.publication.status.v1",
+    "occ3.retire.v1"
+   ]
+  },
+  "offline_selftest": {
+   "exit_code": 0,
+   "report_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+   "binary_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "admission_template": {
+   "identity": {
+    "model_id": "SYNTHETIC-glm53",
+    "architecture": "SYNTHETIC-GlmMoeDsaForCausalLM",
+    "checkpoint_revision": "SYNTHETIC-revision",
+    "weight_fingerprint": "SYNTHETIC-metadata-not-weights",
+    "tokenizer_fingerprint": "SYNTHETIC-tokenizer",
+    "chat_template_fingerprint": "SYNTHETIC-template",
+    "quantisation": "SYNTHETIC-fp8-e4m3",
+    "tensor_geometry": "SYNTHETIC-hidden6144",
+    "kv_layout": "SYNTHETIC-tp8-original",
+    "latent_method": "statebridge.glm53.final-prenorm-predictor.continuous-prefix.v1",
+    "runtime": "SYNTHETIC-sglang-0.5.21"
+   },
+   "fingerprint": "sha256:149c33621f3873019d719d4177e5df96c05144c9b0f7863815199b4b772f5efe",
+   "source_profile": {
+    "dtype": "bfloat16",
+    "expected_ranks": 8,
+    "layer_index": 77,
+    "hidden_dim": 6144,
+    "layout_strategy_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+    "profile_digest": "4444444444444444444444444444444444444444444444444444444444444444"
+   }
+  },
+  "budget_resource_receipt": {
+   "root_reviewed": true,
+   "receipt_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+   "review_digest": "6666666666666666666666666666666666666666666666666666666666666666"
+  },
+  "max_budget": {
+   "default_max_tokens": 131072,
+   "max_tokens": 262144,
+   "context_window": 1048576,
+   "reasoning": true,
+   "thinking_level": "max"
+  },
+  "layout_strategy": {
+   "observed_fields": [
+    "runtime_epoch",
+    "runtime_generation",
+    "tp_layout_digest",
+    "hidden_dim",
+    "layer_index",
+    "dtype",
+    "expected_ranks",
+    "ready_ranks"
+   ],
+   "bound_at": "post_start_enrollment"
+  },
+  "endpoint": {
+   "origin": "https://synthetic-native.invalid",
+   "inference_path": "/v1",
+   "control_root": "/occ3/v1/native/"
+  },
+  "credential_references": {
+   "api_key": "!synthetic-helper-reference",
+   "headers": {
+    "X-Pomerium-Authorization": "!synthetic-pomerium-helper"
+   }
+  },
+  "control_spec": {
+   "before_cases": [
+    "positive",
+    "no_state",
+    "stale_handle_pre"
+   ],
+   "after_cases": [
+    "stale_handle_post",
+    "positive",
+    "no_state"
+   ],
+   "one_shot": true,
+   "no_replay": true,
+   "max_attempts": 1
+  }
+ },
+ "example": {
+  "attempt": {
+   "attempt_id": "synthetic-attempt-0001",
+   "candidate_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+   "candidate_started_at_before": "2026-10-21T00:00:00.000000Z",
+   "candidate_started_at_after": "2026-10-21T01:00:00.000000Z"
+  },
+  "challenge_before": {
+   "schema": "optimus.occ3.validator-phase-challenge.v1",
+   "phase": "before_restart",
+   "attempt_id": "synthetic-attempt-0001",
+   "candidate_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+   "expected_candidate_started_at": "2026-10-21T00:00:00.000000Z",
+   "model_fingerprint": "sha256:149c33621f3873019d719d4177e5df96c05144c9b0f7863815199b4b772f5efe",
+   "method_id": "statebridge.glm53.final-prenorm-predictor.continuous-prefix.v1",
+   "expected_ranks": 8,
+   "challenge": "7777777777777777777777777777777777777777777777777777777777777777",
+   "created_at": 1760000000,
+   "expires_at": 1760000960
+  },
+  "challenge_after": {
+   "schema": "optimus.occ3.validator-phase-challenge.v1",
+   "phase": "after_restart",
+   "attempt_id": "synthetic-attempt-0001",
+   "candidate_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+   "expected_candidate_started_at": "2026-10-21T01:00:00.000000Z",
+   "model_fingerprint": "sha256:149c33621f3873019d719d4177e5df96c05144c9b0f7863815199b4b772f5efe",
+   "method_id": "statebridge.glm53.final-prenorm-predictor.continuous-prefix.v1",
+   "expected_ranks": 8,
+   "challenge": "8888888888888888888888888888888888888888888888888888888888888888",
+   "created_at": 1760000000,
+   "expires_at": 1760000960
+  },
+  "report_before": {
+   "schema": "optimus.occ3.native-phase-suite.v1",
+   "phase": "before_restart",
+   "attempt_id": "synthetic-attempt-0001",
+   "candidate_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+   "candidate_started_at": "2026-10-21T00:00:00.000000Z",
+   "validator_challenge": "7777777777777777777777777777777777777777777777777777777777777777",
+   "harness": {
+    "binary_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "source_manifest_sha256": "c2d853acf555ba61271eef526cacf1200504eb6faefd9cdbf7b124f65d20052f",
+    "platform": "windows-x86_64"
+   },
+   "binding": {
+    "identity_fingerprint": "sha256:149c33621f3873019d719d4177e5df96c05144c9b0f7863815199b4b772f5efe",
+    "method_id": "statebridge.glm53.final-prenorm-predictor.continuous-prefix.v1",
+    "profile_digest": "4444444444444444444444444444444444444444444444444444444444444444",
+    "endpoint_origin": "https://synthetic-native.invalid"
+   },
+   "observed": {
+    "runtime_epoch": "synthetic-runtime-epoch-before",
+    "runtime_generation": 41,
+    "tp_layout_digest": "9999999999999999999999999999999999999999999999999999999999999999",
+    "hidden_dim": 6144,
+    "layer_index": 77,
+    "dtype": "bfloat16",
+    "expected_ranks": 8,
+    "ready_ranks": 8
+   },
+   "suite_nonce_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "cases": {
+    "positive": {
+     "case_passed": true,
+     "semantic_nonce_match": true,
+     "answer_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+     "message_status": "delivered",
+     "lease_state": "Consumed",
+     "consumed_before_tools": true,
+     "receiver_request_audit": {
+      "source_facts_absent": true,
+      "max_tokens": 131072,
+      "request_count": 1
+     }
+    },
+    "no_state": {
+     "case_passed": true,
+     "semantic_nonce_match": false,
+     "answer_sha256": "23759997b3c59884dc4c0ff5320d6301b0e7f63bf0f6483a7b54d7d43bc5ccd1",
+     "messages": 0,
+     "consumed": 0,
+     "tool_calls": 0,
+     "receiver_request_audit": {
+      "source_facts_absent": true,
+      "max_tokens": 131072,
+      "request_count": 1
+     }
+    },
+    "stale_handle_pre": {
+     "case_passed": true,
+     "capture_confirmed": true,
+     "unpublished": true,
+     "unretired": true
+    }
+   },
+   "negative_control_retained": {
+    "handle_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "runtime_epoch": "synthetic-runtime-epoch-before",
+    "runtime_generation": 41,
+    "expires_at_epoch": 4102444800,
+    "retention_reason": "planned_restart",
+    "artifact_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+   },
+   "logical_cleanup_confirmed": true,
+   "gpu_free_proven": false,
+   "completed_at": 1760000000
+  },
+  "report_after": {
+   "schema": "optimus.occ3.native-phase-suite.v1",
+   "phase": "after_restart",
+   "attempt_id": "synthetic-attempt-0001",
+   "candidate_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+   "candidate_started_at": "2026-10-21T01:00:00.000000Z",
+   "validator_challenge": "8888888888888888888888888888888888888888888888888888888888888888",
+   "harness": {
+    "binary_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "source_manifest_sha256": "c2d853acf555ba61271eef526cacf1200504eb6faefd9cdbf7b124f65d20052f",
+    "platform": "windows-x86_64"
+   },
+   "binding": {
+    "identity_fingerprint": "sha256:149c33621f3873019d719d4177e5df96c05144c9b0f7863815199b4b772f5efe",
+    "method_id": "statebridge.glm53.final-prenorm-predictor.continuous-prefix.v1",
+    "profile_digest": "4444444444444444444444444444444444444444444444444444444444444444",
+    "endpoint_origin": "https://synthetic-native.invalid"
+   },
+   "observed": {
+    "runtime_epoch": "synthetic-runtime-epoch-after",
+    "runtime_generation": 42,
+    "tp_layout_digest": "9999999999999999999999999999999999999999999999999999999999999999",
+    "hidden_dim": 6144,
+    "layer_index": 77,
+    "dtype": "bfloat16",
+    "expected_ranks": 8,
+    "ready_ranks": 8
+   },
+   "suite_nonce_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "cases": {
+    "stale_handle_post": {
+     "case_passed": true,
+     "http_status": 409,
+     "error_code": "state",
+     "attempts": 1,
+     "publication_request_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+     "artifact_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "fresh_enrollment_runtime_epoch": "synthetic-runtime-epoch-after"
+    },
+    "positive": {
+     "case_passed": true,
+     "semantic_nonce_match": true,
+     "answer_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+     "message_status": "delivered",
+     "lease_state": "Consumed",
+     "consumed_before_tools": true,
+     "receiver_request_audit": {
+      "source_facts_absent": true,
+      "max_tokens": 131072,
+      "request_count": 1
+     }
+    },
+    "no_state": {
+     "case_passed": true,
+     "semantic_nonce_match": false,
+     "answer_sha256": "23759997b3c59884dc4c0ff5320d6301b0e7f63bf0f6483a7b54d7d43bc5ccd1",
+     "messages": 0,
+     "consumed": 0,
+     "tool_calls": 0,
+     "receiver_request_audit": {
+      "source_facts_absent": true,
+      "max_tokens": 131072,
+      "request_count": 1
+     }
+    }
+   },
+   "logical_cleanup_confirmed": true,
+   "gpu_free_proven": false,
+   "completed_at": 1760000000
+  }
+ },
+ "contract_revision": 3,
+ "publication": {
+  "final_name": "native-phase-suite-<phase>.json",
+  "staging": "uniquely named private file in the same filesystem/attempt directory; exclusive bounded write; flush+fsync; verify exact complete bytes before publish",
+  "atomicity": "publish at the exact final expected name without replacing any existing target; report immutable afterwards; existing final target means refuse/no-replay",
+  "adapter_waiting": "missing final name waits bounded by the plan validation deadline; a malformed final name is an immediate protocol-violation refusal, never retried or ignored",
+  "proof_boundary": "this synthetic fixture does not prove real Windows no-replace atomic publication or ACL behavior; that remains future native-harness work"
+ },
+ "json_depth": {
+  "max_depth": 32,
+  "scope": "control/admission/report documents only; not model payloads",
+  "heap_bound_claimed": false,
+  "encoding": "strict UTF-8 only: byte bound first, then strict UTF-8 decode (no autodetection, no BOM stripping, no replacement) BEFORE the depth scan and parse; parsing runs on the decoded text so json.loads encoding autodetection cannot re-enter; UTF-16, UTF-32, invalid UTF-8 and any BOM are refused as a fixed value-free malformed_json"
+ },
+ "restart_profile": {
+  "required": "same candidate container stop/start with retained native-incarnation counter",
+  "generation_rule": "current > previous (advance), not merely differ",
+  "volatile_reset_admitted": false,
+  "reset_handling": "missing/reset counter fails the attempted validation; ordinary recovery runs; no automatic reset/repair/retry",
+  "epoch_rule": "fresh candidate StartedAt and fresh runtime epoch still required"
+ }
+}
