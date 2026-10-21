@@ -40,6 +40,30 @@ pub const DAEMON_WORKER_LIFECYCLE_RECOVERING: &str = "recovering";
 pub const DAEMON_WORKER_LIFECYCLE_STOPPING: &str = "stopping";
 pub const DAEMON_WORKER_LIFECYCLE_FAILED: &str = "failed";
 
+/// `lastError` prefix written when a worker's stop cleanup parks.
+pub const DAEMON_WORKER_STOP_CLEANUP_PARKED_PREFIX: &str =
+    "Stop cleanup parked; retained descriptor and journals require attention: ";
+
+pub const DEFERRED_ORPHAN_PERSISTENCE_ERROR: &str =
+    "Deferred orphan evidence could not be persisted; recovery journal retained";
+
+/// Permanent stop-cleanup reasons. Fixed strings only: the durable sanitizer
+/// persists them verbatim after the parked prefix.
+pub fn permanent_stop_cleanup_error(error: &str) -> bool {
+    matches!(error,
+        "Uncertain operation has no saved transcript; recovery journal retained"
+        | "Malformed orphan record; recovery journal retained"
+        | "Unverified orphan record; recovery journal retained"
+        | DEFERRED_ORPHAN_PERSISTENCE_ERROR)
+}
+
+/// A `lastError` the sanitizer may keep verbatim: the parked prefix plus one
+/// fixed permanent reason. A transient error that exhausts the stop-finalizer
+/// budget also parks, but its dynamic text stays redacted.
+pub fn is_parked_stop_cleanup_diagnostic(error: &str) -> bool {
+    error.strip_prefix(DAEMON_WORKER_STOP_CLEANUP_PARKED_PREFIX).is_some_and(permanent_stop_cleanup_error)
+}
+
 /// Worker->supervisor roster frames live outside the client-facing DaemonOutbound schema.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -325,8 +349,11 @@ pub fn durable_daemon_worker_descriptor(descriptor: &DaemonWorkerDescriptor) -> 
         stop_requested_at: descriptor.stop_requested_at.clone(),
         archive_on_stop: descriptor.archive_on_stop,
         last_failure_at: descriptor.last_failure_at.clone(),
-        last_error: (descriptor.lifecycle == "failed")
-            .then(|| "Waiting for a client with fresh runtime context".to_string()),
+        last_error: (descriptor.lifecycle == DAEMON_WORKER_LIFECYCLE_FAILED).then(|| match descriptor.last_error.as_deref() {
+            // A parked stop's fixed reason survives; every other failure stays redacted.
+            Some(error) if descriptor.stop_requested_at.is_some() && is_parked_stop_cleanup_diagnostic(error) => error.to_string(),
+            _ => "Waiting for a client with fresh runtime context".to_string(),
+        }),
     }
 }
 

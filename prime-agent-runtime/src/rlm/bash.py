@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import atexit
+import errno
 import functools
 import json
 import os
@@ -1240,7 +1241,7 @@ def _record_journal(pid: int, active: bool) -> bool:
     }
     data = (json.dumps(record) + "\n").encode()
     try:
-        fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+        fd = _open_journal_append(path)
         try:
             # Complete-write loop: a short write would leave a truncated JSON
             # line that the host discards, which must count as failure.
@@ -1256,6 +1257,37 @@ def _record_journal(pid: int, active: bool) -> bool:
     except OSError:
         return False
     return True
+
+
+def _open_journal_append(path: str) -> int:
+    """Open the journal for an append that cannot overwrite existing bytes.
+
+    POSIX O_APPEND is kernel-atomic, but the Windows CRT emulates it as a
+    userspace seek-then-write, so concurrent writers interleave and overwrite
+    tails. A Windows append therefore opens a kernel FILE_APPEND_DATA handle
+    (never GENERIC_WRITE, which would also grant truncating access) and turns
+    it into a binary CRT fd: every os.write then extends the file atomically
+    at the current kernel end.
+    """
+    if _IS_POSIX:
+        return os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+    import msvcrt  # Windows-only stdlib module; POSIX imports cannot live at the top.
+
+    handle = _winjob.create_file_append(path)
+    if handle is None:
+        raise OSError(errno.EIO, "journal append handle unavailable")
+    if not handle:  # False: the open itself failed (e.g. a directory path)
+        raise OSError(errno.EACCES, "journal append open failed")
+    try:
+        fd = msvcrt.open_osfhandle(handle, os.O_WRONLY | os.O_BINARY)
+    except BaseException:
+        _winjob.close(handle)
+        raise
+    if fd == -1:
+        # open_osfhandle rejected ownership: close the raw handle or it leaks.
+        _winjob.close(handle)
+        raise OSError(errno.EBADF, "open_osfhandle rejected the append handle")
+    return fd
 
 
 def _kill_live_handles() -> None:

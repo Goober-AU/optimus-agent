@@ -3,8 +3,16 @@ use super::*;
 use std::io::Read;
 use crate::core::cron_jobs::{AgentCronJobStore, CancelJobsForSessionInput, SESSION_SCHEDULED_JOBS_FILENAME};
 use crate::core::orphan_process_journal::{clear_orphan_process_journal, is_orphan_process_identity_current, kill_orphan_process, read_active_orphan_processes, should_reap_orphan_process, ActiveOrphanProcess, OrphanProcessRecord};
+use crate::modes::daemon::daemon_worker_protocol::{
+    DAEMON_WORKER_STOP_CLEANUP_PARKED_PREFIX, DEFERRED_ORPHAN_PERSISTENCE_ERROR,
+};
 use crate::modes::daemon::snapshot_transcript_cache::{SnapshotTranscriptCache, SnapshotTranscriptCacheOptions, SNAPSHOT_TARGET_CHUNK_BYTES};
 use crate::modes::daemon::worker_recovery_journal::{WorkerRecoveryJournal, WorkerRecoveryRecordInput};
+
+// Single source of truth with the durable-descriptor sanitizer: the permanent
+// stop-cleanup reasons decide both stop-finalizer retries and which parked
+// diagnostics may persist verbatim.
+pub(super) use crate::modes::daemon::daemon_worker_protocol::permanent_stop_cleanup_error;
 
 #[derive(Default)]
 pub(super) struct HeartbeatSnapshot {
@@ -25,7 +33,6 @@ impl HeartbeatSnapshot {
 /// never permission to discard an older unresolved process record.
 const ORPHANS_UNREAPABLE_MAX_RECORDS: usize = 64;
 const ORPHANS_UNREAPABLE_MAX_BYTES: u64 = 256 * 1024;
-const DEFERRED_ORPHAN_PERSISTENCE_ERROR: &str = "Deferred orphan evidence could not be persisted; recovery journal retained";
 
 fn record_deferred_orphans(descriptor_dir: &Path, worker_id: &str, orphans: &[ActiveOrphanProcess]) -> Result<(), String> {
     let path = descriptor_dir.join(format!("{worker_id}.orphans.unreapable.jsonl"));
@@ -94,14 +101,6 @@ fn same_registration(left: &DaemonWorkerDescriptor, right: &DaemonWorkerDescript
         && left.authentication_token == right.authentication_token
         && left.stop_requested_at == right.stop_requested_at
         && left.owner_client_id == right.owner_client_id
-}
-
-pub(super) fn permanent_stop_cleanup_error(error: &str) -> bool {
-    matches!(error,
-        "Uncertain operation has no saved transcript; recovery journal retained"
-        | "Malformed orphan record; recovery journal retained"
-        | "Unverified orphan record; recovery journal retained"
-        | DEFERRED_ORPHAN_PERSISTENCE_ERROR)
 }
 
 impl Supervisor {
@@ -292,7 +291,7 @@ impl Supervisor {
             let mut descriptor = worker.descriptor.lock().unwrap();
             if descriptor.stop_requested_at.is_none() { return; }
             descriptor.lifecycle = DAEMON_WORKER_LIFECYCLE_FAILED.into();
-            descriptor.last_error = Some(format!("Stop cleanup parked; retained descriptor and journals require attention: {error}"));
+            descriptor.last_error = Some(format!("{}{error}", DAEMON_WORKER_STOP_CLEANUP_PARKED_PREFIX));
             descriptor.last_failure_at = Some(chrono::Utc::now().to_rfc3339());
             if let Err(error) = self.persist_worker(&descriptor) { eprintln!("Could not persist parked stop cleanup {id}: {error}"); }
         }
@@ -321,7 +320,16 @@ impl Supervisor {
         let descriptor = worker.descriptor.lock().unwrap().clone();
         if worker.client.lock().unwrap().as_ref().is_some_and(|client| client.is_connected()) || worker.recovery.load(Ordering::SeqCst) { return Ok(false); }
         if descriptor.stop_requested_at.is_none() && (descriptor.lifecycle != DAEMON_WORKER_LIFECYCLE_FAILED || !self.can_reclaim_worker_owner(&descriptor, requester)) { return Ok(false); }
-        if stop_cleanup_is_parked(&descriptor) { return Err("Session worker stop cleanup is parked; retained recovery journals require attention".into()); }
+        if stop_cleanup_is_parked(&descriptor) {
+            // Background sweeps never retry a parked cleanup. An explicit resume
+            // revalidates after journal repair, keeps owner fencing, and the
+            // guarded stop below re-parks evidence that is still unrepaired.
+            match requester {
+                None => return Err("Session worker stop cleanup is parked; retained recovery journals require attention".into()),
+                Some(requester) if !self.can_reclaim_worker_owner(&descriptor, Some(requester)) => return Ok(false),
+                Some(_) => {}
+            }
+        }
         if is_stopping_process_alive(&ProcessIdentity { pid: descriptor.pid as i64, process_start_id: descriptor.process_start_id.clone() }) { return Ok(false); }
         if descriptor.stop_requested_at.is_some() {
             self.stop_worker(worker, descriptor.archive_on_stop == Some(true), false).await?;
