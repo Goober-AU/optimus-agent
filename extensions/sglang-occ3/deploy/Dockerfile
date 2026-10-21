@@ -32,9 +32,10 @@
 ARG BASE_IMAGE=lmsysorg/sglang:latest
 FROM ${BASE_IMAGE}
 
-LABEL org.opencontainers.image.title="neo-glm53 + occ3-bridge" \
-      org.opencontainers.image.description="lmsysorg/sglang base with the occ3-bridge SGLang plugin installed (additive layer; no other changes)" \
-      org.opencontainers.image.base.name="lmsysorg/sglang"
+# No LABEL instructions: the derived image must add no metadata beyond the
+# plugin layer, so a container from it is label-identical to the original
+# (the original carries an ops-added neo.fp8-adaptive-update label which the
+# controller replicates via --label).
 
 # The base image runs SGLang from a venv at /opt/sglang (its PATH is
 # inherited), so plain `python3` below is the same interpreter that runs

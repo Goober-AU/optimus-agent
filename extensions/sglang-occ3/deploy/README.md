@@ -253,3 +253,32 @@ tty/interactive mode.
 - The deploy does not push images anywhere and does not touch other
   containers (`neo-k3-ingress`, `launchpad-traefik`) or the model weights
   under `/data/neo-glm53`.
+
+## Controller-based deployment (canonical)
+
+`deploy.sh`/`rollback.sh` are superseded by `occ3_controller.py`, which
+fixes the root cause of the 2026-10-21 outage (docker 29.x range
+templates append a trailing blank line even for non-empty ranges, so
+line-based capture injected an empty-string argument into the
+replicated launch command):
+
+- `docker inspect` is read as structured JSON; Entrypoint/Cmd/env are
+  carried as exact arrays, never newline-split.
+- The candidate container is created WITHOUT starting it, and its
+  docker-recorded configuration is diffed element-wise against the
+  working original. Only image, name, and the rotated api-key element
+  may differ.
+- Any failure after the mutation begins triggers an automatic rollback
+  that restores the preserved original and re-verifies it (health,
+  authenticated chat, ingress path).
+- `occ3_watchdog.sh` supervises a deploy with a hard timeout and runs
+  the rollback even if the controller itself is killed; it never
+  retries the deployment.
+- `disposable-test` rehearses the three failure scenarios (startup
+  crash, health timeout, validation failure) against throwaway
+  containers, proving the rollback restores and verifies service.
+- `occ3_key_watcher.py` runs on the client VM and flips the local
+  User-scope `GLM53_API_KEY` only after the controller reports
+  SUCCESS, keeping the local key in sync with the rotated server key.
+
+See `tests/test_controller.py` for the offline regression tests.
