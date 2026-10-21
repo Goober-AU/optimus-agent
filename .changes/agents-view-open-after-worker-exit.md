@@ -1,0 +1,1 @@
+- Fixed opening a saved chat failing fatally with "Session worker <id> exited; retry_worker is required" after its worker process crashed; the agents view now resumes the saved session, which reclaims and relaunches the dead worker.
