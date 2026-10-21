@@ -29,11 +29,15 @@ _CREATE_UNICODE_ENVIRONMENT = 0x400
 _STARTF_USESTDHANDLES = 0x100
 _HANDLE_FLAG_INHERIT = 0x1
 _GENERIC_READ = 0x80000000
+_OPEN_ALWAYS = 4
 _FILE_SHARE_READ_WRITE = 0x3
 _OPEN_EXISTING = 3
 _WAIT_OBJECT_0 = 0
 _WAIT_TIMEOUT = 0x102
 _INFINITE = 0xFFFFFFFF
+_FILE_APPEND_DATA = 0x0004
+_SYNCHRONIZE = 0x00100000
+_FILE_ATTRIBUTE_NORMAL = 0x80
 
 
 class _JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
@@ -376,3 +380,29 @@ def close(job: int) -> None:
         _kernel32().CloseHandle(job)
     except (OSError, AttributeError):
         pass
+
+
+def create_file_append(path: str) -> int | None | bool:
+    """A kernel append-only handle for shared-log writers, or None/False.
+
+    Opens with FILE_APPEND_DATA | SYNCHRONIZE -- never GENERIC_WRITE, which
+    would also grant the right to overwrite earlier bytes -- and FILE_SHARE_READ
+    | FILE_SHARE_WRITE so every concurrent writer in any process keeps its own
+    append cursor. Returns the HANDLE on success, None when Windows API access
+    is unavailable, and False when the open itself failed (the caller raises).
+    """
+    try:
+        handle = _kernel32().CreateFileW(
+            path,
+            _FILE_APPEND_DATA | _SYNCHRONIZE,
+            _FILE_SHARE_READ_WRITE,
+            None,
+            _OPEN_ALWAYS,
+            _FILE_ATTRIBUTE_NORMAL,
+            None,
+        )
+    except (OSError, AttributeError):
+        return None
+    if not handle or handle == _INVALID_HANDLE_VALUE:
+        return False
+    return handle

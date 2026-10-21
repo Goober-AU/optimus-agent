@@ -144,6 +144,133 @@ async fn stale_owned_resume_preserves_unresolved_recovery_evidence() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn parked_stop_cleanup_diagnostic_survives_durable_descriptor_sanitization() {
+    let fixture = SupervisorFixture::new("parked-durable-diagnostic").await;
+    let worker = dead_worker(&fixture, "parked");
+    let descriptor_file = fixture.supervisor.descriptor_dir.join("parked.json");
+    let durable = |file: &Path| -> Value {
+        serde_json::from_slice(&std::fs::read(file).unwrap()).unwrap()
+    };
+    // park_worker_stop_cleanup_failure only acts on a stopped registration.
+    worker.descriptor.lock().unwrap().stop_requested_at = Some("2026-10-20T23:29:54Z".into());
+    // Every fixed permanent reason survives verbatim behind the parked prefix.
+    for reason in [
+        "Uncertain operation has no saved transcript; recovery journal retained",
+        "Malformed orphan record; recovery journal retained",
+        "Unverified orphan record; recovery journal retained",
+        DEFERRED_ORPHAN_PERSISTENCE_ERROR,
+    ] {
+        fixture.supervisor.park_worker_stop_cleanup_failure(&worker, reason);
+        let parked_error = format!("{}{reason}", DAEMON_WORKER_STOP_CLEANUP_PARKED_PREFIX);
+        assert_eq!(durable(&descriptor_file)["lastError"].as_str().unwrap(), parked_error);
+    }
+    // The parked prefix around a dynamic suffix stays redacted.
+    {
+        let mut descriptor = worker.descriptor.lock().unwrap();
+        descriptor.last_error = Some(format!("{}provider error containing a live auth token", DAEMON_WORKER_STOP_CLEANUP_PARKED_PREFIX));
+    }
+    fixture.supervisor.persist_worker(&worker.descriptor.lock().unwrap()).unwrap();
+    assert_eq!(durable(&descriptor_file)["lastError"].as_str().unwrap(), "Waiting for a client with fresh runtime context");
+    // A whitelisted reason without the stop tombstone (recovery parking) stays redacted.
+    {
+        let mut descriptor = worker.descriptor.lock().unwrap();
+        descriptor.stop_requested_at = None;
+        descriptor.last_error = Some(format!("{}Malformed orphan record; recovery journal retained", DAEMON_WORKER_STOP_CLEANUP_PARKED_PREFIX));
+    }
+    fixture.supervisor.persist_worker(&worker.descriptor.lock().unwrap()).unwrap();
+    assert_eq!(durable(&descriptor_file)["lastError"].as_str().unwrap(), "Waiting for a client with fresh runtime context");
+    fixture.supervisor.stopped.cancel();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn parked_stop_cleanup_resume_revalidates_repaired_journal() {
+    let fixture = SupervisorFixture::new("parked-resume-revalidate").await;
+    let worker = dead_worker(&fixture, "parked");
+    let (file, _) = session(&fixture, &worker, "parked-chat");
+    let before = std::fs::read(&file).unwrap();
+    let journal = fixture.root.join("orphans.jsonl");
+    {
+        let mut descriptor = worker.descriptor.lock().unwrap();
+        descriptor.stop_requested_at = Some("2026-10-20T23:29:54Z".into());
+        descriptor.orphan_process_journal_path = Some(journal.to_string_lossy().into_owned());
+    }
+    fixture.supervisor.park_worker_stop_cleanup_failure(&worker, "Malformed orphan record; recovery journal retained");
+    // A crash-truncated tail keeps the journal malformed: the explicit resume
+    // re-runs the guarded stop and re-parks instead of discarding the evidence.
+    let repaired = format!("{}\n", json!({"version":1,"ownerPid":i32::MAX,"pid":999_999_999i64,"active":true,"recordedAt":"now"}));
+    let truncated = format!("{repaired}dAt\": \"2026-10-19T06:40:09.151438+00:00\"}}\r\n");
+    std::fs::write(&journal, &truncated).unwrap();
+    let error = fixture.supervisor.reclaim_worker_for_resume(&worker, "repairing-client").await.unwrap_err();
+    assert!(error.contains("Malformed orphan record"), "{error}");
+    assert!(stop_cleanup_is_parked(&worker.descriptor.lock().unwrap()));
+    assert!(fixture.supervisor.descriptor_dir.join("parked.json").exists());
+    assert_eq!(std::fs::read_to_string(&journal).unwrap(), truncated, "unrepaired evidence is retained verbatim");
+    // Operator repair: the truncated tail is removed, the valid record remains.
+    std::fs::write(&journal, &repaired).unwrap();
+    assert!(fixture.supervisor.reclaim_worker_for_resume(&worker, "repairing-client").await.unwrap());
+    assert!(!fixture.supervisor.descriptor_dir.join("parked.json").exists());
+    assert!(!journal.exists(), "a repaired journal is retired with the descriptor");
+    assert!(!fixture.supervisor.workers.lock().unwrap().contains_key("parked"));
+    assert_eq!(std::fs::read(&file).unwrap(), before);
+    fixture.supervisor.stopped.cancel();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn parked_stop_cleanup_resume_keeps_dead_generation_guards() {
+    let fixture = SupervisorFixture::new("parked-resume-guards").await;
+    let worker = add_descriptor_only_worker(&fixture, "parked-live", "parked-live", "token", DAEMON_WORKER_LIFECYCLE_FAILED);
+    {
+        let mut descriptor = worker.descriptor.lock().unwrap();
+        descriptor.pid = std::process::id() as i32;
+        descriptor.stop_requested_at = Some("2026-10-20T23:29:54Z".into());
+    }
+    fixture.supervisor.park_worker_stop_cleanup_failure(&worker, "Malformed orphan record; recovery journal retained");
+    let descriptor_file = fixture.supervisor.descriptor_dir.join("parked-live.json");
+    // A live or unverified process identity is never reclaimed, even by an
+    // explicit resume: the stop must not follow a generation it cannot prove.
+    for start in [get_process_start_id(std::process::id() as i64), None] {
+        worker.descriptor.lock().unwrap().process_start_id = start;
+        assert!(!fixture.supervisor.reclaim_worker_for_resume(&worker, "repairing-client").await.unwrap());
+        assert!(descriptor_file.exists());
+    }
+    // Background sweeps keep refusing the parked registration outright.
+    assert!(fixture.supervisor.reclaim_stale_worker_registration(&worker).await.unwrap_err().contains("parked"));
+    assert!(stop_cleanup_is_parked(&worker.descriptor.lock().unwrap()));
+    assert!(descriptor_file.exists());
+    fixture.supervisor.stopped.cancel();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn parked_stop_cleanup_resume_respects_owner_fencing() {
+    let fixture = SupervisorFixture::new("parked-owner-fence").await;
+    let worker = dead_worker(&fixture, "parked-owned");
+    let (file, _) = session(&fixture, &worker, "parked-owned-chat");
+    let journal = fixture.root.join("orphans.jsonl");
+    {
+        let mut descriptor = worker.descriptor.lock().unwrap();
+        descriptor.stop_requested_at = Some("2026-10-20T23:29:54Z".into());
+        descriptor.owner_client_id = Some(fixture.client.identity());
+        descriptor.orphan_process_journal_path = Some(journal.to_string_lossy().into_owned());
+    }
+    fixture.supervisor.persist_worker(&worker.descriptor.lock().unwrap()).unwrap();
+    fixture.supervisor.park_worker_stop_cleanup_failure(&worker, "Malformed orphan record; recovery journal retained");
+    let truncated = format!("{}\n", json!({"version":1,"ownerPid":i32::MAX,"pid":999_999_999i64,"active":true,"recordedAt":"now"}));
+    std::fs::write(&journal, format!("{truncated}dAt\": \"2026-10-19T06:40:09.151438+00:00\"}}\r\n")).unwrap();
+    // The owner is still connected, so a stranger's resume cannot even revalidate.
+    assert!(!fixture.supervisor.reclaim_worker_for_resume(&worker, "stranger-client").await.unwrap());
+    assert!(fixture.supervisor.descriptor_dir.join("parked-owned.json").exists());
+    assert!(stop_cleanup_is_parked(&worker.descriptor.lock().unwrap()));
+    // Once the owner's transport is gone, the stranger's resume revalidates the
+    // repaired-or-not journal instead of unconditionally refusing.
+    fixture.client.stopped.cancel();
+    let error = fixture.supervisor.reclaim_worker_for_resume(&worker, "stranger-client").await.unwrap_err();
+    assert!(error.contains("Malformed orphan record"), "{error}");
+    assert!(fixture.supervisor.descriptor_dir.join("parked-owned.json").exists());
+    assert!(Path::new(&file).exists());
+    fixture.supervisor.stopped.cancel();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn stale_owned_resume_startup_already_cleans_dead_disconnected_owner() {
     let fixture = SupervisorFixture::new("stale-owned-startup").await;
     let worker = dead_worker(&fixture, "old-worker");

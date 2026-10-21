@@ -1,0 +1,3 @@
+- Fixed concurrent Windows process-journal appends corrupting recovery records and blocking saved chats after shutdown.
+- Fixed explicit resume of a stopped worker after its retained recovery journal has been repaired, while keeping malformed journals blocked.
+- Fixed persisted stopped-worker errors losing their safe cleanup reason.
