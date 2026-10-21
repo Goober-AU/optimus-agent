@@ -27,6 +27,7 @@ use crate::compaction::{
 use crate::utils::diagnostics::AssistantMessageDiagnostic;
 use crate::utils::event_stream::AssistantMessageEventStream;
 
+pub use crate::inference_attachment::InferenceStateLease;
 pub use crate::utils::event_stream::AssistantMessageEventStream as AssistantMessageEventStreamReExport;
 
 pub type BoxFuture<T> = Pin<Box<dyn Future<Output = T> + Send + 'static>>;
@@ -270,6 +271,12 @@ pub struct StreamOptions {
     /// `signal?: AbortSignal`
     #[serde(skip)]
     pub signal: Option<CancellationToken>,
+    /// One-shot native state for this inference only. Never persisted as options.
+    #[serde(skip)]
+    pub inference_state: Option<InferenceStateLease>,
+    /// Source capture for this actual native request only; never persisted.
+    #[serde(skip)]
+    pub source_capture: Option<crate::source_capture::SourceCaptureLease>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub api_key: Option<String>,
     /// Preferred transport for providers that support multiple transports.
@@ -320,6 +327,7 @@ impl std::fmt::Debug for StreamOptions {
             .field("temperature", &self.temperature)
             .field("max_tokens", &self.max_tokens)
             .field("signal", &self.signal)
+            .field("inference_state", &self.inference_state)
             .field("api_key", &self.api_key)
             .field("transport", &self.transport)
             .field("service_tier", &self.service_tier)

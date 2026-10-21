@@ -19,7 +19,11 @@ use serde_json::{json, Map, Value};
 
 use crate::cache_pricing::{get_anthropic_cache_write_cost, has_standard_anthropic_cache_pricing};
 use crate::env_api_keys::{get_env_api_key, get_prime_team_id};
+use crate::inference_attachment::{
+	InferenceAttachmentError, InferenceStateLease, InferenceStateLeaseState, InferenceSubmission, INFERENCE_RECEIPT_HEADER,
+};
 use crate::models::{calculate_cost, clamp_thinking_level, CostOverrides};
+use crate::source_capture::{SourceCaptureError, SourceCaptureLease, SourceCaptureState, SourceSubmission, SOURCE_RECEIPT_HEADER};
 use crate::providers::cloudflare::{is_cloudflare_provider, resolve_cloudflare_base_url};
 use crate::providers::github_copilot_headers::{build_copilot_dynamic_headers, has_copilot_vision_input, CopilotDynamicHeaderParams};
 use crate::providers::opencode_headers::with_opencode_headers;
@@ -1381,7 +1385,42 @@ impl From<String> for StreamError {
 	}
 }
 
+impl From<InferenceAttachmentError> for StreamError {
+	fn from(error: InferenceAttachmentError) -> Self {
+		let message = error.to_string();
+		Self { value: json!({"name":"Error", "message":message, "code":"invalid_request_occ3_attachment"}), message }
+	}
+}
+
+impl From<SourceCaptureError> for StreamError {
+	fn from(error: SourceCaptureError) -> Self {
+		let message = error.to_string();
+		Self { value: json!({"name":"Error", "message":message, "code":"invalid_request_occ3_source"}), message }
+	}
+}
+
+fn record_completions_failure(model: &Model, output: &mut AssistantMessage, error: &StreamError) {
+	if error.value.get("code").and_then(Value::as_str) == Some("occ3_inference_uncertain") {
+		let failure = crate::utils::stream_failure::StreamFailureError::new(
+			error.message.clone(),
+			crate::utils::stream_failure::StreamFailureInfo {
+				kind: crate::utils::stream_failure::KIND_REQUEST_INTERRUPTED.into(),
+				provider_error_type: Some("occ3_inference_uncertain".into()),
+				..Default::default()
+			},
+		);
+		record_stream_failure(model, output, &ThrownStreamError::Failure(&failure));
+	} else {
+		record_stream_failure(model, output, &ThrownStreamError::Value(&error.value));
+	}
+}
+
 impl StreamError {
+	fn inference_uncertain() -> Self {
+		let message = "Inference state request did not complete; automatic replay is disabled.".to_string();
+		Self { value: json!({"name":"Error", "message":message, "code":"occ3_inference_uncertain"}), message }
+	}
+
 	fn dropped() -> Self {
 		let message = "Completions stream ended before finish_reason or [DONE]".to_string();
 		Self {
@@ -1749,7 +1788,7 @@ enum SsePayload {
 	/// The raw payload plus its parsed `Value` when the reader already parsed it
 	/// for an attached observer; `None` means the consumer parses it.
 	Data { payload: String, parsed: Option<Value> },
-	Done,
+	Done { exact: bool },
 }
 
 /// Runs one payload through the observation seam and the channel: the observer
@@ -1771,7 +1810,7 @@ fn forward_sse_payload(
 	};
 	observe_sse_payload_parsed(observer, &payload, parsed.as_ref());
 	if done {
-		let _ = sender.send(Ok(SsePayload::Done));
+		let _ = sender.send(Ok(SsePayload::Done { exact: payload == "[DONE]" }));
 		return false;
 	}
 	sender.send(Ok(SsePayload::Data { payload, parsed })).is_ok()
@@ -1837,6 +1876,105 @@ async fn read_sse_data(
 	}
 }
 
+
+/// Source capture alone drains the finite, server-buffered body to clean EOF.
+/// Hash the exact identity bytes before SSE normalization; never reserialize JSON.
+async fn buffer_source_sse(
+    mut response: reqwest::Response,
+    lease: &SourceCaptureLease,
+    submission: &mut SourceSubmission,
+) -> Result<Vec<String>, StreamError> {
+    let mut bytes = Vec::new();
+    while let Some(chunk) = response.chunk().await.map_err(|_| SourceCaptureError::InvalidCompletion)? {
+        submission.ensure_active()?;
+        if bytes.len().checked_add(chunk.len()).filter(|&n| n <= lease.limits().max_response_bytes).is_none() {
+            return Err(SourceCaptureError::ResponseTooLarge.into());
+        }
+        bytes.extend_from_slice(&chunk);
+    }
+    submission.verify_body(&bytes)?;
+    let raw = std::str::from_utf8(&bytes).map_err(|_| SourceCaptureError::InvalidCompletion)?;
+    let response_id = submission.expected_response_id()?;
+    let mut payloads = Vec::new();
+    let mut data: Vec<&str> = Vec::new();
+    let mut finished = false;
+    let mut done = false;
+    for raw_line in raw.split('\n') {
+        let line = raw_line.strip_suffix('\r').unwrap_or(raw_line);
+        if done {
+            if !line.bytes().all(|b| b.is_ascii_whitespace()) { return Err(SourceCaptureError::InvalidCompletion.into()); }
+            continue;
+        }
+        if line.is_empty() {
+            if data.is_empty() { continue; }
+            let payload = data.join("\n");
+            data.clear();
+            if payload == "[DONE]" {
+                if !finished { return Err(SourceCaptureError::InvalidCompletion.into()); }
+                done = true;
+                payloads.push(payload);
+                continue;
+            }
+            let chunk: Value = serde_json::from_str(&payload).map_err(|_| SourceCaptureError::InvalidCompletion)?;
+            if !chunk.is_object() || chunk.get("id").and_then(Value::as_str) != Some(response_id)
+                || chunk.get("error").filter(|v| !v.is_null()).is_some() {
+                return Err(SourceCaptureError::InvalidCompletion.into());
+            }
+            let choices = chunk.get("choices").and_then(Value::as_array).ok_or(SourceCaptureError::InvalidCompletion)?;
+            if choices.len() > 1 { return Err(SourceCaptureError::InvalidCompletion.into()); }
+            for choice in choices {
+                if choice.get("index").and_then(Value::as_u64) != Some(0) { return Err(SourceCaptureError::InvalidCompletion.into()); }
+                if finished && choice.get("delta").and_then(Value::as_object).map(|d| !d.is_empty()).unwrap_or(false) {
+                    return Err(SourceCaptureError::InvalidCompletion.into());
+                }
+                if let Some(reason) = choice.get("finish_reason").filter(|v| !v.is_null()) {
+                    if finished || !matches!(reason.as_str(), Some("stop" | "length" | "tool_calls" | "function_call" | "end")) {
+                        return Err(SourceCaptureError::InvalidCompletion.into());
+                    }
+                    finished = true;
+                }
+            }
+            payloads.push(payload);
+        } else if line.starts_with(':') {
+            continue;
+        } else if let Some(value) = line.strip_prefix("data:") {
+            data.push(value.strip_prefix(' ').unwrap_or(value));
+        } else if line == "event: message" || line == "event:message" {
+            continue;
+        } else {
+            return Err(SourceCaptureError::InvalidCompletion.into());
+        }
+    }
+    if !done || !finished || !data.is_empty() { return Err(SourceCaptureError::InvalidCompletion.into()); }
+    Ok(payloads)
+}
+
+/// Apply the merged request headers to the built request. Case-insensitive
+/// `x-pomerium-authorization` values are gateway credentials and are marked
+/// sensitive so no Debug render of the request or its HeaderMap can print
+/// them; every other header is applied unchanged, and `None` values (cleared
+/// headers) stay cleared. A value that cannot become a header is a fixed,
+/// value-free failure before any HTTP request.
+fn apply_request_headers(
+	mut builder: reqwest::RequestBuilder,
+	headers: &IndexMap<String, Option<String>>,
+) -> Result<reqwest::RequestBuilder, StreamError> {
+	for (name, value) in headers {
+		match value {
+			Some(value) => {
+				let mut header_value = reqwest::header::HeaderValue::from_str(value)
+					.map_err(|_| StreamError::new("Invalid request header value."))?;
+				if name.eq_ignore_ascii_case("x-pomerium-authorization") {
+					header_value.set_sensitive(true);
+				}
+				builder = builder.header(name.as_str(), header_value);
+			}
+			None => {}
+		}
+	}
+	Ok(builder)
+}
+
 /// TS: the `openai` client request. Sends the same JSON body and headers.
 async fn post_chat_completions(
 	client: &OpenAIClient,
@@ -1845,7 +1983,10 @@ async fn post_chat_completions(
 	timeout_ms: Option<f64>,
 	audit: Option<(&Model, &sglang_budget::BudgetReceipt)>,
 	observer: Option<&crate::types::OnStreamObservation>,
-) -> Result<reqwest::Response, StreamError> {
+	inference: Option<(&InferenceStateLease, &Model)>,
+	source: Option<(&SourceCaptureLease, &Model)>,
+) -> Result<(reqwest::Response, Option<InferenceSubmission>, Option<SourceSubmission>), StreamError> {
+	if inference.is_some() && source.is_some() { return Err(SourceCaptureError::InvalidPayload.into()); }
 	let url = format!("{}/chat/completions", client.base_url.trim_end_matches('/'));
 	let mut headers: IndexMap<String, Option<String>> = IndexMap::new();
 	headers.insert(
@@ -1860,7 +2001,15 @@ async fn post_chat_completions(
 
 	// Guarded requests retain mutable native TLS/proxy policy; ordinary models
 	// keep upstream's shared generation transport.
-	let http_client = if audit.is_some() {
+	let http_client = if inference.is_some() || source.is_some() {
+		// A one-shot native request must not be replayed on redirects or protocol NACKs.
+		reqwest::Client::builder()
+			.redirect(reqwest::redirect::Policy::none())
+			.retry(reqwest::retry::never())
+			.no_gzip().no_brotli().no_zstd().no_deflate()
+			.build()
+			.map_err(|_| StreamError::new("Cannot initialize inference attachment HTTP client."))?
+	} else if audit.is_some() {
 		let lease = http_client_pool::acquire(&url, http_client_pool::RedirectPolicy::Generation)
 			.map_err(|_| StreamError::new("Cannot initialize completion HTTP client."))?;
 		observe_local_phase(observer, lease.phase);
@@ -1869,12 +2018,7 @@ async fn post_chat_completions(
 		shared_client(ClientPolicy::Default)
 	};
 	let mut builder = http_client.post(&url);
-	for (name, value) in &headers {
-		match value {
-			Some(value) => builder = builder.header(name.as_str(), value.as_str()),
-			None => {}
-		}
-	}
+	builder = apply_request_headers(builder, &headers)?;
 	observe_local_phase(observer, "generation_serialize_start");
 	builder = builder.json(body);
 	if let Some((model, receipt)) = audit {
@@ -1885,7 +2029,7 @@ async fn post_chat_completions(
 			.ok_or_else(|| StreamError::new("SGLang audit: serialized request body unavailable."))?;
 		// Re-wrap the exact built request; no body serialization follows the audit.
 		sglang_budget::audit(model, body, receipt, serialized)?;
-		builder = reqwest::RequestBuilder::from_parts(http_client, request);
+		builder = reqwest::RequestBuilder::from_parts(http_client.clone(), request);
 	} else {
 		// RequestBuilder may retain an error; this phase does not prove success.
 		observe_local_phase(observer, "generation_serialize_returned");
@@ -1898,6 +2042,41 @@ async fn post_chat_completions(
 	// `RequestBuilder::timeout` (a TOTAL deadline) because that aborts a long-lived stream.
 	let header_timeout = resolve_header_timeout(timeout_ms);
 
+	let mut submission = if let Some((lease, model)) = inference {
+		lease.validate_target(&model.provider, &model.id, &client.base_url)?;
+		if body.get("model").and_then(Value::as_str) != Some(model.id.as_str())
+			|| body.get("stream").and_then(Value::as_bool) != Some(true)
+			|| body.get("occ3") != Some(&serde_json::to_value(lease.attachment())
+				.map_err(|_| InferenceAttachmentError::InvalidPayload)?)
+		{
+			return Err(InferenceAttachmentError::InvalidPayload.into());
+		}
+		let request = builder.build().map_err(|_| InferenceAttachmentError::InvalidPayload)?;
+		if request.headers().contains_key(reqwest::header::HOST) {
+			return Err(InferenceAttachmentError::TargetMismatch("authority").into());
+		}
+		builder = reqwest::RequestBuilder::from_parts(http_client.clone(), request);
+		if is_cancelled(signal) { return Err(abort_error()); }
+		Some(lease.submit()?)
+	} else { None };
+	let mut source_submission = if let Some((lease, model)) = source {
+		lease.validate_target(&model.provider, &model.id, &client.base_url)?;
+		if body.get("model").and_then(Value::as_str) != Some(model.id.as_str())
+			|| body.get("stream").and_then(Value::as_bool) != Some(true)
+			|| body.get("occ3").is_some()
+			|| body.get("occ3_capture") != Some(&serde_json::to_value(lease.intent()).map_err(|_| SourceCaptureError::InvalidPayload)?) {
+			return Err(SourceCaptureError::InvalidPayload.into());
+		}
+		let mut request = builder.build().map_err(|_| SourceCaptureError::InvalidPayload)?;
+		if request.headers().contains_key(reqwest::header::HOST) { return Err(SourceCaptureError::TargetMismatch.into()); }
+		if request.headers().get_all(reqwest::header::ACCEPT_ENCODING).iter().any(|value| value.as_bytes() != b"identity") {
+			return Err(SourceCaptureError::InvalidPayload.into());
+		}
+		request.headers_mut().insert(reqwest::header::ACCEPT_ENCODING, reqwest::header::HeaderValue::from_static("identity"));
+		builder = reqwest::RequestBuilder::from_parts(http_client, request);
+		if is_cancelled(signal) { return Err(abort_error()); }
+		Some(lease.submit()?)
+	} else { None };
 	observe_local_phase(observer, "generation_send_start");
 	let request = builder.send();
 	let response = match signal {
@@ -1931,6 +2110,16 @@ async fn post_chat_completions(
 
 	observe_local_phase(observer, "generation_headers_complete");
 	let status = response.status().as_u16();
+	if let Some(submission) = submission.as_mut() {
+		if !response.status().is_success() {
+			return Err(StreamError::inference_uncertain());
+		}
+		submission.verify_receipt(response.headers())?;
+	}
+	if let Some(submission) = source_submission.as_mut() {
+		if !response.status().is_success() { return Err(StreamError::inference_uncertain()); }
+		submission.verify_header(response.headers())?;
+	}
 	if status >= 400 {
 		let headers_record = crate::utils::headers::header_map_to_record(response.headers());
 		let text = response.text().await.unwrap_or_default();
@@ -1948,7 +2137,7 @@ async fn post_chat_completions(
 		));
 	}
 
-	Ok(response)
+	Ok((response, submission, source_submission))
 }
 
 // ---------------------------------------------------------------------------
@@ -2579,7 +2768,25 @@ async fn run_stream(
 	stream: &AssistantMessageEventStream,
 ) -> Result<(), StreamError> {
 	let mut state = StreamState::new();
-	let result = run_stream_body(model, context, options, output, &mut state, stream).await;
+	let inference = options.as_ref().and_then(|options| options.stream.inference_state.clone());
+	let source = options.as_ref().and_then(|options| options.stream.source_capture.clone());
+	let source_signal = options.as_ref().and_then(|options| options.stream.signal.clone());
+	let body = run_stream_body(model, context, options, output, &mut state, stream);
+	let result = if let Some(lease) = source.as_ref() {
+		tokio::select! {
+			biased;
+			_ = lease.cancelled() => Err(SourceCaptureError::NotPrepared.into()),
+			_ = async { match source_signal.as_ref() { Some(signal) => signal.cancelled().await, None => std::future::pending::<()>().await } } => Err(abort_error()),
+			_ = tokio::time::sleep_until(tokio::time::Instant::from_std(lease.limits().deadline)) => Err(SourceCaptureError::Expired.into()),
+			result = body => result,
+		}
+	} else if let Some(lease) = inference.as_ref() {
+		tokio::select! {
+			biased;
+			_ = lease.cancelled() => Err(InferenceAttachmentError::NotPrepared.into()),
+			result = body => result,
+		}
+	} else { body.await };
 	if result.is_err() {
 		for block in &mut state.blocks {
 			if let StreamingBlock::ToolCall(block) = block {
@@ -2590,6 +2797,13 @@ async fn run_stream(
 		// array, and strips the streaming scratch buffers (which never reach
 		// `StreamState::content`).
 		output.content = state.content();
+		if inference.as_ref().map(|lease| matches!(lease.state(),
+			InferenceStateLeaseState::Submitted | InferenceStateLeaseState::Uncertain | InferenceStateLeaseState::Consumed
+		)).unwrap_or(false) || source.as_ref().map(|lease| matches!(lease.state(),
+			SourceCaptureState::Submitted | SourceCaptureState::Uncertain | SourceCaptureState::Captured | SourceCaptureState::Retired
+		)).unwrap_or(false) {
+			return Err(StreamError::inference_uncertain());
+		}
 	}
 	result
 }
@@ -2604,6 +2818,19 @@ async fn run_stream_body(
 	stream: &AssistantMessageEventStream,
 ) -> Result<(), StreamError> {
 	let options_ref = options.as_ref();
+	let inference = options_ref.and_then(|options| options.stream.inference_state.as_ref());
+	let source = options_ref.and_then(|options| options.stream.source_capture.as_ref());
+	if source.is_some() && inference.is_some() { return Err(SourceCaptureError::InvalidPayload.into()); }
+	if let Some(lease) = source {
+		if model.api != crate::types::API_OPENAI_COMPLETIONS { return Err(SourceCaptureError::TargetMismatch.into()); }
+		lease.validate_target(&model.provider, &model.id, &model.base_url)?;
+	}
+	if let Some(lease) = inference {
+		if model.api != crate::types::API_OPENAI_COMPLETIONS {
+			return Err(InferenceAttachmentError::TargetMismatch("api").into());
+		}
+		lease.validate_target(&model.provider, &model.id, &model.base_url)?;
+	}
 	let api_key = options_ref
 		.and_then(|options| options.stream.api_key.clone())
 		.or_else(|| get_env_api_key(&model.provider))
@@ -2638,23 +2865,63 @@ async fn run_stream_body(
 		}
 	}
 
+	// The callback never receives a native handle and cannot forge the reserved field.
+	if params.get("occ3").is_some() {
+		return Err(InferenceAttachmentError::ReservedPayloadField.into());
+	}
+	if params.get("occ3_capture").is_some() { return Err(SourceCaptureError::InvalidPayload.into()); }
+	if let Some(lease) = source {
+		lease.validate_target(&model.provider, &model.id, &client.base_url)?;
+		if params.get("model").and_then(Value::as_str) != Some(model.id.as_str())
+			|| params.get("stream").and_then(Value::as_bool) != Some(true) {
+			return Err(SourceCaptureError::InvalidPayload.into());
+		}
+	}
+	if let Some(lease) = inference {
+		lease.validate_target(&model.provider, &model.id, &client.base_url)?;
+		if params.get("model").and_then(Value::as_str) != Some(model.id.as_str())
+			|| params.get("stream").and_then(Value::as_bool) != Some(true)
+		{
+			return Err(InferenceAttachmentError::InvalidPayload.into());
+		}
+	}
 	let signal = options_ref.and_then(|options| options.stream.signal.clone());
 	let timeout_ms = options_ref.and_then(|options| options.stream.timeout_ms);
 
 	let observer = options_ref.and_then(|options| options.stream.on_stream_observation.as_ref());
 	let budget = sglang_budget::guard_observed(model, &client, &mut params, signal.as_ref(), timeout_ms, observer).await?;
-	let response = post_chat_completions(
+	if let Some(lease) = inference {
+		// State belongs only on the actual generation payload, never a token-count helper.
+		params.as_object_mut().ok_or(InferenceAttachmentError::InvalidPayload)?.insert(
+			"occ3".into(), serde_json::to_value(lease.attachment()).map_err(|_| InferenceAttachmentError::InvalidPayload)?,
+		);
+	}
+	if let Some(lease) = source {
+		params.as_object_mut().ok_or(SourceCaptureError::InvalidPayload)?.insert(
+			"occ3_capture".into(), serde_json::to_value(lease.intent()).map_err(|_| SourceCaptureError::InvalidPayload)?,
+		);
+	}
+	let (response, submission, mut source_submission) = post_chat_completions(
 		&client, &params, signal.as_ref(), timeout_ms, budget.as_ref().map(|receipt| (model, receipt)), observer,
+		inference.map(|lease| (lease, model)), source.map(|lease| (lease, model)),
 	).await?;
 	let status = response.status().as_u16();
+	let headers = response.headers().clone();
+	let mut ordinary_response = Some(response);
+	let source_payloads = if let (Some(lease), Some(submission)) = (source, source_submission.as_mut()) {
+		Some(buffer_source_sse(ordinary_response.take().expect("response present"), lease, submission).await?)
+	} else { None };
 	if let Some(on_response) = options_ref.and_then(|options| options.stream.on_response.clone()) {
 		let mut response_record = crate::types::ProviderResponse {
 			status: status as i64,
-			headers: crate::utils::headers::header_map_to_record(response.headers()),
+			headers: crate::utils::headers::header_map_to_record(&headers),
 		};
+		response_record.headers.swap_remove(INFERENCE_RECEIPT_HEADER);
+		response_record.headers.swap_remove(SOURCE_RECEIPT_HEADER);
 		response_record.headers.insert("x-optimus-transport".into(), "sse".into());
 		on_response(response_record, model).await;
 	}
+	if let Some(submission) = submission.as_ref() { submission.ensure_active()?; }
 	stream.push(AssistantMessageEvent::Start {
 		partial: output.clone(),
 	});
@@ -2662,7 +2929,9 @@ async fn run_stream_body(
 	// The SDK throws the in-stream error with `response.headers`
 	// (`throw new APIError(undefined, data.error, undefined, response.headers)`), so the
 	// headers must be captured while the response is still owned here.
-	let response_headers = crate::utils::headers::header_map_to_record(response.headers());
+	let mut response_headers = crate::utils::headers::header_map_to_record(&headers);
+	response_headers.swap_remove(INFERENCE_RECEIPT_HEADER);
+	response_headers.swap_remove(SOURCE_RECEIPT_HEADER);
 
 	let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel::<Result<SsePayload, StreamError>>();
 	let observer = options_ref.and_then(|options| options.stream.on_stream_observation.clone());
@@ -2671,13 +2940,25 @@ async fn run_stream_body(
 	// (measured 10-25 min stalls: attempts failing after ~1,483,861ms /
 	// ~1,449,350ms on 2026-09-24). Every received chunk resets the budget.
 	let sse_idle_timeout = crate::utils::sse_frames::resolve_sse_idle_timeout();
-	stream.spawn(read_sse_data(response, signal.clone(), sender, observer, sse_idle_timeout));
+	if let Some(payloads) = source_payloads {
+		for payload in payloads {
+			if !forward_sse_payload(payload, observer.as_ref(), &sender) { break; }
+		}
+		drop(sender);
+	} else {
+		stream.spawn(read_sse_data(ordinary_response.expect("ordinary response present"), signal.clone(), sender, observer, sse_idle_timeout));
+	}
 	let mut finished = false;
 	let mut done = false;
 	while let Some(payload) = receiver.recv().await {
+		if let Some(submission) = submission.as_ref() { submission.ensure_active()?; }
 		let (payload, parsed) = match payload? {
 			SsePayload::Data { payload, parsed } => (payload, parsed),
-			SsePayload::Done => { done = true; break; }
+			SsePayload::Done { exact } => {
+				if submission.is_some() && !exact { return Err(StreamError::inference_uncertain()); }
+				done = true;
+				break;
+			}
 		};
 		// Fast path: borrowed typed parse of the payload the reader owns.
 		// Observer-attached streams arrive with the parsed Value already (the
@@ -2695,6 +2976,9 @@ async fn run_stream_body(
 					&response_headers,
 					&mut finished,
 				)?;
+				if submission.is_some() && output.stop_reason == "error" {
+					return Err(StreamError::inference_uncertain());
+				}
 				continue;
 			}
 		}
@@ -2720,11 +3004,17 @@ async fn run_stream_body(
 			&response_headers,
 			&mut finished,
 		)?;
+		if submission.is_some() && output.stop_reason == "error" {
+			return Err(StreamError::inference_uncertain());
+		}
 	}
 
 
 	if is_cancelled(signal.as_ref()) {
 		return Err(abort_error());
+	}
+	if (submission.is_some() || source_submission.is_some()) && (!finished || !done) {
+		return Err(StreamError::inference_uncertain());
 	}
 	if !finished && !done {
 		return Err(StreamError::dropped());
@@ -2745,7 +3035,17 @@ async fn run_stream_body(
 		));
 	}
 
+	if let Some(submission) = submission {
+		if stream.is_done() || stream.task_receipt().status().cancel_requested {
+			return Err(abort_error());
+		}
+		submission.complete()?;
+	}
 	output.content = state.content();
+	if let Some(submission) = source_submission {
+		if stream.is_done() || stream.task_receipt().status().cancel_requested { return Err(abort_error()); }
+		submission.complete(output)?;
+	}
 	stream.push(AssistantMessageEvent::Done {
 		reason: output.stop_reason.clone(),
 		message: output.clone(),
@@ -2975,8 +3275,7 @@ pub fn stream_openai_completions(
 				let current = output.error_message.clone().unwrap_or_default();
 				output.error_message = Some(format!("{current}\n{raw_metadata}"));
 			}
-			let thrown = ThrownStreamError::Value(&error.value);
-			record_stream_failure(&model, &mut output, &thrown);
+			record_completions_failure(&model, &mut output, &error);
 			out.push(AssistantMessageEvent::Error {
 				reason: output.stop_reason.clone(),
 				error: output,
@@ -3016,7 +3315,9 @@ pub fn stream_simple_openai_completions(
 			return;
 		};
 
-		let base = build_base_options(&model, options.as_ref(), Some(api_key.as_str()));
+		let mut base = build_base_options(&model, options.as_ref(), Some(api_key.as_str()));
+		base.inference_state = options.as_ref().and_then(|options| options.stream.inference_state.clone());
+		base.source_capture = options.as_ref().and_then(|options| options.stream.source_capture.clone());
 		let requested_reasoning = options.as_ref().and_then(|options| options.reasoning.clone());
 		let reasoning_specified = requested_reasoning.is_some();
 		let clamped_reasoning = requested_reasoning
@@ -3052,8 +3353,7 @@ pub fn stream_simple_openai_completions(
 				"error".to_string()
 			};
 			output.error_message = Some(error.message.clone());
-			let thrown = ThrownStreamError::Value(&error.value);
-			record_stream_failure(&model, &mut output, &thrown);
+			record_completions_failure(&model, &mut output, &error);
 			out.push(AssistantMessageEvent::Error {
 				reason: output.stop_reason.clone(),
 				error: output,
@@ -3206,7 +3506,7 @@ mod provider_settlement_tests {
                 assert_eq!(error.value["code"].as_str(), Some("sse_idle_timeout"));
             }
             Ok(SsePayload::Data { payload, .. }) => panic!("unexpected data after the stall: {payload}"),
-            Ok(SsePayload::Done) => panic!("unexpected [DONE] after the stall"),
+            Ok(SsePayload::Done { .. }) => panic!("unexpected [DONE] after the stall"),
         }
         reader.await.unwrap();
         tokio::time::timeout(Duration::from_secs(5), server).await.unwrap().unwrap();
@@ -3262,7 +3562,7 @@ mod provider_settlement_tests {
             default_headers: IndexMap::new(),
         };
         let body = json!({"model": "fixture", "messages": []});
-        let baseline = post_chat_completions(&client, &body, None, None, None, None).await.unwrap_err();
+        let baseline = post_chat_completions(&client, &body, None, None, None, None, None, None).await.unwrap_err();
         for panic_in_observer in [false, true] {
             let phases = Arc::new(Mutex::new(Vec::<String>::new()));
             let capture = phases.clone();
@@ -3270,7 +3570,7 @@ mod provider_settlement_tests {
                 capture.lock().unwrap().push(phase.to_string());
                 if panic_in_observer { panic!("synthetic observer failure"); }
             });
-            let failure = post_chat_completions(&client, &body, None, None, None, Some(&observer)).await.unwrap_err();
+            let failure = post_chat_completions(&client, &body, None, None, None, Some(&observer), None, None).await.unwrap_err();
             assert_eq!(failure.message, baseline.message);
             assert_eq!(failure.value, baseline.value);
             assert_eq!(*phases.lock().unwrap(), vec![
@@ -5188,6 +5488,83 @@ mod message_tests {
 	// ------------------------------------------------------------------
 	// client / headers
 	// ------------------------------------------------------------------
+
+	#[test]
+	fn gateway_control_header_is_sensitive_and_redacted_from_request_debug() {
+		let sentinel = "synthetic-gateway-control-value";
+		let mut headers: IndexMap<String, Option<String>> = IndexMap::new();
+		headers.insert("Authorization".to_string(), Some("Bearer key".to_string()));
+		headers.insert("Content-Type".to_string(), Some("application/json".to_string()));
+		headers.insert(
+			"X-Pomerium-Authorization".to_string(),
+			Some(sentinel.to_string()),
+		);
+		headers.insert("x-legit-custom-header".to_string(), Some("value".to_string()));
+		headers.insert("x-cleared-header".to_string(), None);
+		let client = reqwest::Client::builder()
+			.redirect(reqwest::redirect::Policy::none())
+			.build()
+			.unwrap();
+		let builder = apply_request_headers(client.post("http://127.0.0.1:1/v1/chat/completions"), &headers)
+			.expect("builder");
+		let request = builder.build().expect("request");
+		// Only the gateway header is marked sensitive; ordinary headers are not.
+		let gateway = request
+			.headers()
+			.get("x-pomerium-authorization")
+			.expect("gateway header present");
+		assert!(gateway.is_sensitive());
+		assert_eq!(gateway.as_bytes(), sentinel.as_bytes(), "raw on-wire bytes unchanged");
+		for ordinary in ["authorization", "content-type", "x-legit-custom-header"] {
+			let value = request.headers().get(ordinary).expect(ordinary);
+			assert!(!value.is_sensitive(), "{ordinary} must not be blanket-marked");
+		}
+		// Cleared (None) headers stay absent.
+		assert!(request.headers().get("x-cleared-header").is_none());
+		// Debug of HeaderMap and Request contains the redaction marker and
+		// never the sentinel.
+		let header_debug = format!("{:?}", request.headers());
+		assert!(header_debug.contains("Sensitive"));
+		assert!(!header_debug.contains(sentinel));
+		let request_debug = format!("{:?}", request);
+		assert!(request_debug.contains("Sensitive"));
+		assert!(!request_debug.contains(sentinel));
+	}
+
+	#[test]
+	fn gateway_control_header_sensitivity_matches_all_case_variants() {
+		for name in [
+			"x-pomerium-authorization",
+			"X-Pomerium-Authorization",
+			"X-POMERIUM-AUTHORIZATION",
+		] {
+			let mut headers: IndexMap<String, Option<String>> = IndexMap::new();
+			headers.insert(name.to_string(), Some("synthetic-gateway-control-value".to_string()));
+			let client = reqwest::Client::builder().build().unwrap();
+			let request = apply_request_headers(client.post("http://127.0.0.1:1"), &headers)
+				.expect("builder")
+				.build()
+				.expect("request");
+			let value = request.headers().get(name).expect("header");
+			assert!(value.is_sensitive(), "{name}");
+			assert!(!format!("{:?}", request).contains("synthetic-gateway-control-value"));
+		}
+	}
+
+	#[test]
+	fn request_headers_without_gateway_header_apply_unchanged() {
+		let mut headers: IndexMap<String, Option<String>> = IndexMap::new();
+		headers.insert("x-legit-custom-header".to_string(), Some("value".to_string()));
+		headers.insert("x-cleared-header".to_string(), None);
+		let client = reqwest::Client::builder().build().unwrap();
+		let request = apply_request_headers(client.post("http://127.0.0.1:1"), &headers)
+			.expect("builder")
+			.build()
+			.expect("request");
+		let value = request.headers().get("x-legit-custom-header").expect("present");
+		assert!(!value.is_sensitive());
+		assert!(request.headers().get("x-cleared-header").is_none());
+	}
 
 	#[test]
 	fn client_sets_session_affinity_headers_only_when_enabled() {

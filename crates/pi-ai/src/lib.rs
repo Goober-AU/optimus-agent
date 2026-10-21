@@ -6,6 +6,7 @@ pub mod cli_entry;
 pub mod compaction;
 pub mod copilot_client_version;
 pub mod env_api_keys;
+pub mod inference_attachment;
 #[path = "mod.rs"]
 pub mod index;
 pub mod log;
@@ -18,6 +19,7 @@ pub mod openrouter_reasoning;
 pub mod prime_inference_model_catalog;
 pub mod providers;
 pub mod session_resources;
+pub mod source_capture;
 pub mod stream;
 #[cfg(test)]
 pub(crate) mod test_env;
