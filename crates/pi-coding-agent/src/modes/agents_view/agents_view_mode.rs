@@ -630,6 +630,14 @@ pub fn is_unknown_active_session_error(message: &str) -> bool {
     message.starts_with("Unknown active session:")
 }
 
+/// The supervisor's terminal attach failure once its worker process is gone:
+/// "Session worker <id> exited; retry_worker is required". The saved-session
+/// create route reclaims the dead registration and relaunches the worker, so
+/// this error class is recoverable there.
+pub fn is_worker_exited_retry_required_error(message: &str) -> bool {
+    message.contains("Session worker ") && message.contains("exited; retry_worker is required")
+}
+
 /// `isUnknownDaemonCommandError(error, command)` (modes/daemon/daemon-protocol.ts).
 pub fn is_unknown_daemon_command_error(message: &str, command: &str) -> bool {
     message.contains("Unknown daemon command") && message.contains(command)
@@ -1352,11 +1360,13 @@ pub async fn open_agents_view_session(
             Ok(connection) => { pending.0 = None; return Ok((connection, summary.clone(), None)); },
             Err(error) => {
                 client.close();
-                // Recovering takes the saved-session path too; its create/open route
-                // retries the recovery.
+                // Recovering and dead-worker exits take the saved-session path too;
+                // its create/open route retries the recovery and reclaims the dead
+                // worker registration before relaunching it.
                 if summary.session_file.is_none()
                     || !(is_unknown_active_session_error(&error)
-                        || error.starts_with("Session is recovering"))
+                        || error.starts_with("Session is recovering")
+                        || is_worker_exited_retry_required_error(&error))
                 {
                     return Err(error);
                 }
@@ -5677,6 +5687,11 @@ mod tests {
         assert_eq!(format_error("Failed to open agent", "boom"), "Failed to open agent: boom");
         assert!(is_unknown_active_session_error("Unknown active session: a-1"));
         assert!(!is_unknown_active_session_error("other"));
+        assert!(is_worker_exited_retry_required_error(
+            "Session worker 9208bf3ab8aa exited; retry_worker is required"
+        ));
+        assert!(!is_worker_exited_retry_required_error("Session worker 9208bf3ab8aa exited"));
+        assert!(!is_worker_exited_retry_required_error("retry_worker is required"));
         assert!(is_unknown_daemon_command_error("Unknown daemon command: rename", "rename"));
         assert!(!is_unknown_daemon_command_error("Unknown daemon command: rename", "kill"));
     }
@@ -6331,6 +6346,69 @@ mod tests {
         assert_eq!(requests[0]["type"], "create");
         assert_eq!(requests[0]["sessionPath"], "C:/sessions/a.jsonl");
         assert!(requests[0]["config"].get("cwd").is_none());
+    }
+
+    #[tokio::test]
+    async fn open_after_worker_exit_resumes_the_saved_session() {
+        struct WorkerExitedThenAttachFactory(StdMutex<u32>);
+        impl DaemonAgentConnectionFactory for WorkerExitedThenAttachFactory {
+            fn attach(
+                &self,
+                _client: DaemonTransportClient,
+                _active_session_id: &str,
+                _options: AttachOptions,
+            ) -> TransportFuture<Result<Arc<dyn DaemonAgentConnectionHandle>, String>> {
+                let mut calls = self.0.lock().unwrap();
+                *calls += 1;
+                if *calls == 1 {
+                    let error = "Session worker w-1 exited; retry_worker is required".to_string();
+                    Box::pin(async move { Err(error) })
+                } else {
+                    Box::pin(async { Ok(Arc::new(FakeAgentConnection) as Arc<dyn DaemonAgentConnectionHandle>) })
+                }
+            }
+        }
+        let mode = build_mode(Vec::new()).await;
+        let transport = FakeTransport::new(&["agent_roster"]);
+        transport.push(Ok(ok_response(serde_json::to_value(summary("a-9", "Resumed")).unwrap())));
+        let mut chat = summary("a-1", "Crashed");
+        chat.cwd = std::env::current_dir().unwrap().to_string_lossy().into_owned();
+        chat.session_file = Some("C:/sessions/a.jsonl".to_string());
+        let factory = WorkerExitedThenAttachFactory(StdMutex::new(0));
+        let (_connection, resumed, _notice) =
+            open_agents_view_session(&mode.options, &chat, transport.clone(), &factory).await.unwrap();
+        assert_eq!(resumed.session_id, "a-9");
+        assert_eq!(*factory.0.lock().unwrap(), 2, "the relaunched session attaches a second time");
+        let requests = transport.requests();
+        assert_eq!(requests.len(), 1);
+        assert_eq!(requests[0]["type"], "create");
+        assert_eq!(requests[0]["sessionPath"], "C:/sessions/a.jsonl");
+    }
+
+    #[tokio::test]
+    async fn open_after_worker_exit_without_a_saved_file_stays_fatal() {
+        struct WorkerExitedFactory;
+        impl DaemonAgentConnectionFactory for WorkerExitedFactory {
+            fn attach(
+                &self,
+                _client: DaemonTransportClient,
+                _active_session_id: &str,
+                _options: AttachOptions,
+            ) -> TransportFuture<Result<Arc<dyn DaemonAgentConnectionHandle>, String>> {
+                Box::pin(async { Err("Session worker w-1 exited; retry_worker is required".to_string()) })
+            }
+        }
+        let mode = build_mode(Vec::new()).await;
+        let transport = FakeTransport::new(&["agent_roster"]);
+        let mut chat = summary("a-1", "Crashed");
+        chat.cwd = std::env::current_dir().unwrap().to_string_lossy().into_owned();
+        chat.session_file = None;
+        let error = match open_agents_view_session(&mode.options, &chat, transport.clone(), &WorkerExitedFactory).await {
+            Err(error) => error,
+            Ok(_) => panic!("open must stay fatal without a saved session file"),
+        };
+        assert_eq!(error, "Session worker w-1 exited; retry_worker is required");
+        assert!(transport.requests().is_empty(), "no create is attempted without a saved session file");
     }
 
     #[tokio::test]
