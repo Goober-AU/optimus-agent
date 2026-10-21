@@ -3,7 +3,7 @@
 `python -m rlm.repl` starts a CPython REPL runtime that executes code cells in
 one persistent `__main__` namespace on a single asyncio event loop. The wire
 format is newline-delimited JSON: one object per line, UTF-8, no other framing.
-The current protocol version is `3`; the runtime announces it in the `ready`
+The current protocol version is `4`; the runtime announces it in the `ready`
 event.
 
 ## Channels
@@ -27,7 +27,7 @@ event.
 
 | Request | Fields |
 |---|---|
-| `execute` | `{"type":"execute","id":str,"code":str}` |
+| `execute` | `{"type":"execute","id":str,"code":str,"executionToken"?:str}` |
 | `interrupt` | `{"type":"interrupt","id"?:str}` — no reply |
 | `host_reply` | `{"type":"host_reply","id":str,"data":{"status":"ok","result":{...}}}` or an error envelope — no reply |
 | `snapshot` | `{"type":"snapshot","id":str,"path":str,"manifest_path":str,"cas_root"?:str,"snapshot_format"?:"auto"|"legacy"|"cas-v2","max_bytes"?:int,"max_variable_bytes"?:int,"prune_oversized"?:bool,"snapshot_budget_ms"?:int}` |
@@ -36,6 +36,23 @@ event.
 | `list_names` | `{"type":"list_names","id":str}` |
 | `shutdown` | `{"type":"shutdown","id"?:str}` |
 
+## Execution provenance token (v4)
+
+The host may attach a top-level `executionToken` (64 lowercase hex chars,
+unguessable, minted per execute) to an `execute` frame. The runtime stores it
+for that cell's duration and attaches the same top-level field to every
+`host_request` frame issued from that cell's context — including detached
+tasks the cell created, which inherit the token via copied context and keep
+it after the cell finishes. The field is omitted when the host sent none; a
+non-string value in the execute frame is ignored (treated as absent). The
+token never appears in any other event, result, or payload.
+
+The token is internal host↔runtime IPC. It is a process-cooperation
+boundary, not malicious same-process isolation: code running in the kernel
+process can read and replay it while its execution is live. Host-side
+authorization classifies frames by token presence (key existence: any value,
+including explicit null, is present) and exact match only.
+
 Requests other than `interrupt` and `host_reply` run strictly in order, one at
 a time. A malformed line
 produces `{"event":"error","id":null,"ename":"ProtocolError",...}` and the
@@ -43,7 +60,7 @@ runtime keeps serving. Closing stdin is equivalent to `shutdown`.
 
 ## Events
 
-- `{"event":"ready","protocol":3,"python":"3.13.11","snapshotFormats":["legacy","cas-v2"]}` — sent once at startup;
+- `{"event":"ready","protocol":4,"python":"3.13.11","snapshotFormats":["legacy","cas-v2"]}` — sent once at startup;
   the handshake. `snapshotFormats` is an additive capability gate: a host must
   not ask a protocol-3 runtime without `cas-v2` support to read or write a v2
   root. No banner precedes it.
@@ -60,7 +77,7 @@ runtime keeps serving. Closing stdin is equivalent to `shutdown`.
   MIME type to JSON payload, shipped verbatim from `emit()`. `id` rides task
   context: an asyncio task spawned by a cell keeps that cell's id even after
   the cell finishes; user threads emit `null`.
-- `{"event":"host_request","id":str,"data":{...}}` — one typed request from
+- `{"event":"host_request","id":str,"data":{...},"executionToken"?:str}` — one typed request from
   runtime code to the host; the host answers with a `host_reply` request
   carrying the same id.
 - `{"event":"error","id":str|null,"ename":str,"evalue":str,"traceback":[str,...]}`

@@ -158,7 +158,7 @@ class ReplTest(unittest.TestCase):
 
     def test_ready_handshake_and_startup_time(self):
         self.assertEqual(self.ready_event["event"], "ready")
-        self.assertEqual(self.ready_event["protocol"], 3)
+        self.assertEqual(self.ready_event["protocol"], 4)
         major, minor = sys.version_info[:2]
         self.assertTrue(self.ready_event["python"].startswith(f"{major}.{minor}."))
         # Load-tolerant bound: an isolated spawn-to-ready measures ~350-450 ms

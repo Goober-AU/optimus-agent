@@ -337,6 +337,228 @@ pub type HostRequestHandler =
 /// Host request handlers keyed by request type (e.g. "rlm.run", "goal.complete").
 pub type HostRequestHandlers = HashMap<String, HostRequestHandler>;
 
+// ---------------------------------------------------------------------------
+// Execution provenance (kernel provenance A+B)
+// ---------------------------------------------------------------------------
+
+/// Hard cap on simultaneously live execution tokens. One kernel serializes
+/// executions, so more than a handful means a bookkeeping defect; arming fails
+/// closed rather than silently evicting a live token.
+pub const MAX_LIVE_EXECUTION_TOKENS: usize = 16;
+
+/// Lifecycle of one [`KernelExecutionScope`]. `Settled`, `Revoked` and
+/// `Tombstoned` are terminal: no transition ever leaves them, and no scope is
+/// re-armed or re-claimed after reaching one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum KernelScopeState {
+    /// Constructed by the host for one tool call; no kernel binding yet.
+    Admitted,
+    /// Bound once to a kernel generation at the real execute-frame write.
+    Armed,
+    /// One-shot claim consumed by a matched host request.
+    Claimed,
+    /// Execution settled (done or abort-grace).
+    Settled,
+    /// Restart, uncertain dispatch, teardown, or queued cancellation.
+    Revoked,
+    /// Unprovable publication attempt; capability dead.
+    Tombstoned,
+}
+
+struct KernelScopeRecord {
+    state: KernelScopeState,
+    generation: Option<u64>,
+    token: Option<[u8; 32]>,
+}
+
+/// Host-created per-tool-call execution capability for the provenance channel.
+///
+/// Never serialized, never restored from a transcript, and never constructed
+/// from Python input: the only construction sites are host code (Phase C
+/// enrollment; none in this build) and tests. The token is private and
+/// redacted from `Debug`; it crosses the process boundary only inside the
+/// execute frame and matching `host_request` frames. State, generation and
+/// token live in one mutex so `arm`/`claim` transitions are atomic.
+pub struct KernelExecutionScope {
+    scope_id: String,
+    tool_call_id: String,
+    tool_name: String,
+    record: std::sync::Mutex<KernelScopeRecord>,
+}
+
+impl std::fmt::Debug for KernelExecutionScope {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Deliberately excludes the token bytes and any derived form.
+        f.debug_struct("KernelExecutionScope")
+            .field("scope_id", &self.scope_id)
+            .field("tool_call_id", &self.tool_call_id)
+            .field("state", &self.state())
+            .finish_non_exhaustive()
+    }
+}
+
+impl KernelExecutionScope {
+    /// Host/test-only constructor. State starts `Admitted`: no generation,
+    /// no authority. There is no production call site in this build; Phase C
+    /// enrollment is the future owner of construction.
+    #[doc(hidden)]
+    pub fn new_admitted(tool_call_id: &str, tool_name: &str) -> Arc<Self> {
+        // Two v4 uuids: 32 unguessable bytes, rendered as 64 hex characters
+        // on the wire. The bytes are minted here so `arm` only ever binds
+        // them to a generation.
+        let mut token = [0u8; 32];
+        token[..16].copy_from_slice(uuid::Uuid::new_v4().as_bytes());
+        token[16..].copy_from_slice(uuid::Uuid::new_v4().as_bytes());
+        Arc::new(Self {
+            scope_id: uuid::Uuid::new_v4().to_string(),
+            tool_call_id: tool_call_id.to_string(),
+            tool_name: tool_name.to_string(),
+            record: std::sync::Mutex::new(KernelScopeRecord {
+                state: KernelScopeState::Admitted,
+                generation: None,
+                token: Some(token),
+            }),
+        })
+    }
+
+    /// Bind once to the live kernel generation at the real execute-frame
+    /// write: `Admitted -> Armed`. Re-entry with the same generation (a
+    /// busy-wait retry before dispatch) returns the SAME token. Any other
+    /// state, or a generation mismatch (restart, uncertain dispatch), is an
+    /// error: the same tool call never receives a fresh token.
+    pub fn arm(&self, kernel_generation: u64) -> Result<[u8; 32], KernelError> {
+        let mut record = self
+            .record
+            .lock()
+            .map_err(|_| KernelError::new("kernel execution scope state poisoned"))?;
+        match record.state {
+            KernelScopeState::Admitted => {
+                record.state = KernelScopeState::Armed;
+                record.generation = Some(kernel_generation);
+                Ok(record.token.expect("admitted scope carries a minted token"))
+            }
+            KernelScopeState::Armed if record.generation == Some(kernel_generation) => {
+                Ok(record.token.expect("armed scope carries a token"))
+            }
+            _ => Err(KernelError::new(
+                "kernel execution scope cannot be armed for this dispatch",
+            )),
+        }
+    }
+
+    /// One-shot claim by the typed host handler. Only `Armed` claims; every
+    /// other state refuses.
+    pub fn claim(&self) -> Result<(), KernelError> {
+        let mut record = self
+            .record
+            .lock()
+            .map_err(|_| KernelError::new("kernel execution scope state poisoned"))?;
+        if record.state == KernelScopeState::Armed {
+            record.state = KernelScopeState::Claimed;
+            Ok(())
+        } else {
+            Err(KernelError::new("kernel execution scope is not claimable"))
+        }
+    }
+
+    /// Terminal: the execution settled normally (done or abort-grace).
+    pub fn settle(&self) {
+        self.terminal(KernelScopeState::Settled);
+    }
+
+    /// Terminal: restart, uncertain dispatch, teardown, queued cancellation.
+    pub fn revoke(&self) {
+        self.terminal(KernelScopeState::Revoked);
+    }
+
+    /// Terminal: unprovable publication attempt.
+    pub fn tombstone(&self) {
+        self.terminal(KernelScopeState::Tombstoned);
+    }
+
+    fn terminal(&self, next: KernelScopeState) {
+        if let Ok(mut record) = self.record.lock() {
+            match record.state {
+                KernelScopeState::Settled
+                | KernelScopeState::Revoked
+                | KernelScopeState::Tombstoned => {}
+                _ => record.state = next,
+            }
+        }
+    }
+
+    pub fn state(&self) -> KernelScopeState {
+        // A poisoned record reads as Revoked: fail closed.
+        self.record
+            .lock()
+            .map(|record| record.state)
+            .unwrap_or(KernelScopeState::Revoked)
+    }
+
+    /// True once the scope has ever left `Admitted` (armed, claimed, or any
+    /// terminal state). Identifies the fail-closed protected window of the
+    /// execution this scope is attached to; never confers authority and
+    /// never identifies an origin.
+    pub fn armed_once(&self) -> bool {
+        self.state() != KernelScopeState::Admitted
+    }
+
+    /// Diagnostic comparison. The token bytes themselves never leave the
+    /// host except inside the execute and host_request protocol frames.
+    pub fn token_matches(&self, candidate: &[u8; 32]) -> bool {
+        self.record
+            .lock()
+            .map(|record| record.token == Some(*candidate))
+            .unwrap_or(false)
+    }
+
+    pub fn tool_call_id(&self) -> &str {
+        &self.tool_call_id
+    }
+
+    pub fn tool_name(&self) -> &str {
+        &self.tool_name
+    }
+
+    pub fn scope_id(&self) -> &str {
+        &self.scope_id
+    }
+}
+
+/// Typed context for the provenance host-request channel. Every field is
+/// host-owned: `token_present` reflects only whether the incoming frame
+/// carried a top-level `executionToken`; `matched_scope` is set only on an
+/// exact live-token map hit; `live_enrolled` is the active execution's own
+/// scope (the fail-closed protected window, never origin). Nothing here is
+/// derived from payload fields, arrival timing, or the current cell.
+pub struct HostRequestContext {
+    /// Python-minted correlation id; diagnostic only, never authority.
+    pub request_id: String,
+    /// True when the frame carried a present top-level `executionToken`
+    /// (any JSON value, including explicit null; parseable or not: a
+    /// present token that does not match refuses).
+    pub token_present: bool,
+    /// Exact live-token map hit, if any.
+    pub matched_scope: Option<Arc<KernelExecutionScope>>,
+    /// The active execution's scope: the fail-closed enrolled window.
+    pub live_enrolled: Option<Arc<KernelExecutionScope>>,
+    /// Kernel start generation at arrival (restart fence input).
+    pub kernel_generation: u64,
+    /// Today's diagnostic cell attribution, unchanged semantics.
+    pub cell_source_code: Option<String>,
+}
+
+/// Typed host-request handler for the provenance channel. The legacy
+/// [`HostRequestHandler`] API is unchanged and still serves every kind not
+/// routed here.
+pub type ProvenanceHostRequestHandler = Arc<
+    dyn Fn(HostRequestContext, Value) -> BoxFuture<'static, Result<Value, KernelError>> + Send + Sync,
+>;
+
+/// Provenance handlers keyed by request type. Dispatch prefers this map; the
+/// legacy map serves everything else (and everything, when this is absent).
+pub type ProvenanceHostRequestHandlers = HashMap<String, ProvenanceHostRequestHandler>;
+
 /// B5 `snapshotDebounceMode`: how the post-cell auto-snapshot debounce window
 /// is chosen. `Legacy` (default) keeps the fixed `debounce_ms` window.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -408,6 +630,8 @@ pub struct KernelManagerOptions {
     pub stderr_log_path: Option<String>,
     /// Called after the last tracked background handle settles or is torn down.
     pub on_background_work_settled: Option<Arc<dyn Fn() + Send + Sync>>,
+    /// Typed provenance handlers; dispatch prefers these over the legacy map.
+    pub provenance_handlers: Option<ProvenanceHostRequestHandlers>,
 }
 
 /// `PythonSkillRuntimeInfo` from ../skills.ts (TODO(slice): needs core::skills).
@@ -457,6 +681,10 @@ pub struct ExecuteOptions {
     pub internal: bool,
     /// The protocol repair's own restore; exempt from waiting on the repair it belongs to.
     pub protocol_repair: bool,
+    /// Host-created execution capability for the provenance channel. `None` on
+    /// every ordinary path in this build; Phase C enrollment owns construction.
+    /// Intentionally absent from the manual `Debug` impl below.
+    pub execution_scope: Option<Arc<KernelExecutionScope>>,
 }
 
 impl std::fmt::Debug for ExecuteOptions {
@@ -1327,5 +1555,88 @@ mod t17_controls_tests {
         let data = "\u{1F648}".repeat(4_999_999);
         let parsed = parse_attachment_display(&json!({"mime_type": "image/png", "data": data}));
         assert!(matches!(parsed, Some(ParsedAttachment::Attachment(_))), "under-limit astral payload must parse; got {parsed:?}");
+    }
+}
+
+#[cfg(test)]
+mod kernel_execution_provenance_tests {
+    use super::*;
+
+    #[test]
+    fn admitted_scope_carries_no_binding() {
+        let scope = KernelExecutionScope::new_admitted("call-1", "ipython");
+        assert_eq!(scope.state(), KernelScopeState::Admitted);
+        assert!(!scope.armed_once());
+        assert_eq!(scope.tool_call_id(), "call-1");
+        assert_eq!(scope.tool_name(), "ipython");
+        assert!(!scope.scope_id().is_empty());
+    }
+
+    #[test]
+    fn arm_binds_a_generation_once_and_retries_idempotently() {
+        let scope = KernelExecutionScope::new_admitted("call-1", "ipython");
+        let token = scope.arm(7).expect("first arm succeeds");
+        assert_eq!(scope.state(), KernelScopeState::Armed);
+        assert!(scope.armed_once());
+        // Busy-wait retry before dispatch: same generation, same token.
+        assert_eq!(scope.arm(7).expect("same-generation retry"), token);
+        // A restarted kernel never receives a fresh binding for the same call.
+        assert!(scope.arm(8).is_err());
+        assert_eq!(scope.state(), KernelScopeState::Armed);
+    }
+
+    #[test]
+    fn claim_is_one_shot() {
+        let scope = KernelExecutionScope::new_admitted("call-1", "ipython");
+        assert!(scope.claim().is_err(), "only Armed claims");
+        scope.arm(1).expect("arm");
+        assert!(scope.claim().is_ok());
+        assert_eq!(scope.state(), KernelScopeState::Claimed);
+        assert!(scope.claim().is_err(), "claim is one-shot");
+    }
+
+    #[test]
+    fn terminal_states_are_absorbing() {
+        let settled = KernelExecutionScope::new_admitted("call-1", "ipython");
+        settled.arm(1).expect("arm");
+        settled.settle();
+        assert_eq!(settled.state(), KernelScopeState::Settled);
+        settled.revoke();
+        settled.tombstone();
+        assert_eq!(settled.state(), KernelScopeState::Settled);
+        assert!(settled.arm(2).is_err());
+
+        let revoked = KernelExecutionScope::new_admitted("call-2", "ipython");
+        revoked.arm(1).expect("arm");
+        revoked.revoke();
+        assert_eq!(revoked.state(), KernelScopeState::Revoked);
+        revoked.settle();
+        assert_eq!(revoked.state(), KernelScopeState::Revoked);
+        assert!(revoked.claim().is_err());
+
+        let tombstoned = KernelExecutionScope::new_admitted("call-3", "ipython");
+        tombstoned.arm(1).expect("arm");
+        tombstoned.tombstone();
+        assert_eq!(tombstoned.state(), KernelScopeState::Tombstoned);
+        assert!(tombstoned.arm(1).is_err(), "tombstoned never re-arms");
+    }
+
+    #[test]
+    fn debug_never_renders_the_token() {
+        let scope = KernelExecutionScope::new_admitted("call-1", "ipython");
+        let token = scope.arm(3).expect("arm");
+        let rendered = format!("{:?}", scope);
+        assert!(rendered.contains("KernelExecutionScope"));
+        assert!(!rendered.to_lowercase().contains("token"));
+        let hex: String = token.iter().map(|byte| format!("{byte:02x}")).collect();
+        assert!(!rendered.contains(&hex));
+    }
+
+    #[test]
+    fn token_matches_is_diagnostic_only() {
+        let scope = KernelExecutionScope::new_admitted("call-1", "ipython");
+        let token = scope.arm(3).expect("arm");
+        assert!(scope.token_matches(&token));
+        assert!(!scope.token_matches(&[7u8; 32]));
     }
 }

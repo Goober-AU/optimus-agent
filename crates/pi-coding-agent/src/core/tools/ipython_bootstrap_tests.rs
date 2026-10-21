@@ -15,7 +15,7 @@ root = pathlib.Path(__file__).parent.parent
 # so the Rust-side byte-level assertions on these files hold on every platform.
 with (root / 'starts').open('a', newline='\n') as f:
     f.write(str(os.getpid()) + '\n')
-print(json.dumps({'event':'ready', 'protocol':3}), flush=True)
+print(json.dumps({'event':'ready', 'protocol':4}), flush=True)
 for line in sys.stdin:
     request = json.loads(line)
     with (root / 'requests').open('a', newline='\n') as f:
