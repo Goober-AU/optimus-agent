@@ -1,0 +1,135 @@
+[
+  {
+    "id": "t01_logistics_dock_move",
+    "domain": "logistics",
+    "sender_msg": "Morning pickup update from the Brussels depot: dock 4 is closed and all shipments moved to gate 12. The pickup window is 08:30 to 09:15; ask for Marek at the gate office. The crate weighs 41 kg and has glass panels inside, so it must stay upright at all times.",
+    "receiver_task": "Using only the message above, state which gate the pickup moved to, how much the crate weighs, and how the crate must be handled.",
+    "eval_checks": [
+      "gate 12",
+      "41",
+      "upright"
+    ]
+  },
+  {
+    "id": "t02_scheduling_sync_move",
+    "domain": "scheduling",
+    "sender_msg": "The team sync moved from Tuesday 14:00 to Thursday 10:30, still in room Borealis. The slot is now 45 minutes instead of a full hour. Ava will dial in from the airport, so please do not reschedule it again this week.",
+    "receiver_task": "Using only the message above, state the new day, the new start time, and the new length of the team sync.",
+    "eval_checks": [
+      "thursday",
+      "10:30",
+      "45"
+    ]
+  },
+  {
+    "id": "t03_coding_flaky_test",
+    "domain": "coding-facts",
+    "sender_msg": "The flaky test is test_packet_reorder, not the timeout suite. It fails only on the CI runner with 2 vCPUs, never on the 16 vCPU machines. The fix landed in commit 9f31c0 and needs a backport to the release branch, not main.",
+    "receiver_task": "Using only the message above, name the flaky test, the commit that fixes it, and the branch that receives the backport.",
+    "eval_checks": [
+      "test_packet_reorder",
+      "9f31c0",
+      "release"
+    ]
+  },
+  {
+    "id": "t04_measurements_niche",
+    "domain": "measurements",
+    "sender_msg": "Measured the cabinet niche again: 62 cm wide, 187 cm tall, 35 cm deep. The radiator pipe on the left steals 4 cm, so the effective width is 58 cm. Order the shelf in matte black, not oak, and keep its depth at most 34 cm for the pipe bend.",
+    "receiver_task": "Using only the message above, state the effective niche width, the shelf color to order, and the maximum shelf depth.",
+    "eval_checks": [
+      "58",
+      "matte black",
+      "34"
+    ]
+  },
+  {
+    "id": "t05_preferences_client",
+    "domain": "preferences",
+    "sender_msg": "Notes from the client call with Dr. Ibanez: she dislikes phone calls and prefers email before noon. She approved the teal prototype, not the sandstone one. Invoices go through the Rotterdam office, and she can approve up to 9000 euros herself before her director must sign.",
+    "receiver_task": "Using only the message above, state which prototype was approved, her preferred contact method, and the amount she can approve without escalation.",
+    "eval_checks": [
+      "teal",
+      "email",
+      "9000"
+    ]
+  },
+  {
+    "id": "t06_priorities_sprint",
+    "domain": "priorities",
+    "sender_msg": "Sprint reprioritization: the export crash is P1 and blocks the customer demo, so it jumps ahead of everything else. The auth fix comes second, the dark mode toggle third. The font change moves to the parking lot. Do not start dark mode before auth is merged.",
+    "receiver_task": "Using only the message above, state which issue must be fixed first, its priority level, and where the font change goes.",
+    "eval_checks": [
+      "export",
+      "p1",
+      "parking lot"
+    ]
+  },
+  {
+    "id": "t07_travel_platform",
+    "domain": "travel",
+    "sender_msg": "Train update for tonight: your connection leaves from platform 9, not platform 8 as printed on the ticket. It departs at 17:42 and requires a seat reservation, code QT-771. Transfer only at Utrecht; the Schiphol segment was cancelled.",
+    "receiver_task": "Using only the message above, state the departure platform, the departure time, and the reservation code.",
+    "eval_checks": [
+      "platform 9",
+      "17:42",
+      "qt-771"
+    ]
+  },
+  {
+    "id": "t08_inventory_count",
+    "domain": "inventory",
+    "sender_msg": "Warehouse count finished: 217 sealed boxes, 14 damaged, 6 missing labels. The damaged boxes go to the reclaim shelf in aisle C. The aisle A count is final; do not recount it. Missing-label boxes need new labels from the office before storage.",
+    "receiver_task": "Using only the message above, state how many boxes are sealed, how many are damaged, and where the damaged boxes must go.",
+    "eval_checks": [
+      "217",
+      "14",
+      "aisle c"
+    ]
+  },
+  {
+    "id": "t09_budget_offsite",
+    "domain": "budget",
+    "sender_msg": "Budget revision for the offsite: the venue quote is 3400 for the hall plus 600 for the AV bundle. Cancel the DJ, which frees 900, and move that money to catering, which now gets 2500 total. Keep the 10 percent contingency untouched.",
+    "receiver_task": "Using only the message above, state the hall cost, the AV bundle cost, and the new total catering budget.",
+    "eval_checks": [
+      "3400",
+      "600",
+      "2500",
+      "catering"
+    ]
+  },
+  {
+    "id": "t10_safety_solvent",
+    "domain": "safety",
+    "sender_msg": "Safety sheet for the new solvent: its flash point is 18 degrees Celsius, which makes it flammable, not merely combustible. Store it in the yellow cabinet, two shelves below the fume hood, and never let the storage temperature exceed 25 degrees. Keep it away from the oxidizer shelf.",
+    "receiver_task": "Using only the message above, state the solvent's flash point, the required storage cabinet, and the maximum storage temperature.",
+    "eval_checks": [
+      "18",
+      "yellow",
+      "25"
+    ]
+  },
+  {
+    "id": "t11_service_rename",
+    "domain": "service-naming",
+    "sender_msg": "Migration note: the service is renamed from relay-bird to hawk-relay, and the old name is deprecated in every config. The default port changes from 8080 to 9443, and TLS stays mandatory. Update the key hawk.relay.port in the values file before Friday.",
+    "receiver_task": "Using only the message above, state the service's current name, its new default port, and the config key to update.",
+    "eval_checks": [
+      "hawk-relay",
+      "9443",
+      "hawk.relay.port"
+    ]
+  },
+  {
+    "id": "t12_dinner_booking",
+    "domain": "dining",
+    "sender_msg": "Dinner booking details: Nadia is vegan, Tom is allergic to shellfish, and Petra eats everything but dislikes cilantro. We booked the Italian place for 19:00, not 20:00, table for 9 people under Petra's name, in the quiet room upstairs.",
+    "receiver_task": "Using only the message above, state who is vegan, the dinner start time, and how many people the table seats.",
+    "eval_checks": [
+      "nadia",
+      "vegan",
+      "19:00"
+    ]
+  }
+]

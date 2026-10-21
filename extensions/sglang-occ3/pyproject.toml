@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "occ3-bridge"
+version = "0.1.0"
+description = "OCC-3 latent communication plugin for SGLang: salted KV-radix channels"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+# Runtime dependencies are provided by the SGLang server image
+# (torch, msgspec, fastapi). The plugin adds none of its own.
+dependencies = []
+
+[project.entry-points."sglang.srt.plugins"]
+occ3_bridge = "occ3_sglang.plugin:load"
+
+[tool.setuptools.packages.find]
+include = ["occ3_sglang*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
