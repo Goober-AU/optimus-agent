@@ -22,7 +22,8 @@ use crate::performance_metrics::AgentLoopPerformanceMetrics;
 use crate::types::{
     AfterToolCallContext, AfterToolCallResult, AgentContext, AgentEvent, AgentLoopConfig,
     AgentMessage, AgentState, BeforeToolCallContext, BeforeToolCallResult,
-    GetContinuationMessagesContext, ShouldStopAfterTurnContext, StreamFn, ToolExecutionMode,
+    GetContinuationMessagesContext, ResolveInferenceState, SourceCaptureHooks, ShouldStopAfterTurnContext, StreamFn,
+    ToolExecutionMode,
 };
 
 /// Why [`Agent::continue_`] refused to start a continuation.
@@ -160,6 +161,8 @@ pub struct AgentOptions {
         >,
     >,
     pub stream_fn: Option<StreamFn>,
+    pub resolve_inference_state: Option<ResolveInferenceState>,
+    pub source_capture: Option<SourceCaptureHooks>,
     pub get_api_key:
         Option<Arc<dyn Fn(String) -> BoxFuture<'static, Option<String>> + Send + Sync>>,
     pub on_payload: Option<pi_ai::types::OnPayload>,
@@ -225,6 +228,8 @@ impl Default for AgentOptions {
             convert_to_llm: None,
             transform_context: None,
             stream_fn: None,
+            resolve_inference_state: None,
+            source_capture: None,
             get_api_key: None,
             on_payload: None,
             on_response: None,
@@ -312,6 +317,8 @@ pub struct Agent {
         >,
     >,
     pub stream_fn: Mutex<StreamFn>,
+    pub resolve_inference_state: Mutex<Option<ResolveInferenceState>>,
+    pub source_capture: Mutex<Option<SourceCaptureHooks>>,
     pub get_api_key:
         Mutex<Option<Arc<dyn Fn(String) -> BoxFuture<'static, Option<String>> + Send + Sync>>>,
     pub on_payload: Mutex<Option<pi_ai::types::OnPayload>>,
@@ -420,6 +427,8 @@ impl Agent {
             transform_context: Mutex::new(options.transform_context),
             // `options.streamFn ?? streamSimple` - the loop resolves the default.
             stream_fn: Mutex::new(options.stream_fn.unwrap_or_else(default_stream_fn)),
+            resolve_inference_state: Mutex::new(options.resolve_inference_state),
+            source_capture: Mutex::new(options.source_capture),
             get_api_key: Mutex::new(options.get_api_key),
             on_payload: Mutex::new(options.on_payload),
             on_response: Mutex::new(options.on_response),
@@ -442,6 +451,20 @@ impl Agent {
             performance_metrics: Mutex::new(options.performance_metrics),
         });
         agent
+    }
+
+    /// Set the resolver for subsequent runs. A running loop retains its callback;
+    /// shared pending state inside that callback may still change between requests.
+    pub fn set_resolve_inference_state(&self, resolver: Option<ResolveInferenceState>) {
+        *self
+            .resolve_inference_state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner()) = resolver;
+    }
+
+    /// Install optional source capture for subsequent runs; never durable options.
+    pub fn set_source_capture_hooks(&self, hooks: Option<SourceCaptureHooks>) {
+        *self.source_capture.lock().unwrap_or_else(|poisoned| poisoned.into_inner()) = hooks;
     }
 
     /// `subscribe(listener)` - returns the unsubscribe function.
@@ -1180,6 +1203,12 @@ impl Agent {
 
         let mut config = AgentLoopConfig::new(model);
         config.execution_scope = Some(self.execution_scope.clone());
+        config.resolve_inference_state = self
+            .resolve_inference_state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
+        config.source_capture = self.source_capture.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).clone();
         config.stream_options.reasoning = Some(thinking_level.as_str().to_string());
         config.stream_options.stream.service_tier = service_tier;
         config.stream_options.stream.session_id = self

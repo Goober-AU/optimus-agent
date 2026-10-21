@@ -12,6 +12,8 @@ use futures::future::BoxFuture;
 use serde_json::{Map, Value};
 use tokio_util::sync::CancellationToken;
 
+use pi_ai::inference_attachment::{InferenceStateLease, InferenceStateLeaseState};
+use pi_ai::source_capture::{SourceCaptureLease, SourceCaptureState};
 use pi_ai::types::{
     AssistantMessage, AssistantMessageEvent, ContentBlock, Context, ImageOrTextContent, Message,
     Model, ProviderUsageObservation, SimpleStreamOptions, StopReason, TextContent, ToolCall,
@@ -29,7 +31,8 @@ use crate::performance_metrics::{
 };
 use crate::types::{
     AgentContext, AgentEvent, AgentLoopConfig, AgentMessage, AgentTool, AgentToolCall,
-    AgentToolResult, ContentBlock as AgentContentBlock, StreamFn, ToolExecutionMode,
+    AgentToolResult, ContentBlock as AgentContentBlock, InferenceStateRequest, SourceCaptureCompletion, StreamFn,
+    ToolExecutionMode,
 };
 
 pub type AgentEventSink = Arc<dyn Fn(AgentEvent) -> BoxFuture<'static, anyhow::Result<()>> + Send + Sync>;
@@ -1130,6 +1133,77 @@ async fn run_loop(
 
 
 
+/// Cancelling or dropping a request must not leave its opaque state reusable.
+struct InferenceStateRequestGuard(Option<InferenceStateLease>);
+
+impl Drop for InferenceStateRequestGuard {
+    fn drop(&mut self) {
+        if let Some(lease) = &self.0 {
+            lease.cancel();
+        }
+    }
+}
+
+fn require_consumed_inference_state(
+    mut message: AssistantMessage,
+    lease: Option<&InferenceStateLease>,
+) -> AssistantMessage {
+    if message.stop_reason != pi_ai::types::STOP_REASON_ERROR
+        && message.stop_reason != pi_ai::types::STOP_REASON_ABORTED
+        && lease.is_some_and(|lease| lease.state() != InferenceStateLeaseState::Consumed)
+    {
+        message.stop_reason = pi_ai::types::STOP_REASON_ERROR.to_string();
+        message.error_message = Some(
+            "Inference state attachment was not consumed; ordinary inference is not a fallback."
+                .to_string(),
+        );
+    }
+    message
+}
+
+/// A failed/cancelled request cannot leave reusable source authority behind.
+struct SourceCaptureRequestGuard {
+    lease: Option<SourceCaptureLease>,
+    transferred: bool,
+}
+impl Drop for SourceCaptureRequestGuard {
+    fn drop(&mut self) {
+        if !self.transferred { if let Some(lease) = &self.lease { lease.cancel(); } }
+    }
+}
+
+async fn finalize_source_capture(
+    mut message: AssistantMessage,
+    lease: Option<&SourceCaptureLease>,
+    config: &AgentLoopConfig,
+    signal: Option<&CancellationToken>,
+) -> AssistantMessage {
+    let Some(lease) = lease else { return message; };
+    if matches!(message.stop_reason.as_str(), pi_ai::types::STOP_REASON_ERROR | pi_ai::types::STOP_REASON_ABORTED) { return message; }
+    let valid = if lease.state() == SourceCaptureState::Captured {
+        if let Some(hooks) = &config.source_capture {
+            let callback = hooks.completed.clone();
+            let completion = SourceCaptureCompletion { model: config.model.clone(), lease: lease.clone(), assistant_message: message.clone() };
+            maybe_abortable(async move { callback(completion).await }, signal.cloned()).await.is_ok()
+                && lease.state() == SourceCaptureState::Captured
+        } else { false }
+    } else { false };
+    if !valid {
+        message.stop_reason = pi_ai::types::STOP_REASON_ERROR.into();
+        message.error_message = Some("Native source capture/provenance did not complete; handoff and replay are forbidden.".into());
+        let failure = pi_ai::utils::stream_failure::StreamFailureError::new(
+            "Native source capture/provenance did not complete; automatic replay is disabled.",
+            pi_ai::utils::stream_failure::StreamFailureInfo {
+                kind: pi_ai::utils::stream_failure::KIND_REQUEST_INTERRUPTED.into(),
+                provider_error_type: Some("occ3_source_uncertain".into()), ..Default::default()
+            },
+        );
+        pi_ai::utils::stream_failure::record_stream_failure(&config.model, &mut message,
+            &pi_ai::utils::stream_failure::ThrownStreamError::Failure(&failure));
+    }
+    message
+}
+
 /// The `observedOnPayload` / `observedOnResponse` / `observedOnUsage` closures.
 struct ObservedCallbacks {
     on_payload: pi_ai::types::OnPayload,
@@ -1386,6 +1460,8 @@ async fn stream_assistant_response_inner(
     let model = config.model.clone();
     let invocation = receipt.clone();
     let producer_signal = provider_config.stream.signal.clone();
+    let inference_state = provider_config.stream.inference_state.clone();
+    let source_capture = provider_config.stream.source_capture.clone();
     if let Some(scope) = &config.execution_scope {
         // Registering the next request is the natural settlement point of the
         // previous one: release its terminal tasks and inert receipts first so
@@ -1576,11 +1652,15 @@ async fn stream_assistant_response_inner(
                         }
                     }
                 }
-                let final_message = crate::stream_watchdog::surface_truncated_response(
-                    config,
-                    final_message,
-                    request_metrics.provider_attempt_number,
+                let final_message = require_consumed_inference_state(
+                    crate::stream_watchdog::surface_truncated_response(
+                        config,
+                        final_message,
+                        request_metrics.provider_attempt_number,
+                    ),
+                    inference_state.as_ref(),
                 );
+                let final_message = finalize_source_capture(final_message, source_capture.as_ref(), config, signal).await;
                 finish_request_metrics(
                     config,
                     metrics,
@@ -1624,11 +1704,15 @@ async fn stream_assistant_response_inner(
         signal.cloned(),
     )
     .await?;
-    let final_message = crate::stream_watchdog::surface_truncated_response(
-        config,
-        final_message,
-        request_metrics.provider_attempt_number,
+    let final_message = require_consumed_inference_state(
+        crate::stream_watchdog::surface_truncated_response(
+            config,
+            final_message,
+            request_metrics.provider_attempt_number,
+        ),
+        inference_state.as_ref(),
     );
+    let final_message = finalize_source_capture(final_message, source_capture.as_ref(), config, signal).await;
     finish_request_metrics(
         config,
         metrics,
@@ -2561,6 +2645,8 @@ async fn stream_assistant_response(
         .await?;
     }
 
+    let inference_messages = (config.resolve_inference_state.is_some() || config.source_capture.is_some())
+        .then(|| messages.clone());
     let convert = config.convert_to_llm.clone();
     let llm_messages = maybe_abortable(
         async move {
@@ -2613,6 +2699,53 @@ async fn stream_assistant_response(
     let mut provider_config = config.provider_options();
     provider_config.stream.api_key = resolved_api_key;
     provider_config.stream.signal = Some(signal.map(CancellationToken::child_token).unwrap_or_default());
+    let mut inference_state_guard =
+        InferenceStateRequestGuard(provider_config.stream.inference_state.clone());
+    if let Some(resolve) = config.resolve_inference_state.clone() {
+        let request = InferenceStateRequest {
+            model: config.model.clone(),
+            context: llm_context.clone(),
+            messages: inference_messages.clone().unwrap_or_default(),
+            signal: provider_config.stream.signal.clone(),
+        };
+        inference_state_guard = maybe_abortable(
+            async move { resolve(request).await.map(InferenceStateRequestGuard) },
+            signal.cloned(),
+        )
+        .await?;
+        provider_config.stream.inference_state = inference_state_guard.0.clone();
+    }
+    throw_if_aborted(signal)?;
+    if let Some(lease) = &inference_state_guard.0 {
+        if config.model.api != pi_ai::types::API_OPENAI_COMPLETIONS {
+            return Err(anyhow::anyhow!(
+                "This provider API does not support inference state attachments."
+            ));
+        }
+        if lease.state() != InferenceStateLeaseState::Prepared {
+            return Err(anyhow::anyhow!("Inference state attachment cannot be replayed."));
+        }
+    }
+    let mut source_guard = SourceCaptureRequestGuard { lease: provider_config.stream.source_capture.clone(), transferred: false };
+    if let Some(hooks) = &config.source_capture {
+        let resolve = hooks.resolve.clone();
+        let request = InferenceStateRequest {
+            model: config.model.clone(), context: llm_context.clone(),
+            messages: inference_messages.unwrap_or_default(), signal: provider_config.stream.signal.clone(),
+        };
+        source_guard = maybe_abortable(async move {
+            resolve(request).await.map(|lease| SourceCaptureRequestGuard { lease, transferred: false })
+        }, signal.cloned()).await?;
+        provider_config.stream.source_capture = source_guard.lease.clone();
+    }
+    throw_if_aborted(signal)?;
+    throw_if_aborted(provider_config.stream.signal.as_ref())?;
+    if let Some(lease) = &source_guard.lease {
+        if config.source_capture.is_none() || config.model.api != pi_ai::types::API_OPENAI_COMPLETIONS
+            || inference_state_guard.0.is_some() || lease.state() != SourceCaptureState::Prepared {
+            return Err(anyhow::anyhow!("Source capture requires its native completion hooks, an unused lease and no simultaneous receiver attachment."));
+        }
+    }
     let observed = create_observed_callbacks(config, metrics.clone(), &request_metrics);
     provider_config.stream.on_payload = Some(observed.on_payload.clone());
     provider_config.stream.on_response = Some(observed.on_response.clone());
@@ -2645,7 +2778,11 @@ async fn stream_assistant_response(
         .flatten();
 
     match result {
-        Ok(message) => Ok(message),
+        Ok(message) => {
+            source_guard.transferred = source_guard.lease.as_ref().is_some_and(|lease| lease.state() == SourceCaptureState::Captured)
+                && !matches!(message.stop_reason.as_str(), pi_ai::types::STOP_REASON_ERROR | pi_ai::types::STOP_REASON_ABORTED);
+            Ok(message)
+        },
         Err(error) => {
             if signal.map(|signal| signal.is_cancelled()).unwrap_or(false) && is_abort_error(&error) {
                 let final_message =
@@ -3259,6 +3396,14 @@ mod tool_abort_cleanup_tests;
 #[cfg(test)]
 #[path = "streaming_metrics_tests.rs"]
 mod streaming_metrics_tests;
+
+#[cfg(test)]
+#[path = "inference_state_tests.rs"]
+mod inference_state_tests;
+
+#[cfg(test)]
+#[path = "source_state_tests.rs"]
+mod source_state_tests;
 
 #[cfg(test)]
 mod tests {
