@@ -16,8 +16,8 @@ use async_trait::async_trait;
 
 use super::connector::{CaptureRequest, ConsumeRequest, Occ3Connector};
 use super::types::{
-    Occ3ConnectorCapabilities, Occ3Error, Occ3HandleRef, Occ3Method,
-    Occ3ModelIdentity, Occ3TransferMetrics,
+    Occ3ConnectorCapabilities, Occ3Error, Occ3HandleRef, Occ3Method, Occ3ModelIdentity,
+    Occ3TransferMetrics,
 };
 
 /// A fault the mock can be told to inject on the next matching
@@ -36,8 +36,12 @@ pub enum MockFault {
 #[derive(Debug, Clone)]
 struct MockState {
     handle: Occ3HandleRef,
+    message_id: String,
+    sender: String,
     receiver: String,
+    method: Occ3Method,
     consumed: bool,
+    native_request_id: Option<String>,
     acknowledged: bool,
     size_bytes: u64,
 }
@@ -87,8 +91,16 @@ impl MockOcc3Connector {
             state_ttl_seconds: self.ttl_seconds,
             max_concurrent_handles: 8,
             cache_isolation: "mock: isolated".into(),
-            features: BTreeMap::new(),
+            features: BTreeMap::from([(
+                "native_inference_attachment".into(),
+                super::inference::NATIVE_INFERENCE_CONTRACT.into(),
+            )]),
         }
+    }
+
+    /// A deterministic access-domain identity; runtime restart changes it.
+    pub fn runtime_id(&self) -> String {
+        format!("mock-runtime-{}", self.core.lock().unwrap().generation)
     }
 
     /// Inject a fault for the next matching operation.
@@ -142,8 +154,7 @@ impl MockOcc3Connector {
         // faults (ExpireNextHandle, BumpGeneration) stay in the table
         // for their dedicated handlers.
         let idx = core.faults.iter().position(|(fop, f, _)| {
-            fop == op
-                && !matches!(f, MockFault::ExpireNextHandle | MockFault::BumpGeneration)
+            fop == op && !matches!(f, MockFault::ExpireNextHandle | MockFault::BumpGeneration)
         })?;
         let (_, fault, sticky) = core.faults.remove(idx);
         if sticky {
@@ -163,6 +174,10 @@ impl Occ3Connector for MockOcc3Connector {
         1
     }
 
+    fn supports_native_inference(&self) -> bool {
+        true
+    }
+
     async fn health(&self) -> Result<(), Occ3Error> {
         if *self.healthy.lock().unwrap() {
             Ok(())
@@ -173,9 +188,7 @@ impl Occ3Connector for MockOcc3Connector {
         }
     }
 
-    async fn discover_capabilities(
-        &self,
-    ) -> Result<Occ3ConnectorCapabilities, Occ3Error> {
+    async fn discover_capabilities(&self) -> Result<Occ3ConnectorCapabilities, Occ3Error> {
         if let Some(MockFault::Unreachable) = self.take_fault("discover") {
             return Err(Occ3Error::ConnectorUnreachable {
                 connector_id: self.id.into(),
@@ -188,10 +201,7 @@ impl Occ3Connector for MockOcc3Connector {
         Ok(self.identity.clone())
     }
 
-    async fn capture_latent(
-        &self,
-        request: CaptureRequest,
-    ) -> Result<Occ3HandleRef, Occ3Error> {
+    async fn capture_latent(&self, request: CaptureRequest) -> Result<Occ3HandleRef, Occ3Error> {
         match self.take_fault("capture") {
             Some(MockFault::Unreachable) => {
                 return Err(Occ3Error::ConnectorUnreachable {
@@ -216,9 +226,8 @@ impl Occ3Connector for MockOcc3Connector {
         // ExpireNextHandle is detected and consumed here, not by
         // take_fault (whose match arms do not handle it).
         let before = core.faults.len();
-        core.faults.retain(|(op, f, _)| {
-            !(op == "capture" && *f == MockFault::ExpireNextHandle)
-        });
+        core.faults
+            .retain(|(op, f, _)| !(op == "capture" && *f == MockFault::ExpireNextHandle));
         let expire_next = core.faults.len() != before;
         let expires_at = if expire_next { 0 } else { u64::MAX };
         let size = 4096 + seq;
@@ -234,8 +243,12 @@ impl Occ3Connector for MockOcc3Connector {
             handle.handle_id.clone(),
             MockState {
                 handle: handle.clone(),
+                message_id: request.message_id,
+                sender: request.sender_session_id,
                 receiver: request.receiver_session_id.clone(),
+                method: request.method,
                 consumed: false,
+                native_request_id: None,
                 acknowledged: false,
                 size_bytes: size,
             },
@@ -251,8 +264,10 @@ impl Occ3Connector for MockOcc3Connector {
                 handle_id: handle.handle_id.clone(),
             });
         };
-        let (state_generation, state_expiry) =
-            (state.handle.runtime_generation, state.handle.expires_at_epoch);
+        let (state_generation, state_expiry) = (
+            state.handle.runtime_generation,
+            state.handle.expires_at_epoch,
+        );
         if state_generation != generation {
             return Err(Occ3Error::RuntimeGenerationChanged {
                 expected: state_generation,
@@ -265,6 +280,55 @@ impl Occ3Connector for MockOcc3Connector {
             });
         }
         Ok(())
+    }
+
+    async fn prepare_inference(
+        &self,
+        request: super::inference::PrepareInferenceRequest,
+    ) -> Result<pi_ai::inference_attachment::InferenceStateLease, Occ3Error> {
+        self.health().await?;
+        let mut core = self.core.lock().unwrap();
+        let runtime = super::inference::VerifiedInferenceRuntime {
+            model_identity: self.identity.clone(),
+            runtime_id: format!("mock-runtime-{}", core.generation),
+            generation: core.generation,
+            methods: self.methods.clone(),
+        };
+        let attachment = super::inference::inference_attachment(&request, self.id, &runtime)?;
+        let handle = &request.envelope.state_handle;
+        let state =
+            core.states
+                .get_mut(&handle.handle_id)
+                .ok_or_else(|| Occ3Error::HandleExpired {
+                    handle_id: handle.handle_id.clone(),
+                })?;
+        if state.receiver != request.receiver_session_id
+            || state.message_id != request.envelope.message_id
+            || state.sender != request.envelope.sender_session_id
+            || state.method != request.envelope.latent_method
+        {
+            return Err(Occ3Error::Unauthorized);
+        }
+        if state.handle.expires_at_epoch <= request.now_epoch {
+            return Err(Occ3Error::HandleExpired {
+                handle_id: handle.handle_id.clone(),
+            });
+        }
+        if state.handle != *handle {
+            return Err(Occ3Error::Unauthorized);
+        }
+        if state.consumed || state.native_request_id.is_some() {
+            return Err(Occ3Error::HandleAlreadyConsumed {
+                handle_id: handle.handle_id.clone(),
+            });
+        }
+        let lease =
+            pi_ai::inference_attachment::InferenceStateLease::new(request.target, attachment)
+                .map_err(|_| Occ3Error::TransferFailed {
+                    reason: "invalid native inference attachment".into(),
+                })?;
+        state.native_request_id = Some(request.request_id);
+        Ok(lease)
     }
 
     async fn consume_latent(
@@ -283,8 +347,10 @@ impl Occ3Connector for MockOcc3Connector {
                 handle_id: request.handle.handle_id.clone(),
             });
         };
-        let (state_generation, state_expiry) =
-            (state.handle.runtime_generation, state.handle.expires_at_epoch);
+        let (state_generation, state_expiry) = (
+            state.handle.runtime_generation,
+            state.handle.expires_at_epoch,
+        );
         if state_generation != generation {
             return Err(Occ3Error::RuntimeGenerationChanged {
                 expected: state_generation,
@@ -298,7 +364,7 @@ impl Occ3Connector for MockOcc3Connector {
         }
         let (already_consumed, authorised_receiver, size) =
             (state.consumed, state.receiver.clone(), state.size_bytes);
-        if already_consumed {
+        if already_consumed || state.native_request_id.is_some() {
             return Err(Occ3Error::HandleAlreadyConsumed {
                 handle_id: request.handle.handle_id.clone(),
             });
@@ -333,11 +399,7 @@ impl Occ3Connector for MockOcc3Connector {
     }
 
     async fn release_handle(&self, handle: &Occ3HandleRef) -> Result<(), Occ3Error> {
-        self.core
-            .lock()
-            .unwrap()
-            .states
-            .remove(&handle.handle_id);
+        self.core.lock().unwrap().states.remove(&handle.handle_id);
         Ok(())
     }
 

@@ -22,7 +22,7 @@
 use crate::core::occ::dialect::OccCapability;
 
 use super::registry::Occ3ConnectorRegistry;
-use super::types::{Occ3Error, Occ3Method, Occ3ModelIdentity};
+use super::types::{Occ3Method, Occ3ModelIdentity};
 
 /// Everything the ladder needs to decide. Built by the caller from
 /// session state, peer advertisement and cached connector snapshots.
@@ -139,10 +139,11 @@ pub fn negotiate_occ3(input: &Occ3NegotiationInput) -> Occ3Decision {
     }
 
     // 4. Connector with verified capabilities for this identity.
-    let connector_ids = input
-        .registry
-        .connectors_for(input.method, &fingerprint);
-    let connector_id = match connector_ids.first() {
+    let connector_ids = input.registry.connectors_for(input.method, &fingerprint);
+    let connector_id = match connector_ids
+        .iter()
+        .find(|id| peer.connector_id.as_deref() == Some(id.as_str()))
+    {
         Some(id) => id.clone(),
         None => return decline(Occ3FallbackReason::NoConnector),
     };
@@ -169,13 +170,8 @@ fn decline(reason: Occ3FallbackReason) -> Occ3Decision {
 
 /// Extract the OCC-3 advertisement from a peer `OccCapability`.
 /// Older peers without the field degrade to "not supported".
-pub fn advertisement_from_capability(
-    capability: &OccCapability,
-) -> Occ3CapabilityAdvertisement {
-    capability
-        .occ3
-        .clone()
-        .unwrap_or_default()
+pub fn advertisement_from_capability(capability: &OccCapability) -> Occ3CapabilityAdvertisement {
+    capability.occ3.clone().unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -220,26 +216,40 @@ mod tests {
         Occ3CapabilityAdvertisement {
             supported: true,
             model_fingerprint: Some(fp.to_string()),
-            connector_id: Some("sglang-occ3".into()),
+            connector_id: Some("mock-occ3".into()),
             methods: vec![Occ3Method::KvHandoff, Occ3Method::StatebridgePrefix],
         }
     }
 
     #[test]
     fn disabled_by_policy_falls_back() {
-        let d = negotiate_occ3(&input_with(false, Some(identity("glm-5.3")), Some(identity("glm-5.3")), Some(full_peer("x"))));
+        let d = negotiate_occ3(&input_with(
+            false,
+            Some(identity("glm-5.3")),
+            Some(identity("glm-5.3")),
+            Some(full_peer("x")),
+        ));
         assert!(matches!(
             d,
-            Occ3Decision::Fallback { reason: Occ3FallbackReason::DisabledByPolicy }
+            Occ3Decision::Fallback {
+                reason: Occ3FallbackReason::DisabledByPolicy
+            }
         ));
     }
 
     #[test]
     fn missing_peer_capability_falls_back() {
-        let d = negotiate_occ3(&input_with(true, Some(identity("glm-5.3")), Some(identity("glm-5.3")), None));
+        let d = negotiate_occ3(&input_with(
+            true,
+            Some(identity("glm-5.3")),
+            Some(identity("glm-5.3")),
+            None,
+        ));
         assert!(matches!(
             d,
-            Occ3Decision::Fallback { reason: Occ3FallbackReason::ReceiverCapabilityAbsent }
+            Occ3Decision::Fallback {
+                reason: Occ3FallbackReason::ReceiverCapabilityAbsent
+            }
         ));
     }
 
@@ -249,10 +259,17 @@ mod tests {
         let a = identity("glm-5.3");
         let mut b = identity("glm-5.3");
         b.checkpoint_revision = "different".into();
-        let d = negotiate_occ3(&input_with(true, Some(a), Some(b), Some(full_peer("ignored"))));
+        let d = negotiate_occ3(&input_with(
+            true,
+            Some(a),
+            Some(b),
+            Some(full_peer("ignored")),
+        ));
         assert!(matches!(
             d,
-            Occ3Decision::Fallback { reason: Occ3FallbackReason::ModelIdentityMismatch }
+            Occ3Decision::Fallback {
+                reason: Occ3FallbackReason::ModelIdentityMismatch
+            }
         ));
     }
 
@@ -266,7 +283,9 @@ mod tests {
         ));
         assert!(matches!(
             d,
-            Occ3Decision::Fallback { reason: Occ3FallbackReason::ModelIdentityMismatch }
+            Occ3Decision::Fallback {
+                reason: Occ3FallbackReason::ModelIdentityMismatch
+            }
         ));
     }
 
@@ -274,10 +293,17 @@ mod tests {
     fn fingerprint_mismatch_in_advertisement_rejected() {
         let id = identity("glm-5.3");
         let fp = id.fingerprint();
-        let d = negotiate_occ3(&input_with(true, Some(id.clone()), Some(id.clone()), Some(full_peer(&format!("not-{fp}")))));
+        let d = negotiate_occ3(&input_with(
+            true,
+            Some(id.clone()),
+            Some(id.clone()),
+            Some(full_peer(&format!("not-{fp}"))),
+        ));
         assert!(matches!(
             d,
-            Occ3Decision::Fallback { reason: Occ3FallbackReason::ModelIdentityMismatch }
+            Occ3Decision::Fallback {
+                reason: Occ3FallbackReason::ModelIdentityMismatch
+            }
         ));
     }
 
@@ -285,10 +311,17 @@ mod tests {
     fn no_connector_falls_back() {
         let id = identity("glm-5.3");
         let fp = id.fingerprint();
-        let d = negotiate_occ3(&input_with(true, Some(id.clone()), Some(id), Some(full_peer(&fp))));
+        let d = negotiate_occ3(&input_with(
+            true,
+            Some(id.clone()),
+            Some(id),
+            Some(full_peer(&fp)),
+        ));
         assert!(matches!(
             d,
-            Occ3Decision::Fallback { reason: Occ3FallbackReason::NoConnector }
+            Occ3Decision::Fallback {
+                reason: Occ3FallbackReason::NoConnector
+            }
         ));
     }
 
@@ -296,7 +329,12 @@ mod tests {
     fn oversized_summary_falls_back() {
         let id = identity("glm-5.3");
         let fp = id.fingerprint();
-        let mut input = input_with(true, Some(id.clone()), Some(id.clone()), Some(full_peer(&fp)));
+        let mut input = input_with(
+            true,
+            Some(id.clone()),
+            Some(id.clone()),
+            Some(full_peer(&fp)),
+        );
         // Register a connector so the earlier gates pass and the budget
         // check is the deciding gate.
         let connector = crate::core::occ::occ3::mock::MockOcc3Connector::new(
@@ -304,12 +342,16 @@ mod tests {
             vec![Occ3Method::KvHandoff],
         );
         let caps = connector.capabilities();
-        input.registry.register(std::sync::Arc::new(connector), caps);
+        input
+            .registry
+            .register(std::sync::Arc::new(connector), caps);
         input.control_summary_chars = 16384;
         let d = negotiate_occ3(&input);
         assert!(matches!(
             d,
-            Occ3Decision::Fallback { reason: Occ3FallbackReason::EnvelopeBudgetExceeded }
+            Occ3Decision::Fallback {
+                reason: Occ3FallbackReason::EnvelopeBudgetExceeded
+            }
         ));
     }
 
@@ -317,16 +359,27 @@ mod tests {
     fn full_ladder_accepts_with_connector() {
         let id = identity("glm-5.3");
         let fp = id.fingerprint();
-        let mut input = input_with(true, Some(id.clone()), Some(id.clone()), Some(full_peer(&fp)));
+        let mut input = input_with(
+            true,
+            Some(id.clone()),
+            Some(id.clone()),
+            Some(full_peer(&fp)),
+        );
         let connector = crate::core::occ::occ3::mock::MockOcc3Connector::new(
             id.clone(),
             vec![Occ3Method::KvHandoff],
         );
         let caps = connector.capabilities();
-        input.registry.register(std::sync::Arc::new(connector), caps);
+        input
+            .registry
+            .register(std::sync::Arc::new(connector), caps);
         let d = negotiate_occ3(&input);
         match d {
-            Occ3Decision::Occ3 { method, connector_id, model_fingerprint } => {
+            Occ3Decision::Occ3 {
+                method,
+                connector_id,
+                model_fingerprint,
+            } => {
                 assert_eq!(method, Occ3Method::KvHandoff);
                 assert_eq!(connector_id, "mock-occ3");
                 assert_eq!(model_fingerprint, fp);

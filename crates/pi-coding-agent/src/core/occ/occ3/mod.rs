@@ -27,6 +27,7 @@
 
 pub mod codec;
 pub mod connector;
+pub mod inference;
 pub mod mock;
 pub mod negotiation;
 pub mod registry;

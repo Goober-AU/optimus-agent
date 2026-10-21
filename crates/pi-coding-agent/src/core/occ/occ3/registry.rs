@@ -58,7 +58,8 @@ impl Occ3ConnectorRegistry {
         connector_id: &str,
         capabilities: Occ3ConnectorCapabilities,
     ) {
-        self.capabilities.insert(connector_id.to_string(), capabilities);
+        self.capabilities
+            .insert(connector_id.to_string(), capabilities);
     }
 
     /// Remove a connector (after shutdown or repeated failures).
@@ -101,26 +102,27 @@ impl Occ3ConnectorRegistry {
         method: Occ3Method,
         model_fingerprint: &str,
     ) -> bool {
-        self.capabilities
-            .get(connector_id)
-            .is_some_and(|caps| {
-                caps.methods.contains(&method)
-                    && caps.model_identity.fingerprint() == model_fingerprint
-            })
+        self.connectors.get(connector_id).is_some_and(|connector| {
+            connector.supports_native_inference() && connector.protocol_version() == 1
+        }) && self.capabilities.get(connector_id).is_some_and(|caps| {
+            caps.protocol_version == 1
+                && caps
+                    .features
+                    .get("native_inference_attachment")
+                    .map(String::as_str)
+                    == Some(super::inference::NATIVE_INFERENCE_CONTRACT)
+                && caps.methods.contains(&method)
+                && caps.model_identity.fingerprint() == model_fingerprint
+        })
     }
 
     /// List connector ids whose cached snapshot matches the model
     /// fingerprint and method, in preference order.
-    pub fn connectors_for(
-        &self,
-        method: Occ3Method,
-        model_fingerprint: &str,
-    ) -> Vec<String> {
+    pub fn connectors_for(&self, method: Occ3Method, model_fingerprint: &str) -> Vec<String> {
         self.preference
             .iter()
             .filter(|id| {
-                self.connectors.contains_key(*id)
-                    && self.supports(id, method, model_fingerprint)
+                self.connectors.contains_key(*id) && self.supports(id, method, model_fingerprint)
             })
             .cloned()
             .collect()
@@ -155,15 +157,28 @@ mod tests {
 
     #[async_trait::async_trait]
     impl Occ3Connector for FakeConnector {
-        fn connector_id(&self) -> &str { self.id }
-        fn protocol_version(&self) -> u32 { 1 }
-        async fn health(&self) -> Result<(), Occ3Error> { Ok(()) }
-        async fn discover_capabilities(
-            &self,
-        ) -> Result<Occ3ConnectorCapabilities, Occ3Error> {
+        fn connector_id(&self) -> &str {
+            self.id
+        }
+        fn protocol_version(&self) -> u32 {
+            if self.id == "protocol-v2" {
+                2
+            } else {
+                1
+            }
+        }
+        fn supports_native_inference(&self) -> bool {
+            self.id != "legacy"
+        }
+        async fn health(&self) -> Result<(), Occ3Error> {
+            Ok(())
+        }
+        async fn discover_capabilities(&self) -> Result<Occ3ConnectorCapabilities, Occ3Error> {
             unimplemented!("registry tests use cached snapshots")
         }
-        async fn model_identity(&self) -> Result<super::super::types::Occ3ModelIdentity, Occ3Error> {
+        async fn model_identity(
+            &self,
+        ) -> Result<super::super::types::Occ3ModelIdentity, Occ3Error> {
             unimplemented!()
         }
         async fn capture_latent(
@@ -196,7 +211,9 @@ mod tests {
         ) -> Result<(), Occ3Error> {
             unimplemented!()
         }
-        async fn shutdown(&self) -> Result<(), Occ3Error> { Ok(()) }
+        async fn shutdown(&self) -> Result<(), Occ3Error> {
+            Ok(())
+        }
     }
 
     fn caps(model_id: &str, methods: Vec<Occ3Method>) -> Occ3ConnectorCapabilities {
@@ -224,7 +241,10 @@ mod tests {
             state_ttl_seconds: 60,
             max_concurrent_handles: 1,
             cache_isolation: "test".into(),
-            features: BTreeMap::new(),
+            features: BTreeMap::from([(
+                "native_inference_attachment".into(),
+                super::super::inference::NATIVE_INFERENCE_CONTRACT.into(),
+            )]),
         }
     }
 
@@ -234,6 +254,28 @@ mod tests {
         assert!(registry.is_empty());
         assert!(registry.connector_ids().is_empty());
         assert!(registry.find_for(Occ3Method::KvHandoff, "fp").is_err());
+    }
+
+    #[test]
+    fn native_contract_and_protocol_require_both_implementation_and_snapshot() {
+        for id in ["legacy", "protocol-v2", "wrong-contract", "snapshot-v2"] {
+            let mut registry = Occ3ConnectorRegistry::empty();
+            let mut snapshot = caps("fixture-model", vec![Occ3Method::KvHandoff]);
+            let fingerprint = snapshot.model_identity.fingerprint();
+            if id == "wrong-contract" {
+                snapshot
+                    .features
+                    .insert("native_inference_attachment".into(), "unknown".into());
+            }
+            if id == "snapshot-v2" {
+                snapshot.protocol_version = 2;
+            }
+            registry.register(Arc::new(FakeConnector { id }), snapshot);
+            assert!(
+                !registry.supports(id, Occ3Method::KvHandoff, &fingerprint),
+                "{id}"
+            );
+        }
     }
 
     #[test]
@@ -247,7 +289,9 @@ mod tests {
         assert_eq!(registry.connector_ids(), vec!["fake".to_string()]);
         assert!(registry.supports("fake", Occ3Method::KvHandoff, &fingerprint));
         assert!(!registry.supports("fake", Occ3Method::StatebridgePrefix, &fingerprint));
-        assert!(registry.find_for(Occ3Method::KvHandoff, &fingerprint).is_ok());
+        assert!(registry
+            .find_for(Occ3Method::KvHandoff, &fingerprint)
+            .is_ok());
         assert!(registry.find_for(Occ3Method::KvHandoff, "other").is_err());
     }
 
@@ -266,7 +310,9 @@ mod tests {
         let mut registry = Occ3ConnectorRegistry::empty();
         for id in ["zeta", "alpha", "mid"] {
             registry.register(
-                Arc::new(FakeConnector { id: leak_static(id) }),
+                Arc::new(FakeConnector {
+                    id: leak_static(id),
+                }),
                 caps(id, vec![Occ3Method::KvHandoff]),
             );
         }
@@ -274,7 +320,9 @@ mod tests {
         // Re-registering an existing id moves nothing: preference keeps
         // first-seen order.
         registry.register(
-            Arc::new(FakeConnector { id: leak_static("alpha") }),
+            Arc::new(FakeConnector {
+                id: leak_static("alpha"),
+            }),
             caps("alpha", vec![Occ3Method::KvHandoff]),
         );
         assert_eq!(registry.connector_ids(), vec!["zeta", "alpha", "mid"]);

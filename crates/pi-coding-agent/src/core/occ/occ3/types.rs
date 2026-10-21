@@ -55,28 +55,13 @@ impl Occ3ModelIdentity {
     /// Stable fingerprint string for logs and capability advertisements.
     /// Contains no secrets: only public identity components.
     pub fn fingerprint(&self) -> String {
-        let raw = format!(
-            "{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
-            self.model_id,
-            self.architecture,
-            self.checkpoint_revision,
-            self.weight_fingerprint,
-            self.tokenizer_fingerprint,
-            self.chat_template_fingerprint,
-            self.quantisation,
-            self.tensor_geometry,
-            self.kv_layout,
-            self.latent_method,
-            self.runtime,
-        );
-        // Hex of a stable 64-bit FNV-1a digest: not security-relevant,
-        // just collision-resistant enough for display and fast compare.
-        let mut hash: u64 = 0xcbf29ce484222325;
-        for byte in raw.as_bytes() {
-            hash ^= u64::from(*byte);
-            hash = hash.wrapping_mul(0x100000001b3);
-        }
-        format!("occ3-mi-{:016x}", hash)
+        // Canonical JSON, not delimiter concatenation. The exact eleven named
+        // fields are shared with the controller's independently attested mapping.
+        // This digest is a summary; complete identity equality is still required.
+        let value = serde_json::to_value(self).expect("model identity serializes");
+        let canonical = pi_ai::source_capture::canonical_json_bytes(&value)
+            .expect("model identity contains only JSON strings");
+        format!("sha256:{}", pi_ai::source_capture::sha256(&canonical))
     }
 }
 
@@ -195,7 +180,10 @@ pub enum Occ3Error {
     /// The connector rejected the operation as unreachable.
     ConnectorUnreachable { connector_id: String },
     /// The connector timed out.
-    ConnectorTimeout { connector_id: String, timeout_ms: u64 },
+    ConnectorTimeout {
+        connector_id: String,
+        timeout_ms: u64,
+    },
     /// The handle expired or was evicted server-side.
     HandleExpired { handle_id: String },
     /// The handle was already consumed (duplicate delivery attempt).
@@ -204,6 +192,10 @@ pub enum Occ3Error {
     RuntimeGenerationChanged { expected: u64, current: u64 },
     /// Connector-reported capture/consume failure.
     TransferFailed { reason: String },
+    /// The connector cannot attach state to an actual native inference.
+    NativeInferenceUnsupported { connector_id: String },
+    /// A native inference may have accepted the state. Never replay as text.
+    InferenceOutcomeUncertain { message_id: String },
     /// OCC-3 disabled by configuration or policy.
     Disabled,
     /// No connector registered for the requested id.
@@ -231,6 +223,15 @@ impl std::fmt::Display for Occ3Error {
                 write!(f, "occ3: runtime generation changed")
             }
             Occ3Error::TransferFailed { reason } => write!(f, "occ3: transfer failed: {reason}"),
+            Occ3Error::NativeInferenceUnsupported { connector_id } => {
+                write!(
+                    f,
+                    "occ3: native inference attachment unsupported: {connector_id}"
+                )
+            }
+            Occ3Error::InferenceOutcomeUncertain { message_id } => {
+                write!(f, "occ3: inference outcome uncertain: {message_id}")
+            }
             Occ3Error::Disabled => write!(f, "occ3: disabled"),
             Occ3Error::UnknownConnector { connector_id } => {
                 write!(f, "occ3: unknown connector: {connector_id}")
@@ -279,4 +280,47 @@ pub struct Occ3TransferMetrics {
     pub state_bytes: u64,
     /// Total lifetime of the handle until release/expiry, milliseconds.
     pub state_lifetime_ms: u64,
+}
+
+#[cfg(test)]
+mod identity_digest_tests {
+    use super::*;
+    #[test]
+    fn identity_digest_matches_python_canonical_ascii_fixture_and_not_old_fnv() {
+        let names = [
+            "model_id",
+            "architecture",
+            "checkpoint_revision",
+            "weight_fingerprint",
+            "tokenizer_fingerprint",
+            "chat_template_fingerprint",
+            "quantisation",
+            "tensor_geometry",
+            "kv_layout",
+            "latent_method",
+            "runtime",
+        ];
+        let value: serde_json::Map<String, serde_json::Value> = names
+            .into_iter()
+            .map(|key| (key.into(), serde_json::json!(format!("{key}|é🌍"))))
+            .collect();
+        let identity: Occ3ModelIdentity = serde_json::from_value(value.into()).unwrap();
+        assert_eq!(
+            identity.fingerprint(),
+            "sha256:07fea040f5765b0d7e13d7783b34a970d5ff806977b64c2dc4a2424964429659"
+        );
+        let mut left = identity.clone();
+        left.model_id = "a|b".into();
+        left.architecture = "c".into();
+        let mut right = identity.clone();
+        right.model_id = "a".into();
+        right.architecture = "b|c".into();
+        assert_ne!(left.fingerprint(), right.fingerprint());
+        for name in names {
+            let mut changed = serde_json::to_value(&identity).unwrap();
+            changed[name] = serde_json::json!("changed");
+            let changed: Occ3ModelIdentity = serde_json::from_value(changed).unwrap();
+            assert_ne!(identity.fingerprint(), changed.fingerprint());
+        }
+    }
 }
