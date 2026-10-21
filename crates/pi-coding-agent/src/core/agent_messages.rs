@@ -2075,6 +2075,20 @@ pub trait AgentSessionMessageController: Send + Sync {
         let _ = (target, message);
         Box::pin(async { Occ2SendPolicy::disabled() })
     }
+
+    /// OCC-3 send policy for one target: the async arm that owns
+    /// connector I/O. Implementors capture the latent state BEFORE the
+    /// send (this is the only async step) and return the handle for
+    /// the pure envelope seam. The default is the disabled policy:
+    /// OCC-3 requires an explicit opt-in plus a live connector.
+    fn occ3_send_policy(
+        &self,
+        target: &str,
+        message: &str,
+    ) -> pi_ai::types::BoxFuture<Occ3SendPolicy> {
+        let _ = (target, message);
+        Box::pin(async { Occ3SendPolicy::disabled() })
+    }
 }
 
 /// `createAgentMessageHostHandlers(controller)`.
@@ -2151,6 +2165,9 @@ async fn handle_agent_message_send(
             // its own negotiated dialect (design R6); no receipt change.
             let policy = controller.occ2_send_policy(&entry.id, &message).await;
             let message = wrap_outgoing_body(&message, &policy);
+            // OCC-3 seam, broadcast arm: latent capture per recipient.
+            let occ3 = controller.occ3_send_policy(&entry.id, &message).await;
+            let message = wrap_outgoing_body_occ3(&message, &occ3);
             let input = AgentSessionMessageSendInput {
                 target: entry.id.clone(),
                 message,
@@ -2242,6 +2259,12 @@ async fn handle_agent_message_send(
     // otherwise the send is byte-identical OCC-0/OCC-1.
     let policy = controller.occ2_send_policy(&target, &message).await;
     let message = wrap_outgoing_body(&message, &policy);
+    // OCC-3 seam: the async capture already happened inside
+    // `occ3_send_policy`; this wrap is the pure envelope encode. Any
+    // failure upstream left the policy disabled, so the message still
+    // goes out as OCC-1/OCC-2 (rule R1: never lost, never truncated).
+    let occ3 = controller.occ3_send_policy(&target, &message).await;
+    let message = wrap_outgoing_body_occ3(&message, &occ3);
     let receipt = controller
         .send_agent_message(AgentSessionMessageSendInput {
             target,
@@ -2536,10 +2559,192 @@ pub fn occ2_send_policy_for_send(
     occ2_send_policy_from_selection(&context, experimental).policy
 }
 
+/// Build the OCC-3 send policy for one message (the capture side of
+/// the seam; see `Occ3SendPolicy`).
+///
+/// Inputs are resolved by the caller (session settings, the sender
+/// model's `occ3` configuration, the live connector registry) so this
+/// function stays offline-testable. A `None` model block, a disabled
+/// or not-yet-live-verified configuration, a missing connector or any
+/// capture failure all return the disabled policy: the message goes
+/// out as OCC-1/OCC-2 exactly as before (rule R1: never lost).
+///
+/// `capture` is the connector call: it exists so tests can substitute
+/// the mock connector while production passes the registry-backed
+/// closure.
+pub async fn occ3_send_policy_for_send<F, Fut>(
+    speaker_session_file: Option<&str>,
+    model_occ3: Option<&pi_ai::types::Occ3Capability>,
+    listener: &str,
+    message: &str,
+    capture: F,
+) -> Occ3SendPolicy
+where
+    F: FnOnce(crate::core::occ::occ3::connector::CaptureRequest) -> Fut,
+    Fut: std::future::Future<
+        Output = Result<
+            crate::core::occ::occ3::types::Occ3HandleRef,
+            crate::core::occ::occ3::types::Occ3Error,
+        >,
+    >,
+{
+    use crate::core::occ::occ3::connector::CaptureRequest;
+    use crate::core::occ::occ3::types::Occ3Method;
+
+    let Some(config) = model_occ3 else {
+        return Occ3SendPolicy::disabled();
+    };
+    if !config.enabled {
+        return Occ3SendPolicy::disabled();
+    }
+    // Activation requires live verification (models.json schema).
+    if config.validation != pi_ai::types::Occ3Validation::LiveVerified {
+        return Occ3SendPolicy::disabled();
+    }
+    // Session opt-in (occ.json occ3Enabled, inherited down the tree).
+    let session_ok = speaker_session_file
+        .and_then(|file| crate::core::occ::session_settings::resolve(file).ok())
+        .is_some_and(|resolution| resolution.occ3_enabled);
+    if !session_ok {
+        return Occ3SendPolicy::disabled();
+    }
+    let request = CaptureRequest {
+        message_id: format!("pending-{}", message.len()),
+        sender_session_id: String::new(),
+        receiver_session_id: listener.to_string(),
+        method: Occ3Method::KvHandoff,
+        capture_context: message.to_string(),
+        ttl: std::time::Duration::from_secs(crate::core::occ::occ3::types::DEFAULT_CAPTURE_TTL_SECONDS),
+    };
+    match capture(request).await {
+        Ok(handle) => Occ3SendPolicy {
+            enabled: true,
+            handle: Some(handle),
+            connector_id: config.connector.clone(),
+            runtime_id: config.endpoint.clone(),
+            method: Occ3Method::KvHandoff,
+            receiver_session_id: listener.to_string(),
+            max_message_chars: DEFAULT_AGENT_MESSAGE_MAX_CHARS,
+        },
+        // Every failure is a fallback, never a dropped message.
+        Err(_) => Occ3SendPolicy::disabled(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[tokio::test]
+    async fn occ3_policy_disabled_without_model_block_or_optin() {
+        // No model block: disabled.
+        let policy = occ3_send_policy_for_send(Some("session-file"), None, "listener", "msg", |_| async { unreachable!() }).await;
+        assert!(!policy.enabled);
+        // Model block not live-verified: disabled.
+        let config = pi_ai::types::Occ3Capability {
+            protocol: "occ3-v1".into(),
+            connector: "sglang".into(),
+            endpoint: "http://localhost:30001".into(),
+            api_version: "v1".into(),
+            same_model_only: true,
+            enabled: true,
+            validation: pi_ai::types::Occ3Validation::Unverified,
+            fallback: vec![],
+        };
+        let policy = occ3_send_policy_for_send(Some("session-file"), Some(&config), "listener", "msg", |_| async { unreachable!() }).await;
+        assert!(!policy.enabled);
+    }
+
+    #[tokio::test]
+    async fn occ3_policy_enables_after_live_capture() {
+        let config = pi_ai::types::Occ3Capability {
+            protocol: "occ3-v1".into(),
+            connector: "sglang".into(),
+            endpoint: "http://localhost:30001".into(),
+            api_version: "v1".into(),
+            same_model_only: true,
+            enabled: true,
+            validation: pi_ai::types::Occ3Validation::LiveVerified,
+            fallback: vec![],
+        };
+        // With a temp session file that has occ3 enabled.
+        let dir = std::env::temp_dir().join(format!("occ3-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let session_file = dir.join("test-session.jsonl");
+        std::fs::write(&session_file, b"{}").unwrap();
+        crate::core::occ::session_settings::save_occ3(session_file.to_str().unwrap(), true, true).unwrap();
+
+        let handle = crate::core::occ::occ3::types::Occ3HandleRef {
+            handle_id: "chan-1".into(),
+            connector_id: "sglang".into(),
+            model_fingerprint: "fp".into(),
+            runtime_generation: 1,
+            expires_at_epoch: 0,
+            state_size_bytes: 64,
+        };
+        let expected = handle.clone();
+        let policy = occ3_send_policy_for_send(
+            session_file.to_str(),
+            Some(&config),
+            "listener-1",
+            "carry me",
+            |request| async move {
+                assert_eq!(request.capture_context, "carry me");
+                assert_eq!(request.receiver_session_id, "listener-1");
+                Ok(handle)
+            },
+        )
+        .await;
+        assert!(policy.enabled);
+        assert_eq!(policy.handle.as_ref(), Some(&expected));
+        assert_eq!(policy.connector_id, "sglang");
+
+        // The wrap produces an OCC/3 envelope wire body.
+        let wire = wrap_outgoing_body_occ3("base body", &policy);
+        assert!(wire.starts_with(crate::core::occ::occ3::codec::OCC3_HEADER));
+        assert!(wire.chars().count() <= policy.max_message_chars);
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[tokio::test]
+    async fn occ3_policy_falls_back_on_capture_failure() {
+        let config = pi_ai::types::Occ3Capability {
+            protocol: "occ3-v1".into(),
+            connector: "sglang".into(),
+            endpoint: "http://localhost:30001".into(),
+            api_version: "v1".into(),
+            same_model_only: true,
+            enabled: true,
+            validation: pi_ai::types::Occ3Validation::LiveVerified,
+            fallback: vec![],
+        };
+        let dir = std::env::temp_dir().join(format!("occ3-test-fail-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        // Unique session identity per test: the preference store keys
+        // artifacts off the session file, so same-named files collide.
+        let session_file = dir.join("fail-session.jsonl");
+        std::fs::write(&session_file, b"{}").unwrap();
+        crate::core::occ::session_settings::save_occ3(session_file.to_str().unwrap(), true, true).unwrap();
+
+        let policy = occ3_send_policy_for_send(
+            session_file.to_str(),
+            Some(&config),
+            "listener",
+            "msg",
+            |_request| async {
+                Err(crate::core::occ::occ3::types::Occ3Error::ConnectorUnreachable {
+                    connector_id: "sglang".into(),
+                })
+            },
+        )
+        .await;
+        assert!(!policy.enabled); // capture failure -> OCC-1/2 fallback
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
 
     fn endpoint(name: Option<&str>, active: &str, session: &str) -> AgentSessionMessageEndpoint {
         AgentSessionMessageEndpoint {

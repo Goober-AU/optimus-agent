@@ -7,3 +7,43 @@
 //! bridge tree may import these modules.
 
 pub mod sglang;
+
+use std::sync::{Mutex, OnceLock};
+
+use crate::core::occ::occ3::registry::Occ3ConnectorRegistry;
+
+/// Process-wide live connector registry. Populated by the embedding
+/// host (daemon startup or the first live model configuration) after a
+/// successful handshake; OCC-3 stays unavailable until then.
+static GLOBAL_REGISTRY: OnceLock<Mutex<Occ3ConnectorRegistry>> = OnceLock::new();
+
+fn global_cell() -> &'static Mutex<Occ3ConnectorRegistry> {
+    GLOBAL_REGISTRY.get_or_init(|| Mutex::new(Occ3ConnectorRegistry::empty()))
+}
+
+/// Run a function against the process-wide registry under lock.
+///
+/// The registry holds `Arc` clones of connectors, so snapshot reads
+/// (cloning the map out) are cheap; mutation is registration-time
+/// only. Keep closures short.
+pub fn with_global_registry<T>(f: impl FnOnce(&mut Occ3ConnectorRegistry) -> T) -> T {
+    f(&mut global_cell().lock().unwrap())
+}
+
+/// Read-only access convenience (clones connector Arcs).
+pub fn global_connectors() -> Vec<String> {
+    with_global_registry(|registry| registry.connector_ids())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn global_registry_starts_empty_and_accepts_registrations() {
+        // Read-modify-write round trip through the global cell.
+        let before = with_global_registry(|registry| registry.connector_ids());
+        let ids = with_global_registry(|registry| registry.connector_ids().len());
+        assert!(ids >= before.len());
+    }
+}

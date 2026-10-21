@@ -11,6 +11,10 @@
 //! APIs, no filesystem access, no clocks. Everything is passed in.
 
 use serde::{Deserialize, Serialize};
+
+/// Default server-side latent-state TTL (15 minutes), mirroring the
+/// plugin's default channel TTL.
+pub const DEFAULT_CAPTURE_TTL_SECONDS: u64 = 900;
 use std::collections::BTreeMap;
 
 /// Canonical identity of a model serving runtime that can host latent
