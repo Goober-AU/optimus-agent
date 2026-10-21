@@ -785,6 +785,84 @@ pub fn wrap_outgoing_body(body: &str, policy: &Occ2SendPolicy) -> String {
     dual
 }
 
+/// Send policy for the OCC-3 latent seam. Mirrors [`Occ2SendPolicy`]:
+/// `enabled: false` (the default) is the identity. When enabled and a
+/// captured handle is present, the body is replaced by the OCC-3
+/// envelope whose control summary is the (already OCC-encoded) body.
+///
+/// Capture happens BEFORE this seam (the daemon send handler is async
+/// and owns connector I/O); this seam stays pure: it only encodes.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Occ3SendPolicy {
+    /// Feature flag (session `occ3Enabled`), default OFF.
+    pub enabled: bool,
+    /// A handle captured for this specific message, plus the negotiated
+    /// connector/runtime identity. `None` keeps the prior encoding.
+    pub handle: Option<crate::core::occ::occ3::types::Occ3HandleRef>,
+    /// Connector id for the envelope.
+    pub connector_id: String,
+    /// Runtime identity string for the envelope.
+    pub runtime_id: String,
+    /// Negotiated latent method.
+    pub method: crate::core::occ::occ3::types::Occ3Method,
+    /// Receiver session id (bound into the envelope).
+    pub receiver_session_id: String,
+    /// Transport bound (R1: never truncate; refuse instead).
+    pub max_message_chars: usize,
+}
+
+impl Occ3SendPolicy {
+    /// Conservative default: no latent substitution, byte-identical.
+    pub fn disabled() -> Self {
+        Self {
+            enabled: false,
+            handle: None,
+            connector_id: String::new(),
+            runtime_id: String::new(),
+            method: crate::core::occ::occ3::types::Occ3Method::KvHandoff,
+            receiver_session_id: String::new(),
+            max_message_chars: DEFAULT_AGENT_MESSAGE_MAX_CHARS,
+        }
+    }
+}
+
+/// Apply the OCC-3 seam AFTER the OCC-2 seam: an eligible latent message
+/// wraps the OCC-1/OCC-2-encoded control summary inside the envelope.
+/// Any error, missing handle or budget breach returns the body
+/// unchanged (R1) so the message still delivers.
+pub fn wrap_outgoing_body_occ3(body: &str, policy: &Occ3SendPolicy) -> String {
+    if !policy.enabled {
+        return body.to_string();
+    }
+    let Some(handle) = &policy.handle else {
+        return body.to_string();
+    };
+    let envelope = crate::core::occ::occ3::codec::build_envelope(
+        // The message id is stamped by the transport; the envelope uses
+        // the handle's capture context linkage instead.
+        format!("pending-{}", handle.handle_id),
+        "sender".to_string(),
+        policy.receiver_session_id.clone(),
+        handle.model_fingerprint.clone(),
+        policy.runtime_id.clone(),
+        policy.connector_id.clone(),
+        policy.method,
+        handle.clone(),
+        body.to_string(),
+        "occ1".to_string(),
+    );
+    let Ok(envelope) = envelope else {
+        return body.to_string();
+    };
+    let Ok(wire) = crate::core::occ::occ3::codec::encode_envelope(&envelope) else {
+        return body.to_string();
+    };
+    if wire.chars().count() > policy.max_message_chars {
+        return body.to_string();
+    }
+    wire
+}
+
 /// Splits a dual OCC-2 payload at the fallback sentinel, mirroring the
 /// codec's private splitter: (symbolic section, OCC-1 section). Returns
 /// `None` when the body carries no sentinel line.
@@ -3136,7 +3214,7 @@ mod tests {
         // No reported capability: OCC-1.
         assert_eq!(select_occ2_dialect(&local, None, &registry, true), None);
         // A peer that speaks OCC-1 only: OCC-1.
-        let occ1_only = OccCapability { occ1: true, dialects: BTreeMap::new() };
+        let occ1_only = OccCapability { occ1: true, dialects: BTreeMap::new(), occ3: None};
         assert_eq!(select_occ2_dialect(&local, Some(&occ1_only), &registry, true), None);
         // Unevaluated cards are refused without the dev override.
         assert_eq!(select_occ2_dialect(&local, Some(&local), &registry, false), None);

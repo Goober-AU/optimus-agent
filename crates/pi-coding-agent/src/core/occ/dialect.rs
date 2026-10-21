@@ -680,6 +680,10 @@ pub struct OccCapability {
     pub occ1: bool,
     /// Dialect id to the set of versions understood.
     pub dialects: BTreeMap<String, BTreeSet<u32>>,
+    /// OCC-3 latent capability. Absent in older peers: they fall back to
+    /// OCC-1/OCC-2. See `core::occ::occ3::negotiation` for the ladder.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub occ3: Option<crate::core::occ::occ3::Occ3CapabilityAdvertisement>,
 }
 
 impl OccCapability {
@@ -692,6 +696,7 @@ impl OccCapability {
                 DEFAULT_DIALECT_ID.to_string(),
                 BTreeSet::from([DEFAULT_DIALECT_VERSION]),
             )]),
+            occ3: None,
         }
     }
 
@@ -1084,7 +1089,8 @@ mod tests {
         let plain = OccCapability {
             occ1: true,
             dialects: BTreeMap::new(),
-        };
+            occ3: None,
+};
         assert_eq!(here.negotiate(&plain), None);
         assert_eq!(plain.negotiate(&here), None);
         assert_eq!(
@@ -1099,7 +1105,8 @@ mod tests {
                 ("alpha".to_string(), BTreeSet::from([1u32, 2])),
                 ("beta".to_string(), BTreeSet::from([1u32, 5])),
             ]),
-        };
+            occ3: None,
+};
         assert_eq!(peer.negotiate(&peer), Some(("beta".to_string(), 5)));
 
         let tie = OccCapability {
@@ -1108,14 +1115,16 @@ mod tests {
                 ("beta".to_string(), BTreeSet::from([1u32])),
                 ("alpha".to_string(), BTreeSet::from([1u32])),
             ]),
-        };
+            occ3: None,
+};
         assert_eq!(tie.negotiate(&tie), Some(("alpha".to_string(), 1)));
 
         // Partial overlap: only the shared id negotiates.
         let a = OccCapability {
             occ1: true,
             dialects: BTreeMap::from([("a-only".to_string(), BTreeSet::from([7u32]))]),
-        };
+            occ3: None,
+};
         assert_eq!(a.negotiate(&peer), None);
         assert_eq!(peer.negotiate(&a), None);
     }

@@ -20,6 +20,7 @@ fn sym_v1_registry() -> DialectRegistry {
 
 fn local() -> OccCapability {
     OccCapability::here()
+    occ3: None,
 }
 
 /// Owns speaker and listener so `SelectionContext` borrows outlive the
@@ -59,6 +60,7 @@ fn occ1_only_peer() -> OccCapability {
         occ1: true,
         dialects: BTreeMap::new(),
     }
+    occ3: None,
 }
 
 fn evaluated_sym_v1(samples: usize, ratio: f64) -> BTreeMap<(String, u32), DialectEvaluationRecord> {
@@ -234,7 +236,8 @@ fn selection_works_over_the_promoted_card_too() {
             PROMOTED_DIALECT_ID.to_string(),
             std::collections::BTreeSet::from([1]),
         )]),
-    };
+        occ3: None,
+};
     let mut local = local();
     local
         .dialects
