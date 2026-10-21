@@ -14,6 +14,8 @@
 
 #[path = "daemon_server.rs"]
 mod native_server;
+#[path = "occ3_native.rs"]
+pub mod occ3_native;
 
 #[path = "daemon_subagents.rs"]
 mod daemon_subagents;
@@ -16765,6 +16767,52 @@ impl DaemonAgentMessageController {
 }
 
 impl AgentSessionMessageController for DaemonAgentMessageController {
+    fn authorize_native_handoff(&self, relationship: String, selector: String)
+        -> pi_ai::types::BoxFuture<Result<crate::core::agent_messages::AuthorizedNativeHandoff,String>> {
+        let daemon=self.daemon.clone(); let current=self.require_current_state();
+        Box::pin(async move {
+            let current=current?;
+            if daemon.agent_messages_paused.load(Ordering::SeqCst) {return Err("Agent messaging is paused".into());}
+            let sender=daemon.session_of(&current).agent_session().ok_or("Native source session unavailable")?;
+            if sender.experimental_native_occ3().is_none() {return Err("Native source permit not installed".into());}
+            // No remote/hydration public wire extension: experimental state is
+            // process-local and both existing live sessions must already exist.
+            let target=daemon.get_bound_session_state(&selector)?;
+            let receiver=daemon.session_of(&target).agent_session().ok_or("Native receiver session unavailable")?;
+            if receiver.experimental_native_occ3().is_none() {return Err("Native receiver permit not installed".into());}
+            crate::core::agent_messages::AuthorizedNativeHandoff::from_catalog(
+                &daemon.agent_family_entry(&current),&daemon.agent_family_entry(&target),
+                daemon.create_agent_session_message_endpoint(&current),daemon.create_agent_session_message_endpoint(&target),&relationship)
+        })
+    }
+    fn send_prepared_native_handoff(&self, prepared: crate::core::agent_messages::PreparedNativeHandoff)
+        -> pi_ai::types::BoxFuture<Result<AgentSessionMessageReceipt,String>> {
+        let daemon=self.daemon.clone(); let current=self.require_current_state();
+        Box::pin(async move {
+            let current=current?;
+            if daemon.agent_messages_paused.load(Ordering::SeqCst) {return Err("Agent messaging is paused".into());}
+            let target=daemon.get_bound_session_state(&prepared.authorization().target().active_session_id)?;
+            daemon.assert_agent_family_reachable(&current,&target)?;
+            if daemon.session_of(&current).session_id()!=prepared.authorization().source_session_id()
+                || daemon.session_of(&target).session_id()!=prepared.authorization().target_session_id()
+            {return Err("Native handoff session changed".into());}
+            let receiver=daemon.session_of(&target).agent_session().and_then(|s|s.experimental_native_occ3())
+                .ok_or("Native receiver permit not installed")?;
+            let from_active=daemon.create_agent_session_message_endpoint(&current).active_session_id;
+            let key=format!("{}->{}",from_active,prepared.authorization().target().active_session_id);
+            match daemon.agent_message_rate_limiter.lock().map_err(|_|"Agent rate limiter unavailable")?.try_consume(&key) {
+                RateLimitResult::Ok=>{}, RateLimitResult::Exceeds{..}=>return Err("Native handoff rate limit reached".into()),
+            }
+            let admitted=receiver.admit(&prepared)?;
+            let payload=prepared.control_payload();
+            if !admitted { return Err("Native handoff duplicate; receiver not replayed".into()); }
+            // The existing normal admission/pump path receives control only.
+            // Its custom details carry the stable ID, never the state handle.
+            let status=daemon.accept_agent_session_message(&target,&payload).await?;
+            Ok(create_agent_session_message_receipt(&payload,&status,&now_iso()))
+        })
+    }
+
     fn list_agents(&self) -> pi_ai::types::BoxFuture<Result<Option<AgentSessionMessageListResult>, String>> {
         let daemon = self.daemon.clone();
         let current = self.require_current_state();

@@ -202,6 +202,13 @@ impl AgentHandle for Arc<Agent> {
             .unwrap_or_else(|error| error.into_inner()) = Some(hook);
     }
 
+    fn set_native_state_hooks(&self, receiver: pi_agent_core::types::ResolveInferenceState,
+        source: pi_agent_core::types::SourceCaptureHooks) -> bool {
+        self.set_resolve_inference_state(Some(receiver));
+        self.set_source_capture_hooks(Some(source));
+        true
+    }
+
     fn set_before_request(&self, hook: BeforeRequestHook) {
         *self
             .before_request

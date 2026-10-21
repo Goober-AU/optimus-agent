@@ -907,6 +907,7 @@ impl AgentSession {
                             None
                         },
                         on_late_sent_agent_message: on_late_sent_agent_message.clone(),
+                        provenance_handlers: self.agent_message_provenance_handlers(),
                         ..Default::default()
                     }),
                     crate::core::tools::ipython::default_kernel_client_factory(),
@@ -915,6 +916,7 @@ impl AgentSession {
                 let options = crate::core::tools::ToolsOptions { ipython: Some(crate::core::tools::IpythonToolOptions {
                     env: Some(self.rlm_kernel_env().into_iter().collect()),
                     host_handlers: Some(self.create_kernel_host_handlers()), session_id: Some(self.session_id()),
+                    provenance_handlers: self.agent_message_provenance_handlers(),
                     command_prefix,
                     shell_path,
                     snapshot_dir,
@@ -1065,6 +1067,28 @@ impl AgentSession {
         }
         // Subsequent builds are in-process rebuilds (/reload), not a fresh resume.
         self.ipython_runtime_built.store(true, Ordering::SeqCst);
+    }
+
+    /// Typed provenance handlers for the kernel bridge. Mirrors the legacy
+    /// agent_message gating (controller present AND skill model-visible);
+    /// gates only `agent_message.send`. No execution scope is constructed.
+    pub(super) fn agent_message_provenance_handlers(
+        self: &Arc<Self>,
+    ) -> Option<crate::core::kernel::shared::ProvenanceHostRequestHandlers> {
+        let visible = self
+            .model_visible_skills()
+            .iter()
+            .any(|skill| match skill {
+                crate::core::skills::Skill::Markdown(value) => !value.base.disable_model_invocation,
+                crate::core::skills::Skill::Python(value) => !value.base.disable_model_invocation,
+            } && skill.name() == crate::core::agent_messages::AGENT_MESSAGE_SKILL_NAME);
+        if self.agent_message_controller.is_some() && visible {
+            Some(crate::core::agent_messages::create_agent_message_provenance_host_handlers(
+                Arc::new(subagent_runs::SessionMessageController(Arc::downgrade(self))),
+            ))
+        } else {
+            None
+        }
     }
 
     pub(super) fn create_kernel_host_handlers(self: &Arc<Self>) -> HostRequestHandlers {

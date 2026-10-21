@@ -23,6 +23,8 @@
 
 #[path = "agent_session/agent_handle.rs"]
 mod agent_handle;
+#[path = "agent_session/occ3_state.rs"]
+pub mod occ3_state;
 mod execution_mode;
 #[path = "agent_session/git_state.rs"]
 mod git_state;
@@ -336,6 +338,10 @@ fn is_harness_digest_custom(message: &AgentMessage) -> bool {
 }
 
 pub trait AgentHandle: Send + Sync {
+    /// Process-local experimental callbacks. Older/test handles refuse installation.
+    fn set_native_state_hooks(&self, _receiver: pi_agent_core::types::ResolveInferenceState,
+        _source: pi_agent_core::types::SourceCaptureHooks) -> bool { false }
+
     /// Snapshot the live callbacks copied by TypeScript's standalone side agent.
     fn side_question_options(&self) -> Option<pi_agent_core::agent::AgentOptions> {
         None
@@ -2637,6 +2643,7 @@ mod transport_retry_tests;
 /// lives behind `Mutex` because Rust callbacks can fire from other tasks.
 pub struct AgentSession {
     pub agent: Arc<dyn AgentHandle>,
+    native_occ3: Mutex<Option<Arc<occ3_state::Occ3NativeSession>>>,
     pub session_manager: Arc<Mutex<SessionManager>>,
     pub settings_manager: Arc<Mutex<crate::core::settings_manager::SettingsManager>>,
 
@@ -3041,6 +3048,7 @@ impl AgentSession {
 
         let session = Arc::new(AgentSession {
             agent: config.agent.clone(),
+            native_occ3: Mutex::new(None),
             session_manager: config.session_manager.clone(),
             settings_manager: config.settings_manager.clone(),
             service_tier_preference: Mutex::new(service_tier_preference),
@@ -3309,6 +3317,27 @@ impl AgentSession {
     /// the session to spawned work call this.
     fn session_arc(&self) -> Option<Arc<AgentSession>> {
         self.session_self.get().and_then(|weak| weak.upgrade())
+    }
+
+
+    /// Explicit isolated controller installation only. Does not set persistent
+    /// OCC3 preferences or change model/provider configuration.
+    pub fn install_experimental_native_occ3(
+        &self, state: Arc<occ3_state::Occ3NativeSession>,
+        controller: Arc<dyn crate::core::agent_messages::AgentSessionMessageController>,
+    ) -> Result<(),String> {
+        if self.is_streaming() || state.session_id()!=self.session_id() { return Err("Native session binding rejected".into()); }
+        let mut installed=self.native_occ3.lock().map_err(|_|"Native session state unavailable")?;
+        if installed.is_some() {return Err("Native state already installed".into());}
+        let mut tools=self.agent.state().tools.unwrap_or_default();
+        if tools.iter().any(|t|t.name==occ3_state::NATIVE_HANDOFF_TOOL) {return Err("Native tool name conflict".into());}
+        if !self.agent.set_native_state_hooks(state.receiver_resolver(),state.source_hooks()) {return Err("Native callbacks unsupported".into());}
+        tools.push(state.handoff_tool(controller));
+        self.agent.update_state(Box::new(move |live|live.tools=Some(tools)));
+        *installed=Some(state); Ok(())
+    }
+    pub fn experimental_native_occ3(&self) -> Option<Arc<occ3_state::Occ3NativeSession>> {
+        self.native_occ3.lock().ok().and_then(|s|s.clone())
     }
 
     /// Refreshes MCP provider registrations without rebuilding the session runtime.
@@ -8320,6 +8349,7 @@ impl AgentSession {
     /// wrapper above is what gives the recursive child disposal a finite,
     /// `Send` future type.
     async fn dispose_async_once_body(self: &Arc<Self>, kernel_snapshot: bool) {
+        if let Some(state)=self.experimental_native_occ3() { let _=state.close().await; }
         // Flush kernels/traces for both still-running and retained children; the sync
         // dispose() below only tears them down synchronously.
         let runs: Vec<Arc<Mutex<RlmChildRun>>> = self
@@ -8397,6 +8427,7 @@ impl AgentSession {
 
     /// `dispose()`.
     pub fn dispose(self: &Arc<Self>) {
+        if let Some(state)=self.experimental_native_occ3() { state.invalidate(); }
         if self.disposed.swap(true, Ordering::SeqCst) {
             return;
         }
@@ -12472,6 +12503,7 @@ impl AgentSession {
 
     /// `clearQueue()`.
     pub fn clear_queue(&self) -> ClearedQueue {
+        if let Some(state)=self.experimental_native_occ3() { state.invalidate(); }
         let clearable: Vec<QueuedSessionAction> = self
             .action_store
             .lock()
@@ -12547,6 +12579,7 @@ impl AgentSession {
 
     /// `clearQueuedAgentMessages()`.
     pub fn clear_queued_agent_messages(&self) -> ClearedQueue {
+        if let Some(state)=self.experimental_native_occ3() { state.invalidate(); }
         self.agent_message_clear_epoch
             .fetch_add(1, Ordering::SeqCst);
         self.clear_queued_user_messages_matching(&|text: &str| {
@@ -13289,6 +13322,7 @@ impl AgentSession {
     }
 
     fn request_abort_inner(self: &Arc<Self>, explicit: bool) {
+        if let Some(state)=self.experimental_native_occ3() { state.invalidate(); }
         let stop_admission = explicit.then(|| self.explicit_stop_admission.lock().unwrap());
         if explicit {
             self.begin_explicit_stop();
@@ -13379,6 +13413,7 @@ impl AgentSession {
             .as_ref()
             .map(|operation| operation.operation.clone());
         self.request_abort_inner(explicit);
+        if let Some(state)=self.experimental_native_occ3() { let _=state.close().await; }
         // TS 7665-7666.
         self.cancel_active_rlm_child_runs("Parent session aborted");
         self.goal_abort_in_progress.store(
@@ -13518,6 +13553,7 @@ impl AgentSession {
         model: Model,
         options: ModelSelectOptions,
     ) -> Result<(), String> {
+        if let Some(state)=self.experimental_native_occ3() { state.close().await?; }
         let previous = self.agent.state().model;
         let thinking_level = self.get_thinking_level_for_model_switch(None);
         let service_tier = self.get_service_tier_for_model_switch();
