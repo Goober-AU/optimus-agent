@@ -61,7 +61,8 @@ class Fixture:
         self.plugin_sources = {"__init__.py": b"raise RuntimeError('plugin must never be imported')\n",
                                "native_profile.py": b"import torch\r\nVALUE = 1\r\n",
                                "native_install.py": b"import torch\nVALUE = 3\n",
-                               "plugin.py": b"import sglang\nVALUE = 2\n"}
+                               "plugin.py": b"import sglang\nVALUE = 2\n",
+                               "startup_state.py": b"VALUE = 4\n"}
         for path, raw in self.plugin_sources.items():
             (self.plugin / path).write_bytes(raw)
         self.staged = root / "native-build-inputs"
@@ -182,7 +183,7 @@ def test_offline_build_receipt_reports_staged_inputs_tools_and_install(fixture, 
         assert receipt["input_receipt"][name] == {"sha256": digest(raw), "bytes": len(raw)}
     assert receipt["staged"] == {"sglang_srt_root": str(fixture.sg),
                                  "occ3_sglang_root": str(fixture.plugin),
-                                 "plugin_source_files": 4, "sg_source_files": 4,
+                                 "plugin_source_files": 5, "sg_source_files": 4,
                                  "patched_source_files": 3}
     assert receipt["install"] == {"flags": list(nib.PIP_INSTALL_FLAGS), "offline": True,
                                  "index": False, "build_isolation": False,
@@ -575,7 +576,7 @@ def test_real_isolated_verify_proves_the_installed_tree(tmp_path):
     spec = nib.compose_verification_spec(plan, fixture.sg)
     receipt = nib.run_isolated_verify(venv_interpreter(venv), spec)
     assert receipt["ok"] is True and receipt["mode"] == "isolated-interpreter"
-    assert receipt["installed_package_files"] == len(spec["package_files"]) == 7
+    assert receipt["installed_package_files"] == len(spec["package_files"]) == 8
     assert receipt["installed_sglang_files"] == 4
     assert receipt["sglang_version"] == package.SOURCE_VERSION
     assert receipt["entry_point"] == "occ3_bridge=occ3_sglang.plugin:load"
@@ -740,7 +741,7 @@ def test_isolated_verify_ignores_cwd_and_pythonpath_shadow(tmp_path):
     env = {"PYTHONPATH": str(shadow), "PATH": os.environ.get("PATH", "")}
     result, returncode = child_result(venv_interpreter(venv), spec, cwd=shadow, env=env)
     assert returncode == 0 and result["ok"] is True
-    assert result["installed_package_files"] == 7
+    assert result["installed_package_files"] == 8
 
 
 def test_shadow_only_environment_cannot_pass_verification(tmp_path):

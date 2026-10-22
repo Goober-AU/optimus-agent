@@ -10,6 +10,7 @@ from starlette.requests import Request
 from occ3_sglang.latent_control_api import BrokerAuthority, create_router
 from occ3_sglang.latent_types import LatentError, SessionEnrollment, bounded_payload
 from occ3_sglang.attachment_contract import AttachmentError
+from occ3_sglang import startup_state
 from test_latent_types import profile
 from test_latent_backend import SyntheticClient, health
 
@@ -30,6 +31,8 @@ def app_fixture(verified=True,refresh_error=None):
             authority.mark_verified(request,"server-owned",deadline_monotonic=time.monotonic()+300)
         return await call_next(request)
     app.include_router(create_router(backend,authority))
+    app.include_router(startup_state.create_control_router())
+    startup_state.record_native_ready(attempt="fixture0", installation=NS(backend=backend, authority=authority))
     return httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url="http://test"),authority,client
 
 

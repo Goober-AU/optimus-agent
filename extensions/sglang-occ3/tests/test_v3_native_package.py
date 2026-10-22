@@ -86,7 +86,8 @@ class Fixture:
         self.plugin_sources = {"__init__.py": b"raise RuntimeError('plugin must never be imported')\n",
                                "native_profile.py": b"import torch\r\nVALUE = 1\r\n",
                                "native_install.py": b"import torch\nVALUE = 3\n",
-                               "plugin.py": b"import sglang\nVALUE = 2\n"}
+                               "plugin.py": b"import sglang\nVALUE = 2\n",
+                               "startup_state.py": b"VALUE = 4\n"}
         for path, raw in self.plugin_sources.items():
             (self.plugin / path).write_bytes(raw)
         self.baseline_path, self.profile_path = root / "baseline.json", root / "profile.json"
@@ -148,8 +149,9 @@ def test_complete_canonical_artifacts_match_loader_schema_and_exact_source_bytes
     assert source_raw == package._canonical(sources)
     assert set(sources) == {"schema", "source_revision", "sglang_version", "manifests", "files"}
     assert sources["schema"] == "optimus.occ3.native-sources.v1"
-    assert len(sources["files"]) == 8
+    assert len(sources["files"]) == 9
     assert any(entry["root"] == "occ3_sglang" and entry["path"] == "native_install.py" for entry in sources["files"])
+    assert any(entry["root"] == "occ3_sglang" and entry["path"] == "startup_state.py" for entry in sources["files"])
     for entry in sources["files"]:
         assert set(entry) == {"root", "path", "sha256"}
         root = fixture.sg if entry["root"] == "sglang_srt" else fixture.plugin

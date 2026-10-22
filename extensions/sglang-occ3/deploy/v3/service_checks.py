@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -128,6 +129,46 @@ def check_health(base_url, key, timeout=5, *, requester=None) -> dict:
 
 
 OCC3_IDENTITY_PATH = "/occ3/v1/native/runtime/identity"
+OCC3_STATUS_PATH = "/occ3/v1/status"
+OCC3_STATUS_SCHEMA = "optimus.occ3.status.v1"
+OCC3_DECLINE_STATE = "DECLINED"
+_OCC3_DECLINE_CODE = re.compile(r"[a-z0-9_]{1,64}")
+_OCC3_DECLINE_STAGE = ("prepare", "install")
+_OCC3_PROGRESS_FIELDS = ("experimental_selected", "preflight_reached", "backend_constructed",
+                         "worker_readiness_reached", "hooks_prepared", "route_mount_attempted",
+                         "rollback_completed")
+
+
+def _occ3_decline_details(body):
+    """Fixed-vocabulary decline facts only; no free-form body text enters evidence."""
+    details = {"declined_code": None, "stage": None}
+    code = body.get("code")
+    if isinstance(code, str) and _OCC3_DECLINE_CODE.fullmatch(code):
+        details["declined_code"] = code
+    if body.get("stage") in _OCC3_DECLINE_STAGE:
+        details["stage"] = body.get("stage")
+    for name in _OCC3_PROGRESS_FIELDS:
+        details[name] = body.get(name) is True
+    return details
+
+
+def _occ3_identity_without_native_tuple(requester, base_url, key, timeout, result):
+    """Ask the control plane why the identity route is not native-ready.
+
+    A DECLINED server is terminal for its lifetime, so its fixed decline code
+    fails the gate immediately instead of waiting out a proof deadline. Every
+    other status answer keeps the generic unavailable evidence.
+    """
+    status = _call(requester, "GET", base_url, OCC3_STATUS_PATH, key, None, timeout)
+    body = status.body if status.status == 200 and not status.error_code else None
+    if (isinstance(body, dict) and body.get("schema") == OCC3_STATUS_SCHEMA
+            and body.get("state") == OCC3_DECLINE_STATE):
+        return _evidence("occ3_identity", result, "occ3_declined",
+                         **_occ3_decline_details(body))
+    if status.status == 404:
+        # The control-plane router itself never registered on this app.
+        return _evidence("occ3_identity", result, "occ3_routes_absent")
+    return _evidence("occ3_identity", result, "occ3_identity_unavailable")
 
 
 def check_occ3_identity(base_url, key, timeout=15, *, requester=None) -> dict:
@@ -140,7 +181,7 @@ def check_occ3_identity(base_url, key, timeout=15, *, requester=None) -> dict:
         # W4-A1 signature: api-key middleware active (401 keyless) but router absent.
         return _evidence("occ3_identity", result, "occ3_routes_absent")
     if result.status != 200 or result.error_code:
-        return _evidence("occ3_identity", result, "occ3_identity_unavailable")
+        return _occ3_identity_without_native_tuple(requester, base_url, key, timeout, result)
     body = result.body
     fields = ("schema", "runtime_id", "runtime_generation", "model_fingerprint", "expected_ranks",
               "ready_ranks", "source_capture", "continuous_prefix", "terminal_journal")

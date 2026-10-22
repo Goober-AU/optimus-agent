@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import json
 from pathlib import Path
 import sys
 
@@ -39,14 +40,17 @@ def test_fixture_images_change_file_content_not_serving_command(tmp_path):
             return "sha256:" + str(len(self.bodies)) * 64
     api = Builder()
     images = rehearsal.build_fixtures(api, IMAGE, "b" * 16, ledger_dir=tmp_path / "builds")
-    assert set(images) == {"original", "healthy", "exit", "unready", "identity-absent"}
+    assert set(images) == {"original", "healthy", "exit", "unready", "identity-absent",
+                           "identity-declined"}
     for files, _ in api.bodies:
         assert files["Dockerfile"].decode().startswith("FROM " + IMAGE + "\n")
         assert "CMD" not in files["Dockerfile"].decode()
     assert b"OCC3_IDENTITY_ABSENT = False" in api.bodies[0][0]["fixture.py"]
     assert b"raise SystemExit(7)" in api.bodies[2][0]["fixture.py"]
     assert b"HEALTH_STATUS = 503" in api.bodies[3][0]["fixture.py"]
-    assert b"OCC3_IDENTITY_ABSENT = True\nHEALTH_STATUS = 200" in api.bodies[4][0]["fixture.py"]
+    assert b"OCC3_IDENTITY_ABSENT = True\nOCC3_DECLINED = False\nHEALTH_STATUS = 200" in api.bodies[4][0]["fixture.py"]
+    assert (b"OCC3_DECLINED = True\nOCC3_DECLINE_CODE = " +
+            repr(rehearsal.DECLINED_FIXTURE_CODE).encode() in api.bodies[5][0]["fixture.py"])
 
 
 def test_cleanup_requires_exact_created_id_and_ownership_label():
@@ -83,10 +87,16 @@ def test_occ3_identity_fixture_contract_and_ninth_scenario():
             "fixture.py", "exec")
     compile("OCC3_IDENTITY_ABSENT = True\nHEALTH_STATUS = 200\n" + rehearsal.FIXTURE,
             "fixture.py", "exec")
+    compile("OCC3_IDENTITY_ABSENT = False\nOCC3_DECLINED = True\nOCC3_DECLINE_CODE = "
+            + repr(rehearsal.DECLINED_FIXTURE_CODE) + "\nHEALTH_STATUS = 200\n" + rehearsal.FIXTURE,
+            "fixture.py", "exec")
     scenarios = {case["name"]: case for case in rehearsal.SCENARIOS}
-    assert len(rehearsal.SCENARIOS) == 9
+    assert len(rehearsal.SCENARIOS) == 10
     assert scenarios["occ3-identity-absent"]["image"] == "identity-absent"
     assert not scenarios["occ3-identity-absent"].get("signal")
+    assert scenarios["occ3-declined"]["image"] == "identity-declined"
+    assert not scenarios["occ3-declined"].get("signal")
+    assert not scenarios["occ3-declined"].get("pause")
     # A service-initial abort after mutation must satisfy the scenario evidence contract.
     state = {"history": [{"operation": operation, "at": index} for index, operation in enumerate(
         ("rename_original", "stop_original", "rename_candidate", "start_candidate"))],
@@ -101,6 +111,144 @@ def test_occ3_identity_fixture_contract_and_ninth_scenario():
         rehearsal.assert_scenario_evidence(scenario, state,
             {"verified": True, "result": "NOOP"}, {"error": "Failure", "heartbeat": 4.0},
             {"State": {}}, False)
+
+
+def declined_state(**changes):
+    state = {"history": [{"operation": operation, "at": index} for index, operation in enumerate(
+        ("rename_original", "stop_original", "rename_candidate", "start_candidate"))],
+        "mutation_intent": True, "candidate_started": True, "candidate_epoch": "fixture-epoch",
+        "original_stopped": True, "restart_count": 0, "gates": {},
+        "occ3_decline": {"gate": "service_initial", "field": "occ3_identity",
+                         "evidence": {"ok": False, "check": "occ3_identity", "http_status": 503,
+                                      "error_code": "occ3_declined",
+                                      "declined_code": rehearsal.DECLINED_FIXTURE_CODE,
+                                      "stage": "install", "experimental_selected": True,
+                                      "preflight_reached": True, "backend_constructed": True,
+                                      "worker_readiness_reached": False, "hooks_prepared": True,
+                                      "route_mount_attempted": False, "rollback_completed": True}}}
+    state.update(changes)
+    return state
+
+
+def test_occ3_declined_scenario_proves_the_exact_code_end_to_end():
+    scenario = next(item for item in rehearsal.SCENARIOS if item["name"] == "occ3-declined")
+    evidence = rehearsal.assert_scenario_evidence(scenario, declined_state(),
+        {"verified": True, "result": "RESTORED"}, {"error": "Failure", "heartbeat": 4.0},
+        {"State": {}}, False)
+    assert evidence == {"expected_recovery": "RESTORED", "failure_stage_proven": True,
+                        "declined_code": rehearsal.DECLINED_FIXTURE_CODE}
+
+
+@pytest.mark.parametrize("mutation", ["missing", "wrong_code", "wrong_stage", "no_rollback",
+                                      "restart_consumed", "gate_journaled", "wrong_gate", "wrong_field"])
+def test_occ3_declined_scenario_requires_the_exact_fail_fast_evidence(mutation):
+    scenario = next(item for item in rehearsal.SCENARIOS if item["name"] == "occ3-declined")
+    state = declined_state()
+    if mutation == "missing":
+        del state["occ3_decline"]
+    elif mutation == "wrong_code":
+        state["occ3_decline"]["evidence"]["declined_code"] = "other_code"
+    elif mutation == "wrong_stage":
+        state["occ3_decline"]["evidence"]["stage"] = "prepare"
+    elif mutation == "no_rollback":
+        state["occ3_decline"]["evidence"]["rollback_completed"] = False
+    elif mutation == "restart_consumed":
+        state["restart_count"] = 1
+    elif mutation == "gate_journaled":
+        state["gates"] = {"service_initial": {"ok": True}}
+    elif mutation == "wrong_gate":
+        state["occ3_decline"]["gate"] = "service_final"
+    else:
+        state["occ3_decline"]["field"] = "chat"
+    with pytest.raises(life.Failure, match="fail fast"):
+        rehearsal.assert_scenario_evidence(scenario, state,
+            {"verified": True, "result": "RESTORED"}, {"error": "Failure", "heartbeat": 4.0},
+            {"State": {}}, False)
+
+
+def test_occ3_declined_fixture_answers_status_schema_and_identity_not_ready():
+    source = rehearsal.FIXTURE
+    assert "'/occ3/v1/status'" in source
+    assert "'optimus.occ3.status.v1'" in source
+    assert "OCC3_DECLINED" in source and "OCC3_DECLINE_CODE" in source
+    assert "{'error': {'code': 'not_ready'}}" in source
+    assert "'DECLINED'" in source and "'NATIVE_READY'" in source
+    assert "DECLINED_FIXTURE_CODE" not in source
+
+
+def declined_fixture_answers(requester_key=None):
+    """Run the shipped declined fixture handler in-process; no socket, no Docker."""
+    import http.server as http_server_module
+    source = ("OCC3_IDENTITY_ABSENT = False\nOCC3_DECLINED = True\nOCC3_DECLINE_CODE = "
+              + repr(rehearsal.DECLINED_FIXTURE_CODE) + "\nHEALTH_STATUS = 200\n" + rehearsal.FIXTURE)
+    served = []
+    class StubServer:
+        def __init__(self, address, handler):
+            served.append(address)
+        def serve_forever(self):
+            pass
+    original_server = http_server_module.HTTPServer
+    original_argv = sys.argv
+    http_server_module.HTTPServer = StubServer
+    sys.argv = ["fixture.py", "--api-key", rehearsal.FIXTURE_KEY]
+    try:
+        namespace = {}
+        exec(compile(source, "fixture.py", "exec"), namespace)
+    finally:
+        http_server_module.HTTPServer = original_server
+        sys.argv = original_argv
+    assert served == [("0.0.0.0", 8081)]
+    Handler = namespace["Handler"]
+
+    def answer(path, method="GET"):
+        import io
+        handler = object.__new__(Handler)
+        handler.path = path
+        handler.headers = {"Authorization": "Bearer " + (requester_key or rehearsal.FIXTURE_KEY)}
+        out, state = io.BytesIO(), {}
+        handler.wfile = out
+        handler.send_response = lambda status: state.update(status=status)
+        handler.send_header = lambda *args: None
+        handler.end_headers = lambda: None
+        handler.rfile = io.BytesIO(b"{}")
+        if method == "GET":
+            handler.do_GET()
+        else:
+            handler.do_POST()
+        body = out.getvalue()
+        return state["status"], (json.loads(body) if body else None)
+    return answer
+
+
+def test_shipped_declined_fixture_drives_the_real_controller_check():
+    from deploy.v3 import service_checks as checks
+    answer = declined_fixture_answers()
+    identity_status, identity_body = answer("/occ3/v1/native/runtime/identity", "POST")
+    assert identity_status == 503 and identity_body == {"error": {"code": "not_ready"}}
+    status_status, status_body = answer("/occ3/v1/status")
+    assert status_status == 200 and status_body["schema"] == "optimus.occ3.status.v1"
+    assert status_body["state"] == "DECLINED" and status_body["code"] == rehearsal.DECLINED_FIXTURE_CODE
+
+    def requester(method, url, key, payload, timeout):
+        assert key == rehearsal.FIXTURE_KEY
+        if url.endswith(checks.OCC3_IDENTITY_PATH):
+            status, body = answer("/occ3/v1/native/runtime/identity", "POST")
+        else:
+            assert url.endswith(checks.OCC3_STATUS_PATH) and method == "GET"
+            status, body = answer("/occ3/v1/status")
+        return checks.HttpResult(status, body)
+
+    result = checks.check_occ3_identity("http://fixture", rehearsal.FIXTURE_KEY, requester=requester)
+    assert result["ok"] is False and result["error_code"] == "occ3_declined"
+    assert result["http_status"] == 503 and result["declined_code"] == rehearsal.DECLINED_FIXTURE_CODE
+    assert result["stage"] == "install" and result["rollback_completed"] is True
+    assert result["worker_readiness_reached"] is False and result["route_mount_attempted"] is False
+
+
+def test_shipped_declined_fixture_keeps_keyless_requests_unauthorized():
+    answer = declined_fixture_answers(requester_key="wrong-key")
+    assert answer("/occ3/v1/status") == (401, {"error": "unauthorized"})
+    assert answer("/occ3/v1/native/runtime/identity", "POST") == (401, {"error": "unauthorized"})
 
 
 def test_rehearsal_mode_cannot_target_unowned_original():

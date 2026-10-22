@@ -7,6 +7,11 @@ so the server-level api-key middleware covers them (paths under
 
 All routes are control-plane only: no tensors, no GPU state and no
 model weights ever appear in requests or responses.
+
+GET /occ3/v1/status and GET /occ3/v1/capabilities moved to
+startup_state.create_control_router() (phase split): they must answer
+before native installation resolves, so their owner is the startup
+control plane, not this dormant bridge router.
 """
 
 from __future__ import annotations
@@ -16,9 +21,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from . import __version__, metrics
 from .identity import IDENTITY_FIELDS, compute_identity, fingerprint
-from .registry import registry
 from .security import DEFAULT_TTL_S
 
 router = APIRouter(prefix="/occ3/v1", tags=["occ3"])
@@ -59,28 +62,6 @@ class ReleaseBody(BaseModel):
     channel: str
 
 
-class StatusView(BaseModel):
-    plugin: str
-    version: str
-    enabled: bool
-    model_fingerprint: Optional[str]
-    channels: dict
-    metrics: dict
-
-
-@router.get("/status")
-async def status() -> StatusView:
-    identity = compute_identity(_tm())
-    return StatusView(
-        plugin="occ3-bridge",
-        version=__version__,
-        enabled=False,
-        model_fingerprint=fingerprint(identity),
-        channels=registry().counts(),
-        metrics=metrics.snapshot(),
-    )
-
-
 @router.get("/identity")
 async def identity_route() -> dict:
     identity = compute_identity(_tm())
@@ -89,27 +70,6 @@ async def identity_route() -> dict:
         "fields": identity,
         "fingerprint": fingerprint(identity),
         "field_order": list(IDENTITY_FIELDS),
-    }
-
-
-@router.get("/capabilities")
-async def capabilities() -> dict:
-    """Capability advertisement, shaped for the Rust Occ3CapabilityAdvertisement."""
-    identity = compute_identity(_tm())
-    return {
-        "schema": "optimus.occ3.capability.v1",
-        "supported": False,
-        "reason": "native_latent_receiver_not_implemented",
-        "experimental_prompt_kv_path": "/occ3/v1/latent/capabilities",
-        "model_fingerprint": fingerprint(identity),
-        "connector_id": "sglang-occ3",
-        "methods": [],
-        "experimental_baselines": ["text-radix", "source-prompt-kv-handle-v1"],
-        "protocol": "occ3-v1",
-        "api_version": "v1",
-        "same_model_only": True,
-        "verification": "cached_tokens",
-        "cache": {"salt_prefix": "occ3-", "eviction": "lru"},
     }
 
 

@@ -128,7 +128,7 @@ Known caveats recorded by the campaign: the earlier owner-chain counts are aggre
 | E-OCC3CODEC | crates/pi-coding-agent/src/core/occ/occ3/codec.rs | 344d9f1fad53b77cb3846a13b5c2fafd399f6941c50c1fb1fd6b0a7a7717ae11 |
 | E-EXTREADME | extensions/sglang-occ3/README.md | 3fe79fadd0a9e5e55cac27e1feca1ee7431d71ec53579f141a920ac9bd454702 |
 | E-BENCH | extensions/sglang-occ3/benchmarks/bench_occ3.py | ec665d665c601db38a083145984060a0b2a8c6f7b2728c0dacd43c7817918437 |
-| E-PATCH3 | extensions/sglang-occ3/patches/scheduler-cache-ipc.v1.json | a80d0051754e2a69dbe88eb642871c871cf1707d15af9a2b4a5e6cc6595865c6 |
+| E-PATCH3 | extensions/sglang-occ3/patches/scheduler-cache-ipc.v1.json | e07c4b84407733a277f7135a017d0e505e275846beedd28f68a303ab97fe275c |
 | E-DOCKCONF | extensions/sglang-occ3/deploy/v3/docker_config.py | faebe73d868bdca228b388125ea3b13d94d50ce0ef42102870950a9facd42304 |
 | E-NPKG | extensions/sglang-occ3/deploy/v3/native_package.py | 53c5abdc9f6cc95868d2ff10927bae3a832007ddbb506ba46e988ea56a3c45d3 |
 | E-LIFE | extensions/sglang-occ3/deploy/v3/lifecycle.py | 74d76ee99001537a976b20a204317863740ea505f9b9e4718e9558b6a8509442 |
