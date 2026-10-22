@@ -428,6 +428,7 @@ async def _construct_components(app, tm, key, buffer_profile):
 _CONTROL_PATHS = (
     "/occ3/v1/native/sessions/enroll", "/occ3/v1/native/publish",
     "/occ3/v1/native/publication/status", "/occ3/v1/native/retire",
+    "/occ3/v1/native/runtime/identity",
 )
 _EXPECTED_HOOKS = (
     ("sglang.srt.entrypoints.openai.serving_chat.OpenAIServingChat.handle_request", "AROUND"),

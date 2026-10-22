@@ -8,17 +8,20 @@ import httpx
 from starlette.requests import Request
 
 from occ3_sglang.latent_control_api import BrokerAuthority, create_router
-from occ3_sglang.latent_types import LatentError, SessionEnrollment
+from occ3_sglang.latent_types import LatentError, SessionEnrollment, bounded_payload
 from occ3_sglang.attachment_contract import AttachmentError
 from test_latent_types import profile
 from test_latent_backend import SyntheticClient, health
 
 
-def app_fixture(verified=True):
+def app_fixture(verified=True,refresh_error=None):
     p=profile(); authority=BrokerAuthority(p,principal_id="server-owned")
-    client=SyntheticClient(p)
-    async def refresh(): return health(p)
-    backend=NS(client=client,refresh_readiness=refresh)
+    client=SyntheticClient(p); client.refreshes=[]
+    async def refresh():
+        client.refreshes.append(time.monotonic())
+        if refresh_error is not None: raise LatentError(refresh_error)
+        return health(p)
+    backend=NS(client=client,refresh_readiness=refresh,profile=p)
     app=FastAPI()
     @app.middleware("http")
     async def auth(request,call_next):
@@ -34,6 +37,82 @@ def enroll_body():
     return dict(schema="occ3.sessions.enroll.v1",operation_id="operation",session_id="source",
         model_fingerprint="model-hash",runtime_id="epoch",runtime_generation=9,access_domain="family",
         expires_at_epoch=int(time.time())+100)
+
+
+IDENTITY_REQUEST={"schema":"occ3.runtime.identity.request.v1"}
+IDENTITY_FIELDS={"schema","runtime_id","runtime_generation","model_fingerprint","method_id",
+    "tp_layout_digest","layer_index","hidden_dim","dtype","expected_ranks","ready_ranks",
+    "profile_digest","source_capture","continuous_prefix","terminal_journal",
+    "server_time_epoch","max_ttl_seconds"}
+
+
+@pytest.mark.asyncio
+async def test_identity_route_returns_current_runtime_tuple():
+    client,authority,transport=app_fixture()
+    p=profile(); now=time.time()
+    response=await client.post("/occ3/v1/native/runtime/identity",json=IDENTITY_REQUEST)
+    assert response.status_code==200, response.text
+    assert response.headers["cache-control"]=="no-store"
+    result=response.json()
+    assert set(result)==IDENTITY_FIELDS
+    assert result["schema"]=="occ3.runtime.identity.v1"
+    assert result["runtime_id"]==p.runtime_epoch and result["runtime_generation"]==p.runtime_generation
+    assert result["model_fingerprint"]==p.model_fingerprint and result["method_id"]==p.method
+    assert result["tp_layout_digest"]==health(p)["tp_layout_digest"]
+    assert (result["layer_index"],result["hidden_dim"],result["dtype"])==(p.layer_index,p.hidden_dim,"bfloat16")
+    assert result["expected_ranks"]==result["ready_ranks"]==8
+    assert result["profile_digest"]==p.binding_digest
+    assert result["source_capture"] and result["continuous_prefix"] and result["terminal_journal"]
+    assert now-5<=result["server_time_epoch"]<=time.time()+5
+    assert result["max_ttl_seconds"]==p.max_ttl_seconds
+    assert len(transport.refreshes)==1  # Fresh ordered health per request; never cached.
+
+
+@pytest.mark.asyncio
+async def test_identity_route_requires_verified_principal():
+    client,authority,transport=app_fixture(False)
+    response=await client.post("/occ3/v1/native/runtime/identity",json=IDENTITY_REQUEST)
+    assert response.status_code==401
+    assert not transport.calls and not transport.refreshes  # Refused before any backend call.
+
+
+@pytest.mark.parametrize("body", [b'{"schema":"x"}',
+    b'{"schema":"occ3.runtime.identity.request.v1","extra":1}',
+    b'{"schema":"a","schema":"b"}',
+    b'{"schema":"x","padding":"'+b'a'*17000+b'"}'])
+@pytest.mark.asyncio
+async def test_identity_route_strict_bodies(body):
+    client,_,_=app_fixture()
+    response=await client.post("/occ3/v1/native/runtime/identity",content=body)
+    assert response.status_code in (400,429)
+    assert "runtime_epoch" not in response.text and "readiness" not in response.text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("code,status",[("unavailable",503),("identity",401),("quota",429)])
+async def test_identity_route_maps_backend_errors(code,status):
+    client,authority,transport=app_fixture(refresh_error=code)
+    response=await client.post("/occ3/v1/native/runtime/identity",json=IDENTITY_REQUEST)
+    assert response.status_code==status and response.json()=={"error":{"code":code}}
+    assert transport.refreshes  # The shared execute() mapping is exercised, nothing else.
+
+
+@pytest.mark.asyncio
+async def test_identity_route_response_is_metadata_only():
+    client,_,_=app_fixture()
+    response=await client.post("/occ3/v1/native/runtime/identity",json=IDENTITY_REQUEST)
+    assert response.status_code==200 and response.headers["cache-control"]=="no-store"
+    for leaked in ("handle","session","nonce","principal","turn","attempt","binding_digest","tokens","tensor"):
+        assert leaked not in response.text
+    bounded_payload(response.json())  # Strict-payload round trip: bounded, no extras.
+
+
+@pytest.mark.asyncio
+async def test_identity_route_rejects_non_post():
+    client,_,_=app_fixture()
+    for method in (client.get,client.put,client.delete):
+        response=await method("/occ3/v1/native/runtime/identity")
+        assert response.status_code==405
 
 
 @pytest.mark.asyncio

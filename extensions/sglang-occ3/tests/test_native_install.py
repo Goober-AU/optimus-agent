@@ -411,6 +411,43 @@ async def test_install_transaction_wires_real_adapter_and_controls_but_never_gat
     assert not f.created[0].backend.closed
 
 
+async def test_install_mounts_identity_route_on_pinned_post_only_surface(transaction_fixture):
+    from test_latent_backend import health as backend_health
+    f = transaction_fixture
+    receipt = await install.install_native_runtime(f.app, f.tm, experimental_opt_in=True)
+    assert receipt.installed
+    assert install._CONTROL_PATHS == (
+        "/occ3/v1/native/sessions/enroll", "/occ3/v1/native/publish",
+        "/occ3/v1/native/publication/status", "/occ3/v1/native/retire",
+        "/occ3/v1/native/runtime/identity")
+    components = f.created[0]
+    assert ({getattr(route, "path", None) for route in components.router.routes} == set(install._CONTROL_PATHS)
+            and len(components.router.routes) == len(install._CONTROL_PATHS)
+            and all(getattr(route, "methods", None) == {"POST"} for route in components.router.routes))
+    # The whole control surface mounts as exactly one install-owned router include.
+    assert [route for route in f.app.router.routes
+            if getattr(route, "original_router", None) is components.router]
+    identity = next(route for route in components.router.routes
+                    if route.path == "/occ3/v1/native/runtime/identity")
+    assert getattr(identity.endpoint, "__qualname__", "") == "create_router.<locals>.identity"
+    # The FixtureBackend replies with explicit metadata only; refresh is never GPU proof.
+    backend = components.backend
+    backend.profile = f.profile
+    async def fixture_refresh(): return backend_health(f.profile)
+    backend.refresh_readiness = fixture_refresh
+    async with AsyncClient(transport=ASGITransport(app=f.app), base_url="http://fixture") as client:
+        denied = await client.post("/occ3/v1/native/runtime/identity",
+            json={"schema": "occ3.runtime.identity.request.v1"})
+        assert denied.status_code == 401
+        allowed = await client.post("/occ3/v1/native/runtime/identity",
+            json={"schema": "occ3.runtime.identity.request.v1"},
+            headers={"Authorization": "Bearer " + KEY})
+        assert allowed.status_code == 200, allowed.text
+        assert allowed.json()["runtime_id"] == f.profile.runtime_epoch
+        assert allowed.json()["runtime_generation"] == f.profile.runtime_generation
+        assert allowed.headers["cache-control"] == "no-store"
+
+
 @pytest.mark.parametrize("phase", ["router", "middleware", "hook"])
 async def test_partial_install_rollback_retry_keeps_unrelated_state(transaction_fixture, monkeypatch, caplog, phase):
     f = transaction_fixture

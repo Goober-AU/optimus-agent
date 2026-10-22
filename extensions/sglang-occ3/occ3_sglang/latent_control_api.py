@@ -119,6 +119,24 @@ def create_router(backend, authority):
                     "runtime_id": enrollment.runtime_epoch, "runtime_generation": enrollment.runtime_generation,
                     "model_fingerprint": enrollment.model_fingerprint, "expires_at_epoch": enrollment.expires_at_epoch,
                     "readiness": health}
+            elif operation == "identity":
+                # Read-only current-incarnation view for the authorized proof harness.
+                body = _fields(value, "occ3.runtime.identity.request.v1", ())
+                health = await backend.refresh_readiness()
+                result = {"schema": "occ3.runtime.identity.v1",
+                    "runtime_id": health["runtime_epoch"],
+                    "runtime_generation": health["runtime_generation"],
+                    "model_fingerprint": health["model_fingerprint"],
+                    "method_id": health["method_id"],
+                    "tp_layout_digest": health["tp_layout_digest"],
+                    "layer_index": health["layer_index"], "hidden_dim": health["hidden_dim"],
+                    "dtype": health["dtype"], "expected_ranks": health["expected_ranks"],
+                    "ready_ranks": health["ready_ranks"], "profile_digest": health["profile_digest"],
+                    "source_capture": health["source_capture"],
+                    "continuous_prefix": health["continuous_prefix"],
+                    "terminal_journal": health["terminal_journal"],
+                    "server_time_epoch": int(time.time()),
+                    "max_ttl_seconds": backend.profile.max_ttl_seconds}
             elif operation == "publish":
                 body = _fields(value, "occ3.publish.v1", ("publication_id", "source_handle", "source_session_id",
                     "receiver_session_id", "message_id", "source_turn_nonce", "tool_call_id", "expires_at_epoch"))
@@ -167,9 +185,12 @@ def create_router(backend, authority):
         return await execute(request, "status")
     async def retire(request):
         return await execute(request, "retire")
-    for endpoint in (enroll, publish, status, retire):
+    async def identity(request):
+        return await execute(request, "identity")
+    for endpoint in (enroll, publish, status, retire, identity):
         endpoint.__annotations__["request"] = Request
     for path, endpoint in (("sessions/enroll", enroll), ("publish", publish),
-                           ("publication/status", status), ("retire", retire)):
+                           ("publication/status", status), ("retire", retire),
+                           ("runtime/identity", identity)):
         router.add_api_route("/occ3/v1/native/" + path, endpoint, methods=["POST"])
     return router
