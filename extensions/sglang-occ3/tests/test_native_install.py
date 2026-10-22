@@ -26,7 +26,7 @@ from starlette.responses import JSONResponse
 from occ3_sglang import native_install as install
 from occ3_sglang.attachment_contract import AttachmentError, InferenceAttachment
 from occ3_sglang.latent_control_api import BrokerAuthority
-from occ3_sglang.latent_types import RuntimeProfile, SessionEnrollment
+from occ3_sglang.latent_types import LatentError, RuntimeProfile, SessionEnrollment
 
 REAL_COMPONENT_FACTORY = install._construct_components
 
@@ -333,7 +333,7 @@ class TokenizerManager:
     profile = runtime_profile()
     created = []
     refresh_gate, refresh_started = asyncio.Event(), asyncio.Event()
-    controls = NS(wait=False, ready=True, fail=False)
+    controls = NS(wait=False, ready=True, fail=False, exc=None)
 
     class Client:
         def __init__(self):
@@ -359,6 +359,8 @@ class TokenizerManager:
             refresh_started.set()
             if controls.wait:
                 await refresh_gate.wait()
+            if controls.exc is not None:
+                raise controls.exc
             if controls.fail:
                 raise RuntimeError(KEY)
         def readiness(self):
@@ -573,6 +575,51 @@ async def test_declined_install_logs_final_return_code(transaction_fixture, capl
     message = records[0].getMessage()
     assert re.fullmatch(r"occ3-bridge: native installation decline \(attempt=[0-9a-f]{8} "
                        r"stage=install code=backend_not_ready\)", message)
+    assert KEY not in caplog.text
+
+
+async def test_declined_install_logs_sanitised_timeout_detail(transaction_fixture, caplog):
+    f = transaction_fixture
+    f.controls.exc = asyncio.TimeoutError()
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.native_install"):
+        result = await install.install_native_runtime(f.app, f.tm, experimental_opt_in=True)
+    assert result.code == "installation_unavailable" and not result.installed
+    records = [record for record in caplog.records if record.name == "occ3_sglang.native_install"]
+    assert len(records) == 1 and records[0].levelno == logging.ERROR
+    assert re.fullmatch(r"occ3-bridge: native installation decline \(attempt=[0-9a-f]{8} "
+                       r"stage=install code=installation_unavailable detail=control_timeout\)",
+                       records[0].getMessage())
+
+
+async def test_declined_install_logs_sanitised_latent_detail(transaction_fixture, caplog):
+    f = transaction_fixture
+    f.controls.exc = LatentError("profile")
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.native_install"):
+        result = await install.install_native_runtime(f.app, f.tm, experimental_opt_in=True)
+    assert result.code == "installation_unavailable" and not result.installed
+    records = [record for record in caplog.records if record.name == "occ3_sglang.native_install"]
+    assert len(records) == 1 and records[0].levelno == logging.ERROR
+    assert re.fullmatch(r"occ3-bridge: native installation decline \(attempt=[0-9a-f]{8} "
+                       r"stage=install code=installation_unavailable detail=latent_profile\)",
+                       records[0].getMessage())
+
+
+async def test_declined_install_generic_detail_keeps_taxonomy_and_hides_text(transaction_fixture, caplog):
+    f = transaction_fixture
+    f.controls.fail = True
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.native_install"):
+        result = await install.install_native_runtime(f.app, f.tm, experimental_opt_in=True)
+    assert result.code == "installation_unavailable" and not result.installed
+    assert result.evidence() == {"code": "installation_unavailable", "installed": False,
+                                "live_proof": False, "gate8_pass": False, "supported": False,
+                                "source_ready": False, "receiver_ready": False,
+                                "runtime_id": None, "runtime_generation": None,
+                                "model_fingerprint": None}
+    records = [record for record in caplog.records if record.name == "occ3_sglang.native_install"]
+    assert len(records) == 1 and records[0].levelno == logging.ERROR
+    assert re.fullmatch(r"occ3-bridge: native installation decline \(attempt=[0-9a-f]{8} "
+                       r"stage=install code=installation_unavailable detail=exception_RuntimeError\)",
+                       records[0].getMessage())
     assert KEY not in caplog.text
 
 

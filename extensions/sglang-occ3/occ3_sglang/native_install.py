@@ -91,6 +91,23 @@ class VerifiedBrokerMiddleware:
             authority.clear_verified(request)
 
 
+def _decline_detail(error):
+    """Bounded sanitised root-cause token for the generic decline paths.
+
+    Never the exception text: only fixed latent codes, a fixed timeout marker,
+    or the bare exception class name. Receipt taxonomies stay unchanged; the
+    detail exists so a live decline distinguishes a control-path timeout or a
+    worker refusal from unrelated local failures.
+    """
+    from .latent_types import LatentError
+    if isinstance(error, LatentError):
+        return "latent_" + error.code
+    if isinstance(error, (asyncio.TimeoutError, TimeoutError)):
+        return "control_timeout"
+    name = type(error).__name__
+    return "exception_" + name if name.isidentifier() else "exception_unknown"
+
+
 def _existing_auth(app, tm):
     args = getattr(tm, "server_args", None)
     key = getattr(args, "api_key", None)
@@ -651,6 +668,7 @@ async def install_native_runtime(app, tokenizer_manager, *, experimental_opt_in=
     committed = False
     mutation_started = False
     snapshot = None
+    detail = None
     try:
         existing = getattr(app, _INSTALLED_ATTR, None)
         if existing is not None:
@@ -724,8 +742,9 @@ async def install_native_runtime(app, tokenizer_manager, *, experimental_opt_in=
         code = "installation_cancelled"
     except InstallationError as error:
         code = error.code
-    except Exception:
+    except Exception as error:
         code = "installation_unavailable"
+        detail = _decline_detail(error)
     finally:
         # Installed adapters retain ownership. Failure closes only this transaction's client.
         try:
@@ -760,8 +779,12 @@ async def install_native_runtime(app, tokenizer_manager, *, experimental_opt_in=
             _install_lock.release()
     if cancelled:
         raise asyncio.CancelledError
-    logger.error("occ3-bridge: native installation decline (attempt=%s stage=install code=%s)",
-                 uuid.uuid4().hex[:8], code)
+    if detail:
+        logger.error("occ3-bridge: native installation decline (attempt=%s stage=install code=%s detail=%s)",
+                     uuid.uuid4().hex[:8], code, detail)
+    else:
+        logger.error("occ3-bridge: native installation decline (attempt=%s stage=install code=%s)",
+                     uuid.uuid4().hex[:8], code)
     return InstallationReceipt(False, code)
 
 
@@ -947,11 +970,12 @@ def prepare_selected_native_server(server, app, tokenizer_manager):
         logger.error("occ3-bridge: native startup decline (attempt=%s stage=prepare code=%s selected=%s)",
                      uuid.uuid4().hex[:8], error.code, selection is not None)
         return receipt
-    except Exception:
+    except Exception as error:
         receipt = StartupReceipt(selection is not None, False, "experimental_startup_refused")
         setattr(app, _STARTUP_ATTR, receipt.evidence())
         logger.error("occ3-bridge: native startup decline (attempt=%s stage=prepare code=experimental_startup_refused "
-                     "selected=%s)", uuid.uuid4().hex[:8], selection is not None)
+                     "selected=%s detail=%s)", uuid.uuid4().hex[:8], selection is not None,
+                     _decline_detail(error))
         return receipt
 
     owner = _StartupOwner(app, tokenizer_manager, original)

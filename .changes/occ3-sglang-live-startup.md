@@ -1,0 +1,1 @@
+- Fixed the OCC-3 native startup decline logs erasing the failure category: generic declines now carry a bounded sanitised detail token (latent_<code>, control_timeout or exception_<ClassName>) so a live control-path timeout or worker refusal is distinguishable from unrelated local failures without logging exception text; the receipt taxonomy and evidence schema are unchanged.

@@ -559,7 +559,8 @@ def test_refused_prepare_logs_fixed_code_and_selected_flag(loop_server, monkeypa
     assert len(records) == 1 and records[0].levelno == logging.ERROR
     message = records[0].getMessage()
     assert re.fullmatch(r"occ3-bridge: native startup decline \(attempt=[0-9a-f]{8} "
-                        r"stage=prepare code=experimental_startup_refused selected=True\)", message)
+                        r"stage=prepare code=experimental_startup_refused selected=True "
+                        r"detail=exception_RuntimeError\)", message)
     assert "PRIVATE" not in message and "PRIVATE" not in caplog.text
 
 
