@@ -1,34 +1,49 @@
 # OCC-3 Final Report
 
-**Status: STUB — awaiting live evidence.** The campaign is not complete: the live GPU validation phase (disposable recovery, one controlled swap, live gates 4-14) has not started under the current approval. The final report must aggregate the completed report set with live evidence, the exact deployed extension version, actual performance and fidelity results, outstanding limitations, and the consolidated development PR.
+**Status: CAMPAIGN PAUSED FOR THE UPSTREAM PR - pause-state record (2026-10-22).** This is not the final aggregate. Under the current approval the live phase has run four windows, every one fail-safe: two pre-mutation aborts at distinct image-build guards (zero production impact) and two full controlled swaps that each served production traffic under the service gates and then rolled back by design at the external native-proof deadline, with the original restored and verified both times. No completed swap exists, no native proof receipt exists, and the occ3 control plane has never mounted in any live window (W4-A1 - the runtime native-install declined cleanly and silently; the exact receipt code is unknown). The campaign pauses here for the upstream PR; the open gates, their blockers and the resume conditions are recorded below. Per the specification, documentation must contain actual evidence and no empty report should be created merely to satisfy the filename checklist: this document records the verified pause state, and the full aggregate (live gate results, deployed version, actual performance and fidelity) follows the remaining live evidence.
 
-**Worktree:** `optimus-occ3-20261021` · **Date:** 2026-10-21 · **Mode:** offline documentation from existing evidence; no live claims.
+**Worktree:** `optimus-occ3-20261021` - branch `feat/occ3-generic-sglang-bridge`, head `7fc540974` (31 commits; production code tip `0fb0375cc`, the commit above it is docs-only) · **Date:** 2026-10-22 · **Mode:** offline documentation from existing evidence; live facts cited are exactly those recorded in the window reports.
 
-**Citation convention.** `occ3-campaign/<path>` refers to the campaign evidence root `C:/Users/openclawuser/Optimus-Assistant/profile/workspace/occ3-campaign/`; worktree files are repository-relative. Full hashes in the evidence register. This stub contains an outline and evidence inventory only; per the specification, documentation must contain actual evidence, and no empty report should be created merely to satisfy the filename checklist, so substantive sections are deferred until the required evidence exists.
+**Citation convention.** `occ3-campaign/<path>` refers to the campaign evidence root `C:/Users/openclawuser/Optimus-Assistant/profile/workspace/occ3-campaign/`; worktree files are repository-relative. Full hashes inline below and in the ROLLBACK.md register. STATE.json and ROOT-HANDOFF.md are living campaign documents; their inline digests are the values at this refresh.
 
-## Planned outline
+## 1. What is complete (verified)
 
-1. Executive summary with the honest gate scorecard (all 15 spec gates).
-2. What was built: generic bridge, connector contract, SGLang extension, source overlays, deployment tooling (pointers to ARCHITECTURE.md, BRIDGE-API.md).
-3. What was verified live: deployment, connectivity, latent handoff, fidelity, benchmarks, performance (pointers to the live-evidence reports once they exist).
-4. Failure history and recovery record (pointer to ROLLBACK.md).
-5. Outstanding limitations and carry-forward list (pointer to BUG-LEDGER.md).
-6. Rollback procedure and production posture.
-7. The consolidated development PR: commit groups, review status, merge authorisation boundary.
+- **Generic bridge and connector contract, offline-proven** (`crates/pi-coding-agent/src/core/occ/occ3/`): model identity with cross-language-pinned fingerprints, opaque handle refs, versioned envelope codec, `Occ3Connector` trait, registry, deterministic eligibility ladder, mock connector with fault injection. Final offline verification 16/16 checks PASS on the frozen tree (worktree freeze 143/143 hash-verified; worktree unchanged after the suites) [occ3-campaign/v3-controlled-deploy/FINAL-VERIFY-RESULT.json, sha256 8d54c074ee3120fae92049dd5f07fd3dd60ed0bba7aa0634f5577ac9d21aad73].
+- **Model configuration**: the optional `occ3` capability block, schema-validated at load, absent-block compatible; no model entry in this tree carries one (activation is a deliberate non-goal until the gates pass - see the matrix).
+- **Negotiation and fallback**: strict same-exact-model enforcement (eleven-field identity, canonical-JSON sha256 fingerprints) with the fail-closed fallback ladder (rule R1: any OCC-3 failure returns the disabled policy; OCC-1 remains the universal floor); offline suites green in the final verification.
+- **SGLang extension** (`extensions/sglang-occ3/`, package `occ3-bridge`): salted KV-radix channels, the experimental native latent runtime behind three sha256-pinned SGLang 0.5.21 source overlays, the opt-in chat adapter and completed-use receipts. At the C28-verified state the extension suite stands at 1427 passed / 324 skipped / 77 subtests (targeted set 133 passed; 282 packaging unit tests ok / 10 skipped; Rust zero-diff) [occ3-campaign/v3-controlled-deploy/ROOT-HANDOFF.md, sha256 2f933eed77fd4e20cd5ad1261f22d736f3101365d03bfa4d32d0db3030676e11, living log].
+- **DGX deployment machinery** (`deploy/v3`): four disposable rehearsal rounds on the real DGX Docker 29.6.2 daemon (round 4: 8/8 scenarios, every recovery verified, zero residue, production untouched) plus four live windows under the current approval, every one fail-safe - window 1 and TS2 aborted pre-mutation at build guards with zero production impact; TS3 and TS4 each executed the full controlled swap and served production under the `service_initial` gate (about eleven and about twenty-two minutes) before rolling back by design at the proof deadline, with the automatic recovery verified both times (TS3: 6.18 s detection-to-verified; TS4: original restarted about 6.3 s after the deadline detection, restart count 0, health 200 verified) [REHEARSAL-RESULT-4.json sha256 1605fca0590d099b8d4b44301e5be3feb11ce90050ecb6ad9342c9127dbe910a; LIVE-PHASE-EXECUTION-REPORT-20261022t0030z.json sha256 ce877c412649c488d8c72290cd47d7492863e3db4640f0c176bfd54d76219be8; LIVE-PHASE-EXECUTION-REPORT-20261022t0145z.json sha256 dc7ae197ab24e22dc318144644934efb415cf9b84e722f715767d6847b9b0f5e; LIVE-PHASE-EXECUTION-REPORT.json sha256 3b4d42cb5556b45ce7cacda4ce4a270a322c41adaa47a7b00b08f1feda343bdc (TS3); live-window/journal-20261022t0356z/LIVE-PHASE-EXECUTION-REPORT-20261022t0356z.json sha256 6d7016f544c950bdfb0750ce43fc5b97423c6fa1342df216ec481eef0fe3d50e (TS4); bundles sha256 0329bc7aa2cf01e5f17bbdda1395c7f96d28d4ac8fb742080316c3d484e7f33e and 817f340aea2d42e406b45731bbd0e8736b763af30b5bd55b2fc6739ab38424a5, remote and local copies matching].
+- **Runtime-identity route (C28 `0fb0375cc`)**: the authenticated read-only `POST /occ3/v1/native/runtime/identity` control route (design A from the W3-A1 round; designs B and C rejected with verified reasons; the claimed==actual enroll invariant unchanged). Independently reviewed ACCEPT (10/10 aspects VERIFIED, mutation-confirmed tests) and pinned into the TS4 candidate. Its first live call 404'd because the control router never mounted (W4-A1): the route code is complete and reviewed, its live proof is open [occ3-campaign/v3-controlled-deploy/C28-REVIEW.md, sha256 fcf240121a7b369545e1ddb9838fb88a00f39830a238292fe9efa7cf9ff69a90; W3A1-DESIGN.md sha256 9b1192e6b64d57eedc9da1011539c7d98b65230677d579e23d7c00b3c7231537].
+- **Benchmarks harness** (`benchmarks/`): eight arms including three information-free latent controls, the 30-task three-tier set with scripted verifiers, the append-only ledger and the two-proportion z-test gating in `analyze.py`; offline selftest 50 checks OK. No GPU results exist.
+- **Report set and PR description**: `reports/occ3/` (17 files) refreshed to this pause state (this document, ROLLBACK.md section 2.7, DEPLOYMENT.md, BUG-LEDGER.md W4-A1); the PR body source refreshed at occ3-campaign/v3-controlled-deploy/PR-DESCRIPTION.md (sha256 5cc2836b7bc078c25303769284c9250378e872394958d0892cacff7acde1d414).
 
-## Evidence already available (offline)
+## 2. What is open (honest gate matrix)
 
-- Draft report set: reports/occ3/ (this package; ARCHITECTURE.md, BRIDGE-API.md, MODEL-COMPATIBILITY.md, SGLANG-SOURCE-AUDIT.md, DGX-ENVIRONMENT.md, ROLLBACK.md, REGRESSION-GATES.md and the stubs).
-- Specification and gate definitions: occ3-campaign/v3-controlled-deploy/ORIGINAL-USER-SPECIFICATION.md (sha256 9f731ebd2e15cc9ffc6dbe42a7c33c9e44e0cd8149dba76f39a8828a5df629e0).
-- Campaign state and resume authorization: occ3-campaign/v3-controlled-deploy/STATE.json (sha256 19a497e2c5682ccd2f03cd6dc364b02ca8e93f8b29dd2cc29939853cd0e5223d).
+| # | Spec gate (abbreviated) | Status at pause | Blocker / note |
+|---|---|---|---|
+| 1 | Generic architecture passes without SGLang or DGX | PASS (offline scope) | final verification 16/16 [E-FV above] |
+| 2 | Same-model-only enforcement correct | PENDING-LIVE | offline green; live `model_identity()` verification not run |
+| 3 | OCC-2/OCC-1/text remain functional | PENDING-LIVE | offline suites green; live regression not run |
+| 4 | SGLang extension builds, installs, starts | PARTIAL | build+install+start proven live twice (TS3 candidate `sha256:306770df...`, TS4 candidate `sha256:a31b23c0...`; both served production under the service gates); `/occ3/v1/status` 200 never observed - the occ3 control routes have never mounted (W4-A1) |
+| 5 | Extension works on the actual GLM-5.3 FP8 TP8 runtime | PENDING-LIVE | swap machinery and ordinary service gates proven twice; the extension's native runtime declined install at serve time in both swaps (W4-A1), so the extension itself has not served |
+| 6 | Cache safety: radix on; no latent contamination | PENDING-LIVE | offline closure (audit + suites); live verification not run (control plane never mounted) |
+| 7 | Optimus communicates through the authenticated path | PENDING-LIVE | live connector call not run; the identity route 404'd (W4-A1) |
+| 8 | True latent handoff (capture -> consume with receipt) | PENDING-LIVE, BLOCKED | offline closure complete; live proof blocked by the unknown W4-A1 decline receipt code (control router not mounted) |
+| 9 | Semantic fidelity demonstrated | PENDING-LIVE (dependent on 8) | benchmark run needs the live latent path |
+| 10 | Empirical benchmarks vs OCC-1/OCC-2 | PENDING-LIVE | harness ready; no GPU results |
+| 11 | Production performance acceptable | PENDING-LIVE | baseline preserved, original healthy throughout; formal pre/post measurements not run |
+| 12 | models.json entry enables the validated connector | NOT DONE (intentional per spec) | activation only if all gates pass; `normal_occ3_enabled` false |
+| 13 | Real multi-agent workload uses OCC-3 | PENDING-LIVE (dependent on 8) | needs the live native path first |
+| 14 | Failure recovery: safe fallback and restore | PASS offline + disposable + two live by-design restorations | TS3 and TS4 exercised the real recovery chain on production; production failure-injection remains PENDING-LIVE |
+| 15 | Final report, limitations, rollback, PR | PARTIAL | this pause-state record + refreshed PR description; the final aggregate awaits the remaining live gates |
 
-## Evidence needed before this report can be drafted (PENDING LIVE EVIDENCE)
+## 3. Pause state and resume conditions
 
-1. Live gate results for gates 4-14 (see REGRESSION-GATES.md pending list).
-2. The exact deployed extension version and image digest from a successful swap.
-3. Actual performance and fidelity improvements with raw evidence.
-4. The consolidated development PR (not yet prepared; do not merge without authorisation).
+- Branch: `feat/occ3-generic-sglang-bridge` tip `b2f508e23` (29 commits; production code `0fb0375cc`). Production: the original `neo-glm53` (`c4a26b345ec6` on `sha256:b1259f3ea327`) running unchanged since 2026-10-22T03:54:08Z, restart count 0, health 200; the TS3 and TS4 candidates are preserved stopped (`occ3-v3-occ3-live-20261022t0140z-failed`, `occ3-v3-occ3-live-20261022t0356z-failed`) - never remove or start. Counters: `live_window.attempts_total=4`; `production_swap` NOT_STARTED [STATE.json sha256 e5cb73abbfb5974fd7f8001d209eceb0023644276ba8bb4b367e9134e0961a2c, living file].
+- W4-A1 repair in flight (design C29-DESIGN.md, sha256 afcd0aa6fa4bcda0de4e2557fe72b4dea90ee52b3ca7fb57a4f51064cece16a3): decline-receipt ERROR logging at the six startup/install choke points (attempt/stage/code markers) plus the `occ3_identity` check as the first controller service gate (abort before the ingress reload and the proof wait; ninth rehearsal scenario). Not yet committed at this refresh.
+- Window TS5 is NOT dispatched. Resume requires: fresh user approval; the landed W4-A1 repair; a boot with the new logging that surfaces the exact decline receipt code; then the mechanical proof path (identity route -> descriptor -> harness -> receipt) toward GATE 8, and only after the gates pass, the benchmark campaign and models.json activation.
+- The upstream PR opens in this pause state with the honest open-items list (PR description source at the digest above); no live success is claimed.
 
 ## Evidence register
 
-Citations are inline above; every cited evidence file appears there with its full path and sha256. This stub adds no register rows of its own because it asserts no new claims.
+Citations are inline above; every cited evidence file appears there with its full path and sha256. The ROLLBACK.md register carries the complete evidence table for this report set, including the four live-window reports and bundles, the rehearsal results, the W3A1 and C29 designs, the C28 review, and the living campaign documents (STATE.json, ROOT-HANDOFF.md, DISPATCH-DIGESTS.json v5).
