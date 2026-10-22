@@ -70,8 +70,12 @@ class WorkerRuntime:
         stage = "init"
         try:
             from sglang.srt.mem_cache.radix_cache import RadixCache
+            from sglang.srt.mem_cache.unified_radix_cache import UnifiedRadixCache
             stage = "radix_cache"
-            require(scheduler is not None and type(scheduler.tree_cache) is RadixCache, "profile")
+            # Sibling classes (no subclass relation): exact-type membership
+            # accepts the two observed runtimes and still declines unknown variants.
+            require(scheduler is not None
+                    and type(scheduler.tree_cache) in (RadixCache, UnifiedRadixCache), "profile")
             stage = "kv_layout"
             kv_layout = validate_kv_layout(model_runner, scheduler, torch)
             config = model_runner.model_config.hf_config

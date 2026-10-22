@@ -355,24 +355,39 @@ def test_failed_cleanup_cannot_clear_inflight_guard(monkeypatch):
     assert record.inflight==2 and not record.gpu_freed and r.charged_bytes==4096
 
 
-def _worker_init_env(monkeypatch, *, radix_match):
-    """Intercept torch/sglang imports with fakes; return (fakes dict, runner, scheduler)."""
+def _worker_init_env(monkeypatch, *, radix_match, unified=False):
+    """Intercept torch/sglang imports with fakes; return (runner, scheduler, group)."""
     import types
     from types import SimpleNamespace as NS
+
+    def fake_all_gather(result, value, group=None):
+        # Single-process stand-in for the 8-rank gather: replicate the local
+        # value, branding per-rank layouts so the all-ranks identity check holds.
+        for i in range(len(result)):
+            result[i] = {**value, "rank": i} if isinstance(value, dict) and "rank" in value else value
 
     fake_torch = types.ModuleType("torch")
     fake_torch.distributed = NS(
         is_initialized=lambda: True,
         get_world_size=lambda group: 8,
         get_rank=lambda group: 3,
-        all_gather_object=lambda result, value, group=None: [result.__setitem__(i, value) for i in range(len(result))])
+        all_gather_object=fake_all_gather)
     fake_torch.float16, fake_torch.bfloat16, fake_torch.float32 = "float16", "bfloat16", "float32"
 
-    class RadixCache:
+    # Mirrors the real 0.5.21 sibling structure: shared base, two equal classes.
+    class BasePrefixCache:
+        pass
+
+    class RadixCache(BasePrefixCache):
+        pass
+
+    class UnifiedRadixCache(BasePrefixCache):
         pass
 
     radix_mod = types.ModuleType("sglang.srt.mem_cache.radix_cache")
     radix_mod.RadixCache = RadixCache
+    unified_mod = types.ModuleType("sglang.srt.mem_cache.unified_radix_cache")
+    unified_mod.UnifiedRadixCache = UnifiedRadixCache
     group = NS(cpu_group="cpu", device_group="dev")
     parallel = NS(tp_size=8, dp_size=1, pp_size=1, attn_cp_size=1, attn_dcp_size=1,
                   attn_tp_size=8, tp_group=group, pp_group=NS(world_size=1))
@@ -387,6 +402,8 @@ def _worker_init_env(monkeypatch, *, radix_match):
             return fake_torch
         if name == "sglang.srt.mem_cache.radix_cache":
             return radix_mod
+        if name == "sglang.srt.mem_cache.unified_radix_cache":
+            return unified_mod
         if name == "sglang.srt.runtime_context":
             return runtime_ctx
         return real_import(name, *args, **kwargs)
@@ -402,10 +419,16 @@ def _worker_init_env(monkeypatch, *, radix_match):
                        enable_lora=False, enable_dp_attention=False,
                        disaggregation_mode="null"),
         model=NS(get_input_embeddings=lambda: NS(
-            weight=NS(is_cuda=True, dtype="bfloat16", device="cuda:3"),
-            tp_size=8, num_embeddings=150528, output_dtype="bfloat16")),
+            weight=NS(is_cuda=True, dtype="bfloat16", device="cuda:3",
+                      ndim=2, shape=(150528, 6144)),
+            shard_indices=NS(org_vocab_start_index=0, org_vocab_end_index=150528,
+                             added_vocab_start_index=150528, added_vocab_end_index=150528,
+                             num_org_elements_padded=151552),
+            tp_size=8, num_embeddings=150528, output_dtype="bfloat16",
+            embedding_dim=6144)),
         forward_stream=None)
-    scheduler = NS(tree_cache=(RadixCache() if radix_match else object()),
+    cache = UnifiedRadixCache() if unified else (RadixCache() if radix_match else object())
+    scheduler = NS(tree_cache=cache,
                     schedule_stream=NS(device="cuda:3", cuda_stream=1),
                     forward_stream=NS(device="cuda:3", cuda_stream=2),
                     copy_stream=NS(device="cuda:3", cuda_stream=3))
@@ -456,3 +479,65 @@ def test_worker_runtime_decline_reports_exception_class_not_text(monkeypatch, ca
     assert records[0].getMessage() == ("occ3-bridge: worker runtime decline "
                                         "(stage=kv_layout code=exception_RuntimeError)")
     assert "PRIVATE" not in caplog.text
+
+
+def test_unified_radix_cache_passes_gate_and_declines_only_later(monkeypatch, caplog):
+    import logging
+    runner, scheduler, group = _worker_init_env(monkeypatch, radix_match=False, unified=True)
+    runner.forward_stream = None  # Later-stage failure isolates the gate outcome.
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.latent_worker"):
+        runtime = object.__new__(w.WorkerRuntime)
+        with pytest.raises(LatentError):
+            runtime.__init__(runner, group, profile(), scheduler=scheduler)
+    records = [r for r in caplog.records if r.name == "occ3_sglang.latent_worker"]
+    assert len(records) == 1
+    assert records[0].getMessage() == ("occ3-bridge: worker runtime decline "
+                                        "(stage=streams code=latent_profile)")
+
+
+def test_worker_runtime_completes_init_with_unified_radix_cache(monkeypatch):
+    runner, scheduler, group = _worker_init_env(monkeypatch, radix_match=False, unified=True)
+    runner.forward_stream = NS(device="cuda:3", cuda_stream=4)
+    runtime = object.__new__(w.WorkerRuntime)
+    runtime.__init__(runner, group, profile(), scheduler=scheduler)
+    assert runtime.initialized is True and not runtime.poisoned
+    assert type(runtime.layout_digest) is str and len(runtime.layout_digest) == 64
+
+
+def test_worker_runtime_completes_init_with_classic_radix_cache(monkeypatch):
+    runner, scheduler, group = _worker_init_env(monkeypatch, radix_match=True)
+    runner.forward_stream = NS(device="cuda:3", cuda_stream=4)
+    runtime = object.__new__(w.WorkerRuntime)
+    runtime.__init__(runner, group, profile(), scheduler=scheduler)
+    assert runtime.initialized is True and not runtime.poisoned
+
+
+@pytest.mark.parametrize("kind", ["classic", "unified"])
+def test_subclass_cache_implementations_still_decline_at_the_gate(monkeypatch, caplog, kind):
+    import logging
+    runner, scheduler, group = _worker_init_env(monkeypatch, radix_match=kind == "classic",
+                                                unified=kind == "unified")
+    scheduler.tree_cache = type("ThirdParty", (type(scheduler.tree_cache),), {})()
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.latent_worker"):
+        runtime = object.__new__(w.WorkerRuntime)
+        with pytest.raises(LatentError):
+            runtime.__init__(runner, group, profile(), scheduler=scheduler)
+    records = [r for r in caplog.records if r.name == "occ3_sglang.latent_worker"]
+    assert len(records) == 1 and records[0].levelno == logging.ERROR
+    assert records[0].getMessage() == ("occ3-bridge: worker runtime decline "
+                                        "(stage=radix_cache code=latent_profile)")
+
+
+def test_duck_typed_unified_surface_does_not_satisfy_the_gate(monkeypatch, caplog):
+    import logging
+    runner, scheduler, group = _worker_init_env(monkeypatch, radix_match=True)
+    scheduler.tree_cache = NS(root_node=object(), free_kv_row=lambda kv, ranges: None,
+                              req_to_token_pool=object())
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.latent_worker"):
+        runtime = object.__new__(w.WorkerRuntime)
+        with pytest.raises(LatentError):
+            runtime.__init__(runner, group, profile(), scheduler=scheduler)
+    records = [r for r in caplog.records if r.name == "occ3_sglang.latent_worker"]
+    assert len(records) == 1
+    assert records[0].getMessage() == ("occ3-bridge: worker runtime decline "
+                                        "(stage=radix_cache code=latent_profile)")
