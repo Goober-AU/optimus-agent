@@ -52,3 +52,57 @@
 ## Evidence register
 
 Citations are inline above; every cited evidence file appears there with its full path and sha256.
+
+
+## Live-startup repair round (2026-10-22, branch `fix/occ3-sglang-live-startup`)
+
+**Round context.** New worktree `optimus-occ3fix-20261022`, branch cut from `db8fec0b8` (merge of PR #189, which landed the C30/C31 follow-ups `0f40faf01`/`7fc540974` of the `feat/occ3-generic-sglang-bridge` chain). The W4-A1 root cause was verified first-hand (root session `01a16256`, 2026-10-22: read-only probes against the exact TS4 candidate image and the preserved candidate logs). The entries below follow the ledger format above; together they supersede the W4-A1 entry's `Status: OPEN` line (its fix description predates this round). The worktree advanced twice while this append was being written (two repairs landed mid-writing); every entry states its commit state and the observation time. Full chain and citations: `reports/occ3/live-startup-repair/ROOT-CAUSE.md`, `STARTUP-GATES.md`, `ROUTE-REGISTRATION.md`.
+
+### W4-A1-RES - verified resolution: false profile rejection of the production default cache
+
+- Bug id: W4-A1-RES (resolution record for W4-A1). Component: `extensions/sglang-occ3/occ3_sglang/latent_worker.py` (install gate, stage `radix_cache`). First observed: live window TS4 (TS=20261022T0356Z), P2.6 step-0 identity query. Severity: TERMINAL for the window; root cause now VERIFIED (offline code reads + read-only image probes).
+- Root cause chain (verified): production sglang 0.5.21 initialises `tree_cache = UnifiedRadixCache` on all 8 TP ranks (candidate logs TS3/TS4); `UnifiedRadixCache` and `RadixCache` are SIBLING classes (both subclass `BasePrefixCache`; `__mro__` verified in the candidate image) and `registered_radix_cache_backends() == []`, so no flag-only switch to the classic cache exists. The install gate at latent_worker.py:72-74 (numbering at `64492e8b1`) `require(scheduler is not None and type(scheduler.tree_cache) is RadixCache, "profile")` is False on the production default -> `LatentError("profile")` on every rank -> the patched scheduler handler collapses it to `error=unsupported_profile` (patch `patches/scheduler-cache-ipc.v1.json`; image `scheduler.py:2793-2804`) -> the tokenizer-side generic handler maps it to `installation_unavailable` (native_install.py:745-747) -> clean pre-mutation rollback (decline at :698 precedes `mutation_started` :706; finally :748-779) -> `selected_serve` proceeds to `original_serve` (:1012) -> inert app with the original api-key middleware and no `/occ3/v1/native/*` routes -> the observed 404-with-valid-key / 401-keyless. The decline was FAST, not the 30 s control timeout: engine-ready 03:42:50.477Z -> Uvicorn running 03:42:50.606Z (129 ms).
+- Classification: false rejection of a SUPPORTED default shape - SAFE-BUT-DIFFERENT-REPRESENTATION per the campaign spec, not a security failure. The verified UnifiedRadixCache surface (`root_node` property, `free_kv_row` with identical signature, `req_to_token_pool`) covers every `tree_cache` touchpoint the occ3 private paths use (the `mem_cache/common.py` patch: `occ3_private_match` / `occ3_release_private_kv`).
+- Why the offline gates missed it: fake `class RadixCache: pass` mocks in the unit tests (tests/conftest.py:142-176 fake sglang package; tests/test_latent_scheduler_patch.py:124-149; the `64492e8b1`-era `_worker_init_env` in tests/test_latent_worker.py), rehearsals that cover docker lifecycle only (deploy/v3/rehearsal.py:27-87, pure-Python http.server fixtures), and seven tiny-boots that could not load the real model on co-resident GPU memory limits (W4-A1 entry above).
+- Fix: W4-A1-R1 and W4-A1-R2 below (the two gates), plus the observability repairs OD-1/OD-2.
+- Status: RESOLVED - root cause VERIFIED; both gate repairs COMMITTED (`d2ed1123b`, `99b2ebdc9`); live confirmation LIVE-PENDING (no live window has run on any repaired build).
+
+### OD-1 - generic decline paths erased the failure category (observability defect)
+
+- Bug id: OD-1. Component: `extensions/sglang-occ3/occ3_sglang/native_install.py` (generic decline paths). First observed: root session round 2 (2026-10-22, `occ3fix-audit/ROOT-NOTES.md` item 4/6), after C30 logging proved insufficient. Severity: HIGH (diagnostic; blocked root-cause capture on any live declined boot).
+- Symptom: every non-InstallationError failure in `install_native_runtime` and `prepare_selected_native_server` collapsed into one fixed code (`installation_unavailable` / `experimental_startup_refused`); a control-path timeout, a latent worker refusal and an unrelated local exception were indistinguishable in the only live-observable channel (the C30 ERROR lines).
+- Root cause (verified): the generic handlers caught `Exception` and logged `result.code` only - the failure category never reached any observable channel.
+- Fix: COMMITTED `71e449783fe0711d43bc5a259258a1a9380f0e5c` (2026-10-22 07:41:03Z) - a bounded sanitised detail token (`latent_<code>`, `control_timeout`, `exception_<ClassName>`) on the two generic ERROR lines only (native_install.py:94-108, :782-787, :976-978); no exception text, payloads or paths logged; receipt taxonomy and evidence schema unchanged.
+- Regression coverage: tests/test_native_install.py:581-624 (sanitised timeout/latent/generic details, taxonomy and evidence unchanged, private strings never logged).
+- Status: FIXED - committed. Targeted files at this commit: 146 tests green (95 in test_native_install.py + 51 in test_native_startup_patch.py, root-session verified).
+
+### OD-2 - worker-side bootstrap rejection invisible end to end (observability defect)
+
+- Bug id: OD-2. Component: `extensions/sglang-occ3/occ3_sglang/latent_worker.py` plus the patched scheduler control handler. First observed: root session (2026-10-22), while tracing the TS4 decline. Severity: HIGH (diagnostic; the W4-A1 failing check produced zero observable output in TS3/TS4).
+- Symptom: the scheduler patch handler collapsed every `bootstrap_worker` exception into the fixed reply error `unsupported_profile`; the tokenizer-side generic handler then logged only `installation_unavailable`; the failing runtime check never reached any observable channel.
+- Root cause (verified): `handle_occ3_control`'s blanket `except Exception` (patch replacement 17/27/29; image `scheduler.py:2793-2804`) with no logging anywhere on the worker path.
+- Fix: COMMITTED `64492e8b1c5df535e30e09cf3064a7584dff98a0` (2026-10-22 08:06:01Z) - fixed stage markers (`radix_cache, kv_layout, model_config, model_class, parallel_layout, speculative, embeddings, dist_init, streams, dtype`) in `WorkerRuntime.__init__` and `bootstrap_worker`, and one bounded ERROR line carrying stage plus sanitised code on decline (latent_worker.py:26-31, :121-122 at `64492e8b1`); no exception text, payloads or paths; receipt taxonomies unchanged.
+- Regression coverage: tests/test_latent_worker.py at `64492e8b1` (failing stage logged, stream-stage distinction, exception class not text; 28 tests, root-session verified).
+- Status: FIXED - committed.
+
+### W4-A1-R1 - install gate rejected UnifiedRadixCache (first instance of the W4-A1 defect)
+
+- Bug id: W4-A1-R1. Component: `extensions/sglang-occ3/occ3_sglang/latent_worker.py` (stage `radix_cache`). Root cause: W4-A1-RES.
+- Fix: COMMITTED `d2ed1123be9ffe26a966a4ca2ec1fcd7282bf041` (2026-10-22 08:32:12Z) - accept exactly the two observed runtime classes: `type(scheduler.tree_cache) in (RadixCache, UnifiedRadixCache)` (latent_worker.py:72-78 at `d2ed1123b`); exact-type membership keeps subclasses and duck-typed variants declining with the existing stage/code ERROR line.
+- Regression coverage: tests/test_latent_worker.py at `d2ed1123b` adds unified-passes-and-declines-only-later, init-completes-with-unified, init-completes-with-classic, subclass-still-declines (parametrised) and duck-typed-surface-still-declines; 34 collected / 34 passed in this append author's point-in-time run (~08:37Z, working tree equal to the commit).
+- Status: FIXED - committed (landed during this append's writing; the round's task list had still recorded it as in flight).
+
+### W4-A1-R2 - data-path admission gate rejected UnifiedRadixCache (second instance, same defect class)
+
+- Bug id: W4-A1-R2. Component: `extensions/sglang-occ3/patches/scheduler-cache-ipc.v1.json` (managers/scheduler.py replacement 2; image `scheduler.py:2820`). Root cause: W4-A1-RES section "second data-path gate" - `_occ3_validate_received` opens with the same `type(self.tree_cache) is not RadixCache` check, so descriptor-carrying requests would abort `occ3_unsupported_profile` even with the install gate fixed (root-verified).
+- Fix: COMMITTED `99b2ebdc99eecba17ec664d28d5749440f1f19b1` (2026-10-22 08:45:03Z) - the admission overlay accepts `type is RadixCache or type is UnifiedRadixCache`; the patch `after_sha256` and tests/test_latent_scheduler_patch.py updated.
+- Regression coverage: tests/test_latent_scheduler_patch.py (admission-gate acceptance under the sibling shape; 32 passed / 15 subtests in this append author's point-in-time pre-commit run ~08:37Z; the two committed repair files together - test_latent_scheduler_patch.py + test_latent_worker.py - pass 66 tests / 15 subtests in the post-commit working tree at ~08:47Z).
+- Status: FIXED - committed (observed landing during this append's writing).
+
+### Round evidence register
+
+- Root-verified facts: root session `01a16256`, 2026-10-22 (sibling `__mro__`, all-8-rank UnifiedRadixCache logs TS3/TS4, `registered_radix_cache_backends() == []`, 129 ms timeline, UnifiedRadixCache compatibility surface, image `scheduler.py:2820`).
+- Chain and gate inventory with file:line: `reports/occ3/live-startup-repair/ROOT-CAUSE.md`, `STARTUP-GATES.md`, `ROUTE-REGISTRATION.md` (this worktree, this branch).
+- Audit documents: occ3fix-shape-audit.md (sha256 `3f6f68600a546c44b81f7711f012d64887ab2ef70e007a64170fb04925702fe9`), occ3fix-decline-map.md (sha256 `ee946b8f32cf415c2319c35d13108c8625cfca4588038bd10a44f021ad5bf99e`), occ3fix-phasesplit-design.md (sha256 `af9c48b2c77ea07a6d9d65be9bf3626416a88f912b187279b51e61ef149ccd2c`), ROOT-NOTES.md (sha256 `2f784eaf761607b5ae51103a7f9910447b88d819016eb59280ca0b2c05f9c96a`), all under `C:/Users/openclawuser/Optimus-Assistant/profile/workspace/occ3fix-audit/`.
+- Commits: `71e449783fe0711d43bc5a259258a1a9380f0e5c`, `64492e8b1c5df535e30e09cf3064a7584dff98a0`, `d2ed1123be9ffe26a966a4ca2ec1fcd7282bf041`, `99b2ebdc99eecba17ec664d28d5749440f1f19b1`.
+- Verified suite state: extension suite at `64492e8b1` 1464 passed / 324 skipped / 77 subtests (root-session verified). The suite has not been re-run at `d2ed1123b`/`99b2ebdc9` by this append's author; the phase-split implementation (startup_state.py and controller-side edits) remains uncommitted in the working tree at 08:46Z and is not covered by any number in this entry.
