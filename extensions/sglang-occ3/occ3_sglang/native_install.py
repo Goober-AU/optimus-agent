@@ -109,6 +109,9 @@ def _decline_detail(error):
     """
     from .latent_types import LatentError
     if isinstance(error, LatentError):
+        members = getattr(error, "members", None)
+        if isinstance(members, str) and members and members.isascii():
+            return ("latent_" + error.code + "[" + members + "]")[:128]
         return "latent_" + error.code
     if isinstance(error, (asyncio.TimeoutError, TimeoutError)):
         return "control_timeout"

@@ -2342,7 +2342,7 @@ async fn run_before_phase(
         binary_sha256: env.harness_binary_sha256.clone(),
         source_manifest_sha256: env.source_manifest_sha256.clone(),
         identity_fingerprint: env.identity.fingerprint(),
-        profile_digest: PROFILE_DIGEST.into(),
+        profile_digest: env.profile_digest.clone(),
         endpoint_origin: url::Url::parse(&env.endpoint)
             .map_err(|_| fail())?
             .origin()
@@ -2438,7 +2438,7 @@ async fn run_after_phase(
         binary_sha256: env.harness_binary_sha256.clone(),
         source_manifest_sha256: env.source_manifest_sha256.clone(),
         identity_fingerprint: env.identity.fingerprint(),
-        profile_digest: PROFILE_DIGEST.into(),
+        profile_digest: env.profile_digest.clone(),
         endpoint_origin: url::Url::parse(&env.endpoint)
             .map_err(|_| fail())?
             .origin()

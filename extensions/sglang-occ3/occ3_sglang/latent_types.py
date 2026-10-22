@@ -15,11 +15,19 @@ HEX = re.compile(r"[0-9a-f]{64}\Z")
 
 
 class LatentError(RuntimeError):
-    def __init__(self, code="latent_failed"):
+    def __init__(self, code="latent_failed", members=None):
         allowed = {"latent_failed", "unavailable", "profile", "identity", "expired",
                    "quota", "replay", "state", "lineage", "ranks", "invalid",
                    "not_ready", "retired", "numerical", "cancelled"}
         self.code = code if code in allowed else "latent_failed"
+        # Bounded sanitised names of the profile members that tripped; a live
+        # decline names every failing check in one attempt instead of one.
+        if (isinstance(members, (list, tuple)) and members
+                and all(isinstance(name, str) and name.isascii()
+                        and len(name) <= 32 for name in members)):
+            self.members = ",".join(members)[:128]
+        else:
+            self.members = None
         super().__init__(self.code)
 
 
@@ -37,6 +45,18 @@ class UniformRequestCancellation(LatentError):
 def require(condition, code="invalid"):
     if not condition:
         raise LatentError(code)
+
+
+def require_members(checks, code="profile"):
+    """Evaluate every (name, holds) member, then decline naming all failures.
+
+    No short-circuit: a decline carries the bounded member names so one live
+    window identifies every tripping profile check at that stage. Member
+    conditions are positive, matching require(condition).
+    """
+    failed = [name for name, holds in checks if not holds]
+    if failed:
+        raise LatentError(code, members=failed)
 
 
 def sha(value):
