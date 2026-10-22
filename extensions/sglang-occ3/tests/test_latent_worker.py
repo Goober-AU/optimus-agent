@@ -353,3 +353,106 @@ def test_failed_cleanup_cannot_clear_inflight_guard(monkeypatch):
     with pytest.raises(LatentError): w.abort_request(NS(occ3_runtime=runtime),req(capture()),"cancel")
     r.retire(handle="handle")
     assert record.inflight==2 and not record.gpu_freed and r.charged_bytes==4096
+
+
+def _worker_init_env(monkeypatch, *, radix_match):
+    """Intercept torch/sglang imports with fakes; return (fakes dict, runner, scheduler)."""
+    import types
+    from types import SimpleNamespace as NS
+
+    fake_torch = types.ModuleType("torch")
+    fake_torch.distributed = NS(
+        is_initialized=lambda: True,
+        get_world_size=lambda group: 8,
+        get_rank=lambda group: 3,
+        all_gather_object=lambda result, value, group=None: [result.__setitem__(i, value) for i in range(len(result))])
+    fake_torch.float16, fake_torch.bfloat16, fake_torch.float32 = "float16", "bfloat16", "float32"
+
+    class RadixCache:
+        pass
+
+    radix_mod = types.ModuleType("sglang.srt.mem_cache.radix_cache")
+    radix_mod.RadixCache = RadixCache
+    group = NS(cpu_group="cpu", device_group="dev")
+    parallel = NS(tp_size=8, dp_size=1, pp_size=1, attn_cp_size=1, attn_dcp_size=1,
+                  attn_tp_size=8, tp_group=group, pp_group=NS(world_size=1))
+    runtime_ctx = types.ModuleType("sglang.srt.runtime_context")
+    runtime_ctx.get_parallel = lambda: parallel
+
+    import builtins
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "torch":
+            return fake_torch
+        if name == "sglang.srt.mem_cache.radix_cache":
+            return radix_mod
+        if name == "sglang.srt.runtime_context":
+            return runtime_ctx
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+    runner = NS(
+        model_config=NS(hf_config=NS(model_type="glm_moe_dsa",
+                                     architectures=["GlmMoeDsaForCausalLM"],
+                                     hidden_size=6144, num_hidden_layers=78,
+                                     quantization_config={"quant_method": "fp8"})),
+        server_args=NS(speculative_algorithm="EAGLE", speculative_eagle_topk=1,
+                       enable_lora=False, enable_dp_attention=False,
+                       disaggregation_mode="null"),
+        model=NS(get_input_embeddings=lambda: NS(
+            weight=NS(is_cuda=True, dtype="bfloat16", device="cuda:3"),
+            tp_size=8, num_embeddings=150528, output_dtype="bfloat16")),
+        forward_stream=None)
+    scheduler = NS(tree_cache=(RadixCache() if radix_match else object()),
+                    schedule_stream=NS(device="cuda:3", cuda_stream=1),
+                    forward_stream=NS(device="cuda:3", cuda_stream=2),
+                    copy_stream=NS(device="cuda:3", cuda_stream=3))
+    monkeypatch.setattr(w, "validate_kv_layout", lambda *args, **kwargs: {"kv": "fp8_e4m3"})
+    monkeypatch.setattr(w, "validate_target_model_class", lambda *args, **kwargs: None)
+    return runner, scheduler, group
+
+
+def test_worker_runtime_decline_logs_failing_stage_and_sanitised_code(monkeypatch, caplog):
+    import logging
+    runner, scheduler, group = _worker_init_env(monkeypatch, radix_match=False)
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.latent_worker"):
+        runtime = object.__new__(w.WorkerRuntime)
+        with pytest.raises(LatentError):
+            runtime.__init__(runner, group, profile(), scheduler=scheduler)
+    records = [r for r in caplog.records if r.name == "occ3_sglang.latent_worker"]
+    assert len(records) == 1 and records[0].levelno == logging.ERROR
+    assert records[0].getMessage() == ("occ3-bridge: worker runtime decline "
+                                        "(stage=radix_cache code=latent_profile)")
+
+
+def test_worker_runtime_decline_distinguishes_stream_stage(monkeypatch, caplog):
+    import logging
+    runner, scheduler, group = _worker_init_env(monkeypatch, radix_match=True)
+    runner.forward_stream = None  # the only failing check
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.latent_worker"):
+        runtime = object.__new__(w.WorkerRuntime)
+        with pytest.raises(LatentError):
+            runtime.__init__(runner, group, profile(), scheduler=scheduler)
+    records = [r for r in caplog.records if r.name == "occ3_sglang.latent_worker"]
+    assert len(records) == 1
+    assert records[0].getMessage() == ("occ3-bridge: worker runtime decline "
+                                        "(stage=streams code=latent_profile)")
+
+
+def test_worker_runtime_decline_reports_exception_class_not_text(monkeypatch, caplog):
+    import logging
+    runner, scheduler, group = _worker_init_env(monkeypatch, radix_match=True)
+    def boom(*args, **kwargs):
+        raise RuntimeError("PRIVATE-WORKER-DETAIL")
+    monkeypatch.setattr(w, "validate_kv_layout", boom)
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.latent_worker"):
+        runtime = object.__new__(w.WorkerRuntime)
+        with pytest.raises(LatentError):
+            runtime.__init__(runner, group, profile(), scheduler=scheduler)
+    records = [r for r in caplog.records if r.name == "occ3_sglang.latent_worker"]
+    assert len(records) == 1
+    assert records[0].getMessage() == ("occ3-bridge: worker runtime decline "
+                                        "(stage=kv_layout code=exception_RuntimeError)")
+    assert "PRIVATE" not in caplog.text

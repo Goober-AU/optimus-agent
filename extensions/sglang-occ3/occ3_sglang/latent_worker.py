@@ -6,6 +6,7 @@ No tensor from this module is placed on a frontend IPC result.
 from __future__ import annotations
 
 import hashlib
+import logging
 import time
 from array import array
 from dataclasses import asdict, dataclass
@@ -18,6 +19,17 @@ from .latent_types import (LatentError, UniformRequestCancellation, Publication,
                            validate_control_payload)
 from .statebridge import (align_hidden_sequence, anchor_tiled, mean_embedding_norm,
                           shard_ranges, workspace_bound)
+
+logger = logging.getLogger(__name__)
+
+
+def _decline_code(error):
+    """Fixed sanitised token for worker-side decline logs (never exception text)."""
+    if isinstance(error, LatentError):
+        return "latent_" + error.code
+    name = type(error).__name__
+    return "exception_" + name if name.isidentifier() else "exception_unknown"
+
 
 _RUNTIME = None
 
@@ -55,38 +67,49 @@ class WorkerRuntime:
         self.target_norm = None
         local_error = ""
         local_layout = None
+        stage = "init"
         try:
             from sglang.srt.mem_cache.radix_cache import RadixCache
+            stage = "radix_cache"
             require(scheduler is not None and type(scheduler.tree_cache) is RadixCache, "profile")
+            stage = "kv_layout"
             kv_layout = validate_kv_layout(model_runner, scheduler, torch)
             config = model_runner.model_config.hf_config
             args = model_runner.server_args
+            stage = "model_config"
             require(config.model_type == "glm_moe_dsa" and config.architectures == ["GlmMoeDsaForCausalLM"], "profile")
             require(config.hidden_size == profile.hidden_dim and config.num_hidden_layers == 78, "profile")
             require(config.quantization_config.get("quant_method") == "fp8", "profile")
+            stage = "model_class"
             validate_target_model_class(model_runner.model)
             from sglang.srt.runtime_context import get_parallel
             parallel = get_parallel()
+            stage = "parallel_layout"
             require((parallel.tp_size, parallel.dp_size, parallel.pp_size, parallel.attn_cp_size,
                      parallel.attn_dcp_size, parallel.attn_tp_size) == (8, 1, 1, 1, 1, 8), "profile")
             require(parallel.tp_group is tp_group and parallel.pp_group.world_size == 1, "profile")
+            stage = "speculative"
             require(getattr(args, "speculative_algorithm", None) in ("EAGLE", "NEXTN")
                     and getattr(args, "speculative_eagle_topk", None) == 1, "profile")
             require(not getattr(args, "enable_lora", False) and not getattr(args, "enable_dp_attention", False)
                     and getattr(args, "disaggregation_mode", "null") == "null", "profile")
+            stage = "embeddings"
             self.embedding = model_runner.model.get_input_embeddings()
             require(self.embedding.weight.is_cuda and self.embedding.weight.dtype in
                     (torch.float16, torch.bfloat16, torch.float32), "profile")
+            stage = "dist_init"
             require(torch.distributed.is_initialized(), "ranks")
             require(torch.distributed.get_world_size(tp_group.device_group) == profile.expected_ranks, "ranks")
             self.rank = torch.distributed.get_rank(tp_group.device_group)
             self.device = self.embedding.weight.device
             # Native schedule/forward/copy work can precede the model hook. Hold
             # actual initialized stream objects so cleanup fences those queues too.
+            stage = "streams"
             for stream in (scheduler.schedule_stream, scheduler.forward_stream,
                            scheduler.copy_stream, model_runner.forward_stream):
                 require(stream is not None and stream.device == self.device, "profile")
                 self.streams[stream.cuda_stream] = stream
+            stage = "dtype"
             self.dtype = str(self.embedding.output_dtype or self.embedding.weight.dtype).split(".")[-1]
             require(self.dtype in ("float16", "bfloat16", "float32"), "profile")
             self.element_size = {"float16": 2, "bfloat16": 2, "float32": 4}[self.dtype]
@@ -94,7 +117,9 @@ class WorkerRuntime:
                             "embedding_tp": self.embedding.tp_size, "dim": profile.hidden_dim,
                             "vocab": self.embedding.num_embeddings, "dtype": self.dtype,
                             "kv": kv_layout}
-        except Exception:
+        except Exception as error:
+            logger.error("occ3-bridge: worker runtime decline (stage=%s code=%s)",
+                         stage, _decline_code(error))
             local_error = "profile"
         errors = self.gather(local_error)
         require(not any(errors), "profile")
@@ -813,7 +838,8 @@ def bootstrap_worker(scheduler):
     profile, error = None, ""
     try:
         profile = load_runtime_profile()
-    except Exception:
+    except Exception as exc:
+        logger.error("occ3-bridge: worker profile decline (code=%s)", _decline_code(exc))
         error = "profile"
     profiles = [None] * size
     torch.distributed.all_gather_object(profiles, error or profile.binding_digest, group=group.cpu_group)
