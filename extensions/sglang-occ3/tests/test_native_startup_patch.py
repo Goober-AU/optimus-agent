@@ -23,6 +23,7 @@ from fastapi import FastAPI
 
 from deploy.v3 import source_patch
 from occ3_sglang import native_install as install
+from test_native_install import KEY, pinned_auth
 
 BEFORE = "1fbb46671e86d0ebf23046efa09e8e03d251754e681ba03b818dbb7a75c79c55"
 AFTER = "76d4f909410a2e587b6e7c3981531982ce630fd57079253f6dd7ed1b12167cc6"
@@ -389,9 +390,12 @@ def test_real_server_refuses_unsupported_branch_or_existing_patch(fault):
 
 
 @pytest.fixture
-def loop_server(monkeypatch):
+def loop_server(monkeypatch, pinned_auth):
+    from occ3_sglang import startup_state
+
     app = FastAPI()
-    tm = NS()
+    tm = NS(server_args=NS(api_key=KEY))
+    pinned_auth.add_api_key_middleware(app, api_key=KEY, admin_api_key=None)
     events = []
     class Server:
         should_exit = False
@@ -404,13 +408,27 @@ def loop_server(monkeypatch):
     monkeypatch.setattr(install, "_read_startup_literal", lambda: {"EXPERIMENTAL_STARTUP": True})
     monkeypatch.setattr(install, "_verify_startup_artifacts", lambda selection: events.append(("artifacts",)))
     monkeypatch.setattr(install, "_verify_native_server", lambda candidate, a, t: candidate.serve)
+    # The attested control-plane module is the real checked-out source here.
+    module_file = Path(startup_state.__file__).resolve()
+    monkeypatch.setattr(install, "_verify_control_plane_sources",
+                        lambda: {str(module_file): module_file.read_text(encoding="utf-8")})
     async def factory(a, t, **kwargs):
         assert a is app and t is tm and kwargs == {"experimental_opt_in": True}
         assert app.middleware_stack is None
         events.append(("install", asyncio.get_running_loop()))
         return install.InstallationReceipt(True, "installed_experimental_not_live_validated")
     monkeypatch.setattr(install, "install_native_runtime", factory)
-    return NS(app=app, tm=tm, server=server, events=events, factory=factory)
+    return NS(app=app, tm=tm, server=server, events=events, factory=factory,
+              startup_state=startup_state)
+
+
+@pytest.fixture(autouse=True)
+def clean_startup_state():
+    from occ3_sglang import startup_state
+
+    startup_state.reset()
+    yield
+    startup_state.reset()
 
 
 async def test_instance_wrapper_awaits_install_on_native_loop_before_serve(loop_server):
@@ -586,3 +604,57 @@ async def test_selected_serve_success_path_stays_silent(loop_server, caplog):
     with caplog.at_level(logging.INFO, logger="occ3_sglang.native_install"):
         assert await f.server.serve() == "native-result"
     assert _native_records(caplog) == []
+
+
+def test_prepare_registers_control_plane_between_selection_and_owner_check(loop_server, monkeypatch):
+    """Registration ordering: after the selection check, before the owner check."""
+    f = loop_server
+    order = []
+    real_artifacts = install._verify_startup_artifacts
+    real_server = install._verify_native_server
+    monkeypatch.setattr(install, "register_control_plane",
+                       lambda app, tm: order.append("register") or True)
+    monkeypatch.setattr(install, "_verify_startup_artifacts",
+                        lambda selection: order.append("artifacts") or real_artifacts(selection))
+    monkeypatch.setattr(install, "_verify_native_server",
+                        lambda s, a, t: order.append("server") or real_server(s, a, t))
+    receipt = install.prepare_selected_native_server(f.server, f.app, f.tm)
+    assert receipt.prepared
+    assert order == ["register", "artifacts", "server"]
+
+
+def test_prepare_without_selection_never_registers_the_control_plane(loop_server, monkeypatch):
+    f = loop_server
+    monkeypatch.setattr(install, "_read_startup_literal", lambda: None)
+    calls = []
+    monkeypatch.setattr(install, "register_control_plane",
+                        lambda app, tm: calls.append((app, tm)) or True)
+    receipt = install.prepare_selected_native_server(f.server, f.app, f.tm)
+    assert not receipt.selected and calls == []
+    machine = f.startup_state.current()
+    assert machine.state.value == "DISABLED"
+    assert machine.code == "experimental_startup_not_selected" and machine.stage == "prepare"
+
+
+def test_prepare_call_order_is_pinned_by_ast():
+    """Source structure: the registration call sits between selection and owner check."""
+    tree = ast.parse(Path(install.__file__).read_text(encoding="utf-8"))
+    function = next(node for node in ast.walk(tree)
+                    if isinstance(node, ast.FunctionDef)
+                    and node.name == "prepare_selected_native_server")
+    statements = [node for node in function.body if not isinstance(node, (ast.Import, ast.ImportFrom, ast.Assign))]
+    # The try-block: selection read, not-selected early return, registration, owner check.
+    body = next(node for node in statements if isinstance(node, ast.Try)).body
+    names = []
+    for node in body:
+        for call in ast.walk(node):
+            if isinstance(call, ast.Call) and isinstance(call.func, ast.Name):
+                names.append(call.func.id)
+            if isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute):
+                names.append(call.func.attr)
+        # The not-selected early return is nested inside its guard; detect any return.
+        if any(isinstance(nested, ast.Return) for nested in ast.walk(node)):
+            names.append("<return>")
+    assert names.index("register_control_plane") > names.index("_read_startup_literal")
+    assert "<return>" in names[:names.index("register_control_plane")]  # not-selected early return
+    assert names.index("register_control_plane") < names.index("getattr")  # existing-owner check

@@ -327,9 +327,12 @@ def kv_client(stub_http_server, stub_tm, monkeypatch):
             stub_tm.mutate_output(obj, out)
         yield out
     stub_tm.generate_request = fake_generate
+    from occ3_sglang import startup_state
     app = FastAPI()
     app.include_router(api.router)
     app.include_router(kv_handles.router)
+    app.include_router(startup_state.create_control_router())
+    startup_state.reset()
     stub_http_server.app = app
     stub_http_server._global_state = StubState(stub_tm)
     with TestClient(app) as client:

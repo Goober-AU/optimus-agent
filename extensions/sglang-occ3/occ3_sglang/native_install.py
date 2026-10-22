@@ -134,6 +134,122 @@ def _existing_auth(app, tm):
     return key
 
 
+def _verify_control_plane_sources():
+    """Attested bytes for the control-plane module only; never executes it."""
+    import hashlib
+    import os
+    import re
+    import stat
+    from pathlib import Path
+
+    from .native_profile import load_source_attestation
+
+    attestation = load_source_attestation()
+    if (type(attestation) is not dict
+            or attestation.get("schema") != "optimus.occ3.native-sources.v1"
+            or attestation.get("source_revision") != _SOURCE_REVISION
+            or attestation.get("sglang_version") != "0.5.21"
+            or type(attestation.get("files")) is not list):
+        raise InstallationError("source_attestation_invalid")
+    selected = None
+    for item in attestation["files"]:
+        if (type(item) is not dict or set(item) != {"root", "path", "sha256"}
+                or item["root"] != "occ3_sglang"):
+            continue
+        if item["path"] == "startup_state.py":
+            if selected is not None:
+                raise InstallationError("source_attestation_invalid")
+            selected = item
+    if selected is None:
+        raise InstallationError("source_attestation_incomplete")
+    expected = selected["sha256"]
+    if type(expected) is not str or not re.fullmatch(r"[a-f0-9]{64}", expected):
+        raise InstallationError("source_attestation_invalid")
+    path = Path(__file__).absolute().parent / "startup_state.py"
+    if any(entry.is_symlink() for entry in (path, *path.parents)):
+        raise InstallationError("source_symlink")
+    fd = None
+    try:
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+                     | getattr(os, "O_BINARY", 0))
+        before = os.fstat(fd)
+        if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1
+                or not 0 < before.st_size <= _MAX_SOURCE_FILE):
+            raise InstallationError("source_file_invalid")
+        with os.fdopen(fd, "rb") as file:
+            fd = None
+            data = file.read(_MAX_SOURCE_FILE + 1)
+            after = os.fstat(file.fileno())
+        signature = lambda info: (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+        if (signature(before) != signature(after) or len(data) > _MAX_SOURCE_FILE
+                or len(data) != before.st_size):
+            raise InstallationError("source_changed")
+        if hashlib.sha256(data).hexdigest() != expected:
+            raise InstallationError("source_digest_mismatch")
+        return {str(path.resolve()): data.decode("utf-8")}
+    except InstallationError:
+        raise
+    except Exception:
+        raise InstallationError("source_unreadable") from None
+    finally:
+        if fd is not None:
+            os.close(fd)
+
+
+def register_control_plane(app, tokenizer_manager):
+    """Mount the three control routes; never on unverified original auth.
+
+    Idempotent via the control-plane marker with route-list restore. A
+    refusal never blocks ordinary serving: the state stays DISABLED with
+    the fixed refusal code and one sanitized ERROR line is logged.
+    """
+    from .startup_state import (CONTROL_PLANE_ATTR, CONTROL_PLANE_ROUTES,
+                                record_control_refusal, record_control_registered)
+
+    attempt = uuid.uuid4().hex[:8]
+
+    def refused(code, detail=None):
+        record_control_refusal(code, attempt=attempt)
+        if detail is None:
+            logger.error("occ3-bridge: control plane registration decline "
+                         "(attempt=%s stage=prepare code=%s)", attempt, code)
+        else:
+            logger.error("occ3-bridge: control plane registration decline "
+                         "(attempt=%s stage=prepare code=%s detail=%s)",
+                         attempt, code, detail)
+        return False
+
+    try:
+        _existing_auth(app, tokenizer_manager)
+    except InstallationError as error:
+        return refused(error.code)
+    if getattr(app, CONTROL_PLANE_ATTR, False):
+        record_control_registered()
+        return True
+    previous_routes = list(app.router.routes)
+    try:
+        from .startup_state import create_control_router
+        router = create_control_router()
+        actual = sorted((getattr(route, "path", None),
+                         tuple(sorted(getattr(route, "methods", None) or ())))
+                        for route in router.routes)
+        if actual != sorted(CONTROL_PLANE_ROUTES):
+            raise InstallationError("native_router_unverified")
+        documents = _verify_control_plane_sources()
+        for route in router.routes:
+            _verify_function_provenance(route.endpoint, documents)
+        app.include_router(router)
+    except InstallationError as error:
+        app.router.routes[:] = previous_routes
+        return refused(error.code)
+    except Exception as error:
+        app.router.routes[:] = previous_routes
+        return refused("experimental_startup_refused", _decline_detail(error))
+    setattr(app, CONTROL_PLANE_ATTR, True)
+    record_control_registered()
+    return True
+
+
 @dataclass(frozen=True)
 class InstallationReceipt:
     installed: bool
@@ -193,7 +309,7 @@ _REQUIRED_PLUGIN = {
     "native_install.py", "native_profile.py", "plugin.py", "chat_adapter.py",
     "attachment_contract.py", "use_receipts.py", "latent_backend.py",
     "latent_control_api.py", "latent_worker.py", "latent_types.py",
-    "latent_registry.py", "statebridge.py",
+    "latent_registry.py", "statebridge.py", "startup_state.py",
 }
 
 
@@ -448,7 +564,6 @@ async def _construct_components(app, tm, key, buffer_profile):
 _CONTROL_PATHS = (
     "/occ3/v1/native/sessions/enroll", "/occ3/v1/native/publish",
     "/occ3/v1/native/publication/status", "/occ3/v1/native/retire",
-    "/occ3/v1/native/runtime/identity",
 )
 _EXPECTED_HOOKS = (
     ("sglang.srt.entrypoints.openai.serving_chat.OpenAIServingChat.handle_request", "AROUND"),
@@ -657,16 +772,24 @@ async def install_native_runtime(app, tokenizer_manager, *, experimental_opt_in=
     adapter only after pinned source, original auth and ordered worker readiness.
     No active uninstall exists. A serving adapter must never be discarded.
     """
+    from . import startup_state
     if experimental_opt_in is not True:
+        startup_state.record_attempt_code("explicit_experimental_opt_in_required")
         return InstallationReceipt(False, "explicit_experimental_opt_in_required")
     if not _install_lock.acquire(blocking=False):
+        startup_state.record_attempt_code("installation_busy")
         return InstallationReceipt(False, "installation_busy")
+    attempt = uuid.uuid4().hex[:8]
     components = None
     hooks, owned_routes, owned_middleware = [], [], []
     openapi_before = getattr(app, "openapi_schema", None)
     cancelled = False
     committed = False
     mutation_started = False
+    # Hoisted fence outcome: nothing pending before the transaction begins.
+    rolled_back = True
+    closed = True
+    code = None
     snapshot = None
     detail = None
     try:
@@ -678,8 +801,12 @@ async def install_native_runtime(app, tokenizer_manager, *, experimental_opt_in=
                             and target in existing.registry._patched
                             for target, owner, attribute, _, wrapped, _, _, _ in existing.hooks)):
                 return existing.receipt
+            startup_state.record_attempt_code("installation_owner_mismatch", attempt=attempt)
             return InstallationReceipt(False, "installation_owner_mismatch")
+        # Only the lock holder mutates the machine from here to the finalize site.
+        startup_state.record_installing(attempt)
         key = _runtime_preflight(app, tokenizer_manager)
+        startup_state.mark_preflight_reached()
         if getattr(tokenizer_manager, "_occ3_control_client", None) is not None:
             raise InstallationError("control_client_occupied")
         _check_route_conflicts(app)
@@ -689,13 +816,16 @@ async def install_native_runtime(app, tokenizer_manager, *, experimental_opt_in=
             raise InstallationError("unsupported_buffer_profile")
         snapshot = _snapshot_precommit(app, tokenizer_manager, key)
         components = await _construct_components(app, tokenizer_manager, key, profile)
+        startup_state.mark_backend_constructed()
         if asyncio.current_task().cancelling():
             raise asyncio.CancelledError
         snapshot.registry_hooks = components.registry._hooks
         snapshot.registry_patched = components.registry._patched
         hooks = _prepare_hooks(components)
+        startup_state.mark_hooks_prepared()
         snapshot.hook_codes = tuple(original.__code__ for _, _, _, _, _, _, _, original in hooks)
         await components.backend.refresh_readiness()
+        startup_state.mark_worker_readiness_reached()
         if asyncio.current_task().cancelling():
             raise asyncio.CancelledError
         readiness = components.backend.readiness()
@@ -704,6 +834,7 @@ async def install_native_runtime(app, tokenizer_manager, *, experimental_opt_in=
         _revalidate_precommit(app, tokenizer_manager, components, hooks, snapshot)
         # No awaits from final ownership fence through app/registry mutation.
         mutation_started = True
+        startup_state.mark_route_mount_attempted()
         routes_before = list(app.router.routes)
         try:
             app.include_router(components.router)
@@ -734,8 +865,9 @@ async def install_native_runtime(app, tokenizer_manager, *, experimental_opt_in=
             tuple(hooks), components.registry)
         setattr(app, _INSTALLED_ATTR, installation)
         committed = True
+        startup_state.record_native_ready(attempt=attempt, installation=installation)
         logger.info("occ3-bridge: native runtime mounted (attempt=%s stage=install code=%s)",
-                    uuid.uuid4().hex[:8], receipt.code)
+                    attempt, receipt.code)
         return receipt
     except asyncio.CancelledError:
         cancelled = True
@@ -778,13 +910,17 @@ async def install_native_runtime(app, tokenizer_manager, *, experimental_opt_in=
         finally:
             _install_lock.release()
     if cancelled:
+        startup_state.record_declined(code, stage="install", attempt=attempt,
+                                       rollback_completed=rolled_back and closed)
         raise asyncio.CancelledError
     if detail:
         logger.error("occ3-bridge: native installation decline (attempt=%s stage=install code=%s detail=%s)",
-                     uuid.uuid4().hex[:8], code, detail)
+                     attempt, code, detail)
     else:
         logger.error("occ3-bridge: native installation decline (attempt=%s stage=install code=%s)",
-                     uuid.uuid4().hex[:8], code)
+                     attempt, code)
+    startup_state.record_declined(code, stage="install", attempt=attempt,
+                                   rollback_completed=rolled_back and closed)
     return InstallationReceipt(False, code)
 
 
@@ -945,15 +1081,22 @@ def prepare_selected_native_server(server, app, tokenizer_manager):
     not create a loop or change Uvicorn arguments/options/stop hooks. Absent or
     false fixed build selection does not load profiles, backends or controls.
     """
+    from . import startup_state
+    attempt = uuid.uuid4().hex[:8]
     selection = None
     try:
         selection = _read_startup_literal()
         if selection is None:
             receipt = StartupReceipt(False, False, "experimental_startup_not_selected")
             setattr(app, _STARTUP_ATTR, receipt.evidence())
+            startup_state.record_prepare("experimental_startup_not_selected",
+                                         selected=False, attempt=attempt)
             logger.info("occ3-bridge: native startup decline (attempt=%s stage=prepare "
-                        "code=experimental_startup_not_selected selected=false)", uuid.uuid4().hex[:8])
+                        "code=experimental_startup_not_selected selected=false)", attempt)
             return receipt
+        # Phase split: the control plane registers before any owner check or
+        # GPU-side validation, so declines stay observable over HTTP.
+        register_control_plane(app, tokenizer_manager)
         existing = getattr(server, _SERVER_ATTR, None)
         if existing is not None:
             if (type(existing) is _StartupOwner and existing.app is app
@@ -967,14 +1110,18 @@ def prepare_selected_native_server(server, app, tokenizer_manager):
         # Nothing was dispatched or patched in this synchronous preparation.
         receipt = StartupReceipt(selection is not None, False, error.code)
         setattr(app, _STARTUP_ATTR, receipt.evidence())
+        startup_state.record_prepare(error.code, selected=selection is not None,
+                                     attempt=attempt)
         logger.error("occ3-bridge: native startup decline (attempt=%s stage=prepare code=%s selected=%s)",
-                     uuid.uuid4().hex[:8], error.code, selection is not None)
+                     attempt, error.code, selection is not None)
         return receipt
     except Exception as error:
         receipt = StartupReceipt(selection is not None, False, "experimental_startup_refused")
         setattr(app, _STARTUP_ATTR, receipt.evidence())
+        startup_state.record_prepare("experimental_startup_refused",
+                                     selected=selection is not None, attempt=attempt)
         logger.error("occ3-bridge: native startup decline (attempt=%s stage=prepare code=experimental_startup_refused "
-                     "selected=%s detail=%s)", uuid.uuid4().hex[:8], selection is not None,
+                     "selected=%s detail=%s)", attempt, selection is not None,
                      _decline_detail(error))
         return receipt
 
@@ -991,6 +1138,9 @@ def prepare_selected_native_server(server, app, tokenizer_manager):
             # transaction into an ordinary serving candidate.
             setattr(app, _STARTUP_ATTR, {"code": "native_startup_aborted", "supported": False,
                                         "live_proof": False, "gate8_pass": False})
+            # A raise-path code always supersedes the recorded decline code.
+            startup_state.record_superseded("native_startup_aborted",
+                                            attempt=uuid.uuid4().hex[:8])
             if isinstance(error, asyncio.CancelledError):
                 raise
             raise InstallationError("native_startup_aborted") from None
@@ -1006,6 +1156,8 @@ def prepare_selected_native_server(server, app, tokenizer_manager):
                 or (not result.installed and (getattr(app, _INSTALLED_ATTR, None) is not None
                     or getattr(tokenizer_manager, "_occ3_control_client", None) is not None
                     or _cleanup_tasks))):
+            startup_state.record_superseded("native_startup_cleanup_unconfirmed",
+                                            attempt=uuid.uuid4().hex[:8])
             raise InstallationError("native_startup_cleanup_unconfirmed")
         # A declined installation reaches here only after verified owned rollback
         # and control settlement. No success/capability claim follows a refusal.
@@ -1021,4 +1173,6 @@ def prepare_selected_native_server(server, app, tokenizer_manager):
         raise InstallationError("startup_wrapper_unavailable") from None
     receipt = StartupReceipt(True, True, "experimental_startup_prepared")
     setattr(app, _STARTUP_ATTR, receipt.evidence())
+    startup_state.record_prepare("experimental_startup_prepared", selected=True,
+                                 attempt=attempt)
     return receipt

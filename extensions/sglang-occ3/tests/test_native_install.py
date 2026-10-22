@@ -30,6 +30,16 @@ from occ3_sglang.latent_types import LatentError, RuntimeProfile, SessionEnrollm
 
 REAL_COMPONENT_FACTORY = install._construct_components
 
+
+@pytest.fixture(autouse=True)
+def clean_startup_state():
+    """The startup singleton is process-wide; each test starts from DISABLED."""
+    from occ3_sglang import startup_state
+
+    startup_state.reset()
+    yield
+    startup_state.reset()
+
 KEY = "SYNTHETIC-PRIVATE-ORIGINAL-KEY"
 AUTH_SHA = "1ecd821d5fefbb196c05f33e6ee1e0cf5731cca03b27e4cce5f563ba20e6b971"
 HOOK_SHA = "0144d8c3e5ee294322894f88b8ad3bd49edad15c124650e4e834d0366815dc7d"
@@ -415,15 +425,48 @@ async def test_install_transaction_wires_real_adapter_and_controls_but_never_gat
     assert not f.created[0].backend.closed
 
 
-async def test_install_mounts_identity_route_on_pinned_post_only_surface(transaction_fixture):
+def app_routes(app):
+    """Flatten FastAPI _IncludedRouter wrappers into their concrete routes."""
+    out = []
+    for route in app.router.routes:
+        inner = getattr(route, "original_router", None)
+        if inner is not None:
+            out.extend(inner.routes)
+        else:
+            out.append(route)
+    return out
+
+
+async def test_install_mounts_identity_route_on_pinned_post_only_surface(
+        transaction_fixture, monkeypatch):
     from test_latent_backend import health as backend_health
+    from occ3_sglang import startup_state
     f = transaction_fixture
+    startup_state.reset()
+    # Phase split: the control plane (identity included) registers BEFORE install.
+    module_file = Path(startup_state.__file__).resolve()
+    monkeypatch.setattr(install, "_verify_control_plane_sources",
+                        lambda: {str(module_file): module_file.read_text(encoding="utf-8")})
+    assert install.register_control_plane(f.app, f.tm) is True
+    assert startup_state.current().state.value == "CONTROL_REGISTERED"
+    mounted = [getattr(route, "path", None) for route in app_routes(f.app)]
+    assert mounted.count("/occ3/v1/native/runtime/identity") == 1
+    assert mounted.count("/occ3/v1/status") == 1
+    assert mounted.count("/occ3/v1/capabilities") == 1
+    denied = await AsyncClient(transport=ASGITransport(app=f.app),
+        base_url="http://fixture").post("/occ3/v1/native/runtime/identity",
+        json={"schema": "occ3.runtime.identity.request.v1"},
+        headers={"Authorization": "Bearer " + KEY})
+    assert denied.status_code == 503 and denied.json() == {"error": {"code": "not_ready"}}
+    assert denied.headers["cache-control"] == "no-store"
+    # Real clients cannot reach the app before uvicorn serves; the probe above is a
+    # test-only interleaving, so restore the pre-serving stack install requires.
+    f.app.middleware_stack = None
     receipt = await install.install_native_runtime(f.app, f.tm, experimental_opt_in=True)
     assert receipt.installed
     assert install._CONTROL_PATHS == (
         "/occ3/v1/native/sessions/enroll", "/occ3/v1/native/publish",
-        "/occ3/v1/native/publication/status", "/occ3/v1/native/retire",
-        "/occ3/v1/native/runtime/identity")
+        "/occ3/v1/native/publication/status", "/occ3/v1/native/retire")
     components = f.created[0]
     assert ({getattr(route, "path", None) for route in components.router.routes} == set(install._CONTROL_PATHS)
             and len(components.router.routes) == len(install._CONTROL_PATHS)
@@ -431,18 +474,22 @@ async def test_install_mounts_identity_route_on_pinned_post_only_surface(transac
     # The whole control surface mounts as exactly one install-owned router include.
     assert [route for route in f.app.router.routes
             if getattr(route, "original_router", None) is components.router]
-    identity = next(route for route in components.router.routes
+    # Install never re-mounts the identity path: single ownership stays with
+    # the control plane, and the pre-mounted routes are not a route conflict.
+    mounted = [getattr(route, "path", None) for route in app_routes(f.app)]
+    assert mounted.count("/occ3/v1/native/runtime/identity") == 1
+    identity = next(route for route in app_routes(f.app)
                     if route.path == "/occ3/v1/native/runtime/identity")
-    assert getattr(identity.endpoint, "__qualname__", "") == "create_router.<locals>.identity"
+    assert getattr(identity.endpoint, "__qualname__", "") == "create_control_router.<locals>.identity"
     # The FixtureBackend replies with explicit metadata only; refresh is never GPU proof.
     backend = components.backend
     backend.profile = f.profile
     async def fixture_refresh(): return backend_health(f.profile)
     backend.refresh_readiness = fixture_refresh
     async with AsyncClient(transport=ASGITransport(app=f.app), base_url="http://fixture") as client:
-        denied = await client.post("/occ3/v1/native/runtime/identity",
+        no_key = await client.post("/occ3/v1/native/runtime/identity",
             json={"schema": "occ3.runtime.identity.request.v1"})
-        assert denied.status_code == 401
+        assert no_key.status_code == 401
         allowed = await client.post("/occ3/v1/native/runtime/identity",
             json={"schema": "occ3.runtime.identity.request.v1"},
             headers={"Authorization": "Bearer " + KEY})
@@ -450,6 +497,7 @@ async def test_install_mounts_identity_route_on_pinned_post_only_surface(transac
         assert allowed.json()["runtime_id"] == f.profile.runtime_epoch
         assert allowed.json()["runtime_generation"] == f.profile.runtime_generation
         assert allowed.headers["cache-control"] == "no-store"
+    startup_state.reset()
 
 
 @pytest.mark.parametrize("phase", ["router", "middleware", "hook"])
@@ -565,6 +613,7 @@ async def test_mounted_install_logs_success_once(transaction_fixture, caplog):
 
 
 async def test_declined_install_logs_final_return_code(transaction_fixture, caplog):
+    from occ3_sglang import startup_state
     f = transaction_fixture
     f.controls.ready = False
     with caplog.at_level(logging.ERROR, logger="occ3_sglang.native_install"):
@@ -576,6 +625,16 @@ async def test_declined_install_logs_final_return_code(transaction_fixture, capl
     assert re.fullmatch(r"occ3-bridge: native installation decline \(attempt=[0-9a-f]{8} "
                        r"stage=install code=backend_not_ready\)", message)
     assert KEY not in caplog.text
+    # The machine records the same finalize site: exact code, reached stage and
+    # the attempt marker shared with the C30 line above.
+    machine = startup_state.current()
+    assert machine.state.value == "DECLINED" and machine.code == "backend_not_ready"
+    assert machine.stage == "install" and machine.attempt == re.search(
+        r"attempt=([0-9a-f]{8})", message).group(1)
+    assert machine.experimental_selected and machine.preflight_reached
+    assert machine.backend_constructed and machine.hooks_prepared
+    assert machine.worker_readiness_reached and not machine.route_mount_attempted
+    assert machine.rollback_completed is True  # verified clean decline, nothing pending
 
 
 async def test_declined_install_logs_sanitised_timeout_detail(transaction_fixture, caplog):
@@ -662,6 +721,15 @@ def attested_tree(tmp_path):
              "sglang_version": "0.5.21", "manifests": [{"name": "fixture", "sha256": "a" * 64}],
              "files": files}
     return roots, value
+
+
+def test_startup_state_module_is_a_required_attested_plugin_member(attested_tree):
+    roots, value = attested_tree
+    assert "startup_state.py" in install._REQUIRED_PLUGIN
+    value["files"] = [item for item in value["files"]
+                      if not (item["root"] == "occ3_sglang" and item["path"] == "startup_state.py")]
+    with pytest.raises(install.InstallationError, match="source_attestation_incomplete"):
+        install._verify_installed_sources(value, roots)
 
 
 def test_source_attestation_reads_exact_installed_bytes_without_executing(attested_tree):

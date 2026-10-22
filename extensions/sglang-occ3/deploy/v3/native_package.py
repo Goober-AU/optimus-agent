@@ -342,7 +342,8 @@ def prepare(sglang_srt, occ3_sglang, baseline_path, profile_path, manifest_paths
             _need(total_bytes <= MAX_INPUT_BYTES, "input_set_oversize")
             _source(record.raw, relative, attested_sg=False)
             plugin_records.append((relative, record))
-        required_modules = {"__init__.py", "native_profile.py", "native_install.py", "plugin.py"}
+        required_modules = {"__init__.py", "native_profile.py", "native_install.py",
+                            "plugin.py", "startup_state.py"}
         _need(required_modules <= {path for path, _ in plugin_records}, "plugin_package_missing")
         _need(len(original) + len(plugin_records) <= MAX_SOURCE_FILES, "source_attestation_file_count")
         manifests, plans, manifest_files, patched_paths, patch_sets, names = [], [], [], set(), set(), set()

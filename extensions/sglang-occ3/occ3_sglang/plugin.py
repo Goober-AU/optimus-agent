@@ -26,6 +26,7 @@ def load() -> None:
 
         from .api import router
         from .kv_handles import router as handle_router
+        from .startup_state import CONTROL_PLANE_ATTR, create_control_router
 
         app = getattr(http_server, "app", None)
         if app is None:
@@ -43,6 +44,16 @@ def load() -> None:
                 "occ3-bridge: routes mounted under /occ3/v1 (version %s)",
                 __import__("occ3_sglang", fromlist=["__version__"]).__version__,
             )
+        # Dormant control-plane mount: no auth verification happens here (the
+        # native register_control_plane call site owns that); state stays DISABLED.
+        if not getattr(app, CONTROL_PLANE_ATTR, False):
+            previous_routes = list(app.router.routes)
+            try:
+                app.include_router(create_control_router())
+            except Exception:
+                app.router.routes[:] = previous_routes
+                raise
+            setattr(app, CONTROL_PLANE_ATTR, True)
     except Exception:
         logger.error("occ3-bridge: route installation failed")
         return

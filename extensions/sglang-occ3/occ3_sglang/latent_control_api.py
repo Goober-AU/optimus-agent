@@ -8,6 +8,7 @@ from dataclasses import asdict
 
 from .attachment_contract import (AttachmentError, AuthenticatedContext, CaptureIntent,
                                   InferenceAttachment, digest, identifier, strict_json)
+from starlette.responses import JSONResponse
 from .latent_types import (LatentError, Publication, SessionEnrollment, bounded_payload,
                            require, sha)
 
@@ -88,6 +89,50 @@ async def _body(request):
     return value
 
 
+def control_error_response(error=None):
+    """Shared fixed-code control envelope; never any exception text."""
+    code = error.code if isinstance(error, (LatentError, AttachmentError)) else "unavailable"
+    status = (401 if code in ("identity", "identity_mismatch") else 429 if code == "quota"
+              else 400 if code in ("invalid", "invalid_attachment")
+              else 503 if code in ("unavailable", "not_ready") else 409)
+    return JSONResponse({"error": {"code": code}}, status_code=status,
+                        headers={"cache-control": "no-store"})
+
+
+async def runtime_identity(request, backend, authority):
+    """Read-only current-incarnation view for the authorized proof harness.
+
+    Extracted verbatim from the former identity branch of the control router
+    (body contract, tuple fields and the fixed error envelope are unchanged);
+    the startup control plane delegates here only after NATIVE_READY.
+    """
+    try:
+        principal, _ = authority.verified(request)
+        value = await _body(request)
+        body = _fields(value, "occ3.runtime.identity.request.v1", ())
+        health = await backend.refresh_readiness()
+        result = {"schema": "occ3.runtime.identity.v1",
+            "runtime_id": health["runtime_epoch"],
+            "runtime_generation": health["runtime_generation"],
+            "model_fingerprint": health["model_fingerprint"],
+            "method_id": health["method_id"],
+            "tp_layout_digest": health["tp_layout_digest"],
+            "layer_index": health["layer_index"], "hidden_dim": health["hidden_dim"],
+            "dtype": health["dtype"], "expected_ranks": health["expected_ranks"],
+            "ready_ranks": health["ready_ranks"], "profile_digest": health["profile_digest"],
+            "source_capture": health["source_capture"],
+            "continuous_prefix": health["continuous_prefix"],
+            "terminal_journal": health["terminal_journal"],
+            "server_time_epoch": int(time.time()),
+            "max_ttl_seconds": backend.profile.max_ttl_seconds}
+        bounded_payload(result)
+        return JSONResponse(result, headers={"cache-control": "no-store"})
+    except (LatentError, AttachmentError) as error:
+        return control_error_response(error)
+    except Exception:
+        return control_error_response()
+
+
 def _fields(value, schema, fields):
     require(set(value) == {"schema", *fields} and value["schema"] == schema)
     return {k: v for k, v in value.items() if k != "schema"}
@@ -96,7 +141,6 @@ def _fields(value, schema, fields):
 def create_router(backend, authority):
     """Returns dormant router; caller explicitly installs original-key middleware."""
     from fastapi import APIRouter, Request
-    from starlette.responses import JSONResponse
     router = APIRouter()
 
     async def execute(request, operation):
@@ -119,24 +163,6 @@ def create_router(backend, authority):
                     "runtime_id": enrollment.runtime_epoch, "runtime_generation": enrollment.runtime_generation,
                     "model_fingerprint": enrollment.model_fingerprint, "expires_at_epoch": enrollment.expires_at_epoch,
                     "readiness": health}
-            elif operation == "identity":
-                # Read-only current-incarnation view for the authorized proof harness.
-                body = _fields(value, "occ3.runtime.identity.request.v1", ())
-                health = await backend.refresh_readiness()
-                result = {"schema": "occ3.runtime.identity.v1",
-                    "runtime_id": health["runtime_epoch"],
-                    "runtime_generation": health["runtime_generation"],
-                    "model_fingerprint": health["model_fingerprint"],
-                    "method_id": health["method_id"],
-                    "tp_layout_digest": health["tp_layout_digest"],
-                    "layer_index": health["layer_index"], "hidden_dim": health["hidden_dim"],
-                    "dtype": health["dtype"], "expected_ranks": health["expected_ranks"],
-                    "ready_ranks": health["ready_ranks"], "profile_digest": health["profile_digest"],
-                    "source_capture": health["source_capture"],
-                    "continuous_prefix": health["continuous_prefix"],
-                    "terminal_journal": health["terminal_journal"],
-                    "server_time_epoch": int(time.time()),
-                    "max_ttl_seconds": backend.profile.max_ttl_seconds}
             elif operation == "publish":
                 body = _fields(value, "occ3.publish.v1", ("publication_id", "source_handle", "source_session_id",
                     "receiver_session_id", "message_id", "source_turn_nonce", "tool_call_id", "expires_at_epoch"))
@@ -170,11 +196,9 @@ def create_router(backend, authority):
             bounded_payload(result)
             return JSONResponse(result, headers={"cache-control": "no-store"})
         except (LatentError, AttachmentError) as error:
-            code = error.code
-            status = 401 if code in ("identity", "identity_mismatch") else 429 if code == "quota" else 400 if code in ("invalid", "invalid_attachment") else 503 if code in ("unavailable", "not_ready") else 409
-            return JSONResponse({"error": {"code": code}}, status_code=status, headers={"cache-control": "no-store"})
+            return control_error_response(error)
         except Exception:
-            return JSONResponse({"error": {"code": "unavailable"}}, status_code=503, headers={"cache-control": "no-store"})
+            return control_error_response()
 
     # Avoid postponed local Request annotation evaluation in FastAPI.
     async def enroll(request):
@@ -185,12 +209,9 @@ def create_router(backend, authority):
         return await execute(request, "status")
     async def retire(request):
         return await execute(request, "retire")
-    async def identity(request):
-        return await execute(request, "identity")
-    for endpoint in (enroll, publish, status, retire, identity):
+    for endpoint in (enroll, publish, status, retire):
         endpoint.__annotations__["request"] = Request
     for path, endpoint in (("sessions/enroll", enroll), ("publish", publish),
-                           ("publication/status", status), ("retire", retire),
-                           ("runtime/identity", identity)):
+                           ("publication/status", status), ("retire", retire)):
         router.add_api_route("/occ3/v1/native/" + path, endpoint, methods=["POST"])
     return router

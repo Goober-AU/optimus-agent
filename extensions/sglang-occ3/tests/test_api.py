@@ -12,12 +12,25 @@ from occ3_sglang.registry import registry
 
 @pytest.fixture
 def client(stub_http_server, stub_tm):
+    from occ3_sglang import startup_state
+
     app = FastAPI()
     app.include_router(api.router)
+    # Dormant parity surface: the control plane owns status/capabilities now.
+    app.include_router(startup_state.create_control_router())
     stub_http_server.app = app
     stub_http_server._global_state = type("S", (), {"tokenizer_manager": stub_tm})()
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture(autouse=True)
+def clean_startup_state():
+    from occ3_sglang import startup_state
+
+    startup_state.reset()
+    yield
+    startup_state.reset()
 
 
 @pytest.fixture(autouse=True)
@@ -40,6 +53,27 @@ def test_status_reports_plugin_and_identity(client):
     assert "channels" in body and "metrics" in body
 
 
+def test_status_payload_is_a_fixed_key_superset_with_dormant_state(client):
+    r = client.get("/occ3/v1/status")
+    assert r.status_code == 200
+    body = r.json()
+    assert set(body) == {
+        "schema", "state", "code", "stage", "attempt",
+        "experimental_selected", "preflight_reached", "backend_constructed",
+        "worker_readiness_reached", "hooks_prepared", "route_mount_attempted",
+        "rollback_completed", "plugin", "version", "enabled",
+        "model_fingerprint", "channels", "metrics"}
+    assert body["schema"] == "optimus.occ3.status.v1"
+    assert body["state"] == "DISABLED"  # dormant mount never transitions
+    assert body["code"] is None and body["stage"] is None and body["attempt"] is None
+    import occ3_sglang
+    assert body["version"] == occ3_sglang.__version__
+    assert not any(body[name] for name in (
+        "experimental_selected", "preflight_reached", "backend_constructed",
+        "worker_readiness_reached", "hooks_prepared", "route_mount_attempted",
+        "rollback_completed"))
+
+
 def test_identity_route_exposes_contract_fields(client):
     r = client.get("/occ3/v1/identity")
     assert r.status_code == 200
@@ -60,6 +94,32 @@ def test_capabilities_advertisement_shape(client):
     assert body["same_model_only"] is True
     assert body["verification"] == "cached_tokens"
     assert body["model_fingerprint"]
+
+
+def test_capabilities_payload_is_a_fixed_key_superset_with_native_block(client):
+    r = client.get("/occ3/v1/capabilities")
+    assert r.status_code == 200
+    body = r.json()
+    assert set(body) == {
+        "schema", "supported", "reason", "experimental_prompt_kv_path",
+        "model_fingerprint", "connector_id", "methods", "experimental_baselines",
+        "protocol", "api_version", "same_model_only", "verification", "cache",
+        "native"}
+    assert set(body["native"]) == {"state", "code", "installed", "source_ready",
+                                   "receiver_ready", "live_validated"}
+    assert body["native"] == {"state": "DISABLED", "code": None, "installed": False,
+                              "source_ready": False, "receiver_ready": False,
+                              "live_validated": False}
+    assert body["methods"] == [] and body["supported"] is False
+
+
+def test_dormant_identity_answers_not_ready_without_state(client):
+    r = client.post("/occ3/v1/native/runtime/identity",
+                    json={"schema": "occ3.runtime.identity.request.v1"})
+    assert r.status_code == 503
+    assert r.json() == {"error": {"code": "not_ready"}}
+    assert r.headers["cache-control"] == "no-store"
+    assert "runtime_epoch" not in r.text
 
 
 @pytest.mark.parametrize("path,payload", [
@@ -342,8 +402,10 @@ def test_plugin_failed_install_can_retry_without_duplicate_routes(stub_http_serv
     assert plugin._LOADED
     from occ3_sglang import kv_handles
     expected = FastAPI()
+    from occ3_sglang import startup_state
     expected.include_router(api.router)
     expected.include_router(kv_handles.router)
+    expected.include_router(startup_state.create_control_router())
     assert len(app.router.routes) == len(expected.router.routes)
     plugin.load()
     assert len(app.router.routes) == len(expected.router.routes)
