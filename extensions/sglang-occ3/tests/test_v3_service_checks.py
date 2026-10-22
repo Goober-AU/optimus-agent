@@ -172,3 +172,73 @@ def test_health_is_only_liveness():
     assert checks.check_health("http://fixture", KEY, requester=responding) == {
         "ok": True, "check": "health", "http_status": 200,
         "error_code": None, "scope": "liveness_only"}
+
+
+IDENTITY_BODY = {"schema": "occ3.runtime.identity.v1", "runtime_id": "fixture-runtime",
+                 "runtime_generation": 1, "model_fingerprint": "sha256:fixture",
+                 "expected_ranks": 8, "ready_ranks": 8, "source_capture": True,
+                 "continuous_prefix": True, "terminal_journal": True}
+
+
+def test_occ3_identity_route_absent_404_is_the_w4a1_signature():
+    result = checks.check_occ3_identity("http://fixture", KEY,
+                                        requester=lambda *args: checks.HttpResult(404))
+    assert result == {"ok": False, "check": "occ3_identity", "http_status": 404,
+                      "error_code": "occ3_routes_absent"}
+
+
+def test_occ3_identity_exact_step0_route_payload_and_valid_body():
+    seen = []
+    def requester(method, url, key, payload, timeout):
+        seen.append((method, url, key, payload, timeout))
+        return checks.HttpResult(200, dict(IDENTITY_BODY))
+    result = checks.check_occ3_identity("http://fixture", KEY, requester=requester)
+    assert result == {"ok": True, "check": "occ3_identity", "http_status": 200,
+                      "error_code": None, "route_present": True}
+    assert seen == [("POST", "http://fixture/occ3/v1/native/runtime/identity", KEY,
+                     {"schema": "occ3.runtime.identity.request.v1"}, 15)]
+
+
+@pytest.mark.parametrize("mutation", ["schema", "ready_ranks", "expected_ranks", "missing_field",
+                                      "false_boolean", "non_dict"])
+def test_occ3_identity_200_with_wrong_shape_is_malformed(mutation):
+    body = dict(IDENTITY_BODY)
+    if mutation == "schema":
+        body["schema"] = "occ3.runtime.identity.v2"
+    elif mutation == "ready_ranks":
+        body["ready_ranks"] = 7
+    elif mutation == "expected_ranks":
+        body["expected_ranks"] = 4
+    elif mutation == "missing_field":
+        del body["terminal_journal"]
+    elif mutation == "false_boolean":
+        body["source_capture"] = False
+    else:
+        body = []
+    result = checks.check_occ3_identity("http://fixture", KEY,
+                                        requester=lambda *args: checks.HttpResult(200, body))
+    assert result == {"ok": False, "check": "occ3_identity", "http_status": 200,
+                      "error_code": "occ3_identity_malformed"}
+
+
+@pytest.mark.parametrize("status", [401, 403, 500, 503])
+def test_occ3_identity_other_http_failures_are_unavailable(status):
+    result = checks.check_occ3_identity("http://fixture", KEY,
+                                        requester=lambda *args: checks.HttpResult(status))
+    assert result == {"ok": False, "check": "occ3_identity", "http_status": status,
+                      "error_code": "occ3_identity_unavailable"}
+
+
+def test_occ3_identity_transport_error_invalid_json_and_missing_key():
+    def broken(*args):
+        raise RuntimeError(KEY)
+    result = checks.check_occ3_identity("http://fixture", KEY, requester=broken)
+    assert result == {"ok": False, "check": "occ3_identity", "http_status": None,
+                      "error_code": "occ3_identity_unavailable"}
+    invalid = checks.check_occ3_identity("http://fixture", KEY,
+        requester=lambda *args: checks.HttpResult(200, None, "invalid_json"))
+    assert invalid["error_code"] == "occ3_identity_unavailable"
+    missing = checks.check_occ3_identity("http://fixture", "", requester=broken)
+    assert missing == {"ok": False, "check": "occ3_identity", "http_status": None,
+                       "error_code": "missing_credentials"}
+    assert KEY not in json.dumps(result) + json.dumps(missing)

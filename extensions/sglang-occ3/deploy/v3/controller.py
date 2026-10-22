@@ -85,13 +85,15 @@ class Controller:
     def service_gate(self, name):
         evidence = {"ok": True}
         evidence["health"] = self.wait_health()
-        for field in ("chat", "tools", "ingress"):
+        for field in ("occ3_identity", "chat", "tools", "ingress"):
             if field == "ingress":
                 evidence["routing_refresh"] = refresh_ingress(self.api, self.journal, self.journal.read(),
                     min(self.end, time.monotonic() + 45), guard=self.guard)
             proof = self.check(getattr(self.services, field))
             if not isinstance(proof, dict) or proof.get("ok") is not True:
-                raise Failure("service gate failed: " + field)
+                detail = "" if not isinstance(proof, dict) else " (%s http=%s)" % (
+                    proof.get("error_code"), proof.get("http_status"))
+                raise Failure("service gate failed: " + field + detail)
             evidence[field] = proof
         self.journal.gate(name, evidence)
 

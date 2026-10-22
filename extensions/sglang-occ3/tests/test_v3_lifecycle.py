@@ -140,6 +140,7 @@ class FakeServices:
         self.fail_restore = False
         self.live_ok = False
         self.admission_ok = True
+        self.identity_proof = None
 
     def pre_mutation_admission(self, state):
         return {"ok": self.admission_ok, "scope": "offline-fixture-contract"}
@@ -149,6 +150,13 @@ class FakeServices:
         candidate = self.api.docs.get(CANDIDATE)
         unready = candidate and candidate["State"]["Running"] and self.api.behavior == "unready"
         return {"ok": not unready, "http_status": 503 if unready else 200}
+
+    def occ3_identity(self):
+        self.calls.append("occ3_identity")
+        if self.identity_proof is not None:
+            return self.identity_proof
+        return {"ok": True, "check": "occ3_identity", "http_status": 200,
+                "error_code": None, "route_present": True}
 
     def chat(self):
         self.calls.append("chat")
@@ -455,6 +463,70 @@ def test_full_offline_state_machine_requires_two_distinct_epoch_proofs(tmp_path)
     with pytest.raises(life.Failure):
         ctl.proof_matches(wrong, last)
     assert sum(op == "create" for op, _ in api.events) == 1
+
+
+def test_service_initial_aborts_on_occ3_routes_absent_before_ingress_and_proof(tmp_path):
+    api, journal, service = authorized(tmp_path)
+    service.identity_proof = {"ok": False, "check": "occ3_identity", "http_status": 404,
+                              "error_code": "occ3_routes_absent", "route_present": False}
+    assert ctl.Controller(api, journal, services=service, guard=lambda: None).run() == 1
+    state = journal.read()
+    # Abort at the first gate: no proof wait, no restart, no journaled service gate.
+    assert not (journal.directory / "checkpoint-initial.json").exists()
+    assert state["restart_count"] == 0 and "service_initial" not in state["gates"]
+    assert not [entry for entry in state["history"] if entry["operation"] == "candidate_ingress_reload"]
+    assert state["ingress_refresh"]["operation"] == "recovery_ingress_reload"
+    # The only nginx reload is the recovery reload of the restored original.
+    reloads = [i for i, event in enumerate(api.events) if event == ("nginx-reload", PROXY)]
+    assert len(reloads) == 1
+    assert api.events.index(("start", ORIGINAL)) < reloads[0]
+    assert service.calls == ["health", "occ3_identity", "health", "chat", "ingress"]
+    assert state["recovery"]["verified"] and state["recovery"]["result"] == "RESTORED"
+    assert_restored(api, journal)
+
+
+def test_service_gate_failure_detail_names_error_code_and_http_status(tmp_path):
+    api, journal, service = authorized(tmp_path)
+    swapped(api, journal)
+    service.identity_proof = {"ok": False, "check": "occ3_identity", "http_status": 404,
+                              "error_code": "occ3_routes_absent"}
+    runner = ctl.Controller(api, journal, services=service, guard=lambda: None)
+    with pytest.raises(life.Failure,
+                       match=r"service gate failed: occ3_identity \(occ3_routes_absent http=404\)"):
+        runner.service_gate("service_initial")
+    assert "service_initial" not in journal.read()["gates"]
+    assert not any(op == "nginx-reload" for op, _ in api.events)
+
+
+def test_service_final_also_requires_occ3_identity(tmp_path):
+    api, journal, service = authorized(tmp_path, proof_timeout_s=2)
+    service.live_ok = True
+    failing = {"ok": False, "check": "occ3_identity", "http_status": 503,
+               "error_code": "occ3_identity_unavailable"}
+    def guardian_and_external_operator_fixture():
+        state = journal.read()
+        if state.get("restart_count"):
+            service.identity_proof = failing
+        request = state.get("restart_request")
+        if request and not state.get("restart_count"):
+            journal.update(restart_count=1)
+            life.private_json(journal.directory / "restart-permit.json", {
+                "attempt_id": state["attempt_id"], "candidate_id": CANDIDATE,
+                "nonce": request["nonce"], "epoch": request["epoch"],
+                "expires_monotonic": time.monotonic() + 1})
+        for phase in ("initial", "final"):
+            checkpoint = journal.directory / ("checkpoint-" + phase + ".json")
+            receipt = journal.directory / ("native-proof-" + phase + ".json")
+            if checkpoint.exists() and not receipt.exists():
+                life.private_json(receipt, native_receipt(journal, life.read_json(checkpoint)))
+    runner = ctl.Controller(api, journal, services=service, guard=guardian_and_external_operator_fixture)
+    assert runner.run() == 1
+    state = journal.read()
+    assert state["restart_count"] == 1 and "service_final" not in state["gates"]
+    assert not (journal.directory / "checkpoint-final.json").exists()
+    assert service.calls.count("occ3_identity") == 2
+    assert state["recovery"]["verified"]
+    assert_restored(api, journal)
 
 
 def test_stale_worker_does_not_recover_or_mutate(tmp_path):

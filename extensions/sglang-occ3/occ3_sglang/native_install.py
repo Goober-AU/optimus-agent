@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import logging
 import secrets
 import threading
 import time
@@ -15,6 +16,8 @@ from dataclasses import dataclass, field
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+
+logger = logging.getLogger(__name__)
 
 
 class InstallationError(Exception):
@@ -713,6 +716,8 @@ async def install_native_runtime(app, tokenizer_manager, *, experimental_opt_in=
             tuple(hooks), components.registry)
         setattr(app, _INSTALLED_ATTR, installation)
         committed = True
+        logger.info("occ3-bridge: native runtime mounted (attempt=%s stage=install code=%s)",
+                    uuid.uuid4().hex[:8], receipt.code)
         return receipt
     except asyncio.CancelledError:
         cancelled = True
@@ -755,6 +760,8 @@ async def install_native_runtime(app, tokenizer_manager, *, experimental_opt_in=
             _install_lock.release()
     if cancelled:
         raise asyncio.CancelledError
+    logger.error("occ3-bridge: native installation decline (attempt=%s stage=install code=%s)",
+                 uuid.uuid4().hex[:8], code)
     return InstallationReceipt(False, code)
 
 
@@ -921,6 +928,8 @@ def prepare_selected_native_server(server, app, tokenizer_manager):
         if selection is None:
             receipt = StartupReceipt(False, False, "experimental_startup_not_selected")
             setattr(app, _STARTUP_ATTR, receipt.evidence())
+            logger.info("occ3-bridge: native startup decline (attempt=%s stage=prepare "
+                        "code=experimental_startup_not_selected selected=false)", uuid.uuid4().hex[:8])
             return receipt
         existing = getattr(server, _SERVER_ATTR, None)
         if existing is not None:
@@ -935,10 +944,14 @@ def prepare_selected_native_server(server, app, tokenizer_manager):
         # Nothing was dispatched or patched in this synchronous preparation.
         receipt = StartupReceipt(selection is not None, False, error.code)
         setattr(app, _STARTUP_ATTR, receipt.evidence())
+        logger.error("occ3-bridge: native startup decline (attempt=%s stage=prepare code=%s selected=%s)",
+                     uuid.uuid4().hex[:8], error.code, selection is not None)
         return receipt
     except Exception:
         receipt = StartupReceipt(selection is not None, False, "experimental_startup_refused")
         setattr(app, _STARTUP_ATTR, receipt.evidence())
+        logger.error("occ3-bridge: native startup decline (attempt=%s stage=prepare code=experimental_startup_refused "
+                     "selected=%s)", uuid.uuid4().hex[:8], selection is not None)
         return receipt
 
     owner = _StartupOwner(app, tokenizer_manager, original)
@@ -960,6 +973,9 @@ def prepare_selected_native_server(server, app, tokenizer_manager):
         if type(result) is not InstallationReceipt:
             raise InstallationError("native_startup_cleanup_unconfirmed")
         setattr(app, _STARTUP_ATTR, result.evidence())
+        if not result.installed:
+            logger.error("occ3-bridge: native startup decline (attempt=%s stage=install code=%s)",
+                         uuid.uuid4().hex[:8], result.code)
         if (result.code in {"installation_cleanup_unconfirmed", "factory_cleanup_unconfirmed",
                             "installation_busy", "installation_owner_mismatch", "hook_target_occupied",
                             "control_client_occupied", "installation_ownership_changed"}

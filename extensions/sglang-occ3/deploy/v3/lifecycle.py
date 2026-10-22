@@ -1135,6 +1135,11 @@ class Services:
         from .service_checks import check_health
         return check_health(self.plan["base_url"], self.key, timeout=min(5, self.plan["request_timeout_s"]))
 
+    def occ3_identity(self):
+        from .service_checks import check_occ3_identity
+        return check_occ3_identity(self.plan["base_url"], self.key,
+                                   timeout=min(15, self.plan["request_timeout_s"]))
+
     def chat(self):
         from .service_checks import check_chat
         return check_chat(self.plan["base_url"], self.key, self.plan["model"], timeout=self.plan["request_timeout_s"])

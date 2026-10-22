@@ -8,7 +8,9 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import os
+import re
 import sys
 import time
 import types
@@ -543,6 +545,35 @@ async def test_install_failure_uses_fixed_error_and_no_secret_logging(transactio
     assert result.code == "installation_unavailable" and not result.installed
     assert KEY not in str(result.evidence()) + caplog.text
     assert f.created[0].backend.closed and not install._install_lock.locked()
+
+
+async def test_mounted_install_logs_success_once(transaction_fixture, caplog):
+    f = transaction_fixture
+    with caplog.at_level(logging.INFO, logger="occ3_sglang.native_install"):
+        first = await install.install_native_runtime(f.app, f.tm, experimental_opt_in=True)
+        again = await install.install_native_runtime(f.app, f.tm, experimental_opt_in=True)
+    assert first.installed and again is first
+    records = [record for record in caplog.records if record.name == "occ3_sglang.native_install"]
+    mounted = [record for record in records if "native runtime mounted" in record.getMessage()]
+    assert len(mounted) == 1 and mounted[0].levelno == logging.INFO
+    assert re.fullmatch(r"occ3-bridge: native runtime mounted \(attempt=[0-9a-f]{8} "
+                       r"stage=install code=installed_experimental_not_live_validated\)",
+                       mounted[0].getMessage())
+    assert not [record for record in records if record.levelno >= logging.ERROR]
+
+
+async def test_declined_install_logs_final_return_code(transaction_fixture, caplog):
+    f = transaction_fixture
+    f.controls.ready = False
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.native_install"):
+        result = await install.install_native_runtime(f.app, f.tm, experimental_opt_in=True)
+    assert not result.installed and result.code == "backend_not_ready"
+    records = [record for record in caplog.records if record.name == "occ3_sglang.native_install"]
+    assert len(records) == 1 and records[0].levelno == logging.ERROR
+    message = records[0].getMessage()
+    assert re.fullmatch(r"occ3-bridge: native installation decline \(attempt=[0-9a-f]{8} "
+                       r"stage=install code=backend_not_ready\)", message)
+    assert KEY not in caplog.text
 
 
 async def test_duplicate_install_rejects_lost_hook_owner_without_overwriting_unknown_wrapper(transaction_fixture):

@@ -39,12 +39,14 @@ def test_fixture_images_change_file_content_not_serving_command(tmp_path):
             return "sha256:" + str(len(self.bodies)) * 64
     api = Builder()
     images = rehearsal.build_fixtures(api, IMAGE, "b" * 16, ledger_dir=tmp_path / "builds")
-    assert set(images) == {"original", "healthy", "exit", "unready"}
+    assert set(images) == {"original", "healthy", "exit", "unready", "identity-absent"}
     for files, _ in api.bodies:
         assert files["Dockerfile"].decode().startswith("FROM " + IMAGE + "\n")
         assert "CMD" not in files["Dockerfile"].decode()
+    assert b"OCC3_IDENTITY_ABSENT = False" in api.bodies[0][0]["fixture.py"]
     assert b"raise SystemExit(7)" in api.bodies[2][0]["fixture.py"]
     assert b"HEALTH_STATUS = 503" in api.bodies[3][0]["fixture.py"]
+    assert b"OCC3_IDENTITY_ABSENT = True\nHEALTH_STATUS = 200" in api.bodies[4][0]["fixture.py"]
 
 
 def test_cleanup_requires_exact_created_id_and_ownership_label():
@@ -69,6 +71,36 @@ def test_scenarios_require_actual_death_before_and_after_mutation():
     assert scenarios["controller-hang-after-start"]["signal"] == "stop"
     assert scenarios["supervisor-kill-before"]["signal"] == "supervisor-kill"
     assert scenarios["supervisor-kill-after-start"]["signal"] == "supervisor-kill"
+
+
+def test_occ3_identity_fixture_contract_and_ninth_scenario():
+    # The disposable fixture answers the exact executor step-0 identity route.
+    source = rehearsal.FIXTURE
+    assert "'/occ3/v1/native/runtime/identity'" in source
+    assert "OCC3_IDENTITY_ABSENT" in source
+    assert "occ3.runtime.identity.v1" in source
+    compile("OCC3_IDENTITY_ABSENT = False\nHEALTH_STATUS = 200\n" + rehearsal.FIXTURE,
+            "fixture.py", "exec")
+    compile("OCC3_IDENTITY_ABSENT = True\nHEALTH_STATUS = 200\n" + rehearsal.FIXTURE,
+            "fixture.py", "exec")
+    scenarios = {case["name"]: case for case in rehearsal.SCENARIOS}
+    assert len(rehearsal.SCENARIOS) == 9
+    assert scenarios["occ3-identity-absent"]["image"] == "identity-absent"
+    assert not scenarios["occ3-identity-absent"].get("signal")
+    # A service-initial abort after mutation must satisfy the scenario evidence contract.
+    state = {"history": [{"operation": operation, "at": index} for index, operation in enumerate(
+        ("rename_original", "stop_original", "rename_candidate", "start_candidate"))],
+        "mutation_intent": True, "candidate_started": True, "candidate_epoch": "fixture-epoch",
+        "original_stopped": True, "plan": {}}
+    scenario = scenarios["occ3-identity-absent"]
+    evidence = rehearsal.assert_scenario_evidence(scenario, state,
+        {"verified": True, "result": "RESTORED"}, {"error": "Failure", "heartbeat": 4.0},
+        {"State": {}}, False)
+    assert evidence["expected_recovery"] == "RESTORED" and evidence["failure_stage_proven"]
+    with pytest.raises(life.Failure, match="failure stage"):
+        rehearsal.assert_scenario_evidence(scenario, state,
+            {"verified": True, "result": "NOOP"}, {"error": "Failure", "heartbeat": 4.0},
+            {"State": {}}, False)
 
 
 def test_rehearsal_mode_cannot_target_unowned_original():

@@ -10,7 +10,9 @@ import asyncio
 import ast
 import hashlib
 import json
+import logging
 import os
+import re
 import stat
 import types
 from pathlib import Path
@@ -508,3 +510,78 @@ async def test_unknown_private_installer_error_is_fixed_and_never_serves(loop_se
         await f.server.serve()
     assert "PRIVATE" not in str(caught.value) + caplog.text
     assert f.app.middleware_stack is None
+
+
+def _native_records(caplog):
+    return [record for record in caplog.records if record.name == "occ3_sglang.native_install"]
+
+
+def test_not_selected_prepare_logs_inert_info_once(loop_server, monkeypatch, caplog):
+    f = loop_server
+    monkeypatch.setattr(install, "_read_startup_literal", lambda: None)
+    with caplog.at_level(logging.INFO, logger="occ3_sglang.native_install"):
+        result = install.prepare_selected_native_server(f.server, f.app, f.tm)
+    assert not result.selected and result.code == "experimental_startup_not_selected"
+    records = _native_records(caplog)
+    assert len(records) == 1 and records[0].levelno == logging.INFO
+    message = records[0].getMessage()
+    assert re.fullmatch(r"occ3-bridge: native startup decline \(attempt=[0-9a-f]{8} "
+                        r"stage=prepare code=experimental_startup_not_selected selected=false\)", message)
+
+
+def test_declined_prepare_logs_fixed_receipt_code(loop_server, monkeypatch, caplog):
+    f = loop_server
+    def unsafe(selection):
+        raise install.InstallationError("startup_selection_unsafe")
+    monkeypatch.setattr(install, "_verify_startup_artifacts", unsafe)
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.native_install"):
+        result = install.prepare_selected_native_server(f.server, f.app, f.tm)
+    assert result.selected and not result.prepared and result.code == "startup_selection_unsafe"
+    assert getattr(f.app, install._STARTUP_ATTR)["code"] == "startup_selection_unsafe"
+    records = _native_records(caplog)
+    assert len(records) == 1 and records[0].levelno == logging.ERROR
+    message = records[0].getMessage()
+    assert re.fullmatch(r"occ3-bridge: native startup decline \(attempt=[0-9a-f]{8} "
+                        r"stage=prepare code=startup_selection_unsafe selected=True\)", message)
+    assert "PRIVATE" not in message
+
+
+def test_refused_prepare_logs_fixed_code_and_selected_flag(loop_server, monkeypatch, caplog):
+    f = loop_server
+    def broken(selection):
+        raise RuntimeError("PRIVATE-GENERIC-DETAIL")
+    monkeypatch.setattr(install, "_verify_startup_artifacts", broken)
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.native_install"):
+        result = install.prepare_selected_native_server(f.server, f.app, f.tm)
+    assert result.selected and not result.prepared
+    assert result.code == "experimental_startup_refused"
+    records = _native_records(caplog)
+    assert len(records) == 1 and records[0].levelno == logging.ERROR
+    message = records[0].getMessage()
+    assert re.fullmatch(r"occ3-bridge: native startup decline \(attempt=[0-9a-f]{8} "
+                        r"stage=prepare code=experimental_startup_refused selected=True\)", message)
+    assert "PRIVATE" not in message and "PRIVATE" not in caplog.text
+
+
+async def test_declined_install_logs_receipt_code(loop_server, monkeypatch, caplog):
+    f = loop_server
+    async def refuse(*args, **kwargs):
+        return install.InstallationReceipt(False, "backend_not_ready")
+    monkeypatch.setattr(install, "install_native_runtime", refuse)
+    install.prepare_selected_native_server(f.server, f.app, f.tm)
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.native_install"):
+        assert await f.server.serve() == "native-result"
+    records = _native_records(caplog)
+    assert len(records) == 1 and records[0].levelno == logging.ERROR
+    message = records[0].getMessage()
+    assert re.fullmatch(r"occ3-bridge: native startup decline \(attempt=[0-9a-f]{8} "
+                        r"stage=install code=backend_not_ready\)", message)
+    assert getattr(f.app, install._STARTUP_ATTR)["code"] == "backend_not_ready"
+
+
+async def test_selected_serve_success_path_stays_silent(loop_server, caplog):
+    f = loop_server
+    install.prepare_selected_native_server(f.server, f.app, f.tm)
+    with caplog.at_level(logging.INFO, logger="occ3_sglang.native_install"):
+        assert await f.server.serve() == "native-result"
+    assert _native_records(caplog) == []

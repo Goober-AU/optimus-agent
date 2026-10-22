@@ -51,6 +51,13 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self.authorized():
             return self.answer(401, {'error': 'unauthorized'})
+        if self.path == '/occ3/v1/native/runtime/identity':
+            if OCC3_IDENTITY_ABSENT:
+                return self.answer(404, {'detail': 'Not Found'})
+            return self.answer(200, {'schema': 'occ3.runtime.identity.v1', 'runtime_id': 'fixture-runtime',
+                                     'runtime_generation': 1, 'model_fingerprint': 'sha256:fixture',
+                                     'expected_ranks': 8, 'ready_ranks': 8, 'source_capture': True,
+                                     'continuous_prefix': True, 'terminal_journal': True})
         body = json.loads(self.rfile.read(int(self.headers.get('Content-Length', '0'))))
         text = body['messages'][-1]['content']
         nonce = re.search(r'OCC3_(?:READY|TOOL)_[a-f0-9]+', text).group(0)
@@ -76,6 +83,7 @@ SCENARIOS = (
     {"name": "controller-hang-after-start", "image": "healthy", "pause": "after_start", "signal": "stop"},
     {"name": "supervisor-kill-before", "image": "healthy", "pause": "before_mutation", "signal": "supervisor-kill"},
     {"name": "supervisor-kill-after-start", "image": "healthy", "pause": "after_start", "signal": "supervisor-kill"},
+    {"name": "occ3-identity-absent", "image": "identity-absent"},
 )
 
 
@@ -418,10 +426,11 @@ def build_fixtures(api, base_image, owner, *, ledger_dir):
     assert_fixture_image(api.inspect_image(base_image), base_image)
     dockerfile = ("FROM " + base_image + "\nCOPY fixture.py /fixture.py\n").encode()
     scripts = {
-        "original": "HEALTH_STATUS = 200\n" + FIXTURE,
-        "healthy": "# distinct candidate fixture image\nHEALTH_STATUS = 200\n" + FIXTURE,
-        "exit": "raise SystemExit(7)\n",
-        "unready": "HEALTH_STATUS = 503\n" + FIXTURE,
+        "original": "OCC3_IDENTITY_ABSENT = False\nHEALTH_STATUS = 200\n" + FIXTURE,
+        "healthy": "OCC3_IDENTITY_ABSENT = False\n# distinct candidate fixture image\nHEALTH_STATUS = 200\n" + FIXTURE,
+        "exit": "OCC3_IDENTITY_ABSENT = False\nraise SystemExit(7)\n",
+        "unready": "OCC3_IDENTITY_ABSENT = False\nHEALTH_STATUS = 503\n" + FIXTURE,
+        "identity-absent": "OCC3_IDENTITY_ABSENT = True\nHEALTH_STATUS = 200\n" + FIXTURE,
     }
     ledger_dir = Path(ledger_dir)
     ledger_dir.mkdir(mode=0o700, exist_ok=False)

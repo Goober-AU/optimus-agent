@@ -127,6 +127,33 @@ def check_health(base_url, key, timeout=5, *, requester=None) -> dict:
     return _evidence("health", result, error, scope="liveness_only")
 
 
+OCC3_IDENTITY_PATH = "/occ3/v1/native/runtime/identity"
+
+
+def check_occ3_identity(base_url, key, timeout=15, *, requester=None) -> dict:
+    """Control-plane presence: the exact executor step-0 route; no new credential."""
+    if not key:
+        return _evidence("occ3_identity", error_code="missing_credentials")
+    payload = {"schema": "occ3.runtime.identity.request.v1"}
+    result = _call(requester, "POST", base_url, OCC3_IDENTITY_PATH, key, payload, timeout)
+    if result.status == 404:
+        # W4-A1 signature: api-key middleware active (401 keyless) but router absent.
+        return _evidence("occ3_identity", result, "occ3_routes_absent")
+    if result.status != 200 or result.error_code:
+        return _evidence("occ3_identity", result, "occ3_identity_unavailable")
+    body = result.body
+    fields = ("schema", "runtime_id", "runtime_generation", "model_fingerprint", "expected_ranks",
+              "ready_ranks", "source_capture", "continuous_prefix", "terminal_journal")
+    if (not isinstance(body, dict) or body.get("schema") != "occ3.runtime.identity.v1"
+            or any(name not in body for name in fields)
+            or body.get("expected_ranks") != 8 or body.get("ready_ranks") != 8
+            or body.get("source_capture") is not True
+            or body.get("continuous_prefix") is not True
+            or body.get("terminal_journal") is not True):
+        return _evidence("occ3_identity", result, "occ3_identity_malformed")
+    return _evidence("occ3_identity", result, None, route_present=True)
+
+
 def check_chat(base_url, key, model, timeout=120, *, requester=None) -> dict:
     if not key or not model:
         return _evidence("chat", error_code="missing_credentials_or_model")
