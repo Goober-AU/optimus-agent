@@ -1,14 +1,14 @@
 # OCC-3 Rollback
 
-**Worktree:** `optimus-occ3-20261021` · **Date:** 2026-10-21 · **Mode:** offline documentation from existing evidence; no live claims.
+**Worktree:** `optimus-occ3-20261021` · **Date:** 2026-10-22 · **Mode:** offline documentation from existing evidence; no live claims.
 
-**Citation convention.** `occ3-campaign/<path>` refers to the campaign evidence root `C:/Users/openclawuser/Optimus-Assistant/profile/workspace/occ3-campaign/`; worktree files are repository-relative (sha256 of the current working-tree state, which includes uncommitted edits). Full hashes in the evidence register.
+**Citation convention.** `occ3-campaign/<path>` refers to the campaign evidence root `C:/Users/openclawuser/Optimus-Assistant/profile/workspace/occ3-campaign/`; worktree files are repository-relative (branch `feat/occ3-generic-sglang-bridge`, head `ea9b9e509`; sha256 of the current working-tree state, which includes uncommitted edits). Full hashes in the evidence register. STATE.json and ROOT-HANDOFF.md are living campaign documents; their register hashes are the digests at this refresh.
 
 ## 1. Purpose and scope
 
-This report documents (a) the preserved-container rollback procedure used by the v1 deployment scripts, (b) the honest failure history of the two 2026-10-21 deployment attempts with their verified root causes, and (c) the v3 controller's automatic rollback design, which encodes both failure modes as regression-checked invariants. No automated rollback has been executed against the real DGX Docker daemon; every live recovery to date was manual and is documented as such.
+This report documents (a) the preserved-container rollback procedure used by the v1 deployment scripts, (b) the honest failure history - the two 2026-10-21 deployment attempts with their verified root causes, the four controller defect classes found in the 2026-10-21 disposable rehearsals (zero production impact), and the 2026-10-22 live-window-1 abort (pre-mutation, zero production impact) - and (c) the v3 controller's automatic rollback design, which encodes both deployment failure modes and all four rehearsal defect classes as regression-checked invariants. The v3 automatic rollback has been exercised against the real DGX Docker daemon only on disposable fixtures (rehearsal round 4: 8/8 scenarios, every recovery verified [E-RH4]); it has never executed against the production containers, and every live recovery of production to date was manual and is documented as such.
 
-## 2. Deployment failure history (verified root causes)
+## 2. Deployment and rehearsal failure history (verified root causes)
 
 ### 2.1 First attempt (2026-10-21 ~03:34-04:19 UTC, ~41 min downtime)
 
@@ -35,6 +35,31 @@ Root cause (docker evidence): the original has one bind mount `/data/neo-glm53 -
 Why rollback was slow: `wait_health()` only polled HTTP and slept until `HEALTH_TIMEOUT_S=1200`; it never checked Docker `State.Running`/`ExitCode`, so a dead candidate was treated like a still-loading server for twenty minutes. The watchdog only waited for controller exit or its 3000-second outer timeout, with no independent container-exit check. The disposable tests used short health timeouts and did not prove immediate detection of a terminated serving container [E-REC2].
 
 Recovery (verified): all deployment control processes stopped by identity; controller/watchdog/deploy entrypoints replaced by refusing stubs with originals retained privately; original container `c4a26b345ec6`, image `sha256:b1259f3e327...` restored as `neo-glm53` and started 05:23:47 UTC; Config, HostConfig, Mounts, Image and Id matched the preserved original exactly; authenticated chat 200 at 05:30:47 UTC; catalog 200 (glm-5.3); health 200; ingress path verified; native Optimus proof receipt `agentmsg_1add7b64-e7cb-4c52-b758-840514f5e1a4`; failed candidate preserved as `neo-glm53-occ3-failed-second-20261021T050435Z` [E-REC2].
+
+## 2.3 Controller defect classes found in the disposable rehearsals (2026-10-21; zero production impact)
+
+Four disposable rehearsal rounds ran on the real DGX Docker 29.6.2 daemon against throwaway fixtures only. Each of rounds 1-3 aborted deterministically at a newly discovered controller defect; each defect was repaired offline first (red-first regression evidence, independent verification) and re-validated live on disposable fixtures in the next round; round 4 completed all scenarios. Production containers were verified identical before and after every round (`neo-glm53` id `c4a26b345ec6...1927`, health 200, restart count 0) and `production_touched=false` is recorded for every round [E-RH1, E-RH2, E-RH3, E-RH4].
+
+| Defect | Round found | Root cause (verified) | Repair (offline first, then live-verified on fixtures) |
+|---|---|---|---|
+| CD-1: OomKillDisable null-to-false coercion | 1 (both runs, first scenario, inside `prepare()` at the first candidate parity check, before supervisor launch, before authorization consumption, before any mutation) [E-RH1] | `build_create_request` deep-copied the original's raw inspect `HostConfig` verbatim including `OomKillDisable: null`; Docker Engine 29.6.2 (API 1.55) coerces an explicitly-present null to `false` on create while omitting the key leaves it null, so exact `HostConfig` parity failed (`ConfigError('HostConfig_differs')`). All 17 pre-existing containers on the host, including production `neo-glm53`, inspect as null, so the production swap path would have failed the same check [E-RH1] | Candidate creation omits `OomKillDisable` when the original inspects null; verified live in round 2 (both runs passed candidate creation and exact HostConfig parity, the exact point where round 1 failed) and regression-free in round 4 (fixture candidates passed exact HostConfig parity in all 8 scenarios, `parity.host_config_exact=true` each) [E-RH2, E-RH4] |
+| CD-2: supervisor fence path | 1 [E-RH1] | The supervisor required `/var/lib/occ3-v3/attempt-fences` (a root path) to exist and be owned by the running user; a non-root rehearsal needed a one-time sudo mkdir/chown [E-RH1] | Supervisor creates its fence at `<attempt-dir>/fences/<original-id>.json` (attempt-local, no `/var/lib` path, no sudo); verified live in round 2 and regression-free in rounds 3-4 (all attempt fences stayed attempt-local; the supervisor lock dir `/run/lock/occ3-v3` was the only host path and was removed in cleanup) [E-RH2, E-RH3, E-RH4] |
+| CD-3: DNSNames hostname identity | 2 (both runs; recovery entry parity check raised `ConfigError('network_dns_names_differ')` before the original was renamed back or restarted; recovery result RESTORE_FAILED) [E-RH2] | Docker 29.6.2 populates endpoint `DNSNames` `[name, 12-char-id, hostname]` when a running container is renamed, and `assert_candidate_parity` did not treat the original's `Config.Hostname` as generated identity material [E-RH2] | `assert_candidate_parity` subtracts each side's own generated identity (name/full-id/12-char-id aliases plus `Config.Hostname`) from the DNSNames comparison; offline repair result pinned [E-CD3R]; verified live in round 3 (both runs passed the recovery entry parity check and completed the full restore) [E-RH3] |
+| CD-4: stale DNSNames after rename of a stopped container | 3 (both runs; the full restore completed but the recovery FINAL independent verification raised `ConfigError('network_dns_names_differ')`) [E-RH3] | Docker 29.6.2 does not update the endpoint `DNSNames` list when a STOPPED container is renamed, so the restored original still carried the stale preserved-name entry written by the mutation-time rename while running; the entry is neither original identity material nor candidate identity and survived the CD-3 subtraction [E-RH3] | `assert_candidate_parity` additionally subtracts, on both sides, the lifecycle's own staging names recognized only by their reserved occ3-v3 construction grammar (prefix + `-candidate`/`-preserved`/`-failed`, optionally + `-n`/`-artifact-n` + 32-hex nonce); every other entry stays exact DNS content in both directions and near-miss staging spellings fail; offline repair result pinned [E-CD4R]; verified live in round 4: the startup-exit recovery completed the full chain including the final independent verification (RESTORED, verified, 0.718 s) [E-RH4] |
+
+Round 4 (2026-10-21, remote dir `v3-rehearsal4-20261021T220529Z`, fresh; rounds 1-3 dirs untouched): 8/8 scenarios PASS (`startup-exit`, `running-unready`, `controller-kill-before`, `controller-kill-after-rename`, `controller-kill-after-start`, `controller-hang-after-start`, `supervisor-kill-before`, `supervisor-kill-after-start`), every recovery verified (service restored, chat and ingress 200 with semantic match, helpers settled, exact-ID cleanup), zero residue (containers 17 = baseline, occ3-v3 images 0, volumes 0, lock dir removed), production identical before and after [E-RH4]. The offline test suite's FakeDocker now models the Docker 29.6.2 rename/stop/start semantics (stale-on-rename-back, never-rewrite-on-start), so the CD-3/CD-4 regressions stay pinned offline [E-RH4, E-STATE].
+
+## 2.4 Live window 1 (TS=20261022T0030Z): aborted pre-mutation at the image-build guard
+
+Timeline (attempt `occ3-live-20261022t0030z`): phase 0 preconditions all PASS (gate checks G0.1-G0.12 plus live checks L1/L2/L3/L5: host and docker 29.6.2 verified, health 200, baseline recorded, native credentials resolved via env references without printing values, authenticated `GET /v1/models` 200); upload 52/52 byte-exact (tar sha256 `c8ac7ec3...`); staged inputs matched frozen digests; the base tag `occ3-v3-base:live-20261022t0030z` resolved to the exact original base image `sha256:b1259f3e...`; the derived-image build started 2026-10-22T00:20:22Z and failed at layer 8/8 in 0.297 s with build receipt `{"code":"package_tree_file_oversize","ok":false}`; the executor aborted per the runbook's abort conditions ("Phase 1 gate failure (build failure)") and the one-attempt rule; report finished 00:23:26Z [E-LIVE1].
+
+Root cause (verified from the docker build log and a read-only transient probe from the pinned base image): the frozen build-input contract `native_package._tree()` enforced `MAX_FILE_BYTES = 2 MiB` for every file under the SGLang `srt` root (pre-repair state; the repaired module carrying the new binary bound is pinned as [E-NPKG]), but the real production base image ships four compiled Rust extension `.so` files exceeding it: `rust_extensions/_server.cpython-312-x86_64-linux-gnu.so` (15,956,840 B), `rust_extensions/_grpc.cpython-312-x86_64-linux-gnu.so` (6,648,424 B), `rust_extensions/_multimodal.cpython-312-x86_64-linux-gnu.so` (3,338,384 B) and `mem_cache/rust_tree_core/mem_cache.cpython-312-x86_64-linux-gnu.so` (3,278,632 B); the tree has 2,385 files (under the 8,192 entry cap). The offline image-build closure had recorded the runtime limit "No image build", so the guard had never met the real tree before this window. The guard and the real tree were irreconcilable as frozen; a build-input code change is a root decision, not executor judgment [E-LIVE1].
+
+Zero production impact (root-verified independently): no rename, stop or restart was ever issued; no plan file was built, no controller preflight, no approval assembled, no supervisor launched; the docker inspect digest was identical to the phase-0 baseline; health 200 before and after; the original `neo-glm53` (id `c4a26b345ec6`, image `sha256:b1259f3e`) stayed running with restart count 0 [E-LIVE1, E-RH]. `rollback_events: []` - no rollback was needed or executed; the one-attempt discipline was honored (no rebuild, no re-preflight, no re-launch, nothing deleted; the remote live dir `/data/occ3-bridge/v3-live-20261022t0030z` was left intact per the runbook, 67 files inventoried) [E-LIVE1]. `live_attempts_under_latest_approval` went from 0 to 1 (pre-mutation abort; the production swap remains unused) [E-RH, E-STATE].
+
+Adjudication (root): the abort was a legitimate fail-closed defense against a wrongly-scoped bound - the 2 MiB per-file cap was authored for `.py` source files, but the tree scan also walked pre-existing compiled `.so` objects from the immutable base image (not authored content) [E-RH].
+
+Repair (commit `ea9b9e509` on top of the C10-C23 tip `4ae80950d`): a separate `MAX_BINARY_FILE_BYTES = 64 MiB` traversal bound for non-`.py` files; `.py` keeps the 2 MiB bound; the binary bound is metadata-walk only (binary files are never read, hashed or attested); 3 regression tests added (oversize `.so` accepted, binary-bound rejection, unchanged `.py` rejection). Verification: extension suite 1413 passed / 324 skipped / 77 subtests; `git diff --check` ok; cargo workspace check ok; 282 unit tests ok / 10 skipped; layout ok. Only `deploy/v3/native_package.py` changed in the upload set (upload-manifest-v3, 46 files) [E-DD, E-RH]. An independent repair review was dispatched; live window TS2 is GO-gated on its ACCEPT [E-RH]. Leftovers retained for root decision (nothing was deleted): the remote live dir (evidence), the remote base tag, the upload tar, and the worktree-untracked `deploy/native-build-inputs/` (2 staged input files per the runbook's P1.2) [E-LIVE1, E-RH].
 
 ## 3. Preserved-container rollback procedure (v1 scripts)
 
@@ -65,10 +90,12 @@ The v3 deployment tooling (`extensions/sglang-occ3/deploy/v3/`) redesigns rollba
 - Immutable journal fields (original/candidate ids and image ids, names, plan, created_at, schema) bind every later action to the exact captured originals; state files are written atomically with 0600 permissions and symlink refusal; an advisory file lock serialises attempts.
 - Default budgets (seconds): startup 1200, deployment 3600, rollback 900, proof 300, controller 45, supervisor lease 5, poll 0.5, request 120, probe 120, stop 30, validation 900.
 
-### 4.2 Preparation and parity (encodes failure mode 1 and 2) [E-LIFE, E-DOCKCONF]
+### 4.2 Preparation and parity (encodes failure modes 1 and 2, and defect classes CD-1, CD-3, CD-4) [E-LIFE, E-DOCKCONF, E-RH1, E-RH2, E-RH3, E-RH4]
 
 - `docker inspect` is read as structured JSON; Entrypoint/Cmd/env are carried as exact arrays, never newline-split [E-DEPREADME].
-- `_actual_mounts()` parses raw top-level inspect `Mounts`, never `NetworkSettings.Mounts` — the function docstring states this verbatim [E-DOCKCONF].
+- Candidate creation omits `OomKillDisable` when the original inspects null: Docker 29.6.2 (API 1.55) coerces an explicitly-present null to false on create, so exact `HostConfig` parity would otherwise fail (CD-1, rehearsal round 1); round-4 fixture candidates passed exact HostConfig parity in all 8 scenarios (`parity.host_config_exact=true` in each attempt journal) [E-RH1, E-RH4].
+- `_actual_mounts()` parses raw top-level inspect `Mounts`, never `NetworkSettings.Mounts` - the function docstring states this verbatim [E-DOCKCONF].
+- `assert_candidate_parity` subtracts, on both sides of the DNSNames comparison, each side's own generated identity (name/full-id/12-char-id aliases and `Config.Hostname` - CD-3, rehearsal round 2) and the lifecycle's own staging names, recognized only by their reserved occ3-v3 construction grammar (prefix + `-candidate`/`-preserved`/`-failed`, optionally + `-n`/`-artifact-n` + 32-hex nonce - CD-4, rehearsal round 3). Every other entry stays exact DNS content in both directions: a rogue non-generated entry on either side fails, a genuine user alias missing from either side fails, and a near-miss staging spelling (31-hex nonce tail) fails [E-RH3, E-RH4, E-CD4R].
 - `prepare()` creates the candidate STOPPED under a fresh nonce-bound temporary name, then `assert_candidate_parity(original, candidate, candidate_image_id)` diffs the recorded configuration element-wise against the working original: every `Config` field must be identical except `Image`, `HostConfig` must be identical, top-level `Mounts` must be identical, the effective launch (`Path`/`Args`) must be identical, and network options must match modulo generated aliases/DNS names; the parity evidence records `actual_mounts_exact: true` with the exact mount count [E-LIFE, E-DOCKCONF]. An artifact probe (CPU-only container with the same mounts/user/workdir) proves the candidate image can read the mounted model before any mutation [E-LIFE].
 - Production mutation additionally requires a fresh, exact, one-attempt authorization (matching attempt/original/candidate ids, expiry within one hour) plus verified receipts for the offline, rehearsal and source-attestation gates and an explicit unchanged-config ingress-reload approval [E-LIFE].
 
@@ -86,22 +113,27 @@ On any failure after mutation begins (or an explicit recovery invocation), `reco
 - The supervisor is a separate process owning the original-ID fence (private 0700 directory, guardian identity recorded) and never treats exit code zero alone as deployment success.
 - Completion requires phase `GATES_COMPLETE`, authorization consumed, exactly one restart, and seven required gates all ok: `service_initial`, `native_initial`, `live_before`, `restart`, `live_after`, `service_final`, `native_final`. Native Optimus proof must be supplied externally twice, matched against the checkpoint (attempt/candidate/process epoch/phase/challenge, kind `native-optimus-glm-response`, verified true, fallback_used false, fresh evidence receipt with digest verification).
 
-### 4.6 Offline verification of the v3 design [E-LW, E-STATE]
+### 4.6 Offline and disposable verification of the v3 design [E-LW, E-STATE, E-RH1, E-RH2, E-RH3, E-RH4, E-FV]
 
 - Lifecycle worker snapshot: owned tests 186 passed (40.4 s); integration run 618 collected tests passed across the ten v3 test modules; latest lifecycle review records 203 owned / 647 selected integration PASS with six independent inert-Docker probes, and explicitly marks real-Docker clearance false (inert Docker only).
-- The deploy README documents a `disposable-test` rehearsal covering three failure scenarios (startup crash, health timeout, validation failure) against throwaway containers, proving rollback restores and verifies service [E-DEPREADME].
+- The deploy README documents a `disposable-test` rehearsal covering failure scenarios against throwaway containers, proving rollback restores and verifies service [E-DEPREADME].
+- Disposable rehearsal rounds on the real DGX Docker 29.6.2 daemon (fixtures only): rounds 1-3 each aborted deterministically at a newly discovered controller defect (CD-1/CD-2, CD-3, CD-4; section 2.3); round 4 completed 8/8 scenarios with every recovery verified, zero residue and production untouched [E-RH1, E-RH2, E-RH3, E-RH4].
+- The offline test suite's FakeDocker models the Docker 29.6.2 rename/stop/start semantics (stale-on-rename-back, never-rewrite-on-start), pinning the CD-3/CD-4 regressions offline [E-RH4, E-STATE].
+- The final offline verification (16/16 checks PASS) pins the rehearsal-4 result (8/8, `production_touched=false`) alongside the full offline suite inventory [E-FV].
 
 ## 5. Current rollback posture
 
 - The live DGX runs the original `neo-glm53` with no OCC-3 plugin (routes 404); both failed candidates and their startup logs are preserved; all deployment control processes are stopped and their entrypoints disarmed [E-FA1, E-REC2, E-STATE].
-- Campaign state under the current approval: zero live attempts, `production_swap` NOT_STARTED, `disposable_recovery` PENDING, `baseline_preserved` PASS (original id/image/key, one actual rw model bind, health 200, no serving changes) [E-STATE].
+- Disposable fixtures: every rehearsal round ended with exact-ID, label-verified cleanup and zero residue; the production containers were verified identical before and after each round [E-RH1, E-RH2, E-RH3, E-RH4].
+- Live window 1 (TS=20261022T0030Z) aborted pre-mutation at the image-build guard: no rollback events, no production mutation of any kind, health 200 before and after; `live_attempts_under_latest_approval=1`; the one authorized controlled swap remains unused [E-LIVE1, E-STATE].
+- Campaign state under the current approval: `baseline_preserved` PASS, `disposable_recovery` PASS (round 4, 8/8), `production_swap` NOT_STARTED (window TS2 pending the repair review ACCEPT) [E-STATE, E-RH].
 
 ## 6. PENDING LIVE EVIDENCE
 
-1. The v3 automatic rollback has never been executed against the real DGX Docker daemon; every code path is offline/inert-Docker verified only (`real_Docker_clearance: false`) [E-STATE, E-LW].
-2. The disposable recovery rehearsal on the DGX (startup-crash, health-timeout, validation-failure scenarios with throwaway containers) is a PENDING campaign gate [E-STATE].
-3. A live end-to-end production swap plus automatic rollback on failure remains unexecuted under the current approval.
-4. Rollback timing under real conditions (weights reload ~minutes) has only the v1 900 s health-wait precedent; no v3 live measurement exists.
+1. The v3 automatic rollback has never been executed against the production containers; it is verified on disposable fixtures only (round 4: 8/8 scenarios, every recovery verified on the real Docker 29.6.2 daemon) [E-RH4].
+2. A live end-to-end production swap plus automatic rollback on failure remains unexecuted under the current approval; window TS2 is GO-gated on the independent repair review ACCEPT for commit `ea9b9e509` [E-RH].
+3. Rollback timing under real conditions (weights reload ~minutes) has only the v1 900 s health-wait precedent; no v3 live measurement exists (round-4 fixture recoveries completed in 0.104-1.989 s on throwaway containers and are not representative of a weights reload) [E-RH4].
+4. Re-verification of the no-armed-redeploy posture (FM-5) immediately before any future swap window.
 
 ## Evidence register
 
@@ -109,11 +141,22 @@ On any failure after mutation begins (or an explicit recovery invocation), `reco
 |---|---|---|
 | E-FA1 | occ3-campaign/dgx-inspect/OCC3-DEPLOY-FAILURE-ANALYSIS.md | 084be196931164e17293ab3f60241cad8105c4c57a47b8d3894b278d945173d9 |
 | E-REC2 | occ3-campaign/recovery-only/SECOND-DEPLOYMENT-RECOVERY.md | 5e0a9c06f4c9a5f8e91322fcb20258964a753e333d5d00351f0aef68390b80a7 |
-| E-STATE | occ3-campaign/v3-controlled-deploy/STATE.json | 19a497e2c5682ccd2f03cd6dc364b02ca8e93f8b29dd2cc29939853cd0e5223d |
+| E-STATE | occ3-campaign/v3-controlled-deploy/STATE.json | 859100d681be04a2229db65785a887f334f21f4b3031354860aa409804af837a (living file; digest at this refresh, field-level reads only) |
+| E-FV | occ3-campaign/v3-controlled-deploy/FINAL-VERIFY-RESULT.json | 8d54c074ee3120fae92049dd5f07fd3dd60ed0bba7aa0634f5577ac9d21aad73 |
+| E-RH1 | occ3-campaign/v3-controlled-deploy/REHEARSAL-RESULT.json | 40698dcad02f1fa4c35f3605a900f8bf84aae3680412fa2c3d4e5b2ffc362dca |
+| E-RH2 | occ3-campaign/v3-controlled-deploy/REHEARSAL-RESULT-2.json | 00269632eee9635808d75cc2d96e576561a4f0c56d1c806fe8f25b33620e7050 |
+| E-RH3 | occ3-campaign/v3-controlled-deploy/REHEARSAL-RESULT-3.json | 7f2784cb6473ed2dc8aaa5e6e96bf43983ac22646a82a86914c6f2499a3d59bc |
+| E-RH4 | occ3-campaign/v3-controlled-deploy/REHEARSAL-RESULT-4.json | 1605fca0590d099b8d4b44301e5be3feb11ce90050ecb6ad9342c9127dbe910a |
+| E-CD3R | occ3-campaign/v3-controlled-deploy/CD3-OFFLINE-REPAIR-RESULT.json | c2626e1ceac57332e0e37911bc52bfea49882c2a6d5c1a629116febd646bccbf |
+| E-CD4R | occ3-campaign/v3-controlled-deploy/CD4-OFFLINE-REPAIR-RESULT.json | 5eb3459a1ea92191c774a75910222078c6f6f9fe97b6a0c9c2326b59f94022cf |
+| E-LIVE1 | occ3-campaign/v3-controlled-deploy/LIVE-PHASE-EXECUTION-REPORT.json | ce877c412649c488d8c72290cd47d7492863e3db4640f0c176bfd54d76219be8 |
+| E-RH | occ3-campaign/v3-controlled-deploy/ROOT-HANDOFF.md | 952041c5f59b072a2f4a68387a9e3f29144fe983a05aa15a60b5d6bfbbe6810b (living log; digest at this refresh) |
+| E-DD | occ3-campaign/v3-controlled-deploy/DISPATCH-DIGESTS.json | 1f9bd5e8dcfc813c5f980df5e4c872b5414284a956077e24430a7252cfe648e3 |
 | E-LW | occ3-campaign/v3-controlled-deploy/lifecycle-worker-l09-l10-v4-result.json | f0a6808c70e2b19e9b56ef6a357d1597b8b5b00d2475968327caea4459cd8f29 |
 | E-DEPREADME | extensions/sglang-occ3/deploy/README.md | c363a736f85530156553f42fb7bfff6b506c085e8dd5d305f4f71f0479d102c1 |
 | E-ROLLBACKSH | extensions/sglang-occ3/deploy/rollback.sh | f2f86063869aabdaa4be0e610a62b1a087d3d25561c2e43fa31d1d2be82570f4 |
 | E-LIFE | extensions/sglang-occ3/deploy/v3/lifecycle.py | 74d76ee99001537a976b20a204317863740ea505f9b9e4718e9558b6a8509442 |
-| E-DOCKCONF | extensions/sglang-occ3/deploy/v3/docker_config.py | 9c7c96c0831b4bc8358f3e1479877350c573b768c5a847146fbcc95cedc6bfb4 |
+| E-DOCKCONF | extensions/sglang-occ3/deploy/v3/docker_config.py | faebe73d868bdca228b388125ea3b13d94d50ce0ef42102870950a9facd42304 |
+| E-NPKG | extensions/sglang-occ3/deploy/v3/native_package.py | 53c5abdc9f6cc95868d2ff10927bae3a832007ddbb506ba46e988ea56a3c45d3 |
 | E-CTL | extensions/sglang-occ3/deploy/v3/controller.py | 5c461beedde78ec98ee23293eaf0824e18d37139a3166a7f2a708f28927a3114 |
-| E-SUP | extensions/sglang-occ3/deploy/v3/supervisor.py | 09df965edb3a4742b4c1610792b78498f2acb8a13d855773cf80a6c955bdfbf1 |
+| E-SUP | extensions/sglang-occ3/deploy/v3/supervisor.py | e4da466cc50fb6f842240c9cf3fa2d6e86461da30366bfd0a4a853b0e76a1b92 |

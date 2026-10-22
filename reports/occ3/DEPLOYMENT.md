@@ -1,10 +1,18 @@
 # OCC-3 DGX Deployment
 
-**Status: STUB — awaiting live evidence.** No successful deployment exists. Both 2026-10-21 attempts failed with verified root causes and were manually recovered; the campaign state records zero live attempts under the current approval and `production_swap` NOT_STARTED. This report must be written from the record of a real, verified deployment.
+**Status: OFFLINE CLOSURE COMPLETE - LIVE DEPLOYMENT PENDING.** No successful deployment exists. The offline gates are closed (final offline verification 16/16 checks PASS, 2026-10-21T23:32Z); the disposable recovery rehearsal is complete after four rounds (final round 8/8 scenarios with every recovery verified, production untouched); live window 1 (TS=20261022T0030Z) aborted pre-mutation at the image-build guard with zero production impact, and the repair is committed as `ea9b9e509` with window TS2 pending the repair review. The two 2026-10-21 attempts failed with verified root causes and were manually recovered. This report makes no live success claims; the deployment narrative must be completed from the record of a real, verified deployment.
 
-**Worktree:** `optimus-occ3-20261021` · **Date:** 2026-10-21 · **Mode:** offline documentation from existing evidence; no live claims.
+**Worktree:** `optimus-occ3-20261021` · **Date:** 2026-10-22 · **Mode:** offline documentation from existing evidence; no live claims.
 
-**Citation convention.** `occ3-campaign/<path>` refers to the campaign evidence root `C:/Users/openclawuser/Optimus-Assistant/profile/workspace/occ3-campaign/`; worktree files are repository-relative. Full hashes in the evidence register. This stub contains an outline and evidence inventory only; per the specification, documentation must contain actual evidence, and no empty report should be created merely to satisfy the filename checklist, so substantive sections are deferred until the required evidence exists.
+**Citation convention.** `occ3-campaign/<path>` refers to the campaign evidence root `C:/Users/openclawuser/Optimus-Assistant/profile/workspace/occ3-campaign/`; worktree files are repository-relative (branch `feat/occ3-generic-sglang-bridge`, head `ea9b9e509`). Full hashes in the evidence register. STATE.json and ROOT-HANDOFF.md are living campaign documents; their inline digests are the values at this refresh.
+
+## Deployment status (from evidence, 2026-10-22)
+
+- Offline closure complete: final offline verification 16/16 checks PASS - worktree freeze 143/143 hash-verified, gate-evidence sha256 pins, rehearsal-4 8/8 pinned, producer re-issue pinned, repo `bash scripts/check.sh` 282 tests, cargo workspace two-stage, occ3 focused sets (7 targets), occ3 examples, extension pytest, terminal six pinned suites (350), `test_repl` (110 ran, ok, 3 skipped) and `occ2_e2e_negotiation` (2 passed) under the p4 kernel environment, worktree unchanged after the suites [E-FV]. The verified content landed as commits C10-C23 (tip `4ae80950d`); the window-1 repair is commit `ea9b9e509` on top [E-STATE, E-RH].
+- Disposable recovery rehearsal: four rounds on the DGX Docker 29.6.2 daemon with throwaway fixtures only. Rounds 1-3 each aborted deterministically at a newly found controller defect (CD-1/CD-2, CD-3, CD-4; history and repairs in ROLLBACK.md section 2.3); round 4 (result 2026-10-21T22:14Z) completed 8/8 scenarios with every recovery verified, zero residue, and the production containers identical before and after [E-RH4].
+- Live window 1 (TS=20261022T0030Z): phase-0 preconditions all PASS (including an authenticated `GET /v1/models` 200 with credentials resolved via env references, never printed); the derived-image build failed at the package-tree guard (`package_tree_file_oversize`: the 2 MiB per-file source bound vs four base-image compiled `.so` files of 3,278,632-15,956,840 B) and the executor aborted pre-mutation per the runbook: no candidate container, no supervisor, no authorization consumed, no rollback events, health 200 before and after, production untouched [E-LIVE1].
+- Window TS2: pending the independent repair review ACCEPT for commit `ea9b9e509` (separate 64 MiB binary traversal bound, metadata-only; 3 regression tests; extension suite 1413 passed / 324 skipped / 77 subtests) [E-RH, E-DD].
+- Live attempts under the current approval: 1 (the pre-mutation abort above); the one authorized controlled swap remains unused [E-STATE, E-LIVE1].
 
 ## Planned outline
 
@@ -18,19 +26,27 @@
 
 ## Evidence already available (offline)
 
-- Verified environment and launch configuration: occ3-campaign/dgx-inspect/ENVIRONMENT.md (sha256 e0667968a38430e9359084242fe0553f0571fad2cdca4a4a4f4a08a345e0afb7) and original-sanitized.json (sha256 b1e15312a042f39bb2620139b7de5251517f242feb46bc571cf81fbb1cae89f4).
+- Verified environment and launch configuration: occ3-campaign/dgx-inspect/ENVIRONMENT.md (sha256 e0667968a38430e9359084242fe0553f0571fad2cdca4a4a4f4a08a345e0afb7) and occ3-campaign/v3-controlled-deploy/original-sanitized.json (sha256 b1e15312a042f39bb2620139b7de5251517f242feb46bc571cf81fbb1cae89f4).
 - Deployment tooling and procedure: extensions/sglang-occ3/deploy/README.md (sha256 c363a736f85530156553f42fb7bfff6b506c085e8dd5d305f4f71f0479d102c1); v3 controller/supervisor/lifecycle (see ROLLBACK.md register).
-- Honest failure history of both attempts: occ3-campaign/dgx-inspect/OCC3-DEPLOY-FAILURE-ANALYSIS.md (sha256 084be196931164e17293ab3f60241cad8105c4c57a47b8d3894b278d945173d9); occ3-campaign/recovery-only/SECOND-DEPLOYMENT-RECOVERY.md (sha256 5e0a9c06f4c9a5f8e91322fcb20258964a753e333d5d00351f0aef68390b80a7).
+- Honest failure history of both 2026-10-21 attempts: occ3-campaign/dgx-inspect/OCC3-DEPLOY-FAILURE-ANALYSIS.md (sha256 084be196931164e17293ab3f60241cad8105c4c57a47b8d3894b278d945173d9); occ3-campaign/recovery-only/SECOND-DEPLOYMENT-RECOVERY.md (sha256 5e0a9c06f4c9a5f8e91322fcb20258964a753e333d5d00351f0aef68390b80a7).
 - Offline dry-run packaging (not applied/installed): occ3-campaign/v3-controlled-deploy/root-native-package-dry-verify.json (sha256 151494f9619fdf21a957ac74792a8fbbed0696b2d71b71cbfc69c118a4132d51).
 - Campaign authorization boundary: occ3-campaign/v3-controlled-deploy/AUTHORIZATION.txt (sha256 aa13cd2c99822f17cb142b6e1c04158fd0728a421244a64175ac53afc8d82c03).
+- Final offline verification (16/16 checks PASS): occ3-campaign/v3-controlled-deploy/FINAL-VERIFY-RESULT.json (sha256 8d54c074ee3120fae92049dd5f07fd3dd60ed0bba7aa0634f5577ac9d21aad73).
+- Disposable rehearsal rounds (final round 8/8, production untouched): occ3-campaign/v3-controlled-deploy/REHEARSAL-RESULT.json (sha256 40698dcad02f1fa4c35f3605a900f8bf84aae3680412fa2c3d4e5b2ffc362dca), REHEARSAL-RESULT-2.json (sha256 00269632eee9635808d75cc2d96e576561a4f0c56d1c806fe8f25b33620e7050), REHEARSAL-RESULT-3.json (sha256 7f2784cb6473ed2dc8aaa5e6e96bf43983ac22646a82a86914c6f2499a3d59bc), REHEARSAL-RESULT-4.json (sha256 1605fca0590d099b8d4b44301e5be3feb11ce90050ecb6ad9342c9127dbe910a).
+- Live window-1 abort evidence (pre-mutation, zero production impact, no rollback events): occ3-campaign/v3-controlled-deploy/LIVE-PHASE-EXECUTION-REPORT.json (sha256 ce877c412649c488d8c72290cd47d7492863e3db4640f0c176bfd54d76219be8).
+- Phase-suite producer re-issue (offline selftest passed): occ3-campaign/v3-controlled-deploy/PRODUCER-RESULT.json (sha256 699901dd9bb557915d2a0549d02d2d2327796e5dd12c0b39347ee93fa431ae73).
+- Dispatch digests including the `ea9b9e509` repair block and re-pinned upload manifest v3: occ3-campaign/v3-controlled-deploy/DISPATCH-DIGESTS.json (sha256 1f9bd5e8dcfc813c5f980df5e4c872b5414284a956077e24430a7252cfe648e3).
+- Root handoff (window-1 abort adjudication, repair record, TS2 gating): occ3-campaign/v3-controlled-deploy/ROOT-HANDOFF.md (sha256 952041c5f59b072a2f4a68387a9e3f29144fe983a05aa15a60b5d6bfbbe6810b; living log, digest at this refresh).
+- Campaign state (gate statuses; `live_attempts_under_latest_approval=1`): occ3-campaign/v3-controlled-deploy/STATE.json (sha256 859100d681be04a2229db65785a887f334f21f4b3031354860aa409804af837a; living file, digest at this refresh).
 
-## Evidence needed before this report can be drafted (PENDING LIVE EVIDENCE)
+## Evidence needed before the deployment narrative can be completed (PENDING LIVE EVIDENCE)
 
 1. A successful controlled swap under the current approval: journal, parity artifact, supervisor gate records, native proof receipts.
 2. Live `/occ3/v1/status` 200 output with the exact plugin version and image digest.
 3. Post-swap verification artifacts: ordinary GLM inference, radix cache behaviour, ingress path.
-4. The disposable recovery rehearsal results on the DGX that must precede the swap.
+
+The disposable recovery rehearsal precondition that must precede the swap is satisfied (round 4: 8/8 scenarios, every recovery verified, production untouched [E-RH4]); the remaining precondition chain for window TS2 is the independent repair review ACCEPT for commit `ea9b9e509` [E-RH].
 
 ## Evidence register
 
-Citations are inline above; every cited evidence file appears there with its full path and sha256. This stub adds no register rows of its own because it asserts no new claims.
+Citations are inline above; every cited evidence file appears there with its full path and sha256.
