@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -260,6 +261,43 @@ def _started_at_of(challenge):
     return started
 
 
+def _derived_profile_digest(profile, observed):
+    """Per-boot RuntimeProfile binding digest for one observed incarnation.
+
+    Parity contract (occ3_sglang.attachment_contract.digest over
+    dataclasses.asdict(RuntimeProfile)): sha256 of the canonical JSON -
+    sorted keys, compact separators, ASCII escapes, NaN refused - of the
+    pinned STATIC profile fields plus runtime_epoch/runtime_generation as
+    observed in the harness report. The wire profile_digest is
+    incarnation-bound (fresh per boot), so it is recomputed here as the
+    anti-fabrication derivation receipt and never statically pinned.
+    """
+    value = {
+        "model_fingerprint": profile["model_fingerprint"],
+        "model_id": profile["model_id"],
+        "expected_ranks": profile["expected_ranks"],
+        "hidden_dim": profile["hidden_dim"],
+        "layer_index": profile["layer_index"],
+        "max_prefix_tokens": profile["max_prefix_tokens"],
+        "max_live_bytes": profile["max_live_bytes"],
+        "workspace_bytes": profile["workspace_bytes"],
+        "max_records": profile["max_records"],
+        "max_active": profile["max_active"],
+        "max_ttl_seconds": profile["max_ttl_seconds"],
+        "anchor_alpha": profile["anchor_alpha"],
+        "tile_rows": profile["tile_rows"],
+        "method": profile["method"],
+        "runtime_epoch": observed["runtime_epoch"],
+        "runtime_generation": observed["runtime_generation"],
+    }
+    try:
+        body = json.dumps(value, separators=(",", ":"), sort_keys=True,
+                          ensure_ascii=True, allow_nan=False)
+    except ValueError:
+        raise _Reject("profile_derivation_unserializable") from None
+    return hashlib.sha256(body.encode("ascii")).hexdigest()
+
+
 class NativeHandoffValidator:
     """Offline admission plus per-phase challenge/report supervision."""
 
@@ -302,7 +340,10 @@ class NativeHandoffValidator:
                     "harness_binary_sha256": pinned["harness_artifact"]["binary_sha256"],
                     "source_manifest_files": len(pinned["source_manifest"]["files"]),
                     "identity_fingerprint": pinned["admission_template"]["fingerprint"],
-                    "profile_digest": pinned["admission_template"]["source_profile"]["profile_digest"],
+                    "profile_digest_before_restart":
+                        pinned["admission_template"]["source_profile"]["profile_digest_before_restart"],
+                    "profile_digest_after_restart":
+                        pinned["admission_template"]["source_profile"]["profile_digest_after_restart"],
                     "budget_receipt_sha256": pinned["budget_resource_receipt"]["receipt_sha256"],
                     "endpoint_origin": pinned["endpoint"]["origin"]},
                 binary_mirror_verified=mirror,
@@ -376,14 +417,41 @@ class NativeHandoffValidator:
         _fingerprint(value["fingerprint"], "identity_fingerprint_invalid")
         profile = _exact_fields(value["source_profile"],
                                 ("dtype", "expected_ranks", "layer_index", "hidden_dim",
-                                 "layout_strategy_digest", "profile_digest"),
+                                 "layout_strategy_digest", "profile_digest_before_restart",
+                                 "profile_digest_after_restart", "model_fingerprint",
+                                 "model_id", "method", "anchor_alpha", "max_prefix_tokens",
+                                 "max_live_bytes", "workspace_bytes", "max_records",
+                                 "max_active", "max_ttl_seconds", "tile_rows"),
                                 "source_profile_invalid")
         _require(profile["dtype"] in DTYPES, "source_dtype_unsupported")
         _require(profile["expected_ranks"] == 8, "expected_ranks_not_tp8")
         _uint(profile["layer_index"], "layer_index_invalid")
         _uint(profile["hidden_dim"], "hidden_dim_invalid", positive=True)
         _sha_field(profile["layout_strategy_digest"], "layout_strategy_digest_invalid")
-        _sha_field(profile["profile_digest"], "profile_digest_invalid")
+        # profile_digest is incarnation-bound (fresh per boot): only the two
+        # per-phase OBSERVED pins exist, never one static digest. Equal pins
+        # would mean the after-restart value was fabricated pre-restart.
+        _sha_field(profile["profile_digest_before_restart"],
+                   "profile_digest_before_restart_invalid")
+        _sha_field(profile["profile_digest_after_restart"],
+                   "profile_digest_after_restart_invalid")
+        _require(profile["profile_digest_before_restart"]
+                 != profile["profile_digest_after_restart"],
+                 "profile_digest_pins_not_per_boot")
+        # Static derivation fieldset (equals native-build-inputs/
+        # native-profile-input.json); recomputed per phase in _verify_report.
+        _string(profile["model_fingerprint"], "source_model_fingerprint_invalid", limit=128)
+        _string(profile["model_id"], "source_model_id_invalid", limit=128)
+        _require(profile["method"] == METHOD_ID, "source_method_mismatch")
+        _require(type(profile["anchor_alpha"]) in (int, float)
+                 and math.isfinite(profile["anchor_alpha"]), "source_anchor_alpha_invalid")
+        _uint(profile["max_prefix_tokens"], "max_prefix_tokens_invalid", positive=True)
+        _uint(profile["max_live_bytes"], "max_live_bytes_invalid", positive=True)
+        _uint(profile["workspace_bytes"], "workspace_bytes_invalid", positive=True)
+        _uint(profile["max_records"], "max_records_invalid", positive=True)
+        _uint(profile["max_active"], "max_active_invalid", positive=True)
+        _uint(profile["max_ttl_seconds"], "max_ttl_seconds_invalid", positive=True)
+        _uint(profile["tile_rows"], "tile_rows_invalid", positive=True)
 
     def _check_budget(self, receipt, budget):
         receipt = _exact_fields(receipt, ("root_reviewed", "receipt_sha256", "review_digest"),
@@ -545,11 +613,19 @@ class NativeHandoffValidator:
         _require(binding["identity_fingerprint"] == template["fingerprint"],
                  "report_identity_binding_mismatch")
         _require(binding["method_id"] == METHOD_ID, "report_method_mismatch")
-        _require(binding["profile_digest"] == template["source_profile"]["profile_digest"],
+        # profile_digest is incarnation-bound: the binding must equal THIS
+        # phase's observed pin and must re-derive from the pinned static
+        # profile fields plus the phase's observed runtime_epoch/generation.
+        profile = template["source_profile"]
+        phase_pin = profile["profile_digest_before_restart"] \
+            if phase == "before_restart" else profile["profile_digest_after_restart"]
+        _require(binding["profile_digest"] == phase_pin,
                  "report_profile_binding_mismatch")
         _require(binding["endpoint_origin"] == pinned["endpoint"]["origin"],
                  "report_origin_binding_mismatch")
         observed = self._verify_observed(report["observed"], challenge)
+        _require(_derived_profile_digest(profile, observed) == binding["profile_digest"],
+                 "report_profile_derivation_mismatch")
         suite_nonce = _sha_field(report["suite_nonce_sha256"], "suite_nonce_hash_invalid")
         cases = _exact_fields(report["cases"],
                               BEFORE_CASES if phase == "before_restart" else AFTER_CASES,
