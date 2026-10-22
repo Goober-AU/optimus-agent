@@ -914,7 +914,14 @@ def validate_kv_layout(model_runner, scheduler, torch):
         ("kernel_page_blocks", pool.kernel_page_blocks == 1),
         ("layer_num", pool.layer_num == 78),
         ("start_layer", pool.start_layer == 0),
-        ("end_layer", pool.end_layer == 77),
+        # Half-open [0, 78): sglang 0.5.21's kv_cache_configurator always passes
+        # end_layer=layer_info.end_layer (= the full model layer count, 78 for
+        # GLM-5.3) and compares start <= id < end; the pool covers exactly the
+        # 78 model layers including the final prenorm seam at layer 77. The
+        # previous 77 pin assumed the ctor's unset default (layer_num - 1),
+        # which the configurator never uses. TS7 live: all 8 ranks named only
+        # end_layer (layer_num/kv_buffer_len/start_layer all passed).
+        ("end_layer", pool.end_layer == 78),
         ("layer_shard_enabled", pool.layer_shard_enabled is False),
         ("post_capture_active", pool.post_capture_active is False),
         ("config_binding", pool.kv_lora_rank == config.kv_lora_rank

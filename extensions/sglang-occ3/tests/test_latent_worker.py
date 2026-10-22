@@ -126,7 +126,7 @@ def test_initialized_kv_metadata_binds_semantic_and_physical_layout(monkeypatch)
     torch=NS(float8_e4m3fn=object(),uint8=object())
     pool=DSAPool()
     pool.__dict__.update(dtype=torch.float8_e4m3fn,store_dtype=torch.uint8,use_dsa=True,
-        page_size=64,kernel_page_blocks=1,layer_num=78,start_layer=0,end_layer=77,
+        page_size=64,kernel_page_blocks=1,layer_num=78,start_layer=0,end_layer=78,
         layer_shard_enabled=False,post_capture_active=False,kv_lora_rank=512,qk_rope_head_dim=64,
         index_head_dim=128,size=1024,kv_cache_dim=656,dsa_kv_cache_store_fp8=True,
         index_kpool=1,index_kpool_compress=False)
@@ -598,7 +598,7 @@ def test_kv_layout_decline_names_page_size_only_when_it_alone_trips(monkeypatch)
     torch=NS(float8_e4m3fn=object(),uint8=object())
     pool=DSAPool()
     pool.__dict__.update(dtype=torch.float8_e4m3fn,store_dtype=torch.uint8,use_dsa=True,
-        page_size=32,kernel_page_blocks=1,layer_num=78,start_layer=0,end_layer=77,
+        page_size=32,kernel_page_blocks=1,layer_num=78,start_layer=0,end_layer=78,
         layer_shard_enabled=False,post_capture_active=False,kv_lora_rank=512,qk_rope_head_dim=64,
         index_head_dim=128,size=1024,kv_cache_dim=656,dsa_kv_cache_store_fp8=True,
         index_kpool=1,index_kpool_compress=False)
@@ -617,3 +617,29 @@ def test_install_decline_detail_carries_worker_profile_members():
     err = w.LatentError("profile", members=["layer_num", "end_layer", "kv_buffer_len"])
     assert ni._decline_detail(err) == "latent_profile[layer_num,end_layer,kv_buffer_len]"
     assert ni._decline_detail(w.LatentError("profile")) == "latent_profile"
+
+
+def test_kv_layout_accepts_the_production_eagle_half_open_end_layer(monkeypatch):
+    """TS7 live: all 8 ranks named only end_layer; the configurator passes
+    layer_info.end_layer (half-open, = full layer count) at every pool
+    construction, so the production EAGLE pool carries end_layer=78 with
+    layer_num=78 and 78 buffers covering layers 0..77."""
+    import types
+    module=types.ModuleType("sglang.srt.mem_cache.memory_pool")
+    class DSAPool: pass
+    module.DSATokenToKVPool=DSAPool
+    monkeypatch.setitem(sys.modules,module.__name__,module)
+    torch=NS(float8_e4m3fn=object(),uint8=object())
+    pool=DSAPool()
+    pool.__dict__.update(dtype=torch.float8_e4m3fn,store_dtype=torch.uint8,use_dsa=True,
+        page_size=64,kernel_page_blocks=1,layer_num=78,start_layer=0,end_layer=78,
+        layer_shard_enabled=False,post_capture_active=False,kv_lora_rank=512,qk_rope_head_dim=64,
+        index_head_dim=128,size=1024,kv_cache_dim=656,dsa_kv_cache_store_fp8=True,
+        index_kpool=1,index_kpool_compress=False)
+    pool.kv_buffer=[NS(is_cuda=True,dtype=torch.uint8,shape=(1088,1,656),is_contiguous=lambda:True)]*78
+    allocator=NS(get_kvcache=lambda:pool)
+    runner=NS(token_to_kv_pool=pool,token_to_kv_pool_allocator=allocator,kv_cache_dtype_str="fp8_e4m3",
+        kv_cache_dtype=torch.float8_e4m3fn,model_config=NS(hf_config=NS(kv_lora_rank=512,qk_rope_head_dim=64)))
+    scheduler=NS(token_to_kv_pool_allocator=allocator)
+    result=w.validate_kv_layout(runner,scheduler,torch)
+    assert result["shape"]==[1088,1,656]
