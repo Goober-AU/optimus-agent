@@ -358,7 +358,9 @@ def test_prepared_input_or_tree_identity_drift_refused_before_any_apply(fixture,
         path.unlink()
         path.write_bytes(raw)
     monkeypatch.setattr(package.source_patch, "apply", lambda plan: pytest.fail("write phase reached"))
-    with pytest.raises(package.PackageError, match="discard_tree"):
+    # 2026-10-22: PackageError reasons now propagate with their own code (TS2 diagnosis
+    # lesson); the drift codes below are the real pre-apply refusals.
+    with pytest.raises(package.PackageError, match="source_tree_(membership_)?identity_drift|input_identity_drift|input_parent_drift"):
         package.apply(plan, disposable=True)
     fixture.no_writes()
 
@@ -366,7 +368,7 @@ def test_prepared_input_or_tree_identity_drift_refused_before_any_apply(fixture,
 def test_output_appearing_after_prepare_is_never_overwritten(fixture):
     plan = fixture.prepare()
     (fixture.plugin / "native_profile.json").write_bytes(b"foreign")
-    with pytest.raises(package.PackageError, match="discard_tree"):
+    with pytest.raises(package.PackageError, match="generated_output_already_exists"):
         package.apply(plan, disposable=True)
     assert (fixture.plugin / "native_profile.json").read_bytes() == b"foreign"
     assert (fixture.sg / "a.py").read_bytes() == fixture.originals["a.py"]
@@ -392,7 +394,57 @@ def test_partial_artifact_write_fails_requires_discard_and_cannot_resume(fixture
 def test_failed_overlay_or_false_apply_receipt_cannot_create_metadata(fixture, monkeypatch):
     plan = fixture.prepare()
     monkeypatch.setattr(package.source_patch, "apply", lambda plan: {"applied": True})
-    with pytest.raises(package.PackageError, match="discard_tree"):
+    # the false receipt is caught by source verification, whose code now propagates
+    with pytest.raises(package.PackageError, match="applied_source_mismatch"):
+        package.apply(plan, disposable=True)
+    fixture.no_writes()
+
+
+def test_overlayfs_directory_nlink_collapse_is_tolerated_after_apply(fixture, monkeypatch):
+    """Live window TS2 abort 2026-10-22: docker overlay2 copy-up collapses the merged-view
+    st_nlink of patched-file parent directories (child count is a filesystem detail) while
+    dev/ino/mode/uid/gid stay stable; directory identity must not pin nlink."""
+    plan = fixture.prepare()
+    original_tree = package._tree
+
+    def collapsed_tree(root):
+        tree = original_tree(root)
+        entries = []
+        for name, kind, sig in tree.entries:
+            sig = list(sig)
+            if kind == "directory" and root == plan.sglang_srt:
+                sig[3] = 1  # overlay2 collapsed link count; dev/ino/mode/tail unchanged
+            entries.append((name, kind, tuple(sig)))
+        return package.Tree(tree.root, tuple(sorted(entries)), tree.parents)
+
+    monkeypatch.setattr(package, "_tree", collapsed_tree)
+    receipt = package.apply(plan, disposable=True)
+    assert receipt["ok"] is True
+    # artifacts exist; discard rule prevents fixture.no_writes from applying
+    assert (fixture.plugin / "native_profile.json").exists()
+
+
+def test_directory_replacement_is_still_refused_without_nlink(fixture, monkeypatch):
+    """The nlink exclusion must not weaken the wholesale-directory-replacement guard:
+    a changed dev/ino (delete + recreate) still fails directory identity."""
+    plan = fixture.prepare()
+    original_tree = package._tree
+
+    def replaced_tree(root):
+        tree = original_tree(root)
+        if root == plan.sglang_srt:
+            entries = []
+            for name, kind, sig in tree.entries:
+                sig = list(sig)
+                if kind == "directory" and name == "sub":
+                    sig[1] = sig[1] + 1  # different inode: directory was replaced
+                entries.append((name, kind, tuple(sig)))
+            return package.Tree(tree.root, tuple(sorted(entries)), tree.parents)
+        return tree
+
+    monkeypatch.setattr(package, "_tree", replaced_tree)
+    # refused by the pre-apply tree identity recheck (dev/ino pinned) before any write
+    with pytest.raises(package.PackageError, match="source_tree_identity_drift"):
         package.apply(plan, disposable=True)
     fixture.no_writes()
 
@@ -405,7 +457,8 @@ def test_post_apply_source_or_artifact_drift_never_returns_success(fixture, monk
         if name == "_native_profile_digest.py":
             (root / "native_sources.json").write_bytes(b"{}")
     monkeypatch.setattr(package, "_write_fresh", corrupt)
-    with pytest.raises(package.PackageError, match="discard_tree"):
+    # the corrupted artifact is caught by the readback, whose code now propagates
+    with pytest.raises(package.PackageError, match="generated_artifact_mismatch"):
         package.apply(plan, disposable=True)
 
 
@@ -659,7 +712,8 @@ def test_final_source_budget_is_rechecked_at_prewrite_barrier(fixture, monkeypat
     plan = fixture.prepare()
     monkeypatch.setattr(package, "MAX_SOURCE_TOTAL", plan.source_bytes - 1)
     monkeypatch.setattr(package.source_patch, "apply", lambda _: pytest.fail("write phase reached"))
-    with pytest.raises(package.PackageError, match="discard_tree"):
+    # the budget recheck's own code now propagates (was masked as discard_tree)
+    with pytest.raises(package.PackageError, match="produced_source_total_oversize"):
         package.apply(plan, disposable=True)
     fixture.no_writes()
 

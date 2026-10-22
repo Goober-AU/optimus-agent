@@ -447,7 +447,13 @@ def _verify_tree_result(plan, *, outputs):
             now_kind, now = current[name]
             _need(now_kind == kind, "source_tree_type_drift")
             if kind == "directory":
-                _need((signature[0:4], signature[7:]) == (now[0:4], now[7:]), "source_directory_identity_drift")
+                # Directory identity pins dev, inode, mode and the metadata tail.
+                # st_nlink is deliberately excluded: it counts child directories and
+                # is a filesystem-implementation detail — on overlay2 a copied-up
+                # directory's merged view collapses nlink even though the directory
+                # itself is untouched (dev/ino/mode/uid/gid stay stable). A wholesale
+                # directory replacement still fails on dev/ino change.
+                _need((signature[0:3], signature[7:]) == (now[0:3], now[7:]), "source_directory_identity_drift")
             elif name not in modified:
                 _need(now == signature, "unmodified_tree_file_drift")
 
@@ -494,6 +500,8 @@ def apply(plan, *, disposable=False):
             actual = _read(plan.occ3_sglang / name, MAX_SOURCES_BYTES)
             _need(actual.raw == raw and (os.name != "posix" or actual.mode == 0o644), "generated_artifact_mismatch")
         return receipt(plan, applied=True)
+    except PackageError:
+        raise
     except BaseException:
         raise PackageError("package_apply_failed_discard_tree") from None
 
