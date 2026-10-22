@@ -87,6 +87,14 @@ const FIXTURE_KEY: &str = "synthetic-fixture-key";
 const PRINCIPAL_DIGEST: &str = "a5ac3b0a49b31b279ea3782df3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3";
 const LAYOUT_DIGEST: &str = "11d7ea1f62a449cfa9203a4312ff42c412b6a17e4dbd8b2b9d2b5b1c3f7d9a4e";
 const PROFILE_DIGEST: &str = "47ba4c76ed3f1d54a1798cc8a9be9ee17b8063e0bcdbdb6a52a636db3a6f9a9d";
+// Offline fixture digests: derived per _derived_profile_digest semantics
+// (extensions/sglang-occ3/deploy/v3/native_validator.py) from the pinned
+// static profile (deploy/native-build-inputs/native-profile-input.json) plus
+// the offline fixture epochs (offline-runtime-epoch-before/41,
+// offline-runtime-epoch-after/42): canonical JSON (sorted keys, compact
+// separators, ASCII escapes, NaN refused), sha256, ascii encoding.
+const OFFLINE_PROFILE_DIGEST_BEFORE: &str = "1f69749f34cf52a200b16152b44fd24007cbcd909a9fa665e53a7307802df425";
+const OFFLINE_PROFILE_DIGEST_AFTER: &str = "52a6d89c090245d13089ec0fae62a835d38706cb30b14b17c1abea6da6b92e36";
 const STALE_CONTROL_TOKEN: &str = "offline-stale-retained-control";
 
 fn now() -> u64 {
@@ -694,6 +702,7 @@ struct FixtureEpoch {
     runtime_epoch: String,
     runtime_generation: u64,
     expires_at_epoch: u64,
+    profile_digest: String,
 }
 
 /// Modeled controlled restart: fresh epoch, ADVANCED generation, retained
@@ -706,12 +715,14 @@ fn restart_fixture(
     runtime_epoch: &str,
     runtime_generation: u64,
     expires_at_epoch: u64,
+    profile_digest: &str,
 ) {
     {
         let mut state = epoch_state.lock().unwrap();
         state.runtime_epoch = runtime_epoch.into();
         state.runtime_generation = runtime_generation;
         state.expires_at_epoch = expires_at_epoch;
+        state.profile_digest = profile_digest.into();
     }
     let mut records = records.lock().unwrap();
     records.captures.clear();
@@ -878,12 +889,13 @@ async fn serve(
         loop {
             let (mut socket, _) = listener.accept().await.unwrap();
             let records = records.clone();
-            let (epoch, generation, expiry) = {
+            let (epoch, generation, expiry, profile_digest) = {
                 let state = epoch_state.lock().unwrap();
                 (
                     state.runtime_epoch.clone(),
                     state.runtime_generation,
                     state.expires_at_epoch,
+                    state.profile_digest.clone(),
                 )
             };
             tokio::spawn(async move {
@@ -901,7 +913,7 @@ async fn serve(
                         let reply = json!({"schema":"occ3.sessions.enrolled.v1","operation_id":body["operation_id"],"session_id":body["session_id"],
                             "principal_digest":PRINCIPAL_DIGEST,"runtime_id":body["runtime_id"],"runtime_generation":body["runtime_generation"],"model_fingerprint":body["model_fingerprint"],"expires_at_epoch":body["expires_at_epoch"],
                             "readiness":{"runtime_epoch":body["runtime_id"],"runtime_generation":body["runtime_generation"],"model_fingerprint":body["model_fingerprint"],"method_id":METHOD_ID,
-                                "expected_ranks":EXPECTED_RANKS,"ready_ranks":EXPECTED_RANKS,"tp_layout_digest":LAYOUT_DIGEST,"hidden_dim":HIDDEN_DIM,"layer_index":LAYER_INDEX,"dtype":"bfloat16","profile_digest":PROFILE_DIGEST,"source_capture":true,"continuous_prefix":true,"terminal_journal":true}});
+                                "expected_ranks":EXPECTED_RANKS,"ready_ranks":EXPECTED_RANKS,"tp_layout_digest":LAYOUT_DIGEST,"hidden_dim":HIDDEN_DIM,"layer_index":LAYER_INDEX,"dtype":"bfloat16","profile_digest":profile_digest,"source_capture":true,"continuous_prefix":true,"terminal_journal":true}});
                         send(&mut socket, "200 OK", reply.to_string(), vec![]).await;
                     }
                     "/occ3/v1/native/publish" => {
@@ -2687,6 +2699,7 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
         runtime_epoch: "offline-runtime-epoch-before".into(),
         runtime_generation: 41,
         expires_at_epoch: expires_before,
+        profile_digest: OFFLINE_PROFILE_DIGEST_BEFORE.into(),
     }));
     let (endpoint_before, server_before) =
         serve(epoch_state.clone(), before_records.clone()).await;
@@ -2715,7 +2728,7 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
         dtype: "bfloat16".into(),
         layout_digest: LAYOUT_DIGEST.into(),
         expected_ranks: EXPECTED_RANKS,
-        profile_digest: PROFILE_DIGEST.into(),
+        profile_digest: OFFLINE_PROFILE_DIGEST_BEFORE.into(),
     };
     let descriptor_digest = effective_descriptor_digest(
         "before_restart",
@@ -2752,6 +2765,7 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
         "offline-runtime-epoch-after",
         42,
         expires_after,
+        OFFLINE_PROFILE_DIGEST_AFTER,
     );
     let endpoint_after = endpoint_before.clone();
     let after_records = before_records.clone();
@@ -2780,7 +2794,7 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
         dtype: "bfloat16".into(),
         layout_digest: LAYOUT_DIGEST.into(),
         expected_ranks: EXPECTED_RANKS,
-        profile_digest: PROFILE_DIGEST.into(),
+        profile_digest: OFFLINE_PROFILE_DIGEST_AFTER.into(),
     };
     let descriptor_digest_after = effective_descriptor_digest(
         "after_restart",
@@ -2801,13 +2815,14 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
         binary_sha256: binary_sha256.clone(),
         source_manifest_sha256: manifest_sha256.clone(),
         identity_fingerprint: fingerprint.clone(),
-        profile_digest: PROFILE_DIGEST.into(),
+        profile_digest: OFFLINE_PROFILE_DIGEST_BEFORE.into(),
         endpoint_origin: url::Url::parse(&endpoint_before)
             .map_err(|_| fail())?
             .origin()
             .ascii_serialization(),
     };
     let pins_after = ReportPins {
+        profile_digest: OFFLINE_PROFILE_DIGEST_AFTER.into(),
         endpoint_origin: url::Url::parse(&endpoint_after)
             .map_err(|_| fail())?
             .origin()
@@ -2867,7 +2882,8 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
             "source_manifest": manifest,
         },
         "identity_fingerprint": fingerprint,
-        "profile_digest": PROFILE_DIGEST,
+        "profile_digest_before_restart": OFFLINE_PROFILE_DIGEST_BEFORE,
+        "profile_digest_after_restart": OFFLINE_PROFILE_DIGEST_AFTER,
         "files": files,
         "gpu_proof": false,
         "physical_gpu_free_proven": false,
