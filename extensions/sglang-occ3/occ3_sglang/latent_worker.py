@@ -14,7 +14,7 @@ from typing import Any
 
 from .attachment_contract import CaptureWorkerDescriptor, ConsumeWorkerDescriptor, digest
 from .latent_registry import LatentRegistry
-from .latent_types import (LatentError, UniformRequestCancellation, Publication, RequestSlice, RuntimeProfile,
+from .latent_types import (LatentError, UniformRequestCancellation, Publication, RequestSlice, RuntimeProfile, require_members,
                            SessionEnrollment, decode_descriptor, require,
                            validate_control_payload)
 from .statebridge import (align_hidden_sequence, anchor_tiled, mean_embedding_norm,
@@ -122,8 +122,13 @@ class WorkerRuntime:
                             "vocab": self.embedding.num_embeddings, "dtype": self.dtype,
                             "kv": kv_layout}
         except Exception as error:
-            logger.error("occ3-bridge: worker runtime decline (stage=%s code=%s)",
-                         stage, _decline_code(error))
+            members = getattr(error, "members", None)
+            if isinstance(members, str) and members and members.isascii():
+                logger.error("occ3-bridge: worker runtime decline (stage=%s code=%s detail=profile_members=%s)",
+                             stage, _decline_code(error), members[:128])
+            else:
+                logger.error("occ3-bridge: worker runtime decline (stage=%s code=%s)",
+                             stage, _decline_code(error))
             local_error = "profile"
         errors = self.gather(local_error)
         require(not any(errors), "profile")
@@ -885,27 +890,44 @@ def validate_target_model_class(model):
 
 
 def validate_kv_layout(model_runner, scheduler, torch):
-    """Observe initialized target storage; no inferred dtype or allocation."""
+    """Observe initialized target storage; no inferred dtype or allocation.
+
+    Every member is evaluated before the single decline, and the failing
+    member names attach to the error, so a live window distinguishes e.g. an
+    EAGLE layer split (layer_num/end_layer/kv_buffer_len) from a dtype or
+    allocator divergence in one attempt.
+    """
     from sglang.srt.mem_cache.memory_pool import DSATokenToKVPool
     pool = model_runner.token_to_kv_pool
-    require(type(pool) is DSATokenToKVPool, "profile")
-    require(scheduler.token_to_kv_pool_allocator is model_runner.token_to_kv_pool_allocator
-            and scheduler.token_to_kv_pool_allocator.get_kvcache() is pool, "profile")
-    require(model_runner.kv_cache_dtype_str == "fp8_e4m3"
-            and model_runner.kv_cache_dtype == torch.float8_e4m3fn
-            and pool.dtype == torch.float8_e4m3fn and pool.store_dtype == torch.uint8, "profile")
-    require(pool.use_dsa is True and pool.page_size == 64 and pool.kernel_page_blocks == 1
-            and pool.layer_num == 78 and pool.start_layer == 0 and pool.end_layer == 77
-            and pool.layer_shard_enabled is False and pool.post_capture_active is False, "profile")
     config = model_runner.model_config.hf_config
-    require(pool.kv_lora_rank == config.kv_lora_rank
-            and pool.qk_rope_head_dim == config.qk_rope_head_dim
-            and pool.index_head_dim == 128, "profile")
-    require(type(pool.size) is int and pool.size > 0 and type(pool.kv_cache_dim) is int
-            and pool.kv_cache_dim > 0 and len(pool.kv_buffer) == 78, "profile")
     geometry = (pool.size + pool.page_size, 1, pool.kv_cache_dim)
-    require(all(buffer.is_cuda and buffer.dtype == pool.store_dtype and tuple(buffer.shape) == geometry
-                and buffer.is_contiguous() for buffer in pool.kv_buffer), "profile")
+    require_members((
+        ("pool_class", type(pool) is DSATokenToKVPool),
+        ("allocator", scheduler.token_to_kv_pool_allocator
+         is model_runner.token_to_kv_pool_allocator
+         and scheduler.token_to_kv_pool_allocator.get_kvcache() is pool),
+        ("kv_dtype", model_runner.kv_cache_dtype_str == "fp8_e4m3"
+         and model_runner.kv_cache_dtype == torch.float8_e4m3fn
+         and pool.dtype == torch.float8_e4m3fn and pool.store_dtype == torch.uint8),
+        ("use_dsa", pool.use_dsa is True),
+        ("page_size", pool.page_size == 64),
+        ("kernel_page_blocks", pool.kernel_page_blocks == 1),
+        ("layer_num", pool.layer_num == 78),
+        ("start_layer", pool.start_layer == 0),
+        ("end_layer", pool.end_layer == 77),
+        ("layer_shard_enabled", pool.layer_shard_enabled is False),
+        ("post_capture_active", pool.post_capture_active is False),
+        ("config_binding", pool.kv_lora_rank == config.kv_lora_rank
+         and pool.qk_rope_head_dim == config.qk_rope_head_dim
+         and pool.index_head_dim == 128),
+        ("pool_size", type(pool.size) is int and pool.size > 0
+         and type(pool.kv_cache_dim) is int and pool.kv_cache_dim > 0),
+        ("kv_buffer_len", len(pool.kv_buffer) == 78),
+        ("kv_buffer_geometry", all(
+            buffer.is_cuda and buffer.dtype == pool.store_dtype
+            and tuple(buffer.shape) == geometry and buffer.is_contiguous()
+            for buffer in pool.kv_buffer)),
+    ), "profile")
     # FP8 is stored as uint8 by the native KVCache base. DSA may include packed
     # scale/BF16-rope bytes; do not mislabel physical uint8 as a dtype mismatch.
     return {"class": "DSATokenToKVPool", "semantic_dtype": "float8_e4m3fn",
