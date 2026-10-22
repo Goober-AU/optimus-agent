@@ -1,6 +1,7 @@
 """Offline disposable-tree packaging tests; no model/runtime imports or Docker."""
 import ast
 import builtins
+import dataclasses
 from copy import deepcopy
 import hashlib
 import importlib
@@ -23,6 +24,52 @@ def digest(raw):
 
 def write_json(path, value):
     path.write_bytes((json.dumps(value, sort_keys=True, indent=2) + "\n").encode("utf-8"))
+
+
+# Fabricated postapply tree pairs for _verify_tree_result (deploy/v3/native_package.py:437-458).
+# Directory st_nlink cannot be driven through the real filesystem on NTFS (it already
+# reports 1), so overlay2-style collapses are fabricated from one real _tree()
+# snapshot; the pairs are therefore identical on NTFS and POSIX, and only the
+# postapply seam ever observes the fabrication.
+PRE_COLLAPSE_NLINK = 3  # ext4 directory with one subdirectory: 2 + child directories
+COLLAPSED_NLINK = 1  # overlay2 merged view after copy-up
+_PRODUCTION_TREE = package._tree  # captured at import, before any test can patch it
+
+
+def tree_with_directory_nlink(tree, nlink):
+    """Copy of tree with every directory signature's st_nlink (sig[3]) set to nlink."""
+    entries = []
+    for name, kind, signature in tree.entries:
+        if kind == "directory":
+            signature = list(signature)
+            signature[3] = nlink
+            signature = tuple(signature)
+        entries.append((name, kind, signature))
+    return package.Tree(tree.root, tuple(sorted(entries)), tree.parents)
+
+
+def tree_with_entry_field(tree, name, index, value):
+    """Copy of tree with a single entry's signature[index] set to value."""
+    entries = []
+    for entry_name, kind, signature in tree.entries:
+        if entry_name == name:
+            signature = list(signature)
+            signature[index] = value
+            signature = tuple(signature)
+        entries.append((entry_name, kind, signature))
+    return package.Tree(tree.root, tuple(sorted(entries)), tree.parents)
+
+
+def fabricated_postapply(monkeypatch, plan, before, after):
+    """Serve a fabricated before/after pair to the postapply check: _verify_tree_result
+    reads its before side from plan.trees and its after side from the module-level
+    _tree lookup it performs per root (native_package.py:439). Only the sglang_srt
+    tree is fabricated; the plugin tree stays real, and because the caller never
+    invokes package.apply, the preapply _recheck_inputs full-tuple comparison
+    (native_package.py:302) never observes the fabrication."""
+    monkeypatch.setattr(package, "_tree",
+                        lambda root: after if root == plan.sglang_srt else _PRODUCTION_TREE(root))
+    return dataclasses.replace(plan, trees=(before, plan.trees[1]))
 
 
 class Fixture:
@@ -401,27 +448,38 @@ def test_failed_overlay_or_false_apply_receipt_cannot_create_metadata(fixture, m
 
 
 def test_overlayfs_directory_nlink_collapse_is_tolerated_after_apply(fixture, monkeypatch):
-    """Live window TS2 abort 2026-10-22: docker overlay2 copy-up collapses the merged-view
-    st_nlink of patched-file parent directories (child count is a filesystem detail) while
-    dev/ino/mode/uid/gid stay stable; directory identity must not pin nlink."""
+    """Replaces the deleted variant that monkeypatched package._tree across the whole
+    apply() flow: on NTFS it was vacuous (directory st_nlink already reports 1, so
+    forcing sig[3]=1 changed nothing) and on POSIX it would have failed the
+    apply-entry recheck instead of the postapply check, because _recheck_inputs
+    compares FULL 9-field trees (native_package.py:302) and the patched _tree drifted
+    the before side too. The faithful seam is the postapply comparison alone: apply()
+    rechecks the real tree, source_patch.apply's writes trigger the overlay2 copy-up
+    collapse, and only afterwards does _verify_tree_result compare
+    (native_package.py:490-493). The collapse is not reproducible through the real
+    NTFS filesystem, so the before/after pair is fabricated from one _tree()
+    snapshot: before carries an ext4-style directory nlink, after the collapsed
+    merged-view nlink, every other field identical on both platforms."""
     plan = fixture.prepare()
-    original_tree = package._tree
-
-    def collapsed_tree(root):
-        tree = original_tree(root)
-        entries = []
-        for name, kind, sig in tree.entries:
-            sig = list(sig)
-            if kind == "directory" and root == plan.sglang_srt:
-                sig[3] = 1  # overlay2 collapsed link count; dev/ino/mode/tail unchanged
-            entries.append((name, kind, tuple(sig)))
-        return package.Tree(tree.root, tuple(sorted(entries)), tree.parents)
-
-    monkeypatch.setattr(package, "_tree", collapsed_tree)
-    receipt = package.apply(plan, disposable=True)
-    assert receipt["ok"] is True
-    # artifacts exist; discard rule prevents fixture.no_writes from applying
-    assert (fixture.plugin / "native_profile.json").exists()
+    snapshot = package._tree(plan.sglang_srt)
+    before = tree_with_directory_nlink(snapshot, PRE_COLLAPSE_NLINK)
+    after = tree_with_directory_nlink(snapshot, COLLAPSED_NLINK)
+    fabricated = fabricated_postapply(monkeypatch, plan, before, after)
+    package._verify_tree_result(fabricated, outputs=False)  # admitted: no PackageError
+    # Anti-vacuity guard: the pair differs in st_nlink and in nothing else.
+    before_directories = {name: sig for name, kind, sig in before.entries if kind == "directory"}
+    after_directories = {name: sig for name, kind, sig in after.entries if kind == "directory"}
+    assert before_directories
+    for name, signature in before_directories.items():
+        assert after_directories[name][3] != signature[3]
+        assert after_directories[name][:3] == signature[:3] and after_directories[name][4:] == signature[4:]
+    fixture.no_writes()
+    # The same fabricated pair with one replaced directory inode is still refused.
+    replaced = tree_with_entry_field(after, "sub", 1, after_directories["sub"][1] + 1)
+    fabricated_postapply(monkeypatch, plan, before, replaced)
+    with pytest.raises(package.PackageError, match="source_directory_identity_drift"):
+        package._verify_tree_result(fabricated, outputs=False)
+    fixture.no_writes()
 
 
 def test_directory_replacement_is_still_refused_without_nlink(fixture, monkeypatch):
@@ -446,6 +504,50 @@ def test_directory_replacement_is_still_refused_without_nlink(fixture, monkeypat
     # refused by the pre-apply tree identity recheck (dev/ino pinned) before any write
     with pytest.raises(package.PackageError, match="source_tree_identity_drift"):
         package.apply(plan, disposable=True)
+    fixture.no_writes()
+
+
+@pytest.mark.parametrize("index,refused",
+                         [(0, True), (1, True), (2, True), (3, False), (7, True), (8, True)],
+                         ids=["dev-drift", "ino-drift", "mode-drift", "nlink-collapse", "uid-drift",
+                              "gid-drift"])
+def test_postapply_directory_identity_pins_dev_ino_mode_and_metadata_tail(fixture, monkeypatch, index, refused):
+    """Pin the exact postapply directory identity contract: _verify_tree_result's
+    directory branch (native_package.py:456) compares (signature[0:3], signature[7:])
+    — dev, ino, mode and the uid/gid tail — and deliberately excludes st_nlink. If that
+    slice ever silently dropped mode or ino, the drift cases here fail; if it grew to
+    pin st_nlink, the collapse case fails. Every case starts from the tolerated nlink
+    collapse, so a refusal can only come from the pinned field."""
+    plan = fixture.prepare()
+    snapshot = package._tree(plan.sglang_srt)
+    before = tree_with_directory_nlink(snapshot, PRE_COLLAPSE_NLINK)
+    after = tree_with_directory_nlink(snapshot, COLLAPSED_NLINK)
+    before_signature = {name: sig for name, kind, sig in before.entries}["sub"]
+    if refused:
+        after = tree_with_entry_field(after, "sub", index, before_signature[index] + 1)
+    after_signature = {name: sig for name, kind, sig in after.entries}["sub"]
+    assert after_signature[index] != before_signature[index]  # anti-vacuity: drift is real
+    fabricated = fabricated_postapply(monkeypatch, plan, before, after)
+    if refused:
+        with pytest.raises(package.PackageError, match="source_directory_identity_drift"):
+            package._verify_tree_result(fabricated, outputs=False)
+    else:
+        package._verify_tree_result(fabricated, outputs=False)
+    fixture.no_writes()
+
+
+def test_postapply_unmodified_file_identity_still_pins_nlink(fixture, monkeypatch):
+    """The directory nlink tolerance must not leak into file entries: unmodified files
+    keep FULL 9-field signature equality (native_package.py:457-458), so a drifted
+    file st_nlink is refused even though every directory is untouched. Fabricated
+    from one snapshot, so the drift is equally real on NTFS and POSIX."""
+    plan = fixture.prepare()
+    snapshot = package._tree(plan.sglang_srt)
+    signature = {name: sig for name, kind, sig in snapshot.entries}["untouched.py"]
+    after = tree_with_entry_field(snapshot, "untouched.py", 3, signature[3] + 1)
+    fabricated = fabricated_postapply(monkeypatch, plan, snapshot, after)
+    with pytest.raises(package.PackageError, match="unmodified_tree_file_drift"):
+        package._verify_tree_result(fabricated, outputs=False)
     fixture.no_writes()
 
 
