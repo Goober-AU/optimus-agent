@@ -34,6 +34,12 @@ MAX_PROFILE_BYTES = 16384
 MAX_SOURCES_BYTES = 65536
 MAX_BASELINE_BYTES = 65536
 MAX_FILE_BYTES = 2 * 1024 * 1024
+# Traversal bound for non-source files in the packaged trees (compiled shared
+# objects and data shipped by the immutable base image). The base image's
+# rust/grpc/multimodal extensions exceed the 2 MiB source bound; this is a
+# metadata-walk bound only — file contents at this size are never read,
+# hashed into source manifests, or attested as reviewed source.
+MAX_BINARY_FILE_BYTES = 64 * 1024 * 1024
 MAX_INPUT_BYTES = 64 * 1024 * 1024
 # Matches native_install._MAX_SOURCE_TOTAL; only native_sources.files bytes.
 MAX_SOURCE_TOTAL = 32 * 1024 * 1024
@@ -224,7 +230,8 @@ def _tree(root):
                     name = child.name if not relative else relative + "/" + child.name
                     pending.append((Path(child.path), name, depth + 1))
         else:
-            _need(info.st_size <= MAX_FILE_BYTES, "tree_file_oversize")
+            limit = MAX_FILE_BYTES if relative.endswith(".py") else MAX_BINARY_FILE_BYTES
+            _need(info.st_size <= limit, "tree_file_oversize")
             total += info.st_size
             _need(total <= MAX_TREE_BYTES, "tree_byte_limit")
     return Tree(root, tuple(sorted(entries)), parents)

@@ -416,6 +416,35 @@ def test_bounded_oversize_refused_without_writes(fixture, monkeypatch):
     fixture.no_writes()
 
 
+def test_base_image_binary_object_exceeding_source_bound_is_accepted(fixture, monkeypatch):
+    """Live-window abort 2026-10-22: compiled .so objects from the immutable base
+    image exceed the 2 MiB source bound; the tree walk must admit them under the
+    separate binary traversal bound while never reading their contents."""
+    monkeypatch.setattr(package, "MAX_FILE_BYTES", 64)
+    (fixture.sg / "rust_extensions").mkdir()
+    (fixture.sg / "rust_extensions" / "_server.cpython-312-x86_64-linux-gnu.so").write_bytes(b"\x7fELF" + b"0" * 96)
+    plan = fixture.prepare()
+    entry = [item for item in plan.trees[0].entries if item[0].endswith(".so")]
+    assert entry and entry[0][1] == "file"
+    fixture.no_writes()
+
+
+def test_binary_object_beyond_traversal_bound_is_refused(fixture, monkeypatch):
+    monkeypatch.setattr(package, "MAX_BINARY_FILE_BYTES", 8)
+    (fixture.sg / "_grpc.cpython-312-x86_64-linux-gnu.so").write_bytes(b"\x7fELF" + b"0" * 40)
+    with pytest.raises(package.PackageError, match="tree_file_oversize"):
+        fixture.prepare()
+    fixture.no_writes()
+
+
+def test_oversize_python_source_still_refused_under_binary_bound(fixture, monkeypatch):
+    monkeypatch.setattr(package, "MAX_FILE_BYTES", 16)
+    (fixture.sg / "oversize.py").write_bytes(b"VALUE = 1\n" + b"#" * 40)
+    with pytest.raises(package.PackageError, match="tree_file_oversize"):
+        fixture.prepare()
+    fixture.no_writes()
+
+
 def test_cli_errors_never_echo_private_input_or_paths(fixture, capsys):
     fixture.profile["model_id"] = PRIVATE + " has spaces"
     write_json(fixture.profile_path, fixture.profile)
