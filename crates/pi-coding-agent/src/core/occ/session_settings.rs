@@ -13,6 +13,12 @@ const SCHEMA: &str = "optimus.occ-session.v1";
 struct Preference {
     schema: String,
     occ2_enabled: bool,
+    /// OCC-3 latent communication preference. Absent in existing
+    /// `occ.json` files: `#[serde(default)]` keeps v1 files loading and
+    /// the value OFF (activation is opt-in and additionally requires a
+    /// live connector handshake).
+    #[serde(default)]
+    occ3_enabled: bool,
 }
 
 pub fn preference_path(session_file: &str) -> PathBuf {
@@ -25,12 +31,13 @@ pub fn preference_path(session_file: &str) -> PathBuf {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Resolution {
     pub occ2_enabled: bool,
+    pub occ3_enabled: bool,
     pub source_session_id: Option<String>,
 }
 
 impl Default for Resolution {
     fn default() -> Self {
-        Resolution { occ2_enabled: true, source_session_id: None }
+        Resolution { occ2_enabled: true, occ3_enabled: false, source_session_id: None }
     }
 }
 
@@ -68,6 +75,7 @@ pub fn resolve(session_file: &str) -> Result<Resolution, String> {
                 if value.schema != SCHEMA { return Err("Unsupported OCC session preference schema".into()); }
                 return Ok(Resolution {
                     occ2_enabled: value.occ2_enabled,
+                    occ3_enabled: value.occ3_enabled,
                     source_session_id: Some(session_id_of(&file.to_string_lossy())),
                 });
             }
@@ -131,11 +139,17 @@ pub fn enabled(session_file: Option<&str>) -> bool {
 }
 
 pub fn save(session_file: &str, enabled: bool) -> Result<(), String> {
+    save_occ3(session_file, enabled, false)
+}
+
+/// Save both preferences; `save` keeps the OCC-2-only signature for
+/// existing callers.
+pub fn save_occ3(session_file: &str, occ2_enabled: bool, occ3_enabled: bool) -> Result<(), String> {
     if session_file.is_empty() { return Err("This chat has no saved session identity".into()); }
     let path = preference_path(session_file);
     let parent = path.parent().ok_or("Invalid OCC session preference path")?;
     fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    let value = Preference { schema: SCHEMA.into(), occ2_enabled: enabled };
+    let value = Preference { schema: SCHEMA.into(), occ2_enabled: occ2_enabled, occ3_enabled };
     let mut pending = tempfile::NamedTempFile::new_in(parent).map_err(|e| e.to_string())?;
     serde_json::to_writer(pending.as_file_mut(), &value).map_err(|e| e.to_string())?;
     pending.write_all(b"\n").map_err(|e| e.to_string())?;

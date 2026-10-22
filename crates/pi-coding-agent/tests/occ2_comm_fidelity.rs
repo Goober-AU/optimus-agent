@@ -768,13 +768,14 @@ fn t07_negotiation_absence_keeps_occ1() {
     // A target that reports nothing: OCC-1.
     assert_eq!(select_occ2_dialect(&local, None, &registry, true), None);
     // A target that speaks OCC-1 only: OCC-1.
-    let occ1_only = OccCapability { occ1: true, dialects: BTreeMap::new() };
+    let occ1_only = OccCapability { occ1: true, dialects: BTreeMap::new(), occ3: None};
     assert_eq!(select_occ2_dialect(&local, Some(&occ1_only), &registry, true), None);
     // A target that knows a different dialect: OCC-1.
     let other = OccCapability {
         occ1: true,
         dialects: BTreeMap::from([("sym-x1".to_string(), BTreeSet::from([1]))]),
-    };
+        occ3: None,
+};
     assert_eq!(select_occ2_dialect(&local, Some(&other), &registry, true), None);
     // Unevaluated cards are refused without the dev override (tier 2).
     assert_eq!(select_occ2_dialect(&local, Some(&local), &registry, false), None);

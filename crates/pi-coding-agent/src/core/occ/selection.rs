@@ -577,7 +577,8 @@ mod tests {
         let occ1_only = OccCapability {
             occ1: true,
             dialects: BTreeMap::new(),
-        };
+            occ3: None,
+};
         let speaker = local();
         let context =
             SelectionContext::simple(&speaker, Some(&occ1_only), &registry, 400, "TASK");

@@ -1,0 +1,467 @@
+{
+  "schema": "optimus.occ3.tasks.v2",
+  "version": 2,
+  "description": "Asymmetric-information tasks for the OCC-1/OCC-2/OCC-3 benchmark. The receiver can answer only from the delivered sender evidence. Tier 1: direct multi-fact extraction (the 12 original v1 tasks, unchanged). Tier 2: multi-fact extraction with distractors. Tier 3: defect identification/repair and distractor-heavy synthesis with scripted verifiers.",
+  "tiers": {
+    "1": "direct extraction of 3 facts from short evidence",
+    "2": "multi-fact extraction with distractors (4+ checks)",
+    "3": "defect identification/repair or deep synthesis with distractors; scripted verifiers"
+  },
+  "construction_rules": [
+    "sender_msg is the only place the answers exist (sender-only evidence)",
+    "receiver_task never contains any check substring (no leakage by construction)",
+    "exact-match checks and scripted all_of members appear in the sender evidence",
+    "each any_of group has at least one member phrased in the sender evidence",
+    "no task's verifier passes on another task's canned answer (content-disjoint controls)",
+    "none_of applies to the receiver output only"
+  ],
+  "tasks": [
+    {
+      "id": "t01_logistics_dock_move",
+      "domain": "logistics",
+      "sender_msg": "Morning pickup update from the Brussels depot: dock 4 is closed and all shipments moved to gate 12. The pickup window is 08:30 to 09:15; ask for Marek at the gate office. The crate weighs 41 kg and has glass panels inside, so it must stay upright at all times.",
+      "receiver_task": "Using only the message above, state which gate the pickup moved to, how much the crate weighs, and how the crate must be handled.",
+      "eval_checks": [
+        "gate 12",
+        "41",
+        "upright"
+      ]
+    },
+    {
+      "id": "t02_scheduling_sync_move",
+      "domain": "scheduling",
+      "sender_msg": "The team sync moved from Tuesday 14:00 to Thursday 10:30, still in room Borealis. The slot is now 45 minutes instead of a full hour. Ava will dial in from the airport, so please do not reschedule it again this week.",
+      "receiver_task": "Using only the message above, state the new day, the new start time, and the new length of the team sync.",
+      "eval_checks": [
+        "thursday",
+        "10:30",
+        "45"
+      ]
+    },
+    {
+      "id": "t03_coding_flaky_test",
+      "domain": "coding-facts",
+      "sender_msg": "The flaky test is test_packet_reorder, not the timeout suite. It fails only on the CI runner with 2 vCPUs, never on the 16 vCPU machines. The fix landed in commit 9f31c0 and needs a backport to the release branch, not main.",
+      "receiver_task": "Using only the message above, name the flaky test, the commit that fixes it, and the branch that receives the backport.",
+      "eval_checks": [
+        "test_packet_reorder",
+        "9f31c0",
+        "release"
+      ]
+    },
+    {
+      "id": "t04_measurements_niche",
+      "domain": "measurements",
+      "sender_msg": "Measured the cabinet niche again: 62 cm wide, 187 cm tall, 35 cm deep. The radiator pipe on the left steals 4 cm, so the effective width is 58 cm. Order the shelf in matte black, not oak, and keep its depth at most 34 cm for the pipe bend.",
+      "receiver_task": "Using only the message above, state the effective niche width, the shelf color to order, and the maximum shelf depth.",
+      "eval_checks": [
+        "58",
+        "matte black",
+        "34"
+      ]
+    },
+    {
+      "id": "t05_preferences_client",
+      "domain": "preferences",
+      "sender_msg": "Notes from the client call with Dr. Ibanez: she dislikes phone calls and prefers email before noon. She approved the teal prototype, not the sandstone one. Invoices go through the Rotterdam office, and she can approve up to 9000 euros herself before her director must sign.",
+      "receiver_task": "Using only the message above, state which prototype was approved, her preferred contact method, and the amount she can approve without escalation.",
+      "eval_checks": [
+        "teal",
+        "email",
+        "9000"
+      ]
+    },
+    {
+      "id": "t06_priorities_sprint",
+      "domain": "priorities",
+      "sender_msg": "Sprint reprioritization: the export crash is P1 and blocks the customer demo, so it jumps ahead of everything else. The auth fix comes second, the dark mode toggle third. The font change moves to the parking lot. Do not start dark mode before auth is merged.",
+      "receiver_task": "Using only the message above, state which issue must be fixed first, its priority level, and where the font change goes.",
+      "eval_checks": [
+        "export",
+        "p1",
+        "parking lot"
+      ]
+    },
+    {
+      "id": "t07_travel_platform",
+      "domain": "travel",
+      "sender_msg": "Train update for tonight: your connection leaves from platform 9, not platform 8 as printed on the ticket. It departs at 17:42 and requires a seat reservation, code QT-771. Transfer only at Utrecht; the Schiphol segment was cancelled.",
+      "receiver_task": "Using only the message above, state the departure platform, the departure time, and the reservation code.",
+      "eval_checks": [
+        "platform 9",
+        "17:42",
+        "qt-771"
+      ]
+    },
+    {
+      "id": "t08_inventory_count",
+      "domain": "inventory",
+      "sender_msg": "Warehouse count finished: 217 sealed boxes, 14 damaged, 6 missing labels. The damaged boxes go to the reclaim shelf in aisle C. The aisle A count is final; do not recount it. Missing-label boxes need new labels from the office before storage.",
+      "receiver_task": "Using only the message above, state how many boxes are sealed, how many are damaged, and where the damaged boxes must go.",
+      "eval_checks": [
+        "217",
+        "14",
+        "aisle c"
+      ]
+    },
+    {
+      "id": "t09_budget_offsite",
+      "domain": "budget",
+      "sender_msg": "Budget revision for the offsite: the venue quote is 3400 for the hall plus 600 for the AV bundle. Cancel the DJ, which frees 900, and move that money to catering, which now gets 2500 total. Keep the 10 percent contingency untouched.",
+      "receiver_task": "Using only the message above, state the hall cost, the AV bundle cost, and the new total catering budget.",
+      "eval_checks": [
+        "3400",
+        "600",
+        "2500",
+        "catering"
+      ]
+    },
+    {
+      "id": "t10_safety_solvent",
+      "domain": "safety",
+      "sender_msg": "Safety sheet for the new solvent: its flash point is 18 degrees Celsius, which makes it flammable, not merely combustible. Store it in the yellow cabinet, two shelves below the fume hood, and never let the storage temperature exceed 25 degrees. Keep it away from the oxidizer shelf.",
+      "receiver_task": "Using only the message above, state the solvent's flash point, the required storage cabinet, and the maximum storage temperature.",
+      "eval_checks": [
+        "18",
+        "yellow",
+        "25"
+      ]
+    },
+    {
+      "id": "t11_service_rename",
+      "domain": "service-naming",
+      "sender_msg": "Migration note: the service is renamed from relay-bird to hawk-relay, and the old name is deprecated in every config. The default port changes from 8080 to 9443, and TLS stays mandatory. Update the key hawk.relay.port in the values file before Friday.",
+      "receiver_task": "Using only the message above, state the service's current name, its new default port, and the config key to update.",
+      "eval_checks": [
+        "hawk-relay",
+        "9443",
+        "hawk.relay.port"
+      ]
+    },
+    {
+      "id": "t12_dinner_booking",
+      "domain": "dining",
+      "sender_msg": "Dinner booking details: Nadia is vegan, Tom is allergic to shellfish, and Petra eats everything but dislikes cilantro. We booked the Italian place for 19:00, not 20:00, table for 9 people under Petra's name, in the quiet room upstairs.",
+      "receiver_task": "Using only the message above, state who is vegan, the dinner start time, and how many people the table seats.",
+      "eval_checks": [
+        "nadia",
+        "vegan",
+        "19:00"
+      ]
+    },
+    {
+      "id": "t13_config_payments",
+      "domain": "config",
+      "tier": 2,
+      "sender_msg": "Config audit from the payments rollout: the service timeout was raised from 2 seconds to 90 seconds, the retry count stays at 5, and the live endpoint moved to paygate.internal:9361. The queue depth alert threshold is now 850 pending jobs. The old endpoint payments.internal:8443 retires after Friday; do not route to it after that.",
+      "receiver_task": "Using only the message above, state the new timeout in seconds, the alert threshold in pending jobs, the new endpoint including port, and the day the old endpoint retires.",
+      "eval_checks": [
+        "90 seconds",
+        "850",
+        "paygate.internal:9361",
+        "after friday"
+      ]
+    },
+    {
+      "id": "t14_mobile_ship_blocker",
+      "domain": "release-ops",
+      "tier": 2,
+      "sender_msg": "Ship status for the mobile app: the 4.8.2 build is blocked. The crash is a SIGSEGV in libpay.so at offset 0x2a9f1c on the checkout screen. The fix landed in commit 88e4c02 by Priya. QA wants a re-run on the emulator image api-36 before sign-off; the previous image api-33 missed it.",
+      "receiver_task": "Using only the message above, state the version that is blocked, the faulting library, the fixing commit, and the emulator image to re-run on.",
+      "eval_checks": [
+        "4.8.2",
+        "libpay.so",
+        "88e4c02",
+        "api-36"
+      ]
+    },
+    {
+      "id": "t15_db_migration_window",
+      "domain": "database",
+      "tier": 2,
+      "sender_msg": "DB migration notes for the warehouse cluster: the orders table moves from Postgres 12 to Postgres 16 this week. The migration window is Sunday 02:00-04:30 UTC, the runbook owner is Ditte, the rollback script is db/rollback_0117.sql, and the vacuum analyze step must run before traffic flips. The reporting replica follows one week later.",
+      "receiver_task": "Using only the message above, state the target Postgres version, the rollback script path, the runbook owner, and the day of the migration window.",
+      "eval_checks": [
+        "postgres 16",
+        "db/rollback_0117.sql",
+        "ditte",
+        "sunday"
+      ]
+    },
+    {
+      "id": "t16_bgp_incident",
+      "domain": "networking",
+      "tier": 2,
+      "sender_msg": "Incident 4471 wrap-up: the outage was caused by a BGP session flap on edge router rtr-ams-2 after a bad route map pushed prefix 10.44.0.0/16 with a wrong community tag. Mitigation was removing route-map BAD-COMM-88 and hardening the session with a 30-second dampening timer. A second router, rtr-ams-3, was checked and cleared.",
+      "receiver_task": "Using only the message above, state the incident number, the router that flapped, the removed route map, and the bad prefix.",
+      "eval_checks": [
+        "4471",
+        "rtr-ams-2",
+        "bad-comm-88",
+        "10.44.0.0/16"
+      ]
+    },
+    {
+      "id": "t17_key_rotation",
+      "domain": "security-ops",
+      "tier": 2,
+      "sender_msg": "Security rotation summary: the API signing key for the partner gateway rotated to key id k-2026-11-04 with fingerprint 9c:aa:21. The old key k-2026-08-30 stays valid for read-only calls only. The rotation ticket is SEC-812 and the on-call approver was Miguel.",
+      "receiver_task": "Using only the message above, state the new key id, its fingerprint, the rotation ticket, and the on-call approver.",
+      "eval_checks": [
+        "k-2026-11-04",
+        "9c:aa:21",
+        "sec-812",
+        "miguel"
+      ]
+    },
+    {
+      "id": "t18_etl_failure",
+      "domain": "data-pipeline",
+      "tier": 2,
+      "sender_msg": "Pipeline postmortem: the nightly ETL for the metrics rollup failed at stage dedupe_keys because the upstream schema added a nullable column is_test without notice. The job id was etl-3391-bis, 2.1 million rows were re-processed, and the guard patch is behind feature flag metrics_guard_v2 going out on Wednesday. The alerting stage alert_push was cleared as a suspect.",
+      "receiver_task": "Using only the message above, state the failed stage, the job id, the added column, and the feature flag.",
+      "eval_checks": [
+        "dedupe_keys",
+        "etl-3391-bis",
+        "is_test",
+        "metrics_guard_v2"
+      ]
+    },
+    {
+      "id": "t19_i18n_poland",
+      "domain": "i18n",
+      "tier": 2,
+      "sender_msg": "Localization status for the Poland launch: the checkout flow is translated except the invoice screen, which still has 12 strings pending legal review by the Warsaw team. The glossary term for 'refund' must be 'zwrot' in all Polish UI, the locale tag is pl-PL, and prices format to PLN with a space as the thousands separator.",
+      "receiver_task": "Using only the message above, state the screen with pending strings, the required Polish term for refund, the locale tag, and the currency.",
+      "eval_checks": [
+        "invoice screen",
+        "zwrot",
+        "pl-pl",
+        "pln"
+      ]
+    },
+    {
+      "id": "t20_sre_handoff",
+      "domain": "oncall",
+      "tier": 2,
+      "sender_msg": "SRE shift handoff: the etcd quorum on cluster prod-eu-west is healthy again after replacing the flaky member node core-7 on rack b12. The follow-up is ticket INFR-552 to swap the raid controller on that node; the failed node's serial ends in XJ4. Pages route to the secondary until 06:00.",
+      "receiver_task": "Using only the message above, state the replaced node name, its rack, the follow-up ticket, and the serial suffix.",
+      "eval_checks": [
+        "core-7",
+        "b12",
+        "infr-552",
+        "xj4"
+      ]
+    },
+    {
+      "id": "t21_defect_off_by_one",
+      "domain": "coding-defect",
+      "tier": 3,
+      "sender_msg": "I audited the manifest parser in src/inventory/count.rs. The function count_remaining has an off-by-one defect: its loop reads `for i in 0..=items.len() { total += items[i].qty; }`, which indexes one past the end on the final iteration. The corrected loop condition is `for i in 0..items.len()`.",
+      "receiver_task": "The sender inspected one function in a source file and found exactly one defect. Using only the message above, state the function name, the defect class in a short phrase, and the corrected loop condition exactly.",
+      "eval_checks": [],
+      "verifier": {
+        "type": "scripted",
+        "all_of": [
+          "count_remaining",
+          "i in 0..items.len()"
+        ],
+        "any_of_groups": [
+          [
+            "off-by-one",
+            "off by one"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "t22_defect_argument_order",
+      "domain": "coding-defect",
+      "tier": 3,
+      "sender_msg": "I reviewed the retry helper in services/gateway/retry.py. The function backoff_delay has an argument-order defect: it is defined as `def backoff_delay(retries, base)` but the caller invokes `backoff_delay(base, retries)`, so the delay shrinks as retries grow. The corrected call is `backoff_delay(retries, base)`.",
+      "receiver_task": "The sender inspected one function in a source file and found exactly one defect. Using only the message above, state the function name, the defect class in a short phrase, and the corrected call exactly.",
+      "eval_checks": [],
+      "verifier": {
+        "type": "scripted",
+        "all_of": [
+          "backoff_delay(retries, base)"
+        ],
+        "any_of_groups": [
+          [
+            "argument-order",
+            "argument order",
+            "swapped arguments"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "t23_defect_missing_await",
+      "domain": "coding-defect",
+      "tier": 3,
+      "sender_msg": "I checked the upload path in workers/upload_task.ts. The function persistChunk has a missing-await defect: it calls `writeFile(tmpPath, data)` without awaiting, so the success log fires before the file exists. The corrected line is `await writeFile(tmpPath, data)`.",
+      "receiver_task": "The sender inspected one function in a source file and found exactly one defect. Using only the message above, state the function name, the defect class in a short phrase, and the corrected line exactly.",
+      "eval_checks": [],
+      "verifier": {
+        "type": "scripted",
+        "all_of": [
+          "persistchunk",
+          "await writefile(tmppath, data)"
+        ],
+        "any_of_groups": [
+          [
+            "missing await",
+            "missing-await",
+            "unawaited"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "t24_defect_sql_concat",
+      "domain": "coding-defect",
+      "tier": 3,
+      "sender_msg": "Security review of the admin search in app/queries.py. The function findUserByMail has a string-concatenation SQL defect: it builds `query = \"SELECT * FROM users WHERE user_mail = '\" + user_mail + \"'\"`, letting user input reach the SQL text directly. The corrected query line is `query = \"SELECT * FROM users WHERE user_mail = ?\"` used with `cursor.execute(query, (user_mail,))`.",
+      "receiver_task": "The sender inspected one function in a source file and found exactly one defect. Using only the message above, state the function name, the defect class in a short phrase, and the corrected query line exactly.",
+      "eval_checks": [],
+      "verifier": {
+        "type": "scripted",
+        "all_of": [
+          "finduserbymail",
+          "user_mail = ?"
+        ],
+        "any_of_groups": [
+          [
+            "sql injection",
+            "string-concatenation",
+            "string concatenation"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "t25_defect_time_unit",
+      "domain": "coding-defect",
+      "tier": 3,
+      "sender_msg": "I checked the cache sweeper in pkg/cache/sweep.go. The function sweepExpired has a time-unit defect: it computes `deadline := now.Add(30 * time.Millisecond)` where the design says thirty seconds, so entries expire a thousand times too fast. The corrected line is `deadline := now.Add(30 * time.Second)`.",
+      "receiver_task": "The sender inspected one function in a source file and found exactly one defect. Using only the message above, state the function name, the defect class in a short phrase, and the corrected line exactly.",
+      "eval_checks": [],
+      "verifier": {
+        "type": "scripted",
+        "all_of": [
+          "sweepexpired",
+          "30 * time.second"
+        ],
+        "any_of_groups": [
+          [
+            "time-unit",
+            "time unit",
+            "wrong unit",
+            "unit error"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "t26_defect_check_then_act",
+      "domain": "coding-defect",
+      "tier": 3,
+      "sender_msg": "I profiled the counter service in src/counter/service.rs. The function incr_if_lower has a check-then-act race defect: it reads `if self.count < limit { self.count += 1; }` without holding the lock across both steps, so concurrent callers overshoot the limit. The corrected form acquires the mutex first: `let mut guard = self.lock.lock().unwrap(); if *guard < limit { *guard += 1; }`.",
+      "receiver_task": "The sender inspected one function in a source file and found exactly one defect. Using only the message above, state the function name, the defect class in a short phrase, and the corrected form exactly.",
+      "eval_checks": [],
+      "verifier": {
+        "type": "scripted",
+        "all_of": [
+          "incr_if_lower",
+          "*guard < limit"
+        ],
+        "any_of_groups": [
+          [
+            "race condition",
+            "check-then-act",
+            "check then act",
+            "time-of-check"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "t27_latency_root_cause",
+      "domain": "incident-forensics",
+      "tier": 3,
+      "sender_msg": "API latency spike triage from last night: p95 rose to 3.8 seconds between 21:10 and 21:40 UTC. Three suspects were checked and cleared: the CDN cache (hit rate unchanged at 97 percent), the database (slow query log empty), and a deploy (none in that window). The actual cause was a retry storm from client sdk version 3.4.1 after its circuit breaker was disabled by the flag retry_disable_cb, sending eleven times the normal request volume to the checkout service.",
+      "receiver_task": "Using only the message above, state the start of the spike window in UTC, the actual root cause, the sdk version, and the flag that disabled the circuit breaker.",
+      "eval_checks": [],
+      "verifier": {
+        "type": "scripted",
+        "all_of": [
+          "3.4.1",
+          "retry_disable_cb",
+          "21:10"
+        ],
+        "any_of_groups": [
+          [
+            "retry storm"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "t28_vendor_decision",
+      "domain": "procurement",
+      "tier": 3,
+      "sender_msg": "Vendor review for the observability contract: Datadog quoted 121k per year but needs a 3-year lock; Grafana Cloud quoted 76k per year with a migration effort of 6 engineer-weeks; the in-house option costs 39k per year in hosting plus 2 engineers ongoing. Finance capped OpEx at 90k per year. The committee chose Grafana Cloud, with the migration owned by the platform team.",
+      "receiver_task": "Using only the message above, state which option the committee chose, its yearly quote, and the migration effort.",
+      "eval_checks": [],
+      "verifier": {
+        "type": "scripted",
+        "all_of": [
+          "grafana cloud",
+          "76k",
+          "6 engineer-weeks"
+        ]
+      }
+    },
+    {
+      "id": "t29_compliance_findings",
+      "domain": "compliance",
+      "tier": 3,
+      "sender_msg": "Compliance audit outcome for the data platform: the auditor raised three findings. F-0931 (critical): audit logs for the payments schema were disabled for six weeks. F-0932 (medium): the retention policy document still references the 2024 schedule. F-0933 (low): two shared service accounts lack MFA. The remediation deadline set by the auditor is March 15 for the critical finding only; the others follow the standard quarterly review.",
+      "receiver_task": "Using only the message above, state the critical finding id, what it concerns, and its remediation deadline.",
+      "eval_checks": [],
+      "verifier": {
+        "type": "scripted",
+        "all_of": [
+          "f-0931",
+          "audit logs",
+          "march 15"
+        ]
+      }
+    },
+    {
+      "id": "t30_defect_hardcoded_endpoint",
+      "domain": "coding-defect",
+      "tier": 3,
+      "sender_msg": "Final audit item in tools/metrics_pusher.py. The function push_metrics has a hard-coded-endpoint defect: it sends to `http://localhost:9090/push` although the staging gateway is `http://metrics.stg.internal:9099/push`. The corrected line is `url = \"http://metrics.stg.internal:9099/push\"`. Reply-format note from the sender: the corrected line must appear exactly once in the reply.",
+      "receiver_task": "The sender inspected one function in a source file and found exactly one defect. Using only the message above, state the function name, the defect class in a short phrase, then the corrected line exactly, and nothing else.",
+      "eval_checks": [],
+      "verifier": {
+        "type": "scripted",
+        "all_of": [
+          "push_metrics",
+          "metrics.stg.internal:9099/push"
+        ],
+        "any_of_groups": [
+          [
+            "hard-coded",
+            "hardcoded",
+            "hard coded"
+          ]
+        ],
+        "none_of": [
+          "localhost:9090"
+        ]
+      }
+    }
+  ]
+}

@@ -11,6 +11,7 @@ enum Choice {
     Menu,
     Status,
     Set(bool),
+    SetOcc3(bool),
 }
 
 fn parse(args: &str) -> Result<Choice, String> {
@@ -20,14 +21,21 @@ fn parse(args: &str) -> Result<Choice, String> {
         ["status"] => Ok(Choice::Status),
         ["1"] | ["occ1"] | ["off"] | ["2", "off"] | ["occ2", "off"] => Ok(Choice::Set(false)),
         ["2"] | ["occ2"] | ["on"] | ["2", "on"] | ["occ2", "on"] => Ok(Choice::Set(true)),
-        _ => Err("Usage: /occ [status|1|2 on|2 off]. OCC-1 remains enabled as the fallback; OCC-2 is enabled by default.".into()),
+        ["3", "on"] | ["occ3", "on"] => Ok(Choice::SetOcc3(true)),
+        ["3", "off"] | ["occ3", "off"] | ["3"] | ["occ3"] => Ok(Choice::SetOcc3(false)),
+        _ => Err("Usage: /occ [status|1|2 on|2 off|3 on|3 off]. OCC-1 remains enabled as the fallback; OCC-2 is enabled by default; OCC-3 requires a live connector handshake.".into()),
     }
 }
 
 fn status(enabled: bool) -> String {
+    status_occ3(enabled, false)
+}
+
+fn status_occ3(enabled: bool, occ3_enabled: bool) -> String {
     format!(
-        "Agent communication (this chat)\n\nOCC-1: ON (fallback)\nOCC-2: {} (adaptive symbolic encoding; default ON)\n\n/occ 2 on enables OCC-2; /occ 2 off returns to OCC-1.\nSaved for this chat and inherited by its subagents unless they have an override. Other chats are unchanged. Applies to subsequent structured messages. Plain-text messages remain TXT.\nNeon-blue TXT / OCC1 / OCC2 indicators flash on delivered messages. OCC-3 is not active.",
-        if enabled { "ON" } else { "OFF" }
+        "Agent communication (this chat)\n\nOCC-1: ON (fallback)\nOCC-2: {} (adaptive symbolic encoding; default ON)\nOCC-3: {} (latent, same-exact-model only; requires a live connector handshake)\n\n/occ 2 on enables OCC-2; /occ 2 off returns to OCC-1; /occ 3 on enables OCC-3 (falls back automatically when the receiver, model or connector is ineligible).\nSaved for this chat and inherited by its subagents unless they have an override. Other chats are unchanged. Applies to subsequent structured messages. Plain-text messages remain TXT.\nNeon-blue TXT / OCC1 / OCC2 indicators flash on delivered messages.",
+        if enabled { "ON" } else { "OFF" },
+        if occ3_enabled { "ON" } else { "OFF" }
     )
 }
 
@@ -147,9 +155,24 @@ pub(super) async fn run(
     }
     let payload = read_preference(connection, &route).await?;
     let enabled = enabled_of(&payload)?;
+    // OCC-3 writes are chat-local for v1: the daemon preference command
+    // set is unchanged (capability-gated), so the toggle persists via
+    // the session artifact the worker reads at send time.
+    if let Choice::SetOcc3(value) = choice {
+        let state = connection.get_state().await?;
+        let session_file = state.session_file.as_deref().ok_or("This chat has no saved session identity")?;
+        let resolution = crate::core::occ::session_settings::resolve(session_file)?;
+        crate::core::occ::session_settings::save_occ3(
+            session_file,
+            resolution.occ2_enabled,
+            value,
+        )?;
+        return Ok(CommandOutput::Status(status_occ3(enabled, value)));
+    }
     let requested = match choice {
         Choice::Status => return Ok(CommandOutput::Panel(status_of(&payload)?)),
         Choice::Set(value) => value,
+        Choice::SetOcc3(_) => unreachable!("handled above"),
         Choice::Menu => {
             let title = format!("OCC-1 ON · OCC-2 {}", if enabled { "ON" } else { "OFF" });
             match select(send, &title, &["OCC-1 only", "Enable OCC-2 (default)"]).await {
@@ -175,8 +198,14 @@ mod tests {
         for args in ["2", "on", "2 on", "occ2 on"] {
             assert_eq!(parse(args).unwrap(), Choice::Set(true));
         }
-        for args in ["3 on", "1 off", "2 maybe", "2 on off"] {
+        for args in ["1 off", "2 maybe", "2 on off"] {
             assert!(parse(args).is_err());
+        }
+        for args in ["3 on", "occ3 on"] {
+            assert_eq!(parse(args).unwrap(), Choice::SetOcc3(true));
+        }
+        for args in ["3 off", "occ3 off", "3", "occ3"] {
+            assert_eq!(parse(args).unwrap(), Choice::SetOcc3(false));
         }
     }
 
@@ -187,6 +216,7 @@ mod tests {
         for enabled in [false, true] {
             assert_eq!(legacy_enabled(&Resolution {
                 occ2_enabled: enabled,
+                occ3_enabled: false,
                 source_session_id: Some("chat".into()),
             }), enabled);
         }

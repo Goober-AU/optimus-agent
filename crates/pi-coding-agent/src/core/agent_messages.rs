@@ -785,6 +785,58 @@ pub fn wrap_outgoing_body(body: &str, policy: &Occ2SendPolicy) -> String {
     dual
 }
 
+/// Send policy for the OCC-3 latent seam. Mirrors [`Occ2SendPolicy`]:
+/// `enabled: false` (the default) is the identity. When enabled and a
+/// captured handle is present, the body is replaced by the OCC-3
+/// envelope whose control summary is the (already OCC-encoded) body.
+///
+/// Capture happens BEFORE this seam (the daemon send handler is async
+/// and owns connector I/O); this seam stays pure: it only encodes.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Occ3SendPolicy {
+    /// Feature flag (session `occ3Enabled`), default OFF.
+    pub enabled: bool,
+    /// A handle captured for this specific message, plus the negotiated
+    /// connector/runtime identity. `None` keeps the prior encoding.
+    pub handle: Option<crate::core::occ::occ3::types::Occ3HandleRef>,
+    /// Connector id for the envelope.
+    pub connector_id: String,
+    /// Runtime identity string for the envelope.
+    pub runtime_id: String,
+    /// Negotiated latent method.
+    pub method: crate::core::occ::occ3::types::Occ3Method,
+    /// Receiver session id (bound into the envelope).
+    pub receiver_session_id: String,
+    /// Transport bound (R1: never truncate; refuse instead).
+    pub max_message_chars: usize,
+}
+
+impl Occ3SendPolicy {
+    /// Conservative default: no latent substitution, byte-identical.
+    pub fn disabled() -> Self {
+        Self {
+            enabled: false,
+            handle: None,
+            connector_id: String::new(),
+            runtime_id: String::new(),
+            method: crate::core::occ::occ3::types::Occ3Method::KvHandoff,
+            receiver_session_id: String::new(),
+            max_message_chars: DEFAULT_AGENT_MESSAGE_MAX_CHARS,
+        }
+    }
+}
+
+/// Apply the OCC-3 seam AFTER the OCC-2 seam: an eligible latent message
+/// wraps the OCC-1/OCC-2-encoded control summary inside the envelope.
+/// Any error, missing handle or budget breach returns the body
+/// unchanged (R1) so the message still delivers.
+pub fn wrap_outgoing_body_occ3(body: &str, _policy: &Occ3SendPolicy) -> String {
+    // Legacy kernel sends have no authenticated native tool/source provenance.
+    // Never fabricate pending IDs or copy the source body into a successful
+    // latent envelope. Actual native handoff uses PreparedNativeHandoff.
+    body.to_string()
+}
+
 /// Splits a dual OCC-2 payload at the fallback sentinel, mirroring the
 /// codec's private splitter: (symbolic section, OCC-1 section). Returns
 /// `None` when the body carries no sentinel line.
@@ -1961,12 +2013,82 @@ impl AgentSessionMessageRateLimiter {
     }
 }
 
+
+/// Internal, process-local authorization. No serde or public daemon wire input
+/// can construct a prepared source handoff. Both the real daemon and isolated
+/// native harness call this exact family-policy constructor.
+#[derive(Clone)]
+pub struct AuthorizedNativeHandoff {
+    message_id: String,
+    from: AgentSessionMessageEndpoint,
+    target: AgentSessionMessageEndpoint,
+    relationship: String,
+}
+impl AuthorizedNativeHandoff {
+    pub fn from_catalog(
+        current: &AgentFamilyCatalogEntry, target: &AgentFamilyCatalogEntry,
+        from: AgentSessionMessageEndpoint, to: AgentSessionMessageEndpoint,
+        requested_relationship: &str,
+    ) -> Result<Self, String> {
+        let relationship = assert_agent_family_reach(current, target)?;
+        if current.id != from.session_id || target.id != to.session_id
+            || relationship != requested_relationship || from.session_id == to.session_id
+        { return Err("Native handoff family binding rejected".into()); }
+        Ok(Self {message_id:create_agent_session_message_id(),from,target:to,relationship})
+    }
+    pub fn message_id(&self) -> &str { &self.message_id }
+    pub fn source_session_id(&self) -> &str { &self.from.session_id }
+    pub fn target_session_id(&self) -> &str { &self.target.session_id }
+    pub fn target(&self) -> &AgentSessionMessageEndpoint { &self.target }
+}
+
+#[derive(Clone)]
+pub struct PreparedNativeHandoff {
+    authorization: AuthorizedNativeHandoff,
+    publication: crate::core::occ::occ3::connector::NativePublication,
+}
+impl PreparedNativeHandoff {
+    pub fn new(authorization: AuthorizedNativeHandoff, publication: crate::core::occ::occ3::connector::NativePublication) -> Result<Self, String> {
+        let e = &publication.envelope;
+        if e.message_id != authorization.message_id || e.sender_session_id != authorization.from.session_id
+            || e.receiver_session_id != authorization.target.session_id
+            || e.control_summary != "Continue the authorized task using the attached state."
+        { return Err("Native handoff publication binding rejected".into()); }
+        Ok(Self {authorization,publication})
+    }
+    pub fn authorization(&self) -> &AuthorizedNativeHandoff { &self.authorization }
+    pub fn envelope(&self) -> &crate::core::occ::occ3::types::Occ3Envelope { &self.publication.envelope }
+    /// Durable/model-visible message contains control only. Never persist raw
+    /// state handles, source receipts or source text in custom-message details.
+    pub fn control_payload(&self) -> AgentSessionMessagePayload {
+        AgentSessionMessagePayload {
+            id:self.authorization.message_id.clone(),source:AGENT_MESSAGE_SOURCE.into(),
+            message:self.publication.envelope.control_summary.clone(),
+            from:Some(AgentSessionMessageSender {active_session_id:Some(self.authorization.from.active_session_id.clone()),
+                session_id:Some(self.authorization.from.session_id.clone()),session_name:self.authorization.from.session_name.clone(),
+                runtime_kind:self.authorization.from.runtime_kind.clone(),client_id:None}),
+            from_relationship:Some(self.authorization.relationship.clone()),target:self.authorization.target.clone(),
+        }
+    }
+}
+
 /// Controller surface used by the host request handlers.
 ///
 /// `AgentSessionMessageController` is a TypeScript interface with optional
 /// members; the Rust trait keeps the same three members and lets each
 /// implementation decide whether the optional ones exist.
 pub trait AgentSessionMessageController: Send + Sync {
+    /// Internal experimental native route; ordinary kernel payloads cannot use
+    /// this without actual parsed source tool provenance and an installed permit.
+    fn authorize_native_handoff(&self, _relationship: String, _selector: String)
+        -> pi_ai::types::BoxFuture<Result<AuthorizedNativeHandoff, String>> {
+        Box::pin(async { Err("Native source handoff is not installed".into()) })
+    }
+    fn send_prepared_native_handoff(&self, _prepared: PreparedNativeHandoff)
+        -> pi_ai::types::BoxFuture<Result<AgentSessionMessageReceipt, String>> {
+        Box::pin(async { Err("Native source handoff is not installed".into()) })
+    }
+
     /// Internal catalog, including passive children; older hosts may omit it.
     fn list_agents(&self) -> pi_ai::types::BoxFuture<Result<Option<AgentSessionMessageListResult>, String>> {
         Box::pin(async { Ok(None) })
@@ -1997,9 +2119,103 @@ pub trait AgentSessionMessageController: Send + Sync {
         let _ = (target, message);
         Box::pin(async { Occ2SendPolicy::disabled() })
     }
+
+    /// OCC-3 send policy for one target: the async arm that owns
+    /// connector I/O. Implementors capture the latent state BEFORE the
+    /// send (this is the only async step) and return the handle for
+    /// the pure envelope seam. The default is the disabled policy:
+    /// OCC-3 requires an explicit opt-in plus a live connector.
+    fn occ3_send_policy(
+        &self,
+        target: &str,
+        message: &str,
+    ) -> pi_ai::types::BoxFuture<Occ3SendPolicy> {
+        let _ = (target, message);
+        Box::pin(async { Occ3SendPolicy::disabled() })
+    }
 }
 
 /// `createAgentMessageHostHandlers(controller)`.
+/// Typed provenance route for `agent_message.send`. Implements the
+/// fail-closed publication gate: authority classification uses ONLY
+/// host-owned frame state (`ctx`), never payload fields, and never the
+/// current cell. The ordinary route (no token present, nothing enrolled)
+/// delegates byte-identically to [`handle_agent_message_send`].
+pub fn create_agent_message_provenance_host_handlers(
+    controller: std::sync::Arc<dyn AgentSessionMessageController>,
+) -> crate::core::kernel::shared::ProvenanceHostRequestHandlers {
+    use crate::core::kernel::shared::{HostRequestContext, ProvenanceHostRequestHandler};
+    use std::collections::HashMap;
+
+    let mut handlers: crate::core::kernel::shared::ProvenanceHostRequestHandlers = HashMap::new();
+
+    let send_controller = controller.clone();
+    let send: ProvenanceHostRequestHandler = std::sync::Arc::new(
+        move |ctx: HostRequestContext, payload: Value| {
+            let controller = send_controller.clone();
+            Box::pin(async move {
+                handle_agent_message_send_provenance(controller, ctx, payload).await
+            })
+        },
+    );
+    handlers.insert("agent_message.send".to_string(), send);
+
+    handlers
+}
+
+/// The fail-closed publication gate for the provenance route.
+///
+/// Rules (root correction, mandatory):
+/// - ANY present token (well-formed or not, matched or not) that does not
+///   claim the live enrolled scope REFUSES before publication, even when no
+///   scope is enrolled: a known prior token can never downgrade to plaintext.
+/// - An absent token while an execution is enrolled (live or settling)
+///   refuses and tombstones the enrolled scope.
+/// - An absent token with nothing enrolled is the ordinary route, unchanged.
+/// - A matched scope that claims successfully is the Phase C consumer; this
+///   build refuses BEFORE publication rather than sending plaintext.
+async fn handle_agent_message_send_provenance(
+    controller: std::sync::Arc<dyn AgentSessionMessageController>,
+    ctx: crate::core::kernel::shared::HostRequestContext,
+    payload: Value,
+) -> Result<Value, crate::core::kernel::shared::KernelError> {
+    use crate::core::kernel::shared::KernelError;
+
+    if ctx.token_present {
+        if let Some(scope) = ctx.live_enrolled.clone() {
+            let matched = ctx
+                .matched_scope
+                .as_ref()
+                .map(|matched| std::sync::Arc::ptr_eq(matched, &scope))
+                .unwrap_or(false);
+            if matched && scope.claim().is_ok() {
+                // Phase C enrollment is not implemented in this build.
+                // Refuse BEFORE publication; never send plaintext. The
+                // claim is consumed, so a retry with the same token
+                // tombstones below.
+                return Err(KernelError::new(
+                    "agent_message.send refused: provenance route is not enrolled in this build",
+                ));
+            }
+            scope.tombstone();
+            return Err(KernelError::new(
+                "agent_message.send refused: execution token did not match the enrolled execution",
+            ));
+        }
+        // No enrolled execution: a present-but-unknown token still refuses.
+        return Err(KernelError::new(
+            "agent_message.send refused: unknown execution token",
+        ));
+    }
+    if let Some(scope) = ctx.live_enrolled.clone() {
+        scope.tombstone();
+        return Err(KernelError::new(
+            "agent_message.send refused: execution provenance required",
+        ));
+    }
+    handle_agent_message_send(controller, payload).await
+}
+
 pub fn create_agent_message_host_handlers(
     controller: std::sync::Arc<dyn AgentSessionMessageController>,
 ) -> crate::core::kernel::shared::HostRequestHandlers {
@@ -2073,6 +2289,9 @@ async fn handle_agent_message_send(
             // its own negotiated dialect (design R6); no receipt change.
             let policy = controller.occ2_send_policy(&entry.id, &message).await;
             let message = wrap_outgoing_body(&message, &policy);
+            // OCC-3 seam, broadcast arm: latent capture per recipient.
+            let occ3 = controller.occ3_send_policy(&entry.id, &message).await;
+            let message = wrap_outgoing_body_occ3(&message, &occ3);
             let input = AgentSessionMessageSendInput {
                 target: entry.id.clone(),
                 message,
@@ -2164,6 +2383,12 @@ async fn handle_agent_message_send(
     // otherwise the send is byte-identical OCC-0/OCC-1.
     let policy = controller.occ2_send_policy(&target, &message).await;
     let message = wrap_outgoing_body(&message, &policy);
+    // OCC-3 seam: the async capture already happened inside
+    // `occ3_send_policy`; this wrap is the pure envelope encode. Any
+    // failure upstream left the policy disabled, so the message still
+    // goes out as OCC-1/OCC-2 (rule R1: never lost, never truncated).
+    let occ3 = controller.occ3_send_policy(&target, &message).await;
+    let message = wrap_outgoing_body_occ3(&message, &occ3);
     let receipt = controller
         .send_agent_message(AgentSessionMessageSendInput {
             target,
@@ -2458,10 +2683,154 @@ pub fn occ2_send_policy_for_send(
     occ2_send_policy_from_selection(&context, experimental).policy
 }
 
+/// Build the OCC-3 send policy for one message (the capture side of
+/// the seam; see `Occ3SendPolicy`).
+///
+/// Inputs are resolved by the caller (session settings, the sender
+/// model's `occ3` configuration, the live connector registry) so this
+/// function stays offline-testable. A `None` model block, a disabled
+/// or not-yet-live-verified configuration, a missing connector or any
+/// capture failure all return the disabled policy: the message goes
+/// out as OCC-1/OCC-2 exactly as before (rule R1: never lost).
+///
+/// `capture` is the connector call: it exists so tests can substitute
+/// the mock connector while production passes the registry-backed
+/// closure.
+pub async fn occ3_send_policy_for_send<F, Fut>(
+    speaker_session_file: Option<&str>,
+    model_occ3: Option<&pi_ai::types::Occ3Capability>,
+    listener: &str,
+    message: &str,
+    capture: F,
+) -> Occ3SendPolicy
+where
+    F: FnOnce(crate::core::occ::occ3::connector::CaptureRequest) -> Fut,
+    Fut: std::future::Future<
+        Output = Result<
+            crate::core::occ::occ3::types::Occ3HandleRef,
+            crate::core::occ::occ3::types::Occ3Error,
+        >,
+    >,
+{
+    let _ = (speaker_session_file, model_occ3, listener, message, capture);
+    // Explicitly unsupported for the ordinary kernel host route. A plaintext
+    // message cannot retroactively capture its original accepted hidden states.
+    Occ3SendPolicy::disabled()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[tokio::test]
+    async fn occ3_policy_disabled_without_model_block_or_optin() {
+        // No model block: disabled.
+        let policy = occ3_send_policy_for_send(Some("session-file"), None, "listener", "msg", |_| async { unreachable!() }).await;
+        assert!(!policy.enabled);
+        // Model block not live-verified: disabled.
+        let config = pi_ai::types::Occ3Capability {
+            protocol: "occ3-v1".into(),
+            connector: "sglang".into(),
+            endpoint: "http://localhost:30001".into(),
+            api_version: "v1".into(),
+            same_model_only: true,
+            enabled: true,
+            validation: pi_ai::types::Occ3Validation::Unverified,
+            fallback: vec![],
+        };
+        let policy = occ3_send_policy_for_send(Some("session-file"), Some(&config), "listener", "msg", |_| async { unreachable!() }).await;
+        assert!(!policy.enabled);
+    }
+
+    #[tokio::test]
+    async fn occ3_kernel_policy_never_recaptures_text_even_if_profile_claims_live() {
+        let config = pi_ai::types::Occ3Capability {
+            protocol: "occ3-v1".into(),
+            connector: "sglang".into(),
+            endpoint: "http://localhost:30001".into(),
+            api_version: "v1".into(),
+            same_model_only: true,
+            enabled: true,
+            validation: pi_ai::types::Occ3Validation::LiveVerified,
+            fallback: vec![],
+        };
+        // With a temp session file that has occ3 enabled.
+        let dir = std::env::temp_dir().join(format!("occ3-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let session_file = dir.join("test-session.jsonl");
+        std::fs::write(&session_file, b"{}").unwrap();
+        crate::core::occ::session_settings::save_occ3(session_file.to_str().unwrap(), true, true).unwrap();
+
+        let handle = crate::core::occ::occ3::types::Occ3HandleRef {
+            handle_id: "chan-1".into(),
+            connector_id: "sglang".into(),
+            model_fingerprint: "fp".into(),
+            runtime_generation: 1,
+            expires_at_epoch: 0,
+            state_size_bytes: 64,
+        };
+        let expected = handle.clone();
+        let policy = occ3_send_policy_for_send(
+            session_file.to_str(),
+            Some(&config),
+            "listener-1",
+            "carry me",
+            |request| async move {
+                let _ = (request, handle);
+                panic!("legacy kernel route must not recapture plaintext")
+            },
+        )
+        .await;
+        let _ = expected;
+        assert!(!policy.enabled);
+        assert!(policy.handle.is_none());
+
+        // The wrap produces an OCC/3 envelope wire body.
+        let wire = wrap_outgoing_body_occ3("base body", &policy);
+        assert_eq!(wire, "base body");
+        assert!(wire.chars().count() <= policy.max_message_chars);
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[tokio::test]
+    async fn occ3_policy_falls_back_on_capture_failure() {
+        let config = pi_ai::types::Occ3Capability {
+            protocol: "occ3-v1".into(),
+            connector: "sglang".into(),
+            endpoint: "http://localhost:30001".into(),
+            api_version: "v1".into(),
+            same_model_only: true,
+            enabled: true,
+            validation: pi_ai::types::Occ3Validation::LiveVerified,
+            fallback: vec![],
+        };
+        let dir = std::env::temp_dir().join(format!("occ3-test-fail-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        // Unique session identity per test: the preference store keys
+        // artifacts off the session file, so same-named files collide.
+        let session_file = dir.join("fail-session.jsonl");
+        std::fs::write(&session_file, b"{}").unwrap();
+        crate::core::occ::session_settings::save_occ3(session_file.to_str().unwrap(), true, true).unwrap();
+
+        let policy = occ3_send_policy_for_send(
+            session_file.to_str(),
+            Some(&config),
+            "listener",
+            "msg",
+            |_request| async {
+                Err(crate::core::occ::occ3::types::Occ3Error::ConnectorUnreachable {
+                    connector_id: "sglang".into(),
+                })
+            },
+        )
+        .await;
+        assert!(!policy.enabled); // capture failure -> OCC-1/2 fallback
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
 
     fn endpoint(name: Option<&str>, active: &str, session: &str) -> AgentSessionMessageEndpoint {
         AgentSessionMessageEndpoint {
@@ -3136,7 +3505,7 @@ mod tests {
         // No reported capability: OCC-1.
         assert_eq!(select_occ2_dialect(&local, None, &registry, true), None);
         // A peer that speaks OCC-1 only: OCC-1.
-        let occ1_only = OccCapability { occ1: true, dialects: BTreeMap::new() };
+        let occ1_only = OccCapability { occ1: true, dialects: BTreeMap::new(), occ3: None};
         assert_eq!(select_occ2_dialect(&local, Some(&occ1_only), &registry, true), None);
         // Unevaluated cards are refused without the dev override.
         assert_eq!(select_occ2_dialect(&local, Some(&local), &registry, false), None);
@@ -3154,6 +3523,201 @@ mod tests {
         let round: AgentSessionMessageAgentSummary =
             serde_json::from_value(serialized).unwrap();
         assert_eq!(round.occ_capability, Some(OccCapability::here()));
+    }
+}
+
+#[cfg(test)]
+mod agent_message_provenance_gate_tests {
+    use super::*;
+    use crate::core::kernel::shared::{HostRequestContext, KernelExecutionScope, KernelScopeState};
+    use serde_json::json;
+    use std::future::Future;
+    use std::pin::Pin;
+    use std::sync::Arc;
+
+    /// A minimal `AgentSessionMessageController` that records sends, for the
+    /// provenance gate seam tests (mirrors the RecordingController shape).
+    struct GateRecordingController {
+        sent: std::sync::Mutex<Vec<(String, String)>>,
+    }
+
+    impl GateRecordingController {
+        fn shared() -> Arc<Self> {
+            Arc::new(GateRecordingController {
+                sent: std::sync::Mutex::new(Vec::new()),
+            })
+        }
+    }
+
+    impl AgentSessionMessageController for GateRecordingController {
+        fn roster(
+            &self,
+        ) -> Pin<Box<dyn Future<Output = Result<AgentFamilyRosterResult, String>> + Send>> {
+            let entries = vec![AgentFamilyRosterEntry {
+                relationship: FAMILY_RELATIONSHIP_PARENT.to_string(),
+                name: "parent".to_string(),
+                id: "parent-id".to_string(),
+                depth: 0.0,
+                status: FAMILY_STATUS_RUNNING.to_string(),
+                replied_since_task: None,
+            }];
+            Box::pin(async move {
+                Ok(AgentFamilyRosterResult {
+                    current: AgentFamilyRosterCurrent {
+                        name: "self".into(),
+                        id: "self-id".into(),
+                        depth: 1.0,
+                    },
+                    entries,
+                })
+            })
+        }
+
+        fn await_pending_child_publication(
+            &self,
+            _selector: String,
+        ) -> Pin<Box<dyn Future<Output = Result<Option<String>, String>> + Send>> {
+            Box::pin(async move { Ok(None) })
+        }
+
+        fn send_agent_message(
+            &self,
+            input: AgentSessionMessageSendInput,
+        ) -> Pin<Box<dyn Future<Output = Result<AgentSessionMessageReceipt, String>> + Send>> {
+            self.sent
+                .lock()
+                .unwrap()
+                .push((input.target.clone(), input.message.clone()));
+            Box::pin(async move {
+                Ok(AgentSessionMessageReceipt {
+                    id: create_agent_session_message_id(),
+                    source: AGENT_MESSAGE_SOURCE.to_string(),
+                    target: AgentSessionMessageEndpoint {
+                        active_session_id: input.target.clone(),
+                        session_id: input.target,
+                        ..Default::default()
+                    },
+                    from: None,
+                    message: input.message,
+                    delivery_status: DELIVERY_STATUS_DELIVERED.to_string(),
+                    delivered_at: None,
+                    queued_at: None,
+                    delivery_mode: None,
+                })
+            })
+        }
+    }
+
+    fn ctx(
+        token_present: bool,
+        matched_scope: Option<Arc<KernelExecutionScope>>,
+        live_enrolled: Option<Arc<KernelExecutionScope>>,
+    ) -> HostRequestContext {
+        HostRequestContext {
+            request_id: "request-1".to_string(),
+            token_present,
+            matched_scope,
+            live_enrolled,
+            kernel_generation: 1,
+            cell_source_code: None,
+        }
+    }
+
+    fn armed_scope() -> Arc<KernelExecutionScope> {
+        let scope = KernelExecutionScope::new_admitted("call-1", "ipython");
+        scope.arm(1).expect("arm");
+        scope
+    }
+
+    fn payload() -> Value {
+        json!({
+            "message": "hello",
+            "receiver_role": "parent",
+        })
+    }
+
+    #[tokio::test]
+    async fn absent_token_with_nothing_enrolled_is_ordinary() {
+        let controller = GateRecordingController::shared();
+        let result = handle_agent_message_send_provenance(
+            controller.clone(),
+            ctx(false, None, None),
+            payload(),
+        )
+        .await;
+        assert!(result.is_ok(), "ordinary route must not change: {result:?}");
+        assert_eq!(controller.sent.lock().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn present_unknown_token_refuses_even_with_no_enrolled_scope() {
+        let controller = GateRecordingController::shared();
+        let result =
+            handle_agent_message_send_provenance(controller.clone(), ctx(true, None, None), payload())
+                .await;
+        let error = result.err().expect("a present unknown token must refuse");
+        assert!(error.to_string().contains("unknown execution token"));
+        assert!(controller.sent.lock().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn absent_token_while_enrolled_refuses_and_tombstones() {
+        let controller = GateRecordingController::shared();
+        let scope = armed_scope();
+        let result = handle_agent_message_send_provenance(
+            controller.clone(),
+            ctx(false, None, Some(scope.clone())),
+            payload(),
+        )
+        .await;
+        let error = result.err().expect("enrolled executions require the token");
+        assert!(error.to_string().contains("provenance required"));
+        assert_eq!(scope.state(), KernelScopeState::Tombstoned);
+        assert!(controller.sent.lock().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn matched_token_claims_then_refuses_before_publication() {
+        let controller = GateRecordingController::shared();
+        let scope = armed_scope();
+        let result = handle_agent_message_send_provenance(
+            controller.clone(),
+            ctx(true, Some(scope.clone()), Some(scope.clone())),
+            payload(),
+        )
+        .await;
+        let error = result.err().expect("Phase C is not implemented in this build");
+        assert!(error.to_string().contains("not enrolled"));
+        assert_eq!(scope.state(), KernelScopeState::Claimed);
+        assert!(controller.sent.lock().unwrap().is_empty());
+        // A retry with the same token can never claim again: one-shot.
+        let retry = handle_agent_message_send_provenance(
+            controller.clone(),
+            ctx(true, Some(scope.clone()), Some(scope.clone())),
+            payload(),
+        )
+        .await;
+        let error = retry.err().expect("the claim is consumed");
+        assert!(error.to_string().contains("did not match"));
+        assert_eq!(scope.state(), KernelScopeState::Tombstoned);
+        assert!(controller.sent.lock().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn a_token_matching_a_different_scope_tombstones_the_enrolled_one() {
+        let controller = GateRecordingController::shared();
+        let enrolled = armed_scope();
+        let other = armed_scope();
+        let result = handle_agent_message_send_provenance(
+            controller.clone(),
+            ctx(true, Some(other.clone()), Some(enrolled.clone())),
+            payload(),
+        )
+        .await;
+        let error = result.err().expect("only the enrolled scope's token matches");
+        assert!(error.to_string().contains("did not match"));
+        assert_eq!(enrolled.state(), KernelScopeState::Tombstoned);
+        assert!(controller.sent.lock().unwrap().is_empty());
     }
 }
 

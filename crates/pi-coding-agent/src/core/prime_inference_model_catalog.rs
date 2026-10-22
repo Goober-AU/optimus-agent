@@ -320,6 +320,7 @@ pub fn build_prime_inference_models(
                 None
             },
             native_compaction: None,
+            occ3: None,
             headers: None,
             compat: Some(Compat::Completions(compat)),
         });
@@ -612,6 +613,7 @@ mod tests {
             default_max_tokens: None,
             featured: Some(true),
             native_compaction: None,
+            occ3: None,
             headers: None,
             compat: Some(Compat::Completions(default_compat())),
         }

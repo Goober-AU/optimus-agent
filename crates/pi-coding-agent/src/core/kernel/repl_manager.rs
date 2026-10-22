@@ -33,6 +33,10 @@ use crate::core::kernel::shared::{
     SNAPSHOT_ADAPTIVE_DEBOUNCE_TIER4_BYTES, SNAPSHOT_ADAPTIVE_DEBOUNCE_TIER4_MS,
     SNAPSHOT_ADAPTIVE_MAX_STALE_MS, SNAPSHOT_BUDGET_MARGIN_MS, SNAPSHOT_EXECUTION_TIMEOUT_MS,
 };
+use crate::core::kernel::shared::{
+    HostRequestContext, KernelExecutionScope, ProvenanceHostRequestHandlers,
+    MAX_LIVE_EXECUTION_TOKENS,
+};
 use crate::core::kernel::state_snapshot::{
     cas_snapshot_root_for_legacy_path, cas_snapshot_state_exists, KernelRestoreSource,
     KernelSnapshotFormat, LegacyExportSource, RestoreResult, SkippedVariable,
@@ -46,7 +50,7 @@ use crate::utils::child_process::{spawn_kernel, KernelProcess, Signal, SpawnOpti
 #[cfg(windows)]
 use crate::utils::child_process::KernelJob;
 
-const REPL_PROTOCOL_VERSION: f64 = 3.0;
+const REPL_PROTOCOL_VERSION: f64 = 4.0;
 const READY_TIMEOUT_MS: u64 = 30_000;
 const REPAIR_STEP_TIMEOUT_MS: u64 = 30_000;
 // Runtime-minted host-request ids never repeat; the bound only guards a
@@ -278,6 +282,38 @@ fn uuid_v4() -> String {
     uuid::Uuid::new_v4().to_string()
 }
 
+/// Decode a 64-character lowercase-hex execution token. Anything else is
+/// not a valid token; callers treat a present-but-unparseable token as a
+/// refusal, never as an absent token.
+fn parse_execution_token(value: &str) -> Option<[u8; 32]> {
+    let bytes = value.as_bytes();
+    if bytes.len() != 64 {
+        return None;
+    }
+    let mut token = [0u8; 32];
+    for (index, chunk) in bytes.chunks_exact(2).enumerate() {
+        let high = hex_digit(chunk[0])?;
+        let low = hex_digit(chunk[1])?;
+        token[index] = (high << 4) | low;
+    }
+    Some(token)
+}
+
+/// Strict lowercase hex digit; the wire form is always lowercase, so an
+/// uppercase variant is simply not this token.
+fn hex_digit(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        _ => None,
+    }
+}
+
+/// Render an execution token as the wire form (64 lowercase hex chars).
+fn hex_encode_execution_token(token: &[u8; 32]) -> String {
+    token.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
 /// `^[a-f0-9]{32}$` for bash activity ids.
 fn is_bash_activity_id(id: &str) -> bool {
     static REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
@@ -433,6 +469,7 @@ struct ManagerOptions {
     env: Option<HashMap<String, String>>,
     session_id: Option<String>,
     host_handlers: Option<HostRequestHandlers>,
+    provenance_handlers: Option<ProvenanceHostRequestHandlers>,
     python_skills: Option<Vec<crate::core::kernel::shared::KernelPythonSkill>>,
     snapshot: Option<KernelSnapshotConfig>,
     performance_metrics: Option<Arc<dyn PerformanceMetricRecorder>>,
@@ -715,6 +752,9 @@ pub struct KernelState {
     pending_background_output: Mutex<String>,
     pending_background_output_truncated: AtomicBool,
     in_flight_host_requests: Mutex<Vec<Arc<SharedPromise<()>>>>,
+    /// Live execution-provenance tokens: inserted at the real execute-frame
+    /// write, removed at settle/revocation, fully cleared on teardown.
+    live_execution_tokens: Mutex<HashMap<[u8; 32], Arc<KernelExecutionScope>>>,
     background_bash_handles: Mutex<Vec<(String, f64)>>,
     state: Mutex<State>,
     /// Bumped by every teardown so a stale in-flight doStart can never touch a newer kernel.
@@ -765,6 +805,7 @@ impl KernelState {
                 env: options.env,
                 session_id: options.session_id,
                 host_handlers: options.host_handlers,
+                provenance_handlers: options.provenance_handlers,
                 python_skills: options.python_skills,
                 snapshot: options.snapshot,
                 performance_metrics: options.performance_metrics,
@@ -796,6 +837,7 @@ impl KernelState {
             pending_background_output: Mutex::new(String::new()),
             pending_background_output_truncated: AtomicBool::new(false),
             in_flight_host_requests: Mutex::new(Vec::new()),
+            live_execution_tokens: Mutex::new(HashMap::new()),
             background_bash_handles: Mutex::new(Vec::new()),
             state: Mutex::new(State::Idle),
             start_generation: std::sync::atomic::AtomicU64::new(0),
@@ -1027,6 +1069,15 @@ impl KernelState {
         }
         let generation = self.start_generation.fetch_add(1, Ordering::SeqCst) + 1;
         self.set_state(State::Starting);
+        // Defensive: a fresh start must never inherit live execution tokens
+        // from an earlier incarnation; teardown already revoked those.
+        {
+            let mut live = self.live_execution_tokens.lock().unwrap();
+            for scope in live.values() {
+                scope.revoke();
+            }
+            live.clear();
+        }
         install_signal_handlers_once();
         // Tracked from the moment startup begins so session cleanup and signal
         // handlers can dispose a kernel that is still booting.
@@ -1954,7 +2005,15 @@ impl KernelState {
         }
         if kind == "host_request" {
             if let Some(id) = event.get("id").and_then(|value| value.as_str()) {
-                self.start_host_request(id.to_string(), event.get("data").cloned());
+                // Top-level internal IPC field only; payload data never
+                // carries or confers provenance. Presence is key existence:
+                // an explicit null is a present malformed token, not absent.
+                let execution_token = event.get("executionToken").cloned();
+                self.start_host_request(
+                    id.to_string(),
+                    event.get("data").cloned(),
+                    execution_token,
+                );
             }
             return Ok(());
         }
@@ -2212,6 +2271,9 @@ impl KernelState {
         mut snapshot_metric: Option<SnapshotMetricState>,
     ) -> Result<InternalExecuteResult, KernelError> {
         if is_aborted(&opts.signal) {
+            if let Some(scope) = opts.execution_scope.as_ref() {
+                scope.revoke();
+            }
             return Ok(aborted_result(0.0));
         }
         self.start_with_options(KernelStartOptions {
@@ -2231,6 +2293,9 @@ impl KernelState {
         // Aborted while waiting on the re-bootstrap: settle now instead of parking
         // on the queue slot behind the still-running bootstrap.
         if is_aborted(&opts.signal) {
+            if let Some(scope) = opts.execution_scope.as_ref() {
+                scope.revoke();
+            }
             return Ok(aborted_result(0.0));
         }
         // Re-check: a final flush may have started while this request awaited the
@@ -2314,6 +2379,9 @@ impl KernelState {
         self.wait_for_active_execution_to_clear_for_reuse(&opts.signal)
             .await?;
         if is_aborted(&opts.signal) {
+            if let Some(scope) = opts.execution_scope.as_ref() {
+                scope.revoke();
+            }
             return Ok(aborted_result(now_ms() - started));
         }
         if self.state() == State::Shutdown {
@@ -2384,6 +2452,11 @@ impl KernelState {
         let request_id = uuid_v4();
 
         if is_aborted(&opts.signal) {
+            // Queued cancellation: the frame was never written, so the scope
+            // must never arm. Revoke terminally instead.
+            if let Some(scope) = opts.execution_scope.as_ref() {
+                scope.revoke();
+            }
             return Ok(aborted_result(now_ms() - started));
         }
         if self.active_execution().is_some() {
@@ -2484,6 +2557,52 @@ impl KernelState {
             object.insert("id".to_string(), Value::String(request_id));
         }
 
+        // Bind execution provenance once at the real frame write. A scope
+        // that cannot be bound here (restart, revocation, generation
+        // change) keeps the enrolled window fail-closed: no fresh token
+        // is ever minted for the same tool call.
+        if let Some(scope) = opts.execution_scope.clone() {
+            match scope.arm(self.start_generation.load(Ordering::SeqCst)) {
+                Ok(token) => {
+                    let mut live = self.live_execution_tokens.lock().unwrap();
+                    live.retain(|_, existing| !Arc::ptr_eq(existing, &scope));
+                    if live.len() >= MAX_LIVE_EXECUTION_TOKENS {
+                        drop(live);
+                        scope.revoke();
+                        if ActiveExecution::same_as(&self.active_execution(), &execution) {
+                            *self.active_execution.lock().unwrap() = None;
+                        }
+                        if let Some(listener) = abort_listener {
+                            listener.remove();
+                        }
+                        return Err(KernelError::new(
+                            "kernel execution provenance token map is full",
+                        ));
+                    }
+                    live.insert(token, scope.clone());
+                    if let Some(object) = request.as_object_mut() {
+                        object.insert(
+                            "executionToken".to_string(),
+                            Value::String(hex_encode_execution_token(&token)),
+                        );
+                    }
+                }
+                Err(error) => {
+                    // The binding failed (restart, revocation, generation
+                    // change): revoke terminally and forget any live entry.
+                    // The same tool call never receives a fresh token.
+                    scope.revoke();
+                    let mut live = self.live_execution_tokens.lock().unwrap();
+                    live.retain(|_, existing| !Arc::ptr_eq(existing, &scope));
+                    drop(live);
+                    self.append_kernel_diagnostic(&format!(
+                        "execution provenance could not be bound: {}",
+                        error_message(&error)
+                    ));
+                }
+            }
+        }
+
         let object = request.as_object().cloned().unwrap_or_default();
         // One future, polled twice: the race, then the confirming await that the
         // TypeScript does with the same (already resolved) sendPromise.
@@ -2507,6 +2626,14 @@ impl KernelState {
         };
         match send_result {
             Some(Err(error)) => {
+                // Uncertain dispatch: the frame write failed after arming.
+                // Revoke terminally and forget the token; the same tool
+                // call never receives a fresh one.
+                if let Some(scope) = &opts.execution_scope {
+                    scope.revoke();
+                    let mut live = self.live_execution_tokens.lock().unwrap();
+                    live.retain(|_, existing| !Arc::ptr_eq(existing, scope));
+                }
                 if ActiveExecution::same_as(&self.active_execution(), &execution) {
                     *self.active_execution.lock().unwrap() = None;
                 }
@@ -2591,6 +2718,9 @@ impl KernelState {
         let mut guard = execution.lock().unwrap();
         if !guard.settled {
             guard.settled = true;
+            if let Some(scope) = guard.opts.execution_scope.clone() {
+                scope.settle();
+            }
             if let Some(handler) = guard.opts.on_late_sent_agent_message.clone() {
                 drop(guard);
                 self.register_late_sent_agent_message_handler(
@@ -2674,6 +2804,10 @@ impl KernelState {
                 done_fields,
             });
         }
+        if let Some(scope) = guard.opts.execution_scope.clone() {
+            let mut live = self.live_execution_tokens.lock().unwrap();
+            live.retain(|_, existing| !Arc::ptr_eq(existing, &scope));
+        }
         drop(guard);
         if did_clear_active {
             self.notify_active_execution_idle();
@@ -2734,7 +2868,15 @@ impl KernelState {
             return;
         };
         *self.active_execution.lock().unwrap() = None;
-        execution.lock().unwrap().reject(error);
+        {
+            let mut guard = execution.lock().unwrap();
+            if let Some(scope) = guard.opts.execution_scope.clone() {
+                scope.revoke();
+                let mut live = self.live_execution_tokens.lock().unwrap();
+                live.retain(|_, existing| !Arc::ptr_eq(existing, &scope));
+            }
+            guard.reject(error);
+        }
         self.notify_active_execution_idle();
     }
 
@@ -2883,7 +3025,12 @@ impl KernelState {
         Ok(())
     }
 
-    fn start_host_request(self: &Arc<Self>, request_id: String, data: Option<Value>) {
+    fn start_host_request(
+        self: &Arc<Self>,
+        request_id: String,
+        data: Option<Value>,
+        execution_token: Option<Value>,
+    ) {
         if self.terminal_stop.load(Ordering::SeqCst) { return; }
         {
             let mut handled = self.handled_host_request_ids.lock().unwrap();
@@ -2907,7 +3054,7 @@ impl KernelState {
         let this = self.clone();
         let started = KernelTaskPromise(task.clone());
         self.owned_tasks.spawn(async move {
-            match this.handle_host_request(data).await {
+            match this.handle_host_request(request_id.clone(), data, execution_token.clone()).await {
                 Ok(result) => {
                     let mut request = Map::new();
                     request.insert("type".to_string(), json!("host_reply"));
@@ -2954,7 +3101,12 @@ impl KernelState {
         });
     }
 
-    async fn handle_host_request(&self, data: Option<Value>) -> Result<Value, KernelError> {
+    async fn handle_host_request(
+        &self,
+        request_id: String,
+        data: Option<Value>,
+        execution_token: Option<Value>,
+    ) -> Result<Value, KernelError> {
         let data = data.unwrap_or(Value::Null);
         if !is_record(&data) {
             return Err(KernelError::new("host request payload must be an object"));
@@ -2969,28 +3121,35 @@ impl KernelState {
             return Err(KernelError::new(
                 "host request payload must have a string type",
             ));
-        }
+        };
 
+        let provenance_handler = self
+            .options
+            .provenance_handlers
+            .as_ref()
+            .and_then(|handlers| handlers.get(kind))
+            .cloned();
         let handler = self
             .options
             .host_handlers
             .as_ref()
             .and_then(|handlers| handlers.get(kind))
             .cloned();
-        let Some(handler) = handler else {
+        if provenance_handler.is_none() && handler.is_none() {
             return Err(KernelError::new(format!(
                 "host request type \"{kind}\" is not available in this session"
             )));
-        };
+        }
         // Tag the request with the cell that triggered it. A blocking call is still
         // the in-flight execution; detached spawns (asyncio.create_task) fire after
         // the scheduling cell goes idle, so fall back to that last cell's source.
+        // Diagnostic only: provenance never derives from it.
         let cell_source_code = self
             .active_execution()
             .map(|execution| execution.lock().unwrap().code.clone())
             .or_else(|| self.last_cell_code.lock().unwrap().clone());
         let mut payload = data.as_object().cloned().unwrap_or_default();
-        match cell_source_code {
+        match cell_source_code.clone() {
             Some(code) => {
                 payload.insert("cellSourceCode".to_string(), json!(cap_cell_source(&code)));
             }
@@ -2998,7 +3157,33 @@ impl KernelState {
                 payload.insert("cellSourceCode".to_string(), Value::Null);
             }
         }
-        handler(Value::Object(payload)).await
+        // Host-owned provenance inputs only: any present top-level token
+        // marks the frame; matched scopes come exclusively from the live
+        // token map; the enrolled window is the active execution's own
+        // scope. Nothing here consults the payload, arrival timing, or
+        // which cell happens to be active.
+        let token_present = execution_token.is_some();
+        let matched_scope = execution_token
+            .as_ref()
+            .and_then(|value| value.as_str())
+            .and_then(parse_execution_token)
+            .and_then(|token| self.live_execution_tokens.lock().unwrap().get(&token).cloned());
+        let live_enrolled = self
+            .active_execution()
+            .and_then(|execution| execution.lock().unwrap().opts.execution_scope.clone())
+            .filter(|scope| scope.armed_once());
+        let context = HostRequestContext {
+            request_id,
+            token_present,
+            matched_scope,
+            live_enrolled,
+            kernel_generation: self.start_generation.load(Ordering::SeqCst),
+            cell_source_code,
+        };
+        if let Some(provenance_handler) = provenance_handler {
+            return provenance_handler(context, Value::Object(payload)).await;
+        }
+        handler.expect("legacy handler checked above")(Value::Object(payload)).await
     }
 
     async fn interrupt(&self) -> Result<(), KernelError> {
@@ -3033,6 +3218,13 @@ impl KernelState {
             .lock()
             .unwrap()
             .clear();
+        {
+            let mut live = self.live_execution_tokens.lock().unwrap();
+            for scope in live.values() {
+                scope.revoke();
+            }
+            live.clear();
+        }
         self.pending_done_waiters.lock().unwrap().clear();
         let had_background_work = {
             let mut handles = self.background_bash_handles.lock().unwrap();
@@ -4626,7 +4818,7 @@ mod tests {
         std::fs::create_dir(dir.path().join("rlm")).unwrap();
         std::fs::write(dir.path().join("rlm/__init__.py"), "").unwrap();
         std::fs::write(dir.path().join("rlm/repl.py"), r#"import json,sys
-print(json.dumps({"event":"ready","protocol":3}),flush=True)
+print(json.dumps({"event":"ready","protocol":4}),flush=True)
 for line in sys.stdin:
     request=json.loads(line)
     if request['type']=='execute':
@@ -5074,7 +5266,7 @@ for line in sys.stdin:
 
     #[test]
     fn required_constants_match_the_typescript() {
-        assert_eq!(REPL_PROTOCOL_VERSION, 3.0);
+        assert_eq!(REPL_PROTOCOL_VERSION, 4.0);
         assert_eq!(READY_TIMEOUT_MS, 30_000);
         assert_eq!(REPAIR_STEP_TIMEOUT_MS, 30_000);
         assert_eq!(MAX_HANDLED_HOST_REQUEST_IDS, 1024);
@@ -5312,7 +5504,7 @@ for line in sys.stdin:
     #[cfg(windows)]
     #[tokio::test]
     async fn kernel_settlement_normal_protocol_and_prompt_stubborn_stop() {
-        let (_dir, manager) = controlled_kernel(3, true);
+        let (_dir, manager) = controlled_kernel(4, true);
         manager.start(KernelStartOptions::default()).await.unwrap();
         let result = manager.execute("fixture request".into(), ExecuteOptions::default()).await.unwrap();
         assert_eq!(result.status, ExecuteStatus::Ok);
@@ -5326,7 +5518,7 @@ for line in sys.stdin:
     #[cfg(windows)]
     #[tokio::test]
     async fn kernel_settlement_preserves_graceful_shutdown_timeout() {
-        let (_dir, manager) = controlled_kernel(3, true);
+        let (_dir, manager) = controlled_kernel(4, true);
         manager.start(KernelStartOptions::default()).await.unwrap();
         assert!(manager.shutdown(KernelShutdownOptions::default()).await.is_err());
         let report = manager.shutdown_and_settle("owned", 5000).await.unwrap();
@@ -5452,8 +5644,8 @@ for line in sys.stdin:
     #[cfg(windows)]
     #[tokio::test]
     async fn kernel_settlement_stops_one_session_not_the_other() {
-        let (_a, first) = controlled_kernel(3, false);
-        let (_b, second) = controlled_kernel(3, false);
+        let (_a, first) = controlled_kernel(4, false);
+        let (_b, second) = controlled_kernel(4, false);
         first.start(KernelStartOptions::default()).await.unwrap();
         second.start(KernelStartOptions::default()).await.unwrap();
         assert!(first.shutdown_and_settle("owned", 5000).await.unwrap().settled);
@@ -5465,7 +5657,7 @@ for line in sys.stdin:
     #[cfg(windows)]
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn kernel_settlement_start_stop_race_retains_all_generations() {
-        let (_dir, manager) = controlled_kernel(3, false);
+        let (_dir, manager) = controlled_kernel(4, false);
         let starting = {
             let manager = manager.clone();
             tokio::spawn(async move { manager.start(KernelStartOptions::default()).await })
@@ -5505,13 +5697,13 @@ for line in sys.stdin:
             host_handlers: Some(HashMap::from([("fixture".into(), handler)])),
             ..Default::default()
         });
-        manager.state.start_host_request("first".into(), Some(json!({"type":"fixture"})));
+        manager.state.start_host_request("first".into(), Some(json!({"type":"fixture"})), None);
         started.wait().await;
         let task = manager.state.in_flight_host_requests.lock().unwrap()[0].clone();
         let report = manager.shutdown_and_settle("owned", 1000).await.unwrap();
         assert!(report.settled && dropped.load(Ordering::SeqCst), "{report:?}");
         assert!(task.wait().await.is_err());
-        manager.state.start_host_request("late".into(), Some(json!({"type":"fixture"})));
+        manager.state.start_host_request("late".into(), Some(json!({"type":"fixture"})), None);
         assert!(!manager.state.handled_host_request_ids.lock().unwrap().iter().any(|id| id == "late"));
     }
 
@@ -5526,5 +5718,646 @@ for line in sys.stdin:
         let report = manager.shutdown_and_settle("owned", 1000).await.unwrap();
         assert!(report.kernel_exited && report.descendants_exited && report.local_tasks_settled);
         assert!(!report.settled && report.errors.iter().any(|e| e.contains("spawn failed")), "{report:?}");
+    }
+}
+
+#[cfg(test)]
+mod kernel_execution_provenance_tests {
+    use super::*;
+    use crate::core::kernel::shared::{
+        HostRequestContext, KernelExecutionScope, KernelScopeState,
+        ProvenanceHostRequestHandlers,
+    };
+    use std::sync::mpsc;
+
+    fn probe_manager(
+        provenance: bool,
+    ) -> (
+        Arc<ReplKernelManager>,
+        mpsc::Receiver<HostRequestContext>,
+        mpsc::Receiver<Value>,
+    ) {
+        let (ctx_tx, ctx_rx) = mpsc::channel::<HostRequestContext>();
+        let (legacy_tx, legacy_rx) = mpsc::channel::<Value>();
+        let mut provenance_handlers: ProvenanceHostRequestHandlers = HashMap::new();
+        if provenance {
+            let sender = std::sync::Mutex::new(ctx_tx);
+            provenance_handlers.insert(
+                "agent_message.send".to_string(),
+                std::sync::Arc::new(
+                    move |context: HostRequestContext, _payload: Value| {
+                        let _ = sender.lock().unwrap().send(context);
+                        Box::pin(async move { Ok(json!({ "route": "provenance" })) })
+                    },
+                ),
+            );
+        }
+        let mut host_handlers: HostRequestHandlers = HashMap::new();
+        let legacy_sender = std::sync::Mutex::new(legacy_tx);
+        host_handlers.insert(
+            "agent_message.send".to_string(),
+            std::sync::Arc::new(move |payload: Value| {
+                let _ = legacy_sender.lock().unwrap().send(payload);
+                Box::pin(async move { Ok(json!({ "route": "legacy" })) })
+            }),
+        );
+        let manager = new_repl_kernel_manager(KernelManagerOptions {
+            host_handlers: Some(host_handlers),
+            provenance_handlers: Some(provenance_handlers),
+            ..Default::default()
+        });
+        (manager, ctx_rx, legacy_rx)
+    }
+
+    fn armed_scope_at(
+        manager: &Arc<ReplKernelManager>,
+    ) -> (Arc<KernelExecutionScope>, [u8; 32]) {
+        let scope = KernelExecutionScope::new_admitted("call-1", "ipython");
+        let generation = manager.state.start_generation.load(Ordering::SeqCst);
+        let token = scope.arm(generation).expect("arm at the live generation");
+        manager
+            .state
+            .live_execution_tokens
+            .lock()
+            .unwrap()
+            .insert(token, scope.clone());
+        (scope, token)
+    }
+
+    fn active_execution_with(
+        scope: Option<Arc<KernelExecutionScope>>,
+    ) -> Arc<Mutex<ActiveExecution>> {
+        Arc::new(Mutex::new(ActiveExecution {
+            request_id: "req-1".to_string(),
+            code: "x = 1".to_string(),
+            started: 0.0,
+            max_chars: 64,
+            opts: ExecuteOptions {
+                execution_scope: scope,
+                ..Default::default()
+            },
+            stdout: String::new(),
+            stderr: String::new(),
+            stdout_truncated: false,
+            stderr_truncated: false,
+            result: None,
+            diffs: Vec::new(),
+            attachments: Vec::new(),
+            sent_agent_messages: Vec::new(),
+            background_output: String::new(),
+            background_output_truncated: false,
+            error: None,
+            status: ExecuteStatus::Ok,
+            done_fields: None,
+            settled: false,
+            interrupt_requested_at: None,
+            resolver: None,
+        }))
+    }
+
+    #[test]
+    fn execution_token_hex_round_trips() {
+        let token = {
+            let mut token = [0u8; 32];
+            token[..16].copy_from_slice(uuid::Uuid::new_v4().as_bytes());
+            token[16..].copy_from_slice(uuid::Uuid::new_v4().as_bytes());
+            token
+        };
+        let encoded = hex_encode_execution_token(&token);
+        assert_eq!(encoded.len(), 64);
+        assert!(encoded
+            .chars()
+            .all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c)));
+        assert_eq!(parse_execution_token(&encoded), Some(token));
+        // Strict wire form: anything else is not this token.
+        assert_eq!(parse_execution_token(&encoded.to_uppercase()), None);
+        assert_eq!(parse_execution_token(""), None);
+        assert_eq!(parse_execution_token("zz"), None);
+        assert_eq!(parse_execution_token(&encoded[..63]), None);
+        assert_eq!(parse_execution_token(&format!("{encoded}00")), None);
+    }
+
+    #[tokio::test]
+    async fn provenance_route_is_preferred_over_the_legacy_map() {
+        let (manager, ctx_rx, legacy_rx) = probe_manager(true);
+        let result = manager
+            .state
+            .handle_host_request(
+                "request-1".to_string(),
+                Some(json!({ "type": "agent_message.send", "message": "hi" })),
+                None,
+            )
+            .await
+            .expect("provenance handler serves the kind");
+        assert_eq!(result, json!({ "route": "provenance" }));
+        let context = ctx_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("context captured");
+        assert!(!context.token_present);
+        assert!(context.matched_scope.is_none());
+        assert!(context.live_enrolled.is_none());
+        assert!(legacy_rx.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn legacy_only_managers_keep_working_and_unknown_kinds_still_error() {
+        let (manager, _ctx_rx, legacy_rx) = probe_manager(false);
+        let result = manager
+            .state
+            .handle_host_request(
+                "request-2".to_string(),
+                Some(json!({ "type": "agent_message.send", "message": "hi" })),
+                None,
+            )
+            .await
+            .expect("legacy handler still serves the kind");
+        assert_eq!(result, json!({ "route": "legacy" }));
+        let payload = legacy_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("legacy payload");
+        assert_eq!(payload["message"], json!("hi"));
+        let missing = manager
+            .state
+            .handle_host_request(
+                "request-3".to_string(),
+                Some(json!({ "type": "not.a.kind" })),
+                None,
+            )
+            .await;
+        assert!(missing.is_err());
+    }
+
+    #[tokio::test]
+    async fn a_present_token_is_reported_even_when_it_matches_nothing() {
+        let (manager, ctx_rx, _legacy_rx) = probe_manager(true);
+        let unknown = {
+            let mut token = [9u8; 32];
+            token[0] = 0xab;
+            hex_encode_execution_token(&token)
+        };
+        manager
+            .state
+            .handle_host_request(
+                "request-4".to_string(),
+                Some(json!({ "type": "agent_message.send" })),
+                Some(Value::String(unknown)),
+            )
+            .await
+            .expect("handler runs; matching is the gate's job");
+        let context = ctx_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("context");
+        assert!(context.token_present);
+        assert!(context.matched_scope.is_none());
+        // A malformed present token is still "present".
+        manager
+            .state
+            .handle_host_request(
+                "request-5".to_string(),
+                Some(json!({ "type": "agent_message.send" })),
+                Some(Value::String("not-a-token".to_string())),
+            )
+            .await
+            .expect("handler runs");
+        let context = ctx_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("context");
+        assert!(context.token_present);
+        assert!(context.matched_scope.is_none());
+    }
+
+    #[tokio::test]
+    async fn matched_scope_comes_only_from_the_live_token_map() {
+        let (manager, ctx_rx, _legacy_rx) = probe_manager(true);
+        let (scope, token) = armed_scope_at(&manager);
+        manager
+            .state
+            .handle_host_request(
+                "request-6".to_string(),
+                Some(json!({ "type": "agent_message.send" })),
+                Some(Value::String(hex_encode_execution_token(&token))),
+            )
+            .await
+            .expect("handler runs");
+        let context = ctx_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("context");
+        let matched = context.matched_scope.expect("exact live-token hit");
+        assert!(Arc::ptr_eq(&matched, &scope));
+        manager.state.live_execution_tokens.lock().unwrap().clear();
+    }
+
+    #[tokio::test]
+    async fn live_enrolled_requires_the_active_scope_to_have_armed_once() {
+        let (manager, ctx_rx, _legacy_rx) = probe_manager(true);
+        // Admitted (never armed): not yet the protected window.
+        let admitted = KernelExecutionScope::new_admitted("call-1", "ipython");
+        *manager.state.active_execution.lock().unwrap() =
+            Some(active_execution_with(Some(admitted.clone())));
+        manager
+            .state
+            .handle_host_request(
+                "request-7".to_string(),
+                Some(json!({ "type": "agent_message.send" })),
+                None,
+            )
+            .await
+            .expect("handler runs");
+        let context = ctx_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("context");
+        assert!(
+            context.live_enrolled.is_none(),
+            "Admitted scopes are not the enrolled window"
+        );
+        // Armed: the fail-closed window opens.
+        let armed = KernelExecutionScope::new_admitted("call-2", "ipython");
+        armed.arm(0).expect("arm");
+        *manager.state.active_execution.lock().unwrap() =
+            Some(active_execution_with(Some(armed.clone())));
+        manager
+            .state
+            .handle_host_request(
+                "request-8".to_string(),
+                Some(json!({ "type": "agent_message.send" })),
+                None,
+            )
+            .await
+            .expect("handler runs");
+        let context = ctx_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("context");
+        let enrolled = context
+            .live_enrolled
+            .expect("armed scope is the enrolled window");
+        assert!(Arc::ptr_eq(&enrolled, &armed));
+        // Revoked while still attached: the latch stays closed until settle.
+        let revoked = KernelExecutionScope::new_admitted("call-3", "ipython");
+        revoked.arm(0).expect("arm");
+        revoked.revoke();
+        *manager.state.active_execution.lock().unwrap() =
+            Some(active_execution_with(Some(revoked.clone())));
+        manager
+            .state
+            .handle_host_request(
+                "request-9".to_string(),
+                Some(json!({ "type": "agent_message.send" })),
+                None,
+            )
+            .await
+            .expect("handler runs");
+        let context = ctx_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("context");
+        assert!(
+            context.live_enrolled.is_some(),
+            "revoked-but-attached stays fail-closed"
+        );
+        *manager.state.active_execution.lock().unwrap() = None;
+    }
+
+    #[tokio::test]
+    async fn queued_cancellation_never_arms() {
+        let (manager, _ctx_rx, _legacy_rx) = probe_manager(true);
+        let scope = KernelExecutionScope::new_admitted("call-1", "ipython");
+        let signal = AbortSignal::new();
+        signal.abort(None);
+        let opts = ExecuteOptions {
+            signal: Some(signal),
+            execution_scope: Some(scope.clone()),
+            ..Default::default()
+        };
+        let result = manager
+            .state
+            .execute_inner(&json!({ "type": "execute" }), "x = 1", &opts, 0.0)
+            .await
+            .expect("aborted, not failed");
+        assert_eq!(result.result.status, ExecuteStatus::Aborted);
+        assert_eq!(scope.state(), KernelScopeState::Revoked);
+        assert!(manager.state.live_execution_tokens.lock().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn uncertain_write_revokes_and_never_regrants() {
+        let (manager, _ctx_rx, _legacy_rx) = probe_manager(true);
+        let scope = KernelExecutionScope::new_admitted("call-1", "ipython");
+        let opts = ExecuteOptions {
+            execution_scope: Some(scope.clone()),
+            ..Default::default()
+        };
+        // No child was ever started: the frame write fails at the stdin.
+        let result = manager
+            .state
+            .execute_inner(&json!({ "type": "execute" }), "x = 1", &opts, 0.0)
+            .await;
+        assert!(result.is_err(), "the uncertain write surfaces as an error");
+        assert_eq!(scope.state(), KernelScopeState::Revoked);
+        assert!(manager.state.live_execution_tokens.lock().unwrap().is_empty());
+        // The same tool call can never receive a fresh token.
+        let generation = manager.state.start_generation.load(Ordering::SeqCst);
+        assert!(scope.arm(generation).is_err());
+    }
+
+    #[tokio::test]
+    async fn a_full_token_map_fails_closed() {
+        let (manager, _ctx_rx, _legacy_rx) = probe_manager(true);
+        for index in 0..MAX_LIVE_EXECUTION_TOKENS {
+            let scope = KernelExecutionScope::new_admitted("call", "ipython");
+            scope.arm(0).expect("arm");
+            manager
+                .state
+                .live_execution_tokens
+                .lock()
+                .unwrap()
+                .insert([index as u8; 32], scope);
+        }
+        let fresh = KernelExecutionScope::new_admitted("call-fresh", "ipython");
+        let opts = ExecuteOptions {
+            execution_scope: Some(fresh.clone()),
+            ..Default::default()
+        };
+        let result = manager
+            .state
+            .execute_inner(&json!({ "type": "execute" }), "x = 1", &opts, 0.0)
+            .await;
+        let error = result.err().expect("map-full fails closed");
+        assert!(error.to_string().contains("token map is full"));
+        assert_eq!(fresh.state(), KernelScopeState::Revoked);
+        assert_eq!(
+            manager.state.live_execution_tokens.lock().unwrap().len(),
+            MAX_LIVE_EXECUTION_TOKENS
+        );
+        assert!(manager.state.active_execution.lock().unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn settle_removes_the_token_and_closes_the_scope() {
+        let (manager, _ctx_rx, _legacy_rx) = probe_manager(true);
+        let (scope, _token) = armed_scope_at(&manager);
+        let execution = active_execution_with(Some(scope.clone()));
+        *manager.state.active_execution.lock().unwrap() = Some(execution.clone());
+        manager.state.resolve_execution(&execution, true);
+        assert_eq!(scope.state(), KernelScopeState::Settled);
+        assert!(manager.state.live_execution_tokens.lock().unwrap().is_empty());
+        assert!(manager.state.active_execution.lock().unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn teardown_revokes_and_clears_the_token_map() {
+        let (manager, _ctx_rx, _legacy_rx) = probe_manager(true);
+        let (scope, _token) = armed_scope_at(&manager);
+        assert_eq!(manager.state.live_execution_tokens.lock().unwrap().len(), 1);
+        manager.state.cleanup_resources(None);
+        assert!(manager.state.live_execution_tokens.lock().unwrap().is_empty());
+        assert_eq!(scope.state(), KernelScopeState::Revoked);
+    }
+
+    mod raw_wire_gate_tests {
+        //! Raw wire seam regressions: every case dispatches a real
+        //! host_request frame through `handle_event` (the pump's own entry)
+        //! and observes the installed gate through the recording controller
+        //! and the kernel diagnostics — never a preconstructed context.
+
+        use super::*;
+        use crate::core::agent_messages::{
+            create_agent_message_provenance_host_handlers, AgentFamilyRosterCurrent,
+            AgentFamilyRosterEntry, AgentFamilyRosterResult, AgentSessionMessageController,
+            AgentSessionMessageReceipt, AgentSessionMessageSendInput, AGENT_MESSAGE_SOURCE,
+            DELIVERY_STATUS_DELIVERED, FAMILY_RELATIONSHIP_PARENT, FAMILY_STATUS_RUNNING,
+        };
+        use std::future::Future;
+        use std::pin::Pin;
+
+        #[derive(Default)]
+        struct RawSeamController {
+            sent: Mutex<Vec<(String, String)>>,
+        }
+
+        impl AgentSessionMessageController for RawSeamController {
+            fn roster(
+                &self,
+            ) -> Pin<Box<dyn Future<Output = Result<AgentFamilyRosterResult, String>> + Send>> {
+                Box::pin(async move {
+                    Ok(AgentFamilyRosterResult {
+                        current: AgentFamilyRosterCurrent {
+                            name: "self".into(),
+                            id: "self-id".into(),
+                            depth: 1.0,
+                        },
+                        entries: vec![AgentFamilyRosterEntry {
+                            relationship: FAMILY_RELATIONSHIP_PARENT.to_string(),
+                            name: "parent".to_string(),
+                            id: "parent-id".to_string(),
+                            depth: 0.0,
+                            status: FAMILY_STATUS_RUNNING.to_string(),
+                            replied_since_task: None,
+                        }],
+                    })
+                })
+            }
+
+            fn await_pending_child_publication(
+                &self,
+                _selector: String,
+            ) -> Pin<Box<dyn Future<Output = Result<Option<String>, String>> + Send>> {
+                Box::pin(async move { Ok(None) })
+            }
+
+            fn send_agent_message(
+                &self,
+                input: AgentSessionMessageSendInput,
+            ) -> Pin<Box<dyn Future<Output = Result<AgentSessionMessageReceipt, String>> + Send>> {
+                self.sent
+                    .lock()
+                    .unwrap()
+                    .push((input.target.clone(), input.message.clone()));
+                Box::pin(async move {
+                    Ok(AgentSessionMessageReceipt {
+                        id: crate::core::agent_messages::create_agent_session_message_id(),
+                        source: AGENT_MESSAGE_SOURCE.to_string(),
+                        target: crate::core::agent_messages::AgentSessionMessageEndpoint {
+                            active_session_id: input.target.clone(),
+                            session_id: input.target,
+                            ..Default::default()
+                        },
+                        from: None,
+                        message: input.message,
+                        delivery_status: DELIVERY_STATUS_DELIVERED.to_string(),
+                        delivered_at: None,
+                        queued_at: None,
+                        delivery_mode: None,
+                    })
+                })
+            }
+        }
+
+        fn gate_manager() -> (Arc<ReplKernelManager>, Arc<RawSeamController>) {
+            let controller = Arc::new(RawSeamController::default());
+            let handlers =
+                create_agent_message_provenance_host_handlers(controller.clone());
+            let manager = new_repl_kernel_manager(KernelManagerOptions {
+                provenance_handlers: Some(handlers),
+                ..Default::default()
+            });
+            (manager, controller)
+        }
+
+        fn host_request_frame(token: Option<Value>, id: &str) -> Map<String, Value> {
+            let mut event = Map::new();
+            event.insert("event".to_string(), json!("host_request"));
+            event.insert("id".to_string(), json!(id));
+            event.insert(
+                "data".to_string(),
+                json!({
+                    "type": "agent_message.send",
+                    "message": "hi",
+                    "receiver_role": "parent",
+                }),
+            );
+            if let Some(token) = token {
+                event.insert("executionToken".to_string(), token);
+            }
+            event
+        }
+
+        async fn dispatch_raw(
+            manager: &Arc<ReplKernelManager>,
+            event: &Map<String, Value>,
+        ) -> String {
+            manager.state.handle_event(event).expect("event dispatches");
+            let task = {
+                let guard = manager.state.in_flight_host_requests.lock().unwrap();
+                guard.last().cloned().expect("one in-flight host request")
+            };
+            task.wait().await.expect("host request task settles");
+            manager.state.kernel_stderr.lock().unwrap().clone()
+        }
+
+        #[tokio::test]
+        async fn raw_wire_absent_and_unenrolled_is_the_ordinary_publisher() {
+            let (manager, controller) = gate_manager();
+            let stderr = dispatch_raw(&manager, &host_request_frame(None, "r1")).await;
+            assert_eq!(controller.sent.lock().unwrap().len(), 1, "{stderr}");
+            assert!(!stderr.contains("host request failed"), "{stderr}");
+        }
+
+        #[tokio::test]
+        async fn raw_wire_present_malformed_tokens_refuse_without_enrollment() {
+            let values = vec![
+                Value::Null,
+                json!(42),
+                json!(true),
+                json!({}),
+                json!([]),
+                json!(""),
+                json!("AB".repeat(32)),
+                json!(format!("{}a", "ab".repeat(31))),
+                json!(format!("{}c", "ab".repeat(32))),
+                json!("ee".repeat(32)),
+            ];
+            for (index, token) in values.into_iter().enumerate() {
+                let (manager, controller) = gate_manager();
+                let id = format!("raw-{index}");
+                let stderr = dispatch_raw(&manager, &host_request_frame(Some(token), &id)).await;
+                assert!(
+                    controller.sent.lock().unwrap().is_empty(),
+                    "index {index}: a present malformed token must never publish"
+                );
+                assert!(
+                    stderr.contains(&format!("host request failed for {id}")),
+                    "index {index}: the refusal must surface: {stderr}"
+                );
+                assert!(
+                    stderr.contains("unknown execution token"),
+                    "index {index}: refusal reason: {stderr}"
+                );
+            }
+        }
+
+        #[tokio::test]
+        async fn raw_wire_stale_token_after_settle_refuses() {
+            let (manager, controller) = gate_manager();
+            let (scope, token) = armed_scope_at(&manager);
+            let execution = active_execution_with(Some(scope.clone()));
+            *manager.state.active_execution.lock().unwrap() = Some(execution.clone());
+            manager.state.resolve_execution(&execution, true);
+            assert_eq!(scope.state(), KernelScopeState::Settled);
+            assert!(manager.state.live_execution_tokens.lock().unwrap().is_empty());
+            let stderr = dispatch_raw(
+                &manager,
+                &host_request_frame(Some(json!(hex_encode_execution_token(&token))), "stale-1"),
+            )
+            .await;
+            assert!(controller.sent.lock().unwrap().is_empty(), "{stderr}");
+            assert!(stderr.contains("unknown execution token"), "{stderr}");
+        }
+
+        #[tokio::test]
+        async fn raw_wire_present_malformed_inside_protected_window_tombstones() {
+            let (manager, controller) = gate_manager();
+            let (scope, _token) = armed_scope_at(&manager);
+            *manager.state.active_execution.lock().unwrap() =
+                Some(active_execution_with(Some(scope.clone())));
+            let stderr =
+                dispatch_raw(&manager, &host_request_frame(Some(Value::Null), "window-1")).await;
+            assert!(controller.sent.lock().unwrap().is_empty(), "{stderr}");
+            assert!(
+                stderr.contains("did not match the enrolled execution"),
+                "gate reason: {stderr}"
+            );
+            assert_eq!(scope.state(), KernelScopeState::Tombstoned);
+        }
+
+        /// Dispatch one raw frame and let its host-request task run to
+        /// completion before the (synchronous) channel receive.
+        async fn dispatch_and_settle(
+            manager: &Arc<ReplKernelManager>,
+            event: &Map<String, Value>,
+        ) {
+            manager.state.handle_event(event).expect("event dispatches");
+            let task = {
+                let guard = manager.state.in_flight_host_requests.lock().unwrap();
+                guard.last().cloned().expect("one in-flight host request")
+            };
+            task.wait().await.expect("host request task settles");
+        }
+
+        #[tokio::test]
+        async fn raw_wire_context_presence_is_key_existence() {
+            let (manager, ctx_rx, _legacy_rx) = probe_manager(true);
+            dispatch_and_settle(&manager, &host_request_frame(Some(Value::Null), "ctx-1")).await;
+            let context = ctx_rx
+                .recv_timeout(Duration::from_secs(5))
+                .expect("explicit null reaches the typed route");
+            assert!(context.token_present);
+            assert!(context.matched_scope.is_none());
+            dispatch_and_settle(&manager, &host_request_frame(Some(json!(1234)), "ctx-2")).await;
+            let context = ctx_rx
+                .recv_timeout(Duration::from_secs(5))
+                .expect("a number reaches the typed route");
+            assert!(context.token_present);
+            assert!(context.matched_scope.is_none());
+            let (_scope, token) = armed_scope_at(&manager);
+            dispatch_and_settle(
+                &manager,
+                &host_request_frame(
+                    Some(json!(hex_encode_execution_token(&token))),
+                    "ctx-3",
+                ),
+            )
+            .await;
+            let context = ctx_rx
+                .recv_timeout(Duration::from_secs(5))
+                .expect("the live token reaches the typed route");
+            assert!(context.token_present);
+            assert!(context.matched_scope.is_some());
+            manager.state.live_execution_tokens.lock().unwrap().clear();
+            dispatch_and_settle(&manager, &host_request_frame(None, "ctx-4")).await;
+            let context = ctx_rx
+                .recv_timeout(Duration::from_secs(5))
+                .expect("the absent key reaches the typed route");
+            assert!(!context.token_present);
+            assert!(context.matched_scope.is_none());
+        }
     }
 }

@@ -27,6 +27,7 @@ use crate::compaction::{
 use crate::utils::diagnostics::AssistantMessageDiagnostic;
 use crate::utils::event_stream::AssistantMessageEventStream;
 
+pub use crate::inference_attachment::InferenceStateLease;
 pub use crate::utils::event_stream::AssistantMessageEventStream as AssistantMessageEventStreamReExport;
 
 pub type BoxFuture<T> = Pin<Box<dyn Future<Output = T> + Send + 'static>>;
@@ -270,6 +271,12 @@ pub struct StreamOptions {
     /// `signal?: AbortSignal`
     #[serde(skip)]
     pub signal: Option<CancellationToken>,
+    /// One-shot native state for this inference only. Never persisted as options.
+    #[serde(skip)]
+    pub inference_state: Option<InferenceStateLease>,
+    /// Source capture for this actual native request only; never persisted.
+    #[serde(skip)]
+    pub source_capture: Option<crate::source_capture::SourceCaptureLease>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub api_key: Option<String>,
     /// Preferred transport for providers that support multiple transports.
@@ -320,6 +327,7 @@ impl std::fmt::Debug for StreamOptions {
             .field("temperature", &self.temperature)
             .field("max_tokens", &self.max_tokens)
             .field("signal", &self.signal)
+            .field("inference_state", &self.inference_state)
             .field("api_key", &self.api_key)
             .field("transport", &self.transport)
             .field("service_tier", &self.service_tier)
@@ -1197,6 +1205,52 @@ pub struct NativeCompactionCapability {
     pub validation: NativeCompactionValidation,
 }
 
+/// Validation state for an OCC-3 latent route. Only `live-verified` may
+/// activate latent communication.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Occ3Validation {
+    Unverified,
+    DocumentationVerified,
+    LiveVerified,
+}
+
+pub const OCC3_PROTOCOL_V1: &str = "occ3-v1";
+pub const OCC3_API_VERSION_V1: &str = "v1";
+
+/// Explicit capability for an OCC-3 latent-communication connector route.
+///
+/// Model scoped on purpose (same pattern as [`NativeCompactionCapability`]):
+/// a provider base URL or display name is not evidence that a route hosts a
+/// latent connector. Activation additionally requires a successful live
+/// capability handshake with the connector at `endpoint`; `validation`
+/// records that evidence state.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Occ3Capability {
+    /// `"occ3-v1"`
+    pub protocol: String,
+    /// Connector id, e.g. `sglang`. The generic bridge resolves this to a
+    /// registered connector implementation.
+    pub connector: String,
+    /// Connector base endpoint (HTTPS; authenticated by existing mechanisms).
+    pub endpoint: String,
+    /// `"v1"`
+    #[serde(rename = "apiVersion")]
+    pub api_version: String,
+    /// Latent transfer is same-exact-model only. Must be `true` for v1.
+    #[serde(rename = "sameModelOnly", default = "default_true")]
+    pub same_model_only: bool,
+    pub enabled: bool,
+    pub validation: Occ3Validation,
+    /// Preferred fallback chain, e.g. `["occ2", "occ1", "text"]`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub fallback: Vec<String>,
+}
+
+fn default_true() -> bool {
+    true
+}
+
 /// Compatibility settings for OpenAI Responses APIs.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -1498,6 +1552,9 @@ pub struct Model {
     /// Exact, explicitly validated native compaction route. Absent means unsupported.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub native_compaction: Option<NativeCompactionCapability>,
+    /// Exact, explicitly validated OCC-3 latent route. Absent means unsupported.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub occ3: Option<Occ3Capability>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub headers: Option<IndexMap<String, String>>,
     /// Compatibility overrides for OpenAI-compatible APIs. If not set,

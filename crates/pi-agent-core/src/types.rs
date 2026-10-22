@@ -38,6 +38,54 @@ pub type StreamFn = Arc<
         + Sync,
 >;
 
+/// Request-local inputs for resolving opaque inference state. Custom message
+/// details are retained because conversion to provider messages can discard them.
+#[derive(Clone)]
+pub struct InferenceStateRequest {
+    pub model: Model,
+    pub context: pi_ai::types::Context,
+    pub messages: Vec<AgentMessage>,
+    pub signal: Option<tokio_util::sync::CancellationToken>,
+}
+
+/// Resolve only state bound to messages in this request. Implementations must
+/// claim pending message IDs atomically and retain failed/uncertain claims so a
+/// retry cannot silently fall back to an ordinary request. A cancelled resolver
+/// must cancel any lease it claimed before returning.
+pub type ResolveInferenceState = Arc<
+    dyn Fn(
+            InferenceStateRequest,
+        ) -> futures::future::BoxFuture<
+            'static,
+            anyhow::Result<Option<pi_ai::inference_attachment::InferenceStateLease>>,
+        > + Send
+        + Sync,
+>;
+
+/// Optional source capture on the actual native request, not a replayed helper.
+pub type ResolveSourceCapture = Arc<
+    dyn Fn(InferenceStateRequest) -> futures::future::BoxFuture<
+        'static, anyhow::Result<Option<pi_ai::source_capture::SourceCaptureLease>>,
+    > + Send + Sync,
+>;
+
+/// Process-local proof from this exact parsed native assistant response. No lease
+/// is added to the durable transcript or reconstructed from prior message text.
+#[derive(Clone)]
+pub struct SourceCaptureCompletion {
+    pub model: Model,
+    pub lease: pi_ai::source_capture::SourceCaptureLease,
+    pub assistant_message: AssistantMessage,
+}
+
+#[derive(Clone)]
+pub struct SourceCaptureHooks {
+    pub resolve: ResolveSourceCapture,
+    /// Runs before any returned tools execute. Must reject ambiguous or stale
+    /// handoff provenance and retain a one-shot execution-scope sidecar.
+    pub completed: Arc<dyn Fn(SourceCaptureCompletion) -> futures::future::BoxFuture<'static, anyhow::Result<()>> + Send + Sync>,
+}
+
 /// Configuration for how tool calls from a single assistant message are executed.
 ///
 /// - `Sequential`: each tool call is prepared, executed, and finalized before the next one starts.
@@ -603,6 +651,10 @@ pub struct AgentLoopConfig {
     pub execution_scope: Option<crate::execution_scope::ExecutionScope>,
     /// Base simple stream options (temperature, maxTokens, headers, metadata, ...).
     pub stream_options: SimpleStreamOptions,
+    /// Called after context conversion for each actual provider request. The
+    /// returned lease belongs only to that request, never the base options.
+    pub resolve_inference_state: Option<ResolveInferenceState>,
+    pub source_capture: Option<SourceCaptureHooks>,
     pub model: Model,
     /// Optional disposable local measurements. `None` preserves the zero-overhead default.
     pub performance_metrics: Option<AgentLoopPerformanceMetrics>,

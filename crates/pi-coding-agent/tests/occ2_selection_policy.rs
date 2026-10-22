@@ -58,6 +58,7 @@ fn occ1_only_peer() -> OccCapability {
     OccCapability {
         occ1: true,
         dialects: BTreeMap::new(),
+        occ3: None,
     }
 }
 
@@ -234,7 +235,8 @@ fn selection_works_over_the_promoted_card_too() {
             PROMOTED_DIALECT_ID.to_string(),
             std::collections::BTreeSet::from([1]),
         )]),
-    };
+        occ3: None,
+};
     let mut local = local();
     local
         .dialects

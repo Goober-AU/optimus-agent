@@ -40,6 +40,7 @@ pub fn private_prime_inference_models() -> Vec<Model> {
         default_max_tokens: None,
         featured: Some(true),
         native_compaction: None,
+            occ3: None,
         headers: None,
         compat: Some(pi_ai::types::Compat::Completions(
             pi_ai::types::OpenAICompletionsCompat {

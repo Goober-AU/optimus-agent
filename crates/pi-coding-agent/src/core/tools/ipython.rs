@@ -367,6 +367,9 @@ pub struct IpythonToolOptions {
     pub session_id: Option<String>,
     /// Typed host request handlers for the kernel<->host bridge (rlm.run, goal.*, ...).
     pub host_handlers: Option<crate::core::kernel::shared::HostRequestHandlers>,
+    /// Typed provenance handlers; dispatch prefers these over `host_handlers`.
+    /// No execution scope is constructed anywhere in this build.
+    pub provenance_handlers: Option<crate::core::kernel::shared::ProvenanceHostRequestHandlers>,
     pub python_skills: Option<Vec<KernelPythonSkill>>,
     /// Per-session artifact dir where the kernel namespace snapshot is stored. Omit to disable snapshots.
     pub snapshot_dir: Option<String>,
@@ -893,6 +896,10 @@ impl IpythonKernelProvisioner {
             env: Some(env),
             session_id: self.options.as_ref().and_then(|options| options.session_id.clone()),
             host_handlers: Some(host_handlers),
+            provenance_handlers: self
+                .options
+                .as_ref()
+                .and_then(|options| options.provenance_handlers.clone()),
             python_skills: self.options.as_ref().and_then(|options| options.python_skills.clone()),
             performance_metrics: self.options.as_ref().and_then(|options| options.performance_metrics.clone()),
             // Only persistent sessions (which have an artifact dir) get a revivable snapshot.

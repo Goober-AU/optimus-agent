@@ -51,7 +51,7 @@ from .snapshot_serializer import SnapshotPathMetrics, SnapshotSerializationMetri
 from .snapshot_restore import ALWAYS_SKIP as _ALWAYS_SKIP, RESTORE_SKIP as _RESTORE_SKIP, prepare_restored_values
 from .snapshot_safety import load_snapshot_value
 
-PROTOCOL_VERSION = 3
+PROTOCOL_VERSION = 4
 
 _STREAM_FRAME_TEXT_CAP = 64 * 1024
 _RESULT_TEXT_CAP = 1024 * 1024
@@ -89,6 +89,14 @@ class _CellExecution:
 _current_cell: contextvars.ContextVar[str | None] = contextvars.ContextVar("_current_cell", default=None)
 _current_cell_execution: contextvars.ContextVar[_CellExecution | None] = contextvars.ContextVar(
     "_current_cell_execution", default=None
+)
+# Host-minted execution-provenance token for the running cell. Internal IPC
+# only: set from the execute frame, inherited by tasks the cell creates (a
+# detached task keeps its cell's token even after the cell finishes), and
+# reset when the cell finishes. A process-cooperation boundary, not
+# malicious same-process isolation. Non-string values are ignored.
+_current_execution_token: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "_current_execution_token", default=None
 )
 _active: dict[str, Any] = {"task": None, "rid": None, "interrupted": False}
 _cell_counter = 0
@@ -161,7 +169,11 @@ async def host_request(data: dict[str, Any]) -> dict[str, Any]:
     future: asyncio.Future[dict[str, Any]] = _loop.create_future()
     _pending_host[rid] = future
     try:
-        _send({"event": "host_request", "id": rid, "data": data})
+        frame: dict[str, Any] = {"event": "host_request", "id": rid, "data": data}
+        token = _current_execution_token.get()
+        if token is not None:
+            frame["executionToken"] = token
+        _send(frame)
         return await future
     finally:
         _pending_host.pop(rid, None)
@@ -593,6 +605,10 @@ async def _handle_execute(req: dict[str, Any], ns: dict[str, Any]) -> None:
     execution = _CellExecution()
     cell_token = _current_cell.set(cell_id)
     execution_token = _current_cell_execution.set(execution)
+    frame_token = req.get("executionToken")
+    token_token = _current_execution_token.set(
+        frame_token if isinstance(frame_token, str) and frame_token else None
+    )
     try:
         codes, has_trailing = _compile_cell(req["code"], filename)
         assert _loop is not None
@@ -627,6 +643,7 @@ async def _handle_execute(req: dict[str, Any], ns: dict[str, Any]) -> None:
     finally:
         execution.owner = None
         execution.finished.set()
+        _current_execution_token.reset(token_token)
         _current_cell_execution.reset(execution_token)
         _current_cell.reset(cell_token)
 
