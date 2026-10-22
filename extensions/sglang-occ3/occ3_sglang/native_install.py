@@ -91,6 +91,14 @@ class VerifiedBrokerMiddleware:
             authority.clear_verified(request)
 
 
+def _frontend_detail(error):
+    """Bounded frontend-member token, or None for every other decline."""
+    members = getattr(error, "frontend_members", None)
+    if isinstance(members, str) and members and members.isascii():
+        return ("frontend_members=" + members)[:128]
+    return None
+
+
 def _decline_detail(error):
     """Bounded sanitised root-cause token for the generic decline paths.
 
@@ -422,25 +430,63 @@ def _verify_function_provenance(function, documents):
         raise InstallationError("hook_provenance_invalid")
 
 
+def _resolve_runtime_device():
+    """The process's runtime device, or None when it cannot be established.
+
+    sglang 0.5.21 leaves ``server_args.device`` unset (None) when the
+    deployment relies on auto-detection; the tokenizer process resolves the
+    device through ``sglang.srt.utils.common.get_device`` during argument
+    resolution. Auto-detect CUDA launches therefore carry ``device=None`` on
+    the argv object, and the frontend profile must confirm the runtime device
+    instead of demanding the literal attribute.
+    """
+    try:
+        from sglang.srt.utils.common import get_device
+        value = get_device()
+    except Exception:
+        return None
+    return value if isinstance(value, str) else None
+
+
+def _frontend_members(app, tm):
+    """The frontend profile as named pass/fail members (no short-circuit).
+
+    Every member is evaluated so a decline names each tripping check instead
+    of revealing one per live window. Values are bounded booleans over fixed
+    config members; nothing secret is observed.
+    """
+    args = getattr(tm, "server_args", None)
+    declared = getattr(args, "device", None)
+    resolved = declared if declared is not None else _resolve_runtime_device()
+    return (
+        ("tokenizer_worker_num", getattr(args, "tokenizer_worker_num", None) != 1),
+        ("device", resolved != "cuda"),
+        ("tp_size", getattr(args, "tp_size", None) != 8),
+        ("dp_size", getattr(args, "dp_size", None) != 1),
+        ("pp_size", getattr(args, "pp_size", None) != 1),
+        ("enable_lora", bool(getattr(args, "enable_lora", False))),
+        ("disaggregation_mode",
+         getattr(args, "disaggregation_mode", "null") not in (None, "null")),
+        ("skip_tokenizer_init", bool(getattr(args, "skip_tokenizer_init", False))),
+        ("enable_trace", bool(getattr(args, "enable_trace", False))),
+        ("log_requests", bool(getattr(args, "log_requests", False))),
+        ("request_logger",
+         bool(getattr(getattr(tm, "request_logger", None), "log_requests", True))),
+        ("root_path", bool(getattr(app, "root_path", ""))),
+    )
+
+
 def _runtime_preflight(app, tm):
     import sys
     args = getattr(tm, "server_args", None)
     module = sys.modules.get("sglang")
     if getattr(module, "__version__", None) != "0.5.21":
         raise InstallationError("unsupported_runtime")
-    if (getattr(args, "tokenizer_worker_num", None) != 1
-            or getattr(args, "device", None) != "cuda"
-            or getattr(args, "tp_size", None) != 8
-            or getattr(args, "dp_size", None) != 1
-            or getattr(args, "pp_size", None) != 1
-            or getattr(args, "enable_lora", False)
-            or getattr(args, "disaggregation_mode", "null") not in (None, "null")
-            or getattr(args, "skip_tokenizer_init", False)
-            or getattr(args, "enable_trace", False)
-            or getattr(args, "log_requests", False)
-            or getattr(getattr(tm, "request_logger", None), "log_requests", True)
-            or getattr(app, "root_path", "")):
-        raise InstallationError("unsupported_frontend_profile")
+    failed = [name for name, trips in _frontend_members(app, tm) if trips]
+    if failed:
+        error = InstallationError("unsupported_frontend_profile")
+        error.frontend_members = ",".join(failed)[:128]
+        raise error
     if app.middleware_stack is not None:
         raise InstallationError("pre_serving_install_required")
     return _existing_auth(app, tm)
@@ -874,6 +920,7 @@ async def install_native_runtime(app, tokenizer_manager, *, experimental_opt_in=
         code = "installation_cancelled"
     except InstallationError as error:
         code = error.code
+        detail = _frontend_detail(error)
     except Exception as error:
         code = "installation_unavailable"
         detail = _decline_detail(error)

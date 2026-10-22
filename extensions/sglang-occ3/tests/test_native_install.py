@@ -1111,3 +1111,61 @@ async def test_actual_A_control_uncertainty_survives_local_close(monkeypatch):
     assert await install._close_components(NS(client=client, backend=backend)) is False
     assert client.closed and client.has_uncertain_control and client.pending == {}
     assert tm._occ3_control_client is client
+
+
+async def test_frontend_preflight_accepts_autodetected_cuda(transaction_fixture, monkeypatch):
+    """sglang 0.5.21 auto-detect leaves server_args.device None; the runtime
+    device confirms cuda (TS5 root cause: the literal attribute declined
+    every auto-detect launch)."""
+    f = transaction_fixture
+    monkeypatch.setattr(f.tm.server_args, "device", None)
+    monkeypatch.setattr(install, "_resolve_runtime_device", lambda: "cuda")
+    members = dict(install._frontend_members(f.app, f.tm))
+    assert members["device"] is False
+    assert install._runtime_preflight(f.app, f.tm) == KEY
+
+
+async def test_frontend_preflight_fails_closed_without_runtime_device(transaction_fixture, monkeypatch):
+    f = transaction_fixture
+    monkeypatch.setattr(f.tm.server_args, "device", None)
+    monkeypatch.setattr(install, "_resolve_runtime_device", lambda: None)
+    members = dict(install._frontend_members(f.app, f.tm))
+    assert members["device"] is True
+
+
+async def test_frontend_preflight_declines_explicit_non_cuda(transaction_fixture, monkeypatch):
+    f = transaction_fixture
+    monkeypatch.setattr(f.tm.server_args, "device", "xpu")
+    monkeypatch.setattr(install, "_resolve_runtime_device", lambda: "cuda")
+    members = dict(install._frontend_members(f.app, f.tm))
+    assert members["device"] is True
+
+
+async def test_frontend_decline_names_every_tripping_member(transaction_fixture, monkeypatch, caplog):
+    f = transaction_fixture
+    monkeypatch.setattr(f.tm.server_args, "device", None)
+    monkeypatch.setattr(f.tm.server_args, "tp_size", 4)
+    f.tm.request_logger.log_requests = True
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.native_install"):
+        result = await install.install_native_runtime(f.app, f.tm, experimental_opt_in=True)
+    assert not result.installed and result.code == "unsupported_frontend_profile"
+    message = [r for r in caplog.records if "native installation decline" in r.getMessage()][0]
+    assert "detail=frontend_members=device,tp_size,request_logger" in message.getMessage()
+    assert KEY not in caplog.text
+
+
+async def test_frontend_decline_token_is_bounded_and_sanitised():
+    error = install.InstallationError("unsupported_frontend_profile")
+    error.frontend_members = "a" * 500
+    token = install._frontend_detail(error)
+    assert token == "frontend_members=" + "a" * 111 and len(token) == 128
+    assert install._frontend_detail(install.InstallationError("other")) is None
+    assert install._frontend_detail(RuntimeError("x")) is None
+
+
+async def test_frontend_preflight_logger_and_root_path_members(transaction_fixture):
+    f = transaction_fixture
+    f.tm.request_logger.log_requests = True
+    f.app.root_path = "/proxy"
+    members = dict(install._frontend_members(f.app, f.tm))
+    assert members["request_logger"] is True and members["root_path"] is True
