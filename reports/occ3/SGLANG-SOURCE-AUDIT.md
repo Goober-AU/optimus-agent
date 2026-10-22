@@ -98,4 +98,4 @@ Research recommendation: Arm B (KV-radix-channel) as the v1 primary for this run
 | E-EXTREADME | extensions/sglang-occ3/README.md | 3fe79fadd0a9e5e55cac27e1feca1ee7431d71ec53579f141a920ac9bd454702 |
 | E-PATCH1 | extensions/sglang-occ3/patches/capture-eager-mtp.v1.json | be161cfd2d43aa6f2136a32bee907e68c2938fd552097742214c909bda393961 |
 | E-PATCH2 | extensions/sglang-occ3/patches/native-startup.v1.json | 851d78fcd1311f5bfdb9be44cd8941f1dc026ed695f1e97a16bfc4248af6d048 |
-| E-PATCH3 | extensions/sglang-occ3/patches/scheduler-cache-ipc.v1.json | a80d0051754e2a69dbe88eb642871c871cf1707d15af9a2b4a5e6cc6595865c6 |
+| E-PATCH3 | extensions/sglang-occ3/patches/scheduler-cache-ipc.v1.json | e07c4b84407733a277f7135a017d0e505e275846beedd28f68a303ab97fe275c |

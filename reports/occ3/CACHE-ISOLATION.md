@@ -17,7 +17,7 @@
 ## Evidence already available (offline)
 
 - Exact source-level analysis of lookup/insert behaviour and isolation levers: occ3-campaign/research/sglang-audit.md (sha256 e48d08488fa65f9bc664f5aba30cedd6f3dd38ec3bcbfbebe14e4878efdb3049).
-- Scheduler cache IPC overlay: extensions/sglang-occ3/patches/scheduler-cache-ipc.v1.json (sha256 a80d0051754e2a69dbe88eb642871c871cf1707d15af9a2b4a5e6cc6595865c6).
+- Scheduler cache IPC overlay: extensions/sglang-occ3/patches/scheduler-cache-ipc.v1.json (sha256 e07c4b84407733a277f7135a017d0e505e275846beedd28f68a303ab97fe275c).
 - Extension cache patch tests (offline): extensions/sglang-occ3/tests/test_latent_cache_patch.py (sha256 999603d2f14dc5f7ccf5dcbb260a2870ab0064dfee4165da77128f2800e8d1c2) and the related latent-patch suites under extensions/sglang-occ3/tests/.
 - Design statement on private pages: extensions/sglang-occ3/README.md (sha256 3fe79fadd0a9e5e55cac27e1feca1ee7431d71ec53579f141a920ac9bd454702).
 

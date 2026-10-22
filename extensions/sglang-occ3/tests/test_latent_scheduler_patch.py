@@ -124,7 +124,12 @@ class TestScheduler(PinnedCase):
     def test_admission_gate_checks_active_cache_not_display_name(self):
         class RadixCache: pass
         class Unsupported(RadixCache): pass
+        class UnifiedRadixCache: pass
+        class UnsupportedUnified(UnifiedRadixCache): pass
+        class ThirdPartyCache: pass
         cache_module = types.ModuleType("sglang.srt.mem_cache.radix_cache"); cache_module.RadixCache = RadixCache
+        unified_module = types.ModuleType("sglang.srt.mem_cache.unified_radix_cache")
+        unified_module.UnifiedRadixCache = UnifiedRadixCache
         fn = self.sources.function("managers/scheduler.py", "_occ3_validate_received", "Scheduler",
             envs=NS(SGLANG_USE_PICKLE_IPC=NS(get=lambda: False)),
             get_parallel=lambda: NS(pp_size=1, attn_cp_size=1, enable_dp_attention=False),
@@ -138,14 +143,18 @@ class TestScheduler(PinnedCase):
                  token_type_ids=None, token_indices_to_pool=None, multi_item_delimiter_indices=None,
                  kv_hints=None, bootstrap_host=None, return_hidden_states=False, return_routed_experts=False,
                  return_indexer_topk=False, return_sampling_mask=False)
-        with patch.dict("sys.modules", {cache_module.__name__: cache_module}):
+        with patch.dict("sys.modules", {cache_module.__name__: cache_module,
+                                        unified_module.__name__: unified_module}):
             self.assertEqual(fn(state, req), descriptor())
             for key in ("session_id", "mm_inputs", "input_embeds", "kv_hints"):
                 setattr(req, key, object())
                 with self.assertRaises(ValueError): fn(state, req)
                 setattr(req, key, None)
-            state.tree_cache = Unsupported()
-            with self.assertRaises(ValueError): fn(state, req)
+            state.tree_cache = UnifiedRadixCache()
+            self.assertEqual(fn(state, req), descriptor())
+            for cache in (Unsupported(), UnsupportedUnified(), ThirdPartyCache()):
+                state.tree_cache = cache
+                with self.assertRaisesRegex(ValueError, "occ3_unsupported_profile"): fn(state, req)
             state.tree_cache = RadixCache()
             state.waiting_queue = [Row("a", True), Row("b", True)]
             with self.assertRaisesRegex(ValueError, "busy"): fn(state, req)
