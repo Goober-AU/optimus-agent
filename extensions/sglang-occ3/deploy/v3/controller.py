@@ -93,6 +93,13 @@ class Controller:
             if not isinstance(proof, dict) or proof.get("ok") is not True:
                 detail = "" if not isinstance(proof, dict) else " (%s http=%s)" % (
                     proof.get("error_code"), proof.get("http_status"))
+                if isinstance(proof, dict) and proof.get("error_code") == "occ3_declined":
+                    detail += " declined=%s stage=%s" % (proof.get("declined_code"), proof.get("stage"))
+                    # A decline is terminal for the server lifetime: keep the exact
+                    # code past process exit for the abort review, best effort only.
+                    with contextlib.suppress(Exception):
+                        self.journal.update(occ3_decline={"gate": name, "field": field,
+                                                          "evidence": proof})
                 raise Failure("service gate failed: " + field + detail)
             evidence[field] = proof
         self.journal.gate(name, evidence)

@@ -24,6 +24,7 @@ from .lifecycle import (Failure, Journal, REHEARSAL_LABEL, Services, checked_ins
 from .supervisor import launch
 
 FIXTURE_KEY = "occ3-disposable-fixture-not-a-serving-credential"
+DECLINED_FIXTURE_CODE = "unsupported_profile"
 FIXTURE = r"""
 import argparse, json, re, uuid
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -47,6 +48,18 @@ class Handler(BaseHTTPRequestHandler):
             return self.answer(HEALTH_STATUS)
         if not self.authorized():
             return self.answer(401, {'error': 'unauthorized'})
+        if self.path == '/occ3/v1/status':
+            if OCC3_DECLINED:
+                return self.answer(200, {'schema': 'optimus.occ3.status.v1', 'state': 'DECLINED',
+                                         'code': OCC3_DECLINE_CODE, 'stage': 'install', 'attempt': 'deadbeef',
+                                         'experimental_selected': True, 'preflight_reached': True,
+                                         'backend_constructed': True, 'worker_readiness_reached': False,
+                                         'hooks_prepared': True, 'route_mount_attempted': False,
+                                         'rollback_completed': True, 'plugin': 'occ3-bridge',
+                                         'version': '0.1.0', 'enabled': False, 'model_fingerprint': None,
+                                         'channels': {}, 'metrics': {}})
+            return self.answer(200, {'schema': 'optimus.occ3.status.v1', 'state': 'NATIVE_READY',
+                                     'code': 'installed_experimental_not_live_validated'})
         return self.answer(200, {'data': [{'id': 'fixture-model'}]})
     def do_POST(self):
         if not self.authorized():
@@ -54,6 +67,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == '/occ3/v1/native/runtime/identity':
             if OCC3_IDENTITY_ABSENT:
                 return self.answer(404, {'detail': 'Not Found'})
+            if OCC3_DECLINED:
+                return self.answer(503, {'error': {'code': 'not_ready'}})
             return self.answer(200, {'schema': 'occ3.runtime.identity.v1', 'runtime_id': 'fixture-runtime',
                                      'runtime_generation': 1, 'model_fingerprint': 'sha256:fixture',
                                      'expected_ranks': 8, 'ready_ranks': 8, 'source_capture': True,
@@ -84,6 +99,7 @@ SCENARIOS = (
     {"name": "supervisor-kill-before", "image": "healthy", "pause": "before_mutation", "signal": "supervisor-kill"},
     {"name": "supervisor-kill-after-start", "image": "healthy", "pause": "after_start", "signal": "supervisor-kill"},
     {"name": "occ3-identity-absent", "image": "identity-absent"},
+    {"name": "occ3-declined", "image": "identity-declined"},
 )
 
 
@@ -416,6 +432,18 @@ def assert_scenario_evidence(scenario, state, recovery, controller, candidate, i
                 observations.get("last_http_status") != 503 or observations.get("last_ok") is not False or
                 controller.get("heartbeat", 0) - observations.get("started_monotonic", 0) < state["plan"]["startup_timeout_s"]):
             raise Failure("running-unready HTTP503 and readiness deadline were not exercised")
+    if scenario["image"] == "identity-declined":
+        decline = state.get("occ3_decline") or {}
+        evidence = decline.get("evidence") or {}
+        if (decline.get("gate") != "service_initial" or decline.get("field") != "occ3_identity" or
+                evidence.get("error_code") != "occ3_declined" or
+                evidence.get("declined_code") != DECLINED_FIXTURE_CODE or
+                evidence.get("stage") != "install" or
+                evidence.get("rollback_completed") is not True or
+                state.get("restart_count") != 0 or "service_initial" in state.get("gates", {})):
+            raise Failure("declined candidate did not fail fast with its exact decline code")
+        return {"expected_recovery": expected, "failure_stage_proven": True,
+                "declined_code": evidence.get("declined_code")}
     return {"expected_recovery": expected, "failure_stage_proven": True}
 
 
@@ -426,11 +454,13 @@ def build_fixtures(api, base_image, owner, *, ledger_dir):
     assert_fixture_image(api.inspect_image(base_image), base_image)
     dockerfile = ("FROM " + base_image + "\nCOPY fixture.py /fixture.py\n").encode()
     scripts = {
-        "original": "OCC3_IDENTITY_ABSENT = False\nHEALTH_STATUS = 200\n" + FIXTURE,
-        "healthy": "OCC3_IDENTITY_ABSENT = False\n# distinct candidate fixture image\nHEALTH_STATUS = 200\n" + FIXTURE,
+        "original": "OCC3_IDENTITY_ABSENT = False\nOCC3_DECLINED = False\nHEALTH_STATUS = 200\n" + FIXTURE,
+        "healthy": "OCC3_IDENTITY_ABSENT = False\nOCC3_DECLINED = False\n# distinct candidate fixture image\nHEALTH_STATUS = 200\n" + FIXTURE,
         "exit": "OCC3_IDENTITY_ABSENT = False\nraise SystemExit(7)\n",
-        "unready": "OCC3_IDENTITY_ABSENT = False\nHEALTH_STATUS = 503\n" + FIXTURE,
-        "identity-absent": "OCC3_IDENTITY_ABSENT = True\nHEALTH_STATUS = 200\n" + FIXTURE,
+        "unready": "OCC3_IDENTITY_ABSENT = False\nOCC3_DECLINED = False\nHEALTH_STATUS = 503\n" + FIXTURE,
+        "identity-absent": "OCC3_IDENTITY_ABSENT = True\nOCC3_DECLINED = False\nHEALTH_STATUS = 200\n" + FIXTURE,
+        "identity-declined": ("OCC3_IDENTITY_ABSENT = False\nOCC3_DECLINED = True\nOCC3_DECLINE_CODE = "
+                              + repr(DECLINED_FIXTURE_CODE) + "\nHEALTH_STATUS = 200\n" + FIXTURE),
     }
     ledger_dir = Path(ledger_dir)
     ledger_dir.mkdir(mode=0o700, exist_ok=False)

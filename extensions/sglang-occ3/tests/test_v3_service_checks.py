@@ -242,3 +242,121 @@ def test_occ3_identity_transport_error_invalid_json_and_missing_key():
     assert missing == {"ok": False, "check": "occ3_identity", "http_status": None,
                        "error_code": "missing_credentials"}
     assert KEY not in json.dumps(result) + json.dumps(missing)
+
+
+DECLINED_STATUS = {"schema": "optimus.occ3.status.v1", "state": "DECLINED",
+                   "code": "unsupported_profile", "stage": "install", "attempt": "deadbeef",
+                   "experimental_selected": True, "preflight_reached": True,
+                   "backend_constructed": True, "worker_readiness_reached": False,
+                   "hooks_prepared": True, "route_mount_attempted": False,
+                   "rollback_completed": True, "plugin": "occ3-bridge", "version": "0.1.0",
+                   "enabled": False, "model_fingerprint": None, "channels": {}, "metrics": {}}
+
+
+def declining(status_body=None, identity_status=503, requests=None):
+    def requester(method, url, key, payload, timeout):
+        if requests is not None:
+            requests.append((method, url, key, payload, timeout))
+        if url.endswith(checks.OCC3_IDENTITY_PATH):
+            return checks.HttpResult(identity_status, {"error": {"code": "not_ready"}})
+        return checks.HttpResult(200, dict(status_body or DECLINED_STATUS))
+    return requester
+
+
+def test_occ3_identity_declined_503_probes_status_and_fails_fast_with_the_code():
+    seen = []
+    result = checks.check_occ3_identity("http://fixture", KEY, requester=declining(requests=seen))
+    assert result == {"ok": False, "check": "occ3_identity", "http_status": 503,
+                      "error_code": "occ3_declined", "declined_code": "unsupported_profile",
+                      "stage": "install", "experimental_selected": True, "preflight_reached": True,
+                      "backend_constructed": True, "worker_readiness_reached": False,
+                      "hooks_prepared": True, "route_mount_attempted": False,
+                      "rollback_completed": True}
+    # The status probe reuses the same credential, route and single-shot timeout.
+    assert seen == [("POST", "http://fixture/occ3/v1/native/runtime/identity", KEY,
+                     {"schema": "occ3.runtime.identity.request.v1"}, 15),
+                    ("GET", "http://fixture/occ3/v1/status", KEY, None, 15)]
+
+
+@pytest.mark.parametrize("state", ["INSTALLING", "CONTROL_REGISTERED", "NATIVE_READY", "DISABLED"])
+def test_occ3_identity_transient_states_keep_exact_unavailable_evidence(state):
+    result = checks.check_occ3_identity("http://fixture", KEY,
+                                        requester=declining(dict(DECLINED_STATUS, state=state)))
+    assert result == {"ok": False, "check": "occ3_identity", "http_status": 503,
+                      "error_code": "occ3_identity_unavailable"}
+
+
+def test_occ3_identity_status_404_means_control_plane_registration_failure():
+    def requester(method, url, key, payload, timeout):
+        if url.endswith(checks.OCC3_IDENTITY_PATH):
+            return checks.HttpResult(503, {"error": {"code": "not_ready"}})
+        return checks.HttpResult(404)
+    result = checks.check_occ3_identity("http://fixture", KEY, requester=requester)
+    assert result == {"ok": False, "check": "occ3_identity", "http_status": 503,
+                      "error_code": "occ3_routes_absent"}
+
+
+@pytest.mark.parametrize("mutation", ["wrong_schema", "missing_state", "lowercase_state",
+                                      "not_dict", "invalid_json", "status_transport_error"])
+def test_occ3_identity_unparseable_status_keeps_generic_unavailable(mutation):
+    def requester(method, url, key, payload, timeout):
+        if url.endswith(checks.OCC3_IDENTITY_PATH):
+            return checks.HttpResult(503, {"error": {"code": "not_ready"}})
+        if mutation == "wrong_schema":
+            return checks.HttpResult(200, dict(DECLINED_STATUS, schema="optimus.occ3.status.v2"))
+        if mutation == "missing_state":
+            body = dict(DECLINED_STATUS)
+            del body["state"]
+            return checks.HttpResult(200, body)
+        if mutation == "lowercase_state":
+            return checks.HttpResult(200, dict(DECLINED_STATUS, state="declined"))
+        if mutation == "not_dict":
+            return checks.HttpResult(200, [])
+        if mutation == "invalid_json":
+            return checks.HttpResult(200, None, "invalid_json")
+        raise RuntimeError(KEY)
+    result = checks.check_occ3_identity("http://fixture", KEY, requester=requester)
+    assert result == {"ok": False, "check": "occ3_identity", "http_status": 503,
+                      "error_code": "occ3_identity_unavailable"}
+
+
+@pytest.mark.parametrize("code", [None, 7, "not a code!", "UPPER_CODE", "x" * 65, "code\npath"])
+def test_occ3_declined_evidence_sanitizes_non_taxonomy_detail(code):
+    result = checks.check_occ3_identity("http://fixture", KEY,
+                                        requester=declining(dict(DECLINED_STATUS, code=code, stage="cleanup")))
+    assert result["error_code"] == "occ3_declined"
+    assert result["declined_code"] is None and result["stage"] is None
+    assert result["rollback_completed"] is True
+
+
+def test_occ3_declined_booleans_require_literal_true():
+    result = checks.check_occ3_identity("http://fixture", KEY,
+        requester=declining(dict(DECLINED_STATUS, experimental_selected="true", rollback_completed=1)))
+    assert result["error_code"] == "occ3_declined"
+    assert result["experimental_selected"] is False and result["rollback_completed"] is False
+    assert result["preflight_reached"] is True
+
+
+@pytest.mark.parametrize("identity_status", [401, 403, 500, 502, None])
+def test_occ3_identity_any_non_200_non_404_answer_still_probes_the_decline(identity_status):
+    result = checks.check_occ3_identity("http://fixture", KEY,
+                                        requester=declining(identity_status=identity_status))
+    assert result["error_code"] == "occ3_declined" and result["http_status"] == identity_status
+    assert result["declined_code"] == "unsupported_profile" and result["stage"] == "install"
+
+
+def test_occ3_identity_404_never_probes_the_status_route():
+    seen = []
+    def requester(method, url, key, payload, timeout):
+        seen.append(url)
+        return checks.HttpResult(404)
+    result = checks.check_occ3_identity("http://fixture", KEY, requester=requester)
+    assert result["error_code"] == "occ3_routes_absent"
+    assert seen == ["http://fixture/occ3/v1/native/runtime/identity"]
+
+
+def test_occ3_declined_evidence_never_carries_foreign_body_fields():
+    body = dict(DECLINED_STATUS, secret=KEY, path="/etc/passwd", exception="boom " + KEY)
+    result = checks.check_occ3_identity("http://fixture", KEY, requester=declining(body))
+    assert result["error_code"] == "occ3_declined" and result["declined_code"] == "unsupported_profile"
+    assert KEY not in json.dumps(result) and "secret" not in result and "exception" not in result

@@ -498,6 +498,62 @@ def test_service_gate_failure_detail_names_error_code_and_http_status(tmp_path):
     assert not any(op == "nginx-reload" for op, _ in api.events)
 
 
+DECLINED_IDENTITY_PROOF = {"ok": False, "check": "occ3_identity", "http_status": 503,
+                           "error_code": "occ3_declined", "declined_code": "unsupported_profile",
+                           "stage": "install", "experimental_selected": True, "preflight_reached": True,
+                           "backend_constructed": True, "worker_readiness_reached": False,
+                           "hooks_prepared": True, "route_mount_attempted": False,
+                           "rollback_completed": True}
+
+
+def test_service_gate_failure_detail_carries_the_declined_code(tmp_path):
+    api, journal, service = authorized(tmp_path)
+    swapped(api, journal)
+    service.identity_proof = dict(DECLINED_IDENTITY_PROOF)
+    runner = ctl.Controller(api, journal, services=service, guard=lambda: None)
+    with pytest.raises(life.Failure,
+                       match=r"service gate failed: occ3_identity \(occ3_declined http=503\) "
+                             r"declined=unsupported_profile stage=install"):
+        runner.service_gate("service_initial")
+    state = journal.read()
+    assert "service_initial" not in state["gates"]
+    assert state["occ3_decline"] == {"gate": "service_initial", "field": "occ3_identity",
+                                     "evidence": DECLINED_IDENTITY_PROOF}
+    assert not any(op == "nginx-reload" for op, _ in api.events)
+
+
+def test_service_initial_aborts_on_occ3_declined_fail_fast_before_ingress_and_proof(tmp_path):
+    api, journal, service = authorized(tmp_path)
+    service.identity_proof = dict(DECLINED_IDENTITY_PROOF)
+    assert ctl.Controller(api, journal, services=service, guard=lambda: None).run() == 1
+    state = journal.read()
+    # Abort at the first gate: no proof wait, no restart, no journaled service gate.
+    assert not (journal.directory / "checkpoint-initial.json").exists()
+    assert state["restart_count"] == 0 and "service_initial" not in state["gates"]
+    assert state["occ3_decline"]["gate"] == "service_initial"
+    assert state["occ3_decline"]["evidence"]["declined_code"] == "unsupported_profile"
+    assert state["occ3_decline"]["evidence"]["stage"] == "install"
+    assert not [entry for entry in state["history"] if entry["operation"] == "candidate_ingress_reload"]
+    assert state["ingress_refresh"]["operation"] == "recovery_ingress_reload"
+    # The only nginx reload is the recovery reload of the restored original.
+    reloads = [i for i, event in enumerate(api.events) if event == ("nginx-reload", PROXY)]
+    assert len(reloads) == 1
+    assert api.events.index(("start", ORIGINAL)) < reloads[0]
+    # Candidate is stopped and renamed -failed BEFORE the original is renamed back and started.
+    candidate_stop = max(i for i, (op, ident) in enumerate(api.events)
+                         if op == "stop" and ident == CANDIDATE)
+    candidate_failed = max(i for i, (op, ident) in enumerate(api.events)
+                           if op == "rename" and ident == CANDIDATE)
+    original_back = [i for i, (op, ident) in enumerate(api.events)
+                     if op == "rename" and ident == ORIGINAL][-1]
+    original_start = max(i for i, (op, ident) in enumerate(api.events)
+                        if op == "start" and ident == ORIGINAL)
+    assert candidate_stop < original_back and candidate_failed < original_back < original_start
+    assert service.calls == ["health", "occ3_identity", "health", "chat", "ingress"]
+    assert state["recovery"]["verified"] and state["recovery"]["result"] == "RESTORED"
+    assert_restored(api, journal)
+
+
 def test_service_final_also_requires_occ3_identity(tmp_path):
     api, journal, service = authorized(tmp_path, proof_timeout_s=2)
     service.live_ok = True
