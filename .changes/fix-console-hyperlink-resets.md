@@ -1,0 +1,1 @@
+- Fixed stray `]8;;` characters in terminals without hyperlink support, including the Windows Server console, by respecting terminal capabilities when resetting rendered lines and overlays.

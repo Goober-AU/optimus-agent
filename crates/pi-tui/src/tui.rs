@@ -580,7 +580,14 @@ impl TUI {
     pub const WHEEL_SCROLL_LINES: i64 = 3;
     pub const SELECTION_AUTO_SCROLL_DELAY_MS: u64 = 150;
     pub const SELECTION_AUTO_SCROLL_INTERVAL_MS: u64 = 50;
-    const SEGMENT_RESET: &'static str = "\x1b[0m\x1b]8;;\x07";
+
+    fn segment_reset() -> &'static str {
+        if get_capabilities().hyperlinks {
+            "\x1b[0m\x1b]8;;\x07"
+        } else {
+            "\x1b[0m"
+        }
+    }
 
     pub fn new(terminal: Box<dyn Terminal>, show_hardware_cursor: Option<bool>) -> Self {
         let show_hardware_cursor = show_hardware_cursor.unwrap_or_else(|| {
@@ -2156,7 +2163,7 @@ fn subtract_selection_coverage(
 
 impl TUI {
     fn apply_line_resets(&self, lines: &mut [String]) {
-        let reset = Self::SEGMENT_RESET;
+        let reset = Self::segment_reset();
         for line in lines.iter_mut() {
             if !is_image_line(line) {
                 *line = format!("{}{reset}", normalize_terminal_output(line));
@@ -2202,7 +2209,7 @@ impl TUI {
         let after_pad = after_target.saturating_sub(base.after_width);
 
         // Compose result
-        let reset = Self::SEGMENT_RESET;
+        let reset = Self::segment_reset();
         let result = format!(
             "{}{}{reset}{}{}{reset}{}{}",
             base.before,
@@ -3756,6 +3763,61 @@ mod tests {
         fn set_title(&mut self, _title: &str) {}
 
         fn set_progress(&mut self, _active: bool) {}
+    }
+
+    #[test]
+    fn rendered_line_resets_respect_hyperlink_capability() {
+        use crate::terminal_image::set_capabilities;
+
+        let original = get_capabilities();
+        for hyperlinks in [false, true] {
+            set_capabilities(crate::terminal_image::TerminalCapabilities {
+                hyperlinks,
+                ..original
+            });
+            for fullscreen in [false, true] {
+                let terminal = Rc::new(RefCell::new(FakeTerminal::new(20, 5)));
+                let mut tui = TUI::new(Box::new(SharedTerminal(terminal.clone())), Some(false));
+                let line = Rc::new(RefCell::new(Line("\x1b[31mhello"))) as Rc<RefCell<dyn Component>>;
+                if fullscreen {
+                    tui.enter_fullscreen(FullscreenOptions {
+                        scroll: vec![line],
+                        dock: Rc::new(RefCell::new(Line("dock"))),
+                        mouse: false,
+                        viewport_controls: false,
+                    });
+                } else {
+                    tui.add_child(line);
+                }
+                tui.do_render();
+                let written = terminal.borrow().written.clone();
+                assert!(written.contains("hello\x1b[0m"), "styles must still reset");
+                assert_eq!(
+                    written.contains("\x1b]8;;\x07"), hyperlinks,
+                    "fullscreen={fullscreen}, hyperlinks={hyperlinks}: {written:?}"
+                );
+            }
+        }
+        set_capabilities(original);
+    }
+
+    #[test]
+    fn overlay_resets_respect_hyperlink_capability() {
+        use crate::terminal_image::set_capabilities;
+
+        let original = get_capabilities();
+        let tui = TUI::new(Box::new(FakeTerminal::new(20, 5)), Some(false));
+        for hyperlinks in [false, true] {
+            set_capabilities(crate::terminal_image::TerminalCapabilities {
+                hyperlinks,
+                ..original
+            });
+            let line = tui.composite_line_at("abcdef", "XY", 2, 2, 6);
+            assert_eq!(strip_ansi(&line), "abXYef");
+            assert_eq!(line.matches("\x1b[0m").count(), 2);
+            assert_eq!(line.matches("\x1b]8;;\x07").count(), if hyperlinks { 2 } else { 0 });
+        }
+        set_capabilities(original);
     }
 
     #[test]
