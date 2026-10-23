@@ -93,7 +93,7 @@ fn drain_pending_handoff_input() -> bool {
 
 pub(crate) fn stdout_write(data: &str) {
     #[cfg(windows)]
-    ensure_windows_utf8();
+    ensure_windows_console_output();
     let stdout = std::io::stdout();
     let mut lock = stdout.lock();
     let conpty = cfg!(windows) || std::env::var_os("WSL_INTEROP").is_some()
@@ -116,8 +116,12 @@ fn write_terminal_output(writer: &mut impl Write, mut data: &str, conpty: bool) 
 }
 
 #[cfg(windows)]
-fn ensure_windows_utf8() {
-    use windows_sys::Win32::System::Console::{GetConsoleCP, GetConsoleOutputCP, SetConsoleCP, SetConsoleOutputCP};
+fn ensure_windows_console_output() {
+    use windows_sys::Win32::System::Console::{
+        GetConsoleCP, GetConsoleMode, GetConsoleOutputCP, GetStdHandle, SetConsoleCP,
+        SetConsoleMode, SetConsoleOutputCP, ENABLE_PROCESSED_OUTPUT,
+        ENABLE_VIRTUAL_TERMINAL_PROCESSING, STD_OUTPUT_HANDLE,
+    };
     // A console-sharing child can change these. Invalid/non-console handles
     // return zero; leave redirected streams alone.
     unsafe {
@@ -125,6 +129,13 @@ fn ensure_windows_utf8() {
         let output = GetConsoleOutputCP();
         if input != 0 && input != 65001 { let _ = SetConsoleCP(65001); }
         if output != 0 && output != 65001 { let _ = SetConsoleOutputCP(65001); }
+        // Plain cmd.exe consoles start with VT output processing disabled.
+        let handle = GetStdHandle(STD_OUTPUT_HANDLE);
+        let mut mode = 0;
+        if GetConsoleMode(handle, &mut mode) != 0 {
+            let vt_mode = mode | ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+            if mode != vt_mode { let _ = SetConsoleMode(handle, vt_mode); }
+        }
     }
 }
 
@@ -1172,6 +1183,66 @@ impl Terminal for ProcessTerminal {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_console_interprets_output_from_a_plain_command_prompt() {
+        use std::os::windows::process::CommandExt;
+        use windows_sys::Win32::{
+            Foundation::{CloseHandle, GENERIC_READ, GENERIC_WRITE, INVALID_HANDLE_VALUE},
+            Storage::FileSystem::{FILE_SHARE_READ, FILE_SHARE_WRITE},
+            System::{
+                Console::{
+                    CreateConsoleScreenBuffer, GetConsoleMode, GetStdHandle,
+                    ReadConsoleOutputCharacterW, SetConsoleMode, SetStdHandle,
+                    CONSOLE_TEXTMODE_BUFFER, COORD, ENABLE_PROCESSED_OUTPUT,
+                    ENABLE_VIRTUAL_TERMINAL_PROCESSING, ENABLE_WRAP_AT_EOL_OUTPUT,
+                    STD_OUTPUT_HANDLE,
+                },
+                Threading::CREATE_NO_WINDOW,
+            },
+        };
+        const CHILD: &str = "PI_TUI_WINDOWS_CONSOLE_TEST_CHILD";
+        if std::env::var_os(CHILD).is_none() {
+            let result = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "terminal::tests::windows_console_interprets_output_from_a_plain_command_prompt", "--nocapture"])
+                .env(CHILD, "1")
+                .creation_flags(CREATE_NO_WINDOW)
+                .output().unwrap();
+            assert!(result.status.success(), "console child failed: {}{}",
+                String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+            return;
+        }
+        // A private, inactive screen buffer keeps the test off the user's screen.
+        unsafe {
+            let buffer = CreateConsoleScreenBuffer(GENERIC_READ | GENERIC_WRITE,
+                FILE_SHARE_READ | FILE_SHARE_WRITE, std::ptr::null(), CONSOLE_TEXTMODE_BUFFER, std::ptr::null());
+            assert_ne!(buffer, INVALID_HANDLE_VALUE, "{}", std::io::Error::last_os_error());
+            let original = GetStdHandle(STD_OUTPUT_HANDLE);
+            let plain_mode = ENABLE_PROCESSED_OUTPUT | ENABLE_WRAP_AT_EOL_OUTPUT;
+            assert_ne!(SetConsoleMode(buffer, plain_mode), 0);
+            assert_ne!(SetStdHandle(STD_OUTPUT_HANDLE, buffer), 0);
+            stdout_write("\x1b[2J\x1b[Hfirst\x1b[2;1Hsecond");
+            // Shared-console children can reset the mode between frames.
+            assert_ne!(SetConsoleMode(buffer, ENABLE_WRAP_AT_EOL_OUTPUT), 0);
+            stdout_write("\x1b[1;1Hfixed\x1b[K");
+            let mut mode = 0;
+            let mode_ok = GetConsoleMode(buffer, &mut mode);
+            let mut first = [0u16; 6];
+            let mut second = [0u16; 6];
+            let mut read = 0;
+            let first_ok = ReadConsoleOutputCharacterW(buffer, first.as_mut_ptr(), 6, COORD { X: 0, Y: 0 }, &mut read);
+            let second_ok = ReadConsoleOutputCharacterW(buffer, second.as_mut_ptr(), 6, COORD { X: 0, Y: 1 }, &mut read);
+            assert_ne!(SetStdHandle(STD_OUTPUT_HANDLE, original), 0);
+            CloseHandle(buffer);
+            assert_ne!(mode_ok, 0);
+            assert_eq!(mode, plain_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+            assert_ne!(first_ok, 0);
+            assert_ne!(second_ok, 0);
+            assert_eq!(String::from_utf16_lossy(&first), "fixed ");
+            assert_eq!(String::from_utf16_lossy(&second), "second");
+        }
+    }
 
     #[test]
     fn conpty_image_writes_are_utf8_safe_bounded_and_stop_on_error() {
