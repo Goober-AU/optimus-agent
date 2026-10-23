@@ -1,1 +1,2 @@
 - Fixed stray `]8;;` characters in terminals without hyperlink support, including the Windows Server console, by respecting terminal capabilities when resetting rendered lines and overlays.
+- Fixed corrupted redraws and visible escape codes when starting from a plain Windows Command Prompt by enabling virtual-terminal output processing before writing terminal controls.
