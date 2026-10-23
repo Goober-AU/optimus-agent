@@ -40,6 +40,7 @@ METHOD_ID = "statebridge.glm53.final-prenorm-predictor.continuous-prefix.v1"
 PHASES = ("before_restart", "after_restart")
 REPORT_SCHEMA = "optimus.occ3.native-phase-suite.v1"
 CHALLENGE_SCHEMA = "optimus.occ3.validator-phase-challenge.v1"
+PIN_SCHEMA = "occ3.admission.pin.v1"
 ADMISSION_SCHEMA = "optimus.occ3.native-admission.v1"
 CONTROL_SCHEMAS = ("occ3.sessions.enroll.v1", "occ3.publish.v1",
                    "occ3.publication.status.v1", "occ3.retire.v1")
@@ -56,6 +57,11 @@ ADMISSION_FIELDS = ("method_id", "harness_artifact", "source_manifest", "interfa
                     "offline_selftest", "admission_template", "budget_resource_receipt",
                     "max_budget", "layout_strategy", "endpoint", "credential_references",
                     "control_spec")
+PIN_FIELDS = ("schema", "phase", "attempt_id", "static_input_sha256", "runtime_epoch",
+              "runtime_generation", "profile_digest", "written_at")
+# Per-phase pin files re-pin the static derivation input by file digest:
+# deploy/native-build-inputs/native-profile-input.json.
+PIN_STATIC_INPUT_SHA256 = "6e676f1c6fc795ba412c4327168b51c8ef6f65056664638c4954eec58e75348a"
 REPORT_COMMON_FIELDS = ("schema", "phase", "attempt_id", "candidate_id",
                          "candidate_started_at", "validator_challenge", "harness", "binding",
                          "observed", "suite_nonce_sha256", "cases", "logical_cleanup_confirmed",
@@ -65,6 +71,7 @@ BEFORE_CASES = ("positive", "no_state", "stale_handle_pre")
 AFTER_CASES = ("stale_handle_post", "positive", "no_state")
 MAX_REPORT_BYTES = 2 * 1024 * 1024
 MAX_CHALLENGE_BYTES = 4096
+MAX_PIN_BYTES = 8192
 MAX_MANIFEST_FILES = 128
 MAX_BINARY_MIRROR_BYTES = 256 * 1024 * 1024
 UNKNOWN_HASH = hashlib.sha256(b"UNKNOWN").hexdigest()
@@ -255,6 +262,10 @@ def _phase_challenge_path(directory, phase):
     return Path(directory) / ("validator-challenge-" + phase + ".json")
 
 
+def _phase_pin_path(directory, phase):
+    return Path(directory) / ("admission-pin-" + phase + ".json")
+
+
 def _started_at_of(challenge):
     started = challenge.get("expected_candidate_started_at")
     _string(started, "challenge_started_at_invalid", limit=64)
@@ -340,10 +351,9 @@ class NativeHandoffValidator:
                     "harness_binary_sha256": pinned["harness_artifact"]["binary_sha256"],
                     "source_manifest_files": len(pinned["source_manifest"]["files"]),
                     "identity_fingerprint": pinned["admission_template"]["fingerprint"],
-                    "profile_digest_before_restart":
-                        pinned["admission_template"]["source_profile"]["profile_digest_before_restart"],
-                    "profile_digest_after_restart":
-                        pinned["admission_template"]["source_profile"]["profile_digest_after_restart"],
+                    "profile_digest_source": "per-phase admission pin files (journal "
+                                              "admission-pin-<phase>.json, write-once after the "
+                                              "identity derivation receipt; unequal per phase by design)",
                     "budget_receipt_sha256": pinned["budget_resource_receipt"]["receipt_sha256"],
                     "endpoint_origin": pinned["endpoint"]["origin"]},
                 binary_mirror_verified=mirror,
@@ -417,8 +427,7 @@ class NativeHandoffValidator:
         _fingerprint(value["fingerprint"], "identity_fingerprint_invalid")
         profile = _exact_fields(value["source_profile"],
                                 ("dtype", "expected_ranks", "layer_index", "hidden_dim",
-                                 "layout_strategy_digest", "profile_digest_before_restart",
-                                 "profile_digest_after_restart", "model_fingerprint",
+                                 "layout_strategy_digest", "model_fingerprint",
                                  "model_id", "method", "anchor_alpha", "max_prefix_tokens",
                                  "max_live_bytes", "workspace_bytes", "max_records",
                                  "max_active", "max_ttl_seconds", "tile_rows"),
@@ -428,16 +437,11 @@ class NativeHandoffValidator:
         _uint(profile["layer_index"], "layer_index_invalid")
         _uint(profile["hidden_dim"], "hidden_dim_invalid", positive=True)
         _sha_field(profile["layout_strategy_digest"], "layout_strategy_digest_invalid")
-        # profile_digest is incarnation-bound (fresh per boot): only the two
-        # per-phase OBSERVED pins exist, never one static digest. Equal pins
-        # would mean the after-restart value was fabricated pre-restart.
-        _sha_field(profile["profile_digest_before_restart"],
-                   "profile_digest_before_restart_invalid")
-        _sha_field(profile["profile_digest_after_restart"],
-                   "profile_digest_after_restart_invalid")
-        _require(profile["profile_digest_before_restart"]
-                 != profile["profile_digest_after_restart"],
-                 "profile_digest_pins_not_per_boot")
+        # profile_digest is incarnation-bound (fresh per boot) and the live
+        # server epoch exists only after the candidate boots, so the per-phase
+        # OBSERVED pins moved OUT of this pre-boot-frozen admission: they
+        # arrive as write-once attempt-dir pin files (admission-pin-<phase>.json,
+        # _load_phase_pin) verified per phase in _verify_report.
         # Static derivation fieldset (equals native-build-inputs/
         # native-profile-input.json); recomputed per phase in _verify_report.
         _string(profile["model_fingerprint"], "source_model_fingerprint_invalid", limit=128)
@@ -613,17 +617,18 @@ class NativeHandoffValidator:
         _require(binding["identity_fingerprint"] == template["fingerprint"],
                  "report_identity_binding_mismatch")
         _require(binding["method_id"] == METHOD_ID, "report_method_mismatch")
-        # profile_digest is incarnation-bound: the binding must equal THIS
-        # phase's observed pin and must re-derive from the pinned static
-        # profile fields plus the phase's observed runtime_epoch/generation.
-        profile = template["source_profile"]
-        phase_pin = profile["profile_digest_before_restart"] \
-            if phase == "before_restart" else profile["profile_digest_after_restart"]
-        _require(binding["profile_digest"] == phase_pin,
-                 "report_profile_binding_mismatch")
         _require(binding["endpoint_origin"] == pinned["endpoint"]["origin"],
                  "report_origin_binding_mismatch")
         observed = self._verify_observed(report["observed"], challenge)
+        # profile_digest is incarnation-bound: the binding must equal THIS
+        # phase's admission pin file (written into the attempt dir after the
+        # identity derivation receipt, never frozen into the pre-boot plan)
+        # and must re-derive from the pinned static profile fields plus the
+        # phase's observed runtime_epoch/generation.
+        profile = template["source_profile"]
+        pin = self._load_phase_pin(challenge, phase, observed)
+        _require(binding["profile_digest"] == pin["profile_digest"],
+                 "report_profile_binding_mismatch")
         _require(_derived_profile_digest(profile, observed) == binding["profile_digest"],
                  "report_profile_derivation_mismatch")
         suite_nonce = _sha_field(report["suite_nonce_sha256"], "suite_nonce_hash_invalid")
@@ -647,7 +652,39 @@ class NativeHandoffValidator:
         _require(completed <= challenge["expires_at"], "completion_after_expiry")
         return {"observed": observed, "suite_nonce_sha256": suite_nonce,
                 "positive": positive, "no_state": no_state, "retained": retained,
-                "stale_post": stale_post, "completed_at": completed}
+                "stale_post": stale_post, "pin": pin, "completed_at": completed}
+
+    def _load_phase_pin(self, challenge, phase, observed):
+        """Strict-load and bind this phase's admission pin file.
+
+        The admission freezes into the immutable journal plan before the
+        candidate boots, but the live server epoch is a fresh uuid4 minted
+        only at boot, so per-phase pins can never reach the validator
+        through the plan. The executor writes each phase's pin write-once
+        into the attempt dir after the identity derivation receipt passes
+        and before the harness run; this re-reads it and strictly binds it
+        to the challenge attempt, the pinned static input file digest and
+        the phase's observed incarnation. Equal before/after pins are
+        refused as fabricated pre-restart in _verify_after_chain.
+        """
+        data = _safe_read(_phase_pin_path(self.journal.directory, phase), MAX_PIN_BYTES)
+        _require(data is not None, "pin_file_missing")
+        pin = _strict_loads(data, MAX_PIN_BYTES)
+        _exact_fields(pin, PIN_FIELDS, "pin_fieldset_invalid")
+        _require(pin["schema"] == PIN_SCHEMA, "pin_schema_unknown")
+        _require(pin["phase"] == phase, "pin_phase_mismatch")
+        _require(pin["attempt_id"] == challenge["attempt_id"], "pin_attempt_binding_mismatch")
+        _sha_field(pin["static_input_sha256"], "pin_static_input_invalid")
+        _require(pin["static_input_sha256"] == PIN_STATIC_INPUT_SHA256,
+                 "pin_static_input_mismatch")
+        _string(pin["runtime_epoch"], "pin_epoch_invalid", limit=256)
+        _uint(pin["runtime_generation"], "pin_generation_invalid", positive=True)
+        _sha_field(pin["profile_digest"], "pin_digest_invalid")
+        _uint(pin["written_at"], "pin_written_at_invalid")
+        _require(pin["runtime_epoch"] == observed["runtime_epoch"], "pin_epoch_mismatch")
+        _require(pin["runtime_generation"] == observed["runtime_generation"],
+                 "pin_generation_mismatch")
+        return pin
 
     def _verify_observed(self, value, challenge):
         value = _exact_fields(value, OBSERVED_LAYOUT_FIELDS, "observed_fieldset_invalid")
@@ -821,10 +858,20 @@ class NativeHandoffValidator:
         generation.
         """
         _require(before is not None, "before_binding_missing")
+        # Per-boot pin anti-fabrication: the after pin must differ from the
+        # before pin (equal pins mean the after value was fabricated
+        # pre-restart; a fresh boot is a fresh incarnation) and its pinned
+        # generation must advance, mirroring the observed-incarnation gates.
+        _require(verified["pin"]["profile_digest"]
+                 != before["pin"]["profile_digest"],
+                 "profile_digest_pins_not_per_boot")
         _require(verified["observed"]["runtime_epoch"]
                  != before["observed"]["runtime_epoch"], "runtime_epoch_unchanged")
         _require(verified["observed"]["runtime_generation"]
                  > before["observed"]["runtime_generation"], "runtime_generation_not_advanced")
+        _require(verified["pin"]["runtime_generation"]
+                 > before["pin"]["runtime_generation"],
+                 "pin_generation_not_advanced")
         _require(verified["stale_post"]["fresh_enrollment_runtime_epoch"]
                  == verified["observed"]["runtime_epoch"], "fresh_enrollment_epoch_mismatch")
         _require(verified["stale_post"]["fresh_enrollment_runtime_epoch"]

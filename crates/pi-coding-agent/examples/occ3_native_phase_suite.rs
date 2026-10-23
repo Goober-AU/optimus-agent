@@ -87,6 +87,14 @@ const FIXTURE_KEY: &str = "synthetic-fixture-key";
 const PRINCIPAL_DIGEST: &str = "a5ac3b0a49b31b279ea3782df3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3";
 const LAYOUT_DIGEST: &str = "11d7ea1f62a449cfa9203a4312ff42c412b6a17e4dbd8b2b9d2b5b1c3f7d9a4e";
 const PROFILE_DIGEST: &str = "47ba4c76ed3f1d54a1798cc8a9be9ee17b8063e0bcdbdb6a52a636db3a6f9a9d";
+// Offline fixture digests: derived per _derived_profile_digest semantics
+// (extensions/sglang-occ3/deploy/v3/native_validator.py) from the pinned
+// static profile (deploy/native-build-inputs/native-profile-input.json) plus
+// the offline fixture epochs (offline-runtime-epoch-before/41,
+// offline-runtime-epoch-after/42): canonical JSON (sorted keys, compact
+// separators, ASCII escapes, NaN refused), sha256, ascii encoding.
+const OFFLINE_PROFILE_DIGEST_BEFORE: &str = "1f69749f34cf52a200b16152b44fd24007cbcd909a9fa665e53a7307802df425";
+const OFFLINE_PROFILE_DIGEST_AFTER: &str = "52a6d89c090245d13089ec0fae62a835d38706cb30b14b17c1abea6da6b92e36";
 const STALE_CONTROL_TOKEN: &str = "offline-stale-retained-control";
 
 fn now() -> u64 {
@@ -694,6 +702,7 @@ struct FixtureEpoch {
     runtime_epoch: String,
     runtime_generation: u64,
     expires_at_epoch: u64,
+    profile_digest: String,
 }
 
 /// Modeled controlled restart: fresh epoch, ADVANCED generation, retained
@@ -706,12 +715,14 @@ fn restart_fixture(
     runtime_epoch: &str,
     runtime_generation: u64,
     expires_at_epoch: u64,
+    profile_digest: &str,
 ) {
     {
         let mut state = epoch_state.lock().unwrap();
         state.runtime_epoch = runtime_epoch.into();
         state.runtime_generation = runtime_generation;
         state.expires_at_epoch = expires_at_epoch;
+        state.profile_digest = profile_digest.into();
     }
     let mut records = records.lock().unwrap();
     records.captures.clear();
@@ -754,7 +765,7 @@ fn sse(id: &str, tool_call_id: &str, content: Option<&str>) -> String {
 
 async fn read_request(
     socket: &mut tokio::net::TcpStream,
-) -> (String, Value, Option<String>) {
+) -> (String, Value, Option<String>, Vec<String>) {
     let mut bytes = Vec::new();
     let end;
     loop {
@@ -777,6 +788,17 @@ async fn read_request(
             .strip_prefix(&control_prefix)
             .map(str::to_string)
     });
+    // One entry per accept-encoding header line, mirroring the live server's
+    // raw_request.headers.getlist("accept-encoding") for the source-request
+    // contract check.
+    let accept_encodings: Vec<String> = headers
+        .lines()
+        .filter_map(|l| {
+            l.to_ascii_lowercase()
+                .strip_prefix("accept-encoding:")
+                .map(|value| value.trim().to_string())
+        })
+        .collect();
     let size = headers
         .lines()
         .find_map(|l| {
@@ -806,6 +828,7 @@ async fn read_request(
             serde_json::from_slice(&bytes[end..end + size]).unwrap()
         },
         control,
+        accept_encodings,
     )
 }
 
@@ -835,6 +858,24 @@ async fn send_sse(socket: &mut tokio::net::TcpStream, body: String, extra: Vec<(
     socket.write_all(headers.as_bytes()).await.unwrap();
     socket.write_all(body.as_bytes()).await.unwrap();
     socket.shutdown().await.unwrap();
+}
+
+/// Actual attachment error shape (chat_adapter.py `_error`): the occ3
+/// status line with {"error":{"message":...,"type":"occ3_attachment_error",
+/// "code":...}} and cache-control: no-store.
+async fn send_attachment_error(socket: &mut tokio::net::TcpStream, status: u16, code: &str) {
+    let reason = match status {
+        400 => "400 Bad Request",
+        409 => "409 Conflict",
+        _ => "503 Service Unavailable",
+    };
+    send(
+        socket,
+        reason,
+        json!({"error":{"message":code,"type":"occ3_attachment_error","code":status}}).to_string(),
+        vec![("cache-control", "no-store".to_string())],
+    )
+    .await;
 }
 
 /// Actual router error shape (latent_control_api.py): 409 + {"error":{"code":...}}.
@@ -878,16 +919,17 @@ async fn serve(
         loop {
             let (mut socket, _) = listener.accept().await.unwrap();
             let records = records.clone();
-            let (epoch, generation, expiry) = {
+            let (epoch, generation, expiry, profile_digest) = {
                 let state = epoch_state.lock().unwrap();
                 (
                     state.runtime_epoch.clone(),
                     state.runtime_generation,
                     state.expires_at_epoch,
+                    state.profile_digest.clone(),
                 )
             };
             tokio::spawn(async move {
-                let (path, body, control) = read_request(&mut socket).await;
+                let (path, body, control, accept_encodings) = read_request(&mut socket).await;
                 {
                     let mut records = records.lock().unwrap();
                     records.requests.push((path.clone(), body.clone()));
@@ -901,7 +943,7 @@ async fn serve(
                         let reply = json!({"schema":"occ3.sessions.enrolled.v1","operation_id":body["operation_id"],"session_id":body["session_id"],
                             "principal_digest":PRINCIPAL_DIGEST,"runtime_id":body["runtime_id"],"runtime_generation":body["runtime_generation"],"model_fingerprint":body["model_fingerprint"],"expires_at_epoch":body["expires_at_epoch"],
                             "readiness":{"runtime_epoch":body["runtime_id"],"runtime_generation":body["runtime_generation"],"model_fingerprint":body["model_fingerprint"],"method_id":METHOD_ID,
-                                "expected_ranks":EXPECTED_RANKS,"ready_ranks":EXPECTED_RANKS,"tp_layout_digest":LAYOUT_DIGEST,"hidden_dim":HIDDEN_DIM,"layer_index":LAYER_INDEX,"dtype":"bfloat16","profile_digest":PROFILE_DIGEST,"source_capture":true,"continuous_prefix":true,"terminal_journal":true}});
+                                "expected_ranks":EXPECTED_RANKS,"ready_ranks":EXPECTED_RANKS,"tp_layout_digest":LAYOUT_DIGEST,"hidden_dim":HIDDEN_DIM,"layer_index":LAYER_INDEX,"dtype":"bfloat16","profile_digest":profile_digest,"source_capture":true,"continuous_prefix":true,"terminal_journal":true}});
                         send(&mut socket, "200 OK", reply.to_string(), vec![]).await;
                     }
                     "/occ3/v1/native/publish" => {
@@ -1025,6 +1067,18 @@ async fn serve(
                             "MAX goes through the existing model-specific conversion"
                         );
                         if let Some(intent) = body.get("occ3_capture") {
+                            // The live occ3-sglang server (chat_adapter handle_around)
+                            // admits capture-armed source requests only with exactly
+                            // one accept-encoding header whose value is identity;
+                            // anything else is 400 unsupported_profile, so the offline
+                            // fixture must refuse the same shape instead of masking
+                            // a client that never sends the header.
+                            if accept_encodings.len() != 1
+                                || accept_encodings[0].trim().to_ascii_lowercase() != "identity"
+                            {
+                                send_attachment_error(&mut socket, 400, "unsupported_profile").await;
+                                return;
+                            }
                             let session = intent["source_session_id"].as_str().unwrap_or_default().to_string();
                             let capture_index = {
                                 let mut records_guard = records.lock().unwrap();
@@ -2687,6 +2741,7 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
         runtime_epoch: "offline-runtime-epoch-before".into(),
         runtime_generation: 41,
         expires_at_epoch: expires_before,
+        profile_digest: OFFLINE_PROFILE_DIGEST_BEFORE.into(),
     }));
     let (endpoint_before, server_before) =
         serve(epoch_state.clone(), before_records.clone()).await;
@@ -2715,7 +2770,7 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
         dtype: "bfloat16".into(),
         layout_digest: LAYOUT_DIGEST.into(),
         expected_ranks: EXPECTED_RANKS,
-        profile_digest: PROFILE_DIGEST.into(),
+        profile_digest: OFFLINE_PROFILE_DIGEST_BEFORE.into(),
     };
     let descriptor_digest = effective_descriptor_digest(
         "before_restart",
@@ -2752,6 +2807,7 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
         "offline-runtime-epoch-after",
         42,
         expires_after,
+        OFFLINE_PROFILE_DIGEST_AFTER,
     );
     let endpoint_after = endpoint_before.clone();
     let after_records = before_records.clone();
@@ -2780,7 +2836,7 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
         dtype: "bfloat16".into(),
         layout_digest: LAYOUT_DIGEST.into(),
         expected_ranks: EXPECTED_RANKS,
-        profile_digest: PROFILE_DIGEST.into(),
+        profile_digest: OFFLINE_PROFILE_DIGEST_AFTER.into(),
     };
     let descriptor_digest_after = effective_descriptor_digest(
         "after_restart",
@@ -2801,13 +2857,14 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
         binary_sha256: binary_sha256.clone(),
         source_manifest_sha256: manifest_sha256.clone(),
         identity_fingerprint: fingerprint.clone(),
-        profile_digest: PROFILE_DIGEST.into(),
+        profile_digest: OFFLINE_PROFILE_DIGEST_BEFORE.into(),
         endpoint_origin: url::Url::parse(&endpoint_before)
             .map_err(|_| fail())?
             .origin()
             .ascii_serialization(),
     };
     let pins_after = ReportPins {
+        profile_digest: OFFLINE_PROFILE_DIGEST_AFTER.into(),
         endpoint_origin: url::Url::parse(&endpoint_after)
             .map_err(|_| fail())?
             .origin()
@@ -2867,7 +2924,8 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
             "source_manifest": manifest,
         },
         "identity_fingerprint": fingerprint,
-        "profile_digest": PROFILE_DIGEST,
+        "profile_digest_before_restart": OFFLINE_PROFILE_DIGEST_BEFORE,
+        "profile_digest_after_restart": OFFLINE_PROFILE_DIGEST_AFTER,
         "files": files,
         "gpu_proof": false,
         "physical_gpu_free_proven": false,
@@ -3468,5 +3526,117 @@ mod gate_tests {
             error.contains("no_replay") || error.contains("not_empty"),
             "unexpected refusal: {error}"
         );
+    }
+
+    /// The fixture mirrors the live occ3-sglang source-request contract
+    /// (chat_adapter handle_around): a capture-armed generation request must
+    /// carry exactly one accept-encoding header with value identity and is
+    /// refused with the attachment-error shape otherwise. This is the exact
+    /// class of gap the TS10 live window exposed: the offline fixture never
+    /// checked accept-encoding, so a client that sends no header passed
+    /// offline and failed live.
+    #[tokio::test]
+    async fn fixture_refuses_capture_requests_without_identity_accept_encoding() {
+        let records = Arc::new(Mutex::new(FixtureRecords::default()));
+        let epoch_state = Arc::new(Mutex::new(FixtureEpoch {
+            runtime_epoch: "fixture-accept-encoding-epoch".into(),
+            runtime_generation: 1,
+            expires_at_epoch: now() + 240,
+            profile_digest: OFFLINE_PROFILE_DIGEST_BEFORE.into(),
+        }));
+        let (endpoint, server) = serve(epoch_state, records).await;
+        let capture_body = json!({
+            "model": "fixture-model",
+            "max_tokens": DEFAULT_MAX_TOKENS as u64,
+            "reasoning_effort": "high",
+            "stream": true,
+            "messages": [{"role": "user", "content": "fixture question"}],
+            "occ3_capture": {
+                "schema": "occ3.capture.v1",
+                "capture_id": "capture-fixture-accept-encoding",
+                "source_session_id": "session-fixture-accept-encoding",
+                "source_request_id": "request-fixture-accept-encoding",
+                "turn_nonce": "turn-fixture-accept-encoding",
+                "model_fingerprint": format!("sha256:{}", "0".repeat(64)),
+                "runtime_id": "fixture-accept-encoding-epoch",
+                "runtime_generation": 1,
+                "method": METHOD_ID,
+                "retained_count_limit": 8,
+                "max_capture_bytes": 1048576,
+                "expires_at_epoch": now() + 240,
+                "span_policy": "whole_completed_response_tail_v1"
+            }
+        })
+        .to_string();
+        async fn roundtrip(
+            endpoint: &str,
+            body: &str,
+            accept_encoding: Option<&str>,
+        ) -> (String, String) {
+            let mut stream = tokio::net::TcpStream::connect(
+                endpoint.trim_start_matches("http://"),
+            )
+            .await
+            .unwrap();
+            let mut request = format!(
+                "POST /v1/chat/completions HTTP/1.1\r\nAuthorization: Bearer {FIXTURE_KEY}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n",
+                body.len()
+            );
+            if let Some(value) = accept_encoding {
+                request.push_str(&format!("accept-encoding: {value}\r\n"));
+            }
+            request.push_str("\r\n");
+            stream.write_all(request.as_bytes()).await.unwrap();
+            stream.write_all(body.as_bytes()).await.unwrap();
+            let mut received = Vec::new();
+            let mut buffer = [0u8; 8192];
+            loop {
+                let n = stream.read(&mut buffer).await.unwrap();
+                if n == 0 {
+                    break;
+                }
+                received.extend_from_slice(&buffer[..n]);
+                if let Some(i) = received.windows(4).position(|w| w == b"\r\n\r\n") {
+                    let head = String::from_utf8(received[..i].to_vec()).unwrap();
+                    let length = head
+                        .lines()
+                        .find_map(|l| {
+                            l.to_ascii_lowercase()
+                                .strip_prefix("content-length: ")
+                                .and_then(|v| v.trim().parse::<usize>().ok())
+                        })
+                        .unwrap_or(0);
+                    if received.len() >= i + 4 + length {
+                        let body = String::from_utf8(received[i + 4..i + 4 + length].to_vec())
+                            .unwrap_or_default();
+                        return (head, body);
+                    }
+                }
+            }
+            (String::from_utf8_lossy(&received).to_string(), String::new())
+        }
+        // Missing header: refused with the attachment-error shape.
+        let (head, body) = roundtrip(&endpoint, &capture_body, None).await;
+        assert!(
+            head.starts_with("HTTP/1.1 400 Bad Request"),
+            "missing accept-encoding must be refused, got: {head}"
+        );
+        assert_eq!(
+            serde_json::from_str::<Value>(&body).unwrap(),
+            json!({"error":{"message":"unsupported_profile","type":"occ3_attachment_error","code":400}})
+        );
+        // A non-identity value is refused exactly like the live server.
+        let (head, _) = roundtrip(&endpoint, &capture_body, Some("gzip")).await;
+        assert!(
+            head.starts_with("HTTP/1.1 400 Bad Request"),
+            "non-identity accept-encoding must be refused, got: {head}"
+        );
+        // Exactly one identity header is admitted (200 SSE capture).
+        let (head, _) = roundtrip(&endpoint, &capture_body, Some("identity")).await;
+        assert!(
+            head.starts_with("HTTP/1.1 200 OK"),
+            "exactly one accept-encoding: identity must be accepted, got: {head}"
+        );
+        server.abort();
     }
 }

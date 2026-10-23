@@ -40,6 +40,11 @@ EPOCH_BEFORE = EXAMPLE["attempt"]["candidate_started_at_before"]
 EPOCH_AFTER = EXAMPLE["attempt"]["candidate_started_at_after"]
 CHALLENGE_BEFORE = EXAMPLE["challenge_before"]["challenge"]
 CHALLENGE_AFTER = EXAMPLE["challenge_after"]["challenge"]
+PIN_SCHEMA = "occ3.admission.pin.v1"
+# Frozen offline fixture pin digests (revision-4 admission pins, kept as the
+# per-phase pin-file values the example reports bind and re-derive).
+FIXTURE_PIN_BEFORE = "1a4da9e7993afcc0191d02a838047454e32572f29a843befda036944eb77a906"
+FIXTURE_PIN_AFTER = "9f4db2e622b62425ba6e763c018f4e1e1241303f922fd6b62944aea1653ea22c"
 
 
 def original_doc():
@@ -76,34 +81,58 @@ def make_journal(tmp_path, plan_value):
     return life.Journal.create(tmp_path / "attempt", plan_value, original_doc())
 
 
-def make_validator(journal, *, timeout=5.0, phase="before_restart", plan_value=None):
+def make_validator(journal, *, timeout=5.0, phase="before_restart"):
     challenge = CHALLENGE_BEFORE if phase == "before_restart" else CHALLENGE_AFTER
     state = journal.read()
-    return NativeHandoffValidator(plan_value if plan_value is not None else state["plan"],
-                                  journal, state, timeout=timeout,
+    return NativeHandoffValidator(state["plan"], journal, state, timeout=timeout,
                                   challenge_factory=lambda: challenge)
 
 
-def _pinned_plan_with_digest(journal, *, before=None, after=None):
-    """Plan copy with one per-phase profile_digest pin overridden.
+def pin_document(phase, observed, *, digest=None, **overrides):
+    """Per-phase admission pin as the executor writes it after step 0.
+
+    The pin binds the attempt, the pinned static input file digest and THIS
+    phase's observed incarnation; profile_digest defaults to the derivation
+    receipt the identity query already proved (recomputed from the pinned
+    static profile fields plus the observed incarnation).
+    """
+    profile = PINNED["admission_template"]["source_profile"]
+    document = {
+        "schema": PIN_SCHEMA,
+        "phase": phase,
+        "attempt_id": ATTEMPT,
+        "static_input_sha256": nv.PIN_STATIC_INPUT_SHA256,
+        "runtime_epoch": observed["runtime_epoch"],
+        "runtime_generation": observed["runtime_generation"],
+        "profile_digest": digest if digest is not None
+        else nv._derived_profile_digest(profile, observed),
+        "written_at": int(time.time()),
+    }
+    document.update(overrides)
+    return document
+
+
+def write_pin(journal, phase, observed, **overrides):
+    """Write-once per-phase pin file into the attempt (journal) directory."""
+    document = pin_document(phase, observed, **overrides)
+    life.private_json(journal.directory / ("admission-pin-" + phase + ".json"),
+                      document, exclusive=True)
+    return document
+
+
+def write_report(journal, phase, report, *, completed_at=None, pin=True):
+    """Publish the phase report and, by default, its honest pin file.
 
     profile_digest is incarnation-bound: tests that change a phase's observed
-    epoch/generation must re-derive that phase's pin so the binding check and
-    the derivation receipt stay consistent with the mutation under test.
+    epoch/generation get a pin re-derived for that incarnation so the binding
+    check and the derivation receipt stay consistent with the mutation under
+    test. pin=False leaves the pin to the test (fabrication negatives).
     """
-    plan_value = copy.deepcopy(journal.read()["plan"])
-    profile = plan_value["native_validator"]["admission_template"]["source_profile"]
-    if before is not None:
-        profile["profile_digest_before_restart"] = before
-    if after is not None:
-        profile["profile_digest_after_restart"] = after
-    return plan_value
-
-
-def write_report(journal, phase, report, *, completed_at=None):
     document = copy.deepcopy(report)
     document["completed_at"] = completed_at if completed_at is not None else int(time.time()) + 30
     life.private_json(journal.directory / ("native-phase-suite-" + phase + ".json"), document)
+    if pin:
+        write_pin(journal, phase, document["observed"])
 
 
 def before_state(journal):
@@ -183,6 +212,12 @@ def test_admission_accepts_synthetic_pinned_inputs(tmp_path):
     assert result["live_success_claimed"] is False
     assert result["http_calls_performed"] == 0 and result["credentials_resolved"] == 0
     assert result["binary_mirror_verified"] == "absent_pinned_digest_only"
+    # Static-only admission: the per-phase digests live in attempt-dir pin
+    # files, never in the frozen plan.
+    assert result["bindings"]["profile_digest_source"].startswith(
+        "per-phase admission pin files")
+    assert "profile_digest_before_restart" not in result["bindings"]
+    assert "profile_digest_after_restart" not in result["bindings"]
 
 
 @pytest.mark.parametrize("mutate,code", [
@@ -494,15 +529,14 @@ def test_after_restart_negatives(tmp_path, mutate, code):
     if code == "runtime_epoch_unchanged":
         report["cases"]["stale_handle_post"]["fresh_enrollment_runtime_epoch"] = \
             report["observed"]["runtime_epoch"]
-    # The incarnation-bound binding must stay derivation-consistent with the
-    # mutated observed incarnation so the mutation's OWN check fires.
+    # The incarnation-bound binding and the after pin file stay
+    # derivation-consistent with the mutated observed incarnation so the
+    # mutation's OWN check fires.
     profile = PINNED["admission_template"]["source_profile"]
     derived = nv._derived_profile_digest(profile, report["observed"])
     report["binding"]["profile_digest"] = derived
-    plan_value = _pinned_plan_with_digest(journal, after=derived)
     write_report(journal, "after_restart", report)
-    result = make_validator(journal, phase="after_restart",
-                            plan_value=plan_value).after_restart()
+    result = make_validator(journal, phase="after_restart").after_restart()
     assert result["ok"] is False and result["code"] == code, result
 
 
@@ -551,6 +585,7 @@ def test_results_stay_in_private_attempt_scope(tmp_path):
     assert KEY not in dumped
     assert "!synthetic-helper-reference" not in dumped
     for name in ("validator-challenge-before_restart.json",
+                 "admission-pin-before_restart.json",
                  "native-phase-suite-before_restart.json"):
         assert (journal.directory / name).exists()
     assert not (journal.directory / "native-phase-suite-after_restart.json").exists()
@@ -589,6 +624,7 @@ class StagingWriter:
 def test_incomplete_private_staging_is_invisible_during_wait(tmp_path):
     journal = make_journal(tmp_path, native_plan())
     before_state(journal)
+    write_pin(journal, "before_restart", EXAMPLE["report_before"]["observed"])
     writer = StagingWriter(journal)
     import threading
 
@@ -606,6 +642,7 @@ def test_incomplete_private_staging_is_invisible_during_wait(tmp_path):
 def test_complete_final_publication_within_deadline_is_accepted(tmp_path):
     journal = make_journal(tmp_path, native_plan())
     before_state(journal)
+    write_pin(journal, "before_restart", EXAMPLE["report_before"]["observed"])
     writer = StagingWriter(journal)
     assert writer.publish("before_restart", dict(EXAMPLE["report_before"],
                                                  completed_at=int(time.time()) + 30)) is True
@@ -633,6 +670,7 @@ def test_malformed_final_is_immediate_refusal_not_retried(tmp_path):
 def test_truncated_mid_write_staging_does_not_burn_challenge(tmp_path):
     journal = make_journal(tmp_path, native_plan())
     before_state(journal)
+    write_pin(journal, "before_restart", EXAMPLE["report_before"]["observed"])
     writer = StagingWriter(journal)
     import threading
 
@@ -654,6 +692,7 @@ def test_truncated_mid_write_staging_does_not_burn_challenge(tmp_path):
 def test_existing_final_target_is_never_replaced(tmp_path):
     journal = make_journal(tmp_path, native_plan())
     before_state(journal)
+    write_pin(journal, "before_restart", EXAMPLE["report_before"]["observed"])
     writer = StagingWriter(journal)
     first = dict(EXAMPLE["report_before"], completed_at=int(time.time()) + 30)
     assert writer.publish("before_restart", first) is True
@@ -730,13 +769,11 @@ def test_public_phase_methods_translate_recursion_to_refusal(tmp_path):
 def _after_case(journal, *, generation, epoch="synthetic-runtime-epoch-after"):
     """Rewrite the after report's incarnation AND its derivation-consistent pin.
 
-    Returns the plan with the after-phase pin re-derived so the binding and
-    derivation checks pass for the synthetic incarnation under test; the
-    restart-chain invariants are then exercised on their own merits.
+    The after pin file is re-derived for the synthetic incarnation under test
+    so the binding and derivation checks pass; the restart-chain invariants
+    are then exercised on their own merits.
     """
-    write_report(journal, "after_restart", dict(
-        EXAMPLE["report_after"],
-        completed_at=int(time.time()) + 30))
+    write_report(journal, "after_restart", EXAMPLE["report_after"], pin=False)
     report = json.loads((journal.directory / "native-phase-suite-after_restart.json").read_text())
     report["observed"]["runtime_generation"] = generation
     report["observed"]["runtime_epoch"] = epoch
@@ -745,7 +782,7 @@ def _after_case(journal, *, generation, epoch="synthetic-runtime-epoch-after"):
     derived = nv._derived_profile_digest(profile, report["observed"])
     report["binding"]["profile_digest"] = derived
     life.private_json(journal.directory / "native-phase-suite-after_restart.json", report)
-    return _pinned_plan_with_digest(journal, after=derived)
+    write_pin(journal, "after_restart", report["observed"])
 
 
 def test_fresh_epoch_and_advanced_generation_accepted(tmp_path):
@@ -754,9 +791,8 @@ def test_fresh_epoch_and_advanced_generation_accepted(tmp_path):
     write_report(journal, "before_restart", EXAMPLE["report_before"])
     assert make_validator(journal).before_restart()["ok"] is True
     after_state(journal)
-    plan_value = _after_case(journal, generation=42)
-    result = make_validator(journal, phase="after_restart",
-                            plan_value=plan_value).after_restart()
+    _after_case(journal, generation=42)
+    result = make_validator(journal, phase="after_restart").after_restart()
     assert result["ok"] is True, result
     assert result["stale_binding"]["generation_advanced"] is True
 
@@ -768,9 +804,8 @@ def test_unchanged_or_decreased_generation_refused_despite_fresh_epoch(tmp_path,
     write_report(journal, "before_restart", EXAMPLE["report_before"])
     assert make_validator(journal).before_restart()["ok"] is True
     after_state(journal)
-    plan_value = _after_case(journal, generation=generation)
-    result = make_validator(journal, phase="after_restart",
-                            plan_value=plan_value).after_restart()
+    _after_case(journal, generation=generation)
+    result = make_validator(journal, phase="after_restart").after_restart()
     assert result["ok"] is False
     assert result["code"] == "runtime_generation_not_advanced"
 
@@ -781,9 +816,8 @@ def test_unchanged_epoch_refused_even_with_advanced_generation(tmp_path):
     write_report(journal, "before_restart", EXAMPLE["report_before"])
     assert make_validator(journal).before_restart()["ok"] is True
     after_state(journal)
-    plan_value = _after_case(journal, generation=42, epoch="synthetic-runtime-epoch-before")
-    result = make_validator(journal, phase="after_restart",
-                            plan_value=plan_value).after_restart()
+    _after_case(journal, generation=42, epoch="synthetic-runtime-epoch-before")
+    result = make_validator(journal, phase="after_restart").after_restart()
     assert result["ok"] is False
     assert result["code"] == "runtime_epoch_unchanged"
 
@@ -794,9 +828,8 @@ def test_volatile_reset_runtime_is_not_admitted_no_auto_retry(tmp_path):
     write_report(journal, "before_restart", EXAMPLE["report_before"])
     assert make_validator(journal).before_restart()["ok"] is True
     after_state(journal)
-    plan_value = _after_case(journal, generation=1, epoch="synthetic-runtime-epoch-after")
-    result = make_validator(journal, phase="after_restart",
-                            plan_value=plan_value).after_restart()
+    _after_case(journal, generation=1, epoch="synthetic-runtime-epoch-after")
+    result = make_validator(journal, phase="after_restart").after_restart()
     assert result["ok"] is False
     assert result["code"] == "runtime_generation_not_advanced"
     # No automatic reset/repair/retry: the failed gate record is not rewritten.
@@ -844,14 +877,14 @@ def test_valid_utf8_unicode_strings_accepted(tmp_path):
     document["negative_control_retained"] = dict(document["negative_control_retained"],
                                                  runtime_epoch=unicode_epoch)
     # The per-boot digest re-derives from the unicode epoch (canonical ASCII
-    # escaping on both sides), so the phase pin and binding follow it.
+    # escaping on both sides), so the phase pin file and binding follow it.
     profile = PINNED["admission_template"]["source_profile"]
     derived = nv._derived_profile_digest(profile, document["observed"])
     document["binding"] = dict(document["binding"], profile_digest=derived)
-    plan_value = _pinned_plan_with_digest(journal, before=derived)
+    write_pin(journal, "before_restart", document["observed"])
     (journal.directory / "native-phase-suite-before_restart.json").write_text(
         json.dumps(document, ensure_ascii=False), encoding="utf-8")
-    result = make_validator(journal, plan_value=plan_value).before_restart()
+    result = make_validator(journal).before_restart()
     assert result["ok"] is True, result
 
 
@@ -940,8 +973,8 @@ def test_fixture_pins_rederive_from_static_profile():
     profile = PINNED["admission_template"]["source_profile"]
     before = nv._derived_profile_digest(profile, EXAMPLE["report_before"]["observed"])
     after = nv._derived_profile_digest(profile, EXAMPLE["report_after"]["observed"])
-    assert before == profile["profile_digest_before_restart"]
-    assert after == profile["profile_digest_after_restart"]
+    assert before == FIXTURE_PIN_BEFORE == EXAMPLE["report_before"]["binding"]["profile_digest"]
+    assert after == FIXTURE_PIN_AFTER == EXAMPLE["report_after"]["binding"]["profile_digest"]
     assert before != after
 
 
@@ -950,22 +983,26 @@ def test_admission_refuses_single_static_profile_digest_fieldset(tmp_path):
     state = journal.read()
     plan_value = copy.deepcopy(state["plan"])
     profile = plan_value["native_validator"]["admission_template"]["source_profile"]
-    profile["profile_digest"] = profile.pop("profile_digest_before_restart")
-    del profile["profile_digest_after_restart"]
+    profile["profile_digest"] = FIXTURE_PIN_BEFORE
     validator = NativeHandoffValidator(plan_value, journal, state)
     result = validator.pre_mutation_admission()
     assert result["ok"] is False and result["code"] == "source_profile_invalid"
 
 
-def test_admission_refuses_identical_per_phase_pins(tmp_path):
+def test_admission_refuses_placeholder_per_phase_pin_fields(tmp_path):
+    # TS9 defect shape: fill-at-window placeholder pins still carried inside
+    # the admission. The repaired admission is static-only; per-phase pins
+    # belong in write-once attempt-dir pin files, so this must be refused
+    # pre-mutation.
     journal = make_journal(tmp_path, native_plan())
     state = journal.read()
     plan_value = copy.deepcopy(state["plan"])
     profile = plan_value["native_validator"]["admission_template"]["source_profile"]
-    profile["profile_digest_after_restart"] = profile["profile_digest_before_restart"]
+    profile["profile_digest_before_restart"] = "0" * 64
+    profile["profile_digest_after_restart"] = "1" * 64
     validator = NativeHandoffValidator(plan_value, journal, state)
     result = validator.pre_mutation_admission()
-    assert result["ok"] is False and result["code"] == "profile_digest_pins_not_per_boot"
+    assert result["ok"] is False and result["code"] == "source_profile_invalid"
 
 
 def test_before_report_refuses_binding_not_equal_to_phase_pin(tmp_path):
@@ -978,15 +1015,35 @@ def test_before_report_refuses_binding_not_equal_to_phase_pin(tmp_path):
     assert result["ok"] is False and result["code"] == "report_profile_binding_mismatch"
 
 
+def test_before_report_refuses_missing_pin_file(tmp_path):
+    journal = make_journal(tmp_path, native_plan())
+    before_state(journal)
+    write_report(journal, "before_restart", EXAMPLE["report_before"], pin=False)
+    result = make_validator(journal).before_restart()
+    assert result["ok"] is False and result["code"] == "pin_file_missing"
+
+
+def test_before_report_refuses_wrong_epoch_pin(tmp_path):
+    journal = make_journal(tmp_path, native_plan())
+    before_state(journal)
+    write_pin(journal, "before_restart", EXAMPLE["report_before"]["observed"],
+              runtime_epoch="synthetic-runtime-epoch-after")
+    write_report(journal, "before_restart", EXAMPLE["report_before"], pin=False)
+    result = make_validator(journal).before_restart()
+    assert result["ok"] is False and result["code"] == "pin_epoch_mismatch"
+
+
 def test_before_report_refuses_non_deriving_observed_incarnation(tmp_path):
     journal = make_journal(tmp_path, native_plan())
     before_state(journal)
     report = copy.deepcopy(EXAMPLE["report_before"])
-    # The binding still equals the phase pin, but the observed incarnation no
-    # longer re-derives it: the fabricated-epoch anti-receipt.
+    # The pin still carries the report's binding digest, but the observed
+    # incarnation no longer re-derives it: the fabricated-epoch anti-receipt.
     report["observed"]["runtime_epoch"] = "synthetic-runtime-epoch-fabricated"
     report["negative_control_retained"]["runtime_epoch"] = report["observed"]["runtime_epoch"]
-    write_report(journal, "before_restart", report)
+    write_pin(journal, "before_restart", report["observed"],
+              digest=report["binding"]["profile_digest"])
+    write_report(journal, "before_restart", report, pin=False)
     result = make_validator(journal).before_restart()
     assert result["ok"] is False and result["code"] == "report_profile_derivation_mismatch"
 
@@ -1001,6 +1058,32 @@ def test_after_report_refuses_derivation_mismatch(tmp_path):
     report["observed"]["runtime_generation"] = 43
     report["cases"]["stale_handle_post"]["fresh_enrollment_runtime_epoch"] = \
         report["observed"]["runtime_epoch"]
-    write_report(journal, "after_restart", report)
+    write_pin(journal, "after_restart", report["observed"],
+              digest=report["binding"]["profile_digest"])
+    write_report(journal, "after_restart", report, pin=False)
     result = make_validator(journal, phase="after_restart").after_restart()
     assert result["ok"] is False and result["code"] == "report_profile_derivation_mismatch"
+
+
+def test_after_phase_refuses_equal_before_and_after_pins(tmp_path):
+    journal = make_journal(tmp_path, native_plan())
+    before_state(journal)
+    write_report(journal, "before_restart", EXAMPLE["report_before"])
+    assert make_validator(journal).before_restart()["ok"] is True
+    after_state(journal)
+    report = copy.deepcopy(EXAMPLE["report_after"])
+    # Fabricated pre-restart: the after incarnation is rewritten to the
+    # before one (the only way an equal pin stays derivation-consistent) and
+    # the after pin file is an exact copy of the before pin.
+    report["observed"] = copy.deepcopy(EXAMPLE["report_before"]["observed"])
+    report["cases"]["stale_handle_post"]["fresh_enrollment_runtime_epoch"] = \
+        report["observed"]["runtime_epoch"]
+    report["binding"]["profile_digest"] = EXAMPLE["report_before"]["binding"]["profile_digest"]
+    before_pin = json.loads(
+        (journal.directory / "admission-pin-before_restart.json").read_text())
+    life.private_json(journal.directory / "admission-pin-after_restart.json",
+                      dict(before_pin, phase="after_restart"), exclusive=True)
+    write_report(journal, "after_restart", report, pin=False)
+    result = make_validator(journal, phase="after_restart").after_restart()
+    assert result["ok"] is False
+    assert result["code"] == "profile_digest_pins_not_per_boot"
