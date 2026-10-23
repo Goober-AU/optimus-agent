@@ -401,8 +401,31 @@ async fn attached_normal_and_simple_requests_preserve_actual_chat_tools_and_reas
         assert!(fixture.requests.lock().unwrap()[0]
             .0
             .starts_with("POST /v1/chat/completions HTTP/1.1"));
+        // The guarded native one-shot transport must satisfy the occ3 server
+        // contract: exactly one accept-encoding header, value identity.
+        assert_single_identity_accept_encoding(&fixture.requests.lock().unwrap()[0].0);
         assert_eq!(fixture.count(), 1);
     }
+}
+
+/// The occ3 server contract (extensions/sglang-occ3 chat_adapter handle_around)
+/// admits guarded native generation requests only with exactly one
+/// accept-encoding header whose value is identity; the no-compression one-shot
+/// client sends none by default, so the header must be forced on the wire.
+fn assert_single_identity_accept_encoding(head: &str) {
+    let encodings: Vec<String> = head
+        .lines()
+        .filter_map(|line| {
+            line.to_ascii_lowercase()
+                .strip_prefix("accept-encoding:")
+                .map(|value| value.trim().to_string())
+        })
+        .collect();
+    assert_eq!(
+        encodings,
+        vec!["identity".to_string()],
+        "guarded native request must carry exactly one accept-encoding: identity header"
+    );
 }
 
 #[tokio::test]

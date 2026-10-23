@@ -765,7 +765,7 @@ fn sse(id: &str, tool_call_id: &str, content: Option<&str>) -> String {
 
 async fn read_request(
     socket: &mut tokio::net::TcpStream,
-) -> (String, Value, Option<String>) {
+) -> (String, Value, Option<String>, Vec<String>) {
     let mut bytes = Vec::new();
     let end;
     loop {
@@ -788,6 +788,17 @@ async fn read_request(
             .strip_prefix(&control_prefix)
             .map(str::to_string)
     });
+    // One entry per accept-encoding header line, mirroring the live server's
+    // raw_request.headers.getlist("accept-encoding") for the source-request
+    // contract check.
+    let accept_encodings: Vec<String> = headers
+        .lines()
+        .filter_map(|l| {
+            l.to_ascii_lowercase()
+                .strip_prefix("accept-encoding:")
+                .map(|value| value.trim().to_string())
+        })
+        .collect();
     let size = headers
         .lines()
         .find_map(|l| {
@@ -817,6 +828,7 @@ async fn read_request(
             serde_json::from_slice(&bytes[end..end + size]).unwrap()
         },
         control,
+        accept_encodings,
     )
 }
 
@@ -846,6 +858,24 @@ async fn send_sse(socket: &mut tokio::net::TcpStream, body: String, extra: Vec<(
     socket.write_all(headers.as_bytes()).await.unwrap();
     socket.write_all(body.as_bytes()).await.unwrap();
     socket.shutdown().await.unwrap();
+}
+
+/// Actual attachment error shape (chat_adapter.py `_error`): the occ3
+/// status line with {"error":{"message":...,"type":"occ3_attachment_error",
+/// "code":...}} and cache-control: no-store.
+async fn send_attachment_error(socket: &mut tokio::net::TcpStream, status: u16, code: &str) {
+    let reason = match status {
+        400 => "400 Bad Request",
+        409 => "409 Conflict",
+        _ => "503 Service Unavailable",
+    };
+    send(
+        socket,
+        reason,
+        json!({"error":{"message":code,"type":"occ3_attachment_error","code":status}}).to_string(),
+        vec![("cache-control", "no-store".to_string())],
+    )
+    .await;
 }
 
 /// Actual router error shape (latent_control_api.py): 409 + {"error":{"code":...}}.
@@ -899,7 +929,7 @@ async fn serve(
                 )
             };
             tokio::spawn(async move {
-                let (path, body, control) = read_request(&mut socket).await;
+                let (path, body, control, accept_encodings) = read_request(&mut socket).await;
                 {
                     let mut records = records.lock().unwrap();
                     records.requests.push((path.clone(), body.clone()));
@@ -1037,6 +1067,18 @@ async fn serve(
                             "MAX goes through the existing model-specific conversion"
                         );
                         if let Some(intent) = body.get("occ3_capture") {
+                            // The live occ3-sglang server (chat_adapter handle_around)
+                            // admits capture-armed source requests only with exactly
+                            // one accept-encoding header whose value is identity;
+                            // anything else is 400 unsupported_profile, so the offline
+                            // fixture must refuse the same shape instead of masking
+                            // a client that never sends the header.
+                            if accept_encodings.len() != 1
+                                || accept_encodings[0].trim().to_ascii_lowercase() != "identity"
+                            {
+                                send_attachment_error(&mut socket, 400, "unsupported_profile").await;
+                                return;
+                            }
                             let session = intent["source_session_id"].as_str().unwrap_or_default().to_string();
                             let capture_index = {
                                 let mut records_guard = records.lock().unwrap();
@@ -3484,5 +3526,117 @@ mod gate_tests {
             error.contains("no_replay") || error.contains("not_empty"),
             "unexpected refusal: {error}"
         );
+    }
+
+    /// The fixture mirrors the live occ3-sglang source-request contract
+    /// (chat_adapter handle_around): a capture-armed generation request must
+    /// carry exactly one accept-encoding header with value identity and is
+    /// refused with the attachment-error shape otherwise. This is the exact
+    /// class of gap the TS10 live window exposed: the offline fixture never
+    /// checked accept-encoding, so a client that sends no header passed
+    /// offline and failed live.
+    #[tokio::test]
+    async fn fixture_refuses_capture_requests_without_identity_accept_encoding() {
+        let records = Arc::new(Mutex::new(FixtureRecords::default()));
+        let epoch_state = Arc::new(Mutex::new(FixtureEpoch {
+            runtime_epoch: "fixture-accept-encoding-epoch".into(),
+            runtime_generation: 1,
+            expires_at_epoch: now() + 240,
+            profile_digest: OFFLINE_PROFILE_DIGEST_BEFORE.into(),
+        }));
+        let (endpoint, server) = serve(epoch_state, records).await;
+        let capture_body = json!({
+            "model": "fixture-model",
+            "max_tokens": DEFAULT_MAX_TOKENS as u64,
+            "reasoning_effort": "high",
+            "stream": true,
+            "messages": [{"role": "user", "content": "fixture question"}],
+            "occ3_capture": {
+                "schema": "occ3.capture.v1",
+                "capture_id": "capture-fixture-accept-encoding",
+                "source_session_id": "session-fixture-accept-encoding",
+                "source_request_id": "request-fixture-accept-encoding",
+                "turn_nonce": "turn-fixture-accept-encoding",
+                "model_fingerprint": format!("sha256:{}", "0".repeat(64)),
+                "runtime_id": "fixture-accept-encoding-epoch",
+                "runtime_generation": 1,
+                "method": METHOD_ID,
+                "retained_count_limit": 8,
+                "max_capture_bytes": 1048576,
+                "expires_at_epoch": now() + 240,
+                "span_policy": "whole_completed_response_tail_v1"
+            }
+        })
+        .to_string();
+        async fn roundtrip(
+            endpoint: &str,
+            body: &str,
+            accept_encoding: Option<&str>,
+        ) -> (String, String) {
+            let mut stream = tokio::net::TcpStream::connect(
+                endpoint.trim_start_matches("http://"),
+            )
+            .await
+            .unwrap();
+            let mut request = format!(
+                "POST /v1/chat/completions HTTP/1.1\r\nAuthorization: Bearer {FIXTURE_KEY}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n",
+                body.len()
+            );
+            if let Some(value) = accept_encoding {
+                request.push_str(&format!("accept-encoding: {value}\r\n"));
+            }
+            request.push_str("\r\n");
+            stream.write_all(request.as_bytes()).await.unwrap();
+            stream.write_all(body.as_bytes()).await.unwrap();
+            let mut received = Vec::new();
+            let mut buffer = [0u8; 8192];
+            loop {
+                let n = stream.read(&mut buffer).await.unwrap();
+                if n == 0 {
+                    break;
+                }
+                received.extend_from_slice(&buffer[..n]);
+                if let Some(i) = received.windows(4).position(|w| w == b"\r\n\r\n") {
+                    let head = String::from_utf8(received[..i].to_vec()).unwrap();
+                    let length = head
+                        .lines()
+                        .find_map(|l| {
+                            l.to_ascii_lowercase()
+                                .strip_prefix("content-length: ")
+                                .and_then(|v| v.trim().parse::<usize>().ok())
+                        })
+                        .unwrap_or(0);
+                    if received.len() >= i + 4 + length {
+                        let body = String::from_utf8(received[i + 4..i + 4 + length].to_vec())
+                            .unwrap_or_default();
+                        return (head, body);
+                    }
+                }
+            }
+            (String::from_utf8_lossy(&received).to_string(), String::new())
+        }
+        // Missing header: refused with the attachment-error shape.
+        let (head, body) = roundtrip(&endpoint, &capture_body, None).await;
+        assert!(
+            head.starts_with("HTTP/1.1 400 Bad Request"),
+            "missing accept-encoding must be refused, got: {head}"
+        );
+        assert_eq!(
+            serde_json::from_str::<Value>(&body).unwrap(),
+            json!({"error":{"message":"unsupported_profile","type":"occ3_attachment_error","code":400}})
+        );
+        // A non-identity value is refused exactly like the live server.
+        let (head, _) = roundtrip(&endpoint, &capture_body, Some("gzip")).await;
+        assert!(
+            head.starts_with("HTTP/1.1 400 Bad Request"),
+            "non-identity accept-encoding must be refused, got: {head}"
+        );
+        // Exactly one identity header is admitted (200 SSE capture).
+        let (head, _) = roundtrip(&endpoint, &capture_body, Some("identity")).await;
+        assert!(
+            head.starts_with("HTTP/1.1 200 OK"),
+            "exactly one accept-encoding: identity must be accepted, got: {head}"
+        );
+        server.abort();
     }
 }

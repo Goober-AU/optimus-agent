@@ -2002,6 +2002,11 @@ async fn post_chat_completions(
 	// Guarded requests retain mutable native TLS/proxy policy; ordinary models
 	// keep upstream's shared generation transport.
 	let http_client = if inference.is_some() || source.is_some() {
+		// The occ3 server contract (extensions/sglang-occ3 chat_adapter
+		// handle_around) admits guarded native generation requests only with
+		// exactly one accept-encoding header set to identity; the no-compression
+		// one-shot client below sends none by default.
+		headers.insert("accept-encoding".to_string(), Some("identity".to_string()));
 		// A one-shot native request must not be replayed on redirects or protocol NACKs.
 		reqwest::Client::builder()
 			.redirect(reqwest::redirect::Policy::none())

@@ -347,7 +347,22 @@ async fn source_actual_normal_and_simple_native_request_preserves_tools_reasonin
             .is_err());
         let requests = fixture.requests.lock().unwrap();
         let (head, payload) = &requests[0];
-        assert!(head.to_lowercase().contains("accept-encoding: identity"));
+        // The occ3 server contract (extensions/sglang-occ3 chat_adapter
+        // handle_around) admits capture-armed source requests only with
+        // exactly one accept-encoding header whose value is identity.
+        let encodings: Vec<String> = head
+            .lines()
+            .filter_map(|line| {
+                line.to_ascii_lowercase()
+                    .strip_prefix("accept-encoding:")
+                    .map(|value| value.trim().to_string())
+            })
+            .collect();
+        assert_eq!(
+            encodings,
+            vec!["identity".to_string()],
+            "guarded native request must carry exactly one accept-encoding: identity header"
+        );
         assert_eq!(
             payload["occ3_capture"],
             serde_json::to_value(lease.intent()).unwrap()
