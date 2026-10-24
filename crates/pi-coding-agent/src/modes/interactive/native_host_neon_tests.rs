@@ -158,6 +158,47 @@ fn resource_strip_is_compact_and_left_aligned_below_telemus_brand() {
 }
 
 #[test]
+fn graph_uses_existing_header_space_without_moving_the_border_or_covering_status() {
+    let _mode = mode();
+    let resources = vec!["MAIN CPU 12% RAM 512M TPS 50.0".into(), "worker CPU 8%".into()];
+    for width in [80, 110, 120, 160, 200] {
+        for budget in [6, 7, 9, 12, 20] {
+            for samples in [&resources[..], &[][..]] {
+                let graph: Vec<_> = (0..graph_height(width, budget, !samples.is_empty()))
+                    .map(|row| format!("graph-row-{row:02}")).collect();
+                let data = HeaderData { cwd: "/fixture", session: "Graph", model: "fixture-model",
+                    execution: None, phase: "WORKING", jev: Some("Jev Standard Mode"), clock: "12:34:56",
+                    resources: samples, graph: &graph };
+                let header = render_header(width, budget, &data);
+                let original = render_header(width, budget, &HeaderData { graph: &[], ..data });
+                assert_eq!(header.len(), original.len(), "the graph must not enlarge the header");
+                assert!(header.len() <= budget);
+                assert!(header.iter().all(|line| visible_width(line) == width));
+                let plain: Vec<_> = header.iter().map(|row| strip_ansi(row)).collect();
+                if width >= 110 && budget >= 7 {
+                    let border = plain.iter().position(|row| row.starts_with('┌')).unwrap();
+                    assert_eq!(plain[border], strip_ansi(&original[border]), "session metadata and border must stay in place");
+                    assert!(border <= 5, "only existing branding rows may hold the graph");
+                    let column = plain[0].find("graph-row-00").unwrap();
+                    let column = visible_width(&plain[0][..column]);
+                    for (i, row) in plain[..border].iter().enumerate() {
+                        let start = row.find(&format!("graph-row-{i:02}")).expect("graph must reach the border");
+                        assert_eq!(visible_width(&row[..start]), column);
+                    }
+                    assert!(plain[border].contains("fixture-model"));
+                    assert!(plain[border].contains("Jev Standard Mode"));
+                    assert!(plain[border + 1].starts_with('├'));
+                    assert!(plain.iter().any(|row| row.contains("telemus.ai")));
+                    if !samples.is_empty() { assert!(plain[1].contains("MAIN CPU 12%")); }
+                } else {
+                    assert!(!plain.join("\n").contains("graph-row-"));
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn neon_metadata_keeps_recorded_times_streaming_identity_and_tool_outcomes() {
     let mode = mode();
     let transcript = Rc::new(RefCell::new(Transcript::new(mode.clone())));

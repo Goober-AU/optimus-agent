@@ -62,8 +62,8 @@ async fn graph_header_reads_roster_pushes_and_stops_its_timer_when_hidden() {
     *bar.roster.lock().unwrap() = Some(roster.clone());
     let (send, receive) = mpsc::channel();
     *bar.render_send.borrow_mut() = Some(send);
-    let before = bar.graph_rows(24, 3);
-    assert_eq!(before.len(), 3);
+    let before = bar.graph_rows(24, 4);
+    assert_eq!(before.len(), 4);
     assert!(before.iter().all(|line| visible_width(line) == 24));
     assert_eq!(strip_ansi(&before.join("")).matches('●').count(), 1);
     assert!(bar.graph_task.is_some());
@@ -72,16 +72,22 @@ async fn graph_header_reads_roster_pushes_and_stops_its_timer_when_hidden() {
     roster.0.lock().unwrap()[1]["communicationActivity"]["deliveries"] = serde_json::json!([{
         "id":"fresh", "sourceSessionId":"root", "kind":"occ1", "timestamp":chrono::Utc::now().timestamp_millis(),
     }]);
-    let after = bar.graph_rows(24, 3);
+    let after = bar.graph_rows(24, 4);
     assert_ne!(before, after);
     let bar = Rc::new(RefCell::new(bar));
     h.transcript.borrow_mut().subagents = Some(bar.clone());
     let mut header =
         super::super::native_neon::Header(h.mode.clone(), Rc::downgrade(&h.transcript));
     for width in [110, 120, 160] {
-        let frame = header.render_with_height(width as f64, 7);
-        assert!(frame.iter().all(|line| visible_width(line) == width));
-        assert!(strip_ansi(&frame.join("\n")).contains("MAIN CPU"));
+        for budget in [7, 9, 12, 16] {
+            let frame = header.render_with_height(width as f64, budget);
+            let expected = if width >= 160 { 5 } else { 6 };
+            assert_eq!(frame.len(), expected);
+            assert!(frame.iter().all(|line| visible_width(line) == width));
+            assert!(strip_ansi(&frame.join("\n")).contains("MAIN CPU"));
+            assert!(strip_ansi(&frame[expected - 2]).starts_with('┌'));
+            assert!(strip_ansi(&frame[expected - 1]).starts_with('├'));
+        }
     }
     header.render_with_height(80.0, 6);
     assert!(bar.borrow().graph_task.is_none());
