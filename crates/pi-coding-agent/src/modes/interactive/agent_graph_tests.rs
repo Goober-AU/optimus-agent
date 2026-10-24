@@ -247,24 +247,20 @@ fn graph_frame_fixture_shows_neon_blue_work_and_communication_beside_resources()
             "\x1b[1;38;5;39mreader CPU 8% RAM 512M TPS 42.0\x1b[22;39m".into(),
         ];
         for width in [80, 110, 120, 160, 200] {
-            let graph_rows = graph.render("root", 24, graph_height(width, 12, true).max(3), time);
+            let mut data = HeaderData {
+                cwd: "/workspace", session: "Live agents", model: "offline-fixture",
+                execution: None, phase: "WORKING", jev: Some("Jev standard mode"),
+                clock: "12:34:56", resources: &resources, graph: &[],
+            };
+            let original = render_header(width, 12, &data);
+            let graph_rows = graph.render("root", 24, graph_height(width, 12, &original).max(3), time);
             assert!(graph_rows.iter().all(|row| visible_width(row) == 24));
             assert!(graph_rows.join("").contains("38;5;39m"));
             let plain = strip_ansi(&graph_rows.join(""));
             assert_eq!(plain.matches('◆').count(), 1);
             assert_eq!(plain.matches('●').count(), 2);
             assert_eq!(plain.matches('○').count(), 2);
-            let data = HeaderData {
-                cwd: "/workspace",
-                session: "Live agents",
-                model: "offline-fixture",
-                execution: None,
-                phase: "WORKING",
-                jev: Some("Jev standard mode"),
-                clock: "12:34:56",
-                resources: &resources,
-                graph: &graph_rows,
-            };
+            data.graph = &graph_rows;
             let header = render_header(width, 12, &data);
             assert!(header.iter().all(|row| visible_width(row) == width));
             if width >= 110 {
@@ -312,18 +308,54 @@ fn graph_centers_sparse_and_symmetric_families_in_the_existing_rows() {
         }
         assert!(frame.iter().all(|line| visible_width(line) == 24));
         assert_eq!(frame.iter().position(|line| line.contains('◆')), Some(height / 2));
-        if height == 3 {
-            if let Ok(dir) = std::env::var("OPTIMUS_GRAPH_CAPTURE_DIR") {
-                use super::super::super::native_neon::{render_header, HeaderData};
-                crate::modes::interactive::theme::theme::init_theme(Some("neon"), false);
-                let resources = vec!["\x1b[1;38;5;39mMAIN CPU 12% RAM 512M TPS 50.0\x1b[22;39m".into()];
-                let header = render_header(221, 20, &HeaderData {
-                    cwd: "/workspace", session: "Centered agent family", model: "offline-fixture",
-                    execution: None, phase: "READY", jev: Some("Jev Standard Mode"), clock: "12:34:56",
-                    resources: &resources, graph: &frame,
-                });
-                std::fs::create_dir_all(&dir).unwrap();
-                std::fs::write(format!("{dir}/balanced-221.ansi"), header.join("\n")).unwrap();
+    }
+}
+
+#[test]
+fn graph_is_centered_between_the_header_top_and_horizontal_transcript_border() {
+    use super::super::super::native_neon::{graph_height, render_header, HeaderData};
+    crate::modes::interactive::theme::theme::init_theme(Some("neon"), false);
+    let resources = vec!["\x1b[1;38;5;39mMAIN CPU 12% RAM 512M TPS 50.0\x1b[22;39m".into(),
+        "\x1b[1;38;5;39mworker CPU 8% RAM 512M TPS 42.0\x1b[22;39m".into()];
+    for width in [110, 160, 221] {
+        for samples in [&resources[..], &[][..]] {
+            let mut data = HeaderData { cwd: "/workspace", session: "Graph",
+                model: if width < 160 { "fixture" } else { "claude-opus-5-5" },
+                execution: (width >= 160).then_some("IPython [F6]"), phase: "READY", jev: Some("Jev Full"),
+                clock: "12:34:56", resources: samples, graph: &[] };
+            let original = render_header(width, 20, &data);
+            let height = graph_height(width, 20, &original);
+            assert_eq!(height, original.len() - 1, "use every row above the horizontal border");
+            let now = Instant::now();
+            let mut graph = Graph::default();
+            let mut rows = vec![row("root", None, false)];
+            rows.extend((0..12).map(|i| row(&format!("agent-{i:02}"), Some("root"), false)));
+            graph.observe(&rows, &parent("root"), false, now);
+            for i in 0..80 { graph.render("root", 24, height, now + FRAME * i); }
+            let frame = graph.render("root", 24, height, now + SETTLE);
+            data.graph = &frame;
+            let header = render_header(width, 20, &data);
+            assert_eq!(header.len(), original.len());
+            assert_eq!(header.last(), original.last());
+            let occupied: Vec<_> = header.iter().enumerate()
+                .filter_map(|(i, line)| (line.contains('○') || line.contains('◆')).then_some(i)).collect();
+            assert_eq!(occupied.first(), Some(&0));
+            assert_eq!(occupied.last(), Some(&(height - 1)), "graph must reach the model row above the border");
+            assert_eq!(strip_ansi(&header.join("\n")).matches('○').count(), 12);
+            assert!(header[height - 1].contains(data.model));
+            if let Some(execution) = data.execution { assert!(header[height - 1].contains(execution)); }
+            assert!(header[height - 1].contains("Jev Full"));
+            let metadata = strip_ansi(&original[height - 1]);
+            let model_column = visible_width(&metadata[..metadata.find('●').unwrap()]);
+            let status = |line: &str| pi_tui::utils::extract_segments(line, 0, model_column,
+                width - model_column, false).after;
+            assert_eq!(status(&header[height - 1]), status(&original[height - 1]),
+                "graph overlay must preserve model and execution colours at its boundary");
+            if !samples.is_empty() {
+                if let Ok(dir) = std::env::var("OPTIMUS_GRAPH_CAPTURE_DIR") {
+                    std::fs::create_dir_all(&dir).unwrap();
+                    std::fs::write(format!("{dir}/balanced-{width}.ansi"), header.join("\n")).unwrap();
+                }
             }
         }
     }

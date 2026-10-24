@@ -328,13 +328,7 @@ impl TuiComponent for Header {
             .and_then(|t| t.borrow().subagents.clone())
             .map(|bar| bar.borrow().resource_rows(resource_width, resource_budget))
             .unwrap_or_default();
-        let graph_width = graph_space(width as usize, height);
-        let graph = self.1.upgrade()
-            .and_then(|t| t.borrow().subagents.clone())
-            .map(|bar| bar.borrow_mut().graph_rows(graph_width,
-                graph_height(width as usize, height, !resources.is_empty())))
-            .unwrap_or_default();
-        render_header(
+        let mut rows = render_header(
             width as usize,
             height,
             &HeaderData {
@@ -352,9 +346,16 @@ impl TuiComponent for Header {
                 jev: jev.as_deref(),
                 clock: &chrono::Local::now().format("%H:%M:%S").to_string(),
                 resources: &resources,
-                graph: &graph,
+                graph: &[],
             },
-        )
+        );
+        let graph = self.1.upgrade()
+            .and_then(|t| t.borrow().subagents.clone())
+            .map(|bar| bar.borrow_mut().graph_rows(graph_space(width as usize, height),
+                graph_height(width as usize, height, &rows)))
+            .unwrap_or_default();
+        overlay_graph(width as usize, height, &mut rows, &graph);
+        rows
     }
     fn invalidate(&mut self) {}
 }
@@ -408,11 +409,30 @@ fn graph_space(width: usize, budget: usize) -> usize {
     if width >= 110 && budget >= 7 { 24 } else { 0 }
 }
 
-pub(super) fn graph_height(width: usize, budget: usize, has_resources: bool) -> usize {
+pub(super) fn graph_height(width: usize, budget: usize, header: &[String]) -> usize {
     if graph_space(width, budget) == 0 { return 0; }
-    // Reuse the existing logo/caption rows and the initial resource-loading gap.
-    // The session border and transcript must stay at their original positions.
-    3 + usize::from(width < 160) + usize::from(!has_resources)
+    let column = width - resource_space(width, budget).0 - graph_space(width, budget) - 2;
+    let metadata = header.len().saturating_sub(2);
+    // Include the space beside session metadata, up to the horizontal border.
+    // A long model/session label still takes priority over graph decoration.
+    let metadata_is_clear = header.get(metadata).is_some_and(|row| {
+        strip_ansi(&pi_tui::utils::slice_by_column(row, column, graph_space(width, budget), false))
+            .trim().is_empty()
+    });
+    metadata + usize::from(metadata_is_clear)
+}
+
+fn overlay_graph(width: usize, budget: usize, rows: &mut [String], graph: &[String]) {
+    let height = graph_height(width, budget, rows);
+    let graph_width = graph_space(width, budget);
+    if height == 0 || graph.is_empty() { return; }
+    let column = width - resource_space(width, budget).0 - graph_width - 2;
+    for (row, graph) in rows.iter_mut().take(height).zip(graph) {
+        let original = fit(row, width);
+        let text = pi_tui::utils::extract_segments(&original, column, column + graph_width,
+            width - column - graph_width, false);
+        *row = format!("{}{}{}", text.before, fit(graph, graph_width), text.after);
+    }
 }
 
 fn resource_space(width: usize, budget: usize) -> (usize, usize) {
@@ -517,16 +537,6 @@ pub(super) fn render_header(width: usize, budget: usize, data: &HeaderData<'_>) 
                 width,
             ));
         }
-        if graph_width > 0 {
-            let column = width - panel_width - graph_width - 2;
-            for (row, graph) in rows.iter_mut().zip(data.graph) {
-                let original = fit(row, width);
-                *row = format!("{}{}{}",
-                    pi_tui::utils::slice_by_column(&original, 0, column, false),
-                    fit(graph, graph_width),
-                    pi_tui::utils::slice_by_column(&original, column + graph_width, width, false));
-            }
-        }
     } else if budget >= 3 {
         rows.push(paired(
             &format!("{} {}", palette.fg("accent", if has_resources { " telemus.ai" } else { " OPTIMUS  //  BUILT FOR WHAT'S NEXT" }), palette.fg("dim", &format!("v{}", crate::config::VERSION))),
@@ -579,6 +589,7 @@ pub(super) fn render_header(width: usize, budget: usize, data: &HeaderData<'_>) 
             ));
         }
     }
+    overlay_graph(width, budget, &mut rows, data.graph);
     rows.into_iter()
         .take(budget)
         .map(|r| surface_with(&palette, &r, width))
