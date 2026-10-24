@@ -1664,38 +1664,26 @@ fn the_daemon_surface_is_capability_gated_and_read_only_where_it_gets() {
         protocol.contains("DaemonServerCapability::JevControl"),
         "the capability must be declared"
     );
-    assert!(
-        protocol.contains("\"jev_get_settings\" | \"jev_set_session_mode\" | \"jev_get_status\" => {"),
-        "the three commands must share one capability gate"
-    );
-    assert!(
-        protocol.contains("DaemonCommandCompatibility::capability(Capability::JevControl)"),
-        "the gate must be the capability, not a schema revision"
-    );
-    // Optional additive metadata advances the schema without a protocol bump.
-    assert!(protocol.contains("pub const DAEMON_PROTOCOL_VERSION: u32 = 7;"));
-    assert!(pi_coding_agent::modes::daemon::daemon_protocol::DAEMON_SCHEMA_REVISION >= 31);
+    use pi_coding_agent::modes::daemon::daemon_protocol::{
+        daemon_command_compatibility, daemon_command_plane, DaemonCommandCompatibility,
+        DaemonServerCapability, DAEMON_PROTOCOL_VERSION, DAEMON_SCHEMA_REVISION,
+        READ_ONLY_DAEMON_COMMANDS,
+    };
+    use pi_coding_agent::modes::daemon::daemon_mode::DAEMON_COMMAND_TYPES;
+    assert_eq!(DAEMON_PROTOCOL_VERSION, 7);
+    assert!(DAEMON_SCHEMA_REVISION >= 31);
     assert!(protocol.contains("JevFeatures"));
-    // The getters are read-only; the setter is not.
-    assert!(protocol.contains("\"jev_get_settings\",\n    \"jev_get_status\","));
-    let read_only_block = protocol
-        .split("pub const READ_ONLY_DAEMON_COMMANDS")
-        .nth(1)
-        .expect("the read-only list");
-    let read_only_block = read_only_block.split("];").next().unwrap();
-    assert!(read_only_block.contains("jev_get_settings"));
-    assert!(!read_only_block.contains("jev_set_session_mode"));
-    // The commands are session-plane, so a control-plane-only client never sends
-    // them and an unknown command still falls through to `None`.
-    assert!(protocol.contains("\"jev_get_settings\" | \"jev_set_session_mode\" | \"jev_get_status\" => {\n            Some(\"session\")"));
-
     let daemon = crate_file("src/modes/daemon/daemon_mode.rs");
     for command in ["jev_get_settings", "jev_set_session_mode", "jev_get_status"] {
-        assert!(daemon.contains(&format!("\"{command}\",")), "{command} must be routable");
+        assert_eq!(daemon_command_compatibility(command),
+            DaemonCommandCompatibility::capability(DaemonServerCapability::JevControl));
+        assert_eq!(daemon_command_plane(command), Some("session"));
+        assert!(DAEMON_COMMAND_TYPES.contains(&command), "{command} must be routable");
+        assert_eq!(READ_ONLY_DAEMON_COMMANDS.contains(&command), command != "jev_set_session_mode");
         assert!(daemon.lines().any(|line| line.contains(&format!("\"{command}\""))
             && line.contains("=>")), "{command} must have a handler");
     }
-    assert!(daemon.contains("pub const DAEMON_COMMAND_TYPES: [&str; 103] = ["));
+    assert_eq!(daemon_command_plane("unknown_jev_fixture_command"), None);
     // The daemon writes the same store the UI reads (lane A's `JevSettingsStore`
     // over the same `<agent_dir>`), and never reads a secret value.
     assert!(daemon.contains("pi_jev::config::JevSettingsStore::new"));
@@ -2233,8 +2221,8 @@ fn the_tray_row_pulls_the_jev_segments_onto_the_model_effort_row() {
         "Tray renders the merged row"
     );
     assert!(
-        tray.contains("get_tray_context_health_text()"),
-        "the indicator comes from the connection state"
+        tray.contains("get_connection_context_usage()"),
+        "the tray context counter comes from the connection state"
     );
     assert!(tray.contains("tray_row::compose_tray_row"));
     let mode = crate_file("src/modes/interactive/interactive_mode.rs");
