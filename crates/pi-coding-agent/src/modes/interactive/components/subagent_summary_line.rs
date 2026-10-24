@@ -464,13 +464,13 @@ mod tests {
         crate::modes::interactive::theme::theme::init_theme(Some("dark"), false);
         let mut line = SubagentSummaryLine::default();
         line.set_always_visible(true);
-        line.set_communication_status(Some("\x1b[1;38;5;39mTXT ●  OCC1 ○\x1b[22;39m".into()));
+        line.set_communication_status(Some("\x1b[1;38;5;39m● TXT  ○ OCC1\x1b[22;39m".into()));
         line.set_right_status(Some(RightStatus { full: "Jev active · 12 req".into(), compact: "Jev 12 req".into(), minimal: "Jev".into() }));
         for width in [2, 5, 14, 15, 16, 40, 80, 120] {
             let lines = line.render(width as f64);
             assert!(lines.iter().all(|row| visible_width(row) <= width));
             let text = pi_tui::utils::strip_ansi(&lines.join("\n"));
-            assert_eq!(text.contains("TXT ●  OCC1 ○"), width >= 15);
+            assert_eq!(text.contains("● TXT  ○ OCC1"), width >= 15);
             if width >= 40 { assert!(text.contains("Jev")); }
             if width >= 80 { assert!(text.contains("0 running") && text.contains("0 idle") && text.contains("0 inactive")); }
             assert!(!text.contains("SYM") && !text.contains("LAT"));
@@ -485,7 +485,7 @@ mod tests {
         crate::modes::interactive::theme::theme::init_theme(Some("dark"), false);
         let mut line = SubagentSummaryLine::default();
         line.set_always_visible(true);
-        line.set_communication_status(Some("\x1b[1;38;5;39mTXT ●  OCC1 ○  OCC2 ●\x1b[22;39m".into()));
+        line.set_communication_status(Some("\x1b[1;38;5;39m● TXT  ○ OCC1  ● OCC2\x1b[22;39m".into()));
         line.set_right_status(Some(RightStatus { full: "Jev active · 12 req".into(), compact: "Jev 12 req".into(), minimal: "Jev".into() }));
         for width in [2, 5, 15, 22, 23, 24, 40, 80, 120] {
             let lines = line.render(width as f64);
@@ -494,9 +494,9 @@ mod tests {
             // The 21-column status needs two border columns. Optional padding
             // must not truncate it when it fits exactly at width 23.
             if width >= 23 {
-                assert!(text.contains("TXT ●  OCC1 ○  OCC2 ●"));
+                assert!(text.contains("● TXT  ○ OCC1  ● OCC2"));
             } else {
-                assert!(!text.contains("TXT ●  OCC1 ○  OCC2 ●"));
+                assert!(!text.contains("● TXT  ○ OCC1  ● OCC2"));
             }
             if width >= 40 { assert!(text.contains("Jev")); }
             assert!(!text.contains("LAT"));
@@ -509,7 +509,7 @@ mod tests {
         let mut line = SubagentSummaryLine::default();
         line.set_always_visible(true);
         line.set_communication_status(Some(
-            "TXT ○  OCC1 ○  OCC2 ○  \x1b[1;38;5;196mSTREAM TPS 50.0\x1b[22;39m".into(),
+            "○ TXT  ○ OCC1  ○ OCC2  \x1b[1;38;5;196mSTREAM TPS 50.0\x1b[22;39m".into(),
         ));
         line.set_right_status(Some(RightStatus {
             full: "Jev active".into(), compact: "Jev on".into(), minimal: "Jev".into(),
@@ -521,7 +521,7 @@ mod tests {
                 assert!(rows.iter().all(|row| visible_width(row) <= width));
                 let rendered = rows.join("\n");
                 let plain = pi_tui::utils::strip_ansi(&rendered);
-                assert_eq!(plain.contains("TXT ○  OCC1 ○  OCC2 ○  STREAM TPS 50.0"), width >= 40);
+                assert_eq!(plain.contains("○ TXT  ○ OCC1  ○ OCC2  STREAM TPS 50.0"), width >= 40);
                 assert!(plain.contains("Jev"));
                 if width >= 40 {
                     assert!(rendered.contains("\x1b[1;38;5;196mSTREAM TPS 50.0"));

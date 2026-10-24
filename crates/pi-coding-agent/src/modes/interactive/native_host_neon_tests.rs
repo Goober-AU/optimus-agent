@@ -61,7 +61,7 @@ fn neon_header_and_timeline_fit_unicode_and_tiny_windows() {
         model: "fixture-model",
         execution: None,
         phase: "READY",
-        jev: Some("Jev Full · fallback"),
+        jev: Some("Jev Full · standard mode"),
         clock: "12:34:56",
         resources: &[],
     };
@@ -99,9 +99,9 @@ fn neon_header_and_timeline_fit_unicode_and_tiny_windows() {
     let header = render_header(160, 7, &data);
     assert!(strip_ansi(&header[0]).trim().is_empty());
     let strip = strip_ansi(&header[4]);
-    assert!(strip.contains("● fixture-model  │  ● Jev Full · fallback"));
+    assert!(strip.contains("● fixture-model  │  ● Jev Full · standard mode"));
     assert!(header[4].contains(&format!(
-        "{}● Jev Full · fallback",
+        "{}● Jev Full · standard mode",
         theme().get_fg_ansi("warning")
     )));
     // 95c61aeb82 made the runtime version part of the persistent brand caption.
@@ -329,9 +329,9 @@ fn neon_frame_fixture_keeps_editor_jev_history_and_theme_switching() {
         ..Default::default()
     });
     agents.set_right_status(Some(RightStatus {
-        full: "Jev Full · fallback · 413 req · 603.8k in/52.2k out · 242ms".into(),
-        compact: "Jev Full · fallback · 413 req".into(),
-        minimal: "Jev Full · fallback".into(),
+        full: "Jev Full · standard mode · 413 req · 603.8k in/52.2k out · 242ms".into(),
+        compact: "Jev Full · standard mode · 413 req".into(),
+        minimal: "Jev Full · standard mode".into(),
     }));
     let dock = Rc::new(RefCell::new(pi_tui::tui::Container::new()));
     dock.borrow_mut().add_child(editor.clone());

@@ -41,6 +41,8 @@ pub const SELF_UPDATE_NOT_ATTEMPTED_EXIT_CODE: i32 = 75;
 pub const PACKAGE_NAME: &str = "@earendil-works/pi-coding-agent";
 /// `APP_NAME` (`pkg.piConfig.name || "pi"`).
 pub const APP_NAME: &str = "prime-agent";
+/// Installed command shown in user guidance; storage and protocol identities are separate.
+pub const APP_COMMAND: &str = "optimus-agent";
 /// `APP_TITLE` (`pkg.piConfig.name ? APP_NAME : "\u{3c0}"`).
 pub const APP_TITLE: &str = "prime-agent";
 /// `CONFIG_DIR_NAME` (`pkg.piConfig.configDir || ".prime/agent"`).

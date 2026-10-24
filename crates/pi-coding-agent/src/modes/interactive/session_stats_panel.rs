@@ -176,7 +176,7 @@ impl StatsPanel {
                 lines.push(jev_activity(snapshot));
                 if snapshot.jev.records > 0 {
                     lines.push(format!(
-                        "Recorded requests: {}   Applied boundaries: {}   Fallbacks: {}",
+                        "Recorded requests: {}   Applied boundaries: {}   Standard mode uses: {}",
                         snapshot.jev.requests, snapshot.jev.applied, snapshot.jev.fallbacks
                     ));
                     let overhead: f64 = snapshot.jev.models.values().map(ModelUsage::total).sum();
@@ -287,7 +287,7 @@ impl StatsPanel {
                     lines.push(dim("No retained records for this scope"));
                 } else {
                     lines.push(format!(
-                        "Requests {}  Applied boundaries {}  Fallbacks {}",
+                        "Requests {}  Applied boundaries {}  Standard mode uses {}",
                         snapshot.jev.requests, snapshot.jev.applied, snapshot.jev.fallbacks
                     ));
                     lines.push(format!(

@@ -21,7 +21,7 @@ impl TelegramApiError {
             "Telegram rejected the bot token. Create a new token in BotFather and run /telegram setup."
                 .to_string()
         } else if code == 409.0 {
-            "Another Telegram poller or webhook is using this bot. Stop it or create a separate bot for Prime."
+            "Another Telegram poller or webhook is using this bot. Stop it or create a separate bot for Optimus."
                 .to_string()
         } else if code == 403.0 {
             "Telegram delivery was blocked. Open the bot chat and unblock the bot.".to_string()
@@ -331,7 +331,7 @@ impl TelegramApi {
         };
         if !url.is_empty() {
             return Err(TelegramCallError::Error(
-                "This bot already has a webhook. Disconnect its other integration or create a new bot for Prime in BotFather."
+                "This bot already has a webhook. Disconnect its other integration or create a new bot for Optimus in BotFather."
                     .to_string(),
             ));
         }
@@ -423,7 +423,7 @@ mod tests {
         );
         assert_eq!(
             TelegramApiError::new(409.0, 0.0).message,
-            "Another Telegram poller or webhook is using this bot. Stop it or create a separate bot for Prime."
+            "Another Telegram poller or webhook is using this bot. Stop it or create a separate bot for Optimus."
         );
         assert_eq!(
             TelegramApiError::new(403.0, 0.0).message,

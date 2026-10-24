@@ -7,8 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::source_info::SourceInfo;
 
-/// `APP_NAME` from `config.ts` (package.json `piConfig.name` = "prime-agent").
-pub const APP_NAME: &str = "prime-agent";
+pub use crate::config::APP_COMMAND as APP_NAME;
 
 pub type SlashCommandSource = String;
 
@@ -665,12 +664,12 @@ mod tests {
             .iter()
             .find(|command| command.name == "update")
             .unwrap();
-        assert_eq!(update.description, "Update prime-agent and installed packages");
+        assert_eq!(update.description, "Update optimus-agent and installed packages");
         let quit = builtin_slash_commands()
             .iter()
             .find(|command| command.name == "quit")
             .unwrap();
-        assert_eq!(quit.description, "Quit prime-agent");
+        assert_eq!(quit.description, "Quit optimus-agent");
     }
 
     #[test]

@@ -402,7 +402,7 @@ pub async fn create_agent_session_services(
     {
         diagnostics.push(AgentSessionRuntimeDiagnostic {
             type_: DIAGNOSTIC_INFO.to_string(),
-            message: "Prime Agent sends pseudonymous usage and performance metrics without prompts, responses, tool content, file paths, or repository data. Disable this with telemetry.enabled=false, PRIME_AGENT_TELEMETRY=0, DO_NOT_TRACK=1, or offline mode.".to_string(),
+            message: "Optimus Agent sends pseudonymous usage and performance metrics without prompts, responses, tool content, file paths, or repository data. Disable this with telemetry.enabled=false, PRIME_AGENT_TELEMETRY=0, DO_NOT_TRACK=1, or offline mode.".to_string(),
         });
         settings_manager
             .lock()

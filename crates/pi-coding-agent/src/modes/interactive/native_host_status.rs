@@ -56,12 +56,8 @@ impl HeartbeatCounts {
     }
 }
 
-fn heartbeat_counts(mode: &InteractiveMode) -> HeartbeatCounts {
-    let jobs = mode.get_scoped_heartbeats();
-    let mut counts = HeartbeatCounts::default();
-    for heartbeat in &jobs {
-        counts.add(&heartbeat.job);
-    }
+fn heartbeat_jobs(mode: &InteractiveMode) -> Vec<local::AgentCronJob> {
+    let mut jobs: Vec<_> = mode.get_scoped_heartbeats().into_iter().map(|heartbeat| heartbeat.job).collect();
     // The initial state includes the user's heartbeat even on an older daemon
     // without a catalog. Catalog entries win when the same job is present.
     if let Some(job) = mode
@@ -70,12 +66,61 @@ fn heartbeat_counts(mode: &InteractiveMode) -> HeartbeatCounts {
         .and_then(|state| state.heartbeat.as_ref())
     {
         if !mode.heartbeat_catalog_authoritative
-            && !jobs.iter().any(|heartbeat| heartbeat.job.id == job.id)
+            && !jobs.iter().any(|heartbeat| heartbeat.id == job.id)
         {
-            counts.add(job);
+            jobs.push(job.clone());
         }
     }
+    jobs
+}
+
+fn heartbeat_counts(mode: &InteractiveMode) -> HeartbeatCounts {
+    let mut counts = HeartbeatCounts::default();
+    for job in heartbeat_jobs(mode) { counts.add(&job); }
     counts
+}
+
+#[derive(Default)]
+struct HeartbeatPulse {
+    session: String,
+    runs: std::collections::BTreeMap<String, (f64, Option<String>)>,
+    fired_at: Option<Instant>,
+}
+
+impl HeartbeatPulse {
+    fn observe(&mut self, session: &str, jobs: &[local::AgentCronJob], now: Instant) {
+        if self.session != session {
+            *self = Self { session: session.into(), ..Default::default() };
+        }
+        let mut active = false;
+        let mut runs = std::collections::BTreeMap::new();
+        for job in jobs.iter().filter(|job| matches!(job.source.as_deref(), Some("heartbeat" | "rlm_heartbeat"))) {
+            if job.status == "active" {
+                active = true;
+                if self.runs.get(&job.id).is_some_and(|(count, last)| {
+                    (job.run_count.is_finite() && job.run_count > *count)
+                        || job.last_run_at.as_ref().zip(last.as_ref()).is_some_and(|(new, old)| new > old)
+                }) {
+                    self.fired_at = Some(now);
+                }
+            }
+            let (previous_count, previous_run) = self.runs.get(&job.id).cloned().unwrap_or_default();
+            runs.insert(job.id.clone(), (
+                previous_count.max(job.run_count),
+                previous_run.max(job.last_run_at.clone()),
+            ));
+        }
+        self.runs = runs;
+        if !active { self.fired_at = None; }
+    }
+
+    fn marker(&self, now: Instant) -> &'static str {
+        match self.fired_at.map(|at| now.saturating_duration_since(at)) {
+            Some(elapsed) if elapsed < Duration::from_millis(1400)
+                && (elapsed.as_millis() / 250) % 2 == 1 => "○",
+            _ => "●",
+        }
+    }
 }
 
 #[derive(Default)]
@@ -108,6 +153,7 @@ thread_local! {
     // Only the visible session owns a clock. Switching sessions replaces it;
     // authoritative goal counters always supersede the local interpolation.
     static GOAL_CLOCK: RefCell<GoalClock> = RefCell::new(GoalClock::default());
+    static HEARTBEAT_PULSE: RefCell<HeartbeatPulse> = RefCell::new(HeartbeatPulse::default());
 }
 
 pub(super) fn right_status(
@@ -121,15 +167,24 @@ pub(super) fn right_status(
     let goal_full = elapsed.map(|seconds| theme().fg("accent", &format!("Pursuing Goal {}", mode.format_goal_elapsed(seconds))));
     let goal_short = elapsed.map(|seconds| theme().fg("accent", &format!("Goal {}", mode.format_goal_elapsed(seconds))));
     let counts = heartbeat_counts(mode);
+    let marker = HEARTBEAT_PULSE.with(|pulse| {
+        let mut pulse = pulse.borrow_mut();
+        let now = Instant::now();
+        pulse.observe(session, &heartbeat_jobs(mode), now);
+        if counts.user_on + counts.agent_on > 0 {
+            format!("\x1b[1;38;5;196m{}\x1b[22;39m ", pulse.marker(now))
+        } else { String::new() }
+    });
     let heartbeat_color =
         if counts.user_on + counts.agent_on > 0 {
             "accent"
         } else {
             "dim"
         };
-    let heartbeat_full = counts.label(false).map(|label| theme().fg(heartbeat_color, &label));
-    let heartbeat_short = counts.label(true).map(|label| theme().fg(heartbeat_color, &label));
-    let heartbeat_minimal = heartbeat_full.as_ref().map(|_| theme().fg(heartbeat_color, "HB"));
+    let decorate = |label: &str| format!("{marker}{}", theme().fg(heartbeat_color, label));
+    let heartbeat_full = counts.label(false).map(|label| decorate(&label));
+    let heartbeat_short = counts.label(true).map(|label| decorate(&label));
+    let heartbeat_minimal = heartbeat_full.as_ref().map(|_| decorate("HB"));
     for (heartbeat, goal) in [
         (&heartbeat_full, &goal_full),
         (&heartbeat_short, &goal_full),

@@ -1,0 +1,8 @@
+- Fixed Linux process CPU sampling so active Optimus workers no longer stay at zero in the status bar.
+- Fixed STREAM TPS to measure recent output from currently streaming agents, excluding completed agents, attach-time history, buffered first chunks, and final usage corrections.
+- Added a red heartbeat circle that flashes on newly observed heartbeat runs.
+- Changed TXT, OCC1, and OCC2 activity lights to appear before their labels.
+- Fixed remaining Prime branding in Telegram messages, command guidance, feature hints, update notices, and telemetry disclosure.
+- Fixed Python runtime installations to declare the required dill snapshot dependency.
+- Changed the Tokio dependency to the patched 1.53.3 release for RUSTSEC-2026-0386.
+- Changed Jev status, help, and statistics to call fallback behavior standard mode.

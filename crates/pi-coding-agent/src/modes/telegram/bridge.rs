@@ -590,7 +590,7 @@ impl TelegramBridge {
             if paired {
                 self.shared.save_connection();
                 let _ = self.enqueue_reply(
-                    "Connected to Prime. This chat controls your connected session. Send a message to begin, or /help for commands.",
+                    "Connected to Optimus. This chat controls your connected session. Send a message to begin, or /help for commands.",
                 );
             }
             self.save();
@@ -602,7 +602,7 @@ impl TelegramBridge {
         }
         if message.text.is_none() {
             let _ = self.enqueue_reply(
-                "Send a text message to Prime. Photos, files, and voice messages are not supported by this connector yet.",
+                "Send a text message to Optimus. Photos, files, and voice messages are not supported by this connector yet.",
             );
             self.save();
             return Ok(());
@@ -631,7 +631,7 @@ impl TelegramBridge {
         }
         let inbox_len = self.shared.state.lock().unwrap().inbox.len();
         if inbox_len >= 100 {
-            let _ = self.enqueue_reply("Prime already has 100 messages waiting. Use /stop to clear the queue.");
+            let _ = self.enqueue_reply("Optimus already has 100 messages waiting. Use /stop to clear the queue.");
         } else {
             let mut state = self.shared.state.lock().unwrap();
             state.inbox.push(crate::modes::telegram::store::TelegramInboxItem {
@@ -759,7 +759,7 @@ impl TelegramBridge {
             }
             AgentConnectionEvent::Closed { .. } => {
                 (self.report_error)(Some(
-                    "The Prime session disconnected. Open Prime and run /telegram restart.".to_string(),
+                    "The Optimus session disconnected. Open Optimus and run /telegram restart.".to_string(),
                 ));
                 self.shared.controller.cancel();
                 return Ok(());
@@ -848,7 +848,7 @@ impl TelegramBridge {
                     AgentConnectionExtensionUiResponse::Cancelled { cancelled: true },
                 )
                 .await;
-            let _ = self.enqueue_reply("This command needs the Prime terminal editor and was cancelled.");
+            let _ = self.enqueue_reply("This command needs the Optimus terminal editor and was cancelled.");
             return;
         }
         if !["select", "confirm", "input"].contains(&request.method.as_str()) {
@@ -874,7 +874,7 @@ impl TelegramBridge {
             })
             .unwrap_or_default();
         let mut lines: Vec<String> = vec![
-            js_string_or(request.payload.get("title"), "Prime needs input"),
+            js_string_or(request.payload.get("title"), "Optimus needs input"),
             js_string_or(request.payload.get("message"), ""),
         ];
         for (index, option) in options.iter().enumerate() {
@@ -902,7 +902,7 @@ impl TelegramBridge {
         let (question_id, raw_value) = match parse_answer_args(args) {
             Some(parsed) => parsed,
             None => {
-                let _ = self.enqueue_reply("That question is missing or expired. Check Prime for its current request.");
+                let _ = self.enqueue_reply("That question is missing or expired. Check Optimus for its current request.");
                 return;
             }
         };
@@ -913,7 +913,7 @@ impl TelegramBridge {
                 _ => {
                     drop(questions);
                     let _ =
-                        self.enqueue_reply("That question is missing or expired. Check Prime for its current request.");
+                        self.enqueue_reply("That question is missing or expired. Check Optimus for its current request.");
                     return;
                 }
             }
@@ -954,7 +954,7 @@ impl TelegramBridge {
             .connection
             .respond_to_extension_ui_request(&pending.request.id, response)
             .await;
-        let _ = self.enqueue_reply("Answer sent to Prime.");
+        let _ = self.enqueue_reply("Answer sent to Optimus.");
     }
 
     /// `async run(signal?)`.
@@ -1044,7 +1044,7 @@ impl TelegramBridge {
         let interrupted = self.shared.state.lock().unwrap().interrupted_update;
         if interrupted.is_some() {
             let _ = self.enqueue_reply(
-                "Prime restarted while accepting a Telegram message. It has not been sent again automatically. Check /session and /copy before repeating it.",
+                "Optimus restarted while accepting a Telegram message. It has not been sent again automatically. Check /session and /copy before repeating it.",
             );
             {
                 let mut state = self.shared.state.lock().unwrap();

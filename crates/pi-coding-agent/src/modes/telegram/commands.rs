@@ -62,7 +62,7 @@ pub fn telegram_command_menu() -> Vec<TelegramMenuCommand> {
     let mut menu = vec![
         TelegramMenuCommand {
             command: "help".to_string(),
-            description: "Show Prime commands available in Telegram".to_string(),
+            description: "Show Optimus commands available in Telegram".to_string(),
         },
         TelegramMenuCommand {
             command: "stop".to_string(),
@@ -95,7 +95,7 @@ pub struct TelegramMenuCommand {
 
 /// `telegramHelp()`.
 pub fn telegram_help() -> String {
-    let mut lines = vec!["Prime in Telegram".to_string(), String::new()];
+    let mut lines = vec!["Optimus in Telegram".to_string(), String::new()];
     for command in telegram_command_menu() {
         lines.push(format!("/{} \u{2014} {}", command.command, command.description));
     }
@@ -105,7 +105,7 @@ pub fn telegram_help() -> String {
             .to_string(),
     );
     lines.push(
-        "Terminal display, login, package, and update commands stay in the Prime terminal. Text messages steer the current turn while Prime is working and start a new turn when idle."
+        "Terminal display, login, package, and update commands stay in the Optimus terminal. Text messages steer the current turn while Optimus is working and start a new turn when idle."
             .to_string(),
     );
     lines.join("\n")
@@ -195,7 +195,7 @@ impl TelegramCommands {
                 };
                 self.reply(format!(
                     "{}\nID: {}\nDirectory: {}\nModel: {}\nEffort: {}\nFast: {}\nState: {}",
-                    state.session_name.clone().unwrap_or_else(|| "Prime session".to_string()),
+                    state.session_name.clone().unwrap_or_else(|| "Optimus session".to_string()),
                     state.session_id,
                     state.cwd,
                     model,
@@ -567,7 +567,7 @@ impl TelegramCommands {
             }
             "reload" => {
                 connection.reload().await?;
-                self.reply("Reloaded Prime resources.");
+                self.reply("Reloaded Optimus resources.");
                 Ok(())
             }
             "copy" => {
@@ -642,12 +642,12 @@ impl TelegramCommands {
                 Ok(())
             }
             "telegram" => {
-                self.reply("Configure the Telegram connection with /telegram in the Prime terminal.");
+                self.reply("Configure the Telegram connection with /telegram in the Optimus terminal.");
                 Ok(())
             }
             _ => {
                 if is_builtin_slash_command_name(name) {
-                    self.reply(format!("/{name} needs the Prime terminal. Use /help for Telegram commands."));
+                    self.reply(format!("/{name} needs the Optimus terminal. Use /help for Telegram commands."));
                     return Ok(());
                 }
                 let commands = connection.get_commands().await?;
@@ -756,9 +756,9 @@ mod tests {
     #[test]
     fn help_lists_every_menu_entry() {
         let help = telegram_help();
-        assert!(help.starts_with("Prime in Telegram\n\n/help \u{2014} "));
+        assert!(help.starts_with("Optimus in Telegram\n\n/help \u{2014} "));
         assert!(help.contains("/stop \u{2014} "));
-        assert!(help.ends_with("Text messages steer the current turn while Prime is working and start a new turn when idle."));
+        assert!(help.ends_with("Text messages steer the current turn while Optimus is working and start a new turn when idle."));
     }
 
     #[test]

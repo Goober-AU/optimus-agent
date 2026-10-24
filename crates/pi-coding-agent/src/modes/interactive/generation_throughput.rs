@@ -1,4 +1,4 @@
-//! Sum of each observed family session's duration-weighted streaming output TPS.
+//! Current family streaming TPS, with separate per-session historical averages.
 //!
 //! Each absolute snapshot already weights that session's measured responses by
 //! first-to-last output time. Keep completed observed descendants when they leave
@@ -11,6 +11,11 @@ use crate::modes::interactive::components::subagent_summary_line::{
     linkage_row_for_roster_summary, RosterParent,
 };
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::time::Instant;
+
+#[path = "current_throughput.rs"]
+mod current;
+use current::LiveWindow;
 
 const MAX_SESSIONS: usize = 4096;
 #[derive(Default)]
@@ -22,12 +27,16 @@ pub(super) struct Throughput {
     samples: BTreeMap<String, Snapshot>,
     finalized: BTreeMap<String, Snapshot>,
     live_overlays: BTreeSet<String>,
+    live_windows: BTreeMap<String, LiveWindow>,
     retired_generations: BTreeMap<String, BTreeSet<String>>,
     overflowed: bool,
     supported: bool,
 }
 impl Throughput {
     pub(super) fn observe(&mut self, rows: &[SessionSummary], parent: &RosterParent) {
+        self.observe_at(rows, parent, Instant::now());
+    }
+    fn observe_at(&mut self, rows: &[SessionSummary], parent: &RosterParent, now: Instant) {
         let root = parent.session_id.clone().unwrap_or_default();
         if self.root != root {
             *self = Self {
@@ -44,6 +53,7 @@ impl Throughput {
             self.samples.clear();
             self.finalized.clear();
             self.live_overlays.clear();
+            self.live_windows.clear();
             self.retired_generations.clear();
             self.family.clear();
             self.family_keys.clear();
@@ -109,6 +119,7 @@ impl Throughput {
         // of that same snapshot from making a vanished estimate live again.
         self.live_overlays
             .retain(|id| available_live_rows.contains(id.as_str()));
+        self.live_windows.retain(|id, _| self.live_overlays.contains(id));
         for (row, sample) in updates {
             if self
                 .retired_generations
@@ -142,12 +153,22 @@ impl Throughput {
                         .insert(previous.generation.clone());
                     self.finalized.remove(&row.session_id);
                     self.live_overlays.remove(&row.session_id);
+                    self.live_windows.remove(&row.session_id);
                 }
             }
             if sample.active && row_allows_live_overlay(row) && sample_rate(&sample).is_some() {
+                if self.samples.get(&row.session_id).is_none_or(|previous| {
+                    !previous.active || previous.responses != sample.responses
+                        || previous.generation != sample.generation
+                }) {
+                    self.live_windows.remove(&row.session_id);
+                }
+                self.live_windows.entry(row.session_id.clone()).or_default()
+                    .observe(sample.output_tokens, sample.streaming_ms, now);
                 self.live_overlays.insert(row.session_id.clone());
             } else {
                 self.live_overlays.remove(&row.session_id);
+                self.live_windows.remove(&row.session_id);
             }
             if !sample.active && !sample.estimated && sample_rate(&sample).is_some() {
                 self.finalized
@@ -156,6 +177,7 @@ impl Throughput {
             self.samples.insert(row.session_id.clone(), sample);
         }
     }
+    #[cfg(test)]
     fn contributions(&self) -> impl Iterator<Item = &Snapshot> {
         self.samples.iter().filter_map(|(id, latest)| {
             if self.live_overlays.contains(id) {
@@ -165,7 +187,8 @@ impl Throughput {
             }
         })
     }
-    fn total_rate(&self) -> Option<f64> {
+    #[cfg(test)]
+    fn historical_total_rate(&self) -> Option<f64> {
         if !self.supported || self.overflowed {
             return None;
         }
@@ -184,15 +207,23 @@ impl Throughput {
         Some((sample_rate(sample)?, sample.active && sample.estimated))
     }
     pub(super) fn indicator(&self) -> String {
+        self.indicator_at(Instant::now())
+    }
+    fn current_rate(&self, now: Instant) -> Option<f64> {
+        if !self.supported || self.overflowed { return None; }
+        let mut total = 0.0;
+        for id in &self.live_overlays {
+            total += self.live_windows.get(id)?.rate(now)?;
+        }
+        total.is_finite().then_some(total)
+    }
+    fn indicator_at(&self, now: Instant) -> String {
         let value = self
-            .total_rate()
+            .current_rate(now)
             .map(|rate| {
                 format!(
                     "{}{rate:.1}",
-                    if self
-                        .contributions()
-                        .any(|s| s.active && s.estimated && sample_rate(s).is_some())
-                    {
+                    if rate > 0.0 {
                         "~"
                     } else {
                         ""
@@ -305,6 +336,54 @@ mod tests {
     }
 
     #[test]
+    fn current_family_rate_sums_only_fresh_streams_and_ignores_final_usage_corrections() {
+        use std::time::Duration;
+        let now = Instant::now();
+        let mut state = Throughput::default();
+        let root = live(row("root", None, 10000.0, 100000.0), 1);
+        let child = live(row("child", Some("root"), 20000.0, 200000.0), 1);
+        let finished = row("finished", Some("root"), 999999.0, 1.0);
+        state.observe_at(&[root.clone(), child.clone(), finished.clone()], &parent("root"), now);
+        assert_eq!(state.current_rate(now), None, "attach history is only a baseline");
+        let root = live(row("root", None, 10040.0, 100500.0), 2);
+        let child = live(row("child", Some("root"), 20030.0, 200500.0), 2);
+        let later = now + Duration::from_millis(500);
+        state.observe_at(&[root.clone(), child.clone(), finished], &parent("root"), later);
+        assert_eq!(state.current_rate(later), Some(140.0));
+        assert!(state.indicator_at(later).contains("STREAM TPS ~140.0"));
+        state.observe_at(&[root.clone(), child.clone()], &parent("root"), later);
+        assert_eq!(state.current_rate(later), Some(140.0), "replay cannot add tokens twice");
+        let final_child = revision(row("child", Some("root"), 50000.0, 200500.0), 3);
+        state.observe_at(&[root.clone(), final_child], &parent("root"), later);
+        assert_eq!(state.current_rate(later), Some(80.0), "final usage is not a stream burst");
+        assert_eq!(state.current_rate(later + Duration::from_secs(4)), Some(0.0));
+        state.observe_at(&[revision(row("root", None, 30000.0, 100500.0), 3)], &parent("root"), later);
+        assert_eq!(state.current_rate(later), Some(0.0), "completed agents stop contributing");
+    }
+
+    #[test]
+    fn current_rate_resets_on_response_restart_loss_and_selection() {
+        use std::time::Duration;
+        let now = Instant::now();
+        let mut state = Throughput::default();
+        let first = live(row("root", None, 100.0, 1000.0), 1);
+        state.observe_at(&[first], &parent("root"), now);
+        let second = live(row("root", None, 150.0, 1500.0), 2);
+        let later = now + Duration::from_millis(500);
+        state.observe_at(&[second.clone()], &parent("root"), later);
+        assert_eq!(state.current_rate(later), Some(100.0));
+        let mut next_attempt = live(row("root", None, 9000.0, 2000.0), 3);
+        sample(&mut next_attempt)["responses"] = json!(2);
+        state.observe_at(&[next_attempt], &parent("root"), later);
+        assert_eq!(state.current_rate(later), None, "a new response needs a new baseline");
+        state.observe_at(&[], &parent("root"), later);
+        assert_eq!(state.current_rate(later), None);
+        state.observe_at(&[row("other", None, 9999.0, 1.0)], &parent("other"), later);
+        assert_eq!(state.current_rate(later), Some(0.0));
+        assert!(state.live_windows.is_empty());
+    }
+
+    #[test]
     fn throughput_survives_actual_ui_roster_projection_and_streams_before_completion() {
         use crate::modes::agents_view::agents_view_state::SessionSummary as UiSummary;
         let mut row = row("a", None, 10.0, 1000.0);
@@ -321,13 +400,13 @@ mod tests {
         };
         let mut state = Throughput::default();
         state.observe(&[project(&row)], &parent("a"));
-        assert_eq!(state.total_rate(), Some(10.0));
-        assert!(state.indicator().contains("STREAM TPS ~10.0"));
+        assert_eq!(state.historical_total_rate(), Some(10.0));
+        assert!(state.indicator().contains("STREAM TPS —"));
         sample(&mut row)["outputTokens"] = json!(40.0);
         sample(&mut row)["streamingMs"] = json!(2000.0);
         sample(&mut row)["sequence"] = json!(2);
         state.observe(&[project(&row)], &parent("a"));
-        assert_eq!(state.total_rate(), Some(20.0));
+        assert_eq!(state.historical_total_rate(), Some(20.0));
         let pending = project(&row);
         sample(&mut row)["active"] = json!(false);
         sample(&mut row)["estimated"] = json!(false);
@@ -336,10 +415,10 @@ mod tests {
         sample(&mut row)["streamingMs"] = json!(1500.0);
         sample(&mut row)["sequence"] = json!(3);
         state.observe(&[project(&row)], &parent("a"));
-        assert!(state.indicator().contains("STREAM TPS 20.0"));
+        assert!(state.indicator().contains("STREAM TPS 0.0"));
         // A late live estimate must not restore the tilde after final usage.
         state.observe(&[pending], &parent("a"));
-        assert!(state.indicator().contains("STREAM TPS 20.0"));
+        assert!(state.indicator().contains("STREAM TPS 0.0"));
     }
 
     #[test]
@@ -355,14 +434,14 @@ mod tests {
             ));
         }
         state.observe(&rows, &parent("root"));
-        assert_eq!(state.total_rate(), Some(3000.0));
-        assert!(state.indicator().contains("STREAM TPS 3000.0"));
+        assert_eq!(state.historical_total_rate(), Some(3000.0));
+        assert!(state.indicator().contains("STREAM TPS 0.0"));
         // The selected chat is also one measured agent, never a multiplier.
         rows.pop();
         rows[0] = revision(row("root", None, 600.0, 2000.0), 2);
         state = Throughput::default();
         state.observe(&rows, &parent("root"));
-        assert_eq!(state.total_rate(), Some(3000.0));
+        assert_eq!(state.historical_total_rate(), Some(3000.0));
     }
 
     #[test]
@@ -375,23 +454,23 @@ mod tests {
         // Exactly the cap is complete, including duplicate roster rows.
         rows.push(rows[1].clone());
         state.observe(&rows, &parent("root"));
-        assert_eq!(state.total_rate(), Some(MAX_SESSIONS as f64 * 100.0));
+        assert_eq!(state.historical_total_rate(), Some(MAX_SESSIONS as f64 * 100.0));
         assert!(!state.overflowed);
         rows.push(row("one-too-many", Some("root"), 100.0, 1000.0));
         state.observe(&rows, &parent("root"));
         assert!(state.overflowed);
         assert_eq!(state.family.len(), MAX_SESSIONS);
-        assert_eq!(state.total_rate(), None);
+        assert_eq!(state.historical_total_rate(), None);
         assert!(state.indicator().contains("STREAM TPS —"));
         state.observe(&[rows[0].clone()], &parent("root"));
         assert_eq!(
-            state.total_rate(),
+            state.historical_total_rate(),
             None,
             "missing rows must not restore a partial sum"
         );
         state.observe(&[row("other", None, 200.0, 1000.0)], &parent("other"));
         assert!(!state.overflowed);
-        assert_eq!(state.total_rate(), Some(200.0));
+        assert_eq!(state.historical_total_rate(), Some(200.0));
     }
 
     #[test]
@@ -405,12 +484,12 @@ mod tests {
             ],
             &parent("a"),
         );
-        assert_eq!(state.total_rate(), Some(110.0));
+        assert_eq!(state.historical_total_rate(), Some(110.0));
         // Two responses in a now total 160 tokens over 4s: a=40, b=10.
         let mut updated = revision(row("a", None, 160.0, 4000.0), 2);
         sample(&mut updated)["responses"] = json!(2);
         state.observe(&[updated], &parent("a"));
-        assert_eq!(state.total_rate(), Some(50.0));
+        assert_eq!(state.historical_total_rate(), Some(50.0));
     }
 
     #[test]
@@ -432,9 +511,9 @@ mod tests {
             rows.rotate_left(1);
             let mut reordered = Throughput::default();
             reordered.observe(&rows, &parent("root"));
-            assert_eq!(reordered.total_rate(), Some(190.0));
+            assert_eq!(reordered.historical_total_rate(), Some(190.0));
             state.observe(&rows, &parent("root"));
-            assert_eq!(state.total_rate(), Some(190.0));
+            assert_eq!(state.historical_total_rate(), Some(190.0));
             assert_eq!(state.samples.len(), 3);
         }
         // Completed observed descendants retain their own rates, not a pooled denominator.
@@ -442,10 +521,10 @@ mod tests {
             &[revision(row("root", None, 200.0, 3000.0), 2)],
             &parent("root"),
         );
-        assert!((state.total_rate().unwrap() - (200.0 / 3.0 + 50.0 + 90.0)).abs() < 1e-9);
+        assert!((state.historical_total_rate().unwrap() - (200.0 / 3.0 + 50.0 + 90.0)).abs() < 1e-9);
         // Selecting a child must not include its ancestor or former siblings.
         state.observe(&rows, &parent("child"));
-        assert_eq!(state.total_rate(), Some(140.0));
+        assert_eq!(state.historical_total_rate(), Some(140.0));
     }
 
     #[test]
@@ -461,7 +540,7 @@ mod tests {
         other_grandchild.parent_session_path = child.session_file.clone();
         state.observe(&[root.clone(), child], &parent("root"));
         state.observe(&[other_grandchild, grandchild, root], &parent("root"));
-        assert_eq!(state.total_rate(), Some(1000.0));
+        assert_eq!(state.historical_total_rate(), Some(1000.0));
     }
 
     #[test]
@@ -472,22 +551,22 @@ mod tests {
             &[old.clone(), row("b", Some("a"), 300.0, 1000.0)],
             &parent("a"),
         );
-        assert_eq!(state.total_rate(), Some(400.0));
+        assert_eq!(state.historical_total_rate(), Some(400.0));
         let mut restarted = revision(row("a", None, 0.0, 0.0), 0);
         sample(&mut restarted)["generation"] = json!("new");
         state.observe(&[restarted.clone()], &parent("a"));
-        assert_eq!(state.total_rate(), Some(300.0));
+        assert_eq!(state.historical_total_rate(), Some(300.0));
         state.observe(&[revision(old, 99)], &parent("a"));
-        assert_eq!(state.total_rate(), Some(300.0));
+        assert_eq!(state.historical_total_rate(), Some(300.0));
         sample(&mut restarted)["outputTokens"] = json!(50.0);
         sample(&mut restarted)["streamingMs"] = json!(1000.0);
         sample(&mut restarted)["sequence"] = json!(1);
         state.observe(&[restarted], &parent("a"));
-        assert_eq!(state.total_rate(), Some(350.0));
+        assert_eq!(state.historical_total_rate(), Some(350.0));
         state.observe(&[row("c", None, 30.0, 1000.0)], &parent("c"));
-        assert_eq!(state.total_rate(), Some(30.0));
+        assert_eq!(state.historical_total_rate(), Some(30.0));
         state.observe(&[], &parent("c"));
-        assert_eq!(state.total_rate(), None);
+        assert_eq!(state.historical_total_rate(), None);
     }
 
     #[test]
@@ -503,9 +582,9 @@ mod tests {
             }),
         );
         state.observe(&[legacy.clone()], &parent("a"));
-        assert_eq!(state.total_rate(), None);
+        assert_eq!(state.historical_total_rate(), None);
         state.observe(&[row("a", None, 100.0, 1000.0)], &parent("a"));
-        assert_eq!(state.total_rate(), Some(100.0));
+        assert_eq!(state.historical_total_rate(), Some(100.0));
         // Losing the capability must not leave the last good value on screen.
         state.observe(&[legacy], &parent("a"));
         assert!(state.indicator().contains("STREAM TPS —"));
@@ -520,21 +599,21 @@ mod tests {
         sample(&mut unmeasurable)["active"] = json!(true);
         sample(&mut unmeasurable)["estimated"] = json!(true);
         state.observe(&[root.clone(), unmeasurable.clone()], &parent("a"));
-        assert_eq!(state.total_rate(), Some(100.0));
+        assert_eq!(state.historical_total_rate(), Some(100.0));
         assert!(!state.indicator().contains('~'));
         sample(&mut unmeasurable)["streamingMs"] = json!(1000.0);
         unmeasurable = revision(unmeasurable, 2);
         state.observe(&[root.clone(), unmeasurable.clone()], &parent("a"));
-        assert_eq!(state.total_rate(), Some(150.0));
-        assert!(state.indicator().contains("STREAM TPS ~150.0"));
+        assert_eq!(state.historical_total_rate(), Some(150.0));
+        assert!(state.indicator().contains("STREAM TPS —"));
         sample(&mut unmeasurable)["active"] = json!(false);
         unmeasurable = revision(unmeasurable, 3);
         state.observe(&[root, unmeasurable], &parent("a"));
         assert!(!state.indicator().contains('~'));
         let mut zero = Throughput::default();
         zero.observe(&[row("a", None, 100.0, 0.0)], &parent("a"));
-        assert_eq!(zero.total_rate(), None);
-        assert!(zero.indicator().contains("STREAM TPS —"));
+        assert_eq!(zero.historical_total_rate(), None);
+        assert!(zero.indicator().contains("STREAM TPS 0.0"));
     }
 
     #[test]
@@ -549,13 +628,13 @@ mod tests {
             revision(row("a", None, 20.0, -2000.0), 4),
         ] {
             state.observe(&[bad], &parent("a"));
-            assert_eq!(state.total_rate(), Some(50.0));
+            assert_eq!(state.historical_total_rate(), Some(50.0));
         }
         let mut invalid = revision(row("a", None, 20.0, 2000.0), 4);
         for value in [Value::Null, json!("NaN"), json!(-1)] {
             sample(&mut invalid)["streamingMs"] = value;
             state.observe(&[invalid.clone()], &parent("a"));
-            assert_eq!(state.total_rate(), Some(50.0));
+            assert_eq!(state.historical_total_rate(), Some(50.0));
         }
         sample(&mut invalid)
             .as_object_mut()
@@ -563,7 +642,7 @@ mod tests {
             .remove("streamingMs");
         sample(&mut invalid)["generationMs"] = json!(2000);
         state.observe(&[invalid], &parent("a"));
-        assert_eq!(state.total_rate(), Some(50.0));
+        assert_eq!(state.historical_total_rate(), Some(50.0));
         // A finite but overflowing individual rate also contributes nothing.
         state.observe(
             &[
@@ -572,7 +651,7 @@ mod tests {
             ],
             &parent("a"),
         );
-        assert_eq!(state.total_rate(), Some(50.0));
+        assert_eq!(state.historical_total_rate(), Some(50.0));
         assert!(!state.indicator().contains("NaN"));
         assert!(!state.indicator().contains("inf"));
     }
@@ -584,24 +663,24 @@ mod tests {
             let root = row("root", None, 0.0, 0.0);
             let child = live(row("child", Some("root"), 300.0, 1000.0), sequence);
             state.observe(&[root.clone(), child.clone()], &parent("root"));
-            assert_eq!(state.total_rate(), Some(300.0));
+            assert_eq!(state.historical_total_rate(), Some(300.0));
             state.observe(&[root.clone()], &parent("root"));
-            assert_eq!(state.total_rate(), None);
-            assert!(state.indicator().contains("STREAM TPS —"));
+            assert_eq!(state.historical_total_rate(), None);
+            assert!(state.indicator().contains("STREAM TPS 0.0"));
             // Preserve the high-water mark even though no baseline exists.
             state.observe(&[root.clone(), child.clone()], &parent("root"));
-            assert_eq!(state.total_rate(), None);
+            assert_eq!(state.historical_total_rate(), None);
             let newer = revision(child.clone(), sequence + 1);
             state.observe(&[root.clone(), newer], &parent("root"));
-            assert_eq!(state.total_rate(), Some(300.0));
+            assert_eq!(state.historical_total_rate(), Some(300.0));
             let final_row = revision(row("child", Some("root"), 250.0, 1000.0), sequence + 2);
             state.observe(&[root.clone(), final_row], &parent("root"));
-            assert_eq!(state.total_rate(), Some(250.0));
+            assert_eq!(state.historical_total_rate(), Some(250.0));
             assert!(!state.indicator().contains('~'));
             state.observe(&[root.clone()], &parent("root"));
-            assert_eq!(state.total_rate(), Some(250.0));
+            assert_eq!(state.historical_total_rate(), Some(250.0));
             state.observe(&[root, child], &parent("root"));
-            assert_eq!(state.total_rate(), Some(250.0));
+            assert_eq!(state.historical_total_rate(), Some(250.0));
             assert!(!state.indicator().contains('~'));
         }
     }
@@ -614,19 +693,19 @@ mod tests {
         state.observe(&[root.clone(), baseline], &parent("root"));
         let child = live(row("child", Some("root"), 400.0, 2000.0), 2);
         state.observe(&[root.clone(), child.clone()], &parent("root"));
-        assert_eq!(state.total_rate(), Some(250.0));
-        assert!(state.indicator().contains('~'));
+        assert_eq!(state.historical_total_rate(), Some(250.0));
+        assert!(state.indicator().contains("STREAM TPS —"));
         state.observe(&[root.clone()], &parent("root"));
-        assert_eq!(state.total_rate(), Some(150.0));
+        assert_eq!(state.historical_total_rate(), Some(150.0));
         assert!(!state.indicator().contains('~'));
         // Replayed live sequence cannot overwrite the fallback's ordering.
         state.observe(&[root.clone(), child], &parent("root"));
-        assert_eq!(state.total_rate(), Some(150.0));
+        assert_eq!(state.historical_total_rate(), Some(150.0));
         let final_row = revision(row("child", Some("root"), 500.0, 2000.0), 3);
         state.observe(&[root.clone(), final_row], &parent("root"));
-        assert_eq!(state.total_rate(), Some(300.0));
+        assert_eq!(state.historical_total_rate(), Some(300.0));
         state.observe(&[root], &parent("root"));
-        assert_eq!(state.total_rate(), Some(300.0));
+        assert_eq!(state.historical_total_rate(), Some(300.0));
         assert!(!state.indicator().contains('~'));
     }
 
@@ -644,7 +723,7 @@ mod tests {
                 }
                 let child = live(row("child", Some("root"), 600.0, 2000.0), 2);
                 state.observe(&[root.clone(), child.clone()], &parent("root"));
-                assert_eq!(state.total_rate(), Some(300.0));
+                assert_eq!(state.historical_total_rate(), Some(300.0));
                 let mut unavailable = child.clone();
                 unavailable.extra.remove("streamingThroughput");
                 if missing == "legacy" {
@@ -661,11 +740,11 @@ mod tests {
                 }
                 state.observe(&[root.clone(), unavailable], &parent("root"));
                 let expected = with_baseline.then_some(200.0);
-                assert_eq!(state.total_rate(), expected);
+                assert_eq!(state.historical_total_rate(), expected);
                 assert!(!state.indicator().contains('~'));
                 state.observe(&[root, child], &parent("root"));
                 assert_eq!(
-                    state.total_rate(),
+                    state.historical_total_rate(),
                     expected,
                     "same-sequence replay must not restore the overlay"
                 );
@@ -716,14 +795,14 @@ mod tests {
                     );
                 }
                 state.observe(&[root.clone(), child.clone()], &parent("root"));
-                assert_eq!(state.total_rate(), Some(300.0));
+                assert_eq!(state.historical_total_rate(), Some(300.0));
                 state.observe(&[root.clone(), stopped.clone()], &parent("root"));
                 let expected = with_baseline.then_some(200.0);
-                assert_eq!(state.total_rate(), expected);
+                assert_eq!(state.historical_total_rate(), expected);
                 assert!(!state.indicator().contains('~'));
                 state.observe(&[root.clone(), child.clone()], &parent("root"));
                 assert_eq!(
-                    state.total_rate(),
+                    state.historical_total_rate(),
                     expected,
                     "stale live row must not undo lifecycle invalidation"
                 );
@@ -734,16 +813,16 @@ mod tests {
                     &parent("root"),
                 );
                 state.observe(&[root.clone(), revision(child.clone(), 3)], &parent("root"));
-                assert_eq!(state.total_rate(), expected);
+                assert_eq!(state.historical_total_rate(), expected);
                 state.observe(&[root.clone(), revision(child.clone(), 4)], &parent("root"));
-                assert_eq!(state.total_rate(), Some(300.0));
+                assert_eq!(state.historical_total_rate(), Some(300.0));
                 let mut final_row = revision(stopped.clone(), 5);
                 sample(&mut final_row)["active"] = json!(false);
                 sample(&mut final_row)["estimated"] = json!(false);
                 state.observe(&[root.clone(), final_row], &parent("root"));
                 state.observe(&[root.clone()], &parent("root"));
                 assert_eq!(
-                    state.total_rate(),
+                    state.historical_total_rate(),
                     Some(300.0),
                     "finalized history survives inactive lifecycle"
                 );
@@ -765,9 +844,9 @@ mod tests {
         helper.roster_status = Some(AgentRosterStatus::Idle);
         helper.worker_state = Some("ready".into());
         state.observe(&[root.clone(), helper.clone()], &parent("root"));
-        assert_eq!(state.total_rate(), Some(300.0));
+        assert_eq!(state.historical_total_rate(), Some(300.0));
         state.observe(&[root, helper], &parent("root"));
-        assert!(state.indicator().contains("STREAM TPS ~300.0"));
+        assert!(state.indicator().contains("STREAM TPS —"));
     }
 
     #[test]
@@ -783,24 +862,24 @@ mod tests {
         let mut restarted = live(row("child", Some("root"), 400.0, 1000.0), 1);
         sample(&mut restarted)["generation"] = json!("new");
         state.observe(&[root.clone(), restarted.clone()], &parent("root"));
-        assert_eq!(state.total_rate(), Some(400.0));
+        assert_eq!(state.historical_total_rate(), Some(400.0));
         state.observe(&[root.clone()], &parent("root"));
         assert_eq!(
-            state.total_rate(),
+            state.historical_total_rate(),
             None,
             "old-generation baseline must not survive restart"
         );
         state.observe(&[root.clone(), revision(old_live, 99)], &parent("root"));
-        assert_eq!(state.total_rate(), None);
+        assert_eq!(state.historical_total_rate(), None);
         sample(&mut restarted)["active"] = json!(false);
         sample(&mut restarted)["estimated"] = json!(false);
         restarted = revision(restarted, 2);
         state.observe(&[root.clone(), restarted], &parent("root"));
-        assert_eq!(state.total_rate(), Some(400.0));
+        assert_eq!(state.historical_total_rate(), Some(400.0));
         state.observe(&[root], &parent("root"));
-        assert_eq!(state.total_rate(), Some(400.0));
+        assert_eq!(state.historical_total_rate(), Some(400.0));
         state.observe(&[row("other", None, 50.0, 1000.0)], &parent("other"));
-        assert_eq!(state.total_rate(), Some(50.0));
+        assert_eq!(state.historical_total_rate(), Some(50.0));
         assert_eq!(state.finalized.len(), 1);
         assert!(state.live_overlays.is_empty());
     }
@@ -820,7 +899,7 @@ mod tests {
         let mut line = SubagentSummaryLine::default();
         line.set_always_visible(true);
         line.set_communication_status(Some(format!(
-            "TXT ○  OCC1 ○  OCC2 ○  {}",
+            "○ TXT  ○ OCC1  ○ OCC2  {}",
             state.indicator()
         )));
         line.set_right_status(Some(RightStatus {
@@ -835,8 +914,8 @@ mod tests {
             // full below-line needs inner >= visible+1, i.e. width >= 41. The documented
             // rule lives in subagent_summary_line.rs.
             if width >= 41 {
-                assert!(strip_ansi(&lines.join("\n")).contains("OCC2 ○  STREAM TPS 50.0"));
-                assert!(lines.join("\n").contains("\x1b[1;38;5;196mSTREAM TPS 50.0"));
+                assert!(strip_ansi(&lines.join("\n")).contains("○ OCC2  STREAM TPS 0.0"));
+                assert!(lines.join("\n").contains("\x1b[1;38;5;196mSTREAM TPS 0.0"));
             }
         }
     }

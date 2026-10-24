@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 
 use pi_agent_core::types::ThinkingLevel;
 
-use crate::config::APP_NAME;
+use crate::config::APP_COMMAND as APP_NAME;
 use crate::core::thinking_levels::THINKING_LEVELS;
 
 pub type Mode = &'static str;
@@ -633,7 +633,7 @@ mod tests {
         let args = parse(&["--export", "file.jsonl"]);
         assert_eq!(
             args.diagnostics[0].message,
-            "--export was removed. Use \"prime-agent session export <file> [output]\"."
+            "--export was removed. Use \"optimus-agent session export <file> [output]\"."
         );
         assert_eq!(args.export, None);
     }
@@ -714,7 +714,7 @@ mod tests {
         assert_eq!(args.list_models, None);
         assert_eq!(
             args.diagnostics[0].message,
-            "--list-models was removed. Use \"prime-agent model list [search]\"."
+            "--list-models was removed. Use \"optimus-agent model list [search]\"."
         );
     }
 

@@ -793,7 +793,9 @@ fn the_footer_truth_table_shows_green_on_red_off_and_truthful_modes() {
     );
     assert_eq!(footer_state(JevMode::Compare, &saved, &checking).color_key(), "warning");
 
-    // A recorded fallback or failure: amber fallback.
+    // A recorded fallback or failure: amber standard mode.
+    assert_eq!(footer_text(JevFooterState::Fallback), "● Jev standard mode");
+    assert_eq!(JevFooterState::Fallback.compact_label(), "Jev standard mode");
     let fallback = JevPipelineStatus {
         fallback_reason: "context too large; category skipped".to_string(),
         ..Default::default()
@@ -1079,7 +1081,7 @@ fn jev_status_distinguishes_checking_degraded_and_never_from_configured() {
     assert!(text.contains("Counters: 0 ok, 3 failed"), "{text}");
     assert!(text.contains("Dropped comparisons: 4"), "{text}");
     assert!(text.contains("category-4 tool choice: no hook in this session"), "{text}");
-    assert!(text.contains("Fallback reason: redacted fallback"), "{text}");
+    assert!(text.contains("Standard mode reason: redacted fallback"), "{text}");
 
     // An unavailable worker snapshot cannot prove zero calls or no success.
     let fresh = render_status(&base);
@@ -2007,7 +2009,7 @@ fn compaction_status_distinguishes_unknown_observed_and_sparse_fallbacks() {
     let fallback = render_status(&report.with_snapshot(Some(&sparse)));
     assert!(fallback.contains("Compaction last: not applied"));
     assert!(fallback.contains("Compaction estimated tokens: unknown -> unknown"));
-    assert!(fallback.contains("Compaction fallback: circuit_open"));
+    assert!(fallback.contains("Compaction standard mode reason: circuit_open"));
     assert!(fallback.contains("Compaction breaker: unknown"));
     for invalid in [serde_json::json!({}), serde_json::json!([]), serde_json::json!({"applied": "yes"})] {
         assert!(jev_ui::CompactionStatus::from_snapshot(Some(&invalid)).is_none());

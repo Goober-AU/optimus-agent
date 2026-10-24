@@ -295,6 +295,26 @@ fn resource_sampler_proves_local_worker_identity_and_collects_real_process_readi
         updates.load(Ordering::SeqCst) >= 2,
         "idle views must receive repaint notifications"
     );
+    if pid == std::process::id() {
+        // A zero-only sampler passes the memory/availability checks above. Keep
+        // one thread busy across refreshes to exercise real per-PID CPU deltas.
+        let work = std::thread::spawn(|| {
+            let until = Instant::now() + Duration::from_millis(2200);
+            let mut value = 1_u64;
+            while Instant::now() < until {
+                value = std::hint::black_box(value.wrapping_mul(6364136223846793005).wrapping_add(1));
+            }
+        });
+        let mut peak = 0.0_f32;
+        while !work.is_finished() {
+            if let Some(cpu) = monitor.state.lock().unwrap().readings.get("root").and_then(|r| r.cpu) {
+                peak = peak.max(cpu);
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        work.join().unwrap();
+        assert!(peak > 1.0, "busy local worker reported {peak}% CPU");
+    }
     let state = monitor.state.lock().unwrap();
     for session in ["root", "child", "nested"] {
         let reading = &state.readings[session];
@@ -418,7 +438,7 @@ fn resource_full_frame_keeps_one_context_health_indicator_and_a_live_header() {
         assert_eq!(text.matches("CTX HEALTH").count(), 1, "{text}");
         assert!(!text.contains("CONTEXT HEALTH"), "{text}");
         assert!(
-            text.contains("STREAM TPS 100.0  CTX HEALTH GREEN"),
+            text.contains("STREAM TPS 0.0  CTX HEALTH GREEN"),
             "{text}"
         );
         assert!(frame.iter().all(|line| visible_width(line) <= 160));
