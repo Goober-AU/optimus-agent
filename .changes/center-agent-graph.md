@@ -1,0 +1,1 @@
+- Fixed vertical centering of the agent graph by mapping nodes directly to terminal rows, keeping symmetric families balanced within the existing header space.
