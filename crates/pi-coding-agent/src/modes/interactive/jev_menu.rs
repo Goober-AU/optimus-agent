@@ -1335,7 +1335,7 @@ impl JevFooterState {
 
     /// The dot glyph prefix.
     pub fn dot(self) -> &'static str {
-        "\u{25cf}"
+        "\u{2022}"
     }
 
     /// True for a healthy operative mode (the green dot states). Degraded
@@ -1396,7 +1396,7 @@ impl JevCompactionState {
 
     /// The dot glyph prefix (same glyph as the decision segment).
     pub fn dot(self) -> &'static str {
-        "\u{25cf}"
+        "\u{2022}"
     }
 
     /// True only for the on state.
@@ -1454,25 +1454,25 @@ pub fn footer_state(
     healthy
 }
 
-/// Plain-text footer segment: `\u{25cf} Jev Off`. No ANSI, so the caller can
+/// Plain-text footer segment: `\u{2022} Jev Off`. No ANSI, so the caller can
 /// measure width and truncate before colouring.
 pub fn footer_text(state: JevFooterState) -> String {
     format!("{} {}", state.dot(), state.label())
 }
 
-/// Narrow decision segment: `\u{25cf} Jev C On`. A SHORT LABELLED form, never a
+/// Narrow decision segment: `\u{2022} Jev C On`. A SHORT LABELLED form, never a
 /// bare dot: the state and the mode stay readable when the full label cannot
 /// fit, and the segment stays distinguishable from the compaction segment.
 pub fn footer_compact_text(state: JevFooterState) -> String {
     format!("{} {}", state.dot(), state.compact_label())
 }
 
-/// Plain-text compaction segment: `\u{25cf} Jev compact on`. No ANSI.
+/// Plain-text compaction segment: `\u{2022} Jev compact on`. No ANSI.
 pub fn footer_compaction_text(state: JevCompactionState) -> String {
     format!("{} {}", state.dot(), state.label())
 }
 
-/// Narrow compaction segment: `\u{25cf} Jev Cmp on`. Short labelled form, see
+/// Narrow compaction segment: `\u{2022} Jev Cmp on`. Short labelled form, see
 /// [`footer_compact_text`].
 pub fn footer_compaction_compact_text(state: JevCompactionState) -> String {
     format!("{} {}", state.dot(), state.compact_label())
@@ -2065,7 +2065,7 @@ pub fn footer_color_key(state: JevFooterState) -> &'static str {
 /// live publisher in `jev_footer.rs` uses the labelled form, because the dispatch
 /// task cannot measure the terminal; this measured form is the contract for a
 /// caller that can. `statusCompactText` is the optional SHORT LABELLED narrow form
-/// (`\u{25cf} Jev C On`): receivers that do not know it ignore the field, and
+/// (`\u{2022} Jev C On`): receivers that do not know it ignore the field, and
 /// senders that omit it degrade to left-truncation instead of segment
 /// compaction. Never a bare dot: two bare dots cannot be told apart.
 #[allow(dead_code)]

@@ -328,6 +328,11 @@ impl TuiComponent for Header {
             .and_then(|t| t.borrow().subagents.clone())
             .map(|bar| bar.borrow().resource_rows(resource_width, resource_budget))
             .unwrap_or_default();
+        let graph_width = graph_space(width as usize, height);
+        let graph = self.1.upgrade()
+            .and_then(|t| t.borrow().subagents.clone())
+            .map(|bar| bar.borrow_mut().graph_rows(graph_width, 3))
+            .unwrap_or_default();
         render_header(
             width as usize,
             height,
@@ -346,6 +351,7 @@ impl TuiComponent for Header {
                 jev: jev.as_deref(),
                 clock: &chrono::Local::now().format("%H:%M:%S").to_string(),
                 resources: &resources,
+                graph: &graph,
             },
         )
     }
@@ -361,6 +367,7 @@ pub(super) struct HeaderData<'a> {
     pub jev: Option<&'a str>,
     pub clock: &'a str,
     pub resources: &'a [String],
+    pub graph: &'a [String],
 }
 
 fn execution_label(mode: &InteractiveMode) -> Option<String> {
@@ -396,9 +403,13 @@ fn paired(left: &str, right: &str, width: usize) -> String {
     format!("{}  {}", fit(left, width - right_width - 2), right)
 }
 
+fn graph_space(width: usize, budget: usize) -> usize {
+    if width >= 110 && budget >= 7 { 24 } else { 0 }
+}
+
 fn resource_space(width: usize, budget: usize) -> (usize, usize) {
     if width >= 110 && budget >= 7 {
-        (width.saturating_sub(if width >= 160 { 75 } else { 39 }).min(60), 2)
+        (width.saturating_sub(39 + graph_space(width, budget)).min(60), 2)
     } else {
         (width.saturating_sub(2), budget.saturating_sub(2).min(2))
     }
@@ -428,11 +439,11 @@ pub(super) fn render_header(width: usize, budget: usize, data: &HeaderData<'_>) 
     let jev = data.jev.map(|label| {
         let lower = label.to_ascii_lowercase();
         let (color, dot) = if lower.contains("standard mode") || lower.contains("fallback") || lower.contains("error") {
-            ("warning", "●")
+            ("warning", "•")
         } else if lower.contains("off") || lower.contains("disabled") {
-            ("dim", "○")
+            ("dim", "◦")
         } else {
-            ("accent", "●")
+            ("accent", "•")
         };
         palette.fg(color, &format!("{dot} {}", clean_label(label)))
     });
@@ -448,7 +459,10 @@ pub(super) fn render_header(width: usize, budget: usize, data: &HeaderData<'_>) 
             "▀▀▀▀ ▀      ▀   ▀▀▀ ▀   ▀ ▀▀▀▀ ▀▀▀",
         ];
         let brand_width = 37;
-        let caption_width = if width >= 160 { 36 } else { 0 };
+        let graph_width = if data.graph.is_empty() { 0 } else { graph_space(width, budget) };
+        let panel_width = resource_space(width, budget).0;
+        let brand_space = width.saturating_sub(panel_width + graph_width + 2);
+        let caption_width = if width >= 160 && (graph_width == 0 || brand_space >= 73) { 36 } else { 0 };
         for i in 0..3 {
             let caption = if caption_width > 0 {
                 fit(
@@ -469,14 +483,16 @@ pub(super) fn render_header(width: usize, budget: usize, data: &HeaderData<'_>) 
             );
             let brand_label = format!("{}  {}", palette.bold(&palette.fg("accent", "telemus.ai")), palette.fg("dim", &format!("v{}", crate::config::VERSION)));
             if has_resources {
-                let panel_width = resource_space(width, budget).0;
                 let right = if i == 0 {
                     format!("{brand_label}  {status}  {}", palette.fg("dim", "*shared CPU/RAM"))
                 } else {
                     data.resources.get(i - 1).cloned().unwrap_or_default()
                 };
                 // Fixed column: labels and samples share the brand's left edge.
-                rows.push(format!("{}{}", fit(&brand, width - panel_width - 1), fit(&right, panel_width)));
+                let graph = if graph_width > 0 {
+                    format!("{} ", fit(data.graph.get(i).map(String::as_str).unwrap_or(""), graph_width))
+                } else { String::new() };
+                rows.push(format!("{}{}{}", fit(&brand, width - panel_width - visible_width(&graph) - 1), graph, fit(&right, panel_width)));
             } else {
                 let right = match i {
                     0 => brand_label,

@@ -117,8 +117,8 @@ impl HeartbeatPulse {
     fn marker(&self, now: Instant) -> &'static str {
         match self.fired_at.map(|at| now.saturating_duration_since(at)) {
             Some(elapsed) if elapsed < Duration::from_millis(1400)
-                && (elapsed.as_millis() / 250) % 2 == 1 => "○",
-            _ => "●",
+                && (elapsed.as_millis() / 250) % 2 == 1 => "◦",
+            _ => "•",
         }
     }
 }
@@ -172,7 +172,7 @@ pub(super) fn right_status(
         let now = Instant::now();
         pulse.observe(session, &heartbeat_jobs(mode), now);
         if counts.user_on + counts.agent_on > 0 {
-            format!("\x1b[1;38;5;196m{}\x1b[22;39m ", pulse.marker(now))
+            format!("{} ", theme().fg("thinkingText", pulse.marker(now)))
         } else { String::new() }
     });
     let heartbeat_color =

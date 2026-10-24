@@ -15,6 +15,8 @@ mod communication_activity;
 mod generation_throughput;
 #[path = "context_health_indicator.rs"]
 mod context_health_indicator;
+#[path = "agent_graph.rs"]
+mod agent_graph;
 #[path = "resource_status.rs"]
 mod resource_status;
 
@@ -62,6 +64,9 @@ pub(super) struct Bar {
     communication: communication_activity::ActivityState,
     throughput: generation_throughput::Throughput,
     resources: resource_status::Monitor,
+    graph: agent_graph::Graph,
+    graph_task: Option<tokio::task::JoinHandle<()>>,
+    graph_deadline: Option<Instant>,
     pulse_task: Option<tokio::task::JoinHandle<()>>,
     pulse_deadline: Option<std::time::Instant>,
     render_send: RefCell<Option<mpsc::Sender<HostEvent>>>,
@@ -82,6 +87,9 @@ impl Bar {
             communication: communication_activity::ActivityState::default(),
             throughput: generation_throughput::Throughput::default(),
             resources: resource_status::Monitor::default(),
+            graph: agent_graph::Graph::default(),
+            graph_task: None,
+            graph_deadline: None,
             pulse_task: None,
             pulse_deadline: None,
             render_send: RefCell::new(None),
@@ -101,6 +109,40 @@ impl Bar {
         let mode = self.mode.borrow();
         let root = mode.connection_state.as_ref().map(|state| state.session_id.as_str()).unwrap_or("");
         self.resources.render(root, width, budget, Instant::now())
+    }
+
+    pub(super) fn graph_rows(&mut self, width: usize, height: usize) -> Vec<String> {
+        if width == 0 || height == 0 {
+            if let Some(task) = self.graph_task.take() { task.abort(); }
+            self.graph_deadline = None;
+            return Vec::new();
+        }
+        let mode = self.mode.borrow();
+        let parent = mode.connection_state.as_ref().map(|state| RosterParent {
+            active_session_id: state.active_session_id.clone(),
+            session_id: Some(state.session_id.clone()), session_file: state.session_file.clone(),
+        }).unwrap_or_default();
+        let rows = self.roster.lock().unwrap().as_ref().map(|store| store.summaries()).unwrap_or_default()
+            .into_iter().filter_map(|row| serde_json::from_value(
+                crate::modes::agents_view::native_wire::normalize_browser_numbers(row),
+            ).ok()).collect::<Vec<_>>();
+        let now = Instant::now();
+        self.graph.observe(&rows, &parent,
+            mode.is_agent_streaming() || mode.is_bash_running() || mode.is_agent_compacting(), now);
+        let lines = self.graph.render(parent.session_id.as_deref().unwrap_or(""), width, height, now);
+        let deadline = self.graph.next_frame(now);
+        // Keep an already scheduled frame; frequent input must not postpone it.
+        if self.graph_deadline.is_none_or(|at| at <= now) || deadline.is_none() {
+            if let Some(task) = self.graph_task.take() { task.abort(); }
+            self.graph_deadline = deadline;
+            if let (Some(send), Some(at)) = (self.render_send.borrow().clone(), deadline) {
+                self.graph_task = Some(tokio::spawn(async move {
+                    tokio::time::sleep_until(at.into()).await;
+                    let _ = send.send(HostEvent::Render);
+                }));
+            }
+        }
+        lines
     }
 
     pub(super) fn subscribe(
@@ -318,6 +360,7 @@ impl Drop for Bar {
     fn drop(&mut self) {
         if let Some(task) = self.jev_task.get_mut().take() { task.abort(); }
         if let Some(task) = self.pulse_task.take() { task.abort(); }
+        if let Some(task) = self.graph_task.take() { task.abort(); }
     }
 }
 
@@ -366,6 +409,10 @@ pub(super) fn project_child(
 #[cfg(test)]
 #[path = "context_health_bar_tests.rs"]
 mod context_health_bar_tests;
+
+#[cfg(test)]
+#[path = "agent_graph_host_tests.rs"]
+mod agent_graph_host_tests;
 
 #[cfg(test)]
 mod jev_bar_tests {

@@ -1,0 +1,3 @@
+- Added a live neon-blue force-directed agent graph beside the fullscreen resource panel, with working-node illumination and delivery-driven communication pulses.
+- Fixed Jev and heartbeat status dots to use text-centered circles; heartbeat now matches the context meter's neon pink and CTX Health Amber matches Jev Standard Mode.
+- Changed the graph to reuse existing roster telemetry without daemon protocol changes; compact terminals retain the agent summary and resource text. Optimus terminal presentation only; Telemus 3D/Web and Telegram are unaffected.

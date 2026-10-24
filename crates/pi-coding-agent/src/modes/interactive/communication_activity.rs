@@ -25,10 +25,23 @@ pub(super) struct ActivityState {
     until: [Option<Instant>; 3],
     supported: bool,
     observed_since_ms: Option<i64>,
+    links: BTreeMap<(String, String), Instant>,
 }
 
 impl ActivityState {
     pub(super) fn observe(&mut self, rows: &[SessionSummary], parent: &RosterParent, now: Instant) -> bool {
+        let children: BTreeSet<String> = rows.iter().filter(|row| {
+            row.runtime_kind.as_deref() == Some("subagent")
+                && crate::modes::agents_view::agents_view_state::is_direct_agent_child(
+                    &linkage_row_for_roster_summary(row), parent.active_session_id.as_deref(),
+                    parent.session_id.as_deref(), parent.session_file.as_deref(),
+                )
+        }).map(|row| row.session_id.clone()).collect();
+        self.observe_scope(rows, parent, &children, now)
+    }
+
+    pub(super) fn observe_scope(&mut self, rows: &[SessionSummary], parent: &RosterParent,
+        children: &BTreeSet<String>, now: Instant) -> bool {
         let epoch = rows.first().and_then(|row| row.extra.get("communicationObservationEpoch"))
             .and_then(|value| value.as_u64()).unwrap_or(0);
         let identity = (parent.session_id.clone().unwrap_or_default(), parent.active_session_id.clone(), epoch);
@@ -37,14 +50,9 @@ impl ActivityState {
         }
         let wall_now_ms = chrono::Utc::now().timestamp_millis();
         let observed_since_ms = *self.observed_since_ms.get_or_insert(wall_now_ms);
-        let is_child = |row: &&SessionSummary| row.runtime_kind.as_deref() == Some("subagent")
-            && crate::modes::agents_view::agents_view_state::is_direct_agent_child(
-                &linkage_row_for_roster_summary(row), parent.active_session_id.as_deref(),
-                parent.session_id.as_deref(), parent.session_file.as_deref(),
-            );
-        let children: BTreeSet<&str> = rows.iter().filter(is_child).map(|row| row.session_id.as_str()).collect();
         let parent_id = parent.session_id.as_deref().unwrap_or("");
         let family = |id: &str| id == parent_id || children.contains(id);
+        self.links.retain(|(from, to), until| family(from) && family(to) && *until > now);
         let mut received = BTreeSet::new();
         let mut pulse = false;
         self.supported = false;
@@ -61,6 +69,7 @@ impl ActivityState {
             if receiver.generation != activity.generation {
                 receiver.generation = activity.generation;
                 receiver.seen.clear();
+                self.links.retain(|(from, to), _| from != &row.session_id && to != &row.session_id);
             }
             for delivery in activity.deliveries.iter().rev().take(MAX_ACTIVITY_MESSAGES).rev() {
                 if receiver.seen.contains(&delivery.id) { continue; }
@@ -84,13 +93,23 @@ impl ActivityState {
                     CommunicationKind::Latent => continue,
                 };
                 self.until[index] = Some(now + PULSE);
+                let edge = (delivery.source_session_id.clone(), row.session_id.clone());
+                if self.links.len() < MAX_SEEN || self.links.contains_key(&edge) {
+                    self.links.insert(edge, now + PULSE);
+                }
                 pulse = true;
             }
         }
         self.receivers.retain(|id, _| received.contains(id));
-        if !self.supported { self.until = [None; 3]; }
+        self.links.retain(|(_, to), _| received.contains(to));
+        if !self.supported { self.until = [None; 3]; self.links.clear(); }
         self.initialized = self.supported;
         pulse
+    }
+
+    pub(super) fn live_links(&self, now: Instant) -> impl Iterator<Item = (&str, &str, Instant)> {
+        self.links.iter().filter(move |(_, until)| **until > now)
+            .map(|((from, to), until)| (from.as_str(), to.as_str(), *until))
     }
 
     pub(super) fn next_deadline(&self, now: Instant) -> Option<Instant> {

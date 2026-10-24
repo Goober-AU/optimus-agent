@@ -768,7 +768,7 @@ fn the_footer_truth_table_shows_green_on_red_off_and_truthful_modes() {
     );
     assert_eq!(footer_state(JevMode::Off, &none, &default_pipeline), JevFooterState::Off);
     assert_eq!(footer_state(JevMode::Off, &none, &default_pipeline).color_key(), "error");
-    assert_eq!(footer_text(JevFooterState::Off), "\u{25cf} Jev Off");
+    assert_eq!(footer_text(JevFooterState::Off), "\u{2022} Jev Off");
     assert!(!JevFooterState::Off.is_green());
     assert_ne!(footer_color_key(JevFooterState::Off), "success");
 
@@ -794,7 +794,7 @@ fn the_footer_truth_table_shows_green_on_red_off_and_truthful_modes() {
     assert_eq!(footer_state(JevMode::Compare, &saved, &checking).color_key(), "warning");
 
     // A recorded fallback or failure: amber standard mode.
-    assert_eq!(footer_text(JevFooterState::Fallback), "● Jev standard mode");
+    assert_eq!(footer_text(JevFooterState::Fallback), "• Jev standard mode");
     assert_eq!(JevFooterState::Fallback.compact_label(), "Jev standard mode");
     let fallback = JevPipelineStatus {
         fallback_reason: "context too large; category skipped".to_string(),
@@ -818,7 +818,7 @@ fn the_footer_truth_table_shows_green_on_red_off_and_truthful_modes() {
     assert_eq!(healthy, JevFooterState::Compare);
     assert_eq!(footer_color_key(healthy), "success");
     assert!(healthy.is_green());
-    assert_eq!(footer_text(healthy), "\u{25cf} Jev On (Compare)");
+    assert_eq!(footer_text(healthy), "\u{2022} Jev On (Compare)");
 
     // Healthy Active: the SAME accent colour, a distinct label, and the very same
     // credential / checking / fallback ladder Compare uses.
@@ -826,7 +826,7 @@ fn the_footer_truth_table_shows_green_on_red_off_and_truthful_modes() {
     assert_eq!(active_healthy, JevFooterState::Active);
     assert_eq!(footer_color_key(active_healthy), "success");
     assert_eq!(footer_color_key(active_healthy), footer_color_key(healthy));
-    assert_eq!(footer_text(active_healthy), "\u{25cf} Jev On (Active)");
+    assert_eq!(footer_text(active_healthy), "\u{2022} Jev On (Active)");
     assert_ne!(active_healthy.label(), healthy.label());
     for (credential, pipeline, expected) in [
         (&none, &default_pipeline, JevFooterState::Unavailable),
@@ -850,7 +850,7 @@ fn the_footer_truth_table_shows_green_on_red_off_and_truthful_modes() {
     let both = footer_state(JevMode::CompareAndActive, &saved, &default_pipeline);
     assert_eq!(both, JevFooterState::CompareAndActive);
     assert!(both.is_green());
-    assert_eq!(footer_text(both), "\u{25cf} Jev On (Compare + Active)");
+    assert_eq!(footer_text(both), "\u{2022} Jev On (Compare + Active)");
 
     // Degraded states never claim green or a healthy "Jev On" label.
     for state in [
@@ -879,10 +879,10 @@ fn the_footer_truth_table_shows_green_on_red_off_and_truthful_modes() {
 #[test]
 fn the_footer_is_width_safe_and_carries_the_state_in_text_not_only_colour() {
     // Wide terminal: the labelled form.
-    assert_eq!(footer_segment(JevFooterState::Off, 120), "\u{25cf} Jev Off");
+    assert_eq!(footer_segment(JevFooterState::Off, 120), "\u{2022} Jev Off");
     // Narrow terminal: dot only, which still fits in one column.
     let narrow = footer_segment(JevFooterState::Off, 10);
-    assert_eq!(narrow, "\u{25cf}");
+    assert_eq!(narrow, "\u{2022}");
     assert!(pi_tui::utils::visible_width(&narrow) <= 10);
     for columns in [1usize, 2, 5, 10, 20, 39, 40, 41, 80, 200] {
         for state in [
@@ -915,17 +915,17 @@ fn the_footer_is_width_safe_and_carries_the_state_in_text_not_only_colour() {
     // `Jev Active` is wider than `Jev Off` but still inside the labelled form.
     assert_eq!(
         footer_segment(JevFooterState::Active, FOOTER_LABEL_MIN_COLUMNS),
-        "\u{25cf} Jev On (Active)"
+        "\u{2022} Jev On (Active)"
     );
-    assert_eq!(footer_segment(JevFooterState::Active, 39), "\u{25cf}");
+    assert_eq!(footer_segment(JevFooterState::Active, 39), "\u{2022}");
     // The compaction dot follows the same width rule.
     assert_eq!(
         footer_compaction_segment(JevCompactionState::On, FOOTER_LABEL_MIN_COLUMNS),
-        "\u{25cf} Jev compact on"
+        "\u{2022} Jev compact on"
     );
     assert_eq!(
         footer_compaction_segment(JevCompactionState::On, 39),
-        "\u{25cf}"
+        "\u{2022}"
     );
     // Every state is distinguishable without colour, across BOTH segments.
     let labels: Vec<String> = [
@@ -961,14 +961,14 @@ fn the_footer_payload_uses_the_existing_setstatus_surface_and_does_no_io() {
     assert_eq!(payload["statusKey"], serde_json::json!("jev"));
     assert_eq!(
         payload["statusText"],
-        serde_json::json!("\u{25cf} Jev On (Compare)")
+        serde_json::json!("\u{2022} Jev On (Compare)")
     );
     // The optional narrow form rides the SAME payload, so the tray row can
     // collapse the segment without a second round trip. It is SHORT LABELLED,
     // never a bare dot.
     assert_eq!(
         payload["statusCompactText"],
-        serde_json::json!("\u{25cf} Jev C On")
+        serde_json::json!("\u{2022} Jev C On")
     );
     // Removal is explicit null, which `Surfaces::set_status` deletes on.
     let cleared = footer_clear_payload();
@@ -983,11 +983,11 @@ fn the_footer_payload_uses_the_existing_setstatus_surface_and_does_no_io() {
     );
     assert_eq!(
         compact["statusText"],
-        serde_json::json!("\u{25cf} Jev compact on")
+        serde_json::json!("\u{2022} Jev compact on")
     );
     assert_eq!(
         compact["statusCompactText"],
-        serde_json::json!("\u{25cf} Jev Cmp on")
+        serde_json::json!("\u{2022} Jev Cmp on")
     );
     let compact_cleared = footer_compaction_clear_payload();
     assert_eq!(
@@ -1001,11 +1001,11 @@ fn the_footer_payload_uses_the_existing_setstatus_surface_and_does_no_io() {
     let labelled = footer_status_payload(JevFooterState::Compare, usize::MAX);
     assert_eq!(
         labelled["statusText"],
-        serde_json::json!("\u{25cf} Jev On (Compare)")
+        serde_json::json!("\u{2022} Jev On (Compare)")
     );
     // Below the threshold the CALLER keeps only the dot, so a narrow terminal
     // cannot lose layout; at and above it the label is used.
-    assert_eq!(footer_segment(JevFooterState::Compare, 39), "\u{25cf}");
+    assert_eq!(footer_segment(JevFooterState::Compare, 39), "\u{2022}");
     assert_eq!(
         footer_segment(JevFooterState::Compare, FOOTER_LABEL_MIN_COLUMNS),
         footer_text(JevFooterState::Compare)
@@ -1761,18 +1761,18 @@ fn the_command_metadata_and_footer_helpers_match_the_registry_and_the_footer_rul
 
     // The footer helpers expose the pinned texts and the width threshold, and the
     // removal event reuses the same status key.
-    assert_eq!(footer_text(JevFooterState::Off), "\u{25cf} Jev Off");
+    assert_eq!(footer_text(JevFooterState::Off), "\u{2022} Jev Off");
     assert_eq!(
         footer_text(JevFooterState::Compare),
-        "\u{25cf} Jev On (Compare)"
+        "\u{2022} Jev On (Compare)"
     );
     assert_eq!(
         footer_compaction_text(JevCompactionState::On),
-        "\u{25cf} Jev compact on"
+        "\u{2022} Jev compact on"
     );
     assert_eq!(
         footer_compaction_text(JevCompactionState::Off),
-        "\u{25cf} Jev compact off"
+        "\u{2022} Jev compact off"
     );
     assert_eq!(FOOTER_LABEL_MIN_COLUMNS, 40);
     assert_eq!(
@@ -1844,7 +1844,7 @@ fn an_operative_footer_is_green_names_its_mode_and_off_is_red() {
         assert_eq!(footer_color_key(state), "success", "{state:?}");
         assert_eq!(
             footer_text(state),
-            format!("\u{25cf} {expected_label}"),
+            format!("\u{2022} {expected_label}"),
             "{state:?}"
         );
         // The label carries the mode, so the text alone distinguishes On states.
@@ -2077,11 +2077,11 @@ fn the_compaction_dot_is_independent_of_the_decision_dot() {
         &JevPipelineStatus::default(),
     );
     assert_eq!(decision, JevFooterState::Off);
-    assert_eq!(footer_text(decision), "\u{25cf} Jev Off");
-    assert_eq!(footer_text(JevFooterState::Off), "\u{25cf} Jev Off");
+    assert_eq!(footer_text(decision), "\u{2022} Jev Off");
+    assert_eq!(footer_text(JevFooterState::Off), "\u{2022} Jev Off");
     assert_eq!(
         footer_compaction_text(JevCompactionState::On),
-        "\u{25cf} Jev compact on"
+        "\u{2022} Jev compact on"
     );
     assert_ne!(
         footer_text(decision),
@@ -2092,13 +2092,13 @@ fn the_compaction_dot_is_independent_of_the_decision_dot() {
     // Same for the reverse: decisions on with compaction off.
     assert_eq!(
         footer_compaction_text(JevCompactionState::Off),
-        "\u{25cf} Jev compact off"
+        "\u{2022} Jev compact off"
     );
     assert_eq!(JevCompactionState::Off.color_key(), "error");
     // Unknown is its own label; it is never rendered as on or off.
     assert_eq!(
         footer_compaction_text(JevCompactionState::Unknown),
-        "\u{25cf} Jev compact unknown"
+        "\u{2022} Jev compact unknown"
     );
     assert_eq!(JevCompactionState::Unknown.color_key(), "warning");
     // The segments publish under different keys, so one refresh can never
