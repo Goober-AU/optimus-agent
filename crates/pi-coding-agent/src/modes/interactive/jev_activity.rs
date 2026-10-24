@@ -78,14 +78,14 @@ pub(super) fn status_with_freshness(
                 _ => "evaluating",
             }
         } else if fallback {
-            "fallback"
+            "standard mode"
         } else {
             "idle"
         }
     } else if response.is_none() {
         "stats unavailable"
     } else if fallback {
-        "fallback"
+        "standard mode"
     } else {
         "idle"
     };

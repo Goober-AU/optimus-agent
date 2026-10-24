@@ -355,7 +355,7 @@ pub fn render_compaction_observation(status: Option<&CompactionStatus>) -> Strin
         return "Compaction last: unknown (no worker boundary observed)\nCompaction breaker: unknown\n".into();
     };
     let count = |value: Option<u64>| value.map(|value| value.to_string()).unwrap_or_else(|| "unknown".into());
-    format!("Compaction last: {}\nCompaction estimated tokens: {} -> {} (reduction {})\nCompaction candidates: {} evaluated, {} calls removed, {} results removed, {} results truncated\nCompaction fallback: {}\nCompaction breaker: {}\n",
+    format!("Compaction last: {}\nCompaction estimated tokens: {} -> {} (reduction {})\nCompaction candidates: {} evaluated, {} calls removed, {} results removed, {} results truncated\nCompaction standard mode reason: {}\nCompaction breaker: {}\n",
         match status.applied { Some(true) => "applied", Some(false) => "not applied", None => "unknown" },
         count(status.estimated_tokens_before), count(status.estimated_tokens_after),
         status.reduction_percent.as_deref().unwrap_or("unknown"),
@@ -589,7 +589,7 @@ pub fn render_status(report: &JevStatusReport) -> String {
         } else if report.pipeline.checking() {
             "checking (comparisons in flight)"
         } else if report.pipeline.degraded() {
-            "degraded (a fallback or failure was recorded)"
+            "degraded (standard mode or a failure was recorded)"
         } else if report.pipeline.last_success_at.is_some() {
             "last-success recorded"
         } else {
@@ -630,7 +630,7 @@ pub fn render_status(report: &JevStatusReport) -> String {
         }
     }
     text.push_str(&format!(
-        "Fallback reason: {}\n",
+        "Standard mode reason: {}\n",
         if report.pipeline.fallback_reason.is_empty() {
             "none".to_string()
         } else {
@@ -1298,7 +1298,7 @@ impl JevFooterState {
             JevFooterState::CompareAndActive => "Jev On (Compare + Active)",
             JevFooterState::Unavailable => "Jev unavailable",
             JevFooterState::Checking => "Jev checking",
-            JevFooterState::Fallback => "Jev fallback",
+            JevFooterState::Fallback => "Jev standard mode",
         }
     }
 
@@ -1329,7 +1329,7 @@ impl JevFooterState {
             JevFooterState::CompareAndActive => "Jev C+A On",
             JevFooterState::Unavailable => "Jev unavailable",
             JevFooterState::Checking => "Jev checking",
-            JevFooterState::Fallback => "Jev fallback",
+            JevFooterState::Fallback => "Jev standard mode",
         }
     }
 
@@ -1430,7 +1430,7 @@ pub fn compaction_state(settings: &JevSettings, session_id: &str) -> JevCompacti
 /// * `CompareAndActive` -> green `Jev On (Compare + Active)` under the same rules.
 /// * No credential -> amber `Jev unavailable`.
 /// * In-flight work -> amber `Jev checking`.
-/// * Recorded fallback/failure -> amber `Jev fallback`.
+/// * Recorded fallback/failure -> amber `Jev standard mode`.
 pub fn footer_state(
     mode: JevMode,
     credential: &CredentialStatus,
@@ -2041,7 +2041,7 @@ pub const JEV_COMPACT_STATUS_KEY: &str = "jev-compact";
 /// Documentation of the footer colour rule (asserted by the tests). The callers
 /// prefix it with `Footer: `, so it does not repeat that word itself.
 pub const JEV_FOOTER_RULE_NOTICE: &str =
-    "green \"Jev On (Compare)\"/\"Jev On (Active)\"/\"Jev On (Compare + Active)\", red \"Jev Off\", amber \"Jev unavailable\"/\"Jev checking\"/\"Jev fallback\". A second dot shows compaction: green \"Jev compact on\", red \"Jev compact off\". The two are independent: turning one off never turns the other off. On narrow rows the short forms \"Jev C On\"/\"Jev A On\"/\"Jev C+A On\" and \"Jev Cmp on\"/\"Jev Cmp off\" keep both states readable in text; never two bare dots.";
+    "green \"Jev On (Compare)\"/\"Jev On (Active)\"/\"Jev On (Compare + Active)\", red \"Jev Off\", amber \"Jev unavailable\"/\"Jev checking\"/\"Jev standard mode\". A second dot shows compaction: green \"Jev compact on\", red \"Jev compact off\". The two are independent: turning one off never turns the other off. On narrow rows the short forms \"Jev C On\"/\"Jev A On\"/\"Jev C+A On\" and \"Jev Cmp on\"/\"Jev Cmp off\" keep both states readable in text; never two bare dots.";
 
 /// The theme colour key for the footer segment.
 ///

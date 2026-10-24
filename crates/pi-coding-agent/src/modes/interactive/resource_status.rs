@@ -218,7 +218,7 @@ impl Monitor {
                             system.refresh_processes_specifics(
                                 ProcessesToUpdate::Some(&pids),
                                 true,
-                                ProcessRefreshKind::new().with_cpu().with_memory(),
+                                ProcessRefreshKind::nothing().with_cpu().with_memory(),
                             );
                         }
                         let mut readings = BTreeMap::new();

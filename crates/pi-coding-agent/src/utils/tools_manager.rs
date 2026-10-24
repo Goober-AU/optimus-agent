@@ -555,7 +555,7 @@ pub fn format_missing_ripgrep_message(result: &ToolUnavailableResult) -> String 
             "Automatic installation was skipped because PI_OFFLINE is enabled.".to_string()
         }
         ToolUnavailableReason::ManualInstallRequired => {
-            "Prime Agent cannot install this helper automatically in Termux.".to_string()
+            "Optimus Agent cannot install this helper automatically in Termux.".to_string()
         }
         ToolUnavailableReason::UnsupportedPlatform => format!(
             "Automatic installation is unavailable for {}/{}.",
@@ -568,14 +568,14 @@ pub fn format_missing_ripgrep_message(result: &ToolUnavailableResult) -> String 
                 .map(|detail| detail.split_whitespace().collect::<Vec<&str>>().join(" "))
                 .filter(|detail| !detail.is_empty());
             match detail {
-                Some(detail) => format!("Prime Agent could not install it automatically: {}", detail),
-                None => "Prime Agent could not install it automatically.".to_string(),
+                Some(detail) => format!("Optimus Agent could not install it automatically: {}", detail),
+                None => "Optimus Agent could not install it automatically.".to_string(),
             }
         }
     };
 
     [
-        "ripgrep (rg) is an optional search helper. Without it, model-run file searches may be slower or fail; Prime Agent and subagents remain available.".to_string(),
+        "ripgrep (rg) is an optional search helper. Without it, model-run file searches may be slower or fail; Optimus Agent and subagents remain available.".to_string(),
         reason,
         get_ripgrep_install_hint(&result.platform),
     ]
@@ -764,7 +764,7 @@ mod tests {
             ..failed.clone()
         };
         assert!(format_missing_ripgrep_message(&failed_no_detail)
-            .contains("Prime Agent could not install it automatically.\n"));
+            .contains("Optimus Agent could not install it automatically.\n"));
     }
 
     #[test]

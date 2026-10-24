@@ -667,7 +667,7 @@ pub async fn connect_telegram_session(
         }
         let Some(active_session_id) = active_session_id else {
             return Err(
-                "The connected Prime session is unavailable. Open it in Prime and run /telegram here.".to_string(),
+                "The connected Optimus session is unavailable. Open it in Optimus and run /telegram here.".to_string(),
             );
         };
         DaemonAgentConnection::attach(
@@ -980,7 +980,7 @@ async fn run_telegram_worker_inner(
                             id: random_uuid(),
                             // `settings.pairedUserId!` is set by the accepted pairing.
                             chat_id: settings.paired_user_id.unwrap_or_default(),
-                            text: "Connected to Prime. This chat controls your connected session. Send a message to begin, or /help for commands.".to_string(),
+                            text: "Connected to Optimus. This chat controls your connected session. Send a message to begin, or /help for commands.".to_string(),
                         });
                     }
                     store.write(

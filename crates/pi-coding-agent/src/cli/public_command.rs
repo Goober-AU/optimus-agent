@@ -18,7 +18,7 @@ use crate::cli::command_registry::{
 use crate::cli::daemon_command::{handle_daemon_command, DaemonCommandIo};
 use crate::cli::daemon_ps::{run_ps, run_reap, run_shutdown_all, DaemonPsIo};
 use crate::cli::daemon_update_restart::DAEMON_UPDATE_RESTART_COORDINATOR_FLAG;
-use crate::config::{APP_NAME, SELF_UPDATE_INTERACTIVE_CHILD_ENV};
+use crate::config::{APP_COMMAND as APP_NAME, SELF_UPDATE_INTERACTIVE_CHILD_ENV};
 use crate::core::auth_storage::AuthStorage;
 use crate::core::mcp::mcp_command::{run_mcp_management_command, McpCredentialStore};
 use crate::core::settings_manager::SettingsManager;
@@ -189,7 +189,7 @@ async fn run_public_command(
             });
             if has_legacy_self_target && has_legacy_package_target {
                 return Ok(fail(
-                    "Prime Agent and package updates are now separate.",
+                    "Optimus Agent and package updates are now separate.",
                     Some(&format!(
                         "Run \"{APP_NAME} update [--force]\" and \"{APP_NAME} package update [source]\" separately."
                     )),
@@ -305,11 +305,11 @@ fn reject_removed_command(args: &[String], io: &PublicCommandIo<'_>) -> PublicCo
     let command = args.first().map(String::as_str);
     let subcommand = args.get(1).map(String::as_str);
     let replacement = match command {
-        Some("daemon") => Some("Run \"prime-agent help\" to see the agent commands.".to_string()),
-        Some("app") if subcommand == Some("update") => Some("Use \"prime-agent update\".".to_string()),
-        Some("install") => Some("Use \"prime-agent package install\".".to_string()),
-        Some("remove") | Some("uninstall") => Some("Use \"prime-agent package remove\".".to_string()),
-        Some("manage") => Some("Use \"prime-agent agents\".".to_string()),
+        Some("daemon") => Some("Run \"optimus-agent help\" to see the agent commands.".to_string()),
+        Some("app") if subcommand == Some("update") => Some("Use \"optimus-agent update\".".to_string()),
+        Some("install") => Some("Use \"optimus-agent package install\".".to_string()),
+        Some("remove") | Some("uninstall") => Some("Use \"optimus-agent package remove\".".to_string()),
+        Some("manage") => Some("Use \"optimus-agent agents\".".to_string()),
         _ => None,
     };
     let name = args[..args.len().min(2)].join(" ");
@@ -491,7 +491,7 @@ async fn run_package(args: &[String], io: &PublicCommandIo<'_>) -> Result<Public
             arg == "--self" || arg == "--extensions" || arg == "--extension" || arg == "--force"
         }) {
             return Ok(fail(
-                "Package updates accept only an optional source. Use \"prime-agent update --force\" to update Prime Agent.",
+                "Package updates accept only an optional source. Use \"optimus-agent update --force\" to update Optimus Agent.",
                 None,
                 io,
             ));
@@ -502,7 +502,7 @@ async fn run_package(args: &[String], io: &PublicCommandIo<'_>) -> Result<Public
         if let Some(source) = rest.first() {
             if is_self_update_source(source) {
                 return Ok(fail(
-                    "Use \"prime-agent update\" to update Prime Agent.",
+                    "Use \"optimus-agent update\" to update Optimus Agent.",
                     None,
                     io,
                 ));
@@ -849,7 +849,7 @@ mod tests {
         assert!(result.handled);
         assert_eq!(harness.exit_code(), Some(1));
         assert!(!harness.errors().is_empty());
-        assert!(harness.errors().iter().any(|line| line.contains("prime-agent attach <agent>")));
+        assert!(harness.errors().iter().any(|line| line.contains("optimus-agent attach <agent>")));
     }
 
     #[test]
@@ -907,12 +907,12 @@ mod tests {
     #[test]
     fn shows_migration_guidance_when_help_targets_removed_commands() {
         let cases: [(&[&str], &str); 6] = [
-            (&["daemon"], "Run \"prime-agent help\""),
-            (&["install"], "Use \"prime-agent package install\""),
-            (&["remove"], "Use \"prime-agent package remove\""),
-            (&["uninstall"], "Use \"prime-agent package remove\""),
-            (&["manage"], "Use \"prime-agent agents\""),
-            (&["app", "update"], "Use \"prime-agent update\""),
+            (&["daemon"], "Run \"optimus-agent help\""),
+            (&["install"], "Use \"optimus-agent package install\""),
+            (&["remove"], "Use \"optimus-agent package remove\""),
+            (&["uninstall"], "Use \"optimus-agent package remove\""),
+            (&["manage"], "Use \"optimus-agent agents\""),
+            (&["app", "update"], "Use \"optimus-agent update\""),
         ];
         for (path, hint) in cases {
             let mut args = vec!["help"];
@@ -933,7 +933,7 @@ mod tests {
         let (harness, result) = run(&["daemon", "list"]);
         assert!(result.handled);
         assert_eq!(harness.exit_code(), Some(1));
-        assert!(harness.errors().iter().any(|line| line.contains("Run \"prime-agent help\"")));
+        assert!(harness.errors().iter().any(|line| line.contains("Run \"optimus-agent help\"")));
     }
 
     #[test]
@@ -956,7 +956,7 @@ mod tests {
         for source in ["self", "pi", "prime-agent"] {
             let (harness, result) = run(&["package", "update", source]);
             assert!(result.handled);
-            assert!(harness.errors().iter().any(|line| line.contains("Use \"prime-agent update\"")));
+            assert!(harness.errors().iter().any(|line| line.contains("Use \"optimus-agent update\"")));
         }
     }
 
@@ -976,7 +976,7 @@ mod tests {
         assert!(harness
             .errors()
             .iter()
-            .any(|line| line.contains("prime-agent package list")));
+            .any(|line| line.contains("optimus-agent package list")));
     }
 
     #[test]

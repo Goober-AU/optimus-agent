@@ -28,7 +28,7 @@
 //!   | `CompareAndActive` | `● Jev On (Compare + Active)` | green (`success`) |
 //!   | checking | `● Jev checking` | amber (`warning`) |
 //!   | unavailable | `● Jev unavailable` | amber (`warning`) |
-//!   | fallback | `● Jev fallback` | amber (`warning`) |
+//!   | fallback | `● Jev standard mode` | amber (`warning`) |
 //!
 //!   The label names the truthful effective mode, so a green segment can only
 //!   mean "on and healthy in the mode it names".

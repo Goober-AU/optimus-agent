@@ -51,7 +51,7 @@ pub const FEATURE_HINTS: &[FeatureHintDefinition] = &[
     },
     FeatureHintDefinition {
         id: "subagents",
-        get_text: |_| Some("Prime Agent can delegate tasks to subagents and run them in parallel.".to_string()),
+        get_text: |_| Some("Optimus Agent can delegate tasks to subagents and run them in parallel.".to_string()),
     },
     FeatureHintDefinition {
         id: "agents-view",
@@ -107,11 +107,11 @@ pub const FEATURE_HINTS: &[FeatureHintDefinition] = &[
     },
     FeatureHintDefinition {
         id: "auto-compaction",
-        get_text: |_| Some("Prime Agent automatically compacts long sessions before context fills up.".to_string()),
+        get_text: |_| Some("Optimus Agent automatically compacts long sessions before context fills up.".to_string()),
     },
     FeatureHintDefinition {
         id: "auto-refine",
-        get_text: |_| Some("Prime Agent self-improves by refining skills, memories, prompts, and subagents.".to_string()),
+        get_text: |_| Some("Optimus Agent self-improves by refining skills, memories, prompts, and subagents.".to_string()),
     },
     FeatureHintDefinition {
         id: "background-running",

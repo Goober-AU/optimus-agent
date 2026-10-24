@@ -367,26 +367,20 @@ wheels = [
 
 [[package]]
 name = "prime-agent-runtime"
-version = "0.1.38"
+version = "0.1.39"
 source = { editable = "." }
 dependencies = [
+    { name = "dill" },
     { name = "mcp" },
     { name = "tyro" },
 ]
 
-[package.dev-dependencies]
-dev = [
-    { name = "dill" },
-]
-
 [package.metadata]
 requires-dist = [
+    { name = "dill" },
     { name = "mcp", specifier = ">=2,<3" },
     { name = "tyro" },
 ]
-
-[package.metadata.requires-dev]
-dev = [{ name = "dill" }]
 
 [[package]]
 name = "pycparser"

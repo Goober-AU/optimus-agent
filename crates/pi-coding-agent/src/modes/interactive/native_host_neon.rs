@@ -427,7 +427,7 @@ pub(super) fn render_header(width: usize, budget: usize, data: &HeaderData<'_>) 
     };
     let jev = data.jev.map(|label| {
         let lower = label.to_ascii_lowercase();
-        let (color, dot) = if lower.contains("fallback") || lower.contains("error") {
+        let (color, dot) = if lower.contains("standard mode") || lower.contains("fallback") || lower.contains("error") {
             ("warning", "●")
         } else if lower.contains("off") || lower.contains("disabled") {
             ("dim", "○")

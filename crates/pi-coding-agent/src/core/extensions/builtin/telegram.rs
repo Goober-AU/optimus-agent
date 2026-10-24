@@ -18,7 +18,7 @@ use crate::modes::telegram::store::{
 };
 
 /// `TELEGRAM_SETUP_INSTRUCTIONS`.
-pub const TELEGRAM_SETUP_INSTRUCTIONS: &str = "1. Open https://t.me/BotFather in Telegram (the official @BotFather).\n2. Send /newbot, choose a display name, and choose a username ending in bot.\n3. Copy its bot token and paste it into the next Prime input dialog.\n4. Open the pairing link Prime provides and press Start in your bot's private chat.\nThe paired Telegram account can control your Prime sessions and tools. Keep the token and pairing link private.";
+pub const TELEGRAM_SETUP_INSTRUCTIONS: &str = "1. Open https://t.me/BotFather in Telegram (the official @BotFather).\n2. Send /newbot, choose a display name, and choose a username ending in bot.\n3. Copy its bot token and paste it into the next Optimus input dialog.\n4. Open the pairing link Optimus provides and press Start in your bot's private chat.\nThe paired Telegram account can control your Optimus sessions and tools. Keep the token and pairing link private.";
 
 /// `sessionBinding(ctx)` - the `Pick<TelegramConnectionSettings, "cwd" |
 /// "sessionId" | "sessionFile" | "daemonSocket">` slice.
@@ -192,7 +192,7 @@ fn create_telegram_extension_impl(pi: Arc<dyn ExtensionApi>, agent_dir: String) 
         "telegram".to_string(),
         RegisterCommandOptions {
             description: Some(
-                "Connect Telegram to Prime, with BotFather setup and private pairing".to_string(),
+                "Connect Telegram to Optimus, with BotFather setup and private pairing".to_string(),
             ),
             get_argument_completions: Some(get_argument_completions),
             handler: Some(handler),
@@ -234,13 +234,13 @@ async fn run_telegram_command(
     args: String,
 ) -> Result<(), String> {
     if !ctx.has_ui() {
-        return Err("Run /telegram in the Prime terminal to manage the connection.".to_string());
+        return Err("Run /telegram in the Optimus terminal to manage the connection.".to_string());
     }
     let mut action = args.trim().to_string();
     if action.is_empty() {
         let choice = ui_select(
             ctx,
-            "Telegram \u{2014} connect to Prime",
+            "Telegram \u{2014} connect to Optimus",
             MENU_LABELS
                 .iter()
                 .map(|(label, _)| (*label).to_string())

@@ -224,13 +224,13 @@ mod tests {
     fn tps_and_health_stay_adjacent_before_communication_labels_are_dropped() {
         let throughput = "\x1b[1;38;5;196mSTREAM TPS ~50.0\x1b[22;39m";
         for width in [0, 8, 20, 30, 40, 60, 80, 120] {
-            let text = status_line("TXT ○  OCC1 ○  OCC2 ○", throughput, &input(100.0), width);
+            let text = status_line("○ TXT  ○ OCC1  ○ OCC2", throughput, &input(100.0), width);
             let plain = strip_ansi(&text);
             if width >= 25 {
                 assert!(plain.contains("STREAM TPS ~50.0  CTX"), "{width}: {plain}");
             }
             if width >= 80 {
-                assert!(plain.contains("OCC2 ○  STREAM TPS ~50.0  CTX HEALTH GREEN 100"));
+                assert!(plain.contains("○ OCC2  STREAM TPS ~50.0  CTX HEALTH GREEN 100"));
             }
             if width >= 8 {
                 assert!(visible_width(&text) <= width);

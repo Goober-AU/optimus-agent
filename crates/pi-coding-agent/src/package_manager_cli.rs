@@ -25,7 +25,7 @@ use crate::cli::daemon_update_restart::{
 };
 use crate::config::{
     get_agent_dir, get_daemon_update_restart_manifest_path, get_legacy_daemon_update_restart_manifest_path,
-    get_self_update_command, get_self_update_unavailable_instruction, APP_NAME, CONFIG_DIR_NAME, PACKAGE_NAME,
+    get_self_update_command, get_self_update_unavailable_instruction, APP_COMMAND as APP_NAME, CONFIG_DIR_NAME, PACKAGE_NAME,
     SELF_UPDATE_INTERACTIVE_CHILD_ENV, SELF_UPDATE_NOT_ATTEMPTED_EXIT_CODE, VERSION,
 };
 use crate::core::messages::CustomMessage;
@@ -75,7 +75,7 @@ pub enum UpdateTarget {
 
 /// `isSelfUpdateSource(source)`.
 pub fn is_self_update_source(source: &str) -> bool {
-    source == "self" || source == "pi" || source == APP_NAME
+    source == "self" || source == "pi" || source == "prime-agent" || source == APP_NAME
 }
 
 /// `PackageCommandOptions`.
@@ -530,7 +530,7 @@ fn print_self_update_unavailable(npm_command: Option<&[String]>, update_spec: &s
 
     if let Some(entrypoint) = std::env::args().nth(1) {
         eprintln!();
-        eprintln!("Location of pi executable: {entrypoint}");
+        eprintln!("Location of Optimus executable: {entrypoint}");
     }
 }
 
@@ -630,18 +630,18 @@ fn exit_signal_name(status: &std::process::ExitStatus) -> Option<String> {
 }
 
 const UPDATE_RESTART_CONTINUATION_PROMPT: &str =
-    "Prime Agent restarted after an update. Continue the interrupted task from the saved transcript and restored tool/kernel state. Inspect current state before retrying commands when needed.";
+    "Optimus Agent restarted after an update. Continue the interrupted task from the saved transcript and restored tool/kernel state. Inspect current state before retrying commands when needed.";
 
 fn update_session_loss_copy() -> DaemonSessionLossCopy<'static> {
     DaemonSessionLossCopy {
         busy_detail: &|count| {
             let Pluralized { noun, pronoun } = pluralize_sessions(count);
             format!(
-                "Prime Agent has {count} busy {noun}. After the update installs, it will stop {pronoun}, restart its background service, and resume interrupted work."
+                "Optimus Agent has {count} busy {noun}. After the update installs, it will stop {pronoun}, restart its background service, and resume interrupted work."
             )
         },
         unlistable_detail:
-            "Running agents could not be listed. After the update installs, Prime Agent will stop resident agents, restart its background service, and resume interrupted work where possible.",
+            "Running agents could not be listed. After the update installs, Optimus Agent will stop resident agents, restart its background service, and resume interrupted work where possible.",
         question: "Continue?",
         non_tty_hint: "Re-run with --force to proceed.",
     }
@@ -1256,7 +1256,7 @@ async fn restore_daemon_update_restart_session(
             "message".to_string(),
             serde_json::json!({
                 "customType": "prime-agent.update_complete",
-                "content": format!("Prime Agent updated to v{VERSION}. This daemon session was restored after the update."),
+                "content": format!("Optimus Agent updated to v{VERSION}. This daemon session was restored after the update."),
                 "display": true,
                 "details": { "version": VERSION },
             }),
