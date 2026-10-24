@@ -262,7 +262,7 @@ impl Graph {
         if root != self.root || width < 8 || height == 0 {
             return Vec::new();
         }
-        let (width, height) = (width.min(40), height.min(5));
+        let (width, height) = (width.min(40), height.min(6));
         if self.size != (width, height) {
             self.size = (width, height);
             self.settle_until = Some(now + SETTLE);

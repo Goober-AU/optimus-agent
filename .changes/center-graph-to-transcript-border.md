@@ -1,0 +1,1 @@
+- Fixed vertical agent graph alignment by including the available space beside session metadata above the horizontal transcript border, without enlarging the header or covering status text.

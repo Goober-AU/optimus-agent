@@ -164,30 +164,34 @@ fn graph_uses_existing_header_space_without_moving_the_border_or_covering_status
     for width in [80, 110, 120, 160, 200] {
         for budget in [6, 7, 9, 12, 20] {
             for samples in [&resources[..], &[][..]] {
-                let graph: Vec<_> = (0..graph_height(width, budget, !samples.is_empty()))
-                    .map(|row| format!("graph-row-{row:02}")).collect();
                 let data = HeaderData { cwd: "/fixture", session: "Graph", model: "fixture-model",
                     execution: None, phase: "WORKING", jev: Some("Jev Standard Mode"), clock: "12:34:56",
-                    resources: samples, graph: &graph };
-                let header = render_header(width, budget, &data);
-                let original = render_header(width, budget, &HeaderData { graph: &[], ..data });
+                    resources: samples, graph: &[] };
+                let original = render_header(width, budget, &data);
+                let graph: Vec<_> = (0..graph_height(width, budget, &original))
+                    .map(|row| format!("graph-row-{row:02}")).collect();
+                let header = render_header(width, budget, &HeaderData { graph: &graph, ..data });
                 assert_eq!(header.len(), original.len(), "the graph must not enlarge the header");
                 assert!(header.len() <= budget);
                 assert!(header.iter().all(|line| visible_width(line) == width));
                 let plain: Vec<_> = header.iter().map(|row| strip_ansi(row)).collect();
                 if width >= 110 && budget >= 7 {
-                    let border = plain.iter().position(|row| row.starts_with('┌')).unwrap();
-                    assert_eq!(plain[border], strip_ansi(&original[border]), "session metadata and border must stay in place");
-                    assert!(border <= 5, "only existing branding rows may hold the graph");
+                    let border = plain.iter().position(|row| row.starts_with('├')).unwrap();
+                    assert_eq!(plain[border], strip_ansi(&original[border]), "the horizontal transcript border must stay in place");
+                    assert!(border <= 6, "only existing header rows may hold the graph");
                     let column = plain[0].find("graph-row-00").unwrap();
                     let column = visible_width(&plain[0][..column]);
-                    for (i, row) in plain[..border].iter().enumerate() {
+                    for (i, row) in plain[..graph.len()].iter().enumerate() {
                         let start = row.find(&format!("graph-row-{i:02}")).expect("graph must reach the border");
                         assert_eq!(visible_width(&row[..start]), column);
                     }
-                    assert!(plain[border].contains("fixture-model"));
-                    assert!(plain[border].contains("Jev Standard Mode"));
-                    assert!(plain[border + 1].starts_with('├'));
+                    if width >= 120 { assert_eq!(graph.len(), border); }
+                    if graph.len() < border {
+                        assert_eq!(header[border - 1], original[border - 1]);
+                    }
+                    assert!(plain[border - 1].contains("fixture-model"));
+                    assert!(plain[border - 1].contains("Jev Standard Mode"));
+                    assert!(plain[border - 1].contains("/fixture · Graph"));
                     assert!(plain.iter().any(|row| row.contains("telemus.ai")));
                     if !samples.is_empty() { assert!(plain[1].contains("MAIN CPU 12%")); }
                 } else {
@@ -195,6 +199,25 @@ fn graph_uses_existing_header_space_without_moving_the_border_or_covering_status
                 }
             }
         }
+    }
+}
+
+#[test]
+fn graph_keeps_long_metadata_when_the_last_header_row_has_no_clear_space() {
+    let _mode = mode();
+    let resources = vec!["MAIN CPU 12%".into()];
+    for width in [110, 160, 221] {
+        let long_session = "session ".repeat(width);
+        let data = HeaderData { cwd: "/workspace", session: &long_session, model: "fixture-model",
+            execution: Some("IPython [F6]"), phase: "WORKING", jev: Some("Jev Standard Mode"),
+            clock: "12:34:56", resources: &resources, graph: &[] };
+        let original = render_header(width, 12, &data);
+        let height = graph_height(width, 12, &original);
+        assert_eq!(height, original.len() - 2);
+        let graph = vec!["graph".into(); height];
+        let header = render_header(width, 12, &HeaderData { graph: &graph, ..data });
+        assert_eq!(header.len(), original.len());
+        assert_eq!(header[height..], original[height..], "graph must not erase metadata or the border");
     }
 }
 
