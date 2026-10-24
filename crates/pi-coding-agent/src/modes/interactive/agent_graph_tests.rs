@@ -292,6 +292,44 @@ fn graph_frame_fixture_shows_neon_blue_work_and_communication_beside_resources()
 }
 
 #[test]
+fn graph_centers_sparse_and_symmetric_families_in_the_existing_rows() {
+    let now = Instant::now();
+    for height in [3, 4, 5] {
+        let mut graph = Graph::default();
+        let mut rows = vec![row("root", None, false)];
+        graph.observe(&rows, &parent("root"), false, now);
+        let frame = graph.render("root", 24, height, now);
+        assert_eq!(frame.len(), height);
+        assert_eq!(frame.iter().position(|line| line.contains('◆')), Some(height / 2));
+        rows.extend((0..12).map(|i| row(&format!("agent-{i:02}"), Some("root"), false)));
+        graph.observe(&rows, &parent("root"), false, now);
+        for i in 0..80 { graph.render("root", 24, height, now + FRAME * i); }
+        let frame = graph.render("root", 24, height, now + SETTLE);
+        let counts: Vec<_> = frame.iter().map(|line| strip_ansi(line).matches('○').count()).collect();
+        assert_eq!(counts.iter().sum::<usize>(), 12, "centering must retain every node");
+        for i in 0..height / 2 {
+            assert_eq!(counts[i], counts[height - i - 1], "symmetric agents must balance above and below the center: {counts:?}");
+        }
+        assert!(frame.iter().all(|line| visible_width(line) == 24));
+        assert_eq!(frame.iter().position(|line| line.contains('◆')), Some(height / 2));
+        if height == 3 {
+            if let Ok(dir) = std::env::var("OPTIMUS_GRAPH_CAPTURE_DIR") {
+                use super::super::super::native_neon::{render_header, HeaderData};
+                crate::modes::interactive::theme::theme::init_theme(Some("neon"), false);
+                let resources = vec!["\x1b[1;38;5;39mMAIN CPU 12% RAM 512M TPS 50.0\x1b[22;39m".into()];
+                let header = render_header(221, 20, &HeaderData {
+                    cwd: "/workspace", session: "Centered agent family", model: "offline-fixture",
+                    execution: None, phase: "READY", jev: Some("Jev Standard Mode"), clock: "12:34:56",
+                    resources: &resources, graph: &frame,
+                });
+                std::fs::create_dir_all(&dir).unwrap();
+                std::fs::write(format!("{dir}/balanced-221.ansi"), header.join("\n")).unwrap();
+            }
+        }
+    }
+}
+
+#[test]
 fn compact_graph_balances_siblings_and_keeps_nested_branches_separate() {
     let now = Instant::now();
     let mut graph = Graph::default();

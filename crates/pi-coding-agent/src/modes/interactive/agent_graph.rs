@@ -285,7 +285,9 @@ impl Graph {
         let mut crowding = vec![0; width * height];
         for node in &self.nodes {
             let x = 1 + (node.x * (width * 2 - 3) as f32).round() as i32;
-            let y = 1 + (node.y * (height * 4 - 3) as f32).round() as i32;
+            // Map to rows directly: rounding braille pixels first biases
+            // symmetric positions toward the upper half of a short graph.
+            let y = (node.y * height as f32).floor() as i32 * 4 + 2;
             // Leave a readable gap between markers where space permits.
             let cell = (0..height)
                 .flat_map(|row| (0..width).map(move |col| (col, row)))
@@ -293,7 +295,8 @@ impl Graph {
                 .min_by_key(|&(col, row)| {
                     let dx = col as i32 * 2 + 1 - x;
                     let dy = row as i32 * 4 + 2 - y;
-                    dx * dx + dy * dy + crowding[row * width + col]
+                    // Equal-distance horizontal shifts retain vertical balance.
+                    (dx * dx + dy * dy + crowding[row * width + col], dy.abs())
                 })
                 .unwrap_or((x as usize / 2, y as usize / 4));
             occupied.insert(cell);
