@@ -25,6 +25,8 @@ struct Node {
     y: f32,
     vx: f32,
     vy: f32,
+    target_x: f32,
+    target_y: f32,
 }
 
 #[derive(Default)]
@@ -120,20 +122,20 @@ impl Graph {
             .drain(..)
             .map(|node| (node.id.clone(), node))
             .collect();
+        let mut added = BTreeSet::new();
         for (id, parent, working) in selected {
             let node = previous.remove(&id).unwrap_or_else(|| {
-                let hash = id.bytes().fold(2166136261u32, |h, b| {
-                    (h ^ u32::from(b)).wrapping_mul(16777619)
-                });
-                let angle = (hash % 65536) as f32 / 65536.0 * std::f32::consts::TAU;
+                added.insert(id.clone());
                 Node {
                     id,
                     parent: parent.clone(),
                     working,
-                    x: 0.5 + angle.cos() * 0.3,
-                    y: 0.5 + angle.sin() * 0.3,
+                    x: 0.5,
+                    y: 0.5,
                     vx: 0.0,
                     vy: 0.0,
+                    target_x: 0.5,
+                    target_y: 0.5,
                 }
             });
             self.nodes.push(Node {
@@ -147,11 +149,56 @@ impl Graph {
             main.y = 0.5;
         }
         if changed {
+            self.arrange();
+            for node in &mut self.nodes {
+                if added.contains(&node.id) {
+                    node.x = node.target_x;
+                    node.y = node.target_y;
+                }
+            }
             self.settle_until = Some(now + SETTLE);
         }
         family.remove(root);
         // Same deduplication/reconnect rules as TXT/OCC, extended to descendants.
         self.activity.observe_scope(rows, parent, &family, now);
+    }
+
+    fn arrange(&mut self) {
+        // Give each family branch its own sector. Larger subtrees get more
+        // room; springs relax around these anchors instead of crossing branches.
+        let mut children = vec![Vec::new(); self.nodes.len()];
+        for (i, node) in self.nodes.iter().enumerate().skip(1) {
+            if let Some(parent) = self.nodes.iter().position(|n| Some(&n.id) == node.parent.as_ref()) {
+                children[parent].push(i);
+            }
+        }
+        for siblings in &mut children {
+            siblings.sort_by(|&a, &b| self.nodes[a].id.cmp(&self.nodes[b].id));
+        }
+        let mut weights = vec![1usize; self.nodes.len()];
+        let mut levels = vec![0usize; self.nodes.len()];
+        // observe() selects parents before children, including nested families.
+        for i in (0..self.nodes.len()).rev() {
+            if !children[i].is_empty() {
+                weights[i] = children[i].iter().map(|&child| weights[child]).sum();
+                levels[i] = 1 + children[i].iter().map(|&child| levels[child]).max().unwrap_or(0);
+            }
+        }
+        let mut pending = VecDeque::from([(0, -std::f32::consts::PI, std::f32::consts::TAU, 0)]);
+        while let Some((i, start, span, depth)) = pending.pop_front() {
+            let total = children[i].iter().map(|&child| weights[child]).sum::<usize>().max(1);
+            let mut angle = start;
+            for &child in &children[i] {
+                let sector = span * weights[child] as f32 / total as f32;
+                let middle = angle + sector * 0.5;
+                let radius = 0.44 * (depth + 1) as f32 / (depth + 1 + levels[child]) as f32;
+                self.nodes[child].target_x = 0.5 + radius * middle.cos();
+                self.nodes[child].target_y = 0.5 + radius * middle.sin();
+                let fan = sector.min(std::f32::consts::PI * 0.75);
+                pending.push_back((child, middle - fan * 0.5, fan, depth + 1));
+                angle += sector;
+            }
+        }
     }
 
     fn step(&mut self, dt: f32, aspect: f32) {
@@ -161,7 +208,7 @@ impl Graph {
                 let dx = (self.nodes[i].x - self.nodes[j].x) * aspect;
                 let dy = self.nodes[i].y - self.nodes[j].y;
                 let d2 = (dx * dx + dy * dy).max(0.005);
-                let repulsion = 0.018 / d2;
+                let repulsion = 0.012 * (8.0 / self.nodes.len() as f32).min(1.0) / d2;
                 let (fx, fy) = (dx * repulsion, dy * repulsion);
                 forces[i].0 += fx;
                 forces[i].1 += fy;
@@ -180,8 +227,10 @@ impl Graph {
             let dx = (self.nodes[j].x - node.x) * aspect;
             let dy = self.nodes[j].y - node.y;
             let length = (dx * dx + dy * dy).sqrt().max(0.01);
-            let rest = (0.8 * (aspect * 3.0 / self.nodes.len() as f32).sqrt()).clamp(0.45, 1.7);
-            let spring = (length - rest) * 3.0 / length;
+            let target_dx = (self.nodes[j].target_x - node.target_x) * aspect;
+            let target_dy = self.nodes[j].target_y - node.target_y;
+            let rest = (target_dx * target_dx + target_dy * target_dy).sqrt().max(0.1);
+            let spring = (length - rest) * 2.0 / length;
             forces[i].0 += dx * spring;
             forces[i].1 += dy * spring;
             forces[j].0 -= dx * spring;
@@ -189,10 +238,10 @@ impl Graph {
         }
         let drag = (-8.0 * dt).exp();
         for (node, (fx, fy)) in self.nodes.iter_mut().zip(forces).skip(1) {
-            node.vx = (node.vx + (fx / aspect + (0.5 - node.x) * 0.5) * dt) * drag;
-            node.vy = (node.vy + (fy + (0.5 - node.y) * 0.5) * dt) * drag;
+            node.vx = (node.vx + (fx / aspect + (node.target_x - node.x) * 4.0) * dt) * drag;
+            node.vy = (node.vy + (fy + (node.target_y - node.y) * 4.0) * dt) * drag;
             node.x = (node.x + node.vx.clamp(-0.8, 0.8) * dt).clamp(0.06, 0.94);
-            node.y = (node.y + node.vy.clamp(-0.8, 0.8) * dt).clamp(0.12, 0.88);
+            node.y = (node.y + node.vy.clamp(-0.8, 0.8) * dt).clamp(0.06, 0.94);
         }
     }
 
@@ -233,20 +282,24 @@ impl Graph {
         let mut canvas = Canvas::new(width, height);
         let mut points = BTreeMap::new();
         let mut occupied = BTreeSet::new();
+        let mut crowding = vec![0; width * height];
         for node in &self.nodes {
             let x = 1 + (node.x * (width * 2 - 3) as f32).round() as i32;
             let y = 1 + (node.y * (height * 4 - 3) as f32).round() as i32;
-            // Quantize to distinct terminal cells so nodes cannot erase one another.
+            // Leave a readable gap between markers where space permits.
             let cell = (0..height)
                 .flat_map(|row| (0..width).map(move |col| (col, row)))
                 .filter(|cell| !occupied.contains(cell))
                 .min_by_key(|&(col, row)| {
                     let dx = col as i32 * 2 + 1 - x;
                     let dy = row as i32 * 4 + 2 - y;
-                    dx * dx + dy * dy
+                    dx * dx + dy * dy + crowding[row * width + col]
                 })
                 .unwrap_or((x as usize / 2, y as usize / 4));
             occupied.insert(cell);
+            for col in [cell.0.checked_sub(1), cell.0.checked_add(1)].into_iter().flatten() {
+                if col < width { crowding[cell.1 * width + col] += 48; }
+            }
             points.insert(
                 node.id.as_str(),
                 (cell.0 as i32 * 2 + 1, cell.1 as i32 * 4 + 2),

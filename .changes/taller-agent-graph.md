@@ -1,0 +1,2 @@
+- Changed the live agent graph to use the existing header space down to the coding-box border without enlarging the header or moving the transcript.
+- Changed automatic graph arrangement to spread parent branches into balanced sectors, group their descendants, and leave more space between nodes while retaining live activity and message highlights.

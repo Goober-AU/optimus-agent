@@ -143,6 +143,8 @@ fn graph_preserves_positions_on_roster_reorder_and_repaint_and_sleeps_when_settl
         row("b", Some("a"), false),
     ];
     graph.observe(&rows, &parent("root"), false, now);
+    graph.nodes[1].x = 0.75;
+    graph.nodes[1].y = 0.35;
     let initial = graph.nodes.iter().map(|n| (n.x, n.y)).collect::<Vec<_>>();
     graph.render("root", 24, 3, now);
     let first = graph
@@ -204,7 +206,7 @@ fn graph_resizes_bounds_large_families_and_handles_missing_metadata_and_cycles()
     assert_eq!(graph.nodes.len(), MAX_NODES);
     assert_eq!(graph.omitted, 137);
     assert_eq!(graph.activity.live_links(now).count(), 0);
-    for (width, height) in [(0, 0), (5, 3), (8, 1), (24, 3), (40, 5)] {
+    for (width, height) in [(0, 0), (5, 3), (8, 1), (24, 3), (24, 10), (40, 12), (40, 100)] {
         let rows = graph.render("root", width, height, now);
         assert!(rows.len() <= height);
         assert!(rows.iter().all(|row| visible_width(row) <= width));
@@ -217,7 +219,7 @@ fn graph_resizes_bounds_large_families_and_handles_missing_metadata_and_cycles()
 
 #[test]
 fn graph_frame_fixture_shows_neon_blue_work_and_communication_beside_resources() {
-    use super::super::super::native_neon::{render_header, HeaderData};
+    use super::super::super::native_neon::{graph_height, render_header, HeaderData};
     crate::modes::interactive::theme::theme::init_theme(Some("neon"), false);
     let now = Instant::now();
     let mut graph = Graph::default();
@@ -230,7 +232,7 @@ fn graph_frame_fixture_shows_neon_blue_work_and_communication_beside_resources()
     ];
     graph.observe(&rows, &parent("root"), false, now);
     for frame in 0..70 {
-        graph.render("root", 24, 3, now + FRAME * frame);
+        graph.render("root", 24, 4, now + FRAME * frame);
     }
     let time = now + Duration::from_secs(6);
     deliver(&mut rows[2], "handoff", "reader");
@@ -240,30 +242,30 @@ fn graph_frame_fixture_shows_neon_blue_work_and_communication_beside_resources()
         ("active", time + Duration::from_millis(160)),
         ("expired", time + PULSE),
     ] {
-        let graph_rows = graph.render("root", 24, 3, time);
-        assert!(graph_rows.iter().all(|row| visible_width(row) == 24));
-        assert!(graph_rows.join("").contains("38;5;39m"));
-        let plain = strip_ansi(&graph_rows.join(""));
-        assert_eq!(plain.matches('◆').count(), 1);
-        assert_eq!(plain.matches('●').count(), 2);
-        assert_eq!(plain.matches('○').count(), 2);
         let resources = vec![
             "\x1b[1;38;5;39mMAIN CPU 12% RAM 512M TPS 50.0\x1b[22;39m".into(),
             "\x1b[1;38;5;39mreader CPU 8% RAM 512M TPS 42.0\x1b[22;39m".into(),
         ];
-        let data = HeaderData {
-            cwd: "/workspace",
-            session: "Live agents",
-            model: "offline-fixture",
-            execution: None,
-            phase: "WORKING",
-            jev: Some("Jev standard mode"),
-            clock: "12:34:56",
-            resources: &resources,
-            graph: &graph_rows,
-        };
         for width in [80, 110, 120, 160, 200] {
-            let header = render_header(width, 7, &data);
+            let graph_rows = graph.render("root", 24, graph_height(width, 12, true).max(3), time);
+            assert!(graph_rows.iter().all(|row| visible_width(row) == 24));
+            assert!(graph_rows.join("").contains("38;5;39m"));
+            let plain = strip_ansi(&graph_rows.join(""));
+            assert_eq!(plain.matches('◆').count(), 1);
+            assert_eq!(plain.matches('●').count(), 2);
+            assert_eq!(plain.matches('○').count(), 2);
+            let data = HeaderData {
+                cwd: "/workspace",
+                session: "Live agents",
+                model: "offline-fixture",
+                execution: None,
+                phase: "WORKING",
+                jev: Some("Jev standard mode"),
+                clock: "12:34:56",
+                resources: &resources,
+                graph: &graph_rows,
+            };
+            let header = render_header(width, 12, &data);
             assert!(header.iter().all(|row| visible_width(row) == width));
             if width >= 110 {
                 let first = strip_ansi(&header[0]);
@@ -272,7 +274,7 @@ fn graph_frame_fixture_shows_neon_blue_work_and_communication_beside_resources()
                     visible_width(&first[..first.find("telemus.ai").unwrap()]),
                     visible_width(&metric[..metric.find("MAIN CPU").unwrap()])
                 );
-                assert!(header[..3].iter().any(|row| strip_ansi(row)
+                assert!(header[..graph_rows.len()].iter().any(|row| strip_ansi(row)
                     .chars()
                     .any(|c| ('\u{2801}'..='\u{28ff}').contains(&c))));
             }
@@ -287,4 +289,50 @@ fn graph_frame_fixture_shows_neon_blue_work_and_communication_beside_resources()
             }
         }
     }
+}
+
+#[test]
+fn compact_graph_balances_siblings_and_keeps_nested_branches_separate() {
+    let now = Instant::now();
+    let mut graph = Graph::default();
+    let mut rows = vec![row("root", None, false)];
+    for branch in ["a", "b", "c", "d"] {
+        rows.push(row(branch, Some("root"), false));
+        for leaf in ["1", "2"] {
+            rows.push(row(&format!("{branch}-{leaf}"), Some(branch), false));
+        }
+    }
+    graph.observe(&rows, &parent("root"), false, now);
+    let positions = |g: &Graph| g.nodes.iter().map(|n| (n.id.clone(), (n.x, n.y))).collect::<BTreeMap<_, _>>();
+    let seeded = positions(&graph);
+    let mut reversed = Graph::default();
+    rows.reverse();
+    reversed.observe(&rows, &parent("root"), false, now);
+    assert_eq!(seeded, positions(&reversed), "roster order must not change branch sectors");
+    for frame in 0..80 {
+        graph.render("root", 24, 4, now + FRAME * frame);
+    }
+    let frame = graph.render("root", 24, 4, now + SETTLE);
+    assert_eq!(frame.len(), 4);
+    let markers: Vec<_> = frame.iter().enumerate().flat_map(|(y, line)| {
+        strip_ansi(line).chars().enumerate().filter_map(move |(x, c)| matches!(c, '◆' | '○' | '●').then_some((x as i32, y as i32))).collect::<Vec<_>>()
+    }).collect();
+    assert_eq!(markers.len(), rows.len());
+    assert!(markers.iter().map(|p| p.1).max().unwrap() - markers.iter().map(|p| p.1).min().unwrap() >= 3);
+    for (i, &(x, y)) in markers.iter().enumerate() {
+        for &(other_x, other_y) in &markers[i + 1..] {
+            assert!((x - other_x).abs() + (y - other_y).abs() * 2 >= 2, "markers need a readable gap");
+        }
+    }
+    for node in graph.nodes.iter().skip(1) {
+        let branch = node.id.split('-').next().unwrap();
+        let owner = &seeded[branch];
+        assert_eq!((node.x - 0.5).is_sign_positive(), (owner.0 - 0.5).is_sign_positive());
+        assert_eq!((node.y - 0.5).is_sign_positive(), (owner.1 - 0.5).is_sign_positive());
+    }
+    let settled = positions(&graph);
+    rows.push(row("a-new", Some("a"), true));
+    graph.observe(&rows, &parent("root"), false, now + SETTLE);
+    for (id, position) in settled { assert_eq!(positions(&graph)[&id], position, "roster updates must animate, not jump"); }
+    assert!(graph.next_frame(now + SETTLE).is_some());
 }

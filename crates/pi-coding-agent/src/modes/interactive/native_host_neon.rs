@@ -331,7 +331,8 @@ impl TuiComponent for Header {
         let graph_width = graph_space(width as usize, height);
         let graph = self.1.upgrade()
             .and_then(|t| t.borrow().subagents.clone())
-            .map(|bar| bar.borrow_mut().graph_rows(graph_width, 3))
+            .map(|bar| bar.borrow_mut().graph_rows(graph_width,
+                graph_height(width as usize, height, !resources.is_empty())))
             .unwrap_or_default();
         render_header(
             width as usize,
@@ -405,6 +406,13 @@ fn paired(left: &str, right: &str, width: usize) -> String {
 
 fn graph_space(width: usize, budget: usize) -> usize {
     if width >= 110 && budget >= 7 { 24 } else { 0 }
+}
+
+pub(super) fn graph_height(width: usize, budget: usize, has_resources: bool) -> usize {
+    if graph_space(width, budget) == 0 { return 0; }
+    // Reuse the existing logo/caption rows and the initial resource-loading gap.
+    // The session border and transcript must stay at their original positions.
+    3 + usize::from(width < 160) + usize::from(!has_resources)
 }
 
 fn resource_space(width: usize, budget: usize) -> (usize, usize) {
@@ -490,7 +498,7 @@ pub(super) fn render_header(width: usize, budget: usize, data: &HeaderData<'_>) 
                 };
                 // Fixed column: labels and samples share the brand's left edge.
                 let graph = if graph_width > 0 {
-                    format!("{} ", fit(data.graph.get(i).map(String::as_str).unwrap_or(""), graph_width))
+                    " ".repeat(graph_width + 1)
                 } else { String::new() };
                 rows.push(format!("{}{}{}", fit(&brand, width - panel_width - visible_width(&graph) - 1), graph, fit(&right, panel_width)));
             } else {
@@ -508,6 +516,16 @@ pub(super) fn render_header(width: usize, budget: usize, data: &HeaderData<'_>) 
                 &palette.fg("accent", "AGENTS > CODE > REASON > TEST > SHIP "),
                 width,
             ));
+        }
+        if graph_width > 0 {
+            let column = width - panel_width - graph_width - 2;
+            for (row, graph) in rows.iter_mut().zip(data.graph) {
+                let original = fit(row, width);
+                *row = format!("{}{}{}",
+                    pi_tui::utils::slice_by_column(&original, 0, column, false),
+                    fit(graph, graph_width),
+                    pi_tui::utils::slice_by_column(&original, column + graph_width, width, false));
+            }
         }
     } else if budget >= 3 {
         rows.push(paired(
