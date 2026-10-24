@@ -22,24 +22,24 @@
 //!
 //!   | state | text | colour |
 //!   |---|---|---|
-//!   | `Off` | `● Jev Off` | red (`error`) |
-//!   | `Compare` | `● Jev On (Compare)` | green (`success`) |
-//!   | `Active` | `● Jev On (Active)` | green (`success`) |
-//!   | `CompareAndActive` | `● Jev On (Compare + Active)` | green (`success`) |
-//!   | checking | `● Jev checking` | amber (`warning`) |
-//!   | unavailable | `● Jev unavailable` | amber (`warning`) |
-//!   | fallback | `● Jev standard mode` | amber (`warning`) |
+//!   | `Off` | `• Jev Off` | red (`error`) |
+//!   | `Compare` | `• Jev On (Compare)` | green (`success`) |
+//!   | `Active` | `• Jev On (Active)` | green (`success`) |
+//!   | `CompareAndActive` | `• Jev On (Compare + Active)` | green (`success`) |
+//!   | checking | `• Jev checking` | amber (`warning`) |
+//!   | unavailable | `• Jev unavailable` | amber (`warning`) |
+//!   | fallback | `• Jev standard mode` | amber (`warning`) |
 //!
 //!   The label names the truthful effective mode, so a green segment can only
 //!   mean "on and healthy in the mode it names".
-//! * `jev-compact` — the independent compaction state: `● Jev compact on`
-//!   (green), `● Jev compact off` (red), `● Jev compact unknown` (amber).
+//! * `jev-compact` — the independent compaction state: `• Jev compact on`
+//!   (green), `• Jev compact off` (red), `• Jev compact unknown` (amber).
 //!   Turning the decision mode off never removes or flips this dot.
 //!
 //! Every segment additionally carries `statusCompactText`, the SHORT LABELLED
-//! narrow form the tray row uses when the full row does not fit: `● Jev C On` /
-//! `● Jev A On` / `● Jev C+A On` for the decision segment and `● Jev Cmp on` /
-//! `● Jev Cmp off` for compaction. Never a bare dot: two bare dots cannot be
+//! narrow form the tray row uses when the full row does not fit: `• Jev C On` /
+//! `• Jev A On` / `• Jev C+A On` for the decision segment and `• Jev Cmp on` /
+//! `• Jev Cmp off` for compaction. Never a bare dot: two bare dots cannot be
 //! told apart, and the state must stay readable in text. Receivers that do not
 //! know the optional field ignore it; senders that omit it degrade to
 //! left-truncation instead of segment compaction.
@@ -115,7 +115,7 @@ impl JevFooterSnapshot {
 
     /// The themed SHORT LABELLED narrow form of the decision segment (the
     /// `statusCompactText` the tray row uses when the row must narrow): the dot
-    /// plus a label that still names the state, e.g. `● Jev C On`. Never a bare
+    /// plus a label that still names the state, e.g. `• Jev C On`. Never a bare
     /// dot: two bare dots cannot be told apart.
     fn themed_compact(&self) -> String {
         let state = self.state();
@@ -131,7 +131,7 @@ impl JevFooterSnapshot {
     }
 
     /// The themed SHORT LABELLED narrow form of the compaction segment, e.g.
-    /// `● Jev Cmp on`.
+    /// `• Jev Cmp on`.
     fn themed_compaction_compact(&self) -> String {
         let state = self.compaction;
         crate::modes::interactive::theme::theme::theme()

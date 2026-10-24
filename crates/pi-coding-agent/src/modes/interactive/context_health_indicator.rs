@@ -87,6 +87,9 @@ impl Indicator {
         } else {
             format!("CTX HEALTH {name}{value}")
         };
+        if self.risk == Some(Risk::Amber) {
+            return crate::modes::interactive::theme::theme::theme().fg("warning", &text);
+        }
         // Match the TPS segment's partial reset so selection backgrounds survive.
         format!("\x1b[1;38;5;{colour}m{text}\x1b[22;39m")
     }
@@ -215,8 +218,12 @@ mod tests {
         ] {
             let text = Indicator::from_input(&input(tokens)).label(false);
             assert!(text.contains(name));
-            assert!(text.starts_with(&format!("\x1b[1;38;5;{code}m")));
-            assert!(text.ends_with("\x1b[22;39m"));
+            if name == "AMBER" {
+                assert_eq!(text, crate::modes::interactive::theme::theme::theme().fg("warning", &strip_ansi(&text)));
+            } else {
+                assert!(text.starts_with(&format!("\x1b[1;38;5;{code}m")));
+                assert!(text.ends_with("\x1b[22;39m"));
+            }
         }
     }
 

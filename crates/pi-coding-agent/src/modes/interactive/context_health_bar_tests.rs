@@ -65,7 +65,7 @@ fn context_health_bar_paints_beside_tps_in_both_styles_and_narrow_terminals() {
                             "{style}/{width}: {plain}"
                         );
                         assert!(
-                            rendered.contains(&format!("\x1b[1;38;5;{ansi}mCTX")),
+                            rendered.contains(&if name == "AMBER" { format!("{}CTX", theme().get_fg_ansi("warning")) } else { format!("\x1b[1;38;5;{ansi}mCTX") }),
                             "{rendered}"
                         );
                     }

@@ -155,18 +155,18 @@ fn heartbeat_off_paused_and_narrow_context_render_without_overflow() {
 }
 
 #[test]
-fn heartbeat_red_circle_pulses_only_on_new_runs_and_resets_on_pause_or_session_change() {
+fn heartbeat_context_colour_circle_pulses_only_on_new_runs_and_resets_on_pause_or_session_change() {
     let now = Instant::now();
     let mut pulse = HeartbeatPulse::default();
     let mut heartbeat = job("u", "heartbeat", "active", "one");
     heartbeat.run_count = 10.0;
     pulse.observe("one", &[heartbeat.clone()], now);
     assert!(pulse.fired_at.is_none(), "attaching must not flash historical runs");
-    assert_eq!(pulse.marker(now), "●");
+    assert_eq!(pulse.marker(now), "•");
     heartbeat.run_count = 11.0;
     pulse.observe("one", &[heartbeat.clone()], now);
-    assert_eq!(pulse.marker(now + Duration::from_millis(250)), "○");
-    assert_eq!(pulse.marker(now + Duration::from_millis(500)), "●");
+    assert_eq!(pulse.marker(now + Duration::from_millis(250)), "◦");
+    assert_eq!(pulse.marker(now + Duration::from_millis(500)), "•");
     pulse.observe("one", &[heartbeat.clone()], now + Duration::from_millis(900));
     assert_eq!(pulse.fired_at, Some(now), "a repaint cannot restart the pulse");
     heartbeat.run_count = 10.0;
@@ -174,7 +174,7 @@ fn heartbeat_red_circle_pulses_only_on_new_runs_and_resets_on_pause_or_session_c
     heartbeat.run_count = 11.0;
     pulse.observe("one", &[heartbeat.clone()], now + Duration::from_secs(2));
     assert_eq!(pulse.fired_at, Some(now), "replayed older snapshots cannot restart the pulse");
-    assert_eq!(pulse.marker(now + Duration::from_secs(2)), "●");
+    assert_eq!(pulse.marker(now + Duration::from_secs(2)), "•");
     heartbeat.status = "paused".into();
     pulse.observe("one", &[heartbeat.clone()], now);
     assert!(pulse.fired_at.is_none());
@@ -185,10 +185,10 @@ fn heartbeat_red_circle_pulses_only_on_new_runs_and_resets_on_pause_or_session_c
     let mut mode = mode();
     mode.connection_state.as_mut().unwrap().heartbeat = Some(job("u", "heartbeat", "active", "heartbeat-fixture"));
     let rendered = right_status(&mode, None, 120).unwrap();
-    assert!(rendered.contains("\x1b[1;38;5;196m●"), "{rendered}");
-    assert!(strip_ansi(&rendered).starts_with("● HB"));
+    assert!(rendered.contains(&theme().fg("thinkingText", "•")), "{rendered}");
+    assert!(strip_ansi(&rendered).starts_with("• HB"));
     mode.connection_state.as_mut().unwrap().heartbeat.as_mut().unwrap().status = "paused".into();
-    assert!(!right_status(&mode, None, 120).unwrap().contains('●'));
+    assert!(!right_status(&mode, None, 120).unwrap().contains('•'));
 }
 
 #[test]

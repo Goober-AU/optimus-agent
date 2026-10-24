@@ -64,6 +64,7 @@ fn neon_header_and_timeline_fit_unicode_and_tiny_windows() {
         jev: Some("Jev Full · standard mode"),
         clock: "12:34:56",
         resources: &[],
+        graph: &[],
     };
     for width in [
         1, 8, 24, 35, 36, 79, 80, 89, 90, 100, 109, 110, 120, 159, 160, 240,
@@ -99,9 +100,9 @@ fn neon_header_and_timeline_fit_unicode_and_tiny_windows() {
     let header = render_header(160, 7, &data);
     assert!(strip_ansi(&header[0]).trim().is_empty());
     let strip = strip_ansi(&header[4]);
-    assert!(strip.contains("● fixture-model  │  ● Jev Full · standard mode"));
+    assert!(strip.contains("● fixture-model  │  • Jev Full · standard mode"));
     assert!(header[4].contains(&format!(
-        "{}● Jev Full · standard mode",
+        "{}• Jev Full · standard mode",
         theme().get_fg_ansi("warning")
     )));
     // 95c61aeb82 made the runtime version part of the persistent brand caption.
@@ -114,7 +115,7 @@ fn neon_header_and_timeline_fit_unicode_and_tiny_windows() {
     };
     assert!(render_header(120, 7, &disabled)
         .join("\n")
-        .contains("○ Jev Off"));
+        .contains("◦ Jev Off"));
 }
 
 #[test]
@@ -125,7 +126,7 @@ fn resource_strip_is_compact_and_left_aligned_below_telemus_brand() {
         "\x1b[1;38;5;39mworker* CPU 12% RAM 512M TPS ~75.0 [1/4]\x1b[22;39m".into(),
     ];
     let data = HeaderData { cwd: "/fixture", session: "Resources", model: "fixture-model",
-        execution: None, phase: "WORKING", jev: None, clock: "12:34:56", resources: &resources };
+        execution: None, phase: "WORKING", jev: None, clock: "12:34:56", resources: &resources, graph: &[] };
     let column = |row: &str, label: &str| {
         let row = strip_ansi(row);
         visible_width(&row[..row.find(label).unwrap()])
