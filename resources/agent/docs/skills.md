@@ -50,17 +50,25 @@ Prime Agent ships with built-in skills that load by default:
 
 - `prime-intellect` - Prime Intellect products and workflows via the prime CLI: verifiers environments and the Environments Hub, evaluations (local and hosted), Hosted Training and prime-rl, sandboxes, tunnels, Prime Inference, GPU compute, and storage. Reference docs for each area load on demand from the skill's `references/` directory.
 - `skill-creator` - teaches the agent to create new skills: markdown skill layout, frontmatter rules, placement and precedence, and the full Python-backed skill contract (package layout, `run()` convention, optional CLI, kernel venv behavior) with a working template in `references/python-skills.md`.
-- `websearch` - a Python-backed Google search skill using the [Serper](https://serper.dev) API.
+- `websearch` - a Python-backed search skill combining Codex hosted web search with optional [Serper](https://serper.dev) Google results.
 
 Built-in skills behave like any other skill but have the lowest precedence: a user, project, package, or `--skill` skill with the same name overrides the built-in one.
 
 ### websearch
 
-Setup: get a free API key at [serper.dev](https://serper.dev), then run `/login`,
-switch to **MCP Connections** using the displayed tab shortcuts, and choose
-**Serper (web search)** to paste it. The key is stored alongside your other
-credentials (in `auth.json`) and read by the skill on each call — no environment
-variables required, and it works even if you add the key mid-session.
+In Optimus Agent v0.1.41, use `/login` to sign in to **OpenAI Codex**. Search reuses
+that Optimus profile's OAuth login and token-refresh logic through a native helper;
+Codex credentials never enter the Python kernel. Sign-ins held only in another
+application or profile are not imported. Start an updated Optimus session after
+upgrading so its kernel uses the matching native helper.
+
+Optionally add a [Serper](https://serper.dev) key through `/login` →
+**MCP Connections** → **Serper (web search)**. Keys added mid-session are picked up
+on the next search. With both providers configured, searches run concurrently:
+Codex's cited summary and sources come first, followed by additional Serper results
+with duplicate URLs removed. Either provider can work alone; a failure of one
+preserves the other's results. This works with any conversation model, including
+Claude, and through the shared skill in terminal and Telegram sessions.
 
 Optional overrides (environment variables):
 
@@ -74,11 +82,22 @@ A `SERPER_API_KEY` in the environment, if set, takes precedence over the stored 
 Once loaded, the model can call it directly in the Python kernel by import name:
 
 ```python
-print(await websearch("latest Prime Agent release"))
+print(await websearch("latest Optimus Agent release"))
+print(await websearch("query", provider="codex"))
+print(await websearch("query", provider="serper"))
+print(await websearch("query", provider="codex", mode="cached"))
 ```
 
-Until a key is configured, web search returns a clear message telling the agent
-to walk you through `/login`.
+`provider` defaults to `auto`. Codex `mode` defaults to `live`; `cached` disables
+Codex's external web access, while Serper always searches Google live. The search
+model defaults to `gpt-6-astra`, independent of the chat model, and can be overridden
+with `codex_model`. `num_results` permits 1–20 sources per provider, `timeout` permits
+1–90 seconds per provider, and `max_output` bounds the combined output. Search
+availability remains subject to the Codex account and model.
+
+Until either login is configured, web search returns setup guidance for `/login`.
+No daemon protocol changes are required. Telemus 3D/Web search is a separate product
+integration and is unaffected; Optimus terminal and Telegram use the same skill.
 
 Disable only the built-in `websearch` skill in settings:
 

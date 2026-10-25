@@ -10,6 +10,13 @@ fn main() {
     if std::env::var_os("PI_PACKAGE_DIR").filter(|value| !value.is_empty()).is_none() {
         std::env::set_var("PI_PACKAGE_DIR", pi_coding_agent::config::get_package_dir());
     }
+    if let Ok(executable) = std::env::current_exe() {
+        std::env::set_var("OPTIMUS_NATIVE_BINARY", executable);
+    }
+    if args.len() == 2 && args[1] == "--internal-codex-web-search" {
+        pi_coding_agent::core::websearch_codex::run_stdio();
+        return;
+    }
     if args.get(1).map(String::as_str) == Some("--internal-telegram-worker") {
         // A standalone worker must not enter the UI or start another daemon.
         let result = tokio::runtime::Builder::new_multi_thread().worker_threads(2).enable_all()

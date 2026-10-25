@@ -93,3 +93,4 @@ pub mod timings;
 pub mod tools;
 pub mod usage;
 pub mod websearch_credential;
+pub mod websearch_codex;
