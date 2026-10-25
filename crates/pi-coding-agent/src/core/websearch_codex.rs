@@ -179,9 +179,9 @@ async fn request_search(request: &SearchRequest, token: &str, endpoint: &str) ->
         Ok(client) => client,
         Err(_) => return SearchResult::failure("error", "transport_error"),
     };
-    let mut pending = client.post(endpoint).json(&request.body());
+    let mut pending = client.post(endpoint);
     for (name, value) in build_sse_headers(None, None, &account, token, None) { pending = pending.header(name, value); }
-    let mut response = match pending.send().await {
+    let mut response = match pending.json(&request.body()).send().await {
         Ok(response) => response,
         Err(error) => return SearchResult::failure("error", if error.is_timeout() { "timeout" } else { "transport_error" }),
     };

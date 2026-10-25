@@ -155,6 +155,8 @@ fn server(status: u16, body: Vec<u8>) -> (String, std::thread::JoinHandle<()>) {
                 let headers = std::str::from_utf8(&bytes[..start]).unwrap().to_ascii_lowercase();
                 assert!(headers.contains("chatgpt-account-id: fixture-account"));
                 assert!(headers.contains("authorization: bearer "));
+                let content_types: Vec<_> = headers.lines().filter_map(|line| line.strip_prefix("content-type: ")).collect();
+                assert_eq!(content_types, ["application/json"], "duplicate content types are rejected by the Codex endpoint");
                 let size: usize = headers.lines().find_map(|line| line.strip_prefix("content-length: ")).unwrap().parse().unwrap();
                 if bytes.len() >= start + 4 + size { body_start = start + 4; break; }
             }
