@@ -56,11 +56,13 @@ Built-in skills behave like any other skill but have the lowest precedence: a us
 
 ### websearch
 
-In Optimus Agent v0.1.41, use `/login` to sign in to **OpenAI Codex**. Search reuses
-that Optimus profile's OAuth login and token-refresh logic through a native helper;
-Codex credentials never enter the Python kernel. Sign-ins held only in another
-application or profile are not imported. Start an updated Optimus session after
-upgrading so its kernel uses the matching native helper.
+In Optimus Agent v0.1.41, search uses the same credential resolver as normal
+**OpenAI Codex** requests. Existing `models.json` credential commands that read
+Codex's OAuth login work directly; no additional login or credential copy is needed.
+Stored Optimus OAuth also works, with its existing token-refresh lock. Credentials
+stay in the native helper and configured credential command; the Python search skill
+receives only results. If Codex is not configured, use `/login`. Start an updated
+Optimus session after upgrading so its kernel uses the matching native helper.
 
 Optionally add a [Serper](https://serper.dev) key through `/login` →
 **MCP Connections** → **Serper (web search)**. Keys added mid-session are picked up

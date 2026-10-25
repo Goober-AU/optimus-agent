@@ -275,7 +275,7 @@ async def run(
     if isinstance(codex, dict) and codex.get("status") == "ok":
         sections.append(_format_codex_results(codex, mode, seen, max_output))
     elif isinstance(codex, Exception) or isinstance(codex, dict) and codex.get("status") == "error":
-        notices.append("Codex search unavailable; retry or check the Codex login in /login.")
+        notices.append("Codex search unavailable; check the existing Codex login or credential configuration.")
     serper = replies.get("serper")
     if isinstance(serper, dict):
         try:
@@ -286,7 +286,8 @@ async def run(
         notices.append("Serper search unavailable; retry or check Serper in /login → MCP Connections.")
     if not sections:
         return _truncate("\n".join(notices + [
-            "No web search results. In Optimus Agent, use /login to sign in to OpenAI Codex, "
+            "No web search results. Check the existing OpenAI Codex login or credential configuration; "
+            "if Codex is not configured in Optimus Agent, use /login to sign in, "
             "or configure Serper (web search) under MCP Connections. "
             "Start an updated Optimus session if the native search helper is unavailable."
         ]), max_output)

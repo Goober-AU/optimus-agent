@@ -71,12 +71,65 @@ fn codex_search_decodes_sse_and_rejects_failure_without_echoing_bodies() {
     assert_eq!(decode_response(b"data: [DONE]\n\n").unwrap_err(), "incomplete_response");
 }
 
+#[test]
+fn codex_search_assembles_streamed_items_when_terminal_output_is_empty() {
+    let expected = response();
+    let item = |index: usize| json!({"type":"response.output_item.done", "output_index":index, "item":expected["output"][index]});
+    let prefix = format!("data: {}\n\ndata: {}\n\ndata: {}\n\n", item(1), item(0), item(0));
+    let wire = format!("{prefix}data: {}\n\n", json!({"type":"response.completed", "response":{"status":"completed","output":[]}}));
+    let decoded = decode_response(wire.as_bytes()).unwrap();
+    assert_eq!(decoded, expected);
+    let result = parse_response(&decoded, 5);
+    assert_eq!(result.status, "ok");
+    assert_eq!(result.search_calls, 1, "duplicate item events must not inflate completed searches");
+    assert_eq!(result.sources[0].title, "Original title");
+    assert_eq!(result.summary, "A verified finding.");
+    assert_eq!(decode_response(prefix.as_bytes()).unwrap_err(), "incomplete_response");
+}
+
 #[tokio::test]
 async fn codex_search_without_oauth_stays_offline() {
-    let mut auth = AuthStorage::in_memory(Default::default(), None);
-    let result = search_with_auth(&request("live"), &mut auth).await;
+    let mut registry = ModelRegistry::in_memory(AuthStorage::in_memory(Default::default(), None));
+    let result = search_with_auth(&request("live"), &mut registry, "http://127.0.0.1:1").await;
     assert_eq!(result.status, "unavailable");
     assert_eq!(result.error.as_deref(), Some("codex_login_required"));
+}
+
+#[tokio::test]
+async fn codex_search_uses_existing_models_credential_command_without_stored_login() {
+    let directory = tempfile::Builder::new().prefix("codex search credentials ").tempdir().unwrap();
+    let credential = directory.path().join("synthetic-token.txt");
+    std::fs::write(&credential, token()).unwrap();
+    let command = if cfg!(windows) {
+        let script = directory.path().join("credential.ps1");
+        std::fs::write(&script, format!("Get-Content -Raw -LiteralPath '{}'\n",
+            credential.display().to_string().replace('\'', "''"))).unwrap();
+        format!("!powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"{}\"", script.display())
+    } else {
+        format!("!cat '{}'", credential.display().to_string().replace('\'', "'\\''"))
+    };
+    let models = directory.path().join("models.json");
+    std::fs::write(&models, json!({"providers":{"openai-codex":{
+        "apiKey":command, "models":[{"id":"gpt-6-astra"}]
+    }}}).to_string()).unwrap();
+    let mut registry = ModelRegistry::create(AuthStorage::in_memory(Default::default(), None),
+        Some(models.to_string_lossy().into_owned()));
+    assert!(registry.get_error().is_none(), "{:?}", registry.get_error());
+    assert!(registry.auth_storage().get(PROVIDER).is_none());
+    let (endpoint, server_thread) = server(200, serde_json::to_vec(&response()).unwrap());
+    let result = search_with_auth(&request("live"), &mut registry, &endpoint).await;
+    assert_eq!(result.status, "ok");
+    assert_eq!(result.search_calls, 1);
+    server_thread.join().unwrap();
+    assert!(registry.auth_storage().get(PROVIDER).is_none(), "must not copy the shared credential");
+
+    // Re-read the configured source on each request, including rotations and failures.
+    std::fs::write(&credential, "invalid rotated synthetic token").unwrap();
+    let failed = search_with_auth(&request("live"), &mut registry, "http://127.0.0.1:1").await;
+    assert_eq!(failed.error.as_deref(), Some("codex_login_required"));
+    std::fs::remove_file(&credential).unwrap();
+    let missing = search_with_auth(&request("live"), &mut registry, "http://127.0.0.1:1").await;
+    assert_eq!(missing.status, "unavailable");
 }
 
 fn token() -> String {

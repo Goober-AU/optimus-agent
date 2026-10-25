@@ -1,9 +1,10 @@
-//! Hosted search for the bundled skill; OAuth stays in the native auth store.
-use super::auth_storage::{AuthCredential, AuthStorage};
+//! Hosted search for the bundled skill using the normal Codex credential resolver.
+use super::auth_storage::AuthStorage;
+use super::model_registry::ModelRegistry;
 use pi_ai::providers::openai_codex_responses::{build_sse_headers, extract_account_id, resolve_codex_url};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::io::Read;
 use std::time::Duration;
 
@@ -137,6 +138,7 @@ fn decode_response(body: &[u8]) -> Result<Value, &'static str> {
         return serde_json::from_str(text).map_err(|_| "invalid_response");
     }
     let mut data = String::new();
+    let mut finished_items = BTreeMap::new();
     for line in text.lines().chain(std::iter::once("")) {
         if let Some(value) = line.strip_prefix("data:") {
             if !data.is_empty() { data.push('\n'); }
@@ -146,7 +148,19 @@ fn decode_response(body: &[u8]) -> Result<Value, &'static str> {
             if frame == "[DONE]" { continue; }
             let event: Value = serde_json::from_str(&frame).map_err(|_| "invalid_response")?;
             match event["type"].as_str() {
-                Some("response.completed") => return Ok(event["response"].clone()),
+                Some("response.output_item.done") => {
+                    if let (Some(index), Some(item)) = (event["output_index"].as_u64(), event.get("item").filter(|v| v.is_object())) {
+                        finished_items.insert(index, item.clone());
+                    }
+                }
+                Some("response.completed") => {
+                    let mut response = event.get("response").filter(|v| v.is_object()).cloned().ok_or("invalid_response")?;
+                    // Codex can omit output from the terminal event; completed items carry the sources.
+                    if response["output"].is_null() || response["output"].as_array().is_some_and(Vec::is_empty) {
+                        response["output"] = Value::Array(finished_items.into_values().collect());
+                    }
+                    return Ok(response);
+                }
                 Some("error" | "response.failed" | "response.incomplete") => return Err("provider_error"),
                 _ => {}
             }
@@ -191,17 +205,14 @@ async fn request_search(request: &SearchRequest, token: &str, endpoint: &str) ->
     }
 }
 
-async fn search_with_auth(request: &SearchRequest, auth: &mut AuthStorage) -> SearchResult {
+async fn search_with_auth(request: &SearchRequest, registry: &mut ModelRegistry, endpoint: &str) -> SearchResult {
     if !request.valid() { return SearchResult::failure("error", "invalid_request"); }
-    auth.reload_if_changed();
-    if !matches!(auth.get(PROVIDER), Some(AuthCredential::OAuth { .. })) {
-        return SearchResult::failure("unavailable", "codex_login_required");
-    }
-    let token = match auth.get_api_key(PROVIDER, false).await {
-        Ok(Some(token)) => token,
-        _ => return SearchResult::failure("error", "codex_login_required"),
+    // Includes models.json credential commands, such as the existing Codex OAuth bridge.
+    let token = match registry.get_api_key_for_provider(PROVIDER).await {
+        Some(token) => token,
+        None => return SearchResult::failure("unavailable", "codex_login_required"),
     };
-    request_search(request, &token, &resolve_codex_url(None)).await
+    request_search(request, &token, endpoint).await
 }
 
 /// Private stdin/stdout bridge: no daemon, query arguments, or credential output.
@@ -214,8 +225,9 @@ pub fn run_stdio() {
         if !request.valid() { return None; }
         let runtime = tokio::runtime::Builder::new_multi_thread().worker_threads(2).enable_all().build().ok()?;
         Some(runtime.block_on(async {
-            let mut auth = AuthStorage::create(None, None);
-            tokio::time::timeout(Duration::from_secs(request.timeout_seconds), search_with_auth(&request, &mut auth))
+            let mut registry = ModelRegistry::create(AuthStorage::create(None, None), None);
+            tokio::time::timeout(Duration::from_secs(request.timeout_seconds),
+                search_with_auth(&request, &mut registry, &resolve_codex_url(None)))
                 .await.unwrap_or_else(|_| SearchResult::failure("error", "timeout"))
         }))
     })().unwrap_or_else(|| SearchResult::failure("error", "invalid_request"));

@@ -11,17 +11,20 @@ Call the prepared import in the Python kernel:
 print(await websearch("latest Optimus Agent release"))
 ```
 
-The default `provider="auto"` runs Codex hosted search when this Optimus profile
-has an OpenAI Codex login, alongside Serper when its key is configured. Codex's
+The default `provider="auto"` runs Codex hosted search using this Optimus profile's
+existing Codex credentials, alongside Serper when its key is configured. Codex's
 cited summary and sources appear first; additional Serper results are appended,
 with duplicate URLs removed. Failure of one provider preserves the other results.
 Search works independently of the model used for the conversation.
 
 ## Setup
 
-Use `/login` to sign in to **OpenAI Codex**. The native helper reuses that profile's
-credentials and existing token-refresh lock. Credentials are not passed to Python.
-An account signed in only in another application/profile is not silently imported.
+Search uses the same credential resolver as normal **OpenAI Codex** requests.
+If Optimus already uses Codex's OAuth through a credential command in `models.json`,
+search uses that same command; no additional login or credential copy is needed.
+Stored Optimus OAuth logins also work with the existing token-refresh lock.
+Credentials stay in the native helper and configured credential command; the Python
+search skill receives only results. If Codex is not configured, use `/login`.
 
 Optionally configure **MCP Connections → Serper (web search)** in `/login` with a
 key from https://serper.dev. Either provider is sufficient; both can be used together.
