@@ -565,6 +565,32 @@ fn installed_cli_probe_is_bounded_and_rechecks_version() {
     assert!(started.elapsed() < Duration::from_secs(1));
 }
 
+#[cfg(unix)]
+#[tokio::test]
+async fn transient_version_probe_failure_recovers_without_login_or_five_minute_wait() {
+    use std::os::unix::fs::PermissionsExt;
+    let directory = tempfile::tempdir().unwrap();
+    write_login(directory.path(), super::super::now_millis() + 300_000);
+    let credentials = std::fs::read(directory.path().join(".credentials.json")).unwrap();
+    let program = directory.path().join("claude");
+    std::fs::write(&program, "#!/bin/sh\nexit 1\n").unwrap();
+    std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let mut auth = fixture(directory.path());
+    auth.program = program.clone();
+    *auth.version.lock().unwrap() = None;
+    let mut storage = storage(auth);
+    let error = storage.get_api_key("anthropic", false).await.unwrap_err();
+    assert_eq!(error, VERSION_HELP);
+    assert!(!error.contains("claude auth login"));
+    std::fs::write(&program, "#!/bin/sh\nprintf '2.1.310 (Claude Code)\\n'\n").unwrap();
+    let auth = storage.claude_code.as_ref().unwrap();
+    auth.version.lock().unwrap().as_mut().unwrap().0 = Instant::now() - Duration::from_secs(2);
+    let resolved = storage.get_api_key_with_source_token("anthropic", false).await.unwrap();
+    assert_eq!(resolved.api_key.as_deref(), Some("sk-ant-oat01-synthetic"));
+    assert_eq!(resolved.source_token.unwrap().source, AUTH_SOURCE_CLAUDE_CODE);
+    assert_eq!(std::fs::read(directory.path().join(".credentials.json")).unwrap(), credentials);
+}
+
 #[test]
 fn production_discovery_and_opt_out_use_an_isolated_profile() {
     let directory = tempfile::tempdir().unwrap();

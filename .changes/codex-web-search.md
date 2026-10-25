@@ -1,3 +1,4 @@
 - Added Codex hosted web search through the existing Codex credential resolver, including shared OAuth credential commands, with cited results followed by optional Serper results, independent of the conversation model.
 - Added explicit Codex-only, Serper-only and cached Codex search options while preserving successful results when another provider is unavailable.
 - Changed the bundled search guidance to Optimus branding and prepared Optimus Agent v0.1.41.
+- Fixed transient Claude Code version-probe failures blocking a valid shared OAuth login for five minutes and incorrectly requesting another login.

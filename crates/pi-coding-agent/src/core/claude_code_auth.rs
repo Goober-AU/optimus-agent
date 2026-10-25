@@ -21,6 +21,7 @@ use crate::utils::store_lock::open_store_lock;
 const MAX_BLOB: usize = 1024 * 1024;
 const REFRESH_MARGIN_MS: f64 = 60_000.0;
 const LOGIN_HELP: &str = "Claude Code OAuth is selected. Run `claude auth login` to renew it, or set OPTIMUS_CLAUDE_CODE_AUTH=0 to use Optimus credentials.";
+const VERSION_HELP: &str = "Cannot verify the installed Claude Code version; retry once the Claude CLI is responsive. Your existing login has not been changed.";
 
 #[derive(Clone)]
 enum Source {
@@ -181,18 +182,23 @@ impl ClaudeCodeAuth {
     fn version(&self) -> Result<Option<String>, String> {
         let mut cache = self.version.lock().unwrap_or_else(|p| p.into_inner());
         if let Some((checked, result)) = cache.as_ref() {
-            if checked.elapsed() < Duration::from_secs(300) {
+            let lifetime = match result {
+                Ok(Some(_)) => 300,
+                Ok(None) => 5,
+                Err(_) => 1,
+            };
+            if checked.elapsed() < Duration::from_secs(lifetime) {
                 return result.clone();
             }
         }
-        let result = match run_command(&self.program, &["--version"], None, Duration::from_secs(2))
+        let result = match run_command(&self.program, &["--version"], None, Duration::from_secs(5))
         {
             Ok((Some(0), bytes)) => parse_version(&String::from_utf8_lossy(&bytes))
                 .map(Some)
-                .ok_or_else(|| "Cannot determine the installed Claude Code version".into()),
-            Ok(_) => Err("Claude Code version check failed".into()),
+                .ok_or_else(|| VERSION_HELP.to_string()),
+            Ok(_) => Err(VERSION_HELP.to_string()),
             Err(error) if error == "Command not installed" => Ok(None),
-            Err(_) => Err("Claude Code version check failed or timed out".into()),
+            Err(_) => Err(VERSION_HELP.to_string()),
         };
         *cache = Some((Instant::now(), result.clone()));
         result
@@ -642,7 +648,9 @@ impl AuthStorage {
         let result = tokio::spawn(async move { auth.resolve().await })
             .await
             .map_err(|_| "Claude Code credential resolution failed")?;
-        let Some(snapshot) = result.map_err(|error| format!("{error}. {LOGIN_HELP}"))? else {
+        let Some(snapshot) = result.map_err(|error| {
+            if error == VERSION_HELP { error } else { format!("{error}. {LOGIN_HELP}") }
+        })? else {
             return Ok(None);
         };
         let candidate = self.candidate_for_claude(&snapshot);
