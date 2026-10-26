@@ -1169,3 +1169,64 @@ async def test_frontend_preflight_logger_and_root_path_members(transaction_fixtu
     f.app.root_path = "/proxy"
     members = dict(install._frontend_members(f.app, f.tm))
     assert members["request_logger"] is True and members["root_path"] is True
+
+
+##############################
+# OCC3_MAX_TURN_SECONDS: per-boot native turn admission window (TS13 live regression)
+
+async def test_max_turn_window_env_absent_keeps_default_300(transaction_fixture, monkeypatch):
+    """The default admission window stays 300s when no override is declared.
+    This is the value that capped the TS13 armed turn: the descriptor declared
+    deadline_seconds=540 but the identity admission window (buffer profile
+    max_turn_seconds) folded ctx.deadline to request-start+300s and the live
+    armed decode died with deadline_exceeded/504 at ~301s mid-generation."""
+    monkeypatch.delenv("OCC3_MAX_TURN_SECONDS", raising=False)
+    f = transaction_fixture
+    receipt = await install.install_native_runtime(f.app, f.tm, experimental_opt_in=True)
+    assert receipt.installed
+    installation = getattr(f.app, install._INSTALLED_ATTR)
+    assert installation.adapter.profile.max_turn_seconds == 300.0
+
+
+async def test_max_turn_window_env_widens_admission_to_declared_boot_window(
+        transaction_fixture, monkeypatch):
+    """Red-first, TS13 live regression: deployments serving armed turns opt in
+    per-boot with OCC3_MAX_TURN_SECONDS. The declared window must reach the
+    installed adapter profile (the same value _construct_components hands the
+    broker gate as its admission window), so a 540s armed descriptor deadline
+    fits inside the identity admission instead of dying mid-decode."""
+    monkeypatch.setenv("OCC3_MAX_TURN_SECONDS", "720")
+    f = transaction_fixture
+    receipt = await install.install_native_runtime(f.app, f.tm, experimental_opt_in=True)
+    assert receipt.installed
+    installation = getattr(f.app, install._INSTALLED_ATTR)
+    assert installation.adapter.profile.max_turn_seconds == 720.0
+
+
+@pytest.mark.parametrize("raw", ["", "abc", "0", "-30", "10", "99999", "nan", "1e999"])
+async def test_max_turn_window_env_invalid_declines_install_fail_closed(
+        transaction_fixture, monkeypatch, raw):
+    """A declared-but-invalid window never silently falls back to the default:
+    the native install declines with the fixed refusal code and nothing mounts."""
+    monkeypatch.setenv("OCC3_MAX_TURN_SECONDS", raw)
+    f = transaction_fixture
+    receipt = await install.install_native_runtime(f.app, f.tm, experimental_opt_in=True)
+    assert not receipt.installed and receipt.code == "max_turn_seconds_invalid"
+    assert getattr(f.app, install._INSTALLED_ATTR, None) is None
+
+
+async def test_max_turn_window_env_never_overrides_explicit_profile(
+        transaction_fixture, monkeypatch):
+    """An explicit caller-supplied buffer profile wins untouched: the boot
+    override only replaces the default profile, it must not mutate a profile
+    the trusted caller constructed deliberately."""
+    monkeypatch.setenv("OCC3_MAX_TURN_SECONDS", "720")
+    from occ3_sglang.chat_adapter import BufferProfile
+    explicit = BufferProfile(max_turn_seconds=300)
+    f = transaction_fixture
+    receipt = await install.install_native_runtime(f.app, f.tm,
+        experimental_opt_in=True, buffer_profile=explicit)
+    assert receipt.installed
+    installation = getattr(f.app, install._INSTALLED_ATTR)
+    assert installation.adapter.profile.max_turn_seconds == 300
+    assert installation.adapter.profile is explicit
