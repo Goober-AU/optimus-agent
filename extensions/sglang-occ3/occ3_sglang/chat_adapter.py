@@ -56,7 +56,10 @@ def _inner_error_detail(response, limit):
         text = body[:4096].decode("utf-8", "replace")
         try:
             value = json.loads(text)
-            message = value["error"]["message"]
+            # Both documented ordinary-path bodies: the OpenAI-style
+            # {"error":{"message":...}} wrapper and the pinned sglang
+            # ErrorResponse flat {"message":...} model dump.
+            message = value["error"]["message"] if isinstance(value.get("error"), dict) else value["message"]
         except Exception:
             message = text
         return message[:limit] if isinstance(message, str) else ""
