@@ -147,6 +147,11 @@ def validate_plan(plan):
         value = plan.setdefault(field, default)
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
             raise Failure("invalid deadline option")
+    from .docker_config import environment_addition_entries
+    try:
+        environment_addition_entries(plan.setdefault("environment_additions", []))
+    except ValueError:
+        raise Failure("invalid environment additions") from None
     return plan
 
 
@@ -991,7 +996,8 @@ def reconcile_candidate_create(api, journal, error=None):
             raise Failure("candidate create intent identity differs")
         if rejected:
             raise Failure("rejected create cannot adopt the occupant of the requested name")
-        request = build_create_request(original, state["candidate_image_id"], record["name"])
+        request = build_create_request(original, state["candidate_image_id"], record["name"],
+                                       state["plan"].get("environment_additions"))
         if _request_digest(request) != record["request_sha256"]:
             raise Failure("candidate create intent request differs")
         document = api.inspect(record.get("container_id") or record["name"])
@@ -1000,7 +1006,8 @@ def reconcile_candidate_create(api, journal, error=None):
                 document.get("Image") != record["image_id"] or document.get("State", {}).get("Status") != "created" or
                 document.get("State", {}).get("Running")):
             raise Failure("candidate create reconciliation is not exact and stopped")
-        assert_candidate_parity(original, document, state["candidate_image_id"])
+        assert_candidate_parity(original, document, state["candidate_image_id"],
+                                state["plan"].get("environment_additions"))
         record.update(container_id=identity, reconciliation="verified_cleanup_only", cleanup_admissible=True,
                       actual_configuration_sha256=_actual_configuration_digest(document))
     except Exception as reconcile_error:
@@ -1043,7 +1050,8 @@ def prepare(api, plan, directory, *, probe=artifact_probe):
         # attempt's own request identity. The final staging name is unchanged.
         resource_nonce = secrets.token_hex(16)
         create_name = candidate_create_name(state["candidate_name"], resource_nonce)
-        body = build_create_request(original, state["candidate_image_id"], create_name)
+        body = build_create_request(original, state["candidate_image_id"], create_name,
+                                    state["plan"].get("environment_additions"))
         journal.intent("create_candidate")
         create_record = {"schema": 1, "attempt_id": state["attempt_id"], "resource_nonce": resource_nonce,
                          "name": create_name, "final_name": state["candidate_name"],
@@ -1061,7 +1069,8 @@ def prepare(api, plan, directory, *, probe=artifact_probe):
             raise Failure("candidate create name binding differs")
         if is_running(candidate) or candidate.get("State", {}).get("Status") != "created":
             raise Failure("candidate was not created stopped")
-        evidence = assert_candidate_parity(original, candidate, state["candidate_image_id"])
+        evidence = assert_candidate_parity(original, candidate, state["candidate_image_id"],
+                                           state["plan"].get("environment_additions"))
         private_json(journal.directory / "candidate-inspect.json", candidate, exclusive=True)
         create_record.update(phase="VERIFIED_STOPPED_OWN")
         private_json(journal.directory / "candidate-create-intent.json", create_record)

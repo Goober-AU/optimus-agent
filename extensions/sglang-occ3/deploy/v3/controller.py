@@ -205,7 +205,8 @@ class Controller:
                 candidate = checked_inspect(self.api, self.state["candidate_id"], self.state["candidate_image_id"])
                 if candidate.get("State", {}).get("Status") != "created" or is_running(candidate):
                     raise Failure("exact preflight candidate is no longer unstarted")
-                assert_candidate_parity(self.original, candidate, self.state["candidate_image_id"])
+                assert_candidate_parity(self.original, candidate, self.state["candidate_image_id"],
+                                        self.state["plan"].get("environment_additions"))
                 self.rehearsal_pause("before_mutation")
                 self.mutate("rename_original", lambda: self.api.rename(self.state["original_id"], self.state["preserved_name"]),
                             mutation_intent=True, phase="MUTATING")

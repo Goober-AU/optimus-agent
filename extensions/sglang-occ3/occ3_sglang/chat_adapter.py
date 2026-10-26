@@ -11,6 +11,7 @@ import inspect
 import json
 import logging
 import math
+import re
 import time
 import uuid
 from dataclasses import dataclass
@@ -55,12 +56,36 @@ def _inner_error_detail(response, limit):
         text = body[:4096].decode("utf-8", "replace")
         try:
             value = json.loads(text)
-            message = value["error"]["message"]
+            # Both documented ordinary-path bodies: the OpenAI-style
+            # {"error":{"message":...}} wrapper and the pinned sglang
+            # ErrorResponse flat {"message":...} model dump.
+            message = value["error"]["message"] if isinstance(value.get("error"), dict) else value["message"]
         except Exception:
             message = text
         return message[:limit] if isinstance(message, str) else ""
     except Exception:
         return ""
+
+
+# Fixed-shape refusal codes the scheduler-side occ3 abort paths emit. Only
+# this bounded shape is ever logged; any other abort payload stays unlogged.
+_REFUSAL_CODE = re.compile(r"occ3_[a-z][a-z_]{0,62}\Z")
+
+
+def _refusal_code(reason) -> str:
+    if not isinstance(reason, dict):
+        return "unclassified"
+    message = reason.get("message")
+    if isinstance(message, str) and _REFUSAL_CODE.fullmatch(message):
+        return message
+    return "unclassified"
+
+
+def _refusal_status(reason) -> str:
+    if not isinstance(reason, dict):
+        return ""
+    status = reason.get("status_code")
+    return str(status) if type(status) is int and 400 <= status <= 599 else ""
 
 
 class NativeGenerateRequest(Protocol):
@@ -684,6 +709,13 @@ class ChatAttachmentAdapter:
                 reason = meta.get("finish_reason")
                 if reason is not None:
                     if not isinstance(reason, dict) or reason.get("type") not in ("stop", "length"):
+                        # Scheduler-side refusals abort the request before prefill; the
+                        # ordinary stream delivers that as one abort output whose message
+                        # is a fixed occ3 refusal code. The public code stays generic;
+                        # the bounded code is recorded server-side so live refusals are
+                        # diagnosable offline. Other abort payloads are never logged.
+                        logger.error("occ3-bridge: native turn aborted (refusal=%s status=%s)",
+                                     _refusal_code(reason), _refusal_status(reason))
                         raise AttachmentError("native_completion_failed")
                     ctx.native_terminal = True
                 yield output
@@ -692,7 +724,11 @@ class ChatAttachmentAdapter:
             raise
         except AttachmentError:
             raise
-        except Exception:
+        except Exception as exc:
+            # Unexpected non-abort failures also fold into the generic 409; record
+            # the bounded exception class server-side so live refusals caused by
+            # adapter/engine defects are diagnosable offline (no payload logged).
+            logger.error("occ3-bridge: native turn failed (class=%s)", type(exc).__name__)
             raise AttachmentError() from None
 
     async def _run(self, original, serving, request, raw_request, ctx):

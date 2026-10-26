@@ -1,8 +1,11 @@
 """Secret-safe Docker create bodies and independent inspect parity.
 
-Only Config.Image changes. Name and immutable container/image IDs are lifecycle
-metadata, not launch configuration. Entrypoint, Cmd (including empty arguments),
-Env order/duplicates, all accepted Config fields and HostConfig fields are exact.
+Only Config.Image changes, plus plan-declared pure environment additions. Name
+and immutable container/image IDs are lifecycle metadata, not launch
+configuration. Entrypoint, Cmd (including empty arguments), Env
+order/duplicates, all accepted Config fields and HostConfig fields are exact;
+the candidate environment is the original environment plus exactly the declared
+additions (environment_addition_entries), never an override or removal.
 No CLI string is constructed and no credential or credential digest is evidence.
 
 HostConfig.OomKillDisable is the single documented spelling exception: Docker
@@ -334,11 +337,59 @@ def _identity_aliases(doc: dict, include_name: bool) -> set[str]:
     return values
 
 
-def build_create_request(original_inspect: dict, candidate_image: str, candidate_name: str) -> dict:
+_ENV_ADDITION_NAME = re.compile(r"[A-Z][A-Z0-9_]{0,63}\Z")
+_ENV_ADDITION_VALUE = re.compile(r"[\x20-\x7e]{1,256}\Z")
+
+
+def environment_addition_entries(values) -> list:
+    """Validated declared env additions as "NAME=VALUE" strings, in order.
+
+    Pure additions only: a name that already exists in the original environment
+    is refused (an override is a different, undeclared mutation). Names are
+    bounded ASCII identifiers; values are bounded printable ASCII with no
+    surrounding whitespace and no NUL. Duplicates are refused. The result is
+    the exact tail the candidate environment must carry beyond the original.
+    """
+    if values is None:
+        return []
+    if not isinstance(values, list):
+        _fail("invalid_environment_additions")
+    entries, names = [], set()
+    for item in values:
+        if not isinstance(item, dict) or set(item) != {"name", "value"}:
+            _fail("invalid_environment_additions")
+        name, value = item["name"], item["value"]
+        if not isinstance(name, str) or not _ENV_ADDITION_NAME.fullmatch(name):
+            _fail("invalid_environment_addition_name")
+        if (not isinstance(value, str) or not _ENV_ADDITION_VALUE.fullmatch(value)
+                or value != value.strip() or "\0" in value):
+            _fail("invalid_environment_addition_value")
+        if name in names:
+            _fail("duplicate_environment_addition")
+        names.add(name)
+        entries.append(name + "=" + value)
+    return entries
+
+
+def _declared_environment(config_env: list, entries: list) -> list:
+    existing = set()
+    for element in config_env:
+        if "=" in element:
+            existing.add(element.split("=", 1)[0])
+    for entry in entries:
+        if entry.split("=", 1)[0] in existing:
+            _fail("environment_addition_name_collision")
+    return config_env + entries
+
+
+def build_create_request(original_inspect: dict, candidate_image: str, candidate_name: str,
+                         environment_additions=None) -> dict:
     """Return the private POST /containers/create body; name is a query parameter.
 
     The result contains the original credential and must not be logged, put in
     process argv, or persisted except in an explicitly private journal.
+    Config.Env is the original environment plus the plan-declared additions
+    (pure additions, exact order, validated by environment_addition_entries).
     """
     if not isinstance(candidate_name, str) or not _NAME.fullmatch(candidate_name):
         _fail("invalid_candidate_name")
@@ -346,6 +397,7 @@ def build_create_request(original_inspect: dict, candidate_image: str, candidate
         _fail("invalid_candidate_image")
     config, host, networks = _validate_structure(original_inspect)
     body = deepcopy(config)
+    body["Env"] = _declared_environment(body["Env"], environment_addition_entries(environment_additions))
     body["Image"] = candidate_image
     host_body = deepcopy(host)
     if host_body.get("OomKillDisable") is None:
@@ -368,12 +420,16 @@ def build_create_request(original_inspect: dict, candidate_image: str, candidate
     return body
 
 
-def assert_candidate_parity(original_inspect: dict, candidate_inspect: dict, expected_image_id: str) -> dict:
+def assert_candidate_parity(original_inspect: dict, candidate_inspect: dict,
+                            expected_image_id: str, environment_additions=None) -> dict:
     """Independent raw-inspect check; never calls the request builder.
 
     Mount records are compared directly BEFORE any source-declaration validation.
     Even a broken/mocked builder or declaration checker cannot hide a missing
     top-level Mounts entry. Errors intentionally contain no captured values.
+    Config.Env is the one field (besides Image) that may differ from the
+    original: the candidate must carry the original environment plus exactly
+    the declared additions and nothing else.
     """
     _object(original_inspect, "invalid_original_inspect")
     _object(candidate_inspect, "invalid_candidate_inspect")
@@ -393,9 +449,13 @@ def assert_candidate_parity(original_inspect: dict, candidate_inspect: dict, exp
     right_config, right_host, right_networks = _validate_structure(candidate_inspect)
     if set(left_config) != set(right_config):
         _fail("config_field_set_differs")
+    declared_env = _declared_environment(left_config["Env"],
+                                         environment_addition_entries(environment_additions))
     for field in left_config:
-        if field != "Image" and left_config[field] != right_config[field]:
+        if field not in ("Image", "Env") and left_config[field] != right_config[field]:
             _fail("Config." + field + "_differs")
+        if field == "Env" and declared_env != right_config["Env"]:
+            _fail("Config.Env_differs")
     if left_host != right_host:
         # Docker Engine 29.6.2 (API 1.55) coerces an explicitly present null
         # OomKillDisable to false at create while an omitted key inspects as
@@ -467,6 +527,8 @@ def assert_candidate_parity(original_inspect: dict, candidate_inspect: dict, exp
         "schema": "occ3-candidate-parity/v1", "result": "PASS",
         "image_id_exact": True, "launch_arrays_exact": True,
         "environment_exact": True, "host_config_exact": True,
+        "declared_environment_additions": [entry.split("=", 1)[0] for entry in
+                                          environment_addition_entries(environment_additions)],
         "actual_mounts_exact": True, "actual_mount_count": len(left_raw),
         "network_options_exact": True, "network_count": len(left_networks),
     }
