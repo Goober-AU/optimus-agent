@@ -209,7 +209,8 @@ class Supervisor:
                             original.get("Name") != "/" + self.state["preserved_name"]):
                         raise Failure("completion state changed")
                     from .docker_config import assert_candidate_parity
-                    assert_candidate_parity(self.original, candidate, self.state["candidate_image_id"])
+                    assert_candidate_parity(self.original, candidate, self.state["candidate_image_id"],
+                                            self.state["plan"].get("environment_additions"))
                     assert_candidate_parity(self.original, original, self.state["original_image_id"])
                     rotate_helper_admission(self.journal, "closed")
                     cleanup = reconcile_helpers(self.api, self.journal)
