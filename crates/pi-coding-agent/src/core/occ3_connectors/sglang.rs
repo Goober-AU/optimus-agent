@@ -1066,6 +1066,32 @@ impl Occ3Connector for SglangOcc3Connector {
 mod tests {
     use super::*;
 
+    // TS12 live regression: the deployed server (PR #200 baseline) carries
+    // `max_capture_bytes` in the enrollment readiness payload. Captured
+    // verbatim from the live candidate on 2026-10-26T14:12Z (enroll 200).
+    #[test]
+    fn enrollment_readiness_parses_the_live_payload_with_the_wire_cap() {
+        let payload = r#"{"schema":"occ3.sessions.enrolled.v1","operation_id":"enroll-diag-5381b3304ba2",
+"session_id":"probe-diag-ee52133b7153","principal_digest":"07e7990bcc87abb833e71344940cb9452a7972ea0c93a0f8d3499f750e1c70e8",
+"runtime_id":"36f66c428aa5421a91bf56d97f5a127c","runtime_generation":1,
+"model_fingerprint":"sha256:db2c8830820da8bd3370bbfacf0799e33085ef7b8b1ca27840b88e3e8101b732","expires_at_epoch":1793024970,
+"readiness":{"runtime_epoch":"36f66c428aa5421a91bf56d97f5a127c","runtime_generation":1,
+"model_fingerprint":"sha256:db2c8830820da8bd3370bbfacf0799e33085ef7b8b1ca27840b88e3e8101b732",
+"method_id":"statebridge.glm53.final-prenorm-predictor.continuous-prefix.v1","expected_ranks":8,"ready_ranks":8,
+"tp_layout_digest":"a55bf3e06038c4683c5ddeffcb947c46e962f2184291de6d55a68b04290fa77d","hidden_dim":6144,
+"layer_index":77,"dtype":"bfloat16","profile_digest":"77f74ffcd6e49a576ebfbe73ee1dfd016c83446f6675e105afd377cdb68d9b4e",
+"source_capture":true,"continuous_prefix":true,"terminal_journal":true,"max_capture_bytes":134217728}}"#;
+        let response: EnrollmentResponse = serde_json::from_str(payload).expect("live payload must parse");
+        assert_eq!(response.readiness.max_capture_bytes, Some(134_217_728));
+        assert_eq!(response.readiness.ready_ranks, 8);
+        assert!(response.readiness.source_capture);
+        // Servers built before the cap was advertised still parse (None).
+        let pre_cap = payload.replace(",\"max_capture_bytes\":134217728", "");
+        let legacy: EnrollmentResponse = serde_json::from_str(&pre_cap).expect("legacy payload must parse");
+        assert_eq!(legacy.readiness.max_capture_bytes, None);
+    }
+
+
     #[test]
     fn channel_ids_are_sanitized_to_the_plugin_grammar() {
         assert_eq!(channel_id_for("agentmsg_fc9f34a3"), "agentmsg_fc9f34a3");
