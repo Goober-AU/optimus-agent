@@ -219,6 +219,64 @@ async def test_source_native_refusal_logs_inner_error_detail(source_harness, cap
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("message", [
+    "occ3_unsupported_profile", "occ3_admission_failed", "occ3_full_budget_unavailable",
+    "occ3_busy", "occ3_invalid_native_request", "occ3_cancelled",
+    "occ3_retraction_unsupported", "occ3_commit_failed",
+])
+async def test_source_scheduler_abort_folds_to_observed_409_and_names_code(source_harness, caplog, message):
+    """Live TS11 regression, red-first: the scheduler refuses armed turns
+    before prefill by aborting the request; the ordinary stream then delivers
+    exactly one abort output, which folds through the pinned first-chunk
+    ValueError catch into the observed generic 409. The refusal code must be
+    recorded server-side: it is the only place the abort code survives."""
+    h = source_harness
+
+    async def aborted_generate(tm, obj, request=None):
+        # Class-level hook original: receives (self, obj, raw) like the real
+        # tokenizer manager generator the scheduler abort reaches.
+        yield {"text": "", "output_ids": [],
+               "meta_info": {"id": obj.rid,
+                              "finish_reason": {"type": "abort", "message": message,
+                                                 "status_code": 503}}}
+
+    type(h.tm).generate_request = h.wrap(aborted_generate, h.adapter.generate_around, h.HookType.AROUND)
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.chat_adapter"):
+        response, _, _ = await source_call(h)
+    assert response.status_code == 409
+    assert json.loads(response.body) == {"error": {"message": "native_completion_failed",
+                                                   "type": "occ3_attachment_error", "code": 409}}
+    aborted = [r.getMessage() for r in caplog.records if "native turn aborted" in r.getMessage()]
+    assert aborted, "expected the scheduler refusal code in the server-side diagnostic"
+    assert f"refusal={message}" in aborted[0] and "status=503" in aborted[0]
+    # The public body stays generic; the PR #200 post-check line still names the fold seam.
+    assert message.encode() not in response.body
+    refused = [r.getMessage() for r in caplog.records if "native completion refused" in r.getMessage()]
+    assert refused and "inner_error_response" in refused[0]
+
+
+@pytest.mark.asyncio
+async def test_source_scheduler_abort_payload_never_logged(source_harness, caplog):
+    """Non-occ3 abort payloads carry arbitrary text; only the bounded
+    refusal shape is ever recorded server-side."""
+    h = source_harness
+
+    async def aborted_generate(tm, obj, request=None):
+        yield {"text": "",
+               "meta_info": {"id": obj.rid,
+                              "finish_reason": {"type": "abort",
+                                                 "message": "Abort in waiting queue with capture-1 payload"}}}
+
+    type(h.tm).generate_request = h.wrap(aborted_generate, h.adapter.generate_around, h.HookType.AROUND)
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.chat_adapter"):
+        response, _, _ = await source_call(h)
+    assert response.status_code == 409
+    aborted = [r.getMessage() for r in caplog.records if "native turn aborted" in r.getMessage()]
+    assert aborted and "refusal=unclassified" in aborted[0]
+    assert "capture-1" not in aborted[0] and "payload" not in aborted[0]
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("change", ["both", "unknown", "null", "duplicate", "missing_schema", "client_rid", "not_ready", "encoding", "encoding_absent", "header_bound"])
 async def test_source_refuses_before_generation(source_harness, change):
     h, a, request = source_harness, intent(), chat_request()
