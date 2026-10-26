@@ -9,6 +9,7 @@ import asyncio
 import copy
 import inspect
 import json
+import logging
 import math
 import time
 import uuid
@@ -33,6 +34,33 @@ from .use_receipts import (
 CHAT_TARGET = "sglang.srt.entrypoints.openai.serving_chat.OpenAIServingChat"
 TOKENIZER_TARGET = "sglang.srt.managers.tokenizer_manager.TokenizerManager"
 _CONTEXT = "_optimus_occ3_chat_context"
+logger = logging.getLogger(__name__)
+
+# Redaction set for adapter diagnostic lines. Inner failures are logged with
+# these detail codes only; request bytes, identifiers and handles stay out.
+_DIAGNOSTIC_CAUSE = "cause"
+
+
+def _inner_error_detail(response, limit):
+    """Bounded diagnostic from an inner error response, or "".
+
+    The ordinary serving path already returns create_error_response(str(e))
+    bodies to clients, so this message class is public-by-design; the native
+    path refuses to forward it and records only this bounded server-side line.
+    """
+    try:
+        body = getattr(response, "body", None)
+        if not isinstance(body, (bytes, bytearray)) or not body:
+            return ""
+        text = body[:4096].decode("utf-8", "replace")
+        try:
+            value = json.loads(text)
+            message = value["error"]["message"]
+        except Exception:
+            message = text
+        return message[:limit] if isinstance(message, str) else ""
+    except Exception:
+        return ""
 
 
 class NativeGenerateRequest(Protocol):
@@ -446,7 +474,12 @@ class ChatAttachmentAdapter:
             return self._error(error)
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except Exception as error:
+            # Same bounded diagnostic contract as the native_completion_failed
+            # seam: exception class name only, never payloads, identifiers or
+            # handles. The public response stays a fixed generic code.
+            logger.error("occ3-bridge: native turn failed (inner=%s)",
+                         type(error).__name__)
             return self._error(AttachmentError())
         finally:
             if ctx is not None:
@@ -667,6 +700,19 @@ class ChatAttachmentAdapter:
         if ctx.cancel_requested:
             raise AttachmentError("client_disconnected", 499)
         if ctx.reservation is None or ctx.generation_calls != 1 or getattr(response, "status_code", 200) != 200:
+            # The public code stays generic; the container log records which
+            # condition fired so live refusals are diagnosable offline. No
+            # request bytes, identifiers or backend handles are logged.
+            logger.error(
+                "occ3-bridge: native completion refused (attempt=%s cause=%s generation_calls=%s "
+                "inner_status=%s inner_message=%r stream=%s)",
+                ctx.attempt_id and "bound" or "none",
+                "reservation_missing" if ctx.reservation is None else
+                ("generation_calls" if ctx.generation_calls != 1 else "inner_error_response"),
+                ctx.generation_calls, getattr(response, "status_code", 200),
+                _inner_error_detail(response, 200),
+                bool(getattr(request, "stream", False)),
+            )
             raise AttachmentError("native_completion_failed")
         source = type(ctx.attachment) is CaptureIntent
         headers = list(getattr(response, "raw_headers", [(b"content-type", b"application/json")]))

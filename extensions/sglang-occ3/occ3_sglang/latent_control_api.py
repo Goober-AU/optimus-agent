@@ -124,7 +124,8 @@ async def runtime_identity(request, backend, authority):
             "continuous_prefix": health["continuous_prefix"],
             "terminal_journal": health["terminal_journal"],
             "server_time_epoch": int(time.time()),
-            "max_ttl_seconds": backend.profile.max_ttl_seconds}
+            "max_ttl_seconds": backend.profile.max_ttl_seconds,
+            "max_capture_bytes": health["max_capture_bytes"]}
         bounded_payload(result)
         return JSONResponse(result, headers={"cache-control": "no-store"})
     except (LatentError, AttachmentError) as error:

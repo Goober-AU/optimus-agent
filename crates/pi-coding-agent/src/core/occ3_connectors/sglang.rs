@@ -282,6 +282,10 @@ struct NativeReadiness {
     source_capture: bool,
     continuous_prefix: bool,
     terminal_journal: bool,
+    /// Server-advertised capture wire cap (attachment_contract
+    /// MAX_CAPTURE_BYTES). Absent on servers built before it was advertised;
+    /// present it is authoritative and gates the permit's byte budget.
+    max_capture_bytes: Option<u64>,
 }
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -473,6 +477,19 @@ impl SglangOcc3Connector {
             || !ready.terminal_journal
         {
             return Err(native_invalid());
+        }
+        if let Some(wire_cap) = ready.max_capture_bytes {
+            if permit.max_capture_bytes > wire_cap {
+                // A permit above the server's advertised capture wire cap can
+                // only fail mid-turn with an opaque invalid_attachment 400;
+                // refuse it at enrollment with both numbers named instead.
+                return Err(Occ3Error::TransferFailed {
+                    reason: format!(
+                        "occ3 capture byte cap {} exceeds server wire cap {}",
+                        permit.max_capture_bytes, wire_cap
+                    ),
+                });
+            }
         }
         let result = NativeSessionEnrollment {
             session_id: session_id.into(),
@@ -1182,6 +1199,19 @@ mod tests {
             *changed.pointer_mut(path).unwrap() = json!(8);
             assert!(validate(changed).is_err(), "{path}");
         }
+        // Live TS11 regression: the server advertises its capture wire cap in
+        // readiness; a permit above it must be refused at enrollment with both
+        // numbers named instead of failing mid-turn with an opaque 400.
+        let mut capped = response.clone();
+        capped["readiness"]["max_capture_bytes"] = json!(134217728u64);
+        let refusal = validate(capped).unwrap_err();
+        assert!(
+            format!("{refusal:?}").contains("exceeds server wire cap"),
+            "named refusal carrying both numbers, got {refusal:?}"
+        );
+        let mut equal = response.clone();
+        equal["readiness"]["max_capture_bytes"] = json!(268435456u64);
+        assert!(validate(equal).is_ok(), "equal cap accepted");
         let mut changed = response;
         changed["readiness"]["runtime_epoch"] = json!(permit.identity.runtime);
         assert!(

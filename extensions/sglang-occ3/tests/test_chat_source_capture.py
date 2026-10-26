@@ -6,6 +6,7 @@ fixtures. Starlette Request/Response and cancellation are real. No model load.
 import asyncio
 import hashlib
 import json
+import logging
 import time
 from dataclasses import asdict, replace
 from pathlib import Path
@@ -185,6 +186,36 @@ async def test_actual_source_native_converter_and_one_generation(source_harness,
     assert [(c.call_id, c.name) for c in provenance.tool_calls] == [("call-fixture", "handoff")]
     if stream: assert response.body == b"".join(h.chat.frames)
     assert h.adapter._active == 0 and not h.backend.retires
+
+
+@pytest.mark.asyncio
+async def test_source_native_refusal_logs_inner_error_detail(source_harness, caplog):
+    """Live TS11 regression: an inner ValueError surfaces through the ordinary
+    path's first-chunk catch as an error response; the native wrapper keeps the
+    generic public 409 but must record the refusal seam and the bounded inner
+    message server-side so live refusals are diagnosable offline."""
+    h = source_harness
+
+    async def failing_stream(obj, request, raw):
+        raise ValueError("exceeds the model's maximum context length of 2048 tokens")
+        yield  # pragma: no cover
+
+    h.chat._generate_chat_stream = failing_stream
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.chat_adapter"):
+        response, _, _ = await source_call(h)
+    assert response.status_code == 409
+    assert json.loads(response.body) == {"error": {"message": "native_completion_failed",
+                                                   "type": "occ3_attachment_error", "code": 409}}
+    lines = [r.getMessage() for r in caplog.records
+             if "native completion refused" in r.getMessage()]
+    assert lines, "expected a server-side diagnostic for the refused native turn"
+    line = lines[0]
+    # The first-chunk ValueError fires before the generate hook runs, so the
+    # reservation is never made: the diagnostic must name that seam AND carry
+    # the bounded inner message (this is what TS11's live 409 could not show).
+    assert "reservation_missing" in line and "maximum context length" in line
+    # Identifiers and handles stay out of the diagnostic.
+    assert "capture-1" not in line and "source-1" not in line
 
 
 @pytest.mark.asyncio

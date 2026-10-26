@@ -842,7 +842,7 @@ async def test_real_frontend_factory_assembles_controls_auth_adapter_with_explic
             "model_fingerprint": p.model_fingerprint, "method_id": p.method, "hidden_dim": p.hidden_dim,
             "layer_index": p.layer_index, "ready_ranks": p.expected_ranks, "expected_ranks": p.expected_ranks,
             "profile_digest": p.binding_digest, "source_capture": True, "continuous_prefix": True,
-            "terminal_journal": True}
+            "terminal_journal": True, "max_capture_bytes": 128 * 1024 * 1024}
         latent_backend.deliver_control(f.tm, {"schema": "occ3.control.result.v1",
             "command_id": request.rid, "ok": True, "result": health, "error": ""})
     f.tm._async_dispatch_to_scheduler = dispatch

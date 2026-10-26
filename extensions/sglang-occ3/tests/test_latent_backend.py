@@ -21,7 +21,8 @@ def health(p):
     return dict(runtime_epoch=p.runtime_epoch,runtime_generation=p.runtime_generation,
         model_fingerprint=p.model_fingerprint,method_id=p.method,hidden_dim=p.hidden_dim,
         layer_index=p.layer_index,ready_ranks=8,expected_ranks=8,profile_digest=p.binding_digest,
-        tp_layout_digest="b"*64,dtype="bfloat16",source_capture=True,continuous_prefix=True,terminal_journal=True)
+        tp_layout_digest="b"*64,dtype="bfloat16",source_capture=True,continuous_prefix=True,
+        terminal_journal=True,max_capture_bytes=128*1024*1024)
 
 
 class SyntheticClient:

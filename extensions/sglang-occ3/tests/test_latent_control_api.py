@@ -46,7 +46,7 @@ IDENTITY_REQUEST={"schema":"occ3.runtime.identity.request.v1"}
 IDENTITY_FIELDS={"schema","runtime_id","runtime_generation","model_fingerprint","method_id",
     "tp_layout_digest","layer_index","hidden_dim","dtype","expected_ranks","ready_ranks",
     "profile_digest","source_capture","continuous_prefix","terminal_journal",
-    "server_time_epoch","max_ttl_seconds"}
+    "server_time_epoch","max_ttl_seconds","max_capture_bytes"}
 
 
 @pytest.mark.asyncio
@@ -68,6 +68,7 @@ async def test_identity_route_returns_current_runtime_tuple():
     assert result["source_capture"] and result["continuous_prefix"] and result["terminal_journal"]
     assert now-5<=result["server_time_epoch"]<=time.time()+5
     assert result["max_ttl_seconds"]==p.max_ttl_seconds
+    assert result["max_capture_bytes"]==128*1024*1024  # server wire cap advertised
     assert len(transport.refreshes)==1  # Fresh ordered health per request; never cached.
 
 

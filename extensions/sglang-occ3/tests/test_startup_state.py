@@ -25,7 +25,8 @@ IDENTITY_REQUEST = {"schema": "occ3.runtime.identity.request.v1"}
 IDENTITY_FIELDS = {"schema", "runtime_id", "runtime_generation", "model_fingerprint",
     "method_id", "tp_layout_digest", "layer_index", "hidden_dim", "dtype",
     "expected_ranks", "ready_ranks", "profile_digest", "source_capture",
-    "continuous_prefix", "terminal_journal", "server_time_epoch", "max_ttl_seconds"}
+    "continuous_prefix", "terminal_journal", "server_time_epoch", "max_ttl_seconds",
+    "max_capture_bytes"}
 STATUS_KEYS = {"schema", "state", "code", "stage", "attempt", "experimental_selected",
     "preflight_reached", "backend_constructed", "worker_readiness_reached",
     "hooks_prepared", "route_mount_attempted", "rollback_completed", "plugin",
@@ -145,6 +146,7 @@ async def test_registration_before_install_answers_not_ready_then_full_tuple(pha
         assert body["model_fingerprint"] == f.profile.model_fingerprint
         assert body["expected_ranks"] == body["ready_ranks"] == 8
         assert body["source_capture"] and body["continuous_prefix"] and body["terminal_journal"]
+        assert body["max_capture_bytes"] == 128 * 1024 * 1024  # server wire cap advertised
         assert ident.headers["cache-control"] == "no-store"
         status = await client.get("/occ3/v1/status", headers=AUTH)
         payload = status.json()
