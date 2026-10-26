@@ -12,7 +12,8 @@ from array import array
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from .attachment_contract import CaptureWorkerDescriptor, ConsumeWorkerDescriptor, digest
+from .attachment_contract import (CaptureWorkerDescriptor, ConsumeWorkerDescriptor,
+                                    MAX_CAPTURE_BYTES, digest)
 from .latent_registry import LatentRegistry
 from .latent_types import (LatentError, UniformRequestCancellation, Publication, RequestSlice, RuntimeProfile, require_members,
                            SessionEnrollment, decode_descriptor, require,
@@ -194,7 +195,8 @@ class WorkerRuntime:
                 "tp_layout_digest": self.layout_digest, "hidden_dim": p.hidden_dim,
                 "layer_index": p.layer_index, "dtype": self.dtype,
                 "profile_digest": p.binding_digest, "source_capture": True,
-                "continuous_prefix": True, "terminal_journal": True}
+                "continuous_prefix": True, "terminal_journal": True,
+                "max_capture_bytes": MAX_CAPTURE_BYTES}
 
     def capture_budget(self, count):
         # Fixed ring + terminal ordered H/E/Z + stage/safe gather/dtype cast margin.
