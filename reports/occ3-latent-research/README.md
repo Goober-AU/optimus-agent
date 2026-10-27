@@ -32,13 +32,28 @@ The focused correction uses `root_node_handle(extra_key=req.extra_key)`, the API
 used by pinned SGLang's own zero-match path. A source-executed regression reproduced
 and then eliminated the exact exception, including namespace and legacy-cache cases.
 The combined focused Python suite passed 37 tests, skipped four, and passed 18 subtests.
-The correction has **not yet been retested on the GPU**.
+The follow-up GPU test below passed this cache operation.
+
+## Receiver verification retest
+
+Window `occ3-live-20261027t090824z` again captured 128 states on all eight ranks,
+published them, and reached receiver prefill. See [sanitized results](live-window-20261027t090824z.json).
+The next speculative verification step failed because native `TARGET_VERIFY.is_extend()`
+is true, while its OCC-3 context has decode geometry (`extend_len=0`). The prefix
+injection hook incorrectly tried to apply its prefill shape check again.
+
+A pinned-source regression reproduced the exact `LatentError(profile)`. The hook
+now excludes target verification, preserving the existing prefix KV and injection
+receipt. The full extension suite and workspace checks pass. This additional fix
+has **not yet been retested on the GPU**. The controller restored the original
+server, with health, chat, tools and authentication checks passing. No semantic
+success or completed receiver consumption is claimed.
 
 ## Offline regression results
 
 - `bash scripts/check.sh`: passed, including locked workspace/all-target Cargo check,
   293 packaging tests (11 skipped), and native resource layout.
-- Full extension suite: 1,923 passed, 24 skipped, 77 subtests passed.
+- Full extension suite: 1,925 passed, 24 skipped, 77 subtests passed.
 - Native handoff driver and source/handoff integration fixtures: 19 passed.
 - Test web dependencies match the DGX: FastAPI 0.142.2, Starlette 1.7.0,
   Pydantic 2.13.5, httpx 0.28.1. Existing Rust warnings and the dependency's

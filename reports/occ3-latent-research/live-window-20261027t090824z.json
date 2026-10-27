@@ -1,0 +1,31 @@
+{
+  "attempt_id": "occ3-live-20261027t090824z",
+  "candidate_image": "sha256:21da586e1844f9147996db42316ca65fe1e55bfd592775b9795d25018194999d",
+  "proof_wrapper_exit": 0,
+  "harness_exit": 1,
+  "source": {
+    "retained_count": 128,
+    "logical_prefix_bytes": 1572864,
+    "ready_ranks": 8,
+    "expected_ranks": 8
+  },
+  "source_published": true,
+  "receiver_requested": true,
+  "case_passed": false,
+  "semantic_nonce_match": false,
+  "receiver_lease": "Uncertain",
+  "server_failure": "target_embedding_inplace: LatentError(profile) on all ranks",
+  "controller_operation": "recovery_start_original",
+  "window_result": "RESTORED",
+  "recovery_verified": true,
+  "original_health_http": 200,
+  "recovery_duration_s": 471.2423617839813,
+  "offline_fix_commit": "8b02ff4990d5313a1afaa8ffa6d0158bd1cae181",
+  "offline_fix": "Exclude TARGET_VERIFY from prefill embedding injection.",
+  "offline_regressions": {
+    "full_extension_passed": 1925,
+    "full_extension_skipped": 24,
+    "subtests_passed": 77,
+    "workspace_check_exit": 0
+  }
+}
