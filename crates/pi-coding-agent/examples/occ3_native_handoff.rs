@@ -22,6 +22,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+const SOURCE_HANDOFF_INSTRUCTIONS: &str = r#"Preserve the private vault code in the native source turn. You have exactly one authorized child agent. Its exact name is receiver. Call occ3_handoff exactly once with these target arguments: `{"receiver_role":"child","receiver_name":"receiver"}`. The arguments identify the receiver, not the message. Do not put the private code in either argument. After the handoff stop."#;
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct LiveDescriptor {
@@ -224,6 +225,60 @@ fn validation_case_passed(report: &Value) -> bool {
         && receiver["model_fingerprint"] == report["source_phase"]["model_fingerprint"]
         && receiver["model_fingerprint"] == report["model_fingerprint"]
 }
+fn require_source_handoff(payload: &mut Value) {
+    payload["tool_choice"] = json!({"type":"function","function":{"name":"occ3_handoff"}});
+    payload["parallel_tool_calls"] = json!(false);
+    if let Some(tool) = payload.get_mut("tools").and_then(Value::as_array_mut)
+        .and_then(|tools| tools.iter_mut().find(|tool| tool["function"]["name"] == "occ3_handoff"))
+    {
+        let function = &mut tool["function"];
+        function["strict"] = json!(true);
+        function["parameters"]["properties"]["receiver_role"]["enum"] = json!(["child"]);
+        function["parameters"]["properties"]["receiver_name"]["enum"] = json!(["receiver"]);
+    }
+}
+
+fn source_handoff_diagnostic(messages: &[pi_agent_core::types::AgentMessage]) -> Value {
+    use pi_ai::types::{ContentBlock, ImageOrTextContent, Message};
+    let mut calls = Vec::new();
+    let mut errors = Vec::new();
+    for message in messages {
+        match message {
+            pi_agent_core::types::AgentMessage::Message(Message::Assistant(message)) => {
+                for block in &message.content {
+                    if let ContentBlock::ToolCall(call) = block {
+                        calls.push(json!({
+                            "native_tool": call.name == "occ3_handoff",
+                            "child_role": call.arguments.get("receiver_role").and_then(Value::as_str) == Some("child"),
+                            "receiver_name": call.arguments.get("receiver_name").and_then(Value::as_str) == Some("receiver"),
+                            "argument_count": call.arguments.len(),
+                        }));
+                    }
+                }
+            }
+            pi_agent_core::types::AgentMessage::Message(Message::ToolResult(message))
+                if message.is_error && message.tool_name == "occ3_handoff" => {
+                for block in &message.content {
+                    if let ImageOrTextContent::Text(text) = block {
+                        let code = [
+                            ("Target not in isolated catalog", "target_missing"),
+                            ("Ambiguous isolated target", "target_ambiguous"),
+                            (AGENT_FAMILY_REACH_ERROR, "family_reach"),
+                            ("Native handoff family binding rejected", "family_binding"),
+                            ("Experimental native handoff unavailable or uncertain; replay is forbidden", "native_unavailable"),
+                            ("Native receiver", "receiver_failure"),
+                        ].into_iter().find(|(known, _)| text.text.contains(known))
+                            .map(|(_, code)| code).unwrap_or("other");
+                        errors.push(code);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    json!({"calls": calls, "errors": errors})
+}
+
 async fn live(path: &str) -> Result<Value, String> {
     let bytes = std::fs::read(path).map_err(|_| fail())?;
     if bytes.len() > 65536 {
@@ -325,11 +380,18 @@ async fn live(path: &str) -> Result<Value, String> {
     let options = |receiver: bool| {
         let key = key.clone();
         AgentOptions {initial_state:Some(AgentState {model:model.clone(),thinking_level:ThinkingLevel::Max,
-            system_prompt:if receiver {"Read the private vault code from the attached native state. Reply with that code. If unavailable say UNKNOWN. Do not call tools."}else{"Preserve the private vault code in the native source turn. Call occ3_handoff exactly once to child receiver; include only receiver_role and receiver_name arguments. After the handoff stop."}.into(),..Default::default()}),
+            system_prompt:if receiver {"Read the private vault code from the attached native state. Reply with that code. If unavailable say UNKNOWN. Do not call tools."}else{SOURCE_HANDOFF_INSTRUCTIONS}.into(),..Default::default()}),
             get_api_key:Some(Arc::new(move |_|{let key=key.clone();Box::pin(async move {Some((*key).clone())})})),
             ..Default::default()}
     };
-    let source_agent = Agent::new(options(false));
+    let mut source_options = options(false);
+    let source_first_request = std::sync::atomic::AtomicBool::new(true);
+    source_options.on_payload = Some(Arc::new(move |mut payload: Value, _model: &Model| {
+        let first = source_first_request.swap(false, std::sync::atomic::Ordering::SeqCst);
+        if first { require_source_handoff(&mut payload); }
+        Box::pin(async move { if first { Some(payload) } else { None } })
+    }));
+    let source_agent = Agent::new(source_options);
     let mut receiver_options = options(false);
     receiver_options.initial_state.as_mut().unwrap().system_prompt="Read the private vault code from attached state. Reply only with the code, or UNKNOWN if unavailable. Do not call tools.".into();
     let audit = context_audit.clone();
@@ -383,6 +445,23 @@ async fn live(path: &str) -> Result<Value, String> {
         },
     ])?;
     family.install()?;
+    let source_completion_diagnostic = Arc::new(Mutex::new(Value::Null));
+    let mut source_hooks = source.source_hooks();
+    let original_completed = source_hooks.completed.clone();
+    let completion_diagnostic = source_completion_diagnostic.clone();
+    source_hooks.completed = Arc::new(move |completion| {
+        let original_completed = original_completed.clone();
+        let bindings = completion.lease.tool_bindings();
+        let assistant = pi_agent_core::types::AgentMessage::Message(
+            pi_ai::types::Message::Assistant(completion.assistant_message.clone()));
+        *completion_diagnostic.lock().unwrap() = json!({
+            "binding_count":bindings.len(),
+            "all_native_tool":bindings.iter().all(|binding| binding.tool_name == "occ3_handoff"),
+            "parsed":source_handoff_diagnostic(&[assistant]),
+        });
+        Box::pin(async move { original_completed(completion).await })
+    });
+    source_agent.set_source_capture_hooks(Some(source_hooks));
     let action_future = async {
         if d.case == "positive" {
             source.arm_source(NativeSourceBudget {
@@ -433,6 +512,8 @@ async fn live(path: &str) -> Result<Value, String> {
         "source_phase":source.audit(),"receiver_phase":receiver.audit(),
         "receiver_request_audit":context_audit.lock().unwrap().clone(),"native_error":receiver_state.error_message.is_some(),
         "source_native_error":source_agent.state().error_message.is_some(),"action_completed":action.is_ok(),
+        "source_handoff_diagnostic":source_handoff_diagnostic(&source_agent.state().messages),
+        "source_completion_diagnostic":source_completion_diagnostic.lock().unwrap().clone(),
         "ordinary_kernel_source_route":"unsupported","production_enabled":false});
     let cleanup = family.close().await;
     let shutdown = connector.shutdown().await;
@@ -478,6 +559,41 @@ async fn main() {
 #[cfg(test)]
 mod gate_tests {
     use super::*;
+    #[test]
+    fn source_prompt_names_the_actual_isolated_child() {
+        let example = SOURCE_HANDOFF_INSTRUCTIONS.split('`').nth(1).unwrap();
+        let arguments: Value = serde_json::from_str(example).unwrap();
+        assert_eq!(arguments, json!({"receiver_role":"child","receiver_name":"receiver"}));
+        assert!(SOURCE_HANDOFF_INSTRUCTIONS.contains("Do not put the private code in either argument"));
+    }
+
+    #[test]
+    fn required_source_tool_preserves_prompt_and_model() {
+        let mut payload = json!({"model":"glm-5.3","messages":[{"role":"user","content":"private fixture"}],"stream":true});
+        let before = payload.clone();
+        require_source_handoff(&mut payload);
+        assert_eq!(payload["messages"], before["messages"]);
+        assert_eq!(payload["model"], before["model"]);
+        assert_eq!(payload["stream"], true);
+        assert_eq!(payload["tool_choice"], json!({"type":"function","function":{"name":"occ3_handoff"}}));
+        assert_eq!(payload["parallel_tool_calls"], false);
+    }
+
+    #[test]
+    fn required_source_tool_uses_only_the_actual_family_target() {
+        let mut payload = json!({"tools":[{"type":"function","function":{
+            "name":"occ3_handoff","parameters":{"type":"object","properties":{
+                "receiver_role":{"type":"string","enum":["parent","sibling","child"]},
+                "receiver_name":{"type":"string"}},"required":["receiver_role","receiver_name"],"additionalProperties":false}
+        }}]});
+        require_source_handoff(&mut payload);
+        let function = &payload["tools"][0]["function"];
+        assert_eq!(function["strict"], true);
+        assert_eq!(function["parameters"]["properties"]["receiver_role"]["enum"], json!(["child"]));
+        assert_eq!(function["parameters"]["properties"]["receiver_name"]["enum"], json!(["receiver"]));
+        assert_eq!(function["parameters"]["additionalProperties"], false);
+    }
+
     fn positive() -> Value {
         json!({"case":"positive","action_completed":true,"logical_cleanup_confirmed":true,
             "native_error":false,"source_native_error":false,"semantic_nonce_match":true,
@@ -494,6 +610,25 @@ mod gate_tests {
                 "request_id":"request-1","handle_sha256":"digest","runtime_id":"epoch",
                 "runtime_generation":1,"model_fingerprint":"fingerprint"}]}})
     }
+    #[test]
+    fn handoff_diagnostic_reports_control_errors_without_private_text() {
+        use pi_agent_core::types::AgentMessage;
+        use pi_ai::types::{AssistantMessage, ContentBlock, ImageOrTextContent, Message, TextContent, ToolCall, ToolResultMessage};
+        let mut assistant = AssistantMessage::default();
+        assistant.content.push(ContentBlock::ToolCall(ToolCall::new("private-id", "occ3_handoff",
+            serde_json::from_value(json!({"receiver_role":"child","receiver_name":"private-secret"})).unwrap())));
+        let messages = vec![
+            AgentMessage::Message(Message::Assistant(assistant)),
+            AgentMessage::Message(Message::ToolResult(ToolResultMessage::new("private-id", "occ3_handoff",
+                vec![ImageOrTextContent::Text(TextContent::new("Target not in isolated catalog: private-secret"))], true, 0))),
+        ];
+        let result = source_handoff_diagnostic(&messages);
+        assert_eq!(result["calls"][0]["child_role"], true);
+        assert_eq!(result["calls"][0]["receiver_name"], false);
+        assert_eq!(result["errors"], json!(["target_missing"]));
+        assert!(!result.to_string().contains("private"));
+    }
+
     #[test]
     fn live_exit_requires_all_bound_phases_semantics_budget_and_cleanup() {
         assert!(validation_case_passed(&positive()));
