@@ -1,0 +1,63 @@
+# OCC-3 latent transfer validation
+
+## Verified baseline
+
+Checked at `2026-10-27T07:25:48.769644+00:00`.
+
+- Repository: https://github.com/telemusai/optimus-agent
+- Latest fetched `main`: `4357e0275db7aa80d1a489cf08586e745537ea5f`.
+- PR #202 merged at `2026-10-27T07:07:08Z`; its merge is still main HEAD.
+- The public GitHub PR list contains no PR newer than #202 at this check.
+- Working branch: `fix/occ3-glm53-latent-transfer-validation`. A new worktree preserves previous campaign trees and artifacts.
+- PRs #189, #190, #191, #193, #200, #201 and #202 are merged. Their historical results are prior evidence, not new validation results.
+
+## Controlled GPU window
+
+Window `occ3-live-20261027t074003z` ran the existing v3 controller on the official
+GLM-5.3 FP8/TP8 runtime. See [sanitized results](live-window-20261027t074003z.json).
+
+- Native sender capture returned 128 states on all eight ranks (1,572,864 logical bytes).
+- The initial handoff failed before publication. Fresh diagnostics identified invalid
+  receiver arguments and missing tool calls. The isolated harness now specifies and
+  constrains the one authorized target using native SGLang tool-choice support.
+- The final diagnostic published the captured state and dispatched a receiver request.
+  The receiver's ordinary payload did not contain the private code.
+- That request crashed before inference: `occ3_private_match` accessed
+  `UnifiedRadixCache.root_node`, which the active Rust tree backend does not implement.
+  The receiver lease remained `Uncertain`; no completed-use receipt or semantic success.
+- The existing controller restored the original container. At 08:55 UTC, health,
+  chat, tools and authentication checks passed. The failed candidate is preserved.
+
+The focused correction uses `root_node_handle(extra_key=req.extra_key)`, the API
+used by pinned SGLang's own zero-match path. A source-executed regression reproduced
+and then eliminated the exact exception, including namespace and legacy-cache cases.
+The combined focused Python suite passed 37 tests, skipped four, and passed 18 subtests.
+The correction has **not yet been retested on the GPU**.
+
+## Offline regression results
+
+- `bash scripts/check.sh`: passed, including locked workspace/all-target Cargo check,
+  293 packaging tests (11 skipped), and native resource layout.
+- Full extension suite: 1,923 passed, 24 skipped, 77 subtests passed.
+- Native handoff driver and source/handoff integration fixtures: 19 passed.
+- Test web dependencies match the DGX: FastAPI 0.142.2, Starlette 1.7.0,
+  Pydantic 2.13.5, httpx 0.28.1. Existing Rust warnings and the dependency's
+  httpx deprecation remain; no new implementation warning was introduced.
+
+## Proof boundary
+
+Captured GPU state and successful publication do not prove semantic communication.
+Receiver consumption, fresh-secret recovery, token-only controls, likelihood measures,
+and comparative benchmarks remain unproven. No wider benchmark was started.
+
+Offline numerical research also identified a token-reference confound in thin
+StateBridge alignment: fitting the same low-rank rows can reproduce reference token
+embeddings with little dependence on hidden-state geometry. This is not a live
+semantic result. Token-only and changed-hidden-state controls remain mandatory.
+
+The [Trinity/C2C source review](TRINITY-C2C-ANALYSIS.md) is static evidence, not proof
+of GLM-5.3 KV transfer. A native KV method has not been implemented.
+
+The work remains surgical: reuse the native bridge, state machine, extension,
+controller and original model. No coding subagents are currently running. Further
+live work uses the user's standing campaign authorization and the existing controller.

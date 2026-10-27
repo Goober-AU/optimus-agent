@@ -1,0 +1,4 @@
+- Fixed experimental OCC-3 prefix completion tracking across copied eager batches.
+- Fixed authenticated native readiness checks after long source turns.
+- Fixed private receiver cache lookup on SGLang's Rust tree backend.
+- Changed the native validation harness to require the single authorized handoff target.
