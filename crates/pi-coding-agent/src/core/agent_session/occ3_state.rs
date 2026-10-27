@@ -296,20 +296,31 @@ impl Occ3NativeSession {
                 Box::pin(async move {
                     this.check_model(&completion.model)
                         .map_err(anyhow::Error::msg)?;
+                    // Each refusal names its check: live TS14 evidence showed
+                    // one generic message is not diagnosable from evidence.
                     let bindings = completion.lease.tool_bindings();
-                    if completion.lease.state() != SourceCaptureState::Captured
-                        || bindings.len() != 1
-                        || bindings[0].tool_name != NATIVE_HANDOFF_TOOL
-                    {
-                        return Err(anyhow::anyhow!(failure()));
+                    if completion.lease.state() != SourceCaptureState::Captured {
+                        return Err(anyhow::anyhow!(format!("{} [occ3_completed_state_not_captured]", failure())));
                     }
-                    let slot = this.source.lock().map_err(|_| anyhow::anyhow!(failure()))?;
+                    if bindings.len() != 1 {
+                        return Err(anyhow::anyhow!(format!("{} [occ3_completed_binding_count]", failure())));
+                    }
+                    if bindings[0].tool_name != NATIVE_HANDOFF_TOOL {
+                        return Err(anyhow::anyhow!(format!("{} [occ3_completed_tool_name]", failure())));
+                    }
+                    let slot = this
+                        .source
+                        .lock()
+                        .map_err(|_| anyhow::anyhow!(format!("{} [occ3_source_lock]", failure())))?;
                     let expected = slot
                         .lease
                         .as_ref()
-                        .ok_or_else(|| anyhow::anyhow!(failure()))?;
-                    if expected.intent() != completion.lease.intent() || slot.tool_claimed {
-                        return Err(anyhow::anyhow!(failure()));
+                        .ok_or_else(|| anyhow::anyhow!(format!("{} [occ3_source_slot_missing]", failure())))?;
+                    if expected.intent() != completion.lease.intent() {
+                        return Err(anyhow::anyhow!(format!("{} [occ3_completed_intent_mismatch]", failure())));
+                    }
+                    if slot.tool_claimed {
+                        return Err(anyhow::anyhow!(format!("{} [occ3_completed_tool_claimed]", failure())));
                     }
                     Ok(())
                 })

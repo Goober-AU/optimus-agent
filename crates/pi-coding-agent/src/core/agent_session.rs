@@ -2637,6 +2637,19 @@ mod queue_stop_tests;
 #[path = "agent_session/transport_retry_tests.rs"]
 mod transport_retry_tests;
 
+// GAP-3 (receiver-tests-audit.md section 7 item 3): the AgentSession-level
+// triggers that invalidate the installed OCC-3 native state.
+#[cfg(test)]
+#[path = "agent_session/occ3_invalidate_triggers_tests.rs"]
+mod occ3_invalidate_triggers_tests;
+
+// GAP-3 follow-up (occ3_export_gap_tests.rs): the negative-control export
+// discipline - fail-closed exports before any receipt lands, one-shot
+// arming after the first resolve, and the invalidate-then-re-arm refusal.
+#[cfg(test)]
+#[path = "agent_session/occ3_export_gap_tests.rs"]
+mod occ3_export_gap_tests;
+
 /// `AgentSession`.
 ///
 /// Fields keep the TypeScript names in `snake_case`. Mutable callback state
