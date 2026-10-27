@@ -194,7 +194,7 @@ def test_full_native_chunk_injection_retains_only_two_integer_span(monkeypatch):
         preflight=lambda phase,check:check(),torch=NS(cuda=NS(current_stream=lambda device:stream)),event=lambda:object())
     monkeypatch.setattr(w,"_RUNTIME",runtime)
     context=(RequestSlice(desc,0,32768,0,0,False),)
-    fb=NS(occ3_context=context,occ3_force_eager=True,batch_size=1,forward_mode=NS(is_extend=lambda:True))
+    fb=NS(occ3_context=context,occ3_force_eager=True,batch_size=1,forward_mode=NS(is_extend=lambda:True,is_target_verify=lambda:False))
     w.inject_target_embeddings(fb,hidden)
     assert fb.occ3_effective_embeds==(0,128) and not record.live_refs
     assert copied==[(32768,None,128),(128,0,128)]
@@ -217,6 +217,114 @@ def test_outside_prefix_draft_does_not_materialize_embedding(monkeypatch):
     assert w.prefix_overlap(128,0,32768)==128
     assert w.prefix_overlap(128,128,32768)==0
     assert w.prefix_overlap(128,127,1,1)==0
+
+
+class _Rows:
+    """Exact stdlib row batch with the CUDA surface the injection hooks read."""
+    is_cuda=True; dtype="float32"
+    def __init__(self,data):
+        self.data=[list(row) for row in data]; self.streams=0
+    @property
+    def shape(self): return (len(self.data),len(self.data[0]))
+    def numel(self): return len(self.data)*len(self.data[0])
+    def __getitem__(self,key): return _RowSpan(self,range(*key.indices(len(self.data))))
+    def record_stream(self,stream): self.streams+=1
+
+
+class _RowSpan:
+    def __init__(self,rows,indices):
+        self.rows,self.indices=rows,list(indices)
+    def copy_(self,source):
+        if not isinstance(source,_RowSpan) or len(source.indices)!=len(self.indices):
+            raise RuntimeError("row shape mismatch")
+        for destination,origin in zip(self.indices,source.indices):
+            self.rows.data[destination]=list(source.rows.data[origin])
+        return self
+
+
+class _Ids(list):
+    def numel(self): return len(self)
+
+
+def _prefix_rows(hidden,count=8):
+    return [[10**6*(row+1)+column for column in range(hidden)] for row in range(count)]
+
+
+def _token_rows(ids,hidden):
+    return [[-10**6*(token+1)-column for column in range(hidden)] for token in ids]
+
+
+def _injection_runtime(monkeypatch,prefix):
+    record=NS(prefix=prefix,events=[],live_refs=[],injected_positions=set(),inflight=0,capture_commit_id="commit")
+    stream=NS(wait_event=lambda event:None)
+    runtime=NS(poisoned=False,profile=profile(),device="cuda",resolve=lambda descriptor:record,
+        preflight=lambda phase,check:check(),
+        torch=NS(cuda=NS(current_stream=lambda device:stream)),event=lambda:object())
+    monkeypatch.setattr(w,"_RUNTIME",runtime)
+    return record
+
+
+def test_prefix_content_lands_at_intended_receiver_positions(monkeypatch):
+    # Content, not the injection count: prefix row prefix_len+j must land on
+    # receiver row j of the target chunk and one row earlier for the rotated
+    # draft chunk. Neighbouring rows must keep their native lookup.
+    import types
+    from occ3_sglang.latent_types import RequestSlice
+    module=types.ModuleType("sglang.srt.layers.layer_boundary")
+    module.get_attn_tp_context=lambda:NS(input_scattered=False)
+    monkeypatch.setitem(sys.modules,module.__name__,module)
+    hidden,tokens=profile().hidden_dim,8
+    prefix=_Rows(_prefix_rows(hidden,tokens))
+    desc=consume(expected_prefix_tokens=tokens)
+    first,later=RequestSlice(desc,0,4,0,0,False),RequestSlice(desc,4,8,4,0,False)
+    native=_token_rows([21,22,23,24,25,26,27,28],hidden)
+    def target(slice_):
+        return NS(occ3_context=(slice_,),occ3_force_eager=True,batch_size=1,
+            forward_mode=NS(is_extend=lambda:True,is_target_verify=lambda:False))
+    def replay(prefix_rows):
+        # One receiver request: chunk 0..3 replaces the whole chunk, chunk 4..11
+        # splits into four prefix rows and four untouched native rows.
+        record=_injection_runtime(monkeypatch,prefix_rows)
+        built=[]
+        for slice_,ids,span in ((first,(11,12,13,14),(0,4)),(later,None,(4,4))):
+            batch=target(slice_)
+            built.append(_Rows(_token_rows(ids,hidden) if ids else native))
+            w.inject_target_embeddings(batch,built[-1])
+            assert batch.occ3_effective_embeds==span
+            w.mark_injection(batch)
+            assert batch.occ3_effective_embeds is None
+        return record,built[0],built[1]
+    record,head,chunk=replay(prefix)
+    assert head.data==prefix.data[:4]
+    assert chunk.data[:4]==prefix.data[4:8] and chunk.data[4:]==native[4:]
+    assert record.injected_positions==set(range(tokens)) and record.injection_commit_id
+    commit=record.injection_commit_id
+    # Same shape and norm, one injected row negated: exactly that receiver row
+    # moves, while the position-only commit witness cannot tell them apart.
+    moved=_Rows(prefix.data); moved.data[5]=[-value for value in moved.data[5]]
+    changed,_,negated=replay(moved)
+    assert negated.data[1]==moved.data[5]==[-value for value in prefix.data[5]]
+    assert negated.data[0]==chunk.data[0] and negated.data[2:4]==chunk.data[2:4] and negated.data[4:]==native[4:]
+    assert changed.injection_commit_id==commit
+    # A prefix row before this chunk's span must not reach the chunk at all.
+    ahead=_Rows(prefix.data); ahead.data[1]=[-value for value in ahead.data[1]]
+    assert replay(ahead)[2].data==chunk.data
+    assert w.prefix_overlap(tokens,4,8,1)==3
+    # Rotated draft batch: row j carries the token at prefix_len+1+j, so the
+    # draft span starts one prefix row later and the tail keeps its lookup.
+    draft_ids=_Ids([21,22,23,24,25,26,27,99])
+    runner=NS(model=NS(get_input_embeddings=lambda:lambda ids:_Rows(_token_rows(ids,hidden))))
+    tail=NS(numel=lambda:1,reshape=lambda shape:[99])
+    def draft():
+        return w.draft_input_embeds(runner,NS(occ3_context=(later,),occ3_force_eager=True,
+            batch_size=1,input_ids=draft_ids),NS(occ3_context=(later,)),tail)
+    values=draft()
+    assert values.data[:3]==prefix.data[5:8] and values.data[3:]==_token_rows(draft_ids,hidden)[3:]
+    _injection_runtime(monkeypatch,moved)
+    shifted=draft()
+    assert shifted.data[0]==moved.data[5] and shifted.data[1:]==values.data[1:]
+    _injection_runtime(monkeypatch,ahead)
+    assert draft().data==values.data
 
 
 def test_retire_control_refreshes_events_but_keeps_exact_idempotency_binding():

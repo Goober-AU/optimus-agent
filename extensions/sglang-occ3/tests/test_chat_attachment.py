@@ -519,3 +519,46 @@ async def test_bind_cannot_modify_other_native_flags(harness):
     harness.backend.mutate_bind = lambda obj: setattr(obj, "stream", False)
     response, _, _ = await call(harness)
     assert response.status_code != 200 and not harness.tm.calls
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("reason,status", [("client_disconnected", 499), ("deadline_exceeded", 504)])
+async def test_cut_turn_names_guard_reason_server_side(harness, reason, status, caplog):
+    """Name the two guard outcomes without changing the public error body.
+    Existing live evidence did not identify which outcome caused the cut."""
+    from test_attachment_cancellation import spin_until  # late: it imports this module
+    h = harness
+    if status == 504:
+        h.adapter.profile = replace(h.adapter.profile, max_turn_seconds=.06, deadline_margin_seconds=.001)
+        h.backend.required_seconds = .001
+    h.chat.buffer_gate = asyncio.Event()  # hold the buffered body like the live cut
+    raw, queue = raw_request(canonical({"occ3": attachment().wire()}))
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.chat_adapter"):
+        task = asyncio.create_task(h.chat.handle_request(chat_request(), raw))
+        await spin_until(lambda: h.chat.frames)
+        if status == 499:
+            queue.put_nowait({"type": "http.disconnect"})
+        response = await asyncio.wait_for(task, 2)
+    assert response.status_code == status
+    assert json.loads(response.body) == {"error": {"message": reason,
+                                                   "type": "occ3_attachment_error", "code": status}}
+    assert RECEIPT_HEADER not in response.headers
+    lines = [record.getMessage() for record in caplog.records
+             if record.name == "occ3_sglang.chat_adapter" and "native turn ended" in record.getMessage()]
+    assert len(lines) == 1, "expected exactly one bounded diagnostic for the cut turn"
+    assert f"reason={reason}" in lines[0] and f"status={status}" in lines[0]
+    assert "dispatched=True" in lines[0]
+    # No prompt text, attachment fields or handles reach the diagnostic.
+    assert "PRIVATE_HANDLE_1" not in caplog.text and "source-message-request" not in caplog.text
+    assert "normal receiver instructions" not in caplog.text
+    assert h.adapter._active == 0 and len(h.backend.retires) == 1
+
+
+@pytest.mark.asyncio
+async def test_plain_refusal_is_not_logged_as_a_cut_turn(harness, caplog):
+    """Only the two guard codes are named; an ordinary refusal adds no such line."""
+    harness.backend.max_bytes = 5
+    with caplog.at_level(logging.ERROR, logger="occ3_sglang.chat_adapter"):
+        response, _, _ = await call(harness)
+    assert response.status_code == 413
+    assert not [record for record in caplog.records if "native turn ended" in record.getMessage()]

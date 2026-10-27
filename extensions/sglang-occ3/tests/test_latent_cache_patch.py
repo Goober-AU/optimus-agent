@@ -51,6 +51,8 @@ class Cache:
         self.req_to_token_pool = RowPool(row)
         self.root_node = object()
         self.calls, self.freed_pages, self.page = [], set(), page
+    def root_node_handle(self, extra_key=None):
+        return self.root_node
     def free_kv_row(self, kv, ranges):
         self.calls.append(("free", ranges))
         for start, end in ranges:
@@ -66,7 +68,7 @@ class Cache:
 
 def request(committed=5, allocated=8, end=5):
     return NS(occ3_private_prefix=True, skip_radix_cache_insert=True, kv=Kv(committed, allocated),
-              prefix_indices=Indices(), extend_range=NS(end=end), session=None,
+              prefix_indices=Indices(), extend_range=NS(end=end), session=None, extra_key=None,
               last_node=None, host_hit_length=0, storage_hit_length=0, occ3_kv_released=False,
               occ3_scheduler=object(), occ3_kv_quarantined=False, occ3_kv_release_started=False)
 
@@ -89,6 +91,52 @@ class TestPrivateCache(PinnedCase):
         cache = self.sources.function(path, "maybe_cache_unfinished_req", occ3_private_match=match)
         public_release = self.sources.function(path, "release_kv_cache", occ3_release_private_kv=release)
         return match, release, cache, public_release
+
+    def test_private_match_native_root_handles_and_namespace(self):
+        """Pinned Python/Rust adapters; no model or GPU allocation."""
+        import hashlib
+        from pathlib import Path
+        source = Path(os.environ.get("OCC3_SGLANG_SOURCE", "")) / "python/sglang/srt"
+        pins = {'mem_cache/base_prefix_cache.py': '49f20555e6b96af071db38a1bd9829b322ce76381940bd2f340abced151335a9', 'mem_cache/unified_radix_cache.py': 'c6f1764166c371cf050f05c966daed8ded366365163a69f066569cc74e2575c3', 'mem_cache/rust_tree_core/adapter.py': '25c567c21768b2b5c23b4a9f63705f6cbde73b98b9a2f65323c088bd2deef3d2'}
+        for path, expected in pins.items():
+            if not (source / path).is_file():
+                self.skipTest("Pinned SGLang source absent; set OCC3_SGLANG_SOURCE")
+            text = (source / path).read_text(encoding="utf-8")
+            self.assertEqual(hashlib.sha256(text.encode()).hexdigest(), expected)
+            self.sources.text[path] = text
+        fn = self.sources.function
+        base = fn("mem_cache/base_prefix_cache.py", "root_node_handle", "BasePrefixCache")
+        unified = "mem_cache/unified_radix_cache.py"
+        rust = "mem_cache/rust_tree_core/adapter.py"
+        RustCore = type("PinnedRustCoreMethods", (), {
+            "root_node": property(fn(rust, "root_node", "RustUnifiedTreeCore")),
+            "root_node_handle": fn(rust, "root_node_handle", "RustUnifiedTreeCore"),
+        })
+        UnifiedCache = type("PinnedUnifiedCacheMethods", (), {
+            "root_node": property(fn(unified, "root_node", "UnifiedRadixCache")),
+            "root_node_handle": fn(unified, "root_node_handle", "UnifiedRadixCache"),
+        })
+        keys = []
+        def root_for(key):
+            keys.append(key)
+            return {"private-a": 41, "private-b": 57}[key]
+        core = RustCore()
+        core._binding = NS(root_node_handle=root_for)
+        tree = UnifiedCache()
+        tree.tree_core = core
+        legacy = type("PinnedLegacyRootMethod", (), {"root_node_handle": base})()
+        legacy.root_node = object()
+        match, _, _, _ = self.functions()
+        for cache, key, expected in ((tree, "private-a", 41), (tree, "private-b", 57), (legacy, None, legacy.root_node)):
+            prefix = object()
+            req = NS(skip_radix_cache_insert=True, kv=NS(cache_protected_len=0), prefix_indices=prefix, extra_key=key)
+            hit = match(req, cache)
+            self.assertIs(hit.device_indices, prefix)
+            self.assertEqual((hit.last_device_node, hit.last_host_node, hit.best_match_node), (expected,) * 3)
+            self.assertEqual((req.last_node, req.last_host_node, req.best_match_node), (expected,) * 3)
+            self.assertEqual(hit.cache_protected_len, 0)
+            self.assertEqual(req.num_matched_prefix_tokens, 0)
+        self.assertEqual(keys, ["private-a", "private-b"])
 
     def test_private_chunk_progress_keeps_partial_page_and_not_overshoot(self):
         match, _, cache, _ = self.functions()
@@ -278,10 +326,11 @@ class TestPrivateCache(PinnedCase):
                     req.kv.req_pool_idx=None
                 tree=NS(root_node=object(),req_to_token_pool=NS(req_to_token=row,free=free_row),
                         token_to_kv_pool_allocator=allocator)
+                tree.root_node_handle=lambda extra_key=None:BasePrefixCache.root_node_handle(tree,extra_key)
                 tree.free_kv_row=lambda kv,ranges:BasePrefixCache.free_kv_row(tree,kv,ranges)
                 req=NS(occ3_private_prefix=True,skip_radix_cache_insert=True,kv=kv,
                        prefix_indices=torch.empty(0,dtype=torch.int64,device=device),
-                       extend_range=NS(end=committed),occ3_kv_released=False,
+                       extend_range=NS(end=committed),extra_key=None,occ3_kv_released=False,
                        occ3_scheduler=object(),occ3_kv_quarantined=False,occ3_kv_release_started=False)
                 common.maybe_cache_unfinished_req(req,tree)
                 self.assertTrue(torch.equal(req.prefix_indices,row[0,:committed]))

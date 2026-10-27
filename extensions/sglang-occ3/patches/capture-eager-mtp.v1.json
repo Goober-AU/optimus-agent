@@ -7,7 +7,7 @@
     {
       "path": "models/deepseek_v2.py",
       "before_sha256": "74f67224cc3d3edcf465bea54af572ebd3b4fb9e784a6a38a445e59db6c58d7b",
-      "after_sha256": "5983a719fb6b75f33e5b6525568d90469915413d1db27d1cc5067bed3f2380e9",
+      "after_sha256": "758dcdccb50cdfa24a8c89fb74162208bf113363af9b0081614ab47c2704f13a",
       "replacements": [
         {
           "before": "            if not forward_batch.forward_mode.is_idle():\n                hidden_states = residual_batch.norm(\n                    hidden_states, forward_batch, self.norm\n                )\n\n        if len(aux_hidden_states) == 0:",
@@ -15,7 +15,7 @@
         },
         {
           "before": "        if self.pp_group.is_last_rank:\n            return self.logits_processor(\n                input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states\n            )\n        else:\n            return hidden_states",
-          "after": "        if self.pp_group.is_last_rank:\n            logits_output = self.logits_processor(\n                input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states\n            )\n            if getattr(forward_batch, \"occ3_context\", None):\n                # Separate worker-local sidecar. Never replace EAGLE hidden_states.\n                logits_output.occ3_capture_rows = getattr(\n                    forward_batch, \"occ3_capture_rows\", None\n                )\n            return logits_output\n        else:\n            return hidden_states"
+          "after": "        if self.pp_group.is_last_rank:\n            logits_output = self.logits_processor(\n                input_ids, hidden_states, self.lm_head, forward_batch, aux_hidden_states\n            )\n            if getattr(forward_batch, \"occ3_context\", None):\n                # Separate worker-local sidecar. Never replace EAGLE hidden_states.\n                logits_output.occ3_capture_rows = getattr(\n                    forward_batch, \"occ3_capture_rows\", None\n                )\n                if getattr(forward_batch, \"occ3_effective_embeds\", None) is not None:\n                    from occ3_sglang.latent_worker import mark_injection\n\n                    # EagerRunner may copy the batch; commit the executed instance.\n                    mark_injection(forward_batch)\n            return logits_output\n        else:\n            return hidden_states"
         },
         {
           "before": "            if input_embeds is None:\n                hidden_states = self.embed_tokens(input_ids)\n            else:\n                hidden_states = input_embeds\n            residual_batch.start(forward_batch)",

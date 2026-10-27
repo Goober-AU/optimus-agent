@@ -1,0 +1,11 @@
+- Fixed experimental OCC-3 prefix completion tracking across copied eager batches.
+- Fixed authenticated native readiness checks after long source turns.
+- Fixed private receiver cache lookup on SGLang's Rust tree backend.
+- Fixed prefix reinjection during native speculative verification.
+- Changed the native validation harness to require the single authorized handoff target.
+- Fixed native GLM validation instructions to use the supported system role.
+- Added native-state, no-state, and full-text semantic controls.
+- Fixed ordinary receiver-input parity across native validation controls without changing native admission.
+- Fixed OCC-3 interruption diagnostics to retain bounded cause and HTTP status without changing no-replay behavior or exposing private error content.
+- Added bounded server diagnostics for native disconnect and deadline guard outcomes without changing cancellation or serving behavior.
+- Added authenticated accepted-span bounds to native source audits without changing capture selection or the communication contract.

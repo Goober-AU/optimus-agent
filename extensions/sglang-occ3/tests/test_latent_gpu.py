@@ -139,7 +139,7 @@ def test_actual_cuda_full_chunk_injection_has_no_extra_full_chunk_allocation(mon
     monkeypatch.setattr(worker,"_RUNTIME",runtime)
     desc=consume(expected_prefix_tokens=128)
     fb=NS(occ3_context=(RequestSlice(desc,0,32768,0,0,False),),
-          occ3_force_eager=True,batch_size=1,forward_mode=NS(is_extend=lambda:True))
+          occ3_force_eager=True,batch_size=1,forward_mode=NS(is_extend=lambda:True,is_target_verify=lambda:False))
     torch.cuda.synchronize(device)
     original_pointer=hidden.data_ptr()
     torch.cuda.reset_peak_memory_stats(device); baseline=torch.cuda.memory_allocated(device)

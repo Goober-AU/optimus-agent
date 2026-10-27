@@ -1,0 +1,284 @@
+{
+  "attempt_id": "occ3-live-20261027t105044z",
+  "candidate_image": "sha256:16d6bf55634368138f42b9e423edc9474cfd1fd9690ceb08945c98fcb2566fd2",
+  "runtime_source_commit": "6df385a95aee079b5ad53b9fe55704954ff7d847",
+  "parity_client_source_commit": "e347be1cf69447d8b8a32f20d80e4e1d640ae971",
+  "parity_client_binary_sha256": "bdc307ed14678bc9cb1b9e2c1b4480dc37a1403da743768f4c98dd1f064de0ae",
+  "diagnostic_client_source_commit": "18e622f4f53129e9d890daa961cd56afe8e1e525",
+  "diagnostic_client_binary_sha256": "d6945cf502677d7464a40c8b45c210685a20313b03e1eb3e40bc97b2bbb225f7",
+  "initial_proof": {
+    "wrapper_exit": 0,
+    "harness_exit": 1,
+    "duration_s": 414.8,
+    "source": {
+      "retained_count": 128,
+      "logical_prefix_bytes": 1572864,
+      "ready_ranks": 8,
+      "expected_ranks": 8
+    },
+    "receiver_lease": "Uncertain",
+    "semantic_answer_match": false,
+    "logical_cleanup_confirmed": true,
+    "controller_proof_published": false
+  },
+  "category_0": [
+    {
+      "index": 0,
+      "case": "no-state",
+      "exit_code": 0,
+      "duration_s": 2.2,
+      "report_exists": true,
+      "case_passed": true,
+      "semantic_answer_match": false,
+      "answer_class": "UNKNOWN",
+      "native_error": false,
+      "source_native_error": false,
+      "action_completed": true,
+      "logical_cleanup_confirmed": true,
+      "controller_proof_eligible": false,
+      "handoff_admitted": null,
+      "capture": {
+        "retained_count": null,
+        "ready_ranks": null,
+        "expected_ranks": null
+      },
+      "receiver_states": [],
+      "source_facts_absent": [
+        true
+      ],
+      "ordinary_user_messages": [
+        1
+      ],
+      "body_sha256_before_attachment": [
+        "bfed110e80e4c811f04f6e0c6fb745ca32072f77056115a4b7cb4ac39b4a835a"
+      ]
+    },
+    {
+      "index": 0,
+      "case": "full-text",
+      "exit_code": 0,
+      "duration_s": 2.5,
+      "report_exists": true,
+      "case_passed": true,
+      "semantic_answer_match": true,
+      "answer_class": "BIRD",
+      "native_error": false,
+      "source_native_error": false,
+      "action_completed": true,
+      "logical_cleanup_confirmed": true,
+      "controller_proof_eligible": false,
+      "handoff_admitted": null,
+      "capture": {
+        "retained_count": null,
+        "ready_ranks": null,
+        "expected_ranks": null
+      },
+      "receiver_states": [],
+      "source_facts_absent": [
+        false
+      ],
+      "ordinary_user_messages": [
+        1
+      ],
+      "body_sha256_before_attachment": [
+        "5a235bd83a4389cad969ce52f329e9d32666545539f8e2f735c28af812eaf27c"
+      ]
+    },
+    {
+      "index": 0,
+      "case": "positive",
+      "exit_code": 1,
+      "duration_s": 362.3,
+      "report_exists": true,
+      "case_passed": false,
+      "semantic_answer_match": false,
+      "answer_class": "OTHER",
+      "native_error": true,
+      "source_native_error": true,
+      "action_completed": true,
+      "logical_cleanup_confirmed": true,
+      "controller_proof_eligible": false,
+      "handoff_admitted": false,
+      "capture": {
+        "retained_count": 126,
+        "ready_ranks": 8,
+        "expected_ranks": 8
+      },
+      "receiver_states": [
+        "Uncertain"
+      ],
+      "source_facts_absent": [
+        true
+      ],
+      "ordinary_user_messages": [
+        1
+      ],
+      "body_sha256_before_attachment": [
+        "bfed110e80e4c811f04f6e0c6fb745ca32072f77056115a4b7cb4ac39b4a835a"
+      ]
+    }
+  ],
+  "category_1_instrumented": [
+    {
+      "index": 1,
+      "case": "no-state",
+      "exit_code": 0,
+      "duration_s": 3.1,
+      "report_exists": true,
+      "case_passed": true,
+      "semantic_answer_match": false,
+      "answer_class": "UNKNOWN",
+      "native_error": false,
+      "source_native_error": false,
+      "action_completed": true,
+      "logical_cleanup_confirmed": true,
+      "controller_proof_eligible": false,
+      "handoff_admitted": null,
+      "capture": {
+        "retained_count": null,
+        "ready_ranks": null,
+        "expected_ranks": null
+      },
+      "receiver_states": [],
+      "source_facts_absent": [
+        true
+      ],
+      "ordinary_user_messages": [
+        1
+      ],
+      "body_sha256_before_attachment": [
+        "bfed110e80e4c811f04f6e0c6fb745ca32072f77056115a4b7cb4ac39b4a835a"
+      ]
+    },
+    {
+      "index": 1,
+      "case": "full-text",
+      "exit_code": 0,
+      "duration_s": 2.3,
+      "report_exists": true,
+      "case_passed": true,
+      "semantic_answer_match": true,
+      "answer_class": "MAMMAL",
+      "native_error": false,
+      "source_native_error": false,
+      "action_completed": true,
+      "logical_cleanup_confirmed": true,
+      "controller_proof_eligible": false,
+      "handoff_admitted": null,
+      "capture": {
+        "retained_count": null,
+        "ready_ranks": null,
+        "expected_ranks": null
+      },
+      "receiver_states": [],
+      "source_facts_absent": [
+        false
+      ],
+      "ordinary_user_messages": [
+        1
+      ],
+      "body_sha256_before_attachment": [
+        "0b9761c22717ea1bbd6cef0957f14fa224664532026d62e26c675b7544f3a7f2"
+      ]
+    },
+    {
+      "index": 1,
+      "case": "positive",
+      "exit_code": 1,
+      "duration_s": 249.2,
+      "report_exists": true,
+      "case_passed": false,
+      "semantic_answer_match": false,
+      "answer_class": "UNKNOWN",
+      "native_error": false,
+      "source_native_error": false,
+      "action_completed": true,
+      "logical_cleanup_confirmed": true,
+      "controller_proof_eligible": false,
+      "handoff_admitted": true,
+      "capture": {
+        "retained_count": 128,
+        "ready_ranks": 8,
+        "expected_ranks": 8
+      },
+      "receiver_states": [
+        "Consumed"
+      ],
+      "source_facts_absent": [
+        true
+      ],
+      "ordinary_user_messages": [
+        1
+      ],
+      "body_sha256_before_attachment": [
+        "bfed110e80e4c811f04f6e0c6fb745ca32072f77056115a4b7cb4ac39b4a835a"
+      ]
+    }
+  ],
+  "offline_diagnostic_regressions": {
+    "red_failed": 1,
+    "integration_passed": 22,
+    "provider_unit_passed": 20,
+    "workspace_check_exit": 0,
+    "packaging_total": 293,
+    "packaging_skipped": 11
+  },
+  "proof_boundary": {
+    "native_capture_observed": true,
+    "completed_consumption_observed": true,
+    "reliable_semantic_transfer_proven": false,
+    "hidden_state_contribution_vs_token_references_measured": false,
+    "interruption_cause_identified": false,
+    "no_private_fact_in_positive_ordinary_payload": true,
+    "physical_gpu_free_proven": false
+  },
+  "last_verified_controller_phase": "RESTORED",
+  "restoration_verified": true,
+  "evidence_root": "C:/Users/openclawuser/occ3-latent-validation/evidence/window-20261027t105044z",
+  "restoration_evidence": "C:\\Users\\openclawuser\\occ3-latent-validation\\evidence\\window-20261027t105044z\\restoration-readonly-20261027T1220Z.json",
+  "restoration_observed_at": "2026-10-27T12:21:31.401251+00:00",
+  "bounded_offline_debugging": {
+    "server_diagnostics": {
+      "commit": "57c23a90171ff0ca7cb0650e157de7c5c7abc57c",
+      "affected_tests_passed": 338,
+      "deployed": false
+    },
+    "alignment_and_injection": {
+      "tests_passed": 52,
+      "reference_pin_test_passed": 1,
+      "real_gpu_proof": false
+    },
+    "accepted_state_content": {
+      "tests_passed": 11,
+      "skipped": 0,
+      "source_root": "C:\\Users\\openclawuser\\Optimus-Assistant\\profile\\tmp\\occ3-pinned-attested",
+      "real_gpu_proof": false
+    },
+    "cleanup_bound": {
+      "tests_passed": 10,
+      "real_gpu_proof": false
+    },
+    "production_capture_or_alignment_defect_reproduced": false,
+    "runtime_ablation_implemented": false,
+    "source_span_audit": {
+      "red_failed": 1,
+      "green_passed": 11,
+      "selection_changed": false,
+      "green_log": "C:\\Users\\openclawuser\\occ3-latent-validation\\evidence\\window-20261027t105044z\\capture-span-green.log",
+      "commit": "2fba644e10d824c4239bedea016ebdb840fb906b"
+    },
+    "attachment_cause_assertions": {
+      "passed": 12,
+      "log": "C:\\Users\\openclawuser\\occ3-latent-validation\\evidence\\window-20261027t105044z\\transport-cause-regressions.log"
+    },
+    "regression_commit": "fc2456a062b64e593a19169df5bad1649d6b6113",
+    "workspace_check": {
+      "exit": 0,
+      "packaging_total": 293,
+      "packaging_skipped": 11,
+      "locked_workspace_all_targets": true,
+      "native_resource_layout": true,
+      "log": "C:\\Users\\openclawuser\\occ3-latent-validation\\evidence\\window-20261027t105044z\\bounded-debugging-workspace.log"
+    }
+  }
+}

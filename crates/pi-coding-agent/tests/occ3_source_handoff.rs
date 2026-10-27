@@ -53,6 +53,8 @@ struct FixtureRecords {
     publication: Option<Value>,
     published_request: Option<Value>,
     source_intent: Option<Value>,
+    // The single authenticated receipt the fixture served for that intent.
+    source_receipt: Option<Value>,
     // In-memory only: the observed control header value per request, in order.
     // Never copied into the report or any evidence file.
     control_header_seen: Vec<(String, Option<String>)>,
@@ -60,6 +62,7 @@ struct FixtureRecords {
 pub struct FixtureResult {
     pub report: Value,
     pub requests: Vec<(String, Value)>,
+    pub source_receipt: Option<Value>,
     pub sender_error: Option<String>,
     pub control_header_seen: Vec<(String, Option<String>)>,
 }
@@ -225,6 +228,7 @@ async fn serve(
                         let output=sse("native-source-rid",true,mode.multiple_tools);
                         let receipt=json!({"schema":"occ3.source.v1","intent_digest":sha256(&canonical_json_bytes(intent).unwrap()),"source_handle":"private-source-handle","native_rid":"native-source-rid","response_id":"native-source-rid","capture_commit_id":"synthetic-capture-commit",
                             "accepted_span_start":0,"accepted_span_end":8,"retained_count":8,"predictor_position_offset":-1,"representation":"final_layer_prenorm_predictor","layer_index":3,"hidden_dim":8,"dtype":"bfloat16","layout_digest":"b".repeat(64),"ready_ranks":8,"expected_ranks":8,"accepted_sequence_digest":"d".repeat(64),"output_sha256":if mode.bad_source_hash{"0".repeat(64)}else{sha256(output.as_bytes())},"expires_at_epoch":intent["expires_at_epoch"],"byte_count":128});
+                        records.lock().unwrap().source_receipt=Some(receipt.clone());
                         headers.push(("x-optimus-occ3-source",receipt.to_string()));send(&mut socket,output,headers).await;return;
                     }
                     if let Some(attachment)=body.get("occ3") {
@@ -454,6 +458,7 @@ pub async fn run_offline_fixture(mode: FixtureMode) -> Result<FixtureResult, Str
     let shutdown = connector.shutdown().await;
     server.abort();
     let requests = records.lock().unwrap().requests.clone();
+    let source_receipt = records.lock().unwrap().source_receipt.clone();
     let control_header_seen = records.lock().unwrap().control_header_seen.clone();
     let report = json!({"mode":"offline-synthetic-native-controller","source_requests":requests.iter().filter(|(_,v)|v.get("occ3_capture").is_some()).count(),
         "receiver_requests":requests.iter().filter(|(_,v)|v.get("occ3").is_some()).count(),"total_model_requests":requests.iter().filter(|(p,_)|p=="/v1/chat/completions").count(),"admitted_messages":receipts.len(),"receiver_source_facts_absent":true,
@@ -462,6 +467,7 @@ pub async fn run_offline_fixture(mode: FixtureMode) -> Result<FixtureResult, Str
     Ok(FixtureResult {
         report,
         requests,
+        source_receipt,
         sender_error,
         control_header_seen,
     })
@@ -488,6 +494,22 @@ async fn actual_native_source_to_authorized_controller_to_actual_receiver_preser
         1
     );
     assert_eq!(result.report["cleanup_logical_only"], true);
+    // The audit projection must expose the two authenticated span integers next
+    // to retained_count: retained_count alone cannot prove the accepted total
+    // or rule out an early suffix drop. Values come from the served receipt.
+    let served = result
+        .source_receipt
+        .as_ref()
+        .expect("fixture served one authenticated source receipt");
+    let audit_receipt = &result.report["source_phase"]["source"]["receipt"];
+    assert_eq!(
+        audit_receipt["accepted_span_start"], served["accepted_span_start"],
+        "audit must expose the authenticated accepted span start"
+    );
+    assert_eq!(
+        audit_receipt["accepted_span_end"], served["accepted_span_end"],
+        "audit must expose the authenticated accepted span end"
+    );
 }
 #[tokio::test]
 async fn lost_publication_reply_queries_same_key_and_does_not_regenerate_source() {
