@@ -234,3 +234,73 @@ def test_decode_does_not_reinject_prefill_embeddings(mode_name):
     assert record.events == [] and record.inflight == 0
     assert record.injected_positions == set(range(8))
     assert record.injection_commit_id == "completed-prefill"
+
+
+class CpuTorch:
+    """Real CPU Torch operators; only the CUDA stream surface is stubbed."""
+
+    def __init__(self, torch, stream):
+        self._torch = torch
+        self.cuda = NS(current_stream=lambda device=None: stream)
+
+    def __getattr__(self, name):
+        return getattr(self._torch, name)
+
+
+def test_only_accepted_verify_rows_enter_the_retained_ring(monkeypatch):
+    """Ring content, not counters: accepted rows survive, rejected rows cannot.
+
+    Real CPU Torch tensors drive the actual capture stage and commit path. The
+    accepted path is a permutation of the verify rows, so a "first N rows" read
+    cannot pass. CUDA events/streams are the file's existing two-callable stub.
+    """
+    torch = pytest.importorskip("torch", reason="Actual CPU Torch is required; no tensor stub")
+    from occ3_sglang.attachment_contract import CaptureWorkerDescriptor
+
+    width, ring_size, accepted = 6, 8, [3, 1, 5]
+    prompt = [11, 12, 13]
+    descriptor = CaptureWorkerDescriptor(
+        attempt_id="capture", reservation_id="reserve-capture", native_rid="rid",
+        principal_digest="a" * 64, runtime_epoch="epoch", model_fingerprint="model-hash",
+        method_id=profile().method, deadline=900.0, capture_id="c" * 64,
+        source_session_id="source", source_turn_nonce="nonce", runtime_generation=9,
+        span_policy="whole_completed_response_tail_v1",
+        max_prefix_tokens=ring_size, max_capture_bytes=1 << 20)
+    hidden_dim = profile().hidden_dim
+    # One unique sentinel per verify row; rejected rows are interleaved with the
+    # accepted set instead of trailing it.
+    hidden = (torch.arange(1, width + 1, dtype=torch.float32)[:, None] * 1e6
+              + torch.arange(hidden_dim, dtype=torch.float32)[None, :])
+    # Predictor offset -1: the accepted column j predicts the token at prompt+j.
+    positions = torch.tensor([50, 3, 51, 2, 52, 4], dtype=torch.int64)
+    predict = torch.tensor([70, 73, 71, 90, 72, 95], dtype=torch.int64)
+    accept_index = torch.tensor([[3, 1, 5, -1, -1, -1]], dtype=torch.int64)
+    accept_lens = torch.tensor([len(accepted)], dtype=torch.int32)
+    context = (RequestSlice(descriptor, 0, width, ring_size, 0, True),)
+    record = NS(events=[], live_refs=[], inflight=0, accepted_count=0, retained=[])
+    stream = NS(wait_event=lambda event: None)
+    runtime = NS(torch=CpuTorch(torch, stream), device="cpu", profile=profile(), poisoned=False,
+                 resolve=lambda value, **kwargs: record, gather=lambda value: [value] * 8,
+                 event=lambda: NS(query=lambda: True))
+    runtime.preflight = types.MethodType(worker.WorkerRuntime.preflight, runtime)
+    runtime.reap_live = types.MethodType(worker.WorkerRuntime.reap_live, runtime)
+    monkeypatch.setattr(worker, "_RUNTIME", runtime)
+    events = runtime.event()
+    logits = NS(occ3_capture_rows=worker.CaptureRows(context, hidden, positions, "verify", events, 7))
+    forward_batch = NS(occ3_context=context, occ3_force_eager=True, batch_size=1)
+    stage = worker.stage_verify(forward_batch, logits, predict, accept_lens, accept_index, positions)
+    assert stage is not None and stage.hidden.shape == (1, width, hidden_dim)
+    assert stage.counts.tolist() == [len(accepted)]
+    request = NS(rid="rid", occ3_worker_descriptor=descriptor, retraction_count=0,
+                 origin_input_ids=prompt, output_ids=[int(predict[i]) for i in accepted])
+    worker.commit_result(NS(occ3_runtime=runtime), request, NS(occ3_capture_stage=stage),
+                         0, 0, len(accepted), terminal=False, forward_iter=7)
+    written_hidden, written_tokens = record.retained
+    span = slice(0, len(accepted))
+    assert record.accepted_count == len(accepted) and stage.committed
+    assert torch.equal(written_hidden[span], hidden[accepted])
+    assert torch.equal(written_tokens[span], predict[accepted])
+    for rejected in range(width):
+        if rejected in accepted:
+            continue
+        assert not any(torch.equal(written_hidden[i], hidden[rejected]) for i in range(len(accepted)))

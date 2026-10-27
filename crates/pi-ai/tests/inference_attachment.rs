@@ -282,6 +282,23 @@ fn assert_no_replay_diagnostic(message: &AssistantMessage) {
         .contains("raw-error-secret"));
 }
 
+/// The bounded `occ3Cause` retained for an OCC interruption; the HTTP status
+/// survives only on the labelled non-success response.
+fn assert_occ3_cause(message: &AssistantMessage, cause: &str, status: Option<u64>) {
+    let details = message
+        .diagnostics
+        .as_ref()
+        .unwrap()
+        .iter()
+        .find(|d| d.type_ == "provider_stream_failure")
+        .unwrap()
+        .details
+        .as_ref()
+        .unwrap();
+    assert_eq!(details["occ3Cause"], cause);
+    assert_eq!(details.get("status").and_then(Value::as_u64), status);
+}
+
 #[tokio::test]
 async fn ordinary_payload_is_unchanged_and_has_no_attachment_field() {
     let fixture = Fixture::new(Reply::Good).await;
@@ -468,6 +485,7 @@ async fn missing_mismatched_or_untrusted_receipts_emit_no_start_content_tools_or
         assert_eq!(hooks.load(Ordering::SeqCst), 0);
         assert_eq!(raw_events.load(Ordering::SeqCst), 0);
         assert_no_replay_diagnostic(error(&output));
+        assert_occ3_cause(error(&output), "receipt_invalid", None);
         assert_eq!(fixture.count(), 1);
     }
 }
@@ -585,11 +603,11 @@ async fn shared_clones_allow_only_one_actual_send_and_never_replay_after_success
 
 #[tokio::test]
 async fn ambiguous_send_http_error_and_incomplete_stream_never_retry() {
-    for reply in [
-        Reply::Disconnect,
-        Reply::Status,
-        Reply::Incomplete,
-        Reply::Error,
+    for (reply, cause, status) in [
+        (Reply::Disconnect, "send_transport_error", None),
+        (Reply::Status, "http_non_success", Some(503)),
+        (Reply::Incomplete, "incomplete_stream", None),
+        (Reply::Error, "unknown", None),
     ] {
         let fixture = Fixture::new(reply).await;
         let lease = lease(&fixture.model);
@@ -600,6 +618,7 @@ async fn ambiguous_send_http_error_and_incomplete_stream_never_retry() {
         );
         let output = events(&stream).await;
         assert_no_replay_diagnostic(error(&output));
+        assert_occ3_cause(error(&output), cause, status);
         assert_eq!(lease.state(), InferenceStateLeaseState::Uncertain);
         assert_eq!(fixture.count(), 1);
         let replay = stream_openai_completions(

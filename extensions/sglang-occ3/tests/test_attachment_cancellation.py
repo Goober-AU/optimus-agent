@@ -143,3 +143,36 @@ async def test_authorizer_wait_is_bounded_and_cannot_start_inference(harness):
     assert response.status_code == 499
     assert not harness.tm.calls and not harness.backend.reserves
     assert harness.adapter._active == 0
+
+
+@pytest.mark.asyncio
+async def test_deadline_cut_latency_stays_within_bounded_cleanup_grace(harness):
+    """A responsive fixture loop bounds cancellation-resistant cleanup.
+
+    This small-scale check does not bound event-loop stalls on a GPU server
+    or identify the cause of a live interruption.
+    """
+    turn, cleanup = .30, .05
+    harness.adapter.profile = replace(
+        harness.adapter.profile, max_turn_seconds=turn, cleanup_seconds=cleanup,
+        disconnect_interval=.005, deadline_margin_seconds=.001)
+    harness.backend.required_seconds = .001
+    # Live producer: the native turn keeps its stream open past the window.
+    harness.chat.buffer_gate = asyncio.Event()
+    blocker = asyncio.Event()
+    async def stubborn(*_args):
+        try:
+            await blocker.wait()
+        except asyncio.CancelledError:
+            await blocker.wait()  # cancellation-resistant, like a wedged engine call
+    harness.tm.abort_request = stubborn
+    harness.backend.retire = stubborn
+    raw, _ = raw_request(canonical({"occ3": attachment().wire()}))
+    started = time.monotonic()
+    response = await asyncio.wait_for(harness.chat.handle_request(chat_request(), raw), 2)
+    elapsed = time.monotonic() - started
+    blocker.set()
+    await spin_until(lambda: not harness.adapter._quarantined)
+    assert response.status_code == 504, (response.status_code, response.body)
+    assert elapsed >= turn, (elapsed, turn)
+    assert elapsed <= turn + 3 * cleanup, (elapsed, turn, cleanup)
