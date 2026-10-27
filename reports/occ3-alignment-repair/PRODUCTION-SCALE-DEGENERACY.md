@@ -124,3 +124,23 @@ transmitted rows' `E`. That is the independent-calibration family
 - `occ3_sglang/align_diagnostics.py`: the measurement instrument. Fixed key
   set, int/float scalars only, no temporary larger than `2 n d`, no tensor
   leaves the call. Not wired into the worker yet.
+
+## 2b. Addendum: the carrier does not depend on any H-E relation
+
+Re-run with `H` statistically independent of `E` (pair cosine 0), then with
+pair cosine 0.24 and 0.9, production dimensions, seed 20261027:
+
+| pair cosine | cos(Z, normcal E) | rel. error to normcal E | H rolled | H permuted |
+|---|---|---|---|---|
+| 0.00 | 1.000000 | 2.8e-05 | 4.0e-05 | 4.0e-05 |
+| 0.24 | 1.000000 | 2.9e-05 | 4.1e-05 | 4.1e-05 |
+| 0.90 | 1.000000 | 6.5e-06 | 9.3e-06 | 9.2e-06 |
+
+The output is the norm-calibrated reference embeddings to 1e-5 whatever the
+relation between the hidden states and those embeddings is, including none at
+all. There is therefore no need to spend a GPU window proving that the positive
+arm equals the token-reference arm: they are the same prefix by computation.
+
+Command: `.venv/Scripts/python.exe <scratch>/pair_sweep.py` (script reproduced
+by `tests/test_alignment_invariance.py::test_output_is_the_norm_calibrated_reference_embeddings`
+at small scale, same statement).

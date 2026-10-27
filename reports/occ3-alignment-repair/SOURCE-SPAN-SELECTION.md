@@ -79,10 +79,13 @@ answer.  When the argument JSON is longer than the window, the window contains
 
 `span_audit` already predicts this: with the four markers it understands, the
 tail policy selects every row, while `final_content` returns `None` on a turn
-with no content run (`span_audit.py:594-623`).  Nothing consumes that prediction;
-`span_audit` is imported by its test only (verified by `rg` over
-`occ3_sglang/`, one hit, the module itself; the only importer in the tree is
-`tests/test_span_audit.py`).
+with no content run (`span_audit.py:594-623`).  Nothing in the runtime consumes
+that prediction.  `rg -n 'span_audit|classify_accepted|span_from_policy'` over
+`extensions/sglang-occ3` returns only: the module itself, the two test files
+(`tests/test_span_audit.py`, `tests/test_span_markers.py`), and one import line
+plus two docstring mentions in `span_markers.py`
+(`span_markers.py:90` imports the `SpanMarkers` type and two bounds).  No worker,
+adapter, receipt or Rust file imports it.
 
 ### 1.4 OFFLINE MEASURED consequence
 
@@ -246,8 +249,11 @@ while the `custom_params` route needs no schema change at all.
 ### 3.3 The tool-call markers have no scheduler-side resolver (SOURCE-ATTESTED)
 
 `glm47_moe_detector.py:311-320` and `glm4_moe_detector.py:174-183` match these
-markers as **text**, with `re.compile` over the detokenized stream, in the
-tokenizer-manager/detokenizer path.  Nothing encodes them to ids.
+markers as **text**, with `re.compile` over a decoded string.  The parsers run in
+the OpenAI frontend - the same process as the tokenizer manager, which it holds as
+`self.tokenizer_manager.tokenizer` - at
+`entrypoints/openai/serving_chat.py:1335,1359,3023-3039`.  Nothing anywhere
+encodes these strings to ids.
 
 The one field that could have carried them, `MessageProcessingResult.
 reasoning_end_token_ids` (`entrypoints/openai/protocol.py:2268-2269`), is
@@ -515,8 +521,8 @@ Headroom (OFFLINE MEASURED, same probe):
 So the block fits, with 200 bytes of slack.  Whether it still fits the adapter's
 header budget under a live ASGI header set is **HYPOTHESIS**; not measured here.
 The fixtures that would also need the new fields are
-`extensions/sglang-occ3/tests/fixtures/occ3_source_v1.json` (14 receipt-like
-objects, `rg -c span_policy`) and
+`extensions/sglang-occ3/tests/fixtures/occ3_source_v1.json` (11 lines carry
+`span_policy`, `rg -c span_policy`) and
 `crates/pi-coding-agent/examples/occ3_native_phase_suite.rs:3573`.
 
 ### 6.3 Lineage
