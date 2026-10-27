@@ -271,6 +271,9 @@ fn assert_no_replay_diagnostic(message: &AssistantMessage) {
         .unwrap();
     assert_eq!(details["kind"], "request_interrupted");
     assert_eq!(details["providerErrorType"], "occ3_inference_uncertain");
+    assert_eq!(message.error_message.as_deref(), Some(
+        "Inference state request did not complete; automatic replay is disabled."
+    ));
     assert!(!serde_json::to_string(message)
         .unwrap()
         .contains("opaque-handle"));
@@ -607,6 +610,43 @@ async fn ambiguous_send_http_error_and_incomplete_stream_never_retry() {
         assert_no_replay_diagnostic(error(&events(&replay).await));
         assert_eq!(fixture.count(), 1);
     }
+}
+
+#[tokio::test]
+async fn attached_http_failure_retains_bounded_cause_without_replay() {
+    let fixture = Fixture::new(Reply::Status).await;
+    let lease = lease(&fixture.model);
+    let stream = stream_openai_completions(
+        &fixture.model, &context(), Some(options(Some(lease.clone()))),
+    );
+    let output = events(&stream).await;
+    assert_eq!(output.len(), 1);
+    let message = error(&output);
+    assert_no_replay_diagnostic(message);
+    assert_eq!(message.error_message.as_deref(), Some(
+        "Inference state request did not complete; automatic replay is disabled."
+    ));
+    let details = message.diagnostics.as_ref().unwrap().iter()
+        .find(|d| d.type_ == "provider_stream_failure").unwrap()
+        .details.as_ref().unwrap();
+    assert_eq!(details["occ3Cause"], "http_non_success");
+    assert_eq!(details["status"], 503);
+    assert_eq!(lease.state(), InferenceStateLeaseState::Uncertain);
+    assert_eq!(fixture.count(), 1);
+    let replay = stream_openai_completions(
+        &fixture.model, &context(), Some(options(Some(lease.clone()))),
+    );
+    assert_no_replay_diagnostic(error(&events(&replay).await));
+    assert_eq!(fixture.count(), 1);
+
+    let ordinary = stream_openai_completions(&fixture.model, &context(), Some(options(None)));
+    let ordinary_output = events(&ordinary).await;
+    let ordinary_details = error(&ordinary_output).diagnostics.as_ref().unwrap().iter()
+        .find(|d| d.type_ == "provider_stream_failure").unwrap()
+        .details.as_ref().unwrap();
+    assert_eq!(ordinary_details["kind"], "server_error");
+    assert_eq!(ordinary_details["status"], 503);
+    assert!(ordinary_details.get("occ3Cause").is_none());
 }
 
 #[tokio::test]

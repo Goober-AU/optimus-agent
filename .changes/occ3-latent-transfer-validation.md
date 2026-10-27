@@ -6,3 +6,4 @@
 - Fixed native GLM validation instructions to use the supported system role.
 - Added native-state, no-state, and full-text semantic controls.
 - Fixed ordinary receiver-input parity across native validation controls without changing native admission.
+- Retained bounded OCC-3 interruption cause and HTTP status without changing no-replay behavior or exposing private error content.

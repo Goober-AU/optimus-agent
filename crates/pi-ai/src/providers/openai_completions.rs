@@ -1377,6 +1377,30 @@ fn resolve_header_timeout(timeout_ms: Option<f64>) -> std::time::Duration {
 	std::time::Duration::from_millis(timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS).max(0.0) as u64)
 }
 
+/// Allowlisted OCC interruption causes. The retained cause is always one of
+/// these bounded tokens, so no error text, URI, header, handle, tensor or prompt
+/// content can reach a diagnostic or a log line.
+const OCC3_CAUSE_UNKNOWN: &str = "unknown";
+const OCC3_CAUSE_SEND_TRANSPORT_ERROR: &str = "send_transport_error";
+const OCC3_CAUSE_HEADER_TIMEOUT: &str = "header_timeout";
+const OCC3_CAUSE_ABORT: &str = "abort";
+const OCC3_CAUSE_HTTP_NON_SUCCESS: &str = "http_non_success";
+const OCC3_CAUSE_RECEIPT_INVALID: &str = "receipt_invalid";
+const OCC3_CAUSE_SSE_IDLE: &str = "sse_idle";
+const OCC3_CAUSE_INCOMPLETE_STREAM: &str = "incomplete_stream";
+const OCC3_CAUSES: [&str; 8] = [
+	OCC3_CAUSE_UNKNOWN,
+	OCC3_CAUSE_SEND_TRANSPORT_ERROR,
+	OCC3_CAUSE_HEADER_TIMEOUT,
+	OCC3_CAUSE_ABORT,
+	OCC3_CAUSE_HTTP_NON_SUCCESS,
+	OCC3_CAUSE_RECEIPT_INVALID,
+	OCC3_CAUSE_SSE_IDLE,
+	OCC3_CAUSE_INCOMPLETE_STREAM,
+];
+/// Field name of the retained cause token in the diagnostic details and log.
+const OCC3_CAUSE_FIELD: &str = "occ3Cause";
+
 /// Lets `?` convert the provider-helper `Result<_, String>` errors (e.g. the
 /// `No API key for provider` / compaction-checkpoint errors) into a thrown error.
 impl From<String> for StreamError {
@@ -1401,24 +1425,156 @@ impl From<SourceCaptureError> for StreamError {
 
 fn record_completions_failure(model: &Model, output: &mut AssistantMessage, error: &StreamError) {
 	if error.value.get("code").and_then(Value::as_str) == Some("occ3_inference_uncertain") {
+		// The public shape stays exact; only the allowlisted cause and a valid
+		// HTTP status survive the collapse.
+		let status = error.occ3_status();
 		let failure = crate::utils::stream_failure::StreamFailureError::new(
 			error.message.clone(),
 			crate::utils::stream_failure::StreamFailureInfo {
 				kind: crate::utils::stream_failure::KIND_REQUEST_INTERRUPTED.into(),
 				provider_error_type: Some("occ3_inference_uncertain".into()),
+				status: status.map(i64::from),
 				..Default::default()
 			},
 		);
 		record_stream_failure(model, output, &ThrownStreamError::Failure(&failure));
+		record_occ3_cause(model, output, error, status);
 	} else {
 		record_stream_failure(model, output, &ThrownStreamError::Value(&error.value));
 	}
+}
+
+/// Add the one allowlisted cause token to the `provider_stream_failure` details
+/// the shared recorder just appended, and emit the same bounded fields through
+/// the existing logger. Never logs the raw error value or any error text.
+fn record_occ3_cause(model: &Model, output: &mut AssistantMessage, error: &StreamError, status: Option<u16>) {
+	// The shared recorder is a no-op for a user abort; keep this supplemental
+	// detail and log equally silent then.
+	if output.stop_reason != "error" {
+		return;
+	}
+	if let Some(diagnostic) = output
+		.diagnostics
+		.as_mut()
+		.and_then(|diagnostics| diagnostics.iter_mut().rev().find(|diagnostic| diagnostic.type_ == "provider_stream_failure"))
+	{
+		diagnostic
+			.details
+			.get_or_insert_with(Map::new)
+			.insert(OCC3_CAUSE_FIELD.to_string(), Value::String(error.occ3_cause().to_string()));
+	}
+	let mut fields = Map::new();
+	fields.insert("provider".to_string(), Value::String(model.provider.clone()));
+	fields.insert("model".to_string(), Value::String(model.id.clone()));
+	fields.insert("api".to_string(), Value::String(model.api.clone()));
+	fields.insert(
+		"kind".to_string(),
+		Value::String(crate::utils::stream_failure::KIND_REQUEST_INTERRUPTED.to_string()),
+	);
+	fields.insert(
+		"providerErrorType".to_string(),
+		Value::String("occ3_inference_uncertain".to_string()),
+	);
+	fields.insert(OCC3_CAUSE_FIELD.to_string(), Value::String(error.occ3_cause().to_string()));
+	if let Some(status) = status {
+		fields.insert("status".to_string(), Value::Number(status.into()));
+	}
+	crate::log::get_logger("ai.provider").error("occ3 inference interruption", Some(fields));
+}
+
+/// A real HTTP status code range; anything else is dropped, never clamped.
+fn valid_http_status(status: Option<u16>) -> Option<u16> {
+	status.filter(|status| (100..=599).contains(status))
+}
+
+/// The allowlist check: a token that is not on the list becomes `unknown` and
+/// can never reach the value, the diagnostic, or the log.
+fn allowlisted_occ3_cause(cause: &str) -> &'static str {
+	for known in OCC3_CAUSES {
+		if known == cause {
+			return known;
+		}
+	}
+	OCC3_CAUSE_UNKNOWN
 }
 
 impl StreamError {
 	fn inference_uncertain() -> Self {
 		let message = "Inference state request did not complete; automatic replay is disabled.".to_string();
 		Self { value: json!({"name":"Error", "message":message, "code":"occ3_inference_uncertain"}), message }
+	}
+
+	/// Retain one allowlisted cause token on the private value, so the OCC
+	/// collapse at the stream wrapper does not erase the phase.
+	fn with_occ3_cause(mut self, cause: &str) -> Self {
+		self.set_occ3_fields(cause, None);
+		self
+	}
+
+	/// Retain an allowlisted cause token plus a valid HTTP status.
+	fn with_occ3_status(mut self, cause: &str, status: Option<u16>) -> Self {
+		self.set_occ3_fields(cause, status);
+		self
+	}
+
+	/// Label the phase only for a native guarded request; an ordinary call keeps
+	/// its exact thrown value and log.
+	fn with_occ3_cause_if(self, native: bool, cause: &str) -> Self {
+		if native { self.with_occ3_cause(cause) } else { self }
+	}
+
+	fn set_occ3_fields(&mut self, cause: &str, status: Option<u16>) {
+		let cause = allowlisted_occ3_cause(cause);
+		let Some(object) = self.value.as_object_mut() else { return; };
+		object.insert(OCC3_CAUSE_FIELD.to_string(), Value::String(cause.to_string()));
+		// Only the labelled non-success response may carry a status.
+		if cause == OCC3_CAUSE_HTTP_NON_SUCCESS {
+			if let Some(status) = valid_http_status(status) {
+				object.insert("status".to_string(), Value::Number(status.into()));
+			}
+		}
+	}
+
+	/// The retained cause: an allowlisted value already on this error, else a
+	/// marker the transport already set, else `unknown`. Never derived from text.
+	fn occ3_cause(&self) -> &'static str {
+		if let Some(cause) = self.value.get(OCC3_CAUSE_FIELD).and_then(Value::as_str) {
+			for known in OCC3_CAUSES {
+				if known == cause {
+					return known;
+				}
+			}
+		}
+		match (
+			self.value.get("name").and_then(Value::as_str),
+			self.value.get("code").and_then(Value::as_str),
+		) {
+			(Some("AbortError"), _) => OCC3_CAUSE_ABORT,
+			(_, Some("sse_idle_timeout")) => OCC3_CAUSE_SSE_IDLE,
+			_ => OCC3_CAUSE_UNKNOWN,
+		}
+	}
+
+	/// The HTTP status of a non-success response that the native HTTP site
+	/// labelled. A status a provider payload happens to carry is never trusted.
+	fn occ3_status(&self) -> Option<u16> {
+		if self.occ3_cause() != OCC3_CAUSE_HTTP_NON_SUCCESS {
+			return None;
+		}
+		valid_http_status(
+			self.value
+				.get("status")
+				.and_then(Value::as_u64)
+				.and_then(|status| u16::try_from(status).ok()),
+		)
+	}
+
+	/// The wrapper collapse: keep the exact uncertain shape and message, and the
+	/// inner allowlisted cause instead of overwriting it.
+	fn inference_uncertain_from(inner: &StreamError) -> Self {
+		let mut error = Self::inference_uncertain();
+		error.set_occ3_fields(inner.occ3_cause(), inner.occ3_status());
+		error
 	}
 
 	fn dropped() -> Self {
@@ -2083,6 +2239,9 @@ async fn post_chat_completions(
 		Some(lease.submit()?)
 	} else { None };
 	observe_local_phase(observer, "generation_send_start");
+	// Only a guarded native request carries the bounded phase; an ordinary call
+	// keeps its exact thrown value and log.
+	let native = inference.is_some() || source.is_some();
 	let request = builder.send();
 	let response = match signal {
 		Some(signal) => {
@@ -2100,16 +2259,19 @@ async fn post_chat_completions(
 				return Err(abort_error());
 			}
 			if error.is_timeout() {
-				return Err(StreamError::new("Request timed out."));
+				return Err(StreamError::new("Request timed out.")
+					.with_occ3_cause_if(native, OCC3_CAUSE_HEADER_TIMEOUT));
 			}
-			return Err(StreamError::new(format!("Connection error: {error}")));
+			// The transport message may embed the request URL, so only the phase survives.
+			return Err(StreamError::new(format!("Connection error: {error}"))
+				.with_occ3_cause_if(native, OCC3_CAUSE_SEND_TRANSPORT_ERROR));
 		}
 		// `APIConnectionTimeoutError`: `Request timed out.`
 		Err(_elapsed) => {
 			if is_cancelled(signal) {
 				return Err(abort_error());
 			}
-			return Err(StreamError::new("Request timed out."));
+			return Err(StreamError::new("Request timed out.").with_occ3_cause_if(native, OCC3_CAUSE_HEADER_TIMEOUT));
 		}
 	};
 
@@ -2117,13 +2279,19 @@ async fn post_chat_completions(
 	let status = response.status().as_u16();
 	if let Some(submission) = submission.as_mut() {
 		if !response.status().is_success() {
-			return Err(StreamError::inference_uncertain());
+			return Err(StreamError::inference_uncertain().with_occ3_status(OCC3_CAUSE_HTTP_NON_SUCCESS, Some(status)));
 		}
-		submission.verify_receipt(response.headers())?;
+		submission
+			.verify_receipt(response.headers())
+			.map_err(|error| StreamError::from(error).with_occ3_cause(OCC3_CAUSE_RECEIPT_INVALID))?;
 	}
 	if let Some(submission) = source_submission.as_mut() {
-		if !response.status().is_success() { return Err(StreamError::inference_uncertain()); }
-		submission.verify_header(response.headers())?;
+		if !response.status().is_success() {
+			return Err(StreamError::inference_uncertain().with_occ3_status(OCC3_CAUSE_HTTP_NON_SUCCESS, Some(status)));
+		}
+		submission
+			.verify_header(response.headers())
+			.map_err(|error| StreamError::from(error).with_occ3_cause(OCC3_CAUSE_RECEIPT_INVALID))?;
 	}
 	if status >= 400 {
 		let headers_record = crate::utils::headers::header_map_to_record(response.headers());
@@ -2792,7 +2960,7 @@ async fn run_stream(
 			result = body => result,
 		}
 	} else { body.await };
-	if result.is_err() {
+	if let Err(error) = &result {
 		for block in &mut state.blocks {
 			if let StreamingBlock::ToolCall(block) = block {
 				flush_tool_arguments(block);
@@ -2807,7 +2975,8 @@ async fn run_stream(
 		)).unwrap_or(false) || source.as_ref().map(|lease| matches!(lease.state(),
 			SourceCaptureState::Submitted | SourceCaptureState::Uncertain | SourceCaptureState::Captured | SourceCaptureState::Retired
 		)).unwrap_or(false) {
-			return Err(StreamError::inference_uncertain());
+			// The collapse keeps every public field and the bounded inner cause.
+			return Err(StreamError::inference_uncertain_from(error));
 		}
 	}
 	result
@@ -2960,7 +3129,9 @@ async fn run_stream_body(
 		let (payload, parsed) = match payload? {
 			SsePayload::Data { payload, parsed } => (payload, parsed),
 			SsePayload::Done { exact } => {
-				if submission.is_some() && !exact { return Err(StreamError::inference_uncertain()); }
+				if submission.is_some() && !exact {
+					return Err(StreamError::inference_uncertain().with_occ3_cause(OCC3_CAUSE_INCOMPLETE_STREAM));
+				}
 				done = true;
 				break;
 			}
@@ -3019,7 +3190,7 @@ async fn run_stream_body(
 		return Err(abort_error());
 	}
 	if (submission.is_some() || source_submission.is_some()) && (!finished || !done) {
-		return Err(StreamError::inference_uncertain());
+		return Err(StreamError::inference_uncertain().with_occ3_cause(OCC3_CAUSE_INCOMPLETE_STREAM));
 	}
 	if !finished && !done {
 		return Err(StreamError::dropped());
@@ -3930,6 +4101,155 @@ mod provider_settlement_tests {
 		// element (both duplicates are objects, IndexMap keeps one `choices`
 		// key with the second array).
 		assert!(value_events.iter().any(|event| event["delta"] == json!("b")));
+	}
+
+	// ------------------------------------------------------------------
+	// OCC interruption cause: bounded evidence survives the wrapper collapse
+	// ------------------------------------------------------------------
+
+	const OCC3_MESSAGE: &str = "Inference state request did not complete; automatic replay is disabled.";
+
+	fn failure_details(output: &AssistantMessage) -> Value {
+		output
+			.diagnostics
+			.as_ref()
+			.and_then(|diagnostics| diagnostics.iter().find(|diagnostic| diagnostic.type_ == "provider_stream_failure"))
+			.and_then(|diagnostic| diagnostic.details.clone())
+			.map(Value::Object)
+			.expect("provider_stream_failure details")
+	}
+
+	/// Record one terminal failure the way both public entry points do.
+	fn record_failure(error: &StreamError) -> AssistantMessage {
+		let model = base_model();
+		let mut output = AssistantMessage::new(model.api.clone(), model.provider.clone(), model.id.clone(), 0);
+		output.stop_reason = "error".to_string();
+		output.error_message = Some(error.message.clone());
+		record_completions_failure(&model, &mut output, error);
+		output
+	}
+
+	#[test]
+	fn occ3_safe_nested_cause_survives_the_wrapper_collapse() {
+		// The non-success HTTP site labels the phase before the wrapper collapses
+		// everything into `occ3_inference_uncertain`; the collapse must keep it.
+		let collapsed = StreamError::inference_uncertain_from(
+			&StreamError::inference_uncertain().with_occ3_status(OCC3_CAUSE_HTTP_NON_SUCCESS, Some(503)),
+		);
+		assert_eq!(collapsed.message, OCC3_MESSAGE);
+		assert_eq!(collapsed.value["code"], "occ3_inference_uncertain");
+		let output = record_failure(&collapsed);
+		assert_eq!(output.error_message.as_deref(), Some(OCC3_MESSAGE));
+		assert_eq!(output.diagnostics.as_ref().map(Vec::len), Some(1));
+		let details = failure_details(&output);
+		assert_eq!(details["kind"], "request_interrupted");
+		assert_eq!(details["providerErrorType"], "occ3_inference_uncertain");
+		assert_eq!(details["occ3Cause"], "http_non_success");
+		assert_eq!(details["status"], 503);
+	}
+
+	#[test]
+	fn occ3_http_504_status_is_retained_after_the_collapse() {
+		let collapsed = StreamError::inference_uncertain_from(
+			&StreamError::inference_uncertain().with_occ3_status(OCC3_CAUSE_HTTP_NON_SUCCESS, Some(504)),
+		);
+		let details = failure_details(&record_failure(&collapsed));
+		assert_eq!(details["kind"], "request_interrupted");
+		assert_eq!(details["providerErrorType"], "occ3_inference_uncertain");
+		assert_eq!(details["occ3Cause"], "http_non_success");
+		assert_eq!(details["status"], 504);
+	}
+
+	#[test]
+	fn occ3_receiver_and_source_non_success_statuses_stay_distinguishable() {
+		// Both receipt-verification sites run before the status branch, so each
+		// failure keeps its own bounded token instead of one generic collapse.
+		let receiver = StreamError::inference_uncertain_from(
+			&StreamError::inference_uncertain().with_occ3_status(OCC3_CAUSE_HTTP_NON_SUCCESS, Some(503)),
+		);
+		let details = failure_details(&record_failure(&receiver));
+		assert_eq!(details["occ3Cause"], "http_non_success");
+		assert_eq!(details["status"], 503);
+
+		let source = StreamError::inference_uncertain_from(
+			&StreamError::inference_uncertain().with_occ3_status(OCC3_CAUSE_HTTP_NON_SUCCESS, Some(502)),
+		);
+		let details = failure_details(&record_failure(&source));
+		assert_eq!(details["occ3Cause"], "http_non_success");
+		assert_eq!(details["status"], 502);
+
+		let receipt =
+			StreamError::from(InferenceAttachmentError::MissingReceipt).with_occ3_status(OCC3_CAUSE_RECEIPT_INVALID, Some(504));
+		let details = failure_details(&record_failure(&StreamError::inference_uncertain_from(&receipt)));
+		assert_eq!(details["kind"], "request_interrupted");
+		assert_eq!(details["occ3Cause"], "receipt_invalid");
+		assert!(details.get("status").is_none(), "a refused receipt never retains a status");
+	}
+
+	#[test]
+	fn occ3_sse_idle_and_unknown_causes_are_distinguishable() {
+		let idle = StreamError::inference_uncertain_from(&StreamError::sse_idle_timeout(Duration::from_millis(120_000)));
+		let details = failure_details(&record_failure(&idle));
+		assert_eq!(details["kind"], "request_interrupted");
+		assert_eq!(details["occ3Cause"], "sse_idle");
+
+		let unknown = StreamError::inference_uncertain_from(
+			&StreamError::new("Connection error: unexpected").with_occ3_status(OCC3_CAUSE_UNKNOWN, Some(500)),
+		);
+		let details = failure_details(&record_failure(&unknown));
+		assert_eq!(details["kind"], "request_interrupted");
+		assert_eq!(details["occ3Cause"], "unknown");
+		assert!(details.get("status").is_none(), "an unknown cause keeps no status");
+	}
+
+	#[test]
+	fn occ3_never_copies_free_text_uris_or_invalid_statuses() {
+		// A cause outside the allowlist, an out-of-range status, and an arbitrary
+		// transport message must not reach the diagnostic or the log.
+		for invalid in [0u16, 99, 600, 1000] {
+			let collapsed = StreamError::inference_uncertain_from(
+				&StreamError::new("Connection error: http://10.0.0.1/x?secret=raw-error-secret")
+					.with_occ3_status("prompt-exfiltration", Some(invalid)),
+			);
+			let output = record_failure(&collapsed);
+			assert_eq!(output.error_message.as_deref(), Some(OCC3_MESSAGE));
+			let details = failure_details(&output);
+			assert_eq!(details["occ3Cause"], "unknown", "status {invalid}");
+			assert!(details.get("status").is_none(), "status {invalid} must be dropped");
+			let serialized = serde_json::to_string(&output).unwrap();
+			for leaked in ["raw-error-secret", "10.0.0.1", "prompt-exfiltration"] {
+				assert!(!serialized.contains(leaked), "{leaked} leaked with status {invalid}");
+			}
+		}
+		// A valid status is copied only for the labelled non-success response.
+		let kept = StreamError::inference_uncertain_from(
+			&StreamError::new("Connection error: http://10.0.0.1/x")
+				.with_occ3_status(OCC3_CAUSE_HTTP_NON_SUCCESS, Some(502)),
+		);
+		let details = failure_details(&record_failure(&kept));
+		assert_eq!(details["occ3Cause"], "http_non_success");
+		assert_eq!(details["status"], 502);
+
+		// A phase that is not the HTTP response keeps its token but never a status.
+		let transport = StreamError::inference_uncertain_from(
+			&StreamError::new("Connection error: http://10.0.0.1/x")
+				.with_occ3_status(OCC3_CAUSE_SEND_TRANSPORT_ERROR, Some(502)),
+		);
+		let details = failure_details(&record_failure(&transport));
+		assert_eq!(details["occ3Cause"], "send_transport_error");
+		assert!(details.get("status").is_none(), "only the HTTP phase keeps a status");
+	}
+
+	#[test]
+	fn ordinary_failures_keep_their_exact_details() {
+		let error = StreamError::api_error(504, None, None, &IndexMap::new());
+		let output = record_failure(&error);
+		assert_eq!(output.diagnostics.as_ref().map(Vec::len), Some(1));
+		let details = failure_details(&output);
+		assert_eq!(details["kind"], "server_error");
+		assert_eq!(details["status"], 504);
+		assert!(details.get("occ3Cause").is_none(), "non-OCC failures must not gain OCC fields");
+		assert!(details.get("providerErrorType").is_none());
 	}
 
 }
