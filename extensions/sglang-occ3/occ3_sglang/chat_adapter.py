@@ -88,6 +88,12 @@ def _refusal_status(reason) -> str:
     return str(status) if type(status) is int and 400 <= status <= 599 else ""
 
 
+# These guard outcomes occur before the buffered inference response is sent.
+# A disconnected client may never receive the JSON error; retain a bounded log.
+# Other AttachmentError outcomes stay unlogged here.
+_CUT_TURN = frozenset({("client_disconnected", 499), ("deadline_exceeded", 504)})
+
+
 class NativeGenerateRequest(Protocol):
     rid: str | None
     input_ids: list[int] | None
@@ -497,6 +503,12 @@ class ChatAttachmentAdapter:
             return await self._guard(
                 self._authorize_and_run(original, serving, request, raw_request, ctx), ctx)
         except AttachmentError as error:
+            if ctx is not None and (error.code, error.status) in _CUT_TURN:
+                # Bounded cut-turn record: fixed code, status and whether native
+                # work was already dispatched. No handle, body or prompt text.
+                logger.error("occ3-bridge: native turn ended before any response "
+                             "(reason=%s status=%s dispatched=%s)",
+                             error.code, error.status, ctx.dispatched)
             return self._error(error)
         except asyncio.CancelledError:
             raise
