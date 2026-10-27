@@ -1,5 +1,25 @@
 # OCC-3 latent transfer validation
 
+## Paused development status — 2026-10-27
+
+Paused at the user's request for upstream review. The original DGX service was
+restored and verified healthy; failed candidates remain stopped and preserved.
+All research workers are stopped and the agent-owned heartbeat is cancelled.
+No new GPU request or deployment is pending. Spent descriptors and proof pins
+must not be replayed.
+
+This branch contains verified runtime/probe repairs, regression tests, and
+qualified negative results. GPU capture and completed consumption were observed,
+but reliable sender-specific semantic transfer is **not proven**. The latest
+matched native receiver answered UNKNOWN while its full-text control succeeded.
+
+The proposed next task—bounded aggregate measurements of real aligned tensors
+versus source token references—was not implemented or authorized for editing
+before the pause. It needs a memory/lifetime review, offline nonmutation tests,
+and a fresh supervised image/window. Token-only/shuffled-H controls, conditional
+likelihood evaluation, native KV transfer, and broad benchmarks remain undone.
+No whitening/ridge change or semantic-success claim is included.
+
 ## Verified baseline
 
 Checked at `2026-10-27T07:25:48.769644+00:00`.
@@ -137,7 +157,9 @@ compatible supervised admission; prompt changes cannot substitute for them.
 
 - `bash scripts/check.sh`: passed, including locked workspace/all-target Cargo check,
   293 packaging tests (11 skipped), and native resource layout.
-- Full extension suite: 1,925 passed, 24 skipped, 77 subtests passed.
+- Earlier full extension suite after the target-verification repair: 1,925 passed,
+  24 skipped, 77 subtests passed. Later changes used the focused suites above; the
+  full extension suite was not rerun after every subsequent test addition.
 - Native handoff driver and source/handoff integration fixtures: 25 passed after
   receiver-input parity correction (two new regressions failed before correction).
 - Test web dependencies match the DGX: FastAPI 0.142.2, Starlette 1.7.0,
