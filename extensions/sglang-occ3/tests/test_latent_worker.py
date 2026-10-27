@@ -197,7 +197,7 @@ def test_full_native_chunk_injection_retains_only_two_integer_span(monkeypatch):
     fb=NS(occ3_context=context,occ3_force_eager=True,batch_size=1,forward_mode=NS(is_extend=lambda:True,is_target_verify=lambda:False))
     w.inject_target_embeddings(fb,hidden)
     assert fb.occ3_effective_embeds==(0,128) and not record.live_refs
-    assert copied==[(32768,None,128),(128,0,128)]
+    assert copied==[(32768,0,128),(128,0,128)]
     assert 32768*6144*2==384*1024*1024  # No extra fullchunk clone allowed.
     w.mark_injection(fb)
     assert fb.occ3_effective_embeds is None and len(record.injected_positions)==128

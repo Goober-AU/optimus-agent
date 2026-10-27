@@ -25,6 +25,7 @@ from .attachment_contract import (
     SOURCE_RECEIPT_HEADER, SourceEnrollment, Reservation, TERMINAL_ACK_HEADER, TERMINAL_MODE,
     canonical, digest, identifier, normalize_worker_descriptor, parse_opt_in, parse_terminal_mode,
 )
+from .prefix_layout import LAYOUT_PREPEND, PREFIX_MARKER, PrefixLayout, resolve_prefix_layout
 from .use_receipts import (
     NativeCompletion, NativeOutputAudit, TerminalOutputAudit, TerminalUseEvidence,
     receipt_bytes, terminal_envelope, terminal_event_bytes,
@@ -108,6 +109,8 @@ class NativeRequestView:
     sampling_digest: str
     streaming: bool
     deadline_monotonic: float
+    #: Absolute row of the reserved continuous prefix in the receiver sequence.
+    prefix_offset: int = 0
 
 
 class ChatStateBackend(Protocol):
@@ -356,6 +359,9 @@ class _Context:
     terminal_failure_latch: bool = False
     terminal_response_task: Any = None
     terminal_ledger: Any = None
+    # Receiver continuous-prefix placement resolved from the rendered prompt.
+    prefix_offset: int = 0
+    prefix_layout: str = "prepend"
 
 
 class ChatAttachmentAdapter:
@@ -616,6 +622,32 @@ class ChatAttachmentAdapter:
         ctx.outer = self._generate(original, tm, obj, request, ctx)
         return ctx.outer
 
+    def _prefix_layout(self, obj, tm):
+        """Resolve the continuous-prefix row for this receiver request.
+
+        A marker in the rendered prompt selects a mid-sequence layout and the
+        prompt is pinned to the exact token ids used to compute the offset.
+        Without a marker the legacy prepend layout is kept unchanged.
+        """
+        text = getattr(obj, "text", None)
+        if not isinstance(text, str) or PREFIX_MARKER not in text:
+            # No marker: the legacy prepend layout is kept byte-identical and
+            # no tokenizer call is made on the ordinary path.
+            return PrefixLayout(LAYOUT_PREPEND, 0), None
+        tokenizer = getattr(tm, "tokenizer", None)
+        if tokenizer is None or not callable(getattr(tokenizer, "encode", None)):
+            raise AttachmentError("unsupported_profile")
+        try:
+            layout = resolve_prefix_layout(text, tokenizer)
+            pinned = list(tokenizer.encode(text, add_special_tokens=False))
+        except AttachmentError:
+            raise
+        except Exception:
+            raise AttachmentError("unsupported_profile") from None
+        if not 0 < layout.offset < len(pinned):
+            raise AttachmentError("unsupported_profile")
+        return layout, pinned
+
     def _fence(self, ctx):
         now = self.epoch()
         self._attempts = {key: expiry for key, expiry in self._attempts.items() if expiry > now}
@@ -656,9 +688,20 @@ class ChatAttachmentAdapter:
                 raise AttachmentError("invalid_evidence")
             if getattr(obj, "occ3_worker_descriptor", None) is not None:
                 raise AttachmentError("unsupported_profile")
+            if not source:
+                # Reserve the receiver's continuous-prefix rows at the attested
+                # prompt marker. The ordinary prompt is never rewritten: the
+                # token ids are pinned here so the scheduler-side reservation
+                # and this offset cannot diverge.
+                layout, pinned = self._prefix_layout(obj, tm)
+                if pinned is not None:
+                    obj.text, obj.input_ids = None, pinned
+                object.__setattr__(ctx, "prefix_offset", layout.offset)
+                object.__setattr__(ctx, "prefix_layout", layout.layout)
             protected = copy.deepcopy({k: v for k, v in vars(obj).items()
                                        if k != "occ3_worker_descriptor"})
-            view = NativeRequestView(obj, budget, digest(sampling), bool(obj.stream), ctx.deadline)
+            view = NativeRequestView(obj, budget, digest(sampling), bool(obj.stream),
+                                     ctx.deadline, prefix_offset=ctx.prefix_offset)
             reservation = (await self.backend.prepare_source(ctx.enrollment, view) if source else
                            await self.backend.reserve(ctx.attachment, ctx.identity, ctx.attempt_id, view))
             if ctx.cancel_requested:
@@ -714,7 +757,8 @@ class ChatAttachmentAdapter:
                     or descriptor.receiver_session_id != ctx.attachment.receiver_session_id
                     or descriptor.message_id != ctx.attachment.message_id
                     or descriptor.consume_nonce != ctx.attachment.request_id
-                    or descriptor.opaque_handle != ctx.attachment.state_handle):
+                    or descriptor.opaque_handle != ctx.attachment.state_handle
+                    or descriptor.prefix_offset != ctx.prefix_offset):
                 raise AttachmentError("invalid_evidence")
             ctx.descriptor = descriptor
             if {k: v for k, v in vars(obj).items() if k != "occ3_worker_descriptor"} != protected:

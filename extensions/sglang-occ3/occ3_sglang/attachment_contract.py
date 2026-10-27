@@ -373,6 +373,10 @@ class ConsumeWorkerDescriptor:
     deadline: float
     schema: str = "occ3.sglang.worker.v1"
     operation: str = "consume"
+    #: Absolute row where the continuous prefix starts in the receiver
+    #: sequence. 0 is the legacy prepend layout; a positive value comes from an
+    #: attested prompt marker and must stay inside the ordinary prompt.
+    prefix_offset: int = 0
 
     def __post_init__(self):
         import math
@@ -385,6 +389,7 @@ class ConsumeWorkerDescriptor:
                 raise AttachmentError("invalid_evidence")
         uint(self.state_generation)
         uint(self.runtime_generation)
+        uint(self.prefix_offset, 2**20)
         if (not 1 <= uint(self.expected_rank_count, 1024) <= 1024
                 or not 1 <= uint(self.expected_prefix_tokens, 128) <= 128
                 or not 1 <= uint(self.hidden_dim, 2**20) <= 2**20
