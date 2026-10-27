@@ -3,3 +3,5 @@
 - Fixed private receiver cache lookup on SGLang's Rust tree backend.
 - Fixed prefix reinjection during native speculative verification.
 - Changed the native validation harness to require the single authorized handoff target.
+- Fixed native GLM validation instructions to use the supported system role.
+- Added matched native-state, no-state, and full-text semantic controls.

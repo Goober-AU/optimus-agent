@@ -61,7 +61,14 @@ struct LiveDescriptor {
     budget_profile_verified: bool,
     budget_review_digest: String,
     case: String,
+    /// Diagnostic category fixture; absent keeps the controller vault-code proof.
+    semantic_case: Option<usize>,
 }
+const CATEGORY_FACTS: [(&str, &str); 4] = [
+    ("sparrow", "BIRD"), ("otter", "MAMMAL"), ("carp", "FISH"), ("iguana", "REPTILE"),
+];
+const CATEGORY_QUESTION: &str = "Identify the biological class of the private animal from the available information. Reply with exactly BIRD, MAMMAL, FISH, or REPTILE. If the private animal is unavailable reply UNKNOWN. Do not call tools.";
+
 fn fail() -> String {
     "Live harness refused or operation uncertain; see private reviewed descriptor and offline gates"
         .into()
@@ -158,6 +165,12 @@ fn resolve_control_headers(
 fn validation_case_passed(report: &Value) -> bool {
     let truth = |value: &Value| value.as_bool() == Some(true);
     let nonempty = |value: &Value| value.as_str().is_some_and(|v| !v.is_empty());
+    let full_text = report["case"] == "full-text";
+    let semantic_match = if report["task"] == "animal-category" {
+        &report["semantic_answer_match"]
+    } else {
+        &report["semantic_nonce_match"]
+    };
     let Some(requests) = report["receiver_request_audit"].as_array() else {
         return false;
     };
@@ -182,18 +195,18 @@ fn validation_case_passed(report: &Value) -> bool {
         || requests.is_empty()
         || !requests
             .iter()
-            .all(|r| truth(&r["source_facts_absent"]) && r["max_tokens"].as_u64() == Some(131072))
+            .all(|r| r["source_facts_absent"].as_bool() == Some(!full_text) && r["max_tokens"].as_u64() == Some(131072))
     {
         return false;
     }
-    if report["case"] == "no-state" {
-        return report["semantic_nonce_match"].as_bool() == Some(false)
+    if report["case"] == "no-state" || full_text {
+        return semantic_match.as_bool() == Some(full_text)
             && messages.is_empty()
             && received.is_empty()
             && report["source_phase"]["source"].is_null();
     }
     if report["case"] != "positive"
-        || !truth(&report["semantic_nonce_match"])
+        || !truth(semantic_match)
         || messages.len() != 1
         || received.len() != 1
     {
@@ -225,6 +238,15 @@ fn validation_case_passed(report: &Value) -> bool {
         && receiver["model_fingerprint"] == report["source_phase"]["model_fingerprint"]
         && receiver["model_fingerprint"] == report["model_fingerprint"]
 }
+fn use_supported_glm_instruction_role(model: &mut Model) {
+    if model.id == "glm-5.3" {
+        // The pinned GLM tokenizer drops developer messages entirely.
+        let mut compat = model.compat_completions().cloned().unwrap_or_default();
+        compat.supports_developer_role = Some(false);
+        model.compat = Some(pi_ai::types::Compat::Completions(compat));
+    }
+}
+
 fn require_source_handoff(payload: &mut Value) {
     payload["tool_choice"] = json!({"type":"function","function":{"name":"occ3_handoff"}});
     payload["parallel_tool_calls"] = json!(false);
@@ -298,7 +320,8 @@ async fn live(path: &str) -> Result<Value, String> {
         || !d.model.reasoning
         || d.deadline_seconds == 0
         || d.deadline_seconds > 3600
-        || !matches!(d.case.as_str(), "positive" | "no-state")
+        || !matches!(d.case.as_str(), "positive" | "no-state" | "full-text")
+        || d.semantic_case.is_some_and(|index| index >= CATEGORY_FACTS.len())
         || !matches!(d.phase.as_str(), "initial" | "final")
         || d.candidate_id.is_empty()
         || d.candidate_id.len() > 256
@@ -332,6 +355,7 @@ async fn live(path: &str) -> Result<Value, String> {
     // legitimate non-credential descriptor headers are preserved, reserved
     // credential names were already rejected above and are never overridden.
     let mut model = d.model.clone();
+    use_supported_glm_instruction_role(&mut model);
     if let Some(headers) = &control_headers {
         let mut merged = model.headers.clone().unwrap_or_default();
         for (name, value) in headers {
@@ -376,11 +400,26 @@ async fn live(path: &str) -> Result<Value, String> {
     let source = Occ3NativeSession::enroll(&source_id, &model, connector.clone()).await?;
     let receiver = Occ3NativeSession::enroll(&receiver_id, &model, connector.clone()).await?;
     let nonce = format!("vault-{}", uuid::Uuid::new_v4());
+    let (private_fact, expected_answer, receiver_question, source_question) =
+        if let Some(index) = d.semantic_case {
+            let (animal, class) = CATEGORY_FACTS[index];
+            (format!("The private animal is a {animal}."), class.to_string(), CATEGORY_QUESTION,
+             "Determine the biological class of the private animal. Communicate that class only through native state to child receiver, using occ3_handoff with no private fact or answer in arguments.")
+        } else {
+            (format!("The private vault code is {nonce}."), nonce.clone(),
+             "Read the private vault code from attached state. Reply only with the code, or UNKNOWN if unavailable. Do not call tools.",
+             "Communicate the code only through native state to child receiver, using occ3_handoff with no code in arguments.")
+        };
+    let forbidden_fact = d.semantic_case.map(|index| CATEGORY_FACTS[index].0.to_string())
+        .unwrap_or_else(|| nonce.clone());
+    let source_instructions = if d.semantic_case.is_some() {
+        SOURCE_HANDOFF_INSTRUCTIONS.replace("private vault code", "private fact").replace("private code", "private fact")
+    } else { SOURCE_HANDOFF_INSTRUCTIONS.to_string() };
     let context_audit = Arc::new(Mutex::new(Vec::<Value>::new()));
     let options = |receiver: bool| {
         let key = key.clone();
         AgentOptions {initial_state:Some(AgentState {model:model.clone(),thinking_level:ThinkingLevel::Max,
-            system_prompt:if receiver {"Read the private vault code from the attached native state. Reply with that code. If unavailable say UNKNOWN. Do not call tools."}else{SOURCE_HANDOFF_INSTRUCTIONS}.into(),..Default::default()}),
+            system_prompt:if receiver {receiver_question}else{&source_instructions}.into(),..Default::default()}),
             get_api_key:Some(Arc::new(move |_|{let key=key.clone();Box::pin(async move {Some((*key).clone())})})),
             ..Default::default()}
     };
@@ -393,15 +432,16 @@ async fn live(path: &str) -> Result<Value, String> {
     }));
     let source_agent = Agent::new(source_options);
     let mut receiver_options = options(false);
-    receiver_options.initial_state.as_mut().unwrap().system_prompt="Read the private vault code from attached state. Reply only with the code, or UNKNOWN if unavailable. Do not call tools.".into();
+    receiver_options.initial_state.as_mut().unwrap().system_prompt = receiver_question.into();
     let audit = context_audit.clone();
-    let forbidden = nonce.clone();
+    let forbidden = forbidden_fact.to_ascii_lowercase();
+    let full_text = d.case == "full-text";
     receiver_options.on_payload = Some(Arc::new(move |payload: Value, _model: &Model| {
         let serialized = payload.to_string();
-        let absent = !serialized.contains(&forbidden);
+        let absent = !serialized.to_ascii_lowercase().contains(&forbidden);
         audit.lock().unwrap().push(json!({"source_facts_absent":absent,"body_sha256_before_attachment":sha256(serialized.as_bytes()),"max_tokens":payload.get("max_tokens").or_else(||payload.get("max_completion_tokens")),"reasoning_effort":payload.get("reasoning_effort")}));
         Box::pin(async move {
-            if absent {
+            if absent || full_text {
                 None
             } else {
                 Some(json!({"model":"refused","stream":false}))
@@ -470,9 +510,12 @@ async fn live(path: &str) -> Result<Value, String> {
                 deadline: Instant::now() + Duration::from_secs(d.deadline_seconds),
                 max_response_bytes: d.max_response_bytes,
             })?;
-            source_agent.prompt(PromptInput::Text {input:format!("The private vault code is {nonce}. The controller checkpoint challenge for this attempt is {}. Communicate the code only through native state to child receiver, using occ3_handoff with no code in arguments.", d.checkpoint_challenge),images:Vec::new()}).await.map_err(|_|fail())?;
+            source_agent.prompt(PromptInput::Text {input:format!("{private_fact} The controller checkpoint challenge for this attempt is {}. {source_question}", d.checkpoint_challenge),images:Vec::new()}).await.map_err(|_|fail())?;
         } else {
-            receiver_agent.prompt(PromptInput::Text {input:"Continue the authorized task. No state attachment is available for this negative control.".into(),images:Vec::new()}).await.map_err(|_|fail())?;
+            let input = if full_text { private_fact.clone() } else {
+                "Continue the authorized task. No state attachment is available for this negative control.".into()
+            };
+            receiver_agent.prompt(PromptInput::Text {input,images:Vec::new()}).await.map_err(|_|fail())?;
         }
         Ok::<(), String>(())
     };
@@ -507,7 +550,12 @@ async fn live(path: &str) -> Result<Value, String> {
         "candidate_id":d.candidate_id,"process_epoch":d.process_epoch,"phase":d.phase,"checkpoint_challenge":d.checkpoint_challenge,
         "model_fingerprint":d.expected_fingerprint,
         "control_header_names":d.control_header_references.as_ref().map(|refs| refs.keys().collect::<Vec<_>>()),
-        "source_fact_sha256":sha256(nonce.as_bytes()),"answer_sha256":sha256(answer.as_bytes()),"semantic_nonce_match":answer.contains(&nonce),
+        "task":if d.semantic_case.is_some() {"animal-category"} else {"vault-code"},
+        "semantic_case":d.semantic_case,"controller_proof_eligible":d.semantic_case.is_none() && d.case == "positive",
+        "source_fact_sha256":sha256(private_fact.as_bytes()),"answer_sha256":sha256(answer.as_bytes()),
+        "semantic_answer_match":answer.trim().eq_ignore_ascii_case(&expected_answer),
+        "answer_class":if ["BIRD", "MAMMAL", "FISH", "REPTILE", "UNKNOWN"].contains(&answer.trim().to_ascii_uppercase().as_str()) {answer.trim().to_ascii_uppercase()} else {"OTHER".into()},
+        "semantic_nonce_match":d.semantic_case.is_none() && answer.contains(&nonce),
         "messages":family.receipts().iter().map(|r|json!({"message_id":r.id,"status":r.delivery_status})).collect::<Vec<_>>(),
         "source_phase":source.audit(),"receiver_phase":receiver.audit(),
         "receiver_request_audit":context_audit.lock().unwrap().clone(),"native_error":receiver_state.error_message.is_some(),
@@ -559,6 +607,23 @@ async fn main() {
 #[cfg(test)]
 mod gate_tests {
     use super::*;
+    #[test]
+    fn glm_instruction_role_preserves_other_compatibility_settings() {
+        let mut model = Model::new("glm-5.3", "fixture", pi_ai::types::API_OPENAI_COMPLETIONS,
+            "dgx-glm53", "https://fixture.invalid/v1");
+        model.compat = Some(pi_ai::types::Compat::Completions(pi_ai::types::OpenAICompletionsCompat {
+            supports_store: Some(false), supports_developer_role: Some(true), ..Default::default()
+        }));
+        use_supported_glm_instruction_role(&mut model);
+        let compat = model.compat_completions().unwrap();
+        assert_eq!(compat.supports_developer_role, Some(false));
+        assert_eq!(compat.supports_store, Some(false));
+        model.id = "other-model".into();
+        model.compat = None;
+        use_supported_glm_instruction_role(&mut model);
+        assert!(model.compat.is_none());
+    }
+
     #[test]
     fn source_prompt_names_the_actual_isolated_child() {
         let example = SOURCE_HANDOFF_INSTRUCTIONS.split('`').nth(1).unwrap();
@@ -761,6 +826,49 @@ mod gate_tests {
                 !model_headers_have_no_reserved_credential_names(&model),
                 "{reserved}"
             );
+        }
+    }
+
+    #[test]
+    fn semantic_category_requires_answer_and_native_receipts() {
+        let mut report = positive();
+        report["task"] = json!("animal-category");
+        report["semantic_nonce_match"] = json!(false);
+        report["semantic_answer_match"] = json!(true);
+        assert!(validation_case_passed(&report));
+        report["semantic_answer_match"] = json!(false);
+        assert!(!validation_case_passed(&report));
+        report["semantic_answer_match"] = json!(true);
+        report["receiver_phase"]["receiver"] = json!([]);
+        assert!(!validation_case_passed(&report));
+    }
+
+    #[test]
+    fn full_text_reference_is_explicit_and_cannot_pass_as_latent() {
+        let mut report = positive();
+        report["case"] = json!("full-text");
+        report["task"] = json!("animal-category");
+        report["semantic_answer_match"] = json!(true);
+        report["semantic_nonce_match"] = json!(false);
+        report["messages"] = json!([]);
+        report["receiver_phase"]["receiver"] = json!([]);
+        report["source_phase"]["source"] = Value::Null;
+        report["receiver_request_audit"][0]["source_facts_absent"] = json!(false);
+        assert!(validation_case_passed(&report));
+        report["case"] = json!("positive");
+        assert!(!validation_case_passed(&report));
+        report["case"] = json!("no-state");
+        assert!(!validation_case_passed(&report));
+        report["semantic_answer_match"] = json!(false);
+        report["receiver_request_audit"][0]["source_facts_absent"] = json!(true);
+        assert!(validation_case_passed(&report));
+    }
+
+    #[test]
+    fn category_question_does_not_reveal_any_private_animal() {
+        for (animal, class) in CATEGORY_FACTS {
+            assert!(!CATEGORY_QUESTION.contains(animal));
+            assert!(CATEGORY_QUESTION.contains(class));
         }
     }
 
