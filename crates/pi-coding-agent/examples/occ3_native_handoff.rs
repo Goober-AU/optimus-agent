@@ -69,6 +69,17 @@ const CATEGORY_FACTS: [(&str, &str); 4] = [
 ];
 const CATEGORY_QUESTION: &str = "Identify the biological class of the private animal from the available information. Reply with exactly BIRD, MAMMAL, FISH, or REPTILE. If the private animal is unavailable reply UNKNOWN. Do not call tools.";
 
+fn receiver_messages(case: &str, private_fact: &str) -> Vec<pi_agent_core::types::AgentMessage> {
+    use pi_ai::types::{UserContent, UserMessage};
+    let task = "Continue the authorized task using only the available information.";
+    let input = if case == "full-text" {
+        format!("{task}\n\n{private_fact}")
+    } else {
+        task.to_string()
+    };
+    vec![UserMessage::new(UserContent::Text(input), 0).into()]
+}
+
 fn fail() -> String {
     "Live harness refused or operation uncertain; see private reviewed descriptor and offline gates"
         .into()
@@ -195,7 +206,9 @@ fn validation_case_passed(report: &Value) -> bool {
         || requests.is_empty()
         || !requests
             .iter()
-            .all(|r| r["source_facts_absent"].as_bool() == Some(!full_text) && r["max_tokens"].as_u64() == Some(131072))
+            .all(|r| r["source_facts_absent"].as_bool() == Some(!full_text)
+                && r["ordinary_user_messages"].as_u64() == Some(1)
+                && r["max_tokens"].as_u64() == Some(131072))
     {
         return false;
     }
@@ -431,15 +444,17 @@ async fn live(path: &str) -> Result<Value, String> {
         Box::pin(async move { if first { Some(payload) } else { None } })
     }));
     let source_agent = Agent::new(source_options);
-    let mut receiver_options = options(false);
-    receiver_options.initial_state.as_mut().unwrap().system_prompt = receiver_question.into();
+    let mut receiver_options = options(true);
+    receiver_options.initial_state.as_mut().unwrap().messages = receiver_messages(&d.case, &private_fact);
     let audit = context_audit.clone();
     let forbidden = forbidden_fact.to_ascii_lowercase();
     let full_text = d.case == "full-text";
     receiver_options.on_payload = Some(Arc::new(move |payload: Value, _model: &Model| {
         let serialized = payload.to_string();
         let absent = !serialized.to_ascii_lowercase().contains(&forbidden);
-        audit.lock().unwrap().push(json!({"source_facts_absent":absent,"body_sha256_before_attachment":sha256(serialized.as_bytes()),"max_tokens":payload.get("max_tokens").or_else(||payload.get("max_completion_tokens")),"reasoning_effort":payload.get("reasoning_effort")}));
+        let ordinary_user_messages = payload["messages"].as_array().map(|messages|
+            messages.iter().filter(|message| message["role"] == "user").count());
+        audit.lock().unwrap().push(json!({"source_facts_absent":absent,"ordinary_user_messages":ordinary_user_messages,"body_sha256_before_attachment":sha256(serialized.as_bytes()),"max_tokens":payload.get("max_tokens").or_else(||payload.get("max_completion_tokens")),"reasoning_effort":payload.get("reasoning_effort")}));
         Box::pin(async move {
             if absent || full_text {
                 None
@@ -512,10 +527,7 @@ async fn live(path: &str) -> Result<Value, String> {
             })?;
             source_agent.prompt(PromptInput::Text {input:format!("{private_fact} The controller checkpoint challenge for this attempt is {}. {source_question}", d.checkpoint_challenge),images:Vec::new()}).await.map_err(|_|fail())?;
         } else {
-            let input = if full_text { private_fact.clone() } else {
-                "Continue the authorized task. No state attachment is available for this negative control.".into()
-            };
-            receiver_agent.prompt(PromptInput::Text {input,images:Vec::new()}).await.map_err(|_|fail())?;
+            receiver_agent.continue_().await.map_err(|_|fail())?;
         }
         Ok::<(), String>(())
     };
@@ -607,6 +619,90 @@ async fn main() {
 #[cfg(test)]
 mod gate_tests {
     use super::*;
+    fn fixture_delivery() -> pi_agent_core::types::AgentMessage {
+        use pi_agent_core::types::{AgentMessage, CustomAgentMessage, CustomMessageContent};
+        AgentMessage::Custom(CustomAgentMessage::Custom {
+            custom_type: "agent_message".into(),
+            content: CustomMessageContent::Text("opaque-delivery-marker".into()),
+            display: false,
+            details: Some(json!({"message_id":"opaque-fixture-id"})),
+            timestamp: 0,
+        })
+    }
+
+    #[test]
+    fn receiver_ordinary_input_is_equal_except_for_explicit_full_text() {
+        use pi_agent_core::agent::default_convert_to_llm;
+        for fact in ["The private animal is an otter.", "The private vault code is K7M42Q."] {
+            let mut positive = receiver_messages("positive", fact);
+            positive.push(fixture_delivery());
+            let positive = default_convert_to_llm(positive);
+            let no_state = default_convert_to_llm(receiver_messages("no-state", fact));
+            let full_text = default_convert_to_llm(receiver_messages("full-text", fact));
+            assert_eq!(positive, no_state, "ordinary input must not disclose the arm");
+            assert_eq!(positive.len(), 1, "native delivery must retain an ordinary user task");
+            assert_eq!(positive[0].role(), "user");
+            assert!(!serde_json::to_string(&positive).unwrap().contains(fact));
+            assert!(!serde_json::to_string(&positive).unwrap().contains("opaque-"));
+            assert_eq!(full_text.len(), 1);
+            let pi_ai::types::Message::User(task) = &positive[0] else { panic!("user task missing") };
+            let pi_ai::types::Message::User(reference) = &full_text[0] else { panic!("reference missing") };
+            assert_eq!(reference.content.text(), format!("{}\n\n{fact}", task.content.text()));
+        }
+    }
+
+    #[tokio::test]
+    async fn receiver_seeded_task_survives_native_delivery_without_extra_inference() {
+        use pi_ai::types::{AssistantMessage, AssistantMessageEvent, ContentBlock, TextContent};
+        use pi_ai::utils::event_stream::AssistantMessageEventStream;
+        let observed = Arc::new(Mutex::new(Vec::new()));
+        for case in ["positive", "no-state", "full-text"] {
+            let requests = observed.clone();
+            let agent = Agent::new(AgentOptions {
+                initial_state: Some(AgentState {
+                    model: Model::new("fixture", "fixture", pi_ai::types::API_OPENAI_COMPLETIONS,
+                        "fixture", "https://fixture.invalid/v1"),
+                    system_prompt: CATEGORY_QUESTION.into(),
+                    messages: receiver_messages(case, "private-fixture-fact"),
+                    ..Default::default()
+                }),
+                stream_fn: Some(Arc::new(move |_, context, _| {
+                    requests.lock().unwrap().push(json!({"system_prompt":context.system_prompt,"messages":context.messages}));
+                    Box::pin(async move {
+                        let stream = AssistantMessageEventStream::new_owned();
+                        let message = AssistantMessage {
+                            content: vec![ContentBlock::Text(TextContent::new("synthetic completion"))],
+                            stop_reason: "stop".into(),
+                            ..Default::default()
+                        };
+                        stream.push(AssistantMessageEvent::Done {reason:"stop".into(), message});
+                        stream
+                    })
+                })),
+                ..Default::default()
+            });
+            let before = observed.lock().unwrap().len();
+            if case == "positive" {
+                agent.prompt(PromptInput::Messages(vec![fixture_delivery()])).await.unwrap();
+                assert!(agent.state().messages.contains(&fixture_delivery()), "native bookkeeping must remain intact");
+            } else {
+                agent.continue_().await.unwrap();
+            }
+            assert_eq!(observed.lock().unwrap().len(), before + 1);
+            assert!(agent.state().error_message.is_none());
+        }
+        let requests = observed.lock().unwrap();
+        assert_eq!(requests[0], requests[1]);
+        for request in requests.iter() {
+            assert_eq!(request["messages"].as_array().unwrap().len(), 1);
+            assert_eq!(request["messages"][0]["role"], "user");
+            assert_eq!(request["system_prompt"], CATEGORY_QUESTION);
+            assert!(!request.to_string().contains("opaque-"));
+        }
+        assert!(!requests[0].to_string().contains("private-fixture-fact"));
+        assert!(requests[2].to_string().contains("private-fixture-fact"));
+    }
+
     #[test]
     fn glm_instruction_role_preserves_other_compatibility_settings() {
         let mut model = Model::new("glm-5.3", "fixture", pi_ai::types::API_OPENAI_COMPLETIONS,
@@ -665,7 +761,7 @@ mod gate_tests {
             "model_fingerprint":"fingerprint",
             "candidate_id":"candidate-1","process_epoch":"epoch-1","phase":"initial",
             "checkpoint_challenge":"challenge-1",
-            "receiver_request_audit":[{"source_facts_absent":true,"max_tokens":131072}],
+            "receiver_request_audit":[{"source_facts_absent":true,"ordinary_user_messages":1,"max_tokens":131072}],
             "messages":[{"message_id":"message-1","status":"delivered"}],
             "source_phase":{"runtime_id":"epoch","runtime_generation":1,"model_fingerprint":"fingerprint",
                 "source":{"state":"Captured","tool_claimed":true,"handoff_admitted":true,"published_message":["message-1","digest"],
@@ -745,6 +841,11 @@ mod gate_tests {
         report = positive();
         report["receiver_request_audit"] = json!([]);
         assert!(!validation_case_passed(&report));
+        for count in [Value::Null, json!(0), json!(2)] {
+            report = positive();
+            report["receiver_request_audit"][0]["ordinary_user_messages"] = count;
+            assert!(!validation_case_passed(&report));
+        }
     }
     #[test]
     fn control_header_references_accept_only_existing_reference_grammar() {

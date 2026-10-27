@@ -44,26 +44,48 @@ injection hook incorrectly tried to apply its prefill shape check again.
 
 A pinned-source regression reproduced the exact `LatentError(profile)`. The hook
 now excludes target verification, preserving the existing prefix KV and injection
-receipt. The full extension suite and workspace checks pass. This additional fix
-has **not yet been retested on the GPU**. The controller restored the original
-server, with health, chat, tools and authentication checks passing. No semantic
-success or completed receiver consumption is claimed.
+receipt. The full extension suite and workspace checks passed. This window
+restored the original server with health, chat, tools and authentication checks
+passing. The next window below retested the fix on the GPU.
+
+## Latest GPU diagnostics and receiver-input correction
+
+Window `occ3-live-20261027t093614z` reached native receiver consumption after
+capture on all eight ranks. After correcting the GLM instruction role, four
+category diagnostics produced one correct native answer, two UNKNOWN answers,
+and one interrupted request with an `Uncertain` lease. That is 1/4 attempted
+and 1/3 completed, versus full-text 4/4 and no-state UNKNOWN 4/4. These are
+saved diagnostics, not a successful controller checkpoint or reliable semantic proof.
+Evidence is under `C:/Users/openclawuser/occ3-latent-validation/evidence/`
+`window-20261027t093614z/system-category-*`.
+
+The probe had a further confirmed comparability defect: its default converter
+removed the native Custom delivery record, leaving no ordinary receiver user
+turn, while controls had one. The probe now seeds the same neutral user task
+for positive and no-state; only full-text adds the fact. Native authorization
+and Custom bookkeeping are unchanged. Controls continue from the seeded user
+turn without extra inference. The receipt gate requires exactly one ordinary
+user message. Two regressions reproduced the mismatch before the correction;
+the corrected probe and existing fixtures pass 25 tests. This correction has
+not been tested on the GPU, and earlier diagnostic results are not reclassified.
 
 ## Offline regression results
 
 - `bash scripts/check.sh`: passed, including locked workspace/all-target Cargo check,
   293 packaging tests (11 skipped), and native resource layout.
 - Full extension suite: 1,925 passed, 24 skipped, 77 subtests passed.
-- Native handoff driver and source/handoff integration fixtures: 19 passed.
+- Native handoff driver and source/handoff integration fixtures: 25 passed after
+  receiver-input parity correction (two new regressions failed before correction).
 - Test web dependencies match the DGX: FastAPI 0.142.2, Starlette 1.7.0,
   Pydantic 2.13.5, httpx 0.28.1. Existing Rust warnings and the dependency's
   httpx deprecation remain; no new implementation warning was introduced.
 
 ## Proof boundary
 
-Captured GPU state and successful publication do not prove semantic communication.
-Receiver consumption, fresh-secret recovery, token-only controls, likelihood measures,
-and comparative benchmarks remain unproven. No wider benchmark was started.
+GPU capture, publication and completed receiver consumption have been observed.
+They do not prove semantic hidden-state communication. Reliable fresh-secret recovery,
+token-only controls, likelihood measures and comparative benchmarks remain unproven.
+No wider benchmark was started. The receiver-input correction has offline proof only.
 
 Offline numerical research also identified a token-reference confound in thin
 StateBridge alignment: fitting the same low-rank rows can reproduce reference token
@@ -74,5 +96,6 @@ The [Trinity/C2C source review](TRINITY-C2C-ANALYSIS.md) is static evidence, not
 of GLM-5.3 KV transfer. A native KV method has not been implemented.
 
 The work remains surgical: reuse the native bridge, state machine, extension,
-controller and original model. No coding subagents are currently running. Further
-live work uses the user's standing campaign authorization and the existing controller.
+controller and original model. No spent descriptor is replayed. The continuation
+issued no server-control commands; the previous session's recovery is observed
+read-only. Any later live validation needs a fresh supervised window.
