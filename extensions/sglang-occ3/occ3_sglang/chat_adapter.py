@@ -444,8 +444,9 @@ class ChatAttachmentAdapter:
         try:
             source = type(attachment) is CaptureIntent
             readiness = self.backend.readiness()
-            if type(readiness) is not BackendReadiness or not (
-                    readiness.source_ready if source else readiness.receiver_ready):
+            if (type(readiness) is not BackendReadiness or not (
+                    readiness.source_ready if source else readiness.receiver_ready)) and not callable(
+                        getattr(self.backend, "refresh_readiness", None)):
                 raise AttachmentError("unsupported_attachment", 503)
             if source:
                 encodings = raw_request.headers.getlist("accept-encoding")
@@ -548,7 +549,19 @@ class ChatAttachmentAdapter:
             raise AttachmentError("deadline_unavailable", 409)
         ctx.identity = identity
         ctx.deadline = min(ctx.deadline, identity.deadline_monotonic)
-        if type(ctx.attachment) is CaptureIntent:
+        source = type(ctx.attachment) is CaptureIntent
+        readiness = self.backend.readiness()
+        if type(readiness) is not BackendReadiness or not (
+                readiness.source_ready if source else readiness.receiver_ready):
+            # Refresh expired health only after authenticating this request.
+            await self.backend.refresh_readiness()
+            if ctx.cancel_requested:
+                raise AttachmentError("client_disconnected", 499)
+            readiness = self.backend.readiness()
+            if type(readiness) is not BackendReadiness or not (
+                    readiness.source_ready if source else readiness.receiver_ready):
+                raise AttachmentError("unsupported_attachment", 503)
+        if source:
             ctx.native_rid = uuid.uuid4().hex
             self._fence(ctx)
             enrollment = await self.backend.enroll_source(
