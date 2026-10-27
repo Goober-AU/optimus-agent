@@ -43,7 +43,7 @@ def test_prefix_equal_to_reference_embeddings_scores_cosine_one():
 
 
 def test_production_map_is_nearly_insensitive_to_the_hidden_states():
-    """Documents the degeneracy at small scale; see MATHEMATICAL-DEGENERACY.md."""
+    """Documents the degeneracy at small scale; see PRODUCTION-SCALE-DEGENERACY.md."""
     from occ3_sglang.align_diagnostics import alignment_diagnostics
     h, e = _fixture(n=32, d=256, seed=5)
     norm = float(e.norm(dim=-1).mean())
