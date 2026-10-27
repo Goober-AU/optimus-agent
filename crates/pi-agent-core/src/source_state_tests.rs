@@ -305,6 +305,16 @@ async fn native_source_provenance_callback_failure_prevents_tools_and_retires_le
     assert_eq!(source.state(), SourceCaptureState::Retired);
     assert_eq!(requests.lock().unwrap().len(), 1);
     assert!(agent.state().error_message.unwrap().contains("provenance"));
+    // TS14 F5 regression, red-first: a settlement refusal must surface the
+    // completed callback's bounded reason so the live sub-cause (which check
+    // rejected the captured turn) is diagnosable from the harness evidence
+    // alone. The public provider code stays the fixed generic
+    // occ3_source_uncertain.
+    assert!(agent
+        .state()
+        .error_message
+        .unwrap()
+        .contains("ambiguous handoff fixture"));
     server.abort();
 }
 #[tokio::test]
@@ -351,6 +361,15 @@ async fn native_source_ignored_by_stream_cannot_run_handoff_tools() {
     assert_eq!(calls.load(Ordering::SeqCst), 0);
     assert_eq!(source.state(), SourceCaptureState::Cancelled);
     assert!(agent.state().error_message.unwrap().contains("provenance"));
+    // TS14 F5 regression, red-first: the pre-callback branch must name the
+    // lease state that blocked settlement. The fixture stream never submits
+    // the armed lease, so settlement sees Prepared (the guard cancels it only
+    // after the turn ends), and the refusal must say so.
+    assert!(agent
+        .state()
+        .error_message
+        .unwrap()
+        .contains("occ3_capture_state_prepared"));
 }
 #[tokio::test]
 async fn native_source_cancel_after_resolution_never_dispatches() {

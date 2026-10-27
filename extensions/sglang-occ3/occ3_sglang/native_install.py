@@ -8,6 +8,8 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
+import math
+import os
 import secrets
 import threading
 import time
@@ -25,6 +27,38 @@ class InstallationError(Exception):
     def __init__(self, code):
         self.code = code
         super().__init__(code)
+
+
+# Per-boot native turn admission window. Armed capture turns buffer their whole
+# response server-side, so a thinking-heavy armed turn can legitimately run
+# past the 300s default admission window (live TS13 evidence: the armed decode
+# died with deadline_exceeded/504 at ~301s mid-generation while the descriptor
+# legitimately declared deadline_seconds=540). Trusted deployments serving
+# armed turns opt in per-boot with OCC3_MAX_TURN_SECONDS; the default stays
+# 300s for every other boot, explicit caller profiles are never overridden,
+# and a declared-but-invalid value fails closed with a fixed refusal code.
+_MAX_TURN_DEFAULT_SECONDS = 300.0
+_MAX_TURN_BOUNDS_SECONDS = (60.0, 1800.0)
+
+
+def _max_turn_seconds_from_env():
+    """Read the per-boot turn admission window. Trusted bootstrap only.
+
+    Absent -> default. Unparseable or outside [60, 1800] -> InstallationError
+    so a mistyped declaration can never silently serve the default window
+    (or an unbounded one) to armed turns.
+    """
+    raw = os.environ.get("OCC3_MAX_TURN_SECONDS")
+    if raw is None:
+        return _MAX_TURN_DEFAULT_SECONDS
+    try:
+        value = float(raw)
+    except ValueError:
+        raise InstallationError("max_turn_seconds_invalid") from None
+    if not (math.isfinite(value)
+            and _MAX_TURN_BOUNDS_SECONDS[0] <= value <= _MAX_TURN_BOUNDS_SECONDS[1]):
+        raise InstallationError("max_turn_seconds_invalid") from None
+    return value
 
 
 @dataclass(repr=False)
@@ -860,7 +894,10 @@ async def install_native_runtime(app, tokenizer_manager, *, experimental_opt_in=
             raise InstallationError("control_client_occupied")
         _check_route_conflicts(app)
         from .chat_adapter import BufferProfile
-        profile = BufferProfile() if buffer_profile is None else buffer_profile
+        # Only the default profile takes the per-boot turn window; a trusted
+        # caller's explicit profile passes through untouched.
+        profile = (BufferProfile(max_turn_seconds=_max_turn_seconds_from_env())
+                   if buffer_profile is None else buffer_profile)
         if type(profile) is not BufferProfile or profile.max_buffer_bytes > 4194304:
             raise InstallationError("unsupported_buffer_profile")
         snapshot = _snapshot_precommit(app, tokenizer_manager, key)

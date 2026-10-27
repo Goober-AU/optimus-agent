@@ -3104,6 +3104,12 @@ async fn live_phase(path: &str) -> Result<Value, String> {
         return Err("harness_binary_sha256_mismatch".into());
     }
     let challenge = read_phase_challenge(&journal, &d.phase)?;
+    // The armed positive case buffers the whole source response server-side
+    // (the capture span settles at completion), so zero client events for the
+    // full server-bounded turn are healthy, not a stall. Raise the stream
+    // watchdog floors to this descriptor's own absolute deadline; the server
+    // deadline still bounds the turn and the watchdog maxima still clamp.
+    let _ = pi_agent_core::stream_watchdog::raise_env_for_armed_turn(d.deadline_seconds);
     // Resolve credentials through the existing reference grammar only,
     // before any enroll/inference/HTTP effect.
     let control_headers = resolve_control_headers(&d.control_header_references)?;

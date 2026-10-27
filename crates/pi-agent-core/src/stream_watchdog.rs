@@ -47,6 +47,57 @@ pub const DEFAULT_STREAM_DEADLINE_MS: u64 = 900_000;
 pub const MIN_STREAM_DEADLINE_MS: u64 = 60_000;
 pub const MAX_STREAM_DEADLINE_MS: u64 = 7_200_000;
 
+/// Settlement grace added on top of a server-bounded silent turn: journal
+/// flush, span settlement and first-event emission after the buffered turn.
+pub const ARMED_TURN_EVENT_GRACE_MS: u64 = 30_000;
+
+/// Bounded silence floors for a stream that is silent by design until a
+/// server-side absolute deadline.
+///
+/// Native armed capture turns buffer the whole response server-side (the
+/// capture span settles at completion; see the occ3 chat adapter's
+/// `whole_completed_response_tail_v1`), so a healthy turn emits zero client
+/// events for its entire length. The descriptor's `deadline_seconds` is the
+/// absolute server bound on that turn: the server produces either the
+/// buffered events or a terminal error by then. The client event gap must
+/// not fire before that bound, and it stays clamped to this module's maxima.
+pub fn armed_stream_bounds(deadline_seconds: u64) -> (u64, u64) {
+    let turn_ms = deadline_seconds.saturating_mul(1000);
+    let event_gap = (turn_ms + ARMED_TURN_EVENT_GRACE_MS)
+        .clamp(MIN_STREAM_EVENT_GAP_MS, MAX_STREAM_EVENT_GAP_MS);
+    // The whole stream phase spans the armed source turn, the handoff and
+    // the receiver turn: two bounded turns plus settlement grace.
+    let stream_deadline = (turn_ms.saturating_mul(2) + ARMED_TURN_EVENT_GRACE_MS)
+        .clamp(MIN_STREAM_DEADLINE_MS, MAX_STREAM_DEADLINE_MS);
+    (event_gap, stream_deadline)
+}
+
+/// Raises the process watchdog env knobs to at least the armed-turn bounds.
+///
+/// Never lowers an explicit operator setting: a value at or above the bound
+/// is preserved, and `0` (explicitly disabled) stays disabled. Unset,
+/// unparseable or too-short values are raised to the required bound so a
+/// healthy silent armed turn can no longer be aborted by the client
+/// watchdog. Returns the effective `(event_gap_ms, stream_deadline_ms)`.
+pub fn raise_env_for_armed_turn(deadline_seconds: u64) -> (u64, u64) {
+    let (required_gap, required_deadline) = armed_stream_bounds(deadline_seconds);
+    let raise = |var: &str, required: u64| -> u64 {
+        match std::env::var(var).ok().and_then(|raw| raw.trim().parse::<u64>().ok()) {
+            // Explicitly disabled or already at least the required bound.
+            Some(0) => 0,
+            Some(value) if value >= required => value,
+            // Unset, unparseable, or shorter than the armed turn needs.
+            _ => {
+                let _ = std::env::set_var(var, required.to_string());
+                required
+            }
+        }
+    };
+    let event_gap = raise(STREAM_EVENT_GAP_MS_ENV, required_gap);
+    let stream_deadline = raise(STREAM_DEADLINE_MS_ENV, required_deadline);
+    (event_gap, stream_deadline)
+}
+
 const LOG_COMPONENT: &str = "agent-core.stream-watchdog";
 
 /// Which watchdog limit expired for one attempt.
@@ -461,6 +512,12 @@ pub(crate) mod testing {
             std::env::set_var(name, value);
             EnvVarGuard { name, previous }
         }
+
+        pub fn remove(name: &'static str) -> Self {
+            let previous = std::env::var_os(name);
+            std::env::remove_var(name);
+            EnvVarGuard { name, previous }
+        }
     }
 
     impl Drop for EnvVarGuard {
@@ -477,6 +534,57 @@ pub(crate) mod testing {
 mod tests {
     use super::testing::{EnvVarGuard, ENV_TESTS};
     use super::*;
+
+    #[test]
+    fn armed_stream_bounds_track_the_server_deadline_and_clamp() {
+        // TS12 regression: an armed turn with a 540 s server deadline needs
+        // an event gap above the old 120 s default and a stream deadline
+        // covering two bounded turns plus settlement grace.
+        let (gap, deadline) = armed_stream_bounds(540);
+        assert_eq!(gap, 570_000);
+        assert_eq!(deadline, 1_110_000);
+        // Very short deadlines still respect the minima.
+        let (gap, _) = armed_stream_bounds(0);
+        assert_eq!(gap, MIN_STREAM_EVENT_GAP_MS.max(ARMED_TURN_EVENT_GRACE_MS));
+        // Very long deadlines clamp to the watchdog maxima, never disable.
+        let (gap, deadline) = armed_stream_bounds(3_600);
+        assert_eq!(gap, MAX_STREAM_EVENT_GAP_MS);
+        assert_eq!(deadline, MAX_STREAM_DEADLINE_MS);
+    }
+
+    #[test]
+    fn raise_env_for_armed_turn_never_lowers_or_reenables_operator_settings() {
+        let _env_lock = ENV_TESTS.lock().unwrap();
+        let gap_guard = EnvVarGuard::remove(STREAM_EVENT_GAP_MS_ENV);
+        let deadline_guard = EnvVarGuard::remove(STREAM_DEADLINE_MS_ENV);
+        // Unset env: both knobs are raised to the armed bounds.
+        assert_eq!(raise_env_for_armed_turn(540), (570_000, 1_110_000));
+        assert_eq!(
+            StreamWatchdogConfig::from_env(),
+            StreamWatchdogConfig::from_env_values(Some("570000"), Some("1110000"))
+        );
+        // An explicit longer operator setting wins and is preserved.
+        let gap_longer = EnvVarGuard::set(STREAM_EVENT_GAP_MS_ENV, "600000".to_string());
+        let deadline_longer = EnvVarGuard::set(STREAM_DEADLINE_MS_ENV, "7200000".to_string());
+        assert_eq!(raise_env_for_armed_turn(540), (600_000, 7_200_000));
+        drop(gap_longer);
+        drop(deadline_longer);
+        // An explicit `0` (disabled) stays disabled.
+        let gap_off = EnvVarGuard::set(STREAM_EVENT_GAP_MS_ENV, "0".to_string());
+        assert_eq!(raise_env_for_armed_turn(540).0, 0);
+        drop(gap_off);
+        // A too-short setting (the TS12 failure mode: the 120 s default
+        // below a 540 s armed turn) is raised to the required bound.
+        let gap_short = EnvVarGuard::set(STREAM_EVENT_GAP_MS_ENV, "120000".to_string());
+        let deadline_short = EnvVarGuard::set(STREAM_DEADLINE_MS_ENV, "900000".to_string());
+        assert_eq!(raise_env_for_armed_turn(540), (570_000, 1_110_000));
+        assert_eq!(
+            StreamWatchdogConfig::from_env(),
+            StreamWatchdogConfig::from_env_values(Some("570000"), Some("1110000"))
+        );
+        drop(gap_short);
+        drop(deadline_short);
+    }
 
     #[test]
     fn watchdog_defaults_apply_when_the_environment_is_unset() {

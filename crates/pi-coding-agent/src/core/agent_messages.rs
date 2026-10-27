@@ -2031,6 +2031,19 @@ impl AuthorizedNativeHandoff {
         requested_relationship: &str,
     ) -> Result<Self, String> {
         let relationship = assert_agent_family_reach(current, target)?;
+        // Native handoff is stricter than plain agent messaging: plain
+        // messaging treats any two parentless roots as siblings, but an
+        // unrelated top-level session must stay outside the native family
+        // reach. Siblings here share an actual parent edge.
+        if current.depth == 0.0
+            && target.depth == 0.0
+            && current.parent_session_path.is_none()
+            && target.parent_session_path.is_none()
+            && current.parent_session_id.is_none()
+            && target.parent_session_id.is_none()
+        {
+            return Err(AGENT_FAMILY_REACH_ERROR.to_string());
+        }
         if current.id != from.session_id || target.id != to.session_id
             || relationship != requested_relationship || from.session_id == to.session_id
         { return Err("Native handoff family binding rejected".into()); }

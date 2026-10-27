@@ -261,6 +261,13 @@ async fn live(path: &str) -> Result<Value, String> {
         return Err(fail());
     }
     std::fs::create_dir(&profile).map_err(|_| fail())?;
+    // The armed source turn buffers the whole response server-side (the
+    // capture span settles at completion), so zero client events for the
+    // full server-bounded turn are healthy, not a stall. Raise the stream
+    // watchdog floors to this descriptor's own absolute deadline; the
+    // server deadline still bounds the turn and the watchdog maxima still
+    // clamp. Explicit longer operator settings are preserved.
+    let _ = pi_agent_core::stream_watchdog::raise_env_for_armed_turn(d.deadline_seconds);
     // No settings/models/auth file is written. This new folder is evidence only.
     // Control header references resolve first: an unset, empty, unknown or
     // malformed reference fails before any enroll, inference or HTTP request.

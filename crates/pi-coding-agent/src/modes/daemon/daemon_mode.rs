@@ -41,6 +41,20 @@ mod daemon_parity_tests;
 #[path = "daemon_snapshot_backlog_tests.rs"]
 mod daemon_snapshot_backlog_tests;
 
+// GAP-2 (receiver-tests-audit.md section 7 item 2): the production
+// DaemonAgentMessageController OCC-3 native receiver wiring.
+#[cfg(test)]
+#[path = "daemon_occ3_native_wiring_tests.rs"]
+mod daemon_occ3_native_wiring_tests;
+
+// GAP-2 follow-up (daemon_occ3_native_wiring_gap_tests.rs): the wiring
+// paths the first file leaves uncovered - an invalidated receiver permit
+// between authorize and send, and the pause gate read during the
+// authorize future.
+#[cfg(test)]
+#[path = "daemon_occ3_native_wiring_gap_tests.rs"]
+mod daemon_occ3_native_wiring_gap_tests;
+
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};

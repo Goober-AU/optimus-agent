@@ -1180,19 +1180,31 @@ async fn finalize_source_capture(
 ) -> AssistantMessage {
     let Some(lease) = lease else { return message; };
     if matches!(message.stop_reason.as_str(), pi_ai::types::STOP_REASON_ERROR | pi_ai::types::STOP_REASON_ABORTED) { return message; }
+    // TS14 F5: every settlement refusal must name the failing check with a
+    // bounded, operator-side reason so live refusals are diagnosable offline.
+    // The public provider code stays the fixed generic occ3_source_uncertain.
+    let mut reason: Option<String> = None;
     let valid = if lease.state() == SourceCaptureState::Captured {
         if let Some(hooks) = &config.source_capture {
             let callback = hooks.completed.clone();
             let completion = SourceCaptureCompletion { model: config.model.clone(), lease: lease.clone(), assistant_message: message.clone() };
-            maybe_abortable(async move { callback(completion).await }, signal.cloned()).await.is_ok()
-                && lease.state() == SourceCaptureState::Captured
-        } else { false }
-    } else { false };
+            let outcome = maybe_abortable(async move { callback(completion).await }, signal.cloned()).await;
+            if let Err(error) = &outcome {
+                reason = Some(error.to_string().chars().take(160).collect());
+            }
+            outcome.is_ok() && lease.state() == SourceCaptureState::Captured
+        } else { reason = Some("occ3_capture_hooks_missing".into()); false }
+    } else {
+        reason = Some(format!("occ3_capture_state_{:?}", lease.state()).to_lowercase());
+        false
+    };
     if !valid {
+        let reason = reason.unwrap_or_else(|| "occ3_capture_unverified".to_string());
         message.stop_reason = pi_ai::types::STOP_REASON_ERROR.into();
-        message.error_message = Some("Native source capture/provenance did not complete; handoff and replay are forbidden.".into());
+        message.error_message = Some(format!(
+            "Native source capture/provenance did not complete; handoff and replay are forbidden. [{reason}]"));
         let failure = pi_ai::utils::stream_failure::StreamFailureError::new(
-            "Native source capture/provenance did not complete; automatic replay is disabled.",
+            &format!("Native source capture/provenance did not complete; automatic replay is disabled. [{reason}]"),
             pi_ai::utils::stream_failure::StreamFailureInfo {
                 kind: pi_ai::utils::stream_failure::KIND_REQUEST_INTERRUPTED.into(),
                 provider_error_type: Some("occ3_source_uncertain".into()), ..Default::default()
