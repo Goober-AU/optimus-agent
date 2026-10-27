@@ -130,6 +130,12 @@ class _StubTorch:
             return False
 
 
+_STUBBED_MODULES = ("torch", "sglang", "sglang.srt", "sglang.srt.entrypoints",
+                    "sglang.srt.entrypoints.http_server", "sglang.srt.managers",
+                    "sglang.srt.managers.io_struct", "sglang.srt.managers.embed_types",
+                    "sglang.srt.plugins", "sglang.srt.plugins.hook_registry")
+
+
 def _install_stubs(http_server_module: StubHttpServer, hook_registry: StubHookRegistry):
     torch_stub = types.ModuleType("torch")
     torch_stub.float32 = _StubTorch.float32
@@ -178,10 +184,25 @@ def _install_stubs(http_server_module: StubHttpServer, hook_registry: StubHookRe
 
 @pytest.fixture
 def stub_http_server():
+    """Install the SGLang/torch stubs for one test, then restore sys.modules.
+
+    The stubs replace real modules by assignment, so without a restore the
+    session keeps a stub `torch` after the first test that used this fixture.
+    Any later test that touches the real torch then fails with an
+    AttributeError that depends only on test order. Save and restore exactly
+    the modules _install_stubs() overwrites.
+    """
+    saved = {name: module for name, module in sys.modules.items()
+             if name in _STUBBED_MODULES or name.startswith("sglang.")}
     server = StubHttpServer()
     registry = StubHookRegistry()
     _install_stubs(server, registry)
-    return server
+    try:
+        yield server
+    finally:
+        for name in [n for n in sys.modules if n in _STUBBED_MODULES or n.startswith("sglang.")]:
+            sys.modules.pop(name)
+        sys.modules.update(saved)
 
 
 @pytest.fixture

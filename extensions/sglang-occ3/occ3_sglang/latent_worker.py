@@ -18,6 +18,7 @@ from .latent_registry import LatentRegistry
 from .latent_types import (LatentError, UniformRequestCancellation, Publication, RequestSlice, RuntimeProfile, require_members,
                            SessionEnrollment, decode_descriptor, require,
                            validate_control_payload)
+from .prefix_layout import prefix_span
 from .statebridge import (align_hidden_sequence, anchor_tiled, mean_embedding_norm,
                           shard_ranges, workspace_bound)
 
@@ -446,10 +447,18 @@ def admit_request(scheduler, req, value):
         new_ids = original
         if type(descriptor) is ConsumeWorkerDescriptor:
             count = descriptor.expected_prefix_tokens
-            new_ids = array(original.typecode, [0] * count) + original if isinstance(original, array) else [0] * count + list(original)
+            at = descriptor.prefix_offset
+            require(0 <= at <= len(original), "profile")
+            holes = [0] * count
+            if isinstance(original, array):
+                new_ids = original[:at] + array(original.typecode, holes) + original[at:]
+            else:
+                new_ids = list(original[:at]) + holes + list(original[at:])
         prepared.update(descriptor=descriptor, record=record, new_ids=new_ids)
         return {"descriptor": digest(asdict(descriptor)), "tokens": digest(list(original)),
-                "state": record.state, "generation": record.state_generation}
+                "state": record.state, "generation": record.state_generation,
+                "prefix_layout": "marker" if descriptor.prefix_offset else "prepend",
+                "prefix_offset": int(descriptor.prefix_offset)}
     runtime.preflight("admit", validate)
     descriptor, record, new_ids = prepared["descriptor"], prepared["record"], prepared["new_ids"]
     req.occ3_worker_descriptor, req.occ3_force_eager = descriptor, True
@@ -578,6 +587,14 @@ def prefix_overlap(prefix_tokens, prefix_len, extend_len, shift=0):
     return max(0, min(extend_len, prefix_tokens - prefix_len - shift))
 
 
+def _span(item, extend_len, shift=0):
+    """(local_start, count, prefix_start) for this chunk under the admitted layout."""
+    descriptor = item.descriptor
+    require(0 <= descriptor.prefix_offset <= 2**20, "lineage")
+    return prefix_span(descriptor.expected_prefix_tokens, descriptor.prefix_offset,
+                       item.prefix_len, extend_len, shift)
+
+
 def _effective(model_runner, forward_batch, shift):
     """Draft-only fresh native embedding replacement, no clone or long-lived ref."""
     context = _context(forward_batch)
@@ -592,8 +609,11 @@ def _effective(model_runner, forward_batch, shift):
         require(record.prefix.is_cuda and record.prefix.shape ==
                 (item.descriptor.expected_prefix_tokens, runtime.profile.hidden_dim), "profile")
         prepared["record"] = record
-        prepared["count"] = prefix_overlap(record.prefix.shape[0], item.prefix_len, item.extend_len, shift)
-        return {"start": item.prefix_len + shift, "length": item.extend_len, "count": prepared["count"],
+        local, count, source = _span(item, item.extend_len, shift)
+        require(local >= 0 and source >= 0 and count <= record.prefix.shape[0], "lineage")
+        prepared.update(count=count, local=local, source=source)
+        return {"start": local, "length": item.extend_len, "count": count,
+                "offset": item.descriptor.prefix_offset,
                 "descriptor": digest(asdict(item.descriptor))}
     runtime.preflight("draft_embedding_prepare", validate)
     record, count = prepared["record"], prepared["count"]
@@ -607,8 +627,8 @@ def _effective(model_runner, forward_batch, shift):
     def replace():
         require(values.is_cuda and values.shape == (item.extend_len, runtime.profile.hidden_dim)
                 and values.dtype == record.prefix.dtype, "profile")
-        start = item.prefix_len + shift
-        values[:count].copy_(record.prefix[start:start + count])
+        local, source = prepared["local"], prepared["source"]
+        values[local:local + count].copy_(record.prefix[source:source + count])
         values.record_stream(runtime.torch.cuda.current_stream(runtime.device))
         record.events.append(runtime.event())
         return {"count": count, "dtype": str(values.dtype)}
@@ -644,22 +664,24 @@ def inject_target_embeddings(forward_batch, hidden_states):
         require(not get_attn_tp_context().input_scattered, "profile")
         record = runtime.resolve(item.descriptor)
         _begin_gpu(runtime, record)
-        count = prefix_overlap(item.descriptor.expected_prefix_tokens, item.prefix_len, item.extend_len)
+        local, count, source = _span(item, item.extend_len)
+        require(0 <= local and 0 <= source and count <= record.prefix.shape[0], "lineage")
         require(hidden_states.is_cuda and hidden_states.shape == (item.extend_len, runtime.profile.hidden_dim)
                 and hidden_states.dtype == record.prefix.dtype, "profile")
         if count:
             for event in record.events:
                 runtime.torch.cuda.current_stream(runtime.device).wait_event(event)
-            hidden_states[:count].copy_(record.prefix[item.prefix_len:item.prefix_len + count])
+            hidden_states[local:local + count].copy_(record.prefix[source:source + count])
             hidden_states.record_stream(runtime.torch.cuda.current_stream(runtime.device))
             record.events.append(runtime.event())
             # Two integers only. Keeping hidden_states here would pin a 384MiB
             # native 32768-row input across every decoder layer and TP rank.
-            prepared["span"] = (item.prefix_len, count)
+            prepared["span"] = (item.prefix_len + local, count)
         else:
             prepared["span"] = None
         _end_gpu(runtime, record)
-        return {"count": count, "start": item.prefix_len, "dtype": str(hidden_states.dtype)}
+        return {"count": count, "start": local, "offset": item.descriptor.prefix_offset,
+                "dtype": str(hidden_states.dtype)}
     runtime.preflight("target_embedding_inplace", validate_and_copy)
     forward_batch.occ3_effective_embeds = prepared["span"]
 
@@ -685,7 +707,9 @@ def mark_injection(forward_batch):
     record = runtime.resolve(item.descriptor)
     require(type(span) is tuple and len(span) == 2 and all(type(x) is int for x in span), "state")
     start, count = span
-    require(start == item.prefix_len and count == prefix_overlap(record.prefix.shape[0], start, item.extend_len), "lineage")
+    local, expected, source = _span(item, item.extend_len)
+    require(start == item.prefix_len + local and count == expected, "lineage")
+    require(start == max(item.prefix_len, item.descriptor.prefix_offset), "lineage")
     record.injected_positions.update(range(start, start + count))
     record.events.append(runtime.event())
     forward_batch.occ3_effective_embeds = None
@@ -765,7 +789,10 @@ def commit_result(scheduler, req, result, request_index, output_start, output_en
     elif terminal:
         runtime.preflight("terminal_fence", lambda: runtime.fence())
         metadata = {"native_rid": req.rid, "injection_commit_id": record.injection_commit_id,
-                    "injected_prefix_count": len(record.injected_positions), "ready_ranks": runtime.profile.expected_ranks,
+                    "injected_prefix_count": len(record.injected_positions),
+                    "prefix_offset": descriptor.prefix_offset,
+                    "prefix_layout": "marker" if descriptor.prefix_offset else "prepend",
+                    "ready_ranks": runtime.profile.expected_ranks,
                     "expected_ranks": runtime.profile.expected_ranks, "num_retractions": 0,
                     "private_cache_namespace": True, "gpu_resident": bool(record.prefix.is_cuda), "completed": True}
         runtime.consensus(metadata)

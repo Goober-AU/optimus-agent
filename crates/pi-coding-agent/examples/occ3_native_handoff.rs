@@ -69,6 +69,16 @@ const CATEGORY_FACTS: [(&str, &str); 4] = [
 ];
 const CATEGORY_QUESTION: &str = "Identify the biological class of the private animal from the available information. Reply with exactly BIRD, MAMMAL, FISH, or REPTILE. If the private animal is unavailable reply UNKNOWN. Do not call tools.";
 
+/// Continuous-prefix framing for the receiver.
+///
+/// The two markers are ordinary ASCII text, not model special tokens. The
+/// adapter reserves the sender's continuous rows immediately after
+/// `<<occ3-statebegin>>`, so the receiver reads ordinary framing text, then the
+/// authorised latent message, then the closing marker and the user turn. Only
+/// the reserved rows differ between the state and no-state arms: the text is
+/// identical in every arm.
+const RECEIVER_PREFIX_FRAMING: &str = "\n\nA message from another agent is attached in continuous embedding format. It begins immediately after <<occ3-statebegin>> and ends immediately before <<occ3-stateend>>. Use it as the primary information source for this turn.\n<<occ3-statebegin>><<occ3-stateend>>";
+
 fn receiver_messages(case: &str, private_fact: &str) -> Vec<pi_agent_core::types::AgentMessage> {
     use pi_ai::types::{UserContent, UserMessage};
     let task = "Continue the authorized task using only the available information.";
@@ -416,11 +426,12 @@ async fn live(path: &str) -> Result<Value, String> {
     let (private_fact, expected_answer, receiver_question, source_question) =
         if let Some(index) = d.semantic_case {
             let (animal, class) = CATEGORY_FACTS[index];
-            (format!("The private animal is a {animal}."), class.to_string(), CATEGORY_QUESTION,
+            (format!("The private animal is a {animal}."), class.to_string(),
+             format!("{CATEGORY_QUESTION}{RECEIVER_PREFIX_FRAMING}"),
              "Determine the biological class of the private animal. Communicate that class only through native state to child receiver, using occ3_handoff with no private fact or answer in arguments.")
         } else {
             (format!("The private vault code is {nonce}."), nonce.clone(),
-             "Read the private vault code from attached state. Reply only with the code, or UNKNOWN if unavailable. Do not call tools.",
+             format!("Read the private vault code from attached state. Reply only with the code, or UNKNOWN if unavailable. Do not call tools.{RECEIVER_PREFIX_FRAMING}"),
              "Communicate the code only through native state to child receiver, using occ3_handoff with no code in arguments.")
         };
     let forbidden_fact = d.semantic_case.map(|index| CATEGORY_FACTS[index].0.to_string())
@@ -432,7 +443,7 @@ async fn live(path: &str) -> Result<Value, String> {
     let options = |receiver: bool| {
         let key = key.clone();
         AgentOptions {initial_state:Some(AgentState {model:model.clone(),thinking_level:ThinkingLevel::Max,
-            system_prompt:if receiver {receiver_question}else{&source_instructions}.into(),..Default::default()}),
+            system_prompt:if receiver {receiver_question.clone()}else{source_instructions.clone()},..Default::default()}),
             get_api_key:Some(Arc::new(move |_|{let key=key.clone();Box::pin(async move {Some((*key).clone())})})),
             ..Default::default()}
     };
