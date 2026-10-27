@@ -66,8 +66,72 @@ for positive and no-state; only full-text adds the fact. Native authorization
 and Custom bookkeeping are unchanged. Controls continue from the seeded user
 turn without extra inference. The receipt gate requires exactly one ordinary
 user message. Two regressions reproduced the mismatch before the correction;
-the corrected probe and existing fixtures pass 25 tests. This correction has
-not been tested on the GPU, and earlier diagnostic results are not reclassified.
+the corrected probe and existing fixtures pass 25 tests. Earlier diagnostic
+results are not reclassified or pooled with the corrected-input runs below.
+
+Window `occ3-live-20261027t105044z` retested the corrected probe (`e347be1cf`).
+The fresh vault-code proof captured 128 states on all eight ranks, but its receiver
+interrupted after about 340 seconds and returned no answer. Total harness time
+was 414.8 seconds; the lease was `Uncertain`. No controller proof was published.
+A separate matched category diagnostic returned UNKNOWN without state (2.2 seconds)
+and the correct class with full text (2.5 seconds). Its native arm captured 126
+states on all eight ranks, then interrupted (362.3 seconds total, `Uncertain`).
+Positive and no-state ordinary payload hashes matched exactly, each with one user
+turn and no private fact. All three arms confirmed logical cleanup; physical GPU
+release is not established by those receipts. These interruptions are incomplete
+trials, not completed semantic misses. The native adapter buffers the entire
+response before headers. Client diagnostic repair `18e622f4f` now retains an
+allowlisted failure cause and HTTP status without changing the public no-replay
+error, deadlines, or serving behavior. A local HTTP regression failed before the
+repair; 22 attachment/source integration tests and 20 provider unit tests passed
+after it. Workspace checks also passed.
+
+One fresh instrumented category diagnostic then completed native consumption
+in 249.2 seconds but answered UNKNOWN. Its full-text control returned the correct
+class (2.3 seconds), and no-state returned UNKNOWN (3.1 seconds). Capture retained
+128 states on all eight ranks; the receiver lease was `Consumed`, with logical
+cleanup confirmed and identical positive/no-state ordinary payload hashes. This
+is a completed semantic miss, not a successful hidden-state communication proof.
+The interruption did not recur, so its earlier cause remains unresolved. The
+runtime image and all timeouts were unchanged. No controller proof was published.
+See [sanitized results](live-window-20261027t105044z.json); raw evidence remains
+in `window-20261027t105044z` under the same evidence root.
+
+After the unused proof checkpoint expired, the existing controller restored the
+original service automatically. At 12:21 UTC, read-only observations verified
+`RESTORED`, service and cleanup success, separate health HTTP 200, and the original
+container identity. The candidate remains stopped and preserved. No manual
+restart or recovery signal was issued in this window.
+
+## Focused offline debugging after the completed semantic miss
+
+- Server diagnostics now distinguish allowlisted disconnect (499) and deadline
+  (504) guard outcomes without logging prompts, handles, or raw exceptions.
+  Commit `57c23a901` passed 338 affected tests and workspace checks. It was not
+  deployed in the GPU window above; the earlier interruption cause is unresolved.
+- The thin solver matched the executed, source-pinned dense StateBridge reference
+  on controlled full-row-rank CPU fixtures. Rank-deficient carrier differences
+  had essentially equal Procrustes objectives, so they did not reproduce a bug.
+  These fixtures do not represent real GLM hidden-state distributions.
+- Content-sensitive CPU tests verified target and rotated-draft prefix copy
+  coordinates, and that selected accepted rows—not rejected or padded rows—enter
+  the retained ring on the tested path. These are not live GPU or semantic proof.
+- Reference/alignment and worker tests passed 52 together; the accepted-state
+  source-attested file passed 11. A cleanup fixture file passed 10. The latter
+  bounds cleanup on a responsive synthetic event loop only. The preserved
+  candidate configuration used a 900-second turn window, not the default 300.
+
+The source audit previously omitted accepted-span start/end even though the
+validated capture receipt contained them. A new fixture failed on the missing
+field before the two-field audit correction; all 11 source-handoff tests passed
+afterward. All 12 attachment tests also passed with cause/status assertions for
+transport, HTTP, incomplete-stream, and receipt failures. The audit correction
+does not change which states are captured.
+
+No numerical, accepted-row, or injection-coordinate production repair was justified
+by these new tests. Actual source-reference-only and fixed-reference/shuffled-H
+GPU controls remain unimplemented. They require an explicit method/profile and
+compatible supervised admission; prompt changes cannot substitute for them.
 
 ## Offline regression results
 
@@ -85,7 +149,8 @@ not been tested on the GPU, and earlier diagnostic results are not reclassified.
 GPU capture, publication and completed receiver consumption have been observed.
 They do not prove semantic hidden-state communication. Reliable fresh-secret recovery,
 token-only controls, likelihood measures and comparative benchmarks remain unproven.
-No wider benchmark was started. The receiver-input correction has offline proof only.
+No wider benchmark was started. Receiver-input parity is verified offline and in
+the fresh GPU request audit; successful semantic recovery remains unproven.
 
 Offline numerical research also identified a token-reference confound in thin
 StateBridge alignment: fitting the same low-rank rows can reproduce reference token
@@ -96,6 +161,6 @@ The [Trinity/C2C source review](TRINITY-C2C-ANALYSIS.md) is static evidence, not
 of GLM-5.3 KV transfer. A native KV method has not been implemented.
 
 The work remains surgical: reuse the native bridge, state machine, extension,
-controller and original model. No spent descriptor is replayed. The continuation
-issued no server-control commands; the previous session's recovery is observed
-read-only. Any later live validation needs a fresh supervised window.
+controller and original model. No spent descriptor is replayed. The previous
+window's restoration was verified read-only before the user authorized the one
+fresh supervised window above. The original container and rollback are preserved.
