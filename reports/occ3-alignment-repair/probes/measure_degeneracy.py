@@ -482,16 +482,16 @@ def main():
             m["erank_Ec"], m["raw_rank_Ec"] = erank(cell["e"])
             runs.append(m)
 
-    # F -- shared row space.  If H is an exact feature-space rotation of E at the same
-    # scale, then ch == ce and the union rank collapses to n-1: the ridge is a common
-    # multiplicative factor and Z must equal E at ANY ridge.  The 2.5x scale row is the
-    # control: an additive ridge does not commute with a rescaling of the spectrum.
+    # F -- isometric H.  H = E Q for an orthogonal Q built from 96 Givens rotations:
+    # the centred row Grams are equal, so the whitening weights agree exactly and Z must
+    # equal E_cal at ANY ridge (corollary 3).  The 2.5x row is the control: a common
+    # scale factor does NOT commute with the additive ridge, so the weights differ.
     for scale in (1.0, 64.0):
         for family in ("isotropic", "anisotropic"):
             cell = make_cell(family, scale, 128, 7)
             rng = np.random.default_rng(4242)
             rot = givens_apply(cell["e"], rng)
-            for tag, hh in (("shared_row_space", rot), ("shared_row_space_2.5x", 2.5 * rot)):
+            for tag, hh in (("isometric_H_same_gram", rot), ("isometric_H_2.5x_scale", 2.5 * rot)):
                 for ridge in (1e-3, 1e-1, 1.0, 1e2):
                     try:
                         zp, info = production(hh, cell["e"], cell["target_norm"], ridge=ridge)
@@ -514,6 +514,33 @@ def main():
                     m["erank_Ec"], m["raw_rank_Ec"] = erank(cell["e"])
                     runs.append(m)
 
+    # G -- is the retained union rank genuine or float32 noise?  Measure the singular
+    # spectrum of the concatenated centred pair against the rank_rtol=1e-5 threshold
+    # that statebridge.py:55 uses to cut it.  Isometric H has a distinct row space
+    # (equal Gram, different subspace), so rank 2(n-1) is expected there as well.
+    spectra = []
+    for scale in (1.0, 64.0):
+        cell = make_cell("isotropic", scale, 128, 9)
+        rng = np.random.default_rng(31)
+        variants = {"isometric_H": givens_apply(cell["e"], rng),
+                    "independent_H": cell["h"]["unrelated_random_H"]}
+        for name, hh in variants.items():
+            h = torch.from_numpy(hh.astype(np.float32))
+            e = torch.from_numpy(cell["e"].astype(np.float32))
+            hc, ec = h - h.mean(0, keepdim=True), e - e.mean(0, keepdim=True)
+            _, sv, _ = torch.linalg.svd(torch.cat((hc, ec), 0), full_matrices=False)
+            svn = sv.numpy().astype(np.float64)
+            thr = max(float(svn[0]) * 1e-5, 1e-6)
+            spectra.append(dict(axis="G_spectrum", family="isotropic", scale=scale, n=128,
+                                variant=name, union_rank_reported=int(min(
+                                    int((svn > thr).sum()), 2 * 127)),
+                                s0=float(svn[0]), s126=float(svn[126]), s127=float(svn[127]),
+                                s128=float(svn[128]), s252=float(svn[252]), s253=float(svn[253]),
+                                threshold=float(thr),
+                                s127_over_s0=float(svn[127] / svn[0]),
+                                s253_over_s0=float(svn[253] / svn[0]),
+                                float32_eps=float(np.finfo(np.float32).eps)))
+
     payload = dict(
         meta=dict(target="extensions/sglang-occ3/occ3_sglang/statebridge.py align_hidden_sequence",
                   command=("extensions/sglang-occ3/.venv/Scripts/python.exe "
@@ -522,7 +549,7 @@ def main():
                   dim=DIM, vocab=VOCAB, pair_cos=PAIR_COS, decay=DECAY,
                   prod_ridge=1e-3, prod_eigen_floor=1e-6, prod_rank_rtol=1e-5,
                   runtime_seconds=0.0),
-        runs=runs, cells=cells, refusals=refusals)
+        runs=runs, cells=cells, refusals=refusals, spectra=spectra)
     payload["meta"]["runtime_seconds"] = round(time.time() - t0, 2)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8", newline="\n") as fh:
