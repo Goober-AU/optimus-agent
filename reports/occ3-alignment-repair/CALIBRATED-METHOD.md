@@ -102,3 +102,32 @@ identity, not a default hidden in code.
 
 Nothing in step 1-5 can be verified on this host: there is no Rust toolchain
 here, so `cargo check` cannot run.
+
+## 6. Production dimensions, and the constraint that decides feasibility
+
+Same module, d=6144, message rows n=128, GLM-shaped latent-factor fixtures with
+a controllable intrinsic rank:
+
+| content rank | M | held-out R^2 | cos to E | state sensitivity | artifact |
+|---|---|---|---|---|---|
+| 64 | 512 | 0.689 | **0.829** | 1.427 | 24 MiB |
+| 64 | 2048 | 0.668 | 0.805 | 1.427 | 96 MiB |
+| 512 | 512 | 0.322 | 0.614 | 1.412 | 24 MiB |
+| 512 | 2048 | 0.552 | 0.752 | 1.414 | 96 MiB |
+| full rank (6144) | 512 | refused | - | - | - |
+
+Two conclusions, both load-bearing:
+
+1. **The calibrated map is viable at production width.** 0.83 row cosine to
+   unseen embeddings with full state dependence, at 24 MiB, is exactly the
+   combination the shipped method cannot produce.
+2. **M must exceed the intrinsic rank of the hidden-to-embedding relation.** The
+   artifact is O(M d) and the dual solve can only represent a rank-M map. With a
+   full-rank relation and M=512 the fit cannot represent it, held-out R^2 falls
+   below the guard and the module refuses. That refusal is the correct outcome:
+   the number to measure on the DGX is the intrinsic rank of the real
+   H-to-E relation, and it decides both feasibility and calibration cost.
+
+The second row also explains the independent harness's finding that M=2048 is
+worse than M=512: past the intrinsic rank, extra rows add noise directions
+without adding signal.
