@@ -194,7 +194,7 @@ def test_full_native_chunk_injection_retains_only_two_integer_span(monkeypatch):
         preflight=lambda phase,check:check(),torch=NS(cuda=NS(current_stream=lambda device:stream)),event=lambda:object())
     monkeypatch.setattr(w,"_RUNTIME",runtime)
     context=(RequestSlice(desc,0,32768,0,0,False),)
-    fb=NS(occ3_context=context,occ3_force_eager=True,batch_size=1,forward_mode=NS(is_extend=lambda:True))
+    fb=NS(occ3_context=context,occ3_force_eager=True,batch_size=1,forward_mode=NS(is_extend=lambda:True,is_target_verify=lambda:False))
     w.inject_target_embeddings(fb,hidden)
     assert fb.occ3_effective_embeds==(0,128) and not record.live_refs
     assert copied==[(32768,None,128),(128,0,128)]

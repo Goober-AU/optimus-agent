@@ -632,7 +632,10 @@ def inject_target_embeddings(forward_batch, hidden_states):
     context = _context(forward_batch)
     if not context or type(context[0].descriptor) is not ConsumeWorkerDescriptor:
         return
-    if not forward_batch.forward_mode.is_extend():
+    # TARGET_VERIFY is extend-shaped in SGLang, but its prefix is already in KV.
+    # It carries decode geometry, not another prefix-injection span.
+    if (not forward_batch.forward_mode.is_extend()
+            or forward_batch.forward_mode.is_target_verify()):
         return
     runtime = _runtime()
     item, prepared = context[0], {}

@@ -193,3 +193,44 @@ def test_native_eager_forward_preserves_injection_journal(no_copy, outcome):
     observed = observe_injection_span(no_copy, outcome)
     assert observed == {"injected_count": 8 if outcome == "success" else 0,
                         "commit_present": outcome == "success"}
+
+
+@pytest.mark.parametrize("mode_name", ["TARGET_VERIFY", "DECODE"])
+def test_decode_does_not_reinject_prefill_embeddings(mode_name):
+    from enum import IntEnum, auto
+
+    if not (SG / "model_executor/forward_batch_info.py").is_file():
+        pytest.skip("Pinned SGLang source absent; set OCC3_SGLANG_SOURCE")
+    mode_source = patched_source("model_executor/forward_batch_info.py")
+    mode_node = next(n for n in ast.parse(mode_source).body
+                     if isinstance(n, ast.ClassDef) and n.name == "ForwardMode")
+    scope = {"IntEnum": IntEnum, "auto": auto}
+    exec(compile(ast.Module(body=[mode_node], type_ignores=[]), str(SG / "forward_batch_info.py"), "exec"), scope)
+    mode = scope["ForwardMode"]
+    descriptor = consume()
+    record = NS(prefix=ShapeOnlyBuffer(), events=[], inflight=0,
+                injected_positions=set(range(8)), injection_commit_id="completed-prefill")
+    stream = NS(wait_event=lambda event: None)
+    runtime = NS(poisoned=False, resolve=lambda descriptor, **kw: record,
+                 profile=profile(), device="synthetic", event=lambda: object(),
+                 gather=lambda value: [value] * 8,
+                 torch=NS(cuda=NS(current_stream=lambda device: stream)))
+    runtime.preflight = types.MethodType(worker.WorkerRuntime.preflight, runtime)
+    scheduled = NS(reqs=[NS(occ3_worker_descriptor=descriptor, output_ids=[1])],
+                   forward_mode=mode.DECODE, extend_lens=[8], prefix_lens=[0])
+    layer_module = types.ModuleType("sglang.srt.layers.layer_boundary")
+    layer_module.get_attn_tp_context = lambda: NS(input_scattered=False)
+    copies = []
+    with patch.object(worker, "_RUNTIME", runtime), patch.dict(sys.modules, {layer_module.__name__: layer_module}):
+        worker.prepare_batch(NS(occ3_runtime=runtime), scheduled)
+        assert scheduled.occ3_context[0].extend_len == 0
+        # Native EAGLE changes DECODE into TARGET_VERIFY; is_extend() includes it.
+        if mode_name == "TARGET_VERIFY":
+            assert mode.TARGET_VERIFY.is_extend()
+        batch = ShapeOnlyBatch(scheduled.occ3_context, forward_mode=mode[mode_name])
+        worker.inject_target_embeddings(batch, ShapeOnlyBuffer(rows=6, copies=copies))
+        worker.mark_injection(batch)
+    assert copies == [] and batch.occ3_effective_embeds is None
+    assert record.events == [] and record.inflight == 0
+    assert record.injected_positions == set(range(8))
+    assert record.injection_commit_id == "completed-prefill"
