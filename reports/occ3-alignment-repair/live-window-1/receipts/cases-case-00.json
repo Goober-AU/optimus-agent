@@ -1,0 +1,123 @@
+{
+  "schema": "optimus.occ3.native-attempt.v1",
+  "case": "positive",
+  "attempt_id": "w9-case-00",
+  "candidate_id": "1126caa9a426468bbb0c6a0af7588e43",
+  "process_epoch": "94bbc3a3994e4d1c88965bcddac2fda2:g2",
+  "phase": "initial",
+  "checkpoint_challenge": "The morning train was two minutes late again.",
+  "model_fingerprint": "sha256:db2c8830820da8bd3370bbfacf0799e33085ef7b8b1ca27840b88e3e8101b732",
+  "control_header_names": null,
+  "task": "vault-code",
+  "semantic_case": null,
+  "controller_proof_eligible": true,
+  "source_fact_sha256": "06aa2e14b6311b6e3715249e230c5185de22ce18fdd015d4ab5590aec37db702",
+  "answer_sha256": "23759997b3c59884dc4c0ff5320d6301b0e7f63bf0f6483a7b54d7d43bc5ccd1",
+  "semantic_answer_match": false,
+  "answer_class": "UNKNOWN",
+  "semantic_nonce_match": false,
+  "messages": [
+    {
+      "message_id": "agentmsg_8cd60335-c2b3-4d41-80cd-42cfcd40d8ed",
+      "status": "delivered"
+    }
+  ],
+  "source_phase": {
+    "session_id": "source-486cf097-faa8-4e31-a59b-b725bd9932dd",
+    "runtime_id": "94bbc3a3994e4d1c88965bcddac2fda2",
+    "runtime_generation": 2,
+    "model_fingerprint": "sha256:db2c8830820da8bd3370bbfacf0799e33085ef7b8b1ca27840b88e3e8101b732",
+    "source": {
+      "capture_id": "capture-0e788999-a3db-4bca-bac1-b9494fa501af",
+      "source_request_id": "source-9ed19da8-6f2a-44b7-8d23-4ef4cd655b0f",
+      "turn_nonce": "turn-ec05c796-c64b-4fb1-96aa-32757499247b",
+      "intent_digest": "d69cbc1d62a2d7347c4f1d195f9839c40534852d287f809c92ba3bca4efd9c24",
+      "state": "Captured",
+      "receipt": {
+        "native_rid": "a079aeb2072844b498b2c3b08ec29cb4",
+        "response_id": "a079aeb2072844b498b2c3b08ec29cb4",
+        "capture_commit_id": "20fa6cff6eb037103eb999a358d373da92a98c06ad7b3a91a72635453a8fdd1a",
+        "handle_sha256": "9b1c03206835f790598fc13cf9e13c30ce90da7db6fc00ae680c7bb2773444f5",
+        "output_sha256": "4860c6d805edfbabfc85df932b793b4aacaaf7727b76d4afb22b980f9af0cd92",
+        "retained_count": 103,
+        "logical_prefix_bytes": 1265664,
+        "ready_ranks": 8,
+        "expected_ranks": 8,
+        "layout_digest": "a55bf3e06038c4683c5ddeffcb947c46e962f2184291de6d55a68b04290fa77d"
+      },
+      "tool_claimed": true,
+      "handoff_admitted": true,
+      "published_message": [
+        "agentmsg_8cd60335-c2b3-4d41-80cd-42cfcd40d8ed",
+        "a2c047f8a1089bf4b3007e4431cea6d39fe9a41d43bc71a28c804cb484160dd3"
+      ],
+      "negative_control_armed": false,
+      "negative_control_exported": false
+    },
+    "receiver": []
+  },
+  "receiver_phase": {
+    "session_id": "receiver-a2d7763c-611a-4139-a9cd-e25854ad6fdd",
+    "runtime_id": "94bbc3a3994e4d1c88965bcddac2fda2",
+    "runtime_generation": 2,
+    "model_fingerprint": "sha256:db2c8830820da8bd3370bbfacf0799e33085ef7b8b1ca27840b88e3e8101b732",
+    "source": null,
+    "receiver": [
+      {
+        "message_id": "agentmsg_8cd60335-c2b3-4d41-80cd-42cfcd40d8ed",
+        "receiver_session_id": "receiver-a2d7763c-611a-4139-a9cd-e25854ad6fdd",
+        "sender_session_id": "source-486cf097-faa8-4e31-a59b-b725bd9932dd",
+        "runtime_id": "94bbc3a3994e4d1c88965bcddac2fda2",
+        "runtime_generation": 2,
+        "model_fingerprint": "sha256:db2c8830820da8bd3370bbfacf0799e33085ef7b8b1ca27840b88e3e8101b732",
+        "handle_sha256": "9b1c03206835f790598fc13cf9e13c30ce90da7db6fc00ae680c7bb2773444f5",
+        "request_id": "consume-92eb5ac6-3705-4dd3-8bae-773a299c7785",
+        "lease_state": "Consumed",
+        "status": "CONSUMED"
+      }
+    ]
+  },
+  "receiver_request_audit": [
+    {
+      "source_facts_absent": true,
+      "ordinary_user_messages": 1,
+      "body_sha256_before_attachment": "517568b193f0b0abddf754e56a7219ba05cd43bc892c538fa7a4bf3d83b03899",
+      "max_tokens": 131072,
+      "reasoning_effort": "max"
+    }
+  ],
+  "native_error": false,
+  "source_native_error": false,
+  "action_completed": true,
+  "source_handoff_diagnostic": {
+    "calls": [
+      {
+        "native_tool": true,
+        "child_role": true,
+        "receiver_name": true,
+        "argument_count": 2
+      }
+    ],
+    "errors": []
+  },
+  "source_completion_diagnostic": {
+    "binding_count": 1,
+    "all_native_tool": true,
+    "parsed": {
+      "calls": [
+        {
+          "native_tool": true,
+          "child_role": true,
+          "receiver_name": true,
+          "argument_count": 2
+        }
+      ],
+      "errors": []
+    }
+  },
+  "ordinary_kernel_source_route": "unsupported",
+  "production_enabled": false,
+  "logical_cleanup_confirmed": true,
+  "physical_gpu_free_proven": false,
+  "case_passed": false
+}

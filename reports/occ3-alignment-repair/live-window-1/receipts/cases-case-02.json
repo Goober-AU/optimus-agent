@@ -1,0 +1,118 @@
+{
+  "schema": "optimus.occ3.native-attempt.v1",
+  "case": "positive",
+  "attempt_id": "w9-case-02",
+  "candidate_id": "af62b9421fb34de9a94f28e6c67c3b36",
+  "process_epoch": "94bbc3a3994e4d1c88965bcddac2fda2:g2",
+  "phase": "initial",
+  "checkpoint_challenge": "We walked past the library on the way home.",
+  "model_fingerprint": "sha256:db2c8830820da8bd3370bbfacf0799e33085ef7b8b1ca27840b88e3e8101b732",
+  "control_header_names": null,
+  "task": "vault-code",
+  "semantic_case": null,
+  "controller_proof_eligible": true,
+  "source_fact_sha256": "a24661a07b365d92ac35a6b1148fdee0f0693ad43f1c914a59e6b615545eb082",
+  "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "semantic_answer_match": false,
+  "answer_class": "OTHER",
+  "semantic_nonce_match": false,
+  "messages": [],
+  "source_phase": {
+    "session_id": "source-1bcf7b6d-2c0a-4025-81ce-f11119d03630",
+    "runtime_id": "94bbc3a3994e4d1c88965bcddac2fda2",
+    "runtime_generation": 2,
+    "model_fingerprint": "sha256:db2c8830820da8bd3370bbfacf0799e33085ef7b8b1ca27840b88e3e8101b732",
+    "source": {
+      "capture_id": "capture-4b6555d2-9c10-481e-b9fe-c99733b5b55a",
+      "source_request_id": "source-e2584acf-1130-4d60-8b27-cd1e8ce3d920",
+      "turn_nonce": "turn-d39cefcb-25e8-449e-ae15-1468fb578089",
+      "intent_digest": "d46a6d63a870e75e820620419ac5d69760ca88e90f0b5e1ce6992350e8632cd4",
+      "state": "Captured",
+      "receipt": {
+        "native_rid": "56345c873f5e424bad288306358c54fa",
+        "response_id": "56345c873f5e424bad288306358c54fa",
+        "capture_commit_id": "703d55d423d1f9ab7feb22aebd653cd80513747c4eb57630e6c3bff2eeb971b7",
+        "handle_sha256": "aa790cb6602034c04f54749ac34b4f233811e4b39658a41e041cc2566d1b6afc",
+        "output_sha256": "f28410e246a8f4490ecce2b9b442cbcf8b87a7babb09a6c3af810f90304acfd5",
+        "retained_count": 128,
+        "logical_prefix_bytes": 1572864,
+        "ready_ranks": 8,
+        "expected_ranks": 8,
+        "layout_digest": "a55bf3e06038c4683c5ddeffcb947c46e962f2184291de6d55a68b04290fa77d"
+      },
+      "tool_claimed": true,
+      "handoff_admitted": false,
+      "published_message": [
+        "agentmsg_91e87747-a289-486b-aa52-16cf9dc9c24c",
+        "a47593596d2bf84f7167d415b87ff6642fdf045a817da5c7a28d2d4708ae0ed1"
+      ],
+      "negative_control_armed": false,
+      "negative_control_exported": false
+    },
+    "receiver": []
+  },
+  "receiver_phase": {
+    "session_id": "receiver-b8f3c164-d4cc-47b3-a283-75eef3cc2ba1",
+    "runtime_id": "94bbc3a3994e4d1c88965bcddac2fda2",
+    "runtime_generation": 2,
+    "model_fingerprint": "sha256:db2c8830820da8bd3370bbfacf0799e33085ef7b8b1ca27840b88e3e8101b732",
+    "source": null,
+    "receiver": [
+      {
+        "message_id": "agentmsg_91e87747-a289-486b-aa52-16cf9dc9c24c",
+        "receiver_session_id": "receiver-b8f3c164-d4cc-47b3-a283-75eef3cc2ba1",
+        "sender_session_id": "source-1bcf7b6d-2c0a-4025-81ce-f11119d03630",
+        "runtime_id": "94bbc3a3994e4d1c88965bcddac2fda2",
+        "runtime_generation": 2,
+        "model_fingerprint": "sha256:db2c8830820da8bd3370bbfacf0799e33085ef7b8b1ca27840b88e3e8101b732",
+        "handle_sha256": "aa790cb6602034c04f54749ac34b4f233811e4b39658a41e041cc2566d1b6afc",
+        "request_id": "consume-d453123d-b238-4d15-9901-4de33b6f924f",
+        "lease_state": "Uncertain",
+        "status": "UNCERTAIN"
+      }
+    ]
+  },
+  "receiver_request_audit": [
+    {
+      "source_facts_absent": true,
+      "ordinary_user_messages": 1,
+      "body_sha256_before_attachment": "517568b193f0b0abddf754e56a7219ba05cd43bc892c538fa7a4bf3d83b03899",
+      "max_tokens": 131072,
+      "reasoning_effort": "max"
+    }
+  ],
+  "native_error": false,
+  "source_native_error": false,
+  "action_completed": false,
+  "source_handoff_diagnostic": {
+    "calls": [
+      {
+        "native_tool": true,
+        "child_role": true,
+        "receiver_name": true,
+        "argument_count": 2
+      }
+    ],
+    "errors": []
+  },
+  "source_completion_diagnostic": {
+    "binding_count": 1,
+    "all_native_tool": true,
+    "parsed": {
+      "calls": [
+        {
+          "native_tool": true,
+          "child_role": true,
+          "receiver_name": true,
+          "argument_count": 2
+        }
+      ],
+      "errors": []
+    }
+  },
+  "ordinary_kernel_source_route": "unsupported",
+  "production_enabled": false,
+  "logical_cleanup_confirmed": true,
+  "physical_gpu_free_proven": false,
+  "case_passed": false
+}
