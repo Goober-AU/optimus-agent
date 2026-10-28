@@ -1,0 +1,5 @@
+- Added an OCC3 segment to the communication indicator, lit only by a completed native OCC-3 delivery.
+- Added `agentCommunication.occ3Enabled` and `agentCommunication.occ3Experimental` opt-ins for experimental OCC-3.
+- Added a persistent supervised deployment mode that keeps a healthy DGX candidate running after a test window.
+- Changed the daemon native handoff to refuse delivery receipts on an uncertain receiver outcome.
+- Added the frozen independent-calibration OCC-3 method, its artifact integrity binding and real method dispatch.
