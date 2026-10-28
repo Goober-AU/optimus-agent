@@ -1,0 +1,282 @@
+{
+  "analyzer": "occ3.probe.analyser.v1",
+  "canonical_decile_medians": [
+    0.9491162896156311,
+    0.9043686389923096,
+    0.8330948948860168,
+    0.6204556226730347,
+    0.0734119638800621,
+    1.467530807985895e-07,
+    3.172153739683381e-08,
+    1.267278948446915e-09,
+    3.6907563116805875e-10,
+    1.323571252598299e-10
+  ],
+  "detail": {
+    "median_cos_prefix_to_embedding": 0.9313827157020569,
+    "median_heldout_r2_within_turn": 0.10105043649673462,
+    "missing_decisive_keys": [],
+    "reason": "median R2 0.1011 sits between 0.1 and 0.3; the pre-registered rule has no verdict in this band",
+    "turns": 3,
+    "turns_with_missing_decisive": 0
+  },
+  "expected_keys": [
+    "rows",
+    "hidden_dim",
+    "union_rank",
+    "hidden_eff_rank",
+    "embedding_eff_rank",
+    "canonical_top1",
+    "canonical_top8",
+    "canonical_top32",
+    "canonical_mean",
+    "canonical_participation",
+    "canonical_above_090",
+    "canonical_above_095",
+    "canonical_above_099",
+    "canonical_decile",
+    "heldout_r2_within_turn",
+    "procrustes_residual",
+    "cos_prefix_to_embedding",
+    "relative_prefix_to_embedding",
+    "hidden_roll_sensitivity",
+    "hidden_permute_sensitivity",
+    "prefix_norm_mean",
+    "hidden_norm_mean",
+    "embedding_norm_mean",
+    "nonfinite_count",
+    "anchor_alpha",
+    "max_prefix_tokens"
+  ],
+  "generated_at": "2026-10-28T02:05:51Z",
+  "input": "C:\\Users\\openclawuser\\occ3-window-20261027b\\align-probe.jsonl",
+  "input_sha256": "ab5c0ffbc5a6a8c4061e1fe3b521d33f10cbea893f665dd27175c1e63dc47b01",
+  "label": "live-window-1",
+  "missing": [],
+  "provenance": {
+    "input_keys": "calibration_probe.PROBE_KEYS (24) plus anchor_alpha and max_prefix_tokens",
+    "offline": true,
+    "tensor_data": "none; scalars only, non-scalar payloads refused"
+  },
+  "rank": {
+    "bound": "R2_heldout_within_turn <= sum_{i<=k} rho_i^2 for the retained dimension k <= union_rank",
+    "interpretation": "the bound is satisfied at k = 1 in every turn, so the canonical spectrum does not resolve the intrinsic rank; the estimate is a floor set by quantisation, and only held-out R2 separates a relation from none",
+    "k_min_definition": "min k such that sum_{i<=k} rho_i^2 >= max(R2_heldout_within_turn, 0)",
+    "k_min_equals_one_turns": [
+      1,
+      2,
+      3
+    ],
+    "max_k_min": 1,
+    "median_k_min": 1,
+    "median_union_rank": 169,
+    "min_k_min": 1,
+    "per_turn": [
+      {
+        "coverage": 160,
+        "k_min": 1,
+        "k_status": "exact",
+        "note": "k = 1 is the floor of the domain",
+        "r2": 0.10105043649673462,
+        "step": 16,
+        "sum_covered": 44.849695463024354,
+        "turn": 1,
+        "union_rank": 169
+      },
+      {
+        "coverage": 160,
+        "k_min": 1,
+        "k_status": "exact",
+        "note": "k = 1 is the floor of the domain",
+        "r2": 0.1304529309272766,
+        "step": 16,
+        "sum_covered": 45.60408074106881,
+        "turn": 2,
+        "union_rank": 168
+      },
+      {
+        "coverage": 200,
+        "k_min": 1,
+        "k_status": "exact",
+        "note": "k = 1 is the floor of the domain",
+        "r2": 0.06745678186416626,
+        "step": 20,
+        "sum_covered": 49.25459933660123,
+        "turn": 3,
+        "union_rank": 201
+      }
+    ]
+  },
+  "rule": {
+    "cos_max": 0.3,
+    "precedence": [
+      "1. any decisive key missing on any turn -> INCONCLUSIVE (no verdict on partial evidence)",
+      "2. median heldout_r2_within_turn >= 0.30 and median cos_prefix_to_embedding <= 0.30 -> FEASIBLE",
+      "3. median heldout_r2_within_turn < 0.10 -> NOT-FEASIBLE",
+      "4. otherwise -> INCONCLUSIVE"
+    ],
+    "r2_feasible": 0.3,
+    "r2_reject": 0.1,
+    "statistic": "cross-turn median of the per-turn value"
+  },
+  "schema": "occ3.probe.verdict.v1",
+  "statistics": {
+    "anchor_alpha": {
+      "max": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "n": 3
+    },
+    "canonical_above_090": {
+      "max": 26,
+      "median": 26,
+      "min": 26,
+      "n": 3
+    },
+    "canonical_above_095": {
+      "max": 10,
+      "median": 8,
+      "min": 7,
+      "n": 3
+    },
+    "canonical_above_099": {
+      "max": 0,
+      "median": 0,
+      "min": 0,
+      "n": 3
+    },
+    "canonical_mean": {
+      "max": 0.32499033212661743,
+      "median": 0.32004237174987793,
+      "min": 0.29845306277275085,
+      "n": 3
+    },
+    "canonical_participation": {
+      "max": 71.1183090209961,
+      "median": 64.56202697753906,
+      "min": 64.43984985351562,
+      "n": 3
+    },
+    "canonical_top1": {
+      "max": 0.9856348037719727,
+      "median": 0.9842769503593445,
+      "min": 0.981412947177887,
+      "n": 3
+    },
+    "canonical_top32": {
+      "max": 0.9286944270133972,
+      "median": 0.9285216331481934,
+      "min": 0.926742434501648,
+      "n": 3
+    },
+    "canonical_top8": {
+      "max": 0.967149555683136,
+      "median": 0.9663161039352417,
+      "min": 0.963327169418335,
+      "n": 3
+    },
+    "cos_prefix_to_embedding": {
+      "max": 0.9368963837623596,
+      "median": 0.9313827157020569,
+      "min": 0.9167133569717407,
+      "n": 3
+    },
+    "embedding_eff_rank": {
+      "max": 33.87068176269531,
+      "median": 30.358654022216797,
+      "min": 29.10839080810547,
+      "n": 3
+    },
+    "embedding_norm_mean": {
+      "max": 0.5743423700332642,
+      "median": 0.5663919448852539,
+      "min": 0.552741289138794,
+      "n": 3
+    },
+    "heldout_r2_within_turn": {
+      "max": 0.1304529309272766,
+      "median": 0.10105043649673462,
+      "min": 0.06745678186416626,
+      "n": 3
+    },
+    "hidden_dim": {
+      "max": 6144,
+      "median": 6144,
+      "min": 6144,
+      "n": 3
+    },
+    "hidden_eff_rank": {
+      "max": 29.96271324157715,
+      "median": 27.807296752929688,
+      "min": 26.624530792236328,
+      "n": 3
+    },
+    "hidden_norm_mean": {
+      "max": 162.39132690429688,
+      "median": 159.4436492919922,
+      "min": 159.22962951660156,
+      "n": 3
+    },
+    "hidden_permute_sensitivity": {
+      "max": 0.5361478924751282,
+      "median": 0.48329877853393555,
+      "min": 0.4652407765388489,
+      "n": 3
+    },
+    "hidden_roll_sensitivity": {
+      "max": 0.5361799001693726,
+      "median": 0.4789964258670807,
+      "min": 0.4713842272758484,
+      "n": 3
+    },
+    "max_prefix_tokens": {
+      "max": 128,
+      "median": 128,
+      "min": 128,
+      "n": 3
+    },
+    "nonfinite_count": {
+      "max": 0,
+      "median": 0,
+      "min": 0,
+      "n": 3
+    },
+    "prefix_norm_mean": {
+      "max": 0.698784589767456,
+      "median": 0.6987840533256531,
+      "min": 0.6987820267677307,
+      "n": 3
+    },
+    "procrustes_residual": {
+      "max": 1.067138910293579,
+      "median": 0.929519534111023,
+      "min": 0.9069128036499023,
+      "n": 3
+    },
+    "relative_prefix_to_embedding": {
+      "max": 0.49960967898368835,
+      "median": 0.49325716495513916,
+      "min": 0.45863425731658936,
+      "n": 3
+    },
+    "rows": {
+      "max": 128,
+      "median": 103,
+      "min": 102,
+      "n": 3
+    },
+    "union_rank": {
+      "max": 201,
+      "median": 169,
+      "min": 168,
+      "n": 3
+    }
+  },
+  "threshold_reasons": {
+    "cos_max": "The shipped solver fits the rotation on the very rows it is scored on, so cos_prefix_to_embedding saturates near 1 for independent rows as well (proven: A == target copier, statebridge.py:58-63; measured 0.99999995 on independent 40x96 rows). A cosine above 0.30 therefore cannot certify that the prefix carries embedding content, while a cosine at or below 0.30 proves the prefix is measurably not that in-sample copier.",
+    "r2_feasible": "A frozen hidden->embedding map must explain at least 30% of the held-out embedding variance of a turn to be worth the window, and 0.30 is three times the artifact's own ship gate; the level was fixed before the data, not fitted to it.",
+    "r2_reject": "0.10 is exactly statebridge_calibrated.MIN_HELDOUT_R2, the level below which fit_calibration refuses to freeze a calibration artifact, so a corpus that scores below it cannot produce a usable map at all."
+  },
+  "turns": 3,
+  "verdict": "INCONCLUSIVE"
+}

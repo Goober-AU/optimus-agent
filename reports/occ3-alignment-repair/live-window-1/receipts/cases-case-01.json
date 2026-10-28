@@ -1,0 +1,123 @@
+{
+  "schema": "optimus.occ3.native-attempt.v1",
+  "case": "positive",
+  "attempt_id": "w9-case-01",
+  "candidate_id": "b6d931ae5be04da583aac96f0119e804",
+  "process_epoch": "94bbc3a3994e4d1c88965bcddac2fda2:g2",
+  "phase": "initial",
+  "checkpoint_challenge": "A blue kettle sits on the second shelf.",
+  "model_fingerprint": "sha256:db2c8830820da8bd3370bbfacf0799e33085ef7b8b1ca27840b88e3e8101b732",
+  "control_header_names": null,
+  "task": "vault-code",
+  "semantic_case": null,
+  "controller_proof_eligible": true,
+  "source_fact_sha256": "a973c6f67ba1b5be721150d670b910e180304ce9d5b84ae82ea61a1e67361308",
+  "answer_sha256": "23759997b3c59884dc4c0ff5320d6301b0e7f63bf0f6483a7b54d7d43bc5ccd1",
+  "semantic_answer_match": false,
+  "answer_class": "UNKNOWN",
+  "semantic_nonce_match": false,
+  "messages": [
+    {
+      "message_id": "agentmsg_5a7dccd8-a785-43a5-bad3-2ba33d8e066f",
+      "status": "delivered"
+    }
+  ],
+  "source_phase": {
+    "session_id": "source-22469487-ee20-4727-a46c-531424ad4103",
+    "runtime_id": "94bbc3a3994e4d1c88965bcddac2fda2",
+    "runtime_generation": 2,
+    "model_fingerprint": "sha256:db2c8830820da8bd3370bbfacf0799e33085ef7b8b1ca27840b88e3e8101b732",
+    "source": {
+      "capture_id": "capture-a7853312-7b20-4ab8-937d-49307fff04d4",
+      "source_request_id": "source-0f313206-f7b5-480d-978d-aea33030187a",
+      "turn_nonce": "turn-af6ee3af-7029-45d0-933a-fc516e31c8ba",
+      "intent_digest": "9662411d7a717540f9032952740da232a4378a458391274fb1b35660b082fa00",
+      "state": "Captured",
+      "receipt": {
+        "native_rid": "939ff55568bc4c2b906b53063a7c1848",
+        "response_id": "939ff55568bc4c2b906b53063a7c1848",
+        "capture_commit_id": "e1d768f5fea4a3351d07f97a9c00fce797fa854e7c02b9296abf4fe2d82f7adc",
+        "handle_sha256": "3c72802343d8b803c9f3a5fdab6c40da0fe3bd95c520ed98979c5c8264d90bec",
+        "output_sha256": "8929f7f0d1cdb7211dc265be30898c712b4cfe9622ba1e7fbeb644e8ff27f137",
+        "retained_count": 102,
+        "logical_prefix_bytes": 1253376,
+        "ready_ranks": 8,
+        "expected_ranks": 8,
+        "layout_digest": "a55bf3e06038c4683c5ddeffcb947c46e962f2184291de6d55a68b04290fa77d"
+      },
+      "tool_claimed": true,
+      "handoff_admitted": true,
+      "published_message": [
+        "agentmsg_5a7dccd8-a785-43a5-bad3-2ba33d8e066f",
+        "546c06669972de86f28d02cf005c4dc83414fcefa54900be127f1f04c5f9148d"
+      ],
+      "negative_control_armed": false,
+      "negative_control_exported": false
+    },
+    "receiver": []
+  },
+  "receiver_phase": {
+    "session_id": "receiver-578c03ae-f3eb-48c4-ac15-6d4bb9f7ed64",
+    "runtime_id": "94bbc3a3994e4d1c88965bcddac2fda2",
+    "runtime_generation": 2,
+    "model_fingerprint": "sha256:db2c8830820da8bd3370bbfacf0799e33085ef7b8b1ca27840b88e3e8101b732",
+    "source": null,
+    "receiver": [
+      {
+        "message_id": "agentmsg_5a7dccd8-a785-43a5-bad3-2ba33d8e066f",
+        "receiver_session_id": "receiver-578c03ae-f3eb-48c4-ac15-6d4bb9f7ed64",
+        "sender_session_id": "source-22469487-ee20-4727-a46c-531424ad4103",
+        "runtime_id": "94bbc3a3994e4d1c88965bcddac2fda2",
+        "runtime_generation": 2,
+        "model_fingerprint": "sha256:db2c8830820da8bd3370bbfacf0799e33085ef7b8b1ca27840b88e3e8101b732",
+        "handle_sha256": "3c72802343d8b803c9f3a5fdab6c40da0fe3bd95c520ed98979c5c8264d90bec",
+        "request_id": "consume-2771d269-aac1-41f6-b96b-0b8c338a4788",
+        "lease_state": "Consumed",
+        "status": "CONSUMED"
+      }
+    ]
+  },
+  "receiver_request_audit": [
+    {
+      "source_facts_absent": true,
+      "ordinary_user_messages": 1,
+      "body_sha256_before_attachment": "517568b193f0b0abddf754e56a7219ba05cd43bc892c538fa7a4bf3d83b03899",
+      "max_tokens": 131072,
+      "reasoning_effort": "max"
+    }
+  ],
+  "native_error": false,
+  "source_native_error": false,
+  "action_completed": true,
+  "source_handoff_diagnostic": {
+    "calls": [
+      {
+        "native_tool": true,
+        "child_role": true,
+        "receiver_name": true,
+        "argument_count": 2
+      }
+    ],
+    "errors": []
+  },
+  "source_completion_diagnostic": {
+    "binding_count": 1,
+    "all_native_tool": true,
+    "parsed": {
+      "calls": [
+        {
+          "native_tool": true,
+          "child_role": true,
+          "receiver_name": true,
+          "argument_count": 2
+        }
+      ],
+      "errors": []
+    }
+  },
+  "ordinary_kernel_source_route": "unsupported",
+  "production_enabled": false,
+  "logical_cleanup_confirmed": true,
+  "physical_gpu_free_proven": false,
+  "case_passed": false
+}

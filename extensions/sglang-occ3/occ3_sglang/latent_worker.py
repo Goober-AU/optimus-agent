@@ -339,6 +339,8 @@ class WorkerRuntime:
         torch.distributed.broadcast(prefix, src=self.group.ranks[0], group=self.group.device_group)
         prefix = anchor_tiled(prefix, self.embedding, alpha=self.profile.anchor_alpha,
                               tp_group=self.group, tile_rows=self.profile.tile_rows)
+        if self.rank == 0:
+            _probe_alignment(h, embeddings, prefix, self.profile)
         event = self.event()
         record.prefix = prefix
         record.events.append(event)
@@ -846,6 +848,33 @@ def abort_request(scheduler, req, reason):
     except Exception:
         runtime.poisoned = True
         raise
+
+
+def _probe_alignment(hidden, embeddings, prefix, profile):
+    """Optional scalar probe of one captured turn. Never fails the turn.
+
+    Enabled only by OCC3_ALIGN_PROBE=<path>. Writes one JSON object per line with
+    the fixed key set of calibration_probe.PROBE_KEYS; no tensor, token id or text
+    is written.
+    """
+    import json
+    import os
+    path = os.environ.get("OCC3_ALIGN_PROBE")
+    if not path:
+        return
+    try:
+        from .calibration_probe import probe_relation
+        result = probe_relation(hidden, embeddings, prefix)
+        result["anchor_alpha"] = float(profile.anchor_alpha)
+        result["max_prefix_tokens"] = int(profile.max_prefix_tokens)
+        with open(path, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(result, sort_keys=True) + "\n")
+    except Exception as error:
+        try:
+            with open(path + ".error", "a", encoding="utf-8") as handle:
+                handle.write(type(error).__name__ + ":" + str(error) + "\n")
+        except Exception:
+            pass
 
 
 def load_runtime_profile():
