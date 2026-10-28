@@ -290,7 +290,7 @@ def test_latent_worker_pins_the_capture_and_commit_arithmetic():
         "positions = torch.arange(len(req.origin_input_ids) + output_start - 1,",
         "destination = (record.accepted_count + i) % descriptor.max_prefix_tokens",
         "embeddings = self.embedding(tokens)",
-        "aligned, _ = align_hidden_sequence(h, embeddings, self.target_norm)",
+        "aligned, _ = self.aligner(h, embeddings, self.target_norm)",
     ):
         once(text, snippet, str(WORKER))
     assert text.count('"predictor_position_offset": -1') == 1

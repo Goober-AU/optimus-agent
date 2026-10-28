@@ -1,8 +1,11 @@
 """Offline packaging for an exclusive disposable derived-image source tree.
 
-No SGLang, Torch, or OCC3 runtime imports. Hashes and syntax are packaging proof,
-not installed-source, GPU, model-identity, or readiness proof. On any interrupted
-or failed apply, discard the disposable tree; this is never an in-place repair.
+No SGLang, Torch, or OCC3 runtime imports at module load: the shipped method ids
+are read lazily from occ3_sglang/native_profile.py, which itself imports neither
+SGLang nor Torch, so the registry stays the only place a method id is written.
+Hashes and syntax are packaging proof, not installed-source, GPU, model-identity,
+or readiness proof. On any interrupted or failed apply, discard the disposable
+tree; this is never an in-place repair.
 """
 from __future__ import annotations
 
@@ -28,7 +31,8 @@ PROFILE_FIELDS = frozenset({
     "max_prefix_tokens", "max_live_bytes", "workspace_bytes", "max_records",
     "max_active", "max_ttl_seconds", "anchor_alpha", "tile_rows", "method",
 })
-METHOD = "statebridge.glm53.final-prenorm-predictor.continuous-prefix.v1"
+# Frozen-artifact reference: optional, because the per-message method names none.
+OPTIONAL_PROFILE_FIELDS = frozenset({"calibration_path", "calibration_digest"})
 OUTPUT_NAMES = ("native_profile.json", "native_sources.json", "_native_profile_digest.py")
 MAX_PROFILE_BYTES = 16384
 MAX_SOURCES_BYTES = 65536
@@ -56,6 +60,38 @@ class PackageError(Exception):
     def __init__(self, code):
         self.code = code
         super().__init__(code)
+
+
+def shipped_methods():
+    """Method ids a packaged profile may pin, read from the registry that owns them.
+
+    The registry in occ3_sglang/native_profile.py is the only place a native
+    method id is spelled out, so packaging never keeps a literal that can drift
+    from the installed runtime. Imported lazily: this module is an offline
+    source transform and keeps no runtime import at module load time.
+    """
+    try:
+        from occ3_sglang import native_profile
+    except ImportError:
+        raise PackageError("method_registry_unavailable") from None
+    return tuple(native_profile.advertised_methods())
+
+
+def default_method():
+    """The method a profile pins when it does not name one: the per-message method."""
+    try:
+        from occ3_sglang import native_profile
+    except ImportError:
+        raise PackageError("method_registry_unavailable") from None
+    return native_profile.PER_MESSAGE_METHOD
+
+
+def __getattr__(name):
+    # Compatibility shim: METHOD was a local literal. It now resolves to the
+    # registry's default method instead of a copy that can silently drift.
+    if name == "METHOD":
+        return default_method()
+    raise AttributeError(name)
 
 
 def _need(condition, code):
@@ -102,8 +138,8 @@ def _json(raw):
         raise PackageError("invalid_json") from None
 
 
-def _keys(value, fields, code):
-    _need(type(value) is dict and set(value) == fields, code)
+def _keys(value, fields, code, optional=frozenset()):
+    _need(type(value) is dict and fields <= set(value) <= fields | optional, code)
     return value
 
 
@@ -249,7 +285,15 @@ def _source(raw, relative, *, attested_sg):
 
 
 def _profile(value):
-    _keys(value, PROFILE_FIELDS, "invalid_profile_fields")
+    _keys(value, PROFILE_FIELDS, "invalid_profile_fields", OPTIONAL_PROFILE_FIELDS)
+    path_value = value.get("calibration_path", "")
+    digest_value = value.get("calibration_digest", "")
+    _need(type(path_value) is str and type(digest_value) is str
+          and bool(path_value) == bool(digest_value), "invalid_profile_calibration_reference")
+    if path_value:
+        _need(0 < len(path_value) <= 512 and path_value.isprintable()
+              and os.path.isabs(path_value), "invalid_profile_calibration_path")
+        _digest(digest_value)
     for name in ("model_fingerprint", "model_id", "method"):
         _need(type(value[name]) is str and _IDENTIFIER.fullmatch(value[name]) is not None,
               "invalid_profile_identifier")
@@ -259,8 +303,10 @@ def _profile(value):
     _need(type(value["anchor_alpha"]) in (int, float) and math.isfinite(value["anchor_alpha"]),
           "invalid_profile_alpha")
     # Current audited RuntimeProfile bounds, not evidence of actual model/TP/GPU state.
+    # A packaged profile may only pin a method the installed registry advertises.
+    _need(value["method"] in shipped_methods(), "profile_method_not_advertised")
     _need((value["expected_ranks"], value["hidden_dim"], value["layer_index"]) == (8, 6144, 77)
-          and value["max_prefix_tokens"] in (8, 16, 32, 64, 128) and value["method"] == METHOD
+          and value["max_prefix_tokens"] in (8, 16, 32, 64, 128)
           and value["max_active"] == 1 and value["max_records"] <= 4096
           and value["max_live_bytes"] <= 2**30 and value["workspace_bytes"] <= 2**30
           and value["max_ttl_seconds"] <= 3600 and value["tile_rows"] <= 4096

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use super::dialect::DialectRegistry;
 use super::occ1::{Occ1Dialect, Occ1Message};
 use super::occ2;
-use crate::core::agent_messages::AGENT_MESSAGE_CUSTOM_TYPE;
+use crate::core::agent_messages::{Occ3DeliveryDetails, AGENT_MESSAGE_CUSTOM_TYPE};
 
 pub const MAX_ACTIVITY_MESSAGES: usize = 32;
 const TRANSCRIPT_SCAN_LIMIT: usize = 128;
@@ -90,13 +90,44 @@ pub fn from_admitted_messages_with_registry(messages: &[AgentMessage], session_i
             bounded_id(&details["id"]), bounded_id(&details["from"]["sessionId"]), details["message"].as_str(),
         ) else { continue; };
         if source == session_id || deliveries.iter().any(|delivery: &CommunicationDelivery| delivery.id == id) { continue; }
+        let kind = match native_delivery(details) {
+            // Only a recorded completed-use receipt may report Latent.
+            NativeDelivery::Completed => CommunicationKind::Latent,
+            // A native delivery without that receipt carries no pulse, and its
+            // fixed control body is never reinterpreted as text.
+            NativeDelivery::Suppressed => continue,
+            NativeDelivery::Absent => recorded_delivery_kind(details).unwrap_or_else(|| classify_with_registry(text, registry)),
+        };
         deliveries.push(CommunicationDelivery {
-            id: id.to_owned(), source_session_id: source.to_owned(), kind: recorded_delivery_kind(details).unwrap_or_else(|| classify_with_registry(text, registry)), timestamp: *timestamp,
+            id: id.to_owned(), source_session_id: source.to_owned(), kind, timestamp: *timestamp,
         });
         if deliveries.len() == MAX_ACTIVITY_MESSAGES { break; }
     }
     deliveries.reverse();
     CommunicationActivity { generation: generation.to_owned(), deliveries }
+}
+
+/// What the recorded OCC-3 native marker says about one delivery.
+enum NativeDelivery {
+    /// No native marker: every non-native record keeps its existing mapping.
+    Absent,
+    /// Pending, unknown, or an unconsumed claim: no pulse at all.
+    Suppressed,
+    /// The receiver's completed-use receipt backed this delivery.
+    Completed,
+}
+
+/// Reads `details.occ3Delivery` (written by the native handoff paths). A marker is
+/// accepted as completed only when its kind, completed-use bit and receipt digest
+/// agree; everything else is suppressed rather than inferred from the body.
+fn native_delivery(details: &serde_json::Value) -> NativeDelivery {
+    if details.get("occ3Delivery").is_none() {
+        return NativeDelivery::Absent;
+    }
+    match Occ3DeliveryDetails::from_details(details) {
+        Some(marker) if marker.is_completed_native_latent() => NativeDelivery::Completed,
+        _ => NativeDelivery::Suppressed,
+    }
 }
 
 /// The delivery classification recorded once at delivery time

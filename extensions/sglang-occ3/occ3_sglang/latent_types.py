@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+import os
 import re
 from dataclasses import asdict, dataclass
 from typing import Any
@@ -57,6 +58,31 @@ def require_members(checks, code="profile"):
     failed = [name for name, holds in checks if not holds]
     if failed:
         raise LatentError(code, members=failed)
+
+
+def advertised_method(value):
+    """True when value is a method id the native registry advertises.
+
+    native_profile.py owns the one list of methods this build may pin, capture
+    or negotiate, so a profile names either the per-message method (the default
+    below) or the independent-calibration method, and never a copy of either.
+    The registry is imported lazily: latent_types must stay importable while
+    native_profile imports it.
+    """
+    if type(value) is not str:
+        return False
+    try:
+        from .native_profile import ProfileError, advertised_methods
+    except ImportError:
+        # No usable registry in this host (an embedded or stubbed runtime): the
+        # per-message method is the only id latent_types itself defines, so no
+        # other id can be named and nothing else is accepted here.
+        return value == METHOD
+    try:
+        return value in advertised_methods()
+    except ProfileError:
+        # A registry that cannot describe its own entries is broken, not open.
+        return False
 
 
 def sha(value):
@@ -117,7 +143,17 @@ class RuntimeProfile:
     max_ttl_seconds: int = 3600
     anchor_alpha: float = 0.0
     tile_rows: int = 256
+    # An advertised native method id. The default is the per-message method, so
+    # an unpinned caller is unchanged; the independent-calibration method is a
+    # different id with its own artifact, never a reinterpretation of this one.
     method: str = METHOD
+    # The frozen calibration artifact this profile is bound to: an absolute path
+    # and the artifact_digest that the file at that path must contain. Both are
+    # empty for the per-message method, which consumes no artifact. The worker
+    # resolves the pair through statebridge_calibrated.deserialize_artifact
+    # before any aligner exists, so a mismatched file is never loaded.
+    calibration_path: str = ""
+    calibration_digest: str = ""
 
     def __post_init__(self):
         for key in ("runtime_epoch", "model_fingerprint", "model_id"):
@@ -129,7 +165,19 @@ class RuntimeProfile:
             uint(getattr(self, key))
         require(type(self.anchor_alpha) in (int, float) and math.isfinite(self.anchor_alpha), "profile")
         require(self.expected_ranks == 8 and self.hidden_dim == 6144 and self.layer_index == 77, "profile")
-        require(self.max_prefix_tokens in (8, 16, 32, 64, 128) and self.method == METHOD, "profile")
+        require(self.max_prefix_tokens in (8, 16, 32, 64, 128)
+                and advertised_method(self.method), "profile")
+        for name in ("calibration_path", "calibration_digest"):
+            require(type(getattr(self, name)) is str, "profile")
+        # A reference is all-or-nothing, absolute and digest-pinned; the
+        # per-message method consumes no artifact, so it may not carry one.
+        require(bool(self.calibration_path) == bool(self.calibration_digest), "profile")
+        if self.calibration_path:
+            require(0 < len(self.calibration_path) <= 512
+                    and "\0" not in self.calibration_path
+                    and os.path.isabs(self.calibration_path), "profile")
+            require(HEX.fullmatch(self.calibration_digest) is not None, "identity")
+            require(self.method != METHOD, "profile")
         require(self.max_active == 1 and 1 <= self.max_records <= 4096, "profile")
         require(0 < self.max_live_bytes <= 2**30 and 0 < self.workspace_bytes <= 2**30, "profile")
         require(self.anchor_alpha in (0.0, 0.3) and 1 <= self.tile_rows <= 4096, "profile")

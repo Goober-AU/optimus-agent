@@ -304,6 +304,188 @@ pub struct AgentSessionMessageDetails {
     pub occ2_delivery: Option<Occ2DeliveryDetails>,
 }
 
+/// The OCC-3 native delivery marker, recorded under `details.occ3Delivery` of one
+/// agent-session record: the only evidence that a delivered native handoff reached
+/// the receiver's completed-use receipt.
+/// Content-free by construction: a bounded method id, the runtime generation,
+/// and two digests. No handle, no receipt blob, no tensor bytes, no body text.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Occ3DeliveryDetails {
+    /// [`OCC3_DELIVERY_PENDING`] or [`OCC3_DELIVERY_LATENT_NATIVE`].
+    pub kind: String,
+    /// The connector's advertised native method id.
+    pub method_id: String,
+    /// Monotonic runtime generation the marker was minted against.
+    pub runtime_generation: u64,
+    /// Digest of the receiver runtime identity (never the identity itself).
+    pub runtime_identity_sha256: String,
+    /// Digest of the completed-use receipt; present only once consumed.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub receipt_sha256: Option<String>,
+    /// True only for a receipt that proved completed use.
+    #[serde(default)]
+    pub completed_use: bool,
+}
+
+/// Recorded before the receiver's completed-use receipt exists: no pulse.
+pub const OCC3_DELIVERY_PENDING: &str = "pending";
+/// Recorded once, and only once, the receiver proved completed use.
+pub const OCC3_DELIVERY_LATENT_NATIVE: &str = "latent_native";
+
+const MAX_OCC3_NATIVE_ID_CHARS: usize = 128;
+
+fn bounded_occ3_native_id(value: &str) -> bool {
+    !value.is_empty()
+        && value.chars().count() <= MAX_OCC3_NATIVE_ID_CHARS
+        && !value.chars().any(char::is_control)
+}
+
+fn is_sha256_hex(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || matches!(byte, b'a'..=b'f'))
+}
+
+impl Occ3DeliveryDetails {
+    fn marker(
+        kind: &str,
+        method_id: &str,
+        runtime_generation: u64,
+        runtime_identity_sha256: &str,
+        receipt_sha256: Option<&str>,
+    ) -> Result<Self, String> {
+        if !bounded_occ3_native_id(method_id)
+            || !is_sha256_hex(runtime_identity_sha256)
+            || receipt_sha256.is_some_and(|digest| !is_sha256_hex(digest))
+        {
+            return Err("OCC-3 delivery marker rejected".into());
+        }
+        Ok(Self {
+            kind: kind.to_string(),
+            method_id: method_id.to_string(),
+            runtime_generation,
+            runtime_identity_sha256: runtime_identity_sha256.to_string(),
+            receipt_sha256: receipt_sha256.map(str::to_string),
+            completed_use: kind == OCC3_DELIVERY_LATENT_NATIVE,
+        })
+    }
+
+    /// Admitted but not consumed: recorded so the control-only body is never
+    /// classified as text, and never projected as a pulse.
+    pub fn pending(
+        method_id: &str,
+        runtime_generation: u64,
+        runtime_identity_sha256: &str,
+    ) -> Result<Self, String> {
+        Self::marker(
+            OCC3_DELIVERY_PENDING,
+            method_id,
+            runtime_generation,
+            runtime_identity_sha256,
+            None,
+        )
+    }
+
+    /// The receiver's completed-use receipt exists for this exact message id.
+    pub fn latent_native(
+        method_id: &str,
+        runtime_generation: u64,
+        runtime_identity_sha256: &str,
+        receipt_sha256: &str,
+    ) -> Result<Self, String> {
+        Self::marker(
+            OCC3_DELIVERY_LATENT_NATIVE,
+            method_id,
+            runtime_generation,
+            runtime_identity_sha256,
+            Some(receipt_sha256),
+        )
+    }
+
+    /// The recorded marker of one delivery, when the record carries one.
+    pub fn from_details(details: &Value) -> Option<Self> {
+        serde_json::from_value(details.get("occ3Delivery")?.clone()).ok()
+    }
+
+    /// True only for a marker that names a completed consumption. The label, the
+    /// completed-use bit and the receipt digest must all agree, so a record that
+    /// merely claims `latent_native` in text is never admitted.
+    pub fn is_completed_native_latent(&self) -> bool {
+        self.kind == OCC3_DELIVERY_LATENT_NATIVE
+            && self.completed_use
+            && bounded_occ3_native_id(&self.method_id)
+            && is_sha256_hex(&self.runtime_identity_sha256)
+            && self
+                .receipt_sha256
+                .as_deref()
+                .is_some_and(is_sha256_hex)
+    }
+}
+
+/// Writes the marker onto the already-recorded delivery `message_id`, keeping the
+/// same record, message id and content. Returns false when no record matches.
+fn write_occ3_delivery(details: &mut Value, marker: &Occ3DeliveryDetails) -> bool {
+    let Some(object) = details.as_object_mut() else {
+        return false;
+    };
+    let Ok(value) = serde_json::to_value(marker) else {
+        return false;
+    };
+    object.insert("occ3Delivery".to_string(), value);
+    true
+}
+
+/// Stamps one not-yet-delivered agent-session record.
+pub fn stamp_occ3_delivery_record(
+    record: &mut CustomAgentMessage,
+    marker: &Occ3DeliveryDetails,
+) -> Result<(), String> {
+    let CustomAgentMessage::Custom {
+        custom_type,
+        details,
+        ..
+    } = record
+    else {
+        return Err("OCC-3 delivery marker requires a custom message".into());
+    };
+    if custom_type != AGENT_MESSAGE_CUSTOM_TYPE {
+        return Err("OCC-3 delivery marker requires an agent message".into());
+    }
+    let details = details.get_or_insert_with(|| Value::Object(Map::new()));
+    write_occ3_delivery(details, marker)
+        .then_some(())
+        .ok_or_else(|| "OCC-3 delivery marker rejected".to_string())
+}
+
+/// Rewrites one already-admitted delivery in the live transcript. The record, its
+/// message id and its content are unchanged, so a repeated stamp is idempotent and
+/// the activity projection still de-duplicates by that id.
+pub fn stamp_occ3_delivery(
+    messages: &mut [AgentMessage],
+    message_id: &str,
+    marker: &Occ3DeliveryDetails,
+) -> bool {
+    for message in messages.iter_mut().rev() {
+        let AgentMessage::Custom(CustomAgentMessage::Custom {
+            custom_type,
+            details: Some(details),
+            ..
+        }) = message
+        else {
+            continue;
+        };
+        if custom_type != AGENT_MESSAGE_CUSTOM_TYPE
+            || details.get("id").and_then(Value::as_str) != Some(message_id)
+        {
+            continue;
+        }
+        return write_occ3_delivery(details, marker);
+    }
+    false
+}
+
 #[derive(Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentSessionMessageReceipt {

@@ -7305,6 +7305,11 @@ impl AgentDaemon {
         }
         self.summarizer.seed(&state);
         self.record_worker_recovery_state(&state, "ready", None);
+        // Experimental OCC-3 is off by default, so this is a no-op for every
+        // ordinary session. When it is opted in, the session is enrolled
+        // before its first prompt so the native permit and handoff tool are
+        // installed while the session is still idle.
+        let _ = self.activate_experimental_occ3(&state).await;
         Ok(state)
     }
 
@@ -16659,6 +16664,93 @@ impl AgentDaemon {
         self.set_state_session_name(state, name).await
     }
 
+
+    /// Experimental OCC-3 activation for one live session.
+    ///
+    /// Off by default: when `agentCommunication.occ3Enabled` and
+    /// `agentCommunication.occ3Experimental` are both false this returns
+    /// before any network access. When they are on, the model's `occ3`
+    /// block plus a live readiness handshake decide, and every refusal is a
+    /// named decline logged as a reason code only.
+    ///
+    /// Activation installs the source/receiver permits and the
+    /// `occ3_handoff` tool. It is not evidence of semantic reliability and it
+    /// never changes the ordinary text/OCC-1/OCC-2 path.
+    async fn activate_experimental_occ3(
+        self: &Arc<Self>,
+        state: &Arc<StdMutex<ActiveSessionState>>,
+    ) -> Result<(), crate::core::occ3_connectors::activation::Occ3Decline>
+    {
+        use crate::core::occ3_connectors::activation::{
+            self, Occ3ActivationRequest, Occ3Decline, ACTIVATION_HANDSHAKE_TIMEOUT,
+        };
+        let (session, settings, model) = {
+            let session = self.session_of(state);
+            // Holding the state lock here is not possible inside the
+            // async handshake below, so read everything now.
+            let settings = session.settings_manager();
+            let model = session.model_identity();
+            (session, settings, model)
+        };
+        let Some(model) = model else { return Err(Occ3Decline::NotConfigured) };
+        let (enabled, experimental, endpoint) = match settings {
+            Some(settings) => {
+                let settings = settings.lock().expect("settings manager poisoned");
+                (
+                    settings.get_agent_communication_occ3_enabled(),
+                    settings.get_agent_communication_occ3_experimental(),
+                    settings.get_agent_communication_occ3_endpoint(),
+                )
+            }
+            None => (false, false, None),
+        };
+        let request = Occ3ActivationRequest::new(&model, enabled, experimental)
+            .with_endpoint_override(endpoint);
+        // Off by default: no network, no log line, no behaviour change.
+        if !enabled && !experimental {
+            return Err(Occ3Decline::DisabledByPolicy);
+        }
+        let ready = match activation::verify_cached(&request, ACTIVATION_HANDSHAKE_TIMEOUT).await {
+            Ok(ready) => ready,
+            Err(decline) => {
+                self.log(&format!(
+                    "occ3 activation declined reason={} session={}",
+                    decline.as_str(),
+                    session.session_id(),
+                ));
+                return Err(decline);
+            }
+        };
+        activation::register(&ready);
+        let session_id = session.session_id();
+        let Some(agent_session) = session.agent_session() else {
+            return Err(Occ3Decline::ConnectorUnavailable);
+        };
+        let controller = self.create_agent_message_controller({
+            let state = Arc::clone(state);
+            Arc::new(move || Some(Arc::clone(&state)))
+        });
+        match activation::enroll(&agent_session, &model, &ready, controller).await {
+            Ok(()) => {
+                self.log(&format!(
+                    "occ3 experimental activation enabled session={} connector={} method={}",
+                    session_id,
+                    ready.connector_id,
+                    ready.method.as_str(),
+                ));
+                self.schedule_roster_flush();
+                Ok(())
+            }
+            Err(_) => {
+                self.log(&format!(
+                    "occ3 activation failed session={} reason=install_refused",
+                    session_id,
+                ));
+                Err(Occ3Decline::ModelIdentityMismatch)
+            }
+        }
+    }
+
     /// `createAgentMessageController(getCurrentState)` (`daemon-mode.ts:3363-3386`).
     fn create_agent_message_controller(
         self: &Arc<Self>,
@@ -16823,6 +16915,31 @@ impl AgentSessionMessageController for DaemonAgentMessageController {
             // The existing normal admission/pump path receives control only.
             // Its custom details carry the stable ID, never the state handle.
             let status=daemon.accept_agent_session_message(&target,&payload).await?;
+            // Admission is not consumption. Stamp the pending marker first so
+            // the content-free activity projection suppresses the control-only
+            // body instead of reporting it as ordinary text; only the receiver's
+            // own completed-use receipt may upgrade it to a latent delivery.
+            let receiver_session=daemon.session_of(&target);
+            let agent=receiver_session.agent_session()
+                .ok_or("Native receiver session unavailable")?;
+            let marker=receiver.stamp_delivery_marker(&*agent.agent,&payload.id)?;
+            if !marker.is_completed_native_latent() {
+                // No completed-use receipt exists, so no successful-delivery
+                // event may be projected. Terminal receiver states are refusals
+                // (never a text replay); a queued or admitted delivery stays a
+                // truthful transport acknowledgement with no completion marker.
+                use crate::core::occ::occ3::types::Occ3DeliveryStatus as Status;
+                if let Ok(outcome)=receiver.outcome(&payload.id) {
+                    match outcome {
+                        Status::Uncertain=>return Err("Native receiver outcome uncertain; no replay".into()),
+                        Status::Failed=>return Err("Native receiver failed; no replay".into()),
+                        Status::Expired=>return Err("Native receiver state expired; no replay".into()),
+                        Status::Consumed|Status::Acknowledged=>
+                            return Err("Native receiver completed-use receipt missing".into()),
+                        Status::Prepared|Status::Captured|Status::Admitted|Status::Delivered=>{}
+                    }
+                }
+            }
             Ok(create_agent_session_message_receipt(&payload,&status,&now_iso()))
         })
     }

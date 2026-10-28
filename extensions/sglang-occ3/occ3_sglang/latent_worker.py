@@ -19,10 +19,24 @@ from .latent_types import (LatentError, UniformRequestCancellation, Publication,
                            SessionEnrollment, decode_descriptor, require,
                            validate_control_payload)
 from .prefix_layout import prefix_span
-from .statebridge import (align_hidden_sequence, anchor_tiled, mean_embedding_norm,
-                          shard_ranges, workspace_bound)
+from .alignment_dispatch import aligner_for, load_frozen_artifact
+from .statebridge import (anchor_tiled, mean_embedding_norm, shard_ranges, workspace_bound)
 
 logger = logging.getLogger(__name__)
+
+
+def method_metadata(profile, calibration_digest=""):
+    """Scalar method identity for the capture record: no tensor bytes, no content.
+
+    Every capture reports the method id it was aligned under. A calibrated
+    capture additionally reports the frozen artifact digest, so a consumer can
+    tell which frozen transform produced the prefix; the per-message method has
+    no artifact and therefore no digest key.
+    """
+    metadata = {"method_id": profile.method}
+    if calibration_digest:
+        metadata["artifact_digest"] = calibration_digest
+    return metadata
 
 
 def _decline_code(error):
@@ -59,9 +73,18 @@ class CaptureStage:
 
 
 class WorkerRuntime:
-    def __init__(self, model_runner, tp_group, profile, *, scheduler):
+    def __init__(self, model_runner, tp_group, profile, *, scheduler, artifact=None):
         import torch
         self.torch, self.runner, self.group, self.profile = torch, model_runner, tp_group, profile
+        # The aligner is resolved once, from the negotiated method id and the
+        # frozen artifact this worker holds, before any rank reaches a solver:
+        # a profile that names an artifact resolves it through the validated
+        # reader, and an inconsistent pair declines here instead of degrading.
+        self.calibration = artifact if artifact is not None else load_frozen_artifact(profile)
+        self.aligner = aligner_for(profile, self.calibration)
+        # Scalar identity of the frozen artifact, never tensor content. Empty for
+        # the per-message method, which holds no artifact.
+        self.calibration_digest = getattr(self.aligner, "artifact_digest", "")
         self.registry = LatentRegistry(profile)
         self.streams = {}
         self.poisoned = False
@@ -330,7 +353,10 @@ class WorkerRuntime:
         solver_error, prefix = "", prepared["prefix"]
         if self.rank == 0:
             try:
-                aligned, _ = align_hidden_sequence(h, embeddings, self.target_norm)
+                # One dispatched solver per method id. A refusal is resolved at
+                # install, so this call cannot be answered with per-message
+                # output; any failure stays a uniform numerical decline.
+                aligned, _ = self.aligner(h, embeddings, self.target_norm)
                 prefix.copy_(aligned)
             except Exception:
                 solver_error = "numerical"
@@ -357,6 +383,7 @@ class WorkerRuntime:
                     "ready_ranks": self.profile.expected_ranks, "expected_ranks": self.profile.expected_ranks,
                     "accepted_sequence_digest": sequence_digest, "expires_at_epoch": record.expires_at_epoch,
                     "byte_count": prefix.numel() * prefix.element_size()}
+        metadata.update(method_metadata(self.profile, self.calibration_digest))
         self.preflight("source_ready", lambda: event.synchronize())
         self.consensus(metadata)
         self.preflight("align_complete", lambda: _end_gpu(self, record))
@@ -370,10 +397,10 @@ class WorkerRuntime:
         record.events[:] = [event for event in record.events if not event.query()]
 
 
-def install_worker(model_runner, tp_group, profile, *, scheduler=None):
+def install_worker(model_runner, tp_group, profile, *, scheduler=None, artifact=None):
     global _RUNTIME
     require(_RUNTIME is None, "state")
-    runtime = WorkerRuntime(model_runner, tp_group, profile, scheduler=scheduler)
+    runtime = WorkerRuntime(model_runner, tp_group, profile, scheduler=scheduler, artifact=artifact)
     _RUNTIME = runtime
     if scheduler is not None:
         scheduler.occ3_runtime = runtime
@@ -881,7 +908,10 @@ def load_runtime_profile():
     from .native_profile import get_runtime_incarnation, load_pinned_profile
     static, incarnation = load_pinned_profile(), get_runtime_incarnation()
     expected = set(RuntimeProfile.__dataclass_fields__) - {"runtime_epoch", "runtime_generation"}
-    require(type(static) is dict and set(static) == expected, "profile")
+    # A pinned profile may omit the frozen-artifact reference: the per-message
+    # method names none, so the runtime profile takes its empty default.
+    optional = {"calibration_path", "calibration_digest"}
+    require(type(static) is dict and expected - optional <= set(static) <= expected, "profile")
     return RuntimeProfile(**static, runtime_epoch=incarnation["runtime_epoch"],
                           runtime_generation=incarnation["runtime_generation"])
 
