@@ -22,7 +22,7 @@ pub(super) struct ActivityState {
     identity: (String, Option<String>, u64),
     initialized: bool,
     receivers: BTreeMap<String, Receiver>,
-    until: [Option<Instant>; 3],
+    until: [Option<Instant>; 4],
     supported: bool,
     observed_since_ms: Option<i64>,
     links: BTreeMap<(String, String), Instant>,
@@ -86,11 +86,11 @@ impl ActivityState {
                     // OCC2 is live: the roster projection reports Symbolic only
                     // for delivered bodies that decoded through the strict
                     // OCC-2 symbolic path, so the pulse reflects the wire
-                    // encoding, not the sender's feature flag. LAT stays
-                    // reserved: OCC-3 has no producer yet, so latent-kind
-                    // data is ignored rather than rendered.
+                    // encoding, not the sender's feature flag. Latent is
+                    // reported only for a completed native OCC-3 delivery, so
+                    // OCC3 pulses on delivery, never on intent.
                     CommunicationKind::Symbolic => 2,
-                    CommunicationKind::Latent => continue,
+                    CommunicationKind::Latent => 3,
                 };
                 self.until[index] = Some(now + PULSE);
                 let edge = (delivery.source_session_id.clone(), row.session_id.clone());
@@ -102,7 +102,7 @@ impl ActivityState {
         }
         self.receivers.retain(|id, _| received.contains(id));
         self.links.retain(|(_, to), _| received.contains(to));
-        if !self.supported { self.until = [None; 3]; self.links.clear(); }
+        if !self.supported { self.until = [None; 4]; self.links.clear(); }
         self.initialized = self.supported;
         pulse
     }
@@ -117,7 +117,7 @@ impl ActivityState {
     }
 
     pub(super) fn indicators(&self, now: Instant) -> String {
-        ["TXT", "OCC1", "OCC2"].iter().enumerate().map(|(index, label)| {
+        ["TXT", "OCC1", "OCC2", "OCC3"].iter().enumerate().map(|(index, label)| {
             let active = self.until[index].is_some_and(|until| now < until);
             let marker = if !self.supported { "-" } else if active { "●" } else { "○" };
             let intensity = if active { "1" } else { "2" };
@@ -132,6 +132,8 @@ mod tests {
     use super::*;
     use serde_json::json;
     use pi_tui::utils::strip_ansi;
+
+    const IDLE: &str = "○ TXT  ○ OCC1  ○ OCC2  ○ OCC3";
 
     fn row(id: &str, child: bool, messages: serde_json::Value) -> SessionSummary {
         SessionSummary {
@@ -155,23 +157,23 @@ mod tests {
         let mut state = ActivityState::default();
         let baseline = row("child", true, json!([message("old", "parent", "text")]));
         assert!(!state.observe(&[baseline], &parent(), now));
-        assert_eq!(strip_ansi(&state.indicators(now)), "○ TXT  ○ OCC1  ○ OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now)), IDLE);
         let fresh = row("child", true, json!([message("new", "parent", "text")]));
         assert!(state.observe(&[fresh.clone()], &parent(), now));
-        assert_eq!(strip_ansi(&state.indicators(now)), "● TXT  ○ OCC1  ○ OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now)), "● TXT  ○ OCC1  ○ OCC2  ○ OCC3");
         assert!(!state.observe(&[fresh], &parent(), now + Duration::from_millis(500)));
-        assert_eq!(strip_ansi(&state.indicators(now + PULSE)), "○ TXT  ○ OCC1  ○ OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now + PULSE)), IDLE);
         assert!(state.observe(&[row("child", true, json!([message("burst", "parent", "occ1")]))], &parent(), now + PULSE));
-        assert_eq!(strip_ansi(&state.indicators(now + PULSE)), "○ TXT  ● OCC1  ○ OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now + PULSE)), "○ TXT  ● OCC1  ○ OCC2  ○ OCC3");
         assert!(state.observe(&[row("child", true, json!([message("burst2", "parent", "occ1")]))], &parent(), now + PULSE + Duration::from_millis(500)));
         assert!(strip_ansi(&state.indicators(now + PULSE * 2)).contains("● OCC1"));
-        // A symbolic delivery pulses SYM with the same lifetime and
-        // coalescing rules; it never lights the OCC slot. burst2's OCC
-        // pulse is still live here, so SYM lights beside it.
+        // A symbolic delivery pulses OCC2 with the same lifetime and
+        // coalescing rules; it never lights the OCC1 slot. burst2's OCC1
+        // pulse is still live here, so OCC2 lights beside it.
         assert!(state.observe(&[row("child", true, json!([message("sym", "parent", "symbolic")]))], &parent(), now + PULSE * 2));
-        assert_eq!(strip_ansi(&state.indicators(now + PULSE * 2)), "○ TXT  ● OCC1  ● OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now + PULSE * 2)), "○ TXT  ● OCC1  ● OCC2  ○ OCC3");
         assert!(!state.observe(&[row("child", true, json!([message("sym", "parent", "symbolic")]))], &parent(), now + PULSE * 2 + Duration::from_millis(500)));
-        assert_eq!(strip_ansi(&state.indicators(now + PULSE * 3)), "○ TXT  ○ OCC1  ○ OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now + PULSE * 3)), IDLE);
     }
 
     #[test]
@@ -182,16 +184,16 @@ mod tests {
         state.observe(&rows, &parent(), now);
         rows[2] = row("b", true, json!([message("1", "a", "occ1")]));
         assert!(state.observe(&rows, &parent(), now));
-        assert_eq!(strip_ansi(&state.indicators(now)), "○ TXT  ● OCC1  ○ OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now)), "○ TXT  ● OCC1  ○ OCC2  ○ OCC3");
         rows[0] = row("parent", false, json!([message("2", "b", "text")]));
         assert!(state.observe(&rows, &parent(), now));
-        assert_eq!(strip_ansi(&state.indicators(now)), "● TXT  ● OCC1  ○ OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now)), "● TXT  ● OCC1  ○ OCC2  ○ OCC3");
         // A text delivery from outside the family stays filtered (the
-        // scope rule), while an in-family symbolic delivery pulses SYM and
-        // a latent-kind delivery is reserved (never pulses, never renders).
+        // scope rule), while in-family symbolic and latent deliveries pulse
+        // OCC2 and OCC3.
         rows[1] = row("a", true, json!([message("3", "unrelated", "text"), message("4", "parent", "symbolic"), message("5", "parent", "latent")]));
         assert!(state.observe(&rows, &parent(), now + PULSE));
-        assert_eq!(strip_ansi(&state.indicators(now + PULSE)), "○ TXT  ○ OCC1  ● OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now + PULSE)), "○ TXT  ○ OCC1  ● OCC2  ● OCC3");
         assert!(!state.indicators(now + PULSE).contains("LAT"));
     }
 
@@ -208,58 +210,216 @@ mod tests {
         assert!(!state.observe(&rows, &parent(), now));
         let other = RosterParent { session_id: Some("other".into()), ..Default::default() };
         assert!(!state.observe(&rows, &other, now));
-        assert_eq!(strip_ansi(&state.indicators(now)), "- TXT  - OCC1  - OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now)), "- TXT  - OCC1  - OCC2  - OCC3");
         assert!(!state.observe(&rows, &parent(), now));
         rows[0].extra.remove("communicationActivity");
         assert!(!state.observe(&rows, &parent(), now));
-        assert_eq!(strip_ansi(&state.indicators(now)), "- TXT  - OCC1  - OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now)), "- TXT  - OCC1  - OCC2  - OCC3");
     }
 
     #[test]
-    fn symbolic_deliveries_pulse_the_sym_slot_exactly_like_occ1() {
+    fn symbolic_deliveries_pulse_the_occ2_slot_exactly_like_occ1() {
         let now = Instant::now();
         let mut state = ActivityState::default();
         // Baseline first, so both bursts are non-baseline deliveries.
         state.observe(&[row("child", true, json!([message("base", "parent", "text")]))], &parent(), now);
-        // An occ1 delivery pulses the OCC slot only.
+        // An occ1 delivery pulses the OCC1 slot only.
         let occ = row("child", true, json!([message("occ", "parent", "occ1")]));
         assert!(state.observe(&[occ], &parent(), now + Duration::from_millis(100)));
-        assert_eq!(strip_ansi(&state.indicators(now + Duration::from_millis(100))), "○ TXT  ● OCC1  ○ OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now + Duration::from_millis(100))), "○ TXT  ● OCC1  ○ OCC2  ○ OCC3");
         // A symbolic delivery drives the same pulse path (dedupe, family
-        // scope, PULSE lifetime) with no special-casing: it lights SYM
-        // only, never OCC.
+        // scope, PULSE lifetime) with no special-casing: it lights OCC2
+        // only, never OCC1.
         let sym = row("child", true, json!([message("sym", "parent", "symbolic")]));
         assert!(state.observe(&[sym.clone()], &parent(), now + Duration::from_millis(200)));
-        assert_eq!(strip_ansi(&state.indicators(now + Duration::from_millis(200))), "○ TXT  ● OCC1  ● OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now + Duration::from_millis(200))), "○ TXT  ● OCC1  ● OCC2  ○ OCC3");
         // Identical replay is a no-op, exactly like an occ1 replay.
         assert!(!state.observe(&[sym], &parent(), now + Duration::from_millis(300)));
-        // The SYM pulse expires on the same PULSE clock as OCC: both lit
+        // The OCC2 pulse expires on the same PULSE clock as OCC1: both lit
         // at +200ms are dark again at +200ms + PULSE.
-        assert_eq!(strip_ansi(&state.indicators(now + Duration::from_millis(200) + PULSE)), "○ TXT  ○ OCC1  ○ OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now + Duration::from_millis(200) + PULSE)), IDLE);
         // A fresh symbolic delivery after expiry pulses again.
         assert!(state.observe(&[row("child", true, json!([message("sym2", "parent", "symbolic")]))], &parent(), now + Duration::from_millis(200) + PULSE));
-        assert_eq!(strip_ansi(&state.indicators(now + Duration::from_millis(200) + PULSE)), "○ TXT  ○ OCC1  ● OCC2");
+        assert_eq!(strip_ansi(&state.indicators(now + Duration::from_millis(200) + PULSE)), "○ TXT  ○ OCC1  ● OCC2  ○ OCC3");
     }
 
     #[test]
-    fn latent_deliveries_are_reserved_and_never_pulse_or_render() {
+    fn idle_supported_row_renders_four_inactive_segments_and_pulses_nothing() {
         let now = Instant::now();
         let mut state = ActivityState::default();
-        let baseline = row("child", true, json!([message("base", "parent", "text")]));
-        state.observe(&[baseline], &parent(), now);
-        // LAT-kind data may appear on the wire (the kind is serde-decodable);
-        // the state machine ignores it: no pulse, no LAT indicator.
-        let latent = row("child", true, json!([message("lat", "parent", "latent")]));
-        assert!(!state.observe(&[latent], &parent(), now));
-        let rendered = state.indicators(now);
-        assert_eq!(strip_ansi(&rendered), "○ TXT  ○ OCC1  ○ OCC2");
-        assert!(!rendered.contains("LAT"));
-        // LAT never renders in any state: idle, pulsing or unsupported.
-        assert!(state.observe(&[row("child", true, json!([message("t", "parent", "text")]))], &parent(), now));
-        assert!(!state.indicators(now).contains("LAT"));
-        let unsupported = ActivityState::default();
-        assert!(!unsupported.indicators(now).contains("LAT"));
+        let rows = [row("parent", false, json!([])), row("child", true, json!([]))];
+        assert!(!state.observe(&rows, &parent(), now));
+        // Exact current spacing: marker, one space, label, two spaces between segments.
+        assert_eq!(strip_ansi(&state.indicators(now)), "○ TXT  ○ OCC1  ○ OCC2  ○ OCC3");
+        assert_eq!(strip_ansi(&state.indicators(now)).chars().count(), 29);
+        assert!(!state.indicators(now).contains('●'));
+        assert_eq!(state.next_deadline(now), None);
+        // An unchanged idle row keeps every segment inactive.
+        assert!(!state.observe(&rows, &parent(), now + Duration::from_millis(1)));
+        assert_eq!(strip_ansi(&state.indicators(now + Duration::from_millis(1))), IDLE);
+        assert_eq!(state.next_deadline(now + Duration::from_millis(1)), None);
     }
+
+    fn pulsing_kind(kind: &str) -> String {
+        let now = Instant::now();
+        let mut state = ActivityState::default();
+        state.observe(&[row("child", true, json!([]))], &parent(), now);
+        assert!(state.observe(&[row("child", true, json!([message("one", "parent", kind)]))], &parent(), now));
+        strip_ansi(&state.indicators(now))
+    }
+
+    #[test]
+    fn each_delivery_kind_pulses_only_its_own_segment() {
+        for (kind, expected) in [
+            ("text", "● TXT  ○ OCC1  ○ OCC2  ○ OCC3"),
+            ("occ1", "○ TXT  ● OCC1  ○ OCC2  ○ OCC3"),
+            ("symbolic", "○ TXT  ○ OCC1  ● OCC2  ○ OCC3"),
+            ("latent", "○ TXT  ○ OCC1  ○ OCC2  ● OCC3"),
+        ] {
+            assert_eq!(pulsing_kind(kind), expected, "{kind}");
+        }
+    }
+
+    #[test]
+    fn latent_pulse_uses_the_existing_neon_blue_style_and_leaves_other_segments_dim() {
+        let now = Instant::now();
+        let mut state = ActivityState::default();
+        state.observe(&[row("child", true, json!([]))], &parent(), now);
+        assert!(state.observe(&[row("child", true, json!([message("lat", "parent", "latent")]))], &parent(), now));
+        let rendered = state.indicators(now);
+        assert!(rendered.contains("\x1b[1;38;5;39m● OCC3\x1b[22;39m"), "{rendered}");
+        assert!(rendered.contains("\x1b[2;38;5;39m○ TXT\x1b[22;39m"), "{rendered}");
+        assert!(rendered.contains("\x1b[2;38;5;39m○ OCC1\x1b[22;39m"), "{rendered}");
+        assert!(rendered.contains("\x1b[2;38;5;39m○ OCC2\x1b[22;39m"), "{rendered}");
+        assert_eq!(rendered.matches('●').count(), 1);
+        assert_eq!(state.next_deadline(now), Some(now + PULSE));
+    }
+
+    #[test]
+    fn occ3_delivery_pulses_once_per_id_and_never_replays_after_expiry() {
+        let now = Instant::now();
+        let mut state = ActivityState::default();
+        state.observe(&[row("child", true, json!([]))], &parent(), now);
+        let delivery = row("child", true, json!([message("lat", "parent", "latent")]));
+        assert!(state.observe(&[delivery.clone()], &parent(), now));
+        assert_eq!(strip_ansi(&state.indicators(now)), "○ TXT  ○ OCC1  ○ OCC2  ● OCC3");
+        assert_eq!(state.next_deadline(now), Some(now + PULSE));
+        // The same id inside the pulse window is suppressed and keeps the deadline.
+        assert!(!state.observe(&[delivery.clone()], &parent(), now + Duration::from_millis(100)));
+        assert_eq!(state.next_deadline(now + Duration::from_millis(100)), Some(now + PULSE));
+        // The identical roster row replayed after expiry must not re-pulse.
+        assert!(!state.observe(&[delivery], &parent(), now + PULSE));
+        assert_eq!(strip_ansi(&state.indicators(now + PULSE)), IDLE);
+        assert_eq!(state.next_deadline(now + PULSE), None);
+        // A new delivery id after expiry pulses OCC3 again.
+        assert!(state.observe(&[row("child", true, json!([message("lat2", "parent", "latent")]))], &parent(), now + PULSE));
+        assert_eq!(strip_ansi(&state.indicators(now + PULSE)), "○ TXT  ○ OCC1  ○ OCC2  ● OCC3");
+    }
+
+    #[test]
+    fn occ3_pulse_expires_within_pulse_and_clears_its_deadline() {
+        let now = Instant::now();
+        let mut state = ActivityState::default();
+        state.observe(&[row("child", true, json!([]))], &parent(), now);
+        assert!(state.observe(&[row("child", true, json!([message("lat", "parent", "latent")]))], &parent(), now));
+        assert!(state.indicators(now).contains("● OCC3"));
+        assert!(state.indicators(now + PULSE - Duration::from_millis(1)).contains("● OCC3"));
+        assert!(state.indicators(now + PULSE).contains("○ OCC3"));
+        assert_eq!(state.next_deadline(now), Some(now + PULSE));
+        assert_eq!(state.next_deadline(now + PULSE), None);
+    }
+
+    #[test]
+    fn latent_delivery_from_outside_the_family_never_pulses() {
+        let now = Instant::now();
+        let mut state = ActivityState::default();
+        state.observe(&[row("parent", false, json!([])), row("child", true, json!([]))], &parent(), now);
+        let rows = [
+            row("parent", false, json!([])),
+            row("child", true, json!([message("lat", "unrelated", "latent")])),
+        ];
+        assert!(!state.observe(&rows, &parent(), now));
+        assert_eq!(strip_ansi(&state.indicators(now)), IDLE);
+        assert_eq!(state.next_deadline(now), None);
+    }
+
+    #[test]
+    fn unsupported_rows_render_four_dashes_and_never_pulse_occ3() {
+        let now = Instant::now();
+        let mut state = ActivityState::default();
+        let mut plain = row("child", true, json!([]));
+        plain.extra.remove("communicationActivity");
+        assert!(!state.observe(&[plain.clone()], &parent(), now));
+        assert_eq!(strip_ansi(&state.indicators(now)), "- TXT  - OCC1  - OCC2  - OCC3");
+        assert!(!state.indicators(now).contains('●'));
+        assert_eq!(state.next_deadline(now), None);
+        // Losing the projection clears a live OCC3 pulse.
+        state.observe(&[row("child", true, json!([]))], &parent(), now);
+        assert!(state.observe(&[row("child", true, json!([message("lat", "parent", "latent")]))], &parent(), now));
+        assert!(state.indicators(now).contains("● OCC3"));
+        assert!(!state.observe(&[plain], &parent(), now));
+        assert_eq!(strip_ansi(&state.indicators(now)), "- TXT  - OCC1  - OCC2  - OCC3");
+        assert_eq!(state.next_deadline(now), None);
+    }
+
+    #[test]
+    fn generation_change_resets_the_pulse_array_to_all_inactive() {
+        let now = Instant::now();
+        let mut state = ActivityState::default();
+        state.observe(&[row("child", true, json!([]))], &parent(), now);
+        assert!(state.observe(&[row("child", true, json!([message("lat", "parent", "latent")]))], &parent(), now));
+        assert_eq!(strip_ansi(&state.indicators(now)), "○ TXT  ○ OCC1  ○ OCC2  ● OCC3");
+        assert_eq!(state.next_deadline(now), Some(now + PULSE));
+        // A new observation epoch is a new roster generation: the whole pulse
+        // array is replaced, so the live OCC3 deadline is gone at once.
+        let epoch = |messages: serde_json::Value| {
+            let mut row = row("child", true, messages);
+            row.extra.insert("communicationObservationEpoch".into(), json!(2));
+            row
+        };
+        assert!(!state.observe(&[epoch(json!([message("lat", "parent", "latent")]))], &parent(), now + Duration::from_millis(1)));
+        assert_eq!(strip_ansi(&state.indicators(now + Duration::from_millis(1))), IDLE);
+        assert_eq!(state.next_deadline(now + Duration::from_millis(1)), None);
+        // The same delivery id in the new generation is baselined, not replayed.
+        assert!(!state.observe(&[epoch(json!([message("lat", "parent", "latent")]))], &parent(), now + Duration::from_millis(2)));
+        assert_eq!(strip_ansi(&state.indicators(now + Duration::from_millis(2))), IDLE);
+        assert_eq!(state.next_deadline(now + Duration::from_millis(2)), None);
+        // A per-receiver runtime generation change baselines as well: no pulse.
+        let mut reconnected = epoch(json!([message("lat", "parent", "latent")]));
+        reconnected.extra.get_mut("communicationActivity").unwrap()["generation"] = json!("restarted");
+        assert!(!state.observe(&[reconnected], &parent(), now + Duration::from_millis(3)));
+        assert_eq!(strip_ansi(&state.indicators(now + Duration::from_millis(3))), IDLE);
+        assert_eq!(state.next_deadline(now + Duration::from_millis(3)), None);
+    }
+
+    #[test]
+    fn four_segments_degrade_without_panic_or_overflow_at_narrow_widths() {
+        use crate::core::context_health::ContextHealthInput;
+        use crate::modes::interactive::components::subagent_summary_line::SubagentSummaryLine;
+        use pi_tui::{tui::Component, utils::visible_width};
+        use super::super::context_health_indicator::status_line;
+        crate::modes::interactive::theme::theme::init_theme(Some("dark"), false);
+        let now = Instant::now();
+        let mut state = ActivityState::default();
+        state.observe(&[row("parent", false, json!([])), row("child", true, json!([]))], &parent(), now);
+        assert!(state.observe(&[row("parent", false, json!([])), row("child", true, json!([message("lat", "parent", "latent")]))], &parent(), now));
+        let indicators = state.indicators(now);
+        assert!(indicators.contains("● OCC3"), "{indicators}");
+        assert_eq!(visible_width(&strip_ansi(&indicators)), 29);
+        for width in [2usize, 5, 8, 20, 30, 40, 60, 80, 120] {
+            let status = status_line(&indicators, "", &ContextHealthInput::default(), width.saturating_sub(2));
+            if width >= 8 {
+                assert!(visible_width(&status) <= width.saturating_sub(2), "{width}: {status:?}");
+            }
+            let mut line = SubagentSummaryLine::default();
+            line.set_always_visible(true);
+            line.set_communication_status(Some(status));
+            for rendered in line.render(width as f64) {
+                assert!(visible_width(&rendered) <= width, "{width}: {rendered:?}");
+            }
+        }
+    }
+
     #[test]
     fn admitted_message_projection_reaches_neon_bar_for_all_three_formats() {
         use crate::core::agent_messages::{create_agent_session_message, AgentSessionMessagePayload, AgentSessionMessageSender, AgentSessionMessageEndpoint};
