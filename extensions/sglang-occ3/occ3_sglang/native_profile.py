@@ -101,7 +101,7 @@ _METHODS = {entry["method_id"]: MappingProxyType(entry) for entry in (
     _method_entry(PER_MESSAGE_METHOD, PER_MESSAGE_ALIGNMENT, "message-rows",
                   "occ3_sglang.statebridge.align_hidden_sequence", False),
     _method_entry(CALIBRATED_METHOD, "frozen-dual-ridge.v1", "independent-calibration-turns",
-                  "occ3_sglang.statebridge_calibrated.apply_calibration", True),
+                  "occ3_sglang.statebridge_calibrated.apply_map", True),
 )}
 _METHOD_IDS = tuple(_METHODS)
 
