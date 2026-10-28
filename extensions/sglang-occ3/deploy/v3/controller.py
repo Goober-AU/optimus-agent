@@ -3,6 +3,17 @@
 Run from the extension root: python -m deploy.v3.controller preflight --plan FILE
 --attempt-dir NEW_DIRECTORY. swap only launches an independent supervisor; it
 never implies readiness. Native Optimus proof must be supplied externally twice.
+
+Candidate persistence is a plan field, `persistence_policy`, with exactly two
+values: `rollback_on_success` (default, and the policy when the field is absent)
+restores the preserved original once the attempt reaches its verified commit
+point, and `persist_candidate_on_success` keeps the verified candidate running
+as the new production service. The persist policy requires the plan's
+`preserved_original` record and never relaxes a readiness gate: an elapsed
+research deadline (experimental proof, maintenance window) is not a service
+failure, so a healthy candidate is persisted instead of rolled back, while a
+genuine health failure still restores production. The explicit operator
+recovery path is `python -m deploy.v3.controller restore --attempt-dir DIR`.
 """
 from __future__ import annotations
 
@@ -20,7 +31,11 @@ from .docker_api import DockerAPI
 from .lifecycle import (Deadline, Failure, FileLock, Journal, Services,
                         check_supervisor, checked_inspect, exit_aware, is_running,
                         prepare, private_json, read_json, recover, refresh_ingress, require_running,
-                        verify_receipt, wait_ready)
+                        verify_receipt, wait_ready, ExperimentDeadline, MaintenanceWindowClosed,
+                        PERSIST_CANDIDATE_ON_SUCCESS, PERSISTED_CANDIDATE, PERSISTED_PHASE,
+                        PERSISTENCE_GATE, READINESS_GATE, RESEARCH_STAGE_DEADLINES,
+                        EXPERIMENT_SERVICE_HEALTH, classify_experiment_signal, record_experiment_signal,
+                        record_persistence)
 
 
 def proof_matches(receipt, checkpoint):
@@ -46,17 +61,87 @@ class Controller:
         self.plan = self.state["plan"]
         self.services = services or Services(self.original, self.plan, api=api, journal=journal)
         self.end = time.monotonic() + self.plan["deployment_timeout_s"]
+        self.window_end = time.monotonic() + self.plan["maintenance_window_s"]
+        self.verifying_persistence = False
         self.needs_handshake = guard is None
         self.external_guard = guard or (lambda: check_supervisor(journal))
 
+    def persist_mode(self):
+        return self.plan.get("persistence_policy") == PERSIST_CANDIDATE_ON_SUCCESS
+
+    def readiness_verified(self):
+        evidence = (self.journal.read().get("gates") or {}).get(READINESS_GATE)
+        return isinstance(evidence, dict) and evidence.get("ok") is True
+
     def guard(self):
         self.external_guard()
-        if time.monotonic() >= self.end:
-            raise Deadline("controller deployment deadline")
+        now = time.monotonic()
+        if not self.verifying_persistence:
+            if self.persist_mode() and now >= self.window_end:
+                raise MaintenanceWindowClosed("operator maintenance window closed")
+            if now >= self.end:
+                raise Deadline("controller deployment deadline")
         private_json(self.journal.directory / "controller.json", {
             "attempt_id": self.state["attempt_id"], "pid": os.getpid(),
             "heartbeat": time.monotonic(), "status": "running",
         })
+
+    def persist_applies(self, error):
+        """Only a research deadline or a closed window can persist a healthy candidate."""
+        return (isinstance(error, (ExperimentDeadline, MaintenanceWindowClosed)) and
+                self.persist_mode() and self.readiness_verified() and
+                self.journal.read().get("candidate_started") is True)
+
+    def persist_candidate(self, reason):
+        """Declare persistence only after every readiness gate passes again.
+
+        Health, ordinary inference, authentication, native OCC-3 readiness with
+        TP8 ranks/runtime identity, tools and the source/receiver routes all
+        repeat here, so an unhealthy candidate is never declared persistent.
+        """
+        state = self.journal.read()
+        if state["plan"].get("persistence_policy") != PERSIST_CANDIDATE_ON_SUCCESS:
+            raise Failure("candidate persistence requires the persist policy")
+        if not self.readiness_verified():
+            raise Failure("candidate persistence requires the initial readiness gate")
+        previous = (self.end, self.window_end, self.verifying_persistence)
+        self.verifying_persistence = True
+        self.end = time.monotonic() + (self.plan["startup_timeout_s"] + self.plan["request_timeout_s"] +
+                                       self.plan["probe_timeout_s"] + 5)
+        self.window_end = self.end
+        try:
+            self.service_gate(PERSISTENCE_GATE)
+        finally:
+            self.end, self.window_end, self.verifying_persistence = previous
+        candidate = require_running(self.api, state["candidate_id"], state["candidate_image_id"])
+        record_persistence(self.journal, state, candidate, self.original,
+                           decision=PERSISTED_CANDIDATE, reason=str(reason), gate=PERSISTENCE_GATE)
+        self.journal.update(phase=PERSISTED_PHASE)
+        return 0
+
+    def observe_experiment_signal(self, phase):
+        """Classify one durable experiment signal; only a health code is fatal."""
+        path = self.journal.directory / ("experiment-signal-" + phase + ".json")
+        if not path.exists():
+            return
+        signal = read_json(path)
+        classification = classify_experiment_signal(signal)
+        record_experiment_signal(self.journal, phase, signal, classification)
+        if classification == EXPERIMENT_SERVICE_HEALTH:
+            raise Failure("experiment reported a service health failure: " + str(signal.get("code")))
+
+    def note_research_deadlines(self, phase, started):
+        """Source capture and receiver inference deadlines are recorded, never fatal."""
+        now = time.monotonic()
+        due = {phase + ": " + name: (name, field) for name, field in RESEARCH_STAGE_DEADLINES.items()
+               if now >= started + self.plan[field]}
+        if not due:
+            return
+        recorded = dict(self.journal.read().get("stage_deadlines") or {})
+        for key, (name, field) in due.items():
+            recorded.setdefault(key, {"phase": phase, "deadline": name, "field": field,
+                                      "fatal": False, "recorded_at": time.time()})
+        self.journal.update(stage_deadlines=recorded)
 
     def mutate(self, operation, action, **changes):
         self.guard()
@@ -116,9 +201,12 @@ class Controller:
         private_json(self.journal.directory / ("checkpoint-" + phase + ".json"), checkpoint, exclusive=True)
         self.journal.update(phase="WAIT_NATIVE_" + phase.upper())
         receipt_path = self.journal.directory / ("native-proof-" + phase + ".json")
-        deadline = min(self.end, time.monotonic() + self.plan["proof_timeout_s"])
-        while time.monotonic() < deadline:
+        started = time.monotonic()
+        deadline = min(self.end, started + self.plan["proof_timeout_s"])
+        while True:
             self.guard()
+            self.observe_experiment_signal(phase)
+            self.note_research_deadlines(phase, started)
             document = require_running(self.api, self.state["candidate_id"], self.state["candidate_image_id"])
             if document["State"].get("StartedAt") != checkpoint["process_epoch"]:
                 raise Failure("candidate restarted during native proof checkpoint")
@@ -126,8 +214,10 @@ class Controller:
                 proof = proof_matches(read_json(receipt_path), checkpoint)
                 self.journal.gate("native_" + phase, proof)
                 return
-            time.sleep(min(self.plan["poll_interval_s"], max(0, deadline - time.monotonic())))
-        raise Deadline("external native Optimus proof deadline")
+            now = time.monotonic()
+            if now >= deadline:
+                raise ExperimentDeadline("external native Optimus proof deadline")
+            time.sleep(min(self.plan["poll_interval_s"], max(0, deadline - now)))
 
     def planned_restart(self):
         state = self.journal.read()
@@ -177,64 +267,76 @@ class Controller:
             self.guard()
             time.sleep(self.plan["poll_interval_s"])
 
-    def run(self):
+    def deploy(self):
         from .docker_config import assert_candidate_parity
+        if self.needs_handshake:
+            handshake_end = time.monotonic() + min(10, self.plan["controller_timeout_s"])
+            while True:
+                try:
+                    self.external_guard()
+                    break
+                except (Failure, OSError, ValueError):
+                    if time.monotonic() >= handshake_end:
+                        raise Failure("supervisor handshake did not complete") from None
+                    time.sleep(min(0.05, self.plan["poll_interval_s"]))
+        self.guard()
+        admission = self.services.pre_mutation_admission(self.state)
+        if not isinstance(admission, dict) or admission.get("ok") is not True:
+            raise Failure("native latent validation unavailable before mutation")
+        self.journal.update(validation_admission=admission)
+        current = require_running(self.api, self.state["original_id"], self.state["original_image_id"])
+        if current["Name"] != "/" + self.state["original_name"]:
+            raise Failure("original name changed after preflight")
+        assert_candidate_parity(self.original, current, self.state["original_image_id"])
+        candidate = checked_inspect(self.api, self.state["candidate_id"], self.state["candidate_image_id"])
+        if candidate.get("State", {}).get("Status") != "created" or is_running(candidate):
+            raise Failure("exact preflight candidate is no longer unstarted")
+        assert_candidate_parity(self.original, candidate, self.state["candidate_image_id"],
+                                self.state["plan"].get("environment_additions"))
+        self.rehearsal_pause("before_mutation")
+        self.mutate("rename_original", lambda: self.api.rename(self.state["original_id"], self.state["preserved_name"]),
+                    mutation_intent=True, phase="MUTATING")
+        self.rehearsal_pause("after_rename")
+        self.mutate("stop_original", lambda: self.api.stop(self.state["original_id"], seconds=self.plan["stop_timeout_s"]))
+        stopped = checked_inspect(self.api, self.state["original_id"], self.state["original_image_id"])
+        if stopped.get("State", {}).get("Running") or stopped.get("State", {}).get("Restarting"):
+            raise Failure("original did not stop; candidate must remain unstarted")
+        self.journal.update(original_stopped=True)
+        self.mutate("rename_candidate", lambda: self.api.rename(self.state["candidate_id"], self.state["original_name"]))
+        self.mutate("start_candidate", lambda: self.api.start(self.state["candidate_id"]))
+        candidate = require_running(self.api, self.state["candidate_id"], self.state["candidate_image_id"])
+        if candidate.get("RestartCount", 0) != 0:
+            raise Failure("candidate restarted during initial startup")
+        self.journal.update(candidate_started=True, candidate_epoch=candidate["State"]["StartedAt"], phase="STARTING")
+        self.rehearsal_pause("after_start")
+        self.service_gate(READINESS_GATE)
+        if self.persist_mode():
+            # A readiness-verified candidate is no longer bounded by the deployment
+            # deadline: from here the operator maintenance window bounds the attempt.
+            self.end = max(self.end, self.window_end)
+        self.checkpoint("initial")
+        validator = self.services.validator(self.state)
+        self.journal.gate("live_before", self.check(validator.before_restart, self.plan["validation_timeout_s"]))
+        self.planned_restart()
+        self.journal.gate("live_after", self.check(validator.after_restart, self.plan["validation_timeout_s"]))
+        self.service_gate("service_final")
+        self.checkpoint("final")
+        self.guard()
+        self.journal.update(phase="GATES_COMPLETE")
+        return 0
+
+    def run(self):
         with FileLock(self.journal.directory / "controller.lock"):
             if self.state["phase"] != "AUTHORIZED" or not self.state["authorization_consumed"]:
                 raise Failure("worker has no consumed unused attempt authorization")
             try:
-                if self.needs_handshake:
-                    handshake_end = time.monotonic() + min(10, self.plan["controller_timeout_s"])
-                    while True:
-                        try:
-                            self.external_guard()
-                            break
-                        except (Failure, OSError, ValueError):
-                            if time.monotonic() >= handshake_end:
-                                raise Failure("supervisor handshake did not complete") from None
-                            time.sleep(min(0.05, self.plan["poll_interval_s"]))
-                self.guard()
-                admission = self.services.pre_mutation_admission(self.state)
-                if not isinstance(admission, dict) or admission.get("ok") is not True:
-                    raise Failure("native latent validation unavailable before mutation")
-                self.journal.update(validation_admission=admission)
-                current = require_running(self.api, self.state["original_id"], self.state["original_image_id"])
-                if current["Name"] != "/" + self.state["original_name"]:
-                    raise Failure("original name changed after preflight")
-                assert_candidate_parity(self.original, current, self.state["original_image_id"])
-                candidate = checked_inspect(self.api, self.state["candidate_id"], self.state["candidate_image_id"])
-                if candidate.get("State", {}).get("Status") != "created" or is_running(candidate):
-                    raise Failure("exact preflight candidate is no longer unstarted")
-                assert_candidate_parity(self.original, candidate, self.state["candidate_image_id"],
-                                        self.state["plan"].get("environment_additions"))
-                self.rehearsal_pause("before_mutation")
-                self.mutate("rename_original", lambda: self.api.rename(self.state["original_id"], self.state["preserved_name"]),
-                            mutation_intent=True, phase="MUTATING")
-                self.rehearsal_pause("after_rename")
-                self.mutate("stop_original", lambda: self.api.stop(self.state["original_id"], seconds=self.plan["stop_timeout_s"]))
-                stopped = checked_inspect(self.api, self.state["original_id"], self.state["original_image_id"])
-                if stopped.get("State", {}).get("Running") or stopped.get("State", {}).get("Restarting"):
-                    raise Failure("original did not stop; candidate must remain unstarted")
-                self.journal.update(original_stopped=True)
-                self.mutate("rename_candidate", lambda: self.api.rename(self.state["candidate_id"], self.state["original_name"]))
-                self.mutate("start_candidate", lambda: self.api.start(self.state["candidate_id"]))
-                candidate = require_running(self.api, self.state["candidate_id"], self.state["candidate_image_id"])
-                if candidate.get("RestartCount", 0) != 0:
-                    raise Failure("candidate restarted during initial startup")
-                self.journal.update(candidate_started=True, candidate_epoch=candidate["State"]["StartedAt"], phase="STARTING")
-                self.rehearsal_pause("after_start")
-                self.service_gate("service_initial")
-                self.checkpoint("initial")
-                validator = self.services.validator(self.state)
-                self.journal.gate("live_before", self.check(validator.before_restart, self.plan["validation_timeout_s"]))
-                self.planned_restart()
-                self.journal.gate("live_after", self.check(validator.after_restart, self.plan["validation_timeout_s"]))
-                self.service_gate("service_final")
-                self.checkpoint("final")
-                self.guard()
-                self.journal.update(phase="GATES_COMPLETE")
-                return 0
+                return self.deploy()
             except BaseException as error:
+                if self.persist_applies(error):
+                    try:
+                        return self.persist_candidate(error)
+                    except BaseException:
+                        error = sys.exc_info()[1]
                 with contextlib.suppress(Exception):
                     private_json(self.journal.directory / "controller.json", {
                         "attempt_id": self.state["attempt_id"], "pid": os.getpid(),
@@ -246,10 +348,25 @@ class Controller:
                 return 1 if result.get("verified") else 2
 
 
+def restore(api, journal, *, services=None, reason="operator_manual_restore"):
+    """Explicit operator rollback of one attempt, including a persisted candidate.
+
+    This is the same verified restoration the automatic paths use; it never
+    deletes a container or an image and it never reopens the attempt.
+    """
+    result = recover(api, journal, services=services, reason=reason)
+    with contextlib.suppress(Exception):
+        record = journal.read().get("persistence")
+        if isinstance(record, dict):
+            journal.update(persistence=dict(record, manual_restore=result.get("result"),
+                                            manual_restore_verified=bool(result.get("verified"))))
+    return result
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", nargs="?", default="preflight",
-                        choices=("preflight", "swap", "status", "worker", "rehearsal"))
+                        choices=("preflight", "swap", "status", "worker", "rehearsal", "restore"))
     parser.add_argument("--plan")
     parser.add_argument("--attempt-dir")
     parser.add_argument("--approval")
@@ -286,6 +403,12 @@ def main(argv=None):
             print(json.dumps({key: state.get(key) for key in ("attempt_id", "phase", "sequence",
                              "original_id", "candidate_id", "operation", "recovery")}))
             return 0
+        if args.command == "restore":
+            api = DockerAPI(state["plan"].get("docker_socket", "/var/run/docker.sock"))
+            result = restore(api, journal)
+            print(json.dumps({key: result.get(key) for key in
+                              ("result", "reason", "verified", "service_result", "cleanup_complete")}))
+            return 0 if result.get("verified") else 2
         if args.command == "swap":
             if not args.approval:
                 parser.error("swap requires explicit --approval plan")

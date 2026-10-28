@@ -14,7 +14,9 @@ from pathlib import Path
 import queue
 import re
 import secrets
+import shlex
 import stat
+import sys
 import threading
 import time
 from urllib.parse import urlsplit
@@ -34,6 +36,14 @@ class RunningUnready(Deadline):
     pass
 
 
+class ExperimentDeadline(Deadline):
+    """A research deadline elapsed. It is not, by itself, a service-health failure."""
+
+
+class MaintenanceWindowClosed(Deadline):
+    """The operator-scheduled maintenance window closed."""
+
+
 TERMINAL = {"COMPLETE", "RESTORED", "NOOP", "RESTORE_FAILED", "PREFLIGHT_FAILED"}
 REHEARSAL_LABEL = "occ3.v3.rehearsal"
 IMMUTABLE = {"attempt_id", "original_id", "original_image_id", "candidate_image_id",
@@ -44,7 +54,49 @@ DEFAULTS = {"startup_timeout_s": 1200, "deployment_timeout_s": 3600,
             "controller_timeout_s": 45, "supervisor_lease_s": 5,
             "poll_interval_s": 0.5, "request_timeout_s": 120,
             "probe_timeout_s": 120, "stop_timeout_s": 30,
-            "validation_timeout_s": 900}
+            "validation_timeout_s": 900,
+            "source_capture_timeout_s": 900, "receiver_inference_timeout_s": 300,
+            "maintenance_window_s": 3600}
+# One named deadline per plan field, never one shared budget. Each named deadline
+# has exactly one documented reaction (see deploy/v3/README.md):
+#   model request, deployment health, controller deployment -> service failure (rollback)
+#   native source capture, receiver inference                -> recorded research stage
+#   experimental proof                                      -> persistence policy decision
+#   operator maintenance window                             -> persistence policy decision
+TIMEOUT_FIELDS = {"model_request_timeout_s": "request_timeout_s",
+                  "deployment_health_timeout_s": "startup_timeout_s",
+                  "controller_deployment_deadline_s": "deployment_timeout_s",
+                  "native_source_capture_deadline_s": "source_capture_timeout_s",
+                  "receiver_inference_deadline_s": "receiver_inference_timeout_s",
+                  "experimental_proof_deadline_s": "proof_timeout_s",
+                  "operator_maintenance_window_s": "maintenance_window_s",
+                  "rollback_deadline_s": "rollback_timeout_s"}
+RESEARCH_STAGE_DEADLINES = {"source capture deadline": "source_capture_timeout_s",
+                            "receiver inference deadline": "receiver_inference_timeout_s"}
+# Candidate persistence policy: what happens to the verified candidate once the
+# attempt reaches its verified commit point.
+ROLLBACK_ON_SUCCESS = "rollback_on_success"
+PERSIST_CANDIDATE_ON_SUCCESS = "persist_candidate_on_success"
+PERSISTENCE_POLICIES = (ROLLBACK_ON_SUCCESS, PERSIST_CANDIDATE_ON_SUCCESS)
+PERSISTED_CANDIDATE = "persisted_candidate_on_success"
+ROLLED_BACK_ON_SUCCESS = "rolled_back_on_success"
+PERSISTED_PHASE = "CANDIDATE_PERSISTED"
+READINESS_GATE = "service_initial"
+PERSISTENCE_GATE = "service_persisted"
+# Experiment signals are a fixed vocabulary split in two disjoint classes. Only
+# the service-health class may ever cause a restart or a rollback; a semantic
+# experiment result is evidence and nothing else.
+EXPERIMENT_SIGNAL_SCHEMA = "occ3.experiment.signal.v1"
+EXPERIMENT_SEMANTIC = "semantic_experiment"
+EXPERIMENT_SERVICE_HEALTH = "service_health"
+EXPERIMENT_SEMANTIC_CODES = frozenset({
+    "receiver_answer_mismatch", "receiver_partial_answer", "receiver_fallback_used",
+    "receiver_fact_mismatch", "source_capture_absent", "proof_not_delivered"})
+EXPERIMENT_SERVICE_HEALTH_CODES = frozenset({
+    "receiver_transport_error", "receiver_timeout", "receiver_http_failure",
+    "source_route_unavailable", "source_capture_transport_error", "runtime_identity_lost"})
+_PRESERVED_RECORD_FIELDS = frozenset({"container_id", "image_id", "name"})
+_CONTAINER_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\Z")
 
 
 def private_json(path, document, *, exclusive=False):
@@ -147,12 +199,123 @@ def validate_plan(plan):
         value = plan.setdefault(field, default)
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
             raise Failure("invalid deadline option")
+    validate_persistence(plan)
     from .docker_config import environment_addition_entries
     try:
         environment_addition_entries(plan.setdefault("environment_additions", []))
     except ValueError:
         raise Failure("invalid environment additions") from None
     return plan
+
+
+def validate_persistence(plan):
+    """The persistence policy, and the preserved original it depends on.
+
+    Persisting a candidate is only admissible when the plan names the preserved
+    production container explicitly. A rollback-policy plan may omit the record,
+    but a malformed or inconsistent record is refused under either policy.
+    """
+    policy = plan.setdefault("persistence_policy", ROLLBACK_ON_SUCCESS)
+    if policy not in PERSISTENCE_POLICIES:
+        raise Failure("invalid candidate persistence policy")
+    record = plan.get("preserved_original")
+    if record is None:
+        if policy == PERSIST_CANDIDATE_ON_SUCCESS:
+            raise Failure("persist policy requires a preserved original container record")
+        return policy
+    if not isinstance(record, dict) or set(record) != _PRESERVED_RECORD_FIELDS:
+        raise Failure("invalid preserved original container record")
+    container_id(record["container_id"])
+    image_id(record["image_id"])
+    if not isinstance(record["name"], str) or not _CONTAINER_NAME.fullmatch(record["name"]):
+        raise Failure("invalid preserved original container name")
+    if record["container_id"] != plan["original_id"] or record["image_id"] != plan["original_image_id"]:
+        raise Failure("preserved original container record differs from the attempt original")
+    return policy
+
+
+def timeout_policy(plan):
+    """Distinct named deadlines as recorded in the journal; one plan field each."""
+    record = {name: plan[field] for name, field in TIMEOUT_FIELDS.items()}
+    record.update({"candidate_persistence_policy": plan["persistence_policy"],
+                   "research_stage_deadlines": dict(RESEARCH_STAGE_DEADLINES)})
+    return record
+
+
+def preserved_configuration_digest(original):
+    """Digest of the preserved launch configuration with the credential removed."""
+    from .docker_config import extract_api_key
+    key = extract_api_key(original)
+    config = dict(original.get("Config") or {})
+    for field in ("Entrypoint", "Cmd", "Env"):
+        config[field] = ["<credential>" if value == key else value
+                         for value in config.get(field) or []]
+    projection = {"config": config, "host": original.get("HostConfig"),
+                  "mounts": original.get("Mounts"),
+                  "networks": sorted((original.get("NetworkSettings") or {}).get("Networks") or {})}
+    return hashlib.sha256(json.dumps(projection, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def preserved_original_record(plan, original):
+    """Non-secret identity of the production container kept for recovery."""
+    record = {"container_id": container_id(original["Id"]), "image_id": image_id(original["Image"]),
+              "name": original["Name"].lstrip("/"),
+              "configuration_sha256": preserved_configuration_digest(original)}
+    claimed = plan.get("preserved_original")
+    if claimed is not None and (claimed["container_id"] != record["container_id"] or
+                                claimed["image_id"] != record["image_id"] or
+                                claimed["name"] != record["name"]):
+        raise Failure("preserved original container record differs from the inspected original")
+    return record
+
+
+def recovery_command(directory):
+    """Explicit operator recovery path for one attempt; contains no credential."""
+    return (sys.executable + " -m deploy.v3.controller restore --attempt-dir "
+            + shlex.quote(str(Path(directory).resolve())))
+
+
+def record_persistence(journal, state, candidate, original, *, decision, reason, gate=None, extra=None):
+    """Durable persistence decision with candidate identity and the preserved original."""
+    record = {"schema": 1, "decision": decision, "policy": state["plan"]["persistence_policy"],
+              "reason": reason, "attempt_id": state["attempt_id"],
+              "candidate_id": state["candidate_id"], "candidate_image_id": state["candidate_image_id"],
+              "candidate_name": (candidate.get("Name") or "").lstrip("/"),
+              "candidate_epoch": (candidate.get("State") or {}).get("StartedAt"),
+              "candidate_restart_count": candidate.get("RestartCount", 0),
+              "original": preserved_original_record(state["plan"], original),
+              "readiness_gate": gate,
+              "recovery_command": recovery_command(journal.directory),
+              "recorded_at": time.time()}
+    if extra:
+        record.update(extra)
+    journal.update(persistence=record, persistence_decision=decision)
+    return record
+
+
+def classify_experiment_signal(signal):
+    """Split one fixed-vocabulary experiment signal into its only two classes.
+
+    An unrecognized code is kept in the non-fatal class and flagged, so no
+    semantic result can be escalated into a restart or a rollback.
+    """
+    if not isinstance(signal, dict) or signal.get("schema") != EXPERIMENT_SIGNAL_SCHEMA:
+        raise Failure("experiment signal schema mismatch")
+    if signal.get("code") in EXPERIMENT_SERVICE_HEALTH_CODES:
+        return EXPERIMENT_SERVICE_HEALTH
+    return EXPERIMENT_SEMANTIC
+
+
+def record_experiment_signal(journal, phase, signal, classification):
+    """Journal one experiment signal. This function never mutates the service."""
+    signals = dict(journal.read().get("experiment_signals") or {})
+    entry = {"phase": phase, "code": signal.get("code"), "classification": classification,
+             "code_known": signal.get("code") in EXPERIMENT_SEMANTIC_CODES | EXPERIMENT_SERVICE_HEALTH_CODES,
+             "rollback_eligible": classification == EXPERIMENT_SERVICE_HEALTH,
+             "recorded_at": time.time()}
+    signals[phase] = entry
+    journal.update(experiment_signals=signals)
+    return entry
 
 
 def assert_rehearsal_original(original, plan):
@@ -1030,10 +1193,13 @@ def prepare(api, plan, directory, *, probe=artifact_probe):
         verify_receipt(reference)
         assert_inspect_schema(original, read_json(reference["path"]))
     extract_api_key(original)
+    preserved = preserved_original_record(plan, original)
+    deadlines = timeout_policy(plan)
     if api.inspect_image(plan["candidate_image_id"]).get("Id") != plan["candidate_image_id"]:
         raise Failure("candidate image identity mismatch")
     journal = Journal.create(directory, plan, original)
-    journal.update(docker_api_version=getattr(api, "version", "offline-test-adapter"))
+    journal.update(docker_api_version=getattr(api, "version", "offline-test-adapter"),
+                   preserved_original=preserved, timeout_policy=deadlines)
     try:
         if plan["mode"] == "production":
             capture_ingress(api, journal)
