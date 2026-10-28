@@ -19,9 +19,16 @@ import sys
 import time
 import uuid
 from contextlib import contextmanager
+from types import MappingProxyType
+
+from .latent_types import ALIGNMENT as PER_MESSAGE_ALIGNMENT
+from .latent_types import METHOD as PER_MESSAGE_METHOD
+from .statebridge_calibrated import METHOD_ID as CALIBRATED_METHOD
 
 __all__ = ["ProfileError", "load_pinned_profile", "load_source_attestation",
-           "get_runtime_incarnation"]
+           "get_runtime_incarnation", "PER_MESSAGE_METHOD", "CALIBRATED_METHOD",
+           "advertised_methods", "method_descriptor", "require_method",
+           "receipt_descriptor", "validate_method_binding"]
 
 _PROFILE_LIMIT = 16384
 _SOURCE_LIMIT = 65536
@@ -43,6 +50,11 @@ _PROFILE_FIELDS = frozenset({
     "max_prefix_tokens", "max_live_bytes", "workspace_bytes", "max_records",
     "max_active", "max_ttl_seconds", "anchor_alpha", "tile_rows", "method",
 })
+# The frozen-artifact reference (absolute path plus expected artifact_digest) is
+# optional in a pinned profile: the per-message method names none, and an older
+# pinned file stays valid. load_pinned_profile always returns the pair, empty
+# when absent, so the runtime profile has one shape.
+_OPTIONAL_PROFILE_FIELDS = frozenset({"calibration_path", "calibration_digest"})
 _RUNTIME_FIELDS = frozenset({"runtime_epoch", "runtime_generation",
                             "incarnation_digest", "profile_sha256",
                             "source_attestation_sha256"})
@@ -64,6 +76,99 @@ class ProfileError(RuntimeError):
 def _require(condition, code="profile_invalid"):
     if not condition:
         raise ProfileError(code)
+
+# Advertised native methods. One representation per method id: the calibrated
+# map is a different map from the per-message Procrustes fit, so it is a
+# different method and can never be served under the per-message id. The
+# representation string describes the captured state (which both methods
+# consume), not the map; the source receipt carries the state representation
+# and the negotiated method separately.
+_METHOD_FIELDS = frozenset({"method_id", "representation", "alignment", "fit_source",
+                            "solver", "predictor_position_offset", "precision",
+                            "requires_calibration_artifact"})
+_RECEIPT_FIELDS = ("method_id", "representation", "alignment", "predictor_position_offset",
+                   "precision")
+
+
+def _method_entry(method_id, alignment, fit_source, solver, requires_calibration_artifact):
+    return {"method_id": method_id, "representation": "final_layer_prenorm_predictor",
+            "alignment": alignment, "fit_source": fit_source, "solver": solver,
+            "predictor_position_offset": -1, "precision": "float32",
+            "requires_calibration_artifact": requires_calibration_artifact}
+
+
+_METHODS = {entry["method_id"]: MappingProxyType(entry) for entry in (
+    _method_entry(PER_MESSAGE_METHOD, PER_MESSAGE_ALIGNMENT, "message-rows",
+                  "occ3_sglang.statebridge.align_hidden_sequence", False),
+    _method_entry(CALIBRATED_METHOD, "frozen-dual-ridge.v1", "independent-calibration-turns",
+                  "occ3_sglang.statebridge_calibrated.apply_calibration", True),
+)}
+_METHOD_IDS = tuple(_METHODS)
+
+
+def _validate_method(descriptor):
+    _require(set(descriptor) == _METHOD_FIELDS)
+    for name in ("method_id", "representation", "alignment", "fit_source", "solver"):
+        item = descriptor[name]
+        _require(type(item) is str and _IDENTIFIER.fullmatch(item) is not None)
+    _require(descriptor["solver"].count(".") == 2)
+    _require(type(descriptor["predictor_position_offset"]) is int
+             and descriptor["predictor_position_offset"] == -1)
+    _require(descriptor["precision"] == "float32")
+    _require(type(descriptor["requires_calibration_artifact"]) is bool)
+    return descriptor
+
+
+def advertised_methods():
+    """Every method this build may pin or negotiate, in registry order."""
+    for descriptor in _METHODS.values():
+        _validate_method(descriptor)
+    return _METHOD_IDS
+
+
+def method_descriptor(method_id):
+    """Immutable identity of one advertised method and its solver."""
+    _require(type(method_id) is str and method_id in _METHODS)
+    return _validate_method(_METHODS[method_id])
+
+
+def require_method(method_id):
+    """Return method_id when it is advertised; a fixed code otherwise."""
+    method_descriptor(method_id)
+    return method_id
+
+
+def receipt_descriptor(method_id):
+    """The scalar method identity a source receipt may carry. No calibration data."""
+    descriptor = method_descriptor(method_id)
+    return {name: descriptor[name] for name in _RECEIPT_FIELDS}
+
+
+def validate_method_binding(binding, profile, *, negotiated_method_id=None):
+    """Refuse a calibration artifact that does not match the negotiated method.
+
+    The per-message method takes no artifact at all, so a calibrated artifact
+    presented under it is refused instead of served. The calibrated method
+    takes one whose method id, dimensions, layer, model fingerprint, precision
+    and predictor position all equal the pinned profile and the registry.
+    """
+    _validate_profile(profile)
+    negotiated = profile["method"] if negotiated_method_id is None else negotiated_method_id
+    _require(negotiated == profile["method"])
+    descriptor = method_descriptor(negotiated)
+    from .statebridge_calibrated import CalibrationBinding
+
+    if not descriptor["requires_calibration_artifact"]:
+        _require(binding is None)
+        return descriptor
+    _require(isinstance(binding, CalibrationBinding))
+    _require(binding.method_id == negotiated)
+    _require(binding.hidden_dim == profile["hidden_dim"])
+    _require(binding.layer_index == profile["layer_index"])
+    _require(binding.model_fingerprint == profile["model_fingerprint"])
+    _require(binding.precision == descriptor["precision"])
+    _require(binding.predictor_position_offset == descriptor["predictor_position_offset"])
+    return descriptor
 
 
 def _sha(value):
@@ -237,10 +342,23 @@ def _artifact(name, attribute, limit):
 
 
 def _validate_profile(value):
-    _require(set(value) == _PROFILE_FIELDS)
+    _require(_PROFILE_FIELDS <= set(value) <= _PROFILE_FIELDS | _OPTIONAL_PROFILE_FIELDS)
+    path_value = value.get("calibration_path", "")
+    digest_value = value.get("calibration_digest", "")
+    _require(type(path_value) is str and type(digest_value) is str
+             and bool(path_value) == bool(digest_value))
+    if path_value:
+        # An absolute path, no control bytes, and a digest that pins its content.
+        _require(0 < len(path_value) <= 512 and path_value.isprintable()
+                 and os.path.isabs(path_value))
+        _require(_HEX.fullmatch(digest_value) is not None)
+        _require(value["method"] != PER_MESSAGE_METHOD)
     for name in ("model_fingerprint", "model_id", "method"):
         item = value[name]
         _require(type(item) is str and _IDENTIFIER.fullmatch(item) is not None)
+    # A pinned profile may only name an advertised method; an unknown or a
+    # silently substituted representation is refused before any runtime use.
+    _require(value["method"] in _METHODS)
     for name in _PROFILE_FIELDS - {"model_fingerprint", "model_id", "method", "anchor_alpha"}:
         _require(_uint(value[name], minimum=0 if name == "layer_index" else 1))
     _require(type(value["anchor_alpha"]) in (int, float)

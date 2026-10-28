@@ -78,3 +78,58 @@ def test_probe_refuses_a_short_message():
     hidden, embeddings = _fixture(rows=1)
     with pytest.raises(LatentError):
         probe_relation(hidden, embeddings)
+
+
+# Pooled probe: the turn-disjoint number the next live window must report.
+
+def _turns(count=12, rows=16, dim=64, rank=8, kappa=0.9, seed=0):
+    from occ3_sglang.calibration_corpus import TurnBlock
+    generator = torch.Generator().manual_seed(seed)
+    left = torch.randn(rank, dim, generator=generator) / rank ** 0.5
+    right = torch.randn(rank, dim, generator=generator) / rank ** 0.5
+    blocks = []
+    for index in range(count):
+        factor = torch.randn(rows, rank, generator=generator)
+        hidden = kappa ** 0.5 * (factor @ left) + (1.0 - kappa) ** 0.5 * torch.randn(rows, dim, generator=generator)
+        embeddings = kappa ** 0.5 * (factor @ right) + (1.0 - kappa) ** 0.5 * torch.randn(rows, dim, generator=generator)
+        blocks.append(TurnBlock(turn_id=f"turn-{index:02d}", hidden=hidden, embeddings=embeddings))
+    return tuple(blocks)
+
+
+def test_per_turn_probe_schema_is_not_extended_in_place():
+    from occ3_sglang.calibration_corpus import EVALUATION_KEYS
+    from occ3_sglang.calibration_probe import POOLED_PROBE_KEYS, PROBE_KEYS
+    assert "heldout_r2_within_turn" in PROBE_KEYS and len(PROBE_KEYS) >= 20
+    assert POOLED_PROBE_KEYS == EVALUATION_KEYS
+    assert set(POOLED_PROBE_KEYS) != set(PROBE_KEYS)
+    assert "canonical_decile" in set(PROBE_KEYS) - set(POOLED_PROBE_KEYS)
+    assert "eval_cosine" in set(POOLED_PROBE_KEYS) - set(PROBE_KEYS)
+
+
+def test_pooled_probe_reports_the_turn_disjoint_schema():
+    from occ3_sglang.calibration_corpus import validate_evaluation
+    from occ3_sglang.calibration_probe import POOLED_PROBE_KEYS, probe_pooled_turn_disjoint
+    report = probe_pooled_turn_disjoint(_turns(), row_budget=512)
+    assert set(report) == set(POOLED_PROBE_KEYS)
+    assert validate_evaluation(report)
+    assert report["eval_turns"] == 4 and report["fit_turns"] == 8
+    assert report["rows_used"] == 128 and report["row_budget"] == 512
+    assert report["eval_cosine"] > 0.5, report["eval_cosine"]
+
+
+def test_pooled_probe_refuses_turns_outside_the_capture_domain():
+    from occ3_sglang.calibration_corpus import TurnBlock
+    from occ3_sglang.calibration_probe import probe_pooled_turn_disjoint
+    from occ3_sglang.latent_types import LatentError
+    blocks = list(_turns())
+    wide = torch.randn(200, 64)
+    blocks[0] = TurnBlock(turn_id=blocks[0].turn_id, hidden=wide, embeddings=wide.clone())
+    with pytest.raises(LatentError) as caught:
+        probe_pooled_turn_disjoint(tuple(blocks), row_budget=512)
+    assert caught.value.code == "profile"
+    narrow = torch.randn(16, 16)
+    blocks = list(_turns())
+    blocks[0] = TurnBlock(turn_id=blocks[0].turn_id, hidden=narrow, embeddings=narrow.clone())
+    with pytest.raises(LatentError) as caught:
+        probe_pooled_turn_disjoint(tuple(blocks), row_budget=512)
+    assert caught.value.code == "profile"

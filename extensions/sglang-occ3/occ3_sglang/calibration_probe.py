@@ -12,6 +12,8 @@ hidden state, and no token id is recorded.
 """
 from __future__ import annotations
 
+from .calibration_corpus import (DEFAULT_EVAL_STRIDE, EVALUATION_KEYS,
+                                 evaluate_turn_disjoint, split_turns)
 from .latent_types import require
 
 PROBE_KEYS = (
@@ -167,3 +169,27 @@ def validate_probe(result):
     require(result["nonfinite_count"] == 0, "numerical")
     require(0 <= result["canonical_top1"] <= 1.0, "numerical")
     return True
+
+
+DEFAULT_POOLED_ROW_BUDGET = 512
+# One schema: the pooled probe reports exactly the pooled evaluation keys.
+POOLED_PROBE_KEYS = EVALUATION_KEYS
+
+
+def probe_pooled_turn_disjoint(blocks, *, row_budget=DEFAULT_POOLED_ROW_BUDGET,
+                              eval_stride=DEFAULT_EVAL_STRIDE, provenance=None):
+    """Turn-disjoint pooled probe: the number LIVE-WINDOW-1 Section 5 asks for.
+
+    PROBE_KEYS is the per-turn schema of one capture and stays unchanged; a
+    pooled corpus needs whole-turn held-out turns, so it is reported under its
+    own fixed key set. Per-turn capture limits are the same as probe_relation:
+    no turn is pooled outside the size the capture path can produce.
+    """
+    values = tuple(blocks)
+    require(len(values) >= 2, "profile")
+    for block in values:
+        require(2 <= block.rows <= 128 and block.hidden.shape[1] > 2 * block.rows, "profile")
+        require(block.embeddings.shape == block.hidden.shape, "profile")
+    split_turns(values, eval_stride=eval_stride)
+    return evaluate_turn_disjoint(values, row_budget=row_budget, eval_stride=eval_stride,
+                                  provenance=provenance)

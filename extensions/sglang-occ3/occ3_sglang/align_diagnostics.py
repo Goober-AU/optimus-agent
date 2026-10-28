@@ -15,6 +15,8 @@ load, and the call never mutates its inputs.
 """
 from __future__ import annotations
 
+import math
+
 from .latent_types import LatentError, require
 
 # Fixed key set. The control plane and the receipts may rely on the names and
@@ -168,3 +170,84 @@ def workspace_elements(rows, hidden_dim):
     require(2 <= rows and hidden_dim > 2 * rows, "profile")
     rank = 2 * (rows - 1)
     return max(2 * rows * hidden_dim, rows * rank, rank * rank, rows * rows)
+
+
+CALIBRATED_DIAGNOSTIC_KEYS = (
+    "rows", "hidden_dim", "hidden_norm_mean", "embedding_norm_mean", "prefix_norm_mean",
+    "cos_prefix_to_embedding", "relative_prefix_error", "predicted_r2",
+    "hidden_sensitivity", "shuffled_hidden_sensitivity", "copier_flag", "nonfinite_count",
+    "anchor_alpha",
+)
+CALIBRATED_FLOATS = ("hidden_norm_mean", "embedding_norm_mean", "prefix_norm_mean",
+                     "cos_prefix_to_embedding", "relative_prefix_error", "predicted_r2",
+                     "hidden_sensitivity", "shuffled_hidden_sensitivity", "anchor_alpha")
+# LIVE-WINDOW-1 Section 5: any candidate whose cosine to the embedding copier
+# stays above this is not a candidate, whatever its other numbers say.
+COPIER_COSINE_LIMIT = 0.9
+
+
+def frozen_map_diagnostics(artifact, hidden, embeddings, *, target_norm=None,
+                           anchor_alpha=0.0):
+    """DIAGNOSTIC-style scalars for the frozen calibrated map, not the per-message fit.
+
+    The per-message diagnostics re-solve the production operator on the same
+    rows, so they cannot report a frozen map's state dependence. Here the prefix
+    is apply_calibration() of the artifact, and the sensitivity is the change of
+    that output when the hidden rows are rolled or reversed. The result carries
+    the pre-registered copier flag so a map that reproduces the embeddings is
+    visible in the receipt.
+    """
+    from .statebridge_calibrated import apply_calibration
+    torch = _torch_of(hidden)
+    require(hidden.ndim == 2 and hidden.shape == embeddings.shape, "profile")
+    require(hidden.shape[0] >= 2 and hidden.device == embeddings.device, "profile")
+    require(hidden.shape[1] == artifact.hidden_dim, "profile")
+    require(hidden.device == artifact.mean_hidden.device, "profile")
+    with torch.no_grad():
+        h, e = hidden.float(), embeddings.float()
+        require(bool(torch.isfinite(h).all()) and bool(torch.isfinite(e).all()), "numerical")
+        norms = e.norm(dim=-1, keepdim=True).clamp_min(torch.finfo(e.dtype).tiny)
+        scalar = float(norms.mean()) if target_norm is None else float(target_norm)
+        require(math.isfinite(scalar) and scalar > 0.0, "numerical")
+        calibrated = e * (scalar / norms)
+        prefix = apply_calibration(artifact, h, scalar)
+        cos = (prefix * calibrated).sum(-1) / (prefix.norm(dim=-1).clamp_min(1e-6) *
+                                              calibrated.norm(dim=-1).clamp_min(1e-6))
+        mean_cos = float(cos.mean())
+        residual = float((prefix - calibrated).pow(2).sum())
+        baseline = float((calibrated - calibrated.mean(0, keepdim=True)).pow(2).sum())
+        require(math.isfinite(residual) and baseline > 0.0, "numerical")
+        rolled = apply_calibration(artifact, torch.roll(h, 1, 0), scalar)
+        reversed_rows = apply_calibration(artifact, torch.flip(h, [0]).contiguous(), scalar)
+        floor = float(prefix.norm().clamp_min(1e-6))
+        result = {
+            "rows": int(h.shape[0]), "hidden_dim": int(h.shape[1]),
+            "hidden_norm_mean": float(h.norm(dim=-1).mean()),
+            "embedding_norm_mean": float(e.norm(dim=-1).mean()),
+            "prefix_norm_mean": float(prefix.norm(dim=-1).mean()),
+            "cos_prefix_to_embedding": mean_cos,
+            "relative_prefix_error": float((prefix - calibrated).norm() / calibrated.norm().clamp_min(1e-6)),
+            "predicted_r2": float(1.0 - residual / baseline),
+            "hidden_sensitivity": float((rolled - prefix).norm() / floor),
+            "shuffled_hidden_sensitivity": float((reversed_rows - prefix).norm() / floor),
+            "copier_flag": int(mean_cos > COPIER_COSINE_LIMIT),
+            "nonfinite_count": int((~torch.isfinite(prefix)).sum()),
+            "anchor_alpha": float(anchor_alpha),
+        }
+    validate_calibrated(result)
+    return result
+
+
+def validate_calibrated(result):
+    """Fixed key set, exact int/float types, finite values, bounded magnitudes."""
+    require(isinstance(result, dict) and set(result) == set(CALIBRATED_DIAGNOSTIC_KEYS), "profile")
+    for key in CALIBRATED_DIAGNOSTIC_KEYS:
+        value = result[key]
+        require(type(value) in (int, float) and not isinstance(value, bool), "profile")
+        if isinstance(value, float):
+            require(value == value and abs(value) != float("inf"), "numerical")
+    require(result["rows"] >= 2 and result["hidden_dim"] > 2, "profile")
+    require(result["copier_flag"] in (0, 1), "profile")
+    require(result["nonfinite_count"] == 0, "numerical")
+    require(-1.0 <= result["cos_prefix_to_embedding"] <= 1.0, "numerical")
+    return True
