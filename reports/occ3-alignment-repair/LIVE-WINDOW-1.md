@@ -138,6 +138,16 @@ id, no text).
    container keeps its configuration: image `sha256:b1259f3ea327...`, no binds, restart
    policy `no`, `python3` entrypoint.
 
+## 6.1 Patch-set attestation of the deployed source
+
+`tests/test_predictor_alignment.py::test_capture_manifest_matches_the_pinned_checkout`
+skips when no pinned SGLang checkout is present, and this host no longer has one. The
+property it guards was therefore checked directly on the deployed image: for all 11 files
+of `extensions/sglang-occ3/patches/capture-eager-mtp.v1.json`, the sha256 of the file in
+`neo-glm53:occ3-latent-verify-20261027t093614z` equals the manifest `after_sha256`
+(11 of 11). The image carries exactly the patch set the repository pins, which is the
+property every claim in this report depends on.
+
 ## 7. Limitations
 
 - Three turns, one model, one layer (77), one dtype (FP8), one parallelism (TP8).
