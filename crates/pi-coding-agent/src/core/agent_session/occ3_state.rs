@@ -2,7 +2,8 @@
 //! No settings, durable lease recovery, helper generation or kernel provenance
 //! inference. Ordinary sessions have no instance and retain their normal path.
 use crate::core::agent_messages::{
-    AgentSessionMessageController, PreparedNativeHandoff, AGENT_MESSAGE_CUSTOM_TYPE,
+    AgentSessionMessageController, Occ3DeliveryDetails, PreparedNativeHandoff,
+    AGENT_MESSAGE_CUSTOM_TYPE,
 };
 use crate::core::occ::occ3::connector::{
     NativePublicationRequest, NativeSessionEnrollment, Occ3Connector,
@@ -420,6 +421,102 @@ impl Occ3NativeSession {
             .record_outcome(message_id)
             .map_err(|_| failure())
     }
+
+    /// Content-free digest of this receiver's runtime identity. The raw runtime
+    /// id, access domain and model identity never leave this function.
+    fn runtime_identity_sha256(&self) -> String {
+        pi_ai::source_capture::sha256(
+            format!(
+                "occ3.runtime.v1\n{}\n{}\n{}",
+                self.enrollment.runtime_id,
+                self.enrollment.runtime_generation,
+                self.enrollment.identity.fingerprint()
+            )
+            .as_bytes(),
+        )
+    }
+
+    /// Digest of the completed-use receipt bound to one admitted message. Only the
+    /// bound lease can supply the request id and the consumed state, and the
+    /// source handle enters this digest already hashed by [`Occ3InferenceInbox::audit`].
+    fn completed_use_receipt_sha256(&self, message_id: &str) -> Result<Option<String>, String> {
+        let audit = self.inbox.lock().map_err(|_| failure())?.audit();
+        let Some(record) = audit
+            .into_iter()
+            .find(|record| record["message_id"].as_str() == Some(message_id))
+        else {
+            return Ok(None);
+        };
+        if record["lease_state"].as_str() != Some("Consumed") {
+            return Ok(None);
+        }
+        let Some(request_id) = record["request_id"].as_str() else {
+            return Ok(None);
+        };
+        let Some(handle_sha256) = record["handle_sha256"].as_str() else {
+            return Ok(None);
+        };
+        Ok(Some(pi_ai::source_capture::sha256(
+            format!(
+                "occ3.completed_use.v1\n{}\n{}\n{}\n{}\n{}",
+                message_id,
+                request_id,
+                handle_sha256,
+                record["runtime_generation"],
+                record["model_fingerprint"].as_str().unwrap_or_default()
+            )
+            .as_bytes(),
+        )))
+    }
+
+    /// Recorded delivery status. Unlike [`Self::outcome`] this also answers for an
+    /// admission that has no bound lease yet; only a bound lease can report
+    /// `Consumed`, so an unclaimed admission can never look consumed here.
+    pub fn delivery_status(&self, message_id: &str) -> Result<Occ3DeliveryStatus, String> {
+        let mut inbox = self.inbox.lock().map_err(|_| failure())?;
+        let Some(recorded) = inbox.status(message_id) else {
+            return Err(failure());
+        };
+        Ok(inbox.record_outcome(message_id).unwrap_or(recorded))
+    }
+
+    /// The marker that matches this delivery's current receipt state: a completed
+    /// `latent_native` marker only when the receiver proved completed use, and a
+    /// pulse-free `pending` marker for capture-only, admitted, delivered, failed,
+    /// expired and uncertain deliveries.
+    pub fn delivery_marker(&self, message_id: &str) -> Result<Occ3DeliveryDetails, String> {
+        let method_id = &self.enrollment.identity.latent_method;
+        let generation = self.enrollment.runtime_generation;
+        let identity = self.runtime_identity_sha256();
+        if self.delivery_status(message_id)? != Occ3DeliveryStatus::Consumed {
+            return Occ3DeliveryDetails::pending(method_id, generation, &identity);
+        }
+        let receipt = self
+            .completed_use_receipt_sha256(message_id)?
+            .ok_or_else(failure)?;
+        Occ3DeliveryDetails::latent_native(method_id, generation, &identity, &receipt)
+    }
+
+    /// Rewrites the already-admitted transcript record to the marker its receipt
+    /// state allows. Same record, same message id, no second record; a repeated
+    /// call is idempotent.
+    pub fn stamp_delivery_marker(
+        &self,
+        agent: &dyn crate::core::agent_session::AgentHandle,
+        message_id: &str,
+    ) -> Result<Occ3DeliveryDetails, String> {
+        let marker = self.delivery_marker(message_id)?;
+        let message_id = message_id.to_string();
+        let applied = marker.clone();
+        agent.update_state(Box::new(move |state| {
+            crate::core::agent_messages::stamp_occ3_delivery(
+                &mut state.messages,
+                &message_id,
+                &applied,
+            );
+        }));
+        Ok(marker)
+    }
     pub fn handoff_tool(
         self: &Arc<Self>,
         controller: Arc<dyn AgentSessionMessageController>,
@@ -534,10 +631,16 @@ impl Occ3NativeSession {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::occ::occ3::connector::{CaptureRequest, ConsumeRequest};
+    use crate::core::agent_messages::{
+        AgentFamilyCatalogEntry, AgentSessionMessageEndpoint, AuthorizedNativeHandoff,
+        OCC3_DELIVERY_PENDING,
+    };
+    use crate::core::occ::occ3::connector::{
+        CaptureRequest, ConsumeRequest, NativePublication,
+    };
     use crate::core::occ::occ3::types::{
-        Occ3ConnectorCapabilities, Occ3Error, Occ3HandleRef, Occ3Method, Occ3ModelIdentity,
-        Occ3TransferMetrics,
+        Occ3ConnectorCapabilities, Occ3Envelope, Occ3Error, Occ3HandleRef, Occ3Method,
+        Occ3ModelIdentity, Occ3TransferMetrics,
     };
     use pi_agent_core::types::InferenceStateRequest;
     use pi_ai::source_capture::{
@@ -734,6 +837,99 @@ mod tests {
         .expect("fixture resolve")
         .expect("capture lease");
         assert_eq!(lease.state(), SourceCaptureState::Prepared);
+    }
+
+    /// The authenticated native family edge the controller authorizes before it
+    /// can build a prepared handoff.
+    fn authorized_handoff() -> AuthorizedNativeHandoff {
+        AuthorizedNativeHandoff::from_catalog(
+            &AgentFamilyCatalogEntry {
+                id: "unit-source".into(),
+                depth: 0.,
+                ..Default::default()
+            },
+            &AgentFamilyCatalogEntry {
+                id: "unit-session".into(),
+                depth: 1.,
+                parent_session_id: Some("unit-source".into()),
+                ..Default::default()
+            },
+            AgentSessionMessageEndpoint {
+                active_session_id: "unit-source-active".into(),
+                session_id: "unit-source".into(),
+                ..Default::default()
+            },
+            AgentSessionMessageEndpoint {
+                active_session_id: "unit-session-active".into(),
+                session_id: "unit-session".into(),
+                ..Default::default()
+            },
+            "child",
+        )
+        .expect("fixture authorization")
+    }
+
+    fn prepared_handoff(authorization: AuthorizedNativeHandoff) -> PreparedNativeHandoff {
+        let envelope = Occ3Envelope {
+            schema: "optimus.occ3.v1".into(),
+            protocol_version: 1,
+            message_id: authorization.message_id().to_string(),
+            sender_session_id: "unit-source".into(),
+            receiver_session_id: "unit-session".into(),
+            model_fingerprint: fixture_identity().fingerprint(),
+            runtime_id: "unit-fixture-runtime".into(),
+            connector_id: "unit-fixture-occ3".into(),
+            latent_method: Occ3Method::StatebridgePrefix,
+            state_handle: Occ3HandleRef {
+                handle_id: "unit-fixture-handle".into(),
+                connector_id: "unit-fixture-occ3".into(),
+                model_fingerprint: fixture_identity().fingerprint(),
+                runtime_generation: 7,
+                expires_at_epoch: now() + 600,
+                state_size_bytes: 128,
+            },
+            control_summary: "Continue the authorized task using the attached state.".into(),
+            fallback_reference: "occ1".into(),
+        };
+        PreparedNativeHandoff::new(
+            authorization,
+            NativePublication {
+                publication_id: "unit-fixture-publication".into(),
+                binding_digest: "4".repeat(64),
+                envelope,
+            },
+        )
+        .expect("fixture prepared handoff")
+    }
+
+    /// The latent marker exists only behind the receiver's completed-use receipt:
+    /// an admitted or failed delivery records a pulse-free `pending` marker.
+    #[tokio::test]
+    async fn delivery_marker_requires_completed_use() {
+        let session = enrolled().await;
+        let prepared = prepared_handoff(authorized_handoff());
+        let message_id = prepared.authorization().message_id().to_string();
+        assert!(session.admit(&prepared).expect("fixture admit"));
+        // A bare admission binds no lease, so it has no completed-use receipt.
+        assert!(session.outcome(&message_id).is_err());
+        let admitted = session.delivery_marker(&message_id).expect("marker");
+        assert_eq!(admitted.kind, OCC3_DELIVERY_PENDING);
+        assert!(!admitted.completed_use);
+        assert!(admitted.receipt_sha256.is_none());
+        assert!(!admitted.is_completed_native_latent());
+        assert_eq!(admitted.runtime_generation, 7);
+        assert_eq!(admitted.method_id, METHOD);
+        // The identity digest is a digest: neither the raw runtime id nor the
+        // session id may appear in the recorded marker.
+        assert_eq!(admitted.runtime_identity_sha256.len(), 64);
+        assert!(!admitted.runtime_identity_sha256.contains("unit"));
+        // A failed or expired delivery stays pending: no completion, no pulse.
+        session.invalidate();
+        let failed = session.delivery_marker(&message_id).expect("marker");
+        assert_eq!(failed.kind, OCC3_DELIVERY_PENDING);
+        assert!(!failed.is_completed_native_latent());
+        // An unknown message id has no marker at all.
+        assert!(session.delivery_marker("no-such-message").is_err());
     }
 
     #[tokio::test]

@@ -198,7 +198,7 @@ impl AgentSessionMessageController for IsolatedController {
                 return Err("Native duplicate; no replay".into());
             }
             let payload = prepared.control_payload();
-            let delivery = create_agent_session_message_delivery(
+            let mut delivery = create_agent_session_message_delivery(
                 &payload,
                 chrono::Utc::now().timestamp_millis(),
                 &Default::default(),
@@ -207,6 +207,10 @@ impl AgentSessionMessageController for IsolatedController {
                 &mut Occ2StrikeLedger::new(),
                 chrono::Utc::now().timestamp_millis() as u64,
             );
+            // Admitted, not yet consumed: the marker suppresses the control-only
+            // body from the activity projection instead of reporting it as text.
+            let pending = receiver.native.delivery_marker(&payload.id)?;
+            stamp_occ3_delivery_record(&mut delivery.record, &pending)?;
             receiver
                 .agent
                 .prompt(PromptInput::Messages(vec![AgentMessage::Custom(
@@ -216,6 +220,11 @@ impl AgentSessionMessageController for IsolatedController {
                 .map_err(|_| "Native receiver failed")?;
             if receiver.native.outcome(&payload.id)? != Occ3DeliveryStatus::Consumed {
                 return Err("Native receiver outcome uncertain".into());
+            }
+            // Completed use: one in-place rewrite, same record and message id.
+            let marker = receiver.native.stamp_delivery_marker(&receiver.agent, &payload.id)?;
+            if !marker.is_completed_native_latent() {
+                return Err("Native receiver completed-use receipt missing".into());
             }
             let receipt = create_agent_session_message_receipt(
                 &payload,

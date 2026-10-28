@@ -6,6 +6,7 @@
 //! registered into the bridge's connector registry. Nothing in the
 //! bridge tree may import these modules.
 
+pub mod activation;
 pub mod sglang;
 
 use std::sync::{Mutex, OnceLock};

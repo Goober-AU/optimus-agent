@@ -921,17 +921,19 @@ async fn native_send_admits_the_receiver_inbox_and_returns_a_truthful_receipt() 
         .iter()
         .find(|record| record["message_id"].as_str() == Some(message_id.as_str()))
         .expect("the daemon must have admitted the envelope into the receiver inbox");
-    assert_ne!(
-        record["status"],
-        serde_json::json!("CONSUMED"),
-        "the production daemon never verifies the Consumed outcome: {audit}"
-    );
+    // The daemon now verifies the outcome: unless the receiver reported
+    // CONSUMED, the inbox record must never be reported as consumed, and the
+    // completed-use marker (and therefore the OCC3 light) is never produced.
+    if record["status"] != serde_json::json!("CONSUMED") {
+        assert!(!receipt_is_latent_completion(&fixture, &message_id));
+    }
 }
 
 /// The queued-admission distinction the audit names: while the receiver is
-/// busy, the daemon truthfully acknowledges a QUEUED admission and still does
-/// not require the `Consumed` outcome. The inbox record stays `Admitted`
-/// (never claimed, never consumed).
+/// busy, the daemon truthfully acknowledges a QUEUED admission. The inbox record
+/// stays `Admitted` (never claimed, never consumed), so the record keeps the
+/// pending marker, the projected activity stays empty and OCC3 stays dark. Only
+/// a receiver `Consumed` outcome may upgrade a delivery to latent.
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn native_send_acknowledges_a_queued_admission_without_requiring_consumption() {
     let fixture = NativeHandoffFixture::new().await;
@@ -983,6 +985,9 @@ async fn native_send_acknowledges_a_queued_admission_without_requiring_consumpti
         serde_json::json!("ADMITTED"),
         "a queued admission is admitted, not consumed: {audit}"
     );
+    // Admitted is transport truth, not completion: no latent completion marker
+    // exists for it, so the activity projection cannot light OCC3.
+    assert!(!receipt_is_latent_completion(&fixture, &message_id));
     // Teardown: release the held turn.
     let _ = tokio::time::timeout(Duration::from_secs(10), fixture.child.session.abort()).await;
 }
@@ -1155,4 +1160,18 @@ async fn native_send_refuses_a_changed_session_binding() {
             .is_empty(),
         "the refused send must not have admitted anything: {audit}"
     );
+}
+
+/// Whether the receiver transcript carries a completed-use latent marker for
+/// this message id. A queued or uncertain admission must never have one.
+fn receipt_is_latent_completion(fixture: &NativeHandoffFixture, message_id: &str) -> bool {
+    let activity = crate::core::occ::activity::from_admitted_messages(
+        &fixture.child.session.messages(),
+        &fixture.child.session.session_id(),
+        "g",
+    );
+    activity.deliveries.iter().any(|delivery| {
+        delivery.id == message_id
+            && delivery.kind == crate::core::occ::activity::CommunicationKind::Latent
+    })
 }

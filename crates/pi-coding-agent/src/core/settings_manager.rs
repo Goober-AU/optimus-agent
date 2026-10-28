@@ -871,6 +871,12 @@ mod keys {
     pub const AGENT_TRACES: &str = "agentTraces";
     pub const AGENT_COMMUNICATION: &str = "agentCommunication";
     pub const OCC2_ENABLED: &str = "occ2Enabled";
+    /// Experimental OCC-3 latent transport opt-in. Both keys must be true: the
+    /// capability flag and the explicit experimental acknowledgement.
+    pub const OCC3_ENABLED: &str = "occ3Enabled";
+    pub const OCC3_EXPERIMENTAL: &str = "occ3Experimental";
+    /// Optional connector endpoint override; the model `occ3.endpoint` is the default.
+    pub const OCC3_ENDPOINT: &str = "occ3Endpoint";
     pub const TELEMETRY: &str = "telemetry";
     pub const BRANCH_SUMMARY: &str = "branchSummary";
     pub const RETRY: &str = "retry";
@@ -1923,6 +1929,67 @@ impl SettingsManager {
         self.save();
     }
 
+    /// Experimental OCC-3 activation request. This is the *request* only: the
+    /// capability itself is still gated on the model's `occ3` configuration,
+    /// a successful live connector handshake and exact model identity. A true
+    /// value here never makes an incompatible model eligible.
+    pub fn get_agent_communication_occ3_enabled(&self) -> bool {
+        nested_bool(&self.settings, keys::AGENT_COMMUNICATION, keys::OCC3_ENABLED).unwrap_or(false)
+    }
+
+    /// Explicit acknowledgement that OCC-3 semantic reliability is unproven.
+    /// OCC-3 stays off unless this is also true.
+    pub fn get_agent_communication_occ3_experimental(&self) -> bool {
+        nested_bool(&self.settings, keys::AGENT_COMMUNICATION, keys::OCC3_EXPERIMENTAL)
+            .unwrap_or(false)
+    }
+
+    /// Both opt-ins together, which is what activation actually checks.
+    pub fn get_agent_communication_occ3_opt_in(&self) -> bool {
+        self.get_agent_communication_occ3_enabled() && self.get_agent_communication_occ3_experimental()
+    }
+
+    /// Optional connector endpoint override. Absent means "use the model's
+    /// `occ3.endpoint`"; the value is never logged.
+    pub fn get_agent_communication_occ3_endpoint(&self) -> Option<String> {
+        self.settings
+            .get(keys::AGENT_COMMUNICATION)
+            .and_then(|value| value.as_object())
+            .and_then(|object| object.get(keys::OCC3_ENDPOINT))
+            .and_then(|value| value.as_str())
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_owned)
+    }
+
+    pub fn set_agent_communication_occ3_enabled(&mut self, enabled: bool) {
+        ensure_object(&mut self.global_settings, keys::AGENT_COMMUNICATION)
+            .insert(keys::OCC3_ENABLED.to_string(), Value::Bool(enabled));
+        self.mark_modified(keys::AGENT_COMMUNICATION, Some(keys::OCC3_ENABLED));
+        self.save();
+    }
+
+    pub fn set_agent_communication_occ3_experimental(&mut self, acknowledged: bool) {
+        ensure_object(&mut self.global_settings, keys::AGENT_COMMUNICATION)
+            .insert(keys::OCC3_EXPERIMENTAL.to_string(), Value::Bool(acknowledged));
+        self.mark_modified(keys::AGENT_COMMUNICATION, Some(keys::OCC3_EXPERIMENTAL));
+        self.save();
+    }
+
+    pub fn set_agent_communication_occ3_endpoint(&mut self, endpoint: Option<&str>) {
+        let object = ensure_object(&mut self.global_settings, keys::AGENT_COMMUNICATION);
+        match endpoint.map(str::trim).filter(|value| !value.is_empty()) {
+            Some(value) => {
+                object.insert(keys::OCC3_ENDPOINT.to_string(), Value::String(value.to_string()));
+            }
+            None => {
+                object.remove(keys::OCC3_ENDPOINT);
+            }
+        }
+        self.mark_modified(keys::AGENT_COMMUNICATION, Some(keys::OCC3_ENDPOINT));
+        self.save();
+    }
+
     /// Telemetry is AND-ed across global, project and runtime scopes so any
     /// scope can opt out and none can opt back in.
     pub fn get_telemetry_enabled(&self) -> bool {
@@ -2798,6 +2865,65 @@ mod tests {
             assert_eq!(manager.get_chat_detail(), detail);
             assert_eq!(manager.get_global_settings()["chatDetail"], detail.as_str());
         }
+    }
+
+    #[test]
+    fn occ3_opt_in_requires_both_flags_and_defaults_off() {
+        let mut manager = SettingsManager::in_memory(Settings::new());
+        // Default OFF: an OCC-3 compatible model is not enough on its own.
+        assert!(!manager.get_agent_communication_occ3_enabled());
+        assert!(!manager.get_agent_communication_occ3_experimental());
+        assert!(!manager.get_agent_communication_occ3_opt_in());
+        assert_eq!(manager.get_agent_communication_occ3_endpoint(), None);
+
+        // Either flag alone never opts in: the experimental acknowledgement is
+        // the second, deliberate step.
+        manager.set_agent_communication_occ3_enabled(true);
+        assert!(manager.get_agent_communication_occ3_enabled());
+        assert!(!manager.get_agent_communication_occ3_opt_in());
+        manager.set_agent_communication_occ3_experimental(true);
+        assert!(manager.get_agent_communication_occ3_opt_in());
+
+        // Disabling either side disables the pair again.
+        manager.set_agent_communication_occ3_enabled(false);
+        assert!(!manager.get_agent_communication_occ3_opt_in());
+
+        // Keys live under the existing agentCommunication object, not a
+        // parallel configuration tree.
+        let global = manager.get_global_settings();
+        assert_eq!(global["agentCommunication"]["occ3Enabled"], Value::Bool(false));
+        assert_eq!(global["agentCommunication"]["occ3Experimental"], Value::Bool(true));
+    }
+
+    #[test]
+    fn occ3_endpoint_override_is_trimmed_and_cleared() {
+        let mut manager = SettingsManager::in_memory(Settings::new());
+        manager.set_agent_communication_occ3_endpoint(Some("  http://127.0.0.1:30001  "));
+        assert_eq!(
+            manager.get_agent_communication_occ3_endpoint(),
+            Some("http://127.0.0.1:30001".into())
+        );
+        // A blank or missing value is no override, never an empty endpoint.
+        manager.set_agent_communication_occ3_endpoint(Some("   "));
+        assert_eq!(manager.get_agent_communication_occ3_endpoint(), None);
+        manager.set_agent_communication_occ3_endpoint(Some("http://127.0.0.1:30002"));
+        manager.set_agent_communication_occ3_endpoint(None);
+        assert_eq!(manager.get_agent_communication_occ3_endpoint(), None);
+        assert!(manager.get_global_settings()["agentCommunication"]
+            .as_object()
+            .is_some_and(|object| !object.contains_key("occ3Endpoint")));
+    }
+
+    #[test]
+    fn occ3_flags_are_independent_of_the_occ2_flag() {
+        let mut manager = SettingsManager::in_memory(Settings::new());
+        manager.set_agent_communication_occ2_enabled(true);
+        assert!(!manager.get_agent_communication_occ3_opt_in());
+        manager.set_agent_communication_occ3_enabled(true);
+        manager.set_agent_communication_occ3_experimental(true);
+        manager.set_agent_communication_occ2_enabled(false);
+        assert!(!manager.get_agent_communication_occ2_enabled());
+        assert!(manager.get_agent_communication_occ3_opt_in());
     }
 
     #[test]
