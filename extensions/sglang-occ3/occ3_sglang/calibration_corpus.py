@@ -667,8 +667,7 @@ def validate_for_activation(artifact, validation_record, policy):
                 expected = getattr(binding, name, None)
                 if not expected or validation_record.get(name) != expected:
                     return ("refuse", "artifact_digest")
-            if (validation_record.get("method_id") != getattr(artifact, "method_id", None)
-                    or validation_record.get("rows") != getattr(artifact, "rows", None)):
+            if validation_record.get("method_id") != getattr(artifact, "method_id", None):
                 return ("refuse", "artifact_digest")
     if not isinstance(policy, Mapping) or not policy:
         return ("refuse", "policy")

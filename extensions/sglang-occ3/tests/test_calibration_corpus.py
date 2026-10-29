@@ -491,3 +491,20 @@ def test_separation_math():
     assert result["trials"] == 3
     assert result["delta_accuracy"] == pytest.approx(2.0 / 3.0)
     assert result["delta_margin"] == pytest.approx(1.0)
+
+
+def test_the_digest_free_fallback_allows_unequal_validation_rows():
+    """A hand-built artifact without a content digest still validates a record
+    measured on a differently sized validation partition."""
+    import dataclasses as _dc
+
+    from occ3_sglang.calibration_corpus import evaluate_map, validate_for_activation
+    from occ3_sglang.statebridge_calibrated import apply_map
+    manifest, artifact = _fitted()
+    record = evaluate_map(apply_map, artifact, manifest["validation"])
+    assert record["rows"] != artifact.rows
+    bare = _dc.replace(artifact, content_digest=None)
+    policy = {"min_r2_standard": 0.1, "min_turns": 1}
+    assert validate_for_activation(bare, record, policy) == ("allow", None)
+    assert validate_for_activation(bare, dict(record, method_id="other"), policy) == (
+        "refuse", "artifact_digest")

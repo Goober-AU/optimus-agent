@@ -723,3 +723,30 @@ def test_required_provenance_fields_and_corpus_digest_binding():
             deserialize_artifact(raw, expected_provenance=_provenance(**{field: value}))
         assert caught.value.code == "identity"
     assert deserialize_artifact(raw, expected_provenance=_provenance()) is not None
+
+
+def test_content_digest_pins_promotion_evidence_like_method_a():
+    import re as _re
+
+    from occ3_sglang.calibration_corpus import (bind_validation_evidence, evaluate_map,
+                                               validate_for_activation)
+    from occ3_sglang.statebridge_calibrated_procrustes import (apply_map, deserialize_artifact,
+                                                               serialize_artifact)
+    artifact = _fitted(seed=1701)
+    assert _re.fullmatch(r"[0-9a-f]{64}", artifact.content_digest)
+    model = _SharedFactor(rows=128, dim=64, rank=16, seed=100)
+    hidden, embeddings = model.rows(96, seed=1702)
+    validation = _partition(hidden, embeddings, _turns(6))
+    record = evaluate_map(apply_map, artifact, validation)
+    assert record["rows"] == 96
+    assert record["artifact_digest"] == artifact.content_digest
+    policy = {"min_r2_standard": 0.1, "min_turns": 1}
+    assert validate_for_activation(artifact, record, policy) == ("allow", None)
+    pinned = bind_validation_evidence(artifact, record, {"kind": "n1"})
+    assert validate_for_activation(pinned, record, policy) == ("allow", None)
+    other = _fitted(seed=1703)
+    foreign = evaluate_map(apply_map, other, validation)
+    assert validate_for_activation(artifact, foreign, policy) == ("refuse", "artifact_digest")
+    assert validate_for_activation(pinned, foreign, policy) == ("refuse", "validation_evidence")
+    round_trip = deserialize_artifact(serialize_artifact(artifact))
+    assert round_trip.content_digest == artifact.content_digest

@@ -82,7 +82,7 @@ import math
 import re
 import sys
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from .latent_types import LatentError, require
 
@@ -121,6 +121,7 @@ BINDING_FIELDS = frozenset({
     "predictor_position_offset", "precision", "fit_manifest_digest", "corpus_digest",
     "rank_hidden", "rank_embedding", "participation_hidden", "participation_embedding",
     "whitening_gain_hidden", "whitening_gain_embedding",
+    "validation_record_digest", "validation_artifact_digest", "serving",
 })
 HEADER_FIELDS = BINDING_FIELDS | frozenset({
     "schema", "byte_order", "tensor_dtype", "tensor_shapes", "tensor_digest",
@@ -192,6 +193,9 @@ class ProcrustesBinding:
     participation_embedding: float
     whitening_gain_hidden: float
     whitening_gain_embedding: float
+    validation_record_digest: str = ""
+    validation_artifact_digest: str = ""
+    serving: object = None
 
     def __post_init__(self):
         require(self.variant in VARIANTS, "identity")
@@ -219,6 +223,12 @@ class ProcrustesBinding:
                 and (self.fit_manifest_digest == "" or _digest(self.fit_manifest_digest)),
                 "identity")
         require(_digest(self.corpus_digest), "identity")
+        for name in ("validation_record_digest", "validation_artifact_digest"):
+            value = getattr(self, name)
+            require(type(value) is str and (value == "" or _digest(value)), "identity")
+        require(self.serving is None
+                or (type(self.serving) is dict and set(self.serving) == {"kind"}
+                    and self.serving["kind"] == "n1"), "profile")
         span = min(self.rows, self.hidden_dim)
         require(_uint(self.rank_hidden, 1, span) and _uint(self.rank_embedding, 1, span),
                 "profile")
@@ -252,7 +262,10 @@ class ProcrustesBinding:
                 "participation_hidden": self.participation_hidden,
                 "participation_embedding": self.participation_embedding,
                 "whitening_gain_hidden": self.whitening_gain_hidden,
-                "whitening_gain_embedding": self.whitening_gain_embedding}
+                "whitening_gain_embedding": self.whitening_gain_embedding,
+                "validation_record_digest": self.validation_record_digest,
+                "validation_artifact_digest": self.validation_artifact_digest,
+                "serving": self.serving}
 
 
 @dataclass(frozen=True)
@@ -272,6 +285,7 @@ class ProcrustesArtifact:
     scale_embedding: object
     rotation: object
     binding: object = None
+    content_digest: object = None
 
 
 def _uint(value, minimum=0, maximum=(1 << 64) - 1):
@@ -395,6 +409,7 @@ def _require_consistent(artifact, torch, *, check_values=True):
         require(isinstance(binding, ProcrustesBinding), "identity")
         for name in ("method_id", "variant", "r", "eta", "a0", "hidden_dim", "rows"):
             require(getattr(binding, name) == getattr(artifact, name), "identity")
+    require(artifact.content_digest is None or _digest(artifact.content_digest), "identity")
     return artifact
 
 
@@ -593,12 +608,15 @@ def fit_map(partition, hyperparams, *, provenance=None, torch_module=None):
             rank_hidden=rank_h, rank_embedding=rank_e,
             participation_hidden=participation_h, participation_embedding=participation_e,
             whitening_gain_hidden=gain_h, whitening_gain_embedding=gain_e)
-    return ProcrustesArtifact(method_id=VARIANT_METHOD_IDS[variant], variant=variant,
-                              r=rank_request, eta=eta, a0=a0, hidden_dim=dim, rows=rows,
-                              mean_hidden=mu_h.contiguous(), mean_embedding=mu_e.contiguous(),
-                              basis_hidden=p_h, basis_embedding=p_e,
-                              scale_hidden=d_h.contiguous(), scale_embedding=d_e.contiguous(),
-                              rotation=rotation.contiguous(), binding=binding)
+    artifact = ProcrustesArtifact(method_id=VARIANT_METHOD_IDS[variant], variant=variant,
+                                   r=rank_request, eta=eta, a0=a0, hidden_dim=dim, rows=rows,
+                                   mean_hidden=mu_h.contiguous(), mean_embedding=mu_e.contiguous(),
+                                   basis_hidden=p_h, basis_embedding=p_e,
+                                   scale_hidden=d_h.contiguous(), scale_embedding=d_e.contiguous(),
+                                   rotation=rotation.contiguous(), binding=binding)
+    if artifact.binding is not None:
+        artifact = replace(artifact, content_digest=artifact_digest(artifact, torch_module=torch))
+    return artifact
 
 
 _FACTOR_CACHE_LIMIT = 8
@@ -723,7 +741,11 @@ def describe(artifact):
                "bytes": artifact_bytes(artifact),
                "bound": 1 if artifact.binding is not None else 0}
     if artifact.binding is not None:
-        summary.update(artifact.binding.scalars())
+        scalars = {name: value for name, value in artifact.binding.scalars().items()
+                   if name != "serving"}
+        summary.update(scalars)
+        summary["serving_kind"] = ("none" if artifact.binding.serving is None
+                                  else artifact.binding.serving["kind"])
     return summary
 
 
@@ -745,6 +767,8 @@ def serialize_artifact(artifact, *, torch_module=None):
     header["payload_sha256"] = hashlib.sha256(payload).hexdigest()
     header["payload_bytes"] = len(payload)
     header["artifact_digest"] = _artifact_digest(header)
+    if artifact.content_digest is not None:
+        require(artifact.content_digest == header["artifact_digest"], "identity")
     require(set(header) == set(HEADER_FIELDS), "profile")
     raw_header = _canonical(header)
     require(len(raw_header) <= MAX_HEADER_BYTES, "quota")
@@ -853,7 +877,8 @@ def deserialize_artifact(raw, *, expected_method_id=None, expected_hidden_dim=No
                                   basis_embedding=loaded["basis_embedding"],
                                   scale_hidden=loaded["scale_hidden"],
                                   scale_embedding=loaded["scale_embedding"],
-                                  rotation=loaded["rotation"], binding=binding)
+                                  rotation=loaded["rotation"], binding=binding,
+                                  content_digest=header["artifact_digest"])
     _require_consistent(artifact, torch)
     require(_tensor_set_digest(artifact, torch) == header["tensor_digest"], "identity")
     return artifact
