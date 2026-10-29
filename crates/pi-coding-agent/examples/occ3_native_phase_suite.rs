@@ -1449,8 +1449,15 @@ fn attach_receiver_audit(
     audit: Arc<Mutex<Vec<Value>>>,
     forbidden: String,
 ) {
+    let dump_path = std::env::var("OCC3_DUMP_RECEIVER_PAYLOAD").ok();
     options.on_payload = Some(Arc::new(move |payload: Value, _model: &Model| {
         let serialized = payload.to_string();
+        // Root diagnostic: dump the receiver's request payload exactly as
+        // serialized to the provider (roles and content layout proof for
+        // the live sender-echo failure). No behavior change when unset.
+        if let Some(path) = &dump_path {
+            let _ = std::fs::write(path, serde_json::to_vec_pretty(&payload).unwrap_or_default());
+        }
         let absent = !serialized.contains(&forbidden);
         let max_tokens = payload
             .get("max_tokens")
