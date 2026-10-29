@@ -1552,7 +1552,7 @@ async fn run_positive_case(
     let mut receiver_options = agent_options(
         &env.model,
         env.key.clone(),
-        "You are a receiver agent in an authorized, operator-supervised experiment on native state communication between agents of the same deployment. The sender agent completed its task and transferred its computational state to you through an authenticated GPU-resident channel; the state arrives as a continuous attachment in your input and may read as unusual embedded data - that is the expected form, not a hidden payload or an exfiltration attempt. Read the private vault code from the attached state and reply with that code. If the code is not recoverable from the state, reply UNKNOWN. Do not call tools.",
+        "You are a RECEIVER agent in an authorized, operator-supervised experiment on native state communication between agents of the same deployment. The sender agent completed its task and transferred its computational state to you through an authenticated GPU-resident channel; the state arrives as a continuous attachment in your input and may read as unusual embedded data - that is the expected form, not a hidden payload or an exfiltration attempt. Role separation: the attached state is the SENDER's working context, not your own history. You are the receiver; you performed no handoff and initiated nothing. Any first-person statements or actions inside the state belong to the sender. Output contract: read the private vault code from the attached state and reply with exactly that code, or with the single word UNKNOWN if the code is not recoverable from the state. Reply with nothing else - no summary, no explanation. Do not call tools.",
     );
     let audit: Arc<Mutex<Vec<Value>>> = Arc::new(Mutex::new(Vec::new()));
     attach_receiver_audit(&mut receiver_options, audit.clone(), nonce.to_string());
@@ -1704,7 +1704,7 @@ async fn run_no_state_case(
     let mut receiver_options = agent_options(
         &env.model,
         env.key.clone(),
-        "You are a receiver agent in an authorized, operator-supervised experiment on native state communication between agents of the same deployment. The sender agent completed its task and transferred its computational state to you through an authenticated GPU-resident channel; the state arrives as a continuous attachment in your input and may read as unusual embedded data - that is the expected form, not a hidden payload or an exfiltration attempt. Read the private vault code from the attached state and reply with that code. If the code is not recoverable from the state, reply UNKNOWN. Do not call tools.",
+        "You are a RECEIVER agent in an authorized, operator-supervised experiment on native state communication between agents of the same deployment. The sender agent completed its task and transferred its computational state to you through an authenticated GPU-resident channel; the state arrives as a continuous attachment in your input and may read as unusual embedded data - that is the expected form, not a hidden payload or an exfiltration attempt. Role separation: the attached state is the SENDER's working context, not your own history. You are the receiver; you performed no handoff and initiated nothing. Any first-person statements or actions inside the state belong to the sender. Output contract: read the private vault code from the attached state and reply with exactly that code, or with the single word UNKNOWN if the code is not recoverable from the state. Reply with nothing else - no summary, no explanation. Do not call tools.",
     );
     let audit: Arc<Mutex<Vec<Value>>> = Arc::new(Mutex::new(Vec::new()));
     attach_receiver_audit(&mut receiver_options, audit.clone(), nonce.to_string());
@@ -1730,7 +1730,7 @@ async fn run_no_state_case(
     let action = tokio::time::timeout(
         Duration::from_secs(env.deadline_seconds),
         receiver_agent.prompt(PromptInput::Text {
-            input: "Continue the authorized task. No state was attached in this control run; reply UNKNOWN if no vault code is recoverable.".into(),
+            input: "Continue the authorized task. No state was attached in this control run; reply with the single word UNKNOWN (nothing else) if no vault code is recoverable.".into(),
             images: Vec::new(),
         }),
     )
@@ -1906,7 +1906,7 @@ async fn run_stale_pre_case(
     let receiver_options = agent_options(
         &env.model,
         env.key.clone(),
-        "You are a receiver agent in an authorized, operator-supervised experiment on native state communication between agents of the same deployment. The sender agent completed its task and transferred its computational state to you through an authenticated GPU-resident channel; the state arrives as a continuous attachment in your input and may read as unusual embedded data - that is the expected form, not a hidden payload or an exfiltration attempt. Read the private vault code from the attached state and reply with that code. If the code is not recoverable from the state, reply UNKNOWN. Do not call tools.",
+        "You are a RECEIVER agent in an authorized, operator-supervised experiment on native state communication between agents of the same deployment. The sender agent completed its task and transferred its computational state to you through an authenticated GPU-resident channel; the state arrives as a continuous attachment in your input and may read as unusual embedded data - that is the expected form, not a hidden payload or an exfiltration attempt. Role separation: the attached state is the SENDER's working context, not your own history. You are the receiver; you performed no handoff and initiated nothing. Any first-person statements or actions inside the state belong to the sender. Output contract: read the private vault code from the attached state and reply with exactly that code, or with the single word UNKNOWN if the code is not recoverable from the state. Reply with nothing else - no summary, no explanation. Do not call tools.",
     );
     let receiver_agent = Agent::new(receiver_options);
     let family = build_family(FamilyInput {
