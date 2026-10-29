@@ -40,7 +40,7 @@ use pi_agent_core::types::{
     AgentMessage, AgentState, AgentTool, AgentToolResult, ContentBlock, ThinkingLevel,
 };
 use pi_ai::source_capture::{canonical_json_bytes, sha256, SourceCaptureProfile};
-use pi_ai::types::{ContentBlock as AiContentBlock, Message, Model, API_OPENAI_COMPLETIONS};
+use pi_ai::types::{ContentBlock as AiContentBlock, ImageOrTextContent, Message, Model, API_OPENAI_COMPLETIONS};
 use pi_coding_agent::core::agent_messages::{
     AgentFamilyCatalogEntry, AgentSessionMessageEndpoint,
 };
@@ -1093,17 +1093,33 @@ async fn serve(
                                 // Root diagnostic: serve a captured live armed-turn
                                 // SSE body instead of the synthetic one, with the
                                 // live response id rewritten to this fixture rid
-                                // so the client's id/digest verification passes
-                                // and processing reaches the real payload path.
+                                // and the live tool-call id rewritten to the
+                                // fixture's, so the client's id/digest verification
+                                // AND the publication's capture-record tool_call_id
+                                // check both pass against fixture records.
                                 if let Ok(captured) = std::fs::read_to_string(&replay) {
-                                    if let Some(live_id) = captured
+                                    let mut body_text = captured;
+                                    if let Some(live_id) = body_text
                                         .lines()
                                         .find_map(|l| l.strip_prefix("data: "))
                                         .and_then(|l| serde_json::from_str::<Value>(l).ok())
                                         .and_then(|v| v["id"].as_str().map(str::to_string))
                                     {
-                                        output = captured.replace(&live_id, &rid);
+                                        body_text = body_text.replace(&live_id, &rid);
                                     }
+                                    if let Some(live_tool_id) = body_text
+                                        .lines()
+                                        .filter_map(|l| l.strip_prefix("data: "))
+                                        .filter_map(|l| serde_json::from_str::<Value>(l).ok())
+                                        .find_map(|v| {
+                                            v["choices"][0]["delta"]["tool_calls"][0]["id"]
+                                                .as_str()
+                                                .map(str::to_string)
+                                        })
+                                    {
+                                        body_text = body_text.replace(&live_tool_id, tool_call_id.as_str());
+                                    }
+                                    output = body_text;
                                 }
                             }
                             let fact = extract_fact(&body["messages"]);
@@ -1292,6 +1308,29 @@ fn final_message_is_pure_text(agent: &Agent) -> bool {
         })
 }
 
+fn source_tool_errors(agent: &Agent) -> Vec<String> {
+    agent
+        .state()
+        .messages
+        .iter()
+        .filter_map(|m| match m {
+            AgentMessage::Message(Message::ToolResult(r)) => {
+                let texts: Vec<String> = r
+                    .content
+                    .iter()
+                    .filter_map(|c| match c {
+                        ImageOrTextContent::Text(t) => Some(t.text.clone()),
+                        _ => None,
+                    })
+                    .collect();
+                if r.is_error { Some(texts) } else { None }
+            }
+            _ => None,
+        })
+        .flatten()
+        .collect()
+}
+
 fn count_tool_calls(agent: &Agent) -> usize {
     agent
         .state()
@@ -1351,6 +1390,16 @@ fn attach_receiver_audit(
             }
         })
     }));
+}
+
+/// Root diagnostic: raise the offline fixture's capture bound so a captured
+/// live SSE body larger than the synthetic default replays through the
+/// client path unchanged. Defaults to the historical 64 KiB.
+fn replay_max_response_bytes() -> usize {
+    std::env::var("OCC3_REPLAY_MAX_RESPONSE_BYTES")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(65536)
 }
 
 fn receiver_audit_summary(audit: &[Value]) -> Value {
@@ -1448,7 +1497,7 @@ async fn run_positive_case(
     let mut source_options = agent_options(
         &env.model,
         env.key.clone(),
-        "Preserve the private vault code in the native source turn. Call occ3_handoff exactly once to child receiver; include only receiver_role and receiver_name arguments. After the handoff stop.",
+        "Preserve the private vault code in the native source turn. Call occ3_handoff exactly once with receiver_role \"child\" and receiver_name \"receiver\"; include only receiver_role and receiver_name arguments. After the handoff stop.",
     );
     if let Ok(path) = std::env::var("OCC3_DUMP_SOURCE_PAYLOAD") {
         // Root diagnostic: dump the armed source-turn request payload exactly
@@ -1485,7 +1534,7 @@ async fn run_positive_case(
     let action = tokio::time::timeout(
         Duration::from_secs(env.deadline_seconds),
         source_agent.prompt(PromptInput::Text {
-            input: format!("The private vault code is {nonce}. Communicate it only through native state to child receiver, using occ3_handoff with no code in arguments."),
+            input: format!("The private vault code is {nonce}. Communicate it only through native state to the child agent named receiver, using occ3_handoff with receiver_role \"child\" and receiver_name \"receiver\" and no code in arguments."),
             images: Vec::new(),
         }),
     )
@@ -1533,7 +1582,11 @@ async fn run_positive_case(
         && audit_summary["request_count"] == json!(1);
     let observed = observed_from(env, &source_audit);
     let cleanup = family.close().await;
-    let case = json!({
+    // Root diagnostics (env-gated so the default report keeps its exact
+    // fieldset): the source capture audit and any tool-result errors, for
+    // offline replay of live client-side failures.
+    let diagnostic_extras = std::env::var_os("OCC3_REPLAY_SSE_FILE").is_some();
+    let mut case = json!({
         "case_passed": case_passed,
         "semantic_nonce_match": semantic_nonce_match,
         "answer_sha256": answer_sha256,
@@ -1542,6 +1595,10 @@ async fn run_positive_case(
         "consumed_before_tools": consumed && receiver_tool_calls == 0 && source_tool_calls == 1,
         "receiver_request_audit": audit_summary,
     });
+    if diagnostic_extras && !case_passed {
+        case["source_audit"] = source_audit;
+        case["source_tool_errors"] = json!(source_tool_errors(&source_agent));
+    }
     if !case_passed {
         return Err(format!("positive case failed: {case}"));
     }
@@ -1756,7 +1813,7 @@ async fn run_stale_pre_case(
     let source_options = agent_options(
         &env.model,
         env.key.clone(),
-        "Preserve the private control token in the native source turn. Call occ3_handoff exactly once to child receiver; include only receiver_role and receiver_name arguments. After the handoff stop.",
+        "Preserve the private control token in the native source turn. Call occ3_handoff exactly once with receiver_role \"child\" and receiver_name \"receiver\"; include only receiver_role and receiver_name arguments. After the handoff stop.",
     );
     let source_agent = Agent::new(source_options);
     let receiver_options = agent_options(
@@ -1803,7 +1860,7 @@ async fn run_stale_pre_case(
     let action = tokio::time::timeout(
         Duration::from_secs(env.deadline_seconds),
         source_agent.prompt(PromptInput::Text {
-            input: format!("Retain the private control token {STALE_CONTROL_TOKEN} in native state. Call occ3_handoff exactly once to child receiver with only receiver_role and receiver_name arguments, then stop."),
+            input: format!("Retain the private control token {STALE_CONTROL_TOKEN} in native state. Call occ3_handoff exactly once with receiver_role \"child\" and receiver_name \"receiver\" and only those two arguments, then stop."),
             images: Vec::new(),
         }),
     )
@@ -2797,10 +2854,7 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
         expires_at_epoch: expires_before,
         deadline_seconds: 20,
         max_capture_bytes: 1048576,
-        max_response_bytes: std::env::var("OCC3_REPLAY_MAX_RESPONSE_BYTES")
-            .ok()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(65536),
+        max_response_bytes: replay_max_response_bytes(),
         harness_binary_sha256: binary_sha256.clone(),
         source_manifest_sha256: manifest_sha256.clone(),
         offline_records: Some(before_records.clone()),
@@ -2866,7 +2920,7 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
         expires_at_epoch: expires_after,
         deadline_seconds: 20,
         max_capture_bytes: 1048576,
-        max_response_bytes: 65536,
+        max_response_bytes: replay_max_response_bytes(),
         harness_binary_sha256: binary_sha256.clone(),
         source_manifest_sha256: manifest_sha256.clone(),
         offline_records: Some(after_records),
