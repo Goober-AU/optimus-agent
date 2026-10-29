@@ -19,7 +19,7 @@ from .latent_types import (LatentError, UniformRequestCancellation, Publication,
                            SessionEnrollment, decode_descriptor, require,
                            validate_control_payload)
 from .prefix_layout import prefix_span
-from .alignment_dispatch import aligner_for, load_frozen_artifact
+from .alignment_dispatch import aligner_for, artifact_resident_bytes, load_frozen_artifact
 from .statebridge import (anchor_tiled, mean_embedding_norm, shard_ranges, workspace_bound)
 
 logger = logging.getLogger(__name__)
@@ -45,6 +45,16 @@ def _decline_code(error):
         return "latent_" + error.code
     name = type(error).__name__
     return "exception_" + name if name.isidentifier() else "exception_unknown"
+
+
+def _serving_renorm(aligner):
+    """True when the negotiated method renormalises rows to the target norm.
+
+    The aligner exposes the serving config it will apply: N0 (None) skips the
+    renorm step, N1 and the per-message solver need the vocabulary-norm
+    statistic the worker measures from the frozen embedding matrix.
+    """
+    return getattr(aligner, "serving", None) is not None
 
 
 _RUNTIME = None
@@ -86,6 +96,13 @@ class WorkerRuntime:
         # the per-message method, which holds no artifact.
         self.calibration_digest = getattr(self.aligner, "artifact_digest", "")
         self.registry = LatentRegistry(profile)
+        # The frozen artifact is resident on every rank for the life of the
+        # runtime: charge its bytes into the rank-local live-bytes budget at
+        # install so capture reservations cannot spend them twice, and expose
+        # the all-rank aggregate for the install/health record.
+        self.artifact_bytes = 0 if self.calibration is None else artifact_resident_bytes(self.calibration)
+        require(self.artifact_bytes <= profile.max_live_bytes, "quota")
+        self.registry.charged_bytes += self.artifact_bytes
         self.streams = {}
         self.poisoned = False
         self.commands = {}
@@ -220,7 +237,9 @@ class WorkerRuntime:
                 "layer_index": p.layer_index, "dtype": self.dtype,
                 "profile_digest": p.binding_digest, "source_capture": True,
                 "continuous_prefix": True, "terminal_journal": True,
-                "max_capture_bytes": MAX_CAPTURE_BYTES}
+                "max_capture_bytes": MAX_CAPTURE_BYTES,
+                "artifact_bytes": getattr(self, "artifact_bytes", 0),
+                "artifact_bytes_all_ranks": getattr(self, "artifact_bytes", 0) * p.expected_ranks}
 
     def capture_budget(self, count):
         # Fixed ring + terminal ordered H/E/Z + stage/safe gather/dtype cast margin.
@@ -346,7 +365,10 @@ class WorkerRuntime:
         self.preflight("align_prepare", local_prepare)
         n, h, tokens = prepared["n"], prepared["h"], prepared["tokens"]
         embeddings = self.embedding(tokens)
-        if self.target_norm is None:
+        # N0 (the binding's serving config is None) must not renormalise, so
+        # the vocabulary-norm statistic is measured only for a method whose
+        # negotiated serving renormalises rows (N1 or the per-message solver).
+        if _serving_renorm(self.aligner) and self.target_norm is None:
             self.target_norm = mean_embedding_norm(self.embedding, tp_group=self.group,
                                                   tile_rows=self.profile.tile_rows)
         # All ranks reach the outcome handshake even if the root solver fails.
@@ -886,12 +908,16 @@ def _probe_alignment(hidden, embeddings, prefix, profile):
     """
     import json
     import os
+    import torch
     path = os.environ.get("OCC3_ALIGN_PROBE")
     if not path:
         return
     try:
         from .calibration_probe import probe_relation
-        result = probe_relation(hidden, embeddings, prefix)
+        # An explicit probe-local generator: the serving model RNG is never
+        # drawn from, so a probe never perturbs sampling determinism.
+        result = probe_relation(hidden, embeddings, prefix,
+                                generator=torch.Generator(device=hidden.device).manual_seed(0))
         result["anchor_alpha"] = float(profile.anchor_alpha)
         result["max_prefix_tokens"] = int(profile.max_prefix_tokens)
         with open(path, "a", encoding="utf-8") as handle:

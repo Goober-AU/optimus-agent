@@ -66,6 +66,111 @@ def test_capture_budget_all_rank_units():
         runtime.capture_budget(128)
 
 
+def test_serving_renorm_reads_the_aligner_serving_config():
+    from types import SimpleNamespace as NS
+    # N0 (the binding's serving config is None) skips the renorm step; N1 and
+    # the per-message solver (which always renormalises) need the norm.
+    assert w._serving_renorm(NS(serving=None)) is False
+    assert w._serving_renorm(NS(serving={"kind": "n1"})) is True
+    assert w._serving_renorm(NS()) is False
+    from occ3_sglang import alignment_dispatch
+    from occ3_sglang.latent_types import RuntimeProfile
+    message_profile = RuntimeProfile("epoch", 9, "model-hash", "glm")
+    assert w._serving_renorm(alignment_dispatch.aligner_for(message_profile)) is True
+
+
+def _calibrated_profile(**changes):
+    from occ3_sglang.native_profile import CALIBRATED_METHOD
+    return profile(method=CALIBRATED_METHOD, **changes)
+
+
+def _calibrated_artifact():
+    torch = pytest.importorskip("torch")
+    from occ3_sglang import statebridge_calibrated
+    from occ3_sglang.native_profile import CALIBRATED_METHOD
+    generator = torch.Generator().manual_seed(21)
+    rows, dim, rank = 128, 6144, 8
+    left = torch.randn(rank, dim, generator=generator) / rank ** 0.5
+    right = torch.randn(rank, dim, generator=generator) / rank ** 0.5
+    factor = torch.randn(rows, rank, generator=generator)
+    hidden = 0.9 ** 0.5 * (factor @ left) + 0.1 ** 0.5 * torch.randn(rows, dim, generator=generator)
+    embeddings = 0.9 ** 0.5 * (factor @ right) + 0.1 ** 0.5 * torch.randn(rows, dim, generator=generator)
+    provenance = statebridge_calibrated.CalibrationProvenance(
+        layer_index=77, model_fingerprint="model-hash", checkpoint_revision="rev-1",
+        tokenizer_fingerprint="tok-hash", embedding_id="emb-hash",
+        capture_method_id="cap-hash")
+    partition = {"hidden": hidden, "embeddings": embeddings,
+                 "row_turn_ids": ("turn-0",) * rows, "turn_ids": ("turn-0",),
+                 "manifest_digest": ""}
+    artifact = statebridge_calibrated.fit_map(partition, {"rho": 0.02}, provenance=provenance)
+    assert artifact.binding.method_id == CALIBRATED_METHOD
+    return artifact
+
+
+def test_worker_install_charges_artifact_bytes_and_records_the_aggregate(monkeypatch):
+    from occ3_sglang import alignment_dispatch
+    artifact = _calibrated_artifact()
+    runner, scheduler, group = _worker_init_env(monkeypatch, radix_match=True, unified=True)
+    runner.forward_stream = NS(device="cuda:3", cuda_stream=4)
+    runtime = object.__new__(w.WorkerRuntime)
+    runtime.__init__(runner, group, _calibrated_profile(), scheduler=scheduler,
+                     artifact=artifact)
+    charged = alignment_dispatch.artifact_resident_bytes(artifact)
+    assert charged > 0
+    assert runtime.registry.charged_bytes == charged
+    assert runtime.artifact_bytes == charged
+    health = runtime.health()
+    assert health["artifact_bytes"] == charged
+    # Every rank loads its own resident copy: the aggregate is recorded too.
+    assert health["artifact_bytes_all_ranks"] == charged * runtime.profile.expected_ranks
+    # The charge leaves less headroom for capture reservations, not more.
+    with pytest.raises(LatentError) as caught:
+        runtime.capture_budget(0)
+    assert caught.value.code in ("profile", "quota")
+
+
+def test_worker_install_refuses_an_artifact_beyond_the_live_bytes_budget(monkeypatch):
+    artifact = _calibrated_artifact()
+    from occ3_sglang import statebridge_calibrated
+    assert statebridge_calibrated.artifact_bytes(artifact) > 1024
+    runner, scheduler, group = _worker_init_env(monkeypatch, radix_match=True, unified=True)
+    runner.forward_stream = NS(device="cuda:3", cuda_stream=4)
+    runtime = object.__new__(w.WorkerRuntime)
+    with pytest.raises(LatentError) as caught:
+        runtime.__init__(runner, group, _calibrated_profile(max_live_bytes=1024),
+                         scheduler=scheduler, artifact=artifact)
+    assert caught.value.code == "quota"
+
+
+def test_per_message_install_charges_no_artifact(monkeypatch):
+    runner, scheduler, group = _worker_init_env(monkeypatch, radix_match=True, unified=True)
+    runner.forward_stream = NS(device="cuda:3", cuda_stream=4)
+    runtime = object.__new__(w.WorkerRuntime)
+    runtime.__init__(runner, group, profile(), scheduler=scheduler)
+    assert runtime.artifact_bytes == 0
+    assert runtime.registry.charged_bytes == 0
+    health = runtime.health()
+    assert health["artifact_bytes"] == 0
+    assert health["artifact_bytes_all_ranks"] == 0
+
+
+def test_the_live_probe_uses_a_probe_local_generator_and_writes_scalars(tmp_path, monkeypatch):
+    torch = pytest.importorskip("torch")
+    import json
+    probe = tmp_path / "probe.jsonl"
+    monkeypatch.setenv("OCC3_ALIGN_PROBE", str(probe))
+    generator = torch.Generator().manual_seed(40)
+    hidden = torch.randn(128, 512, generator=generator)
+    embeddings = torch.randn(128, 512, generator=generator)
+    w._probe_alignment(hidden, embeddings, embeddings.clone(), profile())
+    lines = probe.read_text(encoding="utf-8").strip().split("\n")
+    assert len(lines) == 1
+    result = json.loads(lines[0])
+    from occ3_sglang.calibration_probe import PROBE_KEYS
+    assert set(result) >= set(PROBE_KEYS) | {"anchor_alpha", "max_prefix_tokens"}
+    assert not probe.with_suffix(".jsonl.error").exists()
+
+
 def test_profile_loader_uses_no_client_fields(monkeypatch):
     import types
     from dataclasses import asdict
