@@ -1088,7 +1088,24 @@ async fn serve(
                             let handle = format!("offline-source-handle-{capture_index}");
                             let rid = format!("offline-native-rid-{capture_index}");
                             let tool_call_id = format!("fixture-tool-{capture_index}");
-                            let output = sse(&rid, &tool_call_id, None);
+                            let mut output = sse(&rid, &tool_call_id, None);
+                            if let Ok(replay) = std::env::var("OCC3_REPLAY_SSE_FILE") {
+                                // Root diagnostic: serve a captured live armed-turn
+                                // SSE body instead of the synthetic one, with the
+                                // live response id rewritten to this fixture rid
+                                // so the client's id/digest verification passes
+                                // and processing reaches the real payload path.
+                                if let Ok(captured) = std::fs::read_to_string(&replay) {
+                                    if let Some(live_id) = captured
+                                        .lines()
+                                        .find_map(|l| l.strip_prefix("data: "))
+                                        .and_then(|l| serde_json::from_str::<Value>(l).ok())
+                                        .and_then(|v| v["id"].as_str().map(str::to_string))
+                                    {
+                                        output = captured.replace(&live_id, &rid);
+                                    }
+                                }
+                            }
                             let fact = extract_fact(&body["messages"]);
                             // Receipt arithmetic must mirror validate_receipt:
                             // one logical aligned [retained_count, hidden_dim]
@@ -1428,11 +1445,19 @@ async fn run_positive_case(
     let source = Occ3NativeSession::enroll(source_id, &env.model, connector.clone()).await?;
     let receiver =
         Occ3NativeSession::enroll(receiver_id, &env.model, connector.clone()).await?;
-    let source_options = agent_options(
+    let mut source_options = agent_options(
         &env.model,
         env.key.clone(),
         "Preserve the private vault code in the native source turn. Call occ3_handoff exactly once to child receiver; include only receiver_role and receiver_name arguments. After the handoff stop.",
     );
+    if let Ok(path) = std::env::var("OCC3_DUMP_SOURCE_PAYLOAD") {
+        // Root diagnostic: dump the armed source-turn request payload exactly
+        // as serialized to the provider. No behavior change when unset.
+        source_options.on_payload = Some(Arc::new(move |payload: Value, _model: &Model| {
+            let _ = std::fs::write(&path, serde_json::to_vec_pretty(&payload).unwrap_or_default());
+            Box::pin(async move { None })
+        }));
+    }
     let source_agent = Agent::new(source_options);
     let mut receiver_options = agent_options(
         &env.model,
@@ -2381,6 +2406,17 @@ fn assemble_report(
 // Phase runners.
 // ---------------------------------------------------------------------------
 
+// Root diagnostic override: a server process binds each session id to its
+// first (runtime, expiry) enrollment; after a live attempt those ids are
+// burned for that process. Setting OCC3_SOURCE_SESSION / OCC3_RECEIVER_SESSION
+// mints fresh ids for diagnostic reruns against the same serving process.
+// Defaults keep the historical constants byte-identical.
+fn diagnostic_source_session() -> String {
+    std::env::var("OCC3_SOURCE_SESSION").unwrap_or_else(|_| ORIGINAL_SOURCE_SESSION.into())
+}
+fn diagnostic_receiver_session() -> String {
+    std::env::var("OCC3_RECEIVER_SESSION").unwrap_or_else(|_| ORIGINAL_RECEIVER_SESSION.into())
+}
 const ORIGINAL_SOURCE_SESSION: &str = "source-session";
 const ORIGINAL_RECEIVER_SESSION: &str = "receiver-session";
 const ORIGINAL_NOSTATE_SESSION: &str = "nostate-receiver-session";
@@ -2429,7 +2465,7 @@ async fn run_before_phase(
     // connector so no close/shutdown path can ever retire it.
     let stale_connector = env.connector()?;
     let (positive, observed, cleanup_positive) =
-        run_positive_case(env, &connector, ORIGINAL_SOURCE_SESSION, ORIGINAL_RECEIVER_SESSION, &nonce).await?;
+        run_positive_case(env, &connector, &diagnostic_source_session(), &diagnostic_receiver_session(), &nonce).await?;
     let (no_state, cleanup_no_state) =
         run_no_state_case(env, &connector, ORIGINAL_NOSTATE_SESSION, &nonce).await?;
     let (stale_pre, artifact) = run_stale_pre_case(
@@ -2572,7 +2608,7 @@ async fn run_after_phase(
     )
     .await?;
     let (positive, observed, cleanup_positive) =
-        run_positive_case(env, &connector, ORIGINAL_SOURCE_SESSION, ORIGINAL_RECEIVER_SESSION, &nonce).await?;
+        run_positive_case(env, &connector, &diagnostic_source_session(), &diagnostic_receiver_session(), &nonce).await?;
     let (no_state, cleanup_no_state) =
         run_no_state_case(env, &connector, ORIGINAL_NOSTATE_SESSION, &nonce).await?;
     let shutdown = connector.shutdown().await;
@@ -2761,7 +2797,10 @@ async fn offline_selftest(journal: Option<PathBuf>) -> Result<Value, String> {
         expires_at_epoch: expires_before,
         deadline_seconds: 20,
         max_capture_bytes: 1048576,
-        max_response_bytes: 65536,
+        max_response_bytes: std::env::var("OCC3_REPLAY_MAX_RESPONSE_BYTES")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(65536),
         harness_binary_sha256: binary_sha256.clone(),
         source_manifest_sha256: manifest_sha256.clone(),
         offline_records: Some(before_records.clone()),
@@ -3155,8 +3194,42 @@ async fn live_phase(path: &str) -> Result<Value, String> {
     Ok(report)
 }
 
-#[tokio::main]
-async fn main() {
+/// The armed positive-case chain (Agent::run -> run_agent_loop ->
+/// stream_assistant_response -> inner -> Done-arm completion) needs roughly
+/// 1.25 MiB of stack in a debug build: the nested async state machines are
+/// large and unoptimized frames do not share slots. A Windows main thread has
+/// a 1 MiB reserve, so driving the suite there overflowed the stack the
+/// moment a source turn completed (exit 0xC00000FD, before tool dispatch).
+/// The fix is to drive the suite on a thread with an explicit, generous
+/// stack; 64 MiB leaves order-of-magnitude headroom over the measured need.
+/// `OCC3_DRIVER_STACK_BYTES` overrides the size (diagnostics: setting it to
+/// 1048576 reproduces the historical overflow on demand).
+const DEFAULT_DRIVER_STACK_BYTES: usize = 64 * 1024 * 1024;
+
+fn main() {
+    let stack_bytes = std::env::var("OCC3_DRIVER_STACK_BYTES")
+        .ok()
+        .and_then(|value| value.parse::<usize>().ok())
+        .filter(|bytes| *bytes >= 1024 * 1024)
+        .unwrap_or(DEFAULT_DRIVER_STACK_BYTES);
+    let child = std::thread::Builder::new()
+        .stack_size(stack_bytes)
+        .spawn(|| {
+            let runtime = tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()
+                .expect("runtime");
+            runtime.block_on(async move { real_main().await })
+        })
+        .expect("spawn driver thread");
+    match child.join() {
+        Ok(Ok(())) => {}
+        Ok(Err(code)) => std::process::exit(code),
+        Err(_) => std::process::exit(2),
+    }
+}
+
+async fn real_main() -> Result<(), i32> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let result = if args.is_empty() {
         offline_selftest(None).await
@@ -3173,9 +3246,10 @@ async fn main() {
         Ok(summary) => println!("{summary}"),
         Err(error) => {
             eprintln!("Native phase-suite producer refused: {error}");
-            std::process::exit(1);
+            return Err(1);
         }
     }
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
