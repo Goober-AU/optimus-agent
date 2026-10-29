@@ -928,8 +928,10 @@ impl Occ3Connector for SglangOcc3Connector {
                     state_size_bytes: receipt.byte_count,
                 },
                 // Fixed control instruction: source data and tool arguments are
-                // never copied into the successful receiver message.
-                control_summary: "Continue the authorized task using the attached state.".into(),
+                // never copied into the successful receiver message. The
+                // summary is receiver-framed so the receiving model answers
+                // as itself, not in the sender's voice.
+                control_summary: "You are the receiver of this attached native state. It is the sender's context, not your own history. As the receiver, answer your current task using that state.".into(),
                 fallback_reference: "text".into(),
             },
         };
