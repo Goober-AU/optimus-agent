@@ -1544,6 +1544,44 @@ async fn run_positive_case(
     // Evidence extraction happens before cleanup.
     let answer = normalized_final_answer(&receiver_agent);
     let answer_sha256 = sha256(answer.as_bytes());
+    if let Ok(path) = std::env::var("OCC3_DUMP_RECEIVER_ANSWER") {
+        // Root diagnostic: a live semantic_nonce_match failure names its exact
+        // string. Dumps the normalized answer, every assistant text the
+        // receiver produced, and the expected nonce. No behavior change unset.
+        let assistant_turns: Vec<String> = receiver_agent
+            .state()
+            .messages
+            .iter()
+            .filter_map(|m| match m {
+                AgentMessage::Message(Message::Assistant(a)) => {
+                    let texts: Vec<String> = a
+                        .content
+                        .iter()
+                        .filter_map(|c| match c {
+                            AiContentBlock::Text(t) => Some(t.text.clone()),
+                            _ => None,
+                        })
+                        .collect();
+                    let tools = a
+                        .content
+                        .iter()
+                        .filter(|c| matches!(c, AiContentBlock::ToolCall(_)))
+                        .count();
+                    Some(format!("[stop={:?} tools={} text={:?}]", a.stop_reason, tools, texts.join("\n")))
+                }
+                _ => None,
+            })
+            .collect();
+        let _ = std::fs::write(
+            &path,
+            format!(
+                "nonce={:?}\nnormalized_answer={:?}\nassistant_turns=\n{}\n",
+                nonce,
+                answer,
+                assistant_turns.iter().map(|t| format!("  {t}\n")).collect::<String>()
+            ),
+        );
+    }
     let semantic_nonce_match = answer == nonce;
     let receipts = family.receipts();
     // The session audit projects the receiver inbox under the "receiver" key.
@@ -1598,6 +1636,8 @@ async fn run_positive_case(
     if diagnostic_extras && !case_passed {
         case["source_audit"] = source_audit;
         case["source_tool_errors"] = json!(source_tool_errors(&source_agent));
+        case["receiver_tool_calls"] = json!(receiver_tool_calls);
+        case["source_tool_calls"] = json!(source_tool_calls);
     }
     if !case_passed {
         return Err(format!("positive case failed: {case}"));
