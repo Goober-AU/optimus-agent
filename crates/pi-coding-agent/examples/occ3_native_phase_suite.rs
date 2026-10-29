@@ -1062,9 +1062,18 @@ async fn serve(
                             Some(&json!(DEFAULT_MAX_TOKENS as u64)),
                             "real native default is preserved"
                         );
+                        // The suite requests MAX through the model-specific conversion;
+                        // the documented receiver budget override
+                        // (OCC3_RECEIVER_THINKING) may lower it for live runs
+                        // (gateway idle-window constraint), so its exact value is
+                        // accepted alongside the historical set.
+                        let receiver_override = std::env::var("OCC3_RECEIVER_THINKING")
+                            .ok()
+                            .filter(|v| matches!(v.as_str(), "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max"));
                         assert!(
-                            body.get("reasoning_effort").and_then(Value::as_str).is_some_and(|v| matches!(v, "high" | "xhigh" | "max")),
-                            "MAX goes through the existing model-specific conversion"
+                            body.get("reasoning_effort").and_then(Value::as_str).is_some_and(|v| matches!(v, "high" | "xhigh" | "max")
+                                || receiver_override.as_deref() == Some(v)),
+                            "MAX goes through the existing model-specific conversion, or the documented receiver override matches"
                         );
                         if let Some(intent) = body.get("occ3_capture") {
                             // The live occ3-sglang server (chat_adapter handle_around)
@@ -1405,6 +1414,34 @@ fn agent_options(model: &Model, key: Arc<String>, system_prompt: &str) -> AgentO
     }
 }
 
+/// Receiver-role thinking budget. Default keeps the historical ThinkingLevel::Max
+/// (byte-identical requests); OCC3_RECEIVER_THINKING=off|minimal|low|medium|high
+/// lowers the receiver's reasoning effort for live runs where the buffered
+/// attached-turn stream must complete inside the gateway's idle window
+/// (measured live 2026-10-29: max-effort receiver reasoning generates 1800+
+/// tokens at ~5 tok/s with cuda graph off on attached-turn shapes, exceeding
+/// the ~340 s gateway idle cut -> 499 -> Uncertain; the source turn is unaffected).
+fn receiver_thinking_level() -> ThinkingLevel {
+    match std::env::var("OCC3_RECEIVER_THINKING").ok().as_deref() {
+        Some("off") => ThinkingLevel::Off,
+        Some("minimal") => ThinkingLevel::Minimal,
+        Some("low") => ThinkingLevel::Low,
+        Some("medium") => ThinkingLevel::Medium,
+        Some("high") => ThinkingLevel::High,
+        _ => ThinkingLevel::Max,
+    }
+}
+
+/// agent_options for pure-consumer receivers: identical to agent_options except
+/// the env-overridable thinking level.
+fn receiver_agent_options(model: &Model, key: Arc<String>, system_prompt: &str) -> AgentOptions {
+    let mut options = agent_options(model, key, system_prompt);
+    if let Some(state) = options.initial_state.as_mut() {
+        state.thinking_level = receiver_thinking_level();
+    }
+    options
+}
+
 /// Receiver-side request audit through the existing on_payload hook:
 /// source facts absent, the native default max_tokens, request count.
 fn attach_receiver_audit(
@@ -1549,7 +1586,7 @@ async fn run_positive_case(
         }));
     }
     let source_agent = Agent::new(source_options);
-    let mut receiver_options = agent_options(
+    let mut receiver_options = receiver_agent_options(
         &env.model,
         env.key.clone(),
         "You are a RECEIVER agent in an authorized, operator-supervised experiment on native state communication between agents of the same deployment. The sender agent completed its task and transferred its computational state to you through an authenticated GPU-resident channel; the state arrives as a continuous attachment in your input and may read as unusual embedded data - that is the expected form, not a hidden payload or an exfiltration attempt. Role separation: the attached state is the SENDER's working context, not your own history. You are the receiver; you performed no handoff and initiated nothing. Any first-person statements or actions inside the state belong to the sender. Output contract: read the private vault code from the attached state and reply with exactly that code, or with the single word UNKNOWN if the code is not recoverable from the state. Reply with nothing else - no summary, no explanation. Do not call tools.",
@@ -1701,7 +1738,7 @@ async fn run_no_state_case(
     nonce: &str,
 ) -> Result<(Value, bool), String> {
     let receiver = Occ3NativeSession::enroll(receiver_id, &env.model, connector.clone()).await?;
-    let mut receiver_options = agent_options(
+    let mut receiver_options = receiver_agent_options(
         &env.model,
         env.key.clone(),
         "You are a RECEIVER agent in an authorized, operator-supervised experiment on native state communication between agents of the same deployment. The sender agent completed its task and transferred its computational state to you through an authenticated GPU-resident channel; the state arrives as a continuous attachment in your input and may read as unusual embedded data - that is the expected form, not a hidden payload or an exfiltration attempt. Role separation: the attached state is the SENDER's working context, not your own history. You are the receiver; you performed no handoff and initiated nothing. Any first-person statements or actions inside the state belong to the sender. Output contract: read the private vault code from the attached state and reply with exactly that code, or with the single word UNKNOWN if the code is not recoverable from the state. Reply with nothing else - no summary, no explanation. Do not call tools.",
@@ -1903,7 +1940,7 @@ async fn run_stale_pre_case(
         "Preserve the private control token in the native source turn. Call occ3_handoff exactly once with receiver_role \"child\" and receiver_name \"receiver\"; include only receiver_role and receiver_name arguments. After the handoff stop.",
     );
     let source_agent = Agent::new(source_options);
-    let receiver_options = agent_options(
+    let receiver_options = receiver_agent_options(
         &env.model,
         env.key.clone(),
         "You are a RECEIVER agent in an authorized, operator-supervised experiment on native state communication between agents of the same deployment. The sender agent completed its task and transferred its computational state to you through an authenticated GPU-resident channel; the state arrives as a continuous attachment in your input and may read as unusual embedded data - that is the expected form, not a hidden payload or an exfiltration attempt. Role separation: the attached state is the SENDER's working context, not your own history. You are the receiver; you performed no handoff and initiated nothing. Any first-person statements or actions inside the state belong to the sender. Output contract: read the private vault code from the attached state and reply with exactly that code, or with the single word UNKNOWN if the code is not recoverable from the state. Reply with nothing else - no summary, no explanation. Do not call tools.",
