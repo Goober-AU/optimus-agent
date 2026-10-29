@@ -1308,6 +1308,47 @@ fn final_message_is_pure_text(agent: &Agent) -> bool {
         })
 }
 
+/// Pure-consumer receivers must not carry the source-side handoff tool.
+/// `install()` arms every family member with `occ3_handoff` (a source
+/// capability), but the receiver's prompt already forbids tools: a live
+/// receiver model that calls it burns its turns on refusals instead of
+/// answering from the attached state (observed live 2026-10-29: the receiver
+/// spent both turns on handoff attempts - first a family-resolution
+/// refusal, then `occ3_tool_source_lease_missing` - and answered with a
+/// refusal, so the semantic endpoint was never measured). Removing the
+/// tool from receiver-role agents makes the suite's documented intent
+/// ("Do not call tools") structural.
+fn strip_handoff_tool(agent: &Agent) {
+    let mut state = agent.state();
+    let mut tools = state.tools.take().unwrap_or_default();
+    tools.retain(|t| t.name != NATIVE_HANDOFF_TOOL);
+    state.tools = Some(tools);
+    agent.set_state(state);
+}
+
+fn receiver_tool_errors(agent: &Agent) -> Vec<String> {
+    agent
+        .state()
+        .messages
+        .iter()
+        .filter_map(|m| match m {
+            AgentMessage::Message(Message::ToolResult(r)) => {
+                let texts: Vec<String> = r
+                    .content
+                    .iter()
+                    .filter_map(|c| match c {
+                        ImageOrTextContent::Text(t) => Some(t.text.clone()),
+                        _ => None,
+                    })
+                    .collect();
+                if r.is_error { Some(texts) } else { None }
+            }
+            _ => None,
+        })
+        .flatten()
+        .collect()
+}
+
 fn source_tool_errors(agent: &Agent) -> Vec<String> {
     agent
         .state()
@@ -1525,6 +1566,10 @@ async fn run_positive_case(
         receiver_native: receiver.clone(),
     })?;
     family.install()?;
+    // The receiver is a pure consumer: without this, a live receiver model
+    // can call the installed source-side tool and refuse instead of
+    // answering from the attached state.
+    strip_handoff_tool(&receiver_agent);
     source.arm_source(NativeSourceBudget {
         retained_count_limit: 128,
         max_capture_bytes: env.max_capture_bytes,
@@ -1636,6 +1681,7 @@ async fn run_positive_case(
     if diagnostic_extras && !case_passed {
         case["source_audit"] = source_audit;
         case["source_tool_errors"] = json!(source_tool_errors(&source_agent));
+        case["receiver_tool_errors"] = json!(receiver_tool_errors(&receiver_agent));
         case["receiver_tool_calls"] = json!(receiver_tool_calls);
         case["source_tool_calls"] = json!(source_tool_calls);
     }
@@ -1680,6 +1726,7 @@ async fn run_no_state_case(
         native: receiver.clone(),
     }])?;
     family.install()?;
+    strip_handoff_tool(&receiver_agent);
     let action = tokio::time::timeout(
         Duration::from_secs(env.deadline_seconds),
         receiver_agent.prompt(PromptInput::Text {
@@ -1871,6 +1918,9 @@ async fn run_stale_pre_case(
         receiver_native: receiver.clone(),
     })?;
     family.install()?;
+    // The stale-pre receiver is a pure consumer (same structural rule as the
+    // positive case: no source-side tool on the answering agent).
+    strip_handoff_tool(&receiver_agent);
     // F5: replace the installed tool BEFORE the source prompt.
     let dispatched = Arc::new(AtomicBool::new(false));
     let dispatch_count = Arc::new(AtomicU64::new(0));
